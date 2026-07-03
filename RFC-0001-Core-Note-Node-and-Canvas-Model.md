@@ -143,6 +143,9 @@ Phase 1 MUST establish:
 
 - Deterministic Obsidian-style note links.
 
+- Unresolved-link phantom notes with materialize-on-intent creation
+  and wiki-link title suggestions.
+
 - Immediate text navigation with independent spatial resolution.
 
 - Non-destructive image import, cropping, thumbnail generation, and
@@ -609,6 +612,16 @@ arbitrary database state.
 25. A continuous pointer gesture may update renderer state ephemerally
 but commits at most one durable user-level command when completed.
 
+26. Every saved wiki-link token has exactly one indexed link record in
+state bound, unresolved, or broken.
+
+27. Creating, renaming, or restoring a note binds matching unresolved
+link records within the same user-level command; broken link records
+never re-bind implicitly.
+
+28. A phantom note persists no records and reserves no title until
+materialization.
+
 # 6. Creation, reuse, and promotion flows
 
 ## 6.1 Drop an image onto a canvas
@@ -761,14 +774,34 @@ Connector endpoints MAY be free points or anchored to placements.
 Connector geometry remains visual decoration and does not create a
 semantic relationship.
 
+## 6.9 Materialize a phantom note
+
+Writing [[Title]] for a title that does not yet exist is itself a
+creation flow. The unresolved link accumulates alongside any other
+references to the same title until the user materializes the phantom
+note by editing its body, choosing Create Note, or choosing Create and
+Place on Current Canvas. Semantics are specified in section 7.2.
+
 # 7. Titles, wiki links, and spatial resolution
 
-## 7.1 Wiki-link storage
+## 7.1 Wiki-link storage and link states
 
-Typing [[Blackwater]] resolves by title_key to one note. Saving the
-source note stores or refreshes an indexed link record containing the
-source note ID, target note ID, source revision, and source token range
-or identity.
+Saving a source note stores or refreshes one indexed link record per
+wiki-link token. Every link record stores the source note ID, source
+revision, and source token range or token identity, and exists in
+exactly one of three states:
+
+| **State** | **Additionally stores** | **Meaning** |
+|----|----|----|
+| Bound | Target note ID | The token resolved by title_key to one note, active or trashed. |
+| Unresolved | The token's normalized title_key and display text | No note with that title_key existed when the source was saved. |
+| Broken | Last-known display text | The bound target was permanently purged. |
+
+On save, each token resolves by title_key against active and trashed
+notes. A match produces a bound record; a token whose title matches a
+trashed note binds to it, because the trashed note's title_key
+reservation would otherwise leave the token permanently unresolvable.
+No match produces an unresolved record.
 
 Markdown source remains canonical and human-readable. Renaming a target
 note transactionally rewrites inbound unaliased [[Title]] tokens and
@@ -776,16 +809,81 @@ rebuilds affected link positions; explicitly aliased display labels
 remain unchanged. The rename and all rewrites form one user-level
 command.
 
-A link to a trashed note retains the same target ID and opens that note
-with a clear In Trash state and Restore action. After permanent purge,
-the source becomes an explicit broken link and MUST NOT silently
-retarget by title.
+Creating, renaming, or restoring a note MUST, within the same
+user-level command, re-evaluate unresolved link records whose stored
+title_key matches the note's resulting title_key and bind them. This
+re-resolution sweep is the only implicit binding path; it never touches
+broken records.
+
+A bound link to a trashed note opens that note with a clear In Trash
+state and a Restore action, and MAY additionally offer Purge and Start
+Fresh, which purges the trashed note after an impact summary and opens
+a phantom view for the title.
+
+Purging a note converts its inbound bound records to broken. A broken
+link MUST NOT silently re-bind by title. Activating a broken link
+SHOULD offer creating a new note from the link's display text and,
+when an active note matching that title_key exists, relinking this
+occurrence to it. Both are explicit per-user actions that produce or
+target a new note ID.
 
 Wiki links do not choose a node or placement at authoring time.
 
-## 7.2 Activation behavior
+## 7.2 Unresolved links, phantom notes, and materialization
 
-Activating a wiki link resolves text and space independently:
+All unresolved link records sharing one title_key are presented as one
+**phantom note**. A phantom note is a projection over unresolved link
+records; it persists no note record and does not reserve its title_key.
+
+Unresolved links MUST render visibly distinct from bound links.
+Activating an unresolved link opens the note pane in a **phantom
+view** showing:
+
+- The would-be title.
+
+- All references to that title_key across the project, grouped by
+  source note.
+
+- The materialization actions below.
+
+A phantom note materializes through any of:
+
+1. Typing into the phantom body. The first committed edit creates the
+   note carrying the typed content as one user-level command.
+
+2. An explicit Create Note action.
+
+3. An explicit Create and Place on Current Canvas action, which
+   commits note creation, node creation, default appearance, and
+   placement on the active canvas as one user-level transaction.
+
+Create Note and Create and Place are equal peer actions; neither is
+presented as the primary path. Materialization runs the re-resolution
+sweep, binding every matching unresolved token project-wide in the
+same command. Dismissing a phantom view without materializing persists
+nothing.
+
+A note created without placements is not orphaned: it remains
+reachable through the links that reference it, search, and Unplaced
+views, and can be embodied later through the note-side placement flow.
+
+While typing a wiki link, the editor MUST offer title suggestions
+matched by title_key, including:
+
+- Active note titles.
+
+- Phantom titles with a phantom indicator and reference count, so
+  repeated references converge on one spelling.
+
+- Trashed note titles, marked In Trash, MAY be included.
+
+The suggestion list does not include an explicit create action in
+Phase 1; creation flows through phantom materialization. Suggestion
+ordering and presentation remain UI decisions.
+
+## 7.3 Activation behavior
+
+Activating a bound wiki link resolves text and space independently:
 
 1. The note pane loads the target note immediately and
 unconditionally.
@@ -805,7 +903,7 @@ Dismissing the chooser keeps the newly opened note visible and leaves
 the canvas where it was. The dismissal interaction MUST NOT also select
 or drag content underneath it.
 
-## 7.3 Uses sidebar and location chooser
+## 7.4 Uses sidebar and location chooser
 
 A note MAY expose a closable Uses sidebar. The sidebar and the
 link-activation chooser SHOULD use the same location query and grouping
@@ -828,7 +926,7 @@ placements highlighted. Selecting a node group may highlight all
 placements of that node. Selecting an individual placement may center
 it.
 
-## 7.4 Highlighted-placement visualization
+## 7.5 Highlighted-placement visualization
 
 When several relevant placements exist on one canvas, the application
 SHOULD support a visual resolution mode:
@@ -850,13 +948,13 @@ SHOULD support a visual resolution mode:
 This is a helpful navigation feature, not a requirement that every
 repeated placement be individually distinguishable in a textual picker.
 
-## 7.5 Exact identity links
+## 7.6 Exact identity links
 
 Phase 1 wiki links address notes. Exact node links and exact placement
 deep links are deferred. The storage model should leave room for them
 later without overloading ordinary [[Title]] syntax.
 
-## 7.6 Title collisions
+## 7.7 Title collisions
 
 A blocked note creation or rename returns a structured
 NOTE_TITLE_CONFLICT result containing the existing note ID, requested
@@ -1526,32 +1624,41 @@ while preserving viewport and origin context.
 13. Click a wiki link and verify immediate note navigation and
 link-table resolution.
 
-14. Rename a linked note and verify inbound unaliased Markdown tokens
-and indexed links update transactionally.
+14. Type a wiki link to a nonexistent title in two different notes,
+verify unresolved rendering, title suggestions, and one aggregated
+phantom view; materialize through Create and Place; and verify both
+tokens bind project-wide in one command.
 
-15. Verify zero-, one-, and many-location spatial behavior and the
+15. Rename a linked note and verify inbound unaliased Markdown tokens
+and indexed links update transactionally, and that unresolved tokens
+matching the new title bind.
+
+16. Verify zero-, one-, and many-location spatial behavior and the
 grouped location chooser.
 
-16. Detach a note from one node without modifying other uses, then
+17. Detach a note from one node without modifying other uses, then
 make one node's note independent.
 
-17. Draw canvas text, basic shapes, a freehand path, lines, arrows,
+18. Draw canvas text, basic shapes, a freehand path, lines, arrows,
 and a placement-anchored connector.
 
-18. Reorder, lock, hide, group, move, ungroup, and undo decorations;
+19. Reorder, lock, hide, group, move, ungroup, and undo decorations;
 confirm connectors remain visual rather than semantic edges.
 
-19. Delete a placement; move a canvas, node, and note to Trash; inspect
+20. Delete a placement; move a canvas, node, and note to Trash; inspect
 impact summaries; restore the trashed records; and verify preserved
 relationships.
 
-20. Verify Trash retention defaults to Never and that permanent purge
+21. Verify a link to the trashed note presents In Trash affordances,
+and that purging it produces a broken link offering explicit recreate.
+
+22. Verify Trash retention defaults to Never and that permanent purge
 invalidates dependent undo and enables safe garbage collection.
 
-21. Open a minimal graph or data workspace tab and confirm Trash and
+23. Open a minimal graph or data workspace tab and confirm Trash and
 decoration edges are excluded by default.
 
-22. Close and reopen the application without data loss, duplicate
+24. Close and reopen the application without data loss, duplicate
 project writers, or unreconciled temporary imports.
 
 # 18. Acceptance criteria
@@ -1579,6 +1686,23 @@ The model is successfully implemented when:
   Markdown tokens and indexed link records updated in one command.
 
 - Activating a wiki link always updates the note pane immediately.
+
+- An unresolved wiki link persists an indexed unresolved record,
+  renders distinctly, and its title appears in wiki-link suggestions
+  with a phantom indicator and reference count.
+
+- Activating an unresolved link opens a phantom view that persists
+  nothing until materialization.
+
+- Materializing a phantom note through a first edit, Create Note, or
+  Create and Place binds every matching unresolved token project-wide
+  in one user-level command.
+
+- A newly typed token matching a trashed note's title binds to that
+  note and presents In Trash affordances on activation.
+
+- A broken link never re-binds implicitly; activation offers explicit
+  recreate and, when applicable, relink actions.
 
 - One spatial destination navigates automatically.
 
@@ -1649,7 +1773,8 @@ The model is successfully implemented when:
 
 The following remain deliberately unresolved:
 
-1. Exact visual design and keyboard behavior of the location chooser.
+1. Exact visual design and keyboard behavior of the location chooser,
+the phantom view, and wiki-link suggestion ranking.
 
 2. Whether highlighted-placement mode activates automatically for a
 large same-canvas group or only on explicit selection.
@@ -1704,6 +1829,17 @@ Accepted for the Phase 1 prototype:
 
 - Wiki links target note IDs through indexed link records; placements
   target nodes.
+
+- Link records are bound, unresolved, or broken; unresolved records
+  group into phantom notes by title_key.
+
+- Phantom notes materialize on first edit or through equal-peer Create
+  Note and Create and Place actions; materialization, note creation,
+  rename, and restore run the re-resolution sweep, while broken links
+  require explicit recreation or relinking.
+
+- Wiki-link autocomplete suggests existing and phantom titles without
+  a separate create action.
 
 - Note text updates immediately on link activation.
 
