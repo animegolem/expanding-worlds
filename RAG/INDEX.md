@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 5 | 6 |
+| Planned | 5 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 2 | 10 |
+| Completed | 2 | 13 |
 | **Total** | **8** | **16** |
 
 ## In Progress
@@ -21,10 +21,10 @@
 **IMPs:**
 - [[AI-IMP-009-sqlite-foundation-and-schema|IMP-009]] Sqlite foundation and schema — completed
 - [[AI-IMP-010-command-pipeline-and-project-api|IMP-010]] Command pipeline and project api — completed
-- [[AI-IMP-011-notes-titles-and-link-records|IMP-011]] Notes titles and link records — planned
-- [[AI-IMP-012-structure-commands|IMP-012]] Structure commands — planned
+- [[AI-IMP-011-notes-titles-and-link-records|IMP-011]] Notes titles and link records — completed
+- [[AI-IMP-012-structure-commands|IMP-012]] Structure commands — completed
 - [[AI-IMP-013-lifecycle-trash-restore-purge|IMP-013]] Lifecycle trash restore purge — planned
-- [[AI-IMP-014-staged-asset-import|IMP-014]] Staged asset import — planned
+- [[AI-IMP-014-staged-asset-import|IMP-014]] Staged asset import — completed
 - [[AI-IMP-015-fts5-search-and-queries|IMP-015]] Fts5 search and queries — planned
 - [[AI-IMP-016-recovery-and-invariant-suite|IMP-016]] Recovery and invariant suite — planned
 
@@ -71,12 +71,20 @@ Generated from tracked files; binary assets excluded.
 ### > 300 LOC
 
 - RAG/scripts/generate-index.sh (575 LOC)
+- packages/persistence/src/handlers/notes.test.ts (417 LOC)
+- packages/persistence/src/handlers/nodes.ts (387 LOC)
+- packages/persistence/src/handlers/nodes.test.ts (382 LOC)
+- packages/persistence/src/handlers/placements.ts (378 LOC)
+- packages/persistence/src/handlers/placements.test.ts (368 LOC)
+- packages/persistence/src/import/pipeline.test.ts (340 LOC)
+- packages/persistence/src/queries-structure.test.ts (311 LOC)
+- packages/persistence/src/handlers/decorations.ts (301 LOC)
 
 ---
 
 ## Completed
 <details>
-<summary>2 EPICs, 10 IMPs completed</summary>
+<summary>2 EPICs, 13 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

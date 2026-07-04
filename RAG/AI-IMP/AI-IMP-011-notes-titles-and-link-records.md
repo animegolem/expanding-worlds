@@ -6,12 +6,12 @@ tags:
   - notes
   - links
   - phantoms
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-010]
 parent_epic: [[AI-EPIC-003-domain-persistence-core]]
 confidence_score: 0.8
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-011-notes-titles-and-link-records
