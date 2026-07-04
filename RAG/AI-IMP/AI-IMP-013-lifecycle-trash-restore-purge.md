@@ -81,17 +81,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] DeletePlacement: removes placement, never purges the node (invariant 11); bare-node case trashes the node in the same command with one command_log row and result flag (test both bare and non-bare paths; non-bare node stays active and appears in Unplaced query).
-- [ ] TrashNote: note to trashed, node attachments and bound link target ids intact (§9.4); bound links to it resolve with In Trash state in link queries (§7.1); title_key still reserved (invariant 5 retest while trashed).
-- [ ] TrashNode: aggregate per §9.6 — placements excluded from canvas-contents query while trashed, owned canvas + tags + appearance + note reference preserved; shared note stays active (invariant 15 test).
-- [ ] TrashCanvas: aggregate per §9.5 (placements, decorations, background, view state preserved recoverably); referenced nodes/notes stay active (invariant 14 test); no bare-node auto-trash (explicit test); root canvas refuses trash (invariant 2).
-- [ ] Ordinary queries exclude trashed records by default (invariant 13 + §9.1 sweep test over node library, canvas contents, suggestions, tag views); Trash view query lists trashed records with trashed_at/by.
-- [ ] RestoreRecord: restores each aggregate losslessly; note restore triggers the 011 re-resolution sweep via its exposed primitive (invariant 27 test: unresolved token binds on restore); node restore revives placements.
-- [ ] PurgeRecord: removes records, converts inbound bound links to broken storing last display text (§7.1 test), broken never re-binds on later same-title create (test); frees anchored connector endpoints; result flags undo invalidation.
-- [ ] gc.ts mark-and-sweep: assets referenced by active or trashed appearances/backgrounds are ineligible; purging the last referrer makes the blob hash eligible (test); pending-import and export-lease guards stubbed as always-held sets with TODO wired in 016.
-- [ ] Impact summary queries: note (§9.4 counts), canvas (§9.5 counts incl. newly-unplaced and bare), node; Empty Trash eligibility list (§9.7); tests.
-- [ ] Trash retention setting readable/writable via settings table, defaults Never (§9.1 test).
-- [ ] `pnpm check` green from fresh `pnpm -r build`; commit on worktree branch.
+- [x] DeletePlacement: removes placement, never purges the node (invariant 11); bare-node case trashes the node in the same command with one command_log row and result flag (test both bare and non-bare paths; non-bare node stays active and appears in Unplaced query).
+- [x] TrashNote: note to trashed, node attachments and bound link target ids intact (§9.4); bound links to it resolve with In Trash state in link queries (§7.1); title_key still reserved (invariant 5 retest while trashed).
+- [x] TrashNode: aggregate per §9.6 — placements excluded from canvas-contents query while trashed, owned canvas + tags + appearance + note reference preserved; shared note stays active (invariant 15 test).
+- [x] TrashCanvas: aggregate per §9.5 (placements, decorations, background, view state preserved recoverably); referenced nodes/notes stay active (invariant 14 test); no bare-node auto-trash (explicit test); root canvas refuses trash (invariant 2).
+- [x] Ordinary queries exclude trashed records by default (invariant 13 + §9.1 sweep test over node library, canvas contents, suggestions, tag views); Trash view query lists trashed records with trashed_at/by.
+- [x] RestoreRecord: restores each aggregate losslessly; note restore triggers the 011 re-resolution sweep via its exposed primitive (invariant 27 test: unresolved token binds on restore); node restore revives placements.
+- [x] PurgeRecord: removes records, converts inbound bound links to broken storing last display text (§7.1 test), broken never re-binds on later same-title create (test); frees anchored connector endpoints; result flags undo invalidation.
+- [x] gc.ts mark-and-sweep: assets referenced by active or trashed appearances/backgrounds are ineligible; purging the last referrer makes the blob hash eligible (test); pending-import and export-lease guards stubbed as always-held sets with TODO wired in 016.
+- [x] Impact summary queries: note (§9.4 counts), canvas (§9.5 counts incl. newly-unplaced and bare), node; Empty Trash eligibility list (§9.7); tests.
+- [x] Trash retention setting readable/writable via settings table, defaults Never (§9.1 test).
+- [x] `pnpm check` green from fresh `pnpm -r build`; commit on worktree branch.
 
 ### Acceptance Criteria
 
@@ -121,3 +121,70 @@ sprint.
 You MUST document any failed implementations, blockers or missing
 tests.
 -->
+
+- **DeleteDecoration stance (012 handoff):** kept the hard delete with
+  a full-state CreateDecoration inverse. §9.2's placement precedent —
+  removal "normally recovered through command undo," no user-visible
+  Trash entry — fits decorations even better: they are canvas-local
+  visual rows with no capabilities (invariant 16) and a one-row
+  aggregate, so command undo is lossless, and Trash-view entries for
+  strokes would be noise. Canvas purge hard-deletes them with the
+  aggregate.
+- **Purge precondition:** PurgeRecord requires `lifecycle_state =
+  'trashed'` (§9.7 frames purge as Delete Permanently over Trash);
+  active records return RECORD_NOT_TRASHED. This also makes the root
+  node/canvas unpurgeable (they can never be trashed), with the schema
+  delete-triggers as backstop.
+- **Purge ordering (FK-safe):** connector anchors released for every
+  placement leaving rendering permanently, before row deletion;
+  decorations before decoration_groups; note purge converts inbound
+  bound links to broken and clears node.note_id before deleting the
+  note row. tag_assignment/decoration_group deletions have no
+  AffectedRecord kind and are not individually listed.
+- **Broken display_text derivation:** bound records store no display
+  text, so purge re-reads each source body and matches tokens by
+  range_start (raw token title preserved, aliases keep their title
+  part); falls back to the purged note's title if a range no longer
+  matches.
+- **GC interpretation:** the ticket's "hashes referenced by no asset
+  row" is not computable without file IO (blob hashes are only known
+  through asset rows), and asset rows are shared dedupe metadata
+  (§4.7) that survive purges. Implemented eligibility: a content hash
+  is eligible when NO asset row carrying it is referenced by any node
+  appearance or canvas background in ANY lifecycle state and no guard
+  holds it. Guards query pending_imports (state <> 'committed') and
+  derivative_jobs (state = 'queued') for real — the 0002 tables exist
+  — deviating from the ticket's "stubbed as always-held sets"; only
+  the export-lease guard is the named empty stub
+  (`exportLeaseGuardedHashes`, EPIC-008). AI-IMP-016's sweep deletes
+  blob files and their orphaned asset rows.
+- **CreateNote inverse switched** from PurgeDraftNote to TrashNote
+  (the AI-IMP-011 handoff): undo of CreateNote can no longer fail once
+  links or nodes reference the note. Redo is RestoreRecord via
+  TrashNote's inverse. Wrinkle: after undoing a create, the title
+  stays reserved by the trashed note until restore or purge.
+  PurgeDraftNote remains registered as a standalone command;
+  notes.test.ts updated minimally (inverse expectation + direct
+  PurgeDraftNote invocation).
+- **Result flags without type changes:** HandlerOutcome is strictly
+  {affected, inverse}, so the bare-node-trash flag is the node record
+  appearing in DeletePlacement's `affected` (absent otherwise), and
+  undo invalidation is `inverse: null` on PurgeRecord with `affected`
+  naming every removed/converted record. No @ew/commands envelope
+  change needed.
+- **Acceptance "note's now-unreferenced asset":** the Phase 1 schema
+  gives notes no direct asset reference, so the acceptance test
+  embodies the note in a node with an image appearance; the hash
+  enters the GC-eligible set when purging that node removes the last
+  appearance reference.
+- **Query audit fixes:** getCanvasContents returns [] for trashed
+  canvases and joins out trashed nodes' placements; listNodeLibrary
+  and getTagView placement counts join out placements on trashed
+  canvases so §9.5 newly-unplaced nodes surface in Unplaced. listNotes
+  /listNodes/suggestTitles were already compliant (suggestTitles keeps
+  the In Trash flag per §7.2).
+- **Validation:** `pnpm -r build && pnpm -r --filter '!@ew/desktop'
+  test && pnpm lint` green — persistence 210 tests / 23 files (from
+  175 / 20). `pnpm check:spike` fails in this fresh worktree only
+  because spike/'s separate npm-prefix deps are not installed; spike/
+  is untouched by this ticket.

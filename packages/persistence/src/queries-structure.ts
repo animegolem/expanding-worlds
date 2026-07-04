@@ -35,12 +35,22 @@ export function registerStructureQueries(registry: QueryRegistry): void {
   // kind discriminators; UUID breaks ties deterministically.
   registry.register('getCanvasContents', (ctx, args) => {
     const { canvasId } = args as { canvasId: string }
+    // §9.1/invariant 13: a trashed canvas renders nothing (its rows
+    // are preserved for restore, not for display).
+    const canvas = ctx.db.get<{ lifecycle_state: string }>(
+      'SELECT lifecycle_state FROM canvas WHERE id = ?',
+      canvasId,
+    )
+    if (!canvas || canvas.lifecycle_state !== 'active') return []
+    // §9.6: a trashed node's placements are excluded from ordinary
+    // rendering while the node is trashed.
     const placements = ctx.db.all<Record<string, unknown>>(
-      `SELECT id, node_id AS nodeId, x, y, width, height, scale, rotation,
-              flip_x AS flipX, flip_y AS flipY, render_order AS renderOrder,
-              label_visible AS labelVisible
-       FROM placement
-       WHERE canvas_id = ? AND lifecycle_state = 'active'`,
+      `SELECT p.id, p.node_id AS nodeId, p.x, p.y, p.width, p.height, p.scale,
+              p.rotation, p.flip_x AS flipX, p.flip_y AS flipY,
+              p.render_order AS renderOrder, p.label_visible AS labelVisible
+       FROM placement p
+       JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
+       WHERE p.canvas_id = ? AND p.lifecycle_state = 'active'`,
       canvasId,
     )
     const decorations = ctx.db.all<Record<string, unknown>>(
@@ -90,6 +100,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       `SELECT n.id, n.note_id AS noteId, ${NODE_APPEARANCE_SELECT},
               note.title AS noteTitle,
               (SELECT count(*) FROM placement p
+                JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
                 WHERE p.node_id = n.id AND p.lifecycle_state = 'active')
                 AS placementCount
        FROM node n
@@ -135,6 +146,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
         `SELECT n.id, ${NODE_APPEARANCE_SELECT},
                 note.title AS noteTitle,
                 (SELECT count(*) FROM placement p
+                  JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
                   WHERE p.node_id = n.id AND p.lifecycle_state = 'active')
                   AS placementCount
          FROM node n

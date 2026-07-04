@@ -54,6 +54,17 @@ export {
   type SearchResults,
   type TagSearchResult,
 } from './queries-search'
+export { registerLifecycleHandlers } from './handlers/lifecycle'
+export {
+  registerLifecycleQueries,
+  type CanvasImpact,
+  type EmptyTrashEntry,
+  type NodeImpact,
+  type NoteImpact,
+  type TrashEntry,
+  type TrashView,
+} from './queries-lifecycle'
+export { computeGcEligibleBlobs, exportLeaseGuardedHashes } from './gc'
 export {
   openProjectService,
   type ProjectInfo,
