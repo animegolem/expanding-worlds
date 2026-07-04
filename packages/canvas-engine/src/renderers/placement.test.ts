@@ -1,7 +1,12 @@
-import { Graphics, Sprite } from 'pixi.js'
+import { Graphics, Sprite, type Container, type Text } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 import { fakeResources, makePlacement } from '../test-helpers'
-import { DEFAULT_DOT_RADIUS, cssColorToNumber, placementRenderer } from './placement'
+import {
+  DEFAULT_DOT_RADIUS,
+  LABEL_HEIGHT_RATIO,
+  cssColorToNumber,
+  placementRenderer,
+} from './placement'
 
 async function settled(): Promise<void> {
   await Promise.resolve()
@@ -102,5 +107,78 @@ describe('placementRenderer', () => {
   it('renders an outline stub for appearance-less nodes', () => {
     const object = placementRenderer.create(makePlacement(), fakeResources())
     expect(object.children[0]!.label).toBe('bare-node')
+  })
+})
+
+function labelOf(object: Container): Text | undefined {
+  return object.children.find((child) => child.label === 'label') as Text | undefined
+}
+
+describe('placement labels (§4.5)', () => {
+  it('shows the note title under the body when visible', () => {
+    const item = makePlacement({ noteTitle: 'Harbor', width: 100, height: 50, labelVisible: 1 })
+    const object = placementRenderer.create(item, fakeResources())
+    const label = labelOf(object)!
+    expect(label.text).toBe('Harbor')
+    // Proportional to the placement's world height, never screen-space.
+    expect(label.style.fontSize).toBeCloseTo(50 * LABEL_HEIGHT_RATIO)
+    expect(label.position.y).toBeGreaterThan(25) // hangs below the body
+  })
+
+  it('no note means no label; hidden label means no Text child', () => {
+    const noNote = placementRenderer.create(
+      makePlacement({ noteTitle: null, labelVisible: 1 }),
+      fakeResources(),
+    )
+    expect(labelOf(noNote)).toBeUndefined()
+    const hidden = placementRenderer.create(
+      makePlacement({ noteTitle: 'Harbor', labelVisible: 0 }),
+      fakeResources(),
+    )
+    expect(labelOf(hidden)).toBeUndefined()
+  })
+
+  it('updates text on rename and size on resize through the update path', () => {
+    const resources = fakeResources()
+    const item = makePlacement({ noteTitle: 'Old', width: 100, height: 50 })
+    const object = placementRenderer.create(item, resources)
+    const renamed = { ...item, noteTitle: 'New' }
+    placementRenderer.update(object, renamed, item, resources)
+    expect(labelOf(object)!.text).toBe('New')
+    // Resize changes the appearance signature → body AND label rebuild.
+    const resized = { ...renamed, width: 200, height: 100 }
+    placementRenderer.update(object, resized, renamed, resources)
+    expect(labelOf(object)!.style.fontSize).toBeCloseTo(100 * LABEL_HEIGHT_RATIO)
+    expect(labelOf(object)!.text).toBe('New')
+  })
+
+  it('toggling visibility removes and restores the label', () => {
+    const resources = fakeResources()
+    const item = makePlacement({ noteTitle: 'Harbor', width: 40, height: 40 })
+    const object = placementRenderer.create(item, resources)
+    const off = { ...item, labelVisible: 0 as const }
+    placementRenderer.update(object, off, item, resources)
+    expect(labelOf(object)).toBeUndefined()
+    placementRenderer.update(object, item, off, resources)
+    expect(labelOf(object)!.text).toBe('Harbor')
+  })
+
+  it('counter-flips so text stays readable when the placement is flipped', () => {
+    const item = makePlacement({ noteTitle: 'Harbor', width: 40, height: 40, flipX: 1 })
+    const object = placementRenderer.create(item, fakeResources())
+    // Container mirrors (scale −1); the label mirrors back (scale −1 → net +1).
+    expect(object.scale.x).toBe(-1)
+    expect(labelOf(object)!.scale.x).toBe(-1)
+  })
+
+  it('sizes dot labels from the dot diameter when height is null', () => {
+    const item = makePlacement({
+      noteTitle: 'Dot',
+      appearanceKind: 'dot',
+      width: 40,
+      height: null,
+    })
+    const object = placementRenderer.create(item, fakeResources())
+    expect(labelOf(object)!.style.fontSize).toBeCloseTo(40 * LABEL_HEIGHT_RATIO)
   })
 })

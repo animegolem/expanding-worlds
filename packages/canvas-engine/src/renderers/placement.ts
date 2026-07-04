@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Texture } from 'pixi.js'
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import { assetUrl, type ScenePlacement } from '../types'
 import type { ItemRenderer, RendererResources } from './registry'
 
@@ -6,11 +6,19 @@ import type { ItemRenderer, RendererResources } from './registry'
  * Placement renderer: dot, icon placeholder, or image appearance
  * (§4.6). Convention shared with hit-testing and gestures: placement
  * (x, y) is the CENTER of the body, and rotation/flip apply about it
- * — bodies are drawn centered on the local origin. Labels are added
- * by AI-IMP-019.
+ * — bodies are drawn centered on the local origin. The label (§4.5)
+ * is a Text child under the body: it exists only when the node has a
+ * note AND label visibility is on, and its size is proportional to
+ * the placement's world size (rev 0.8 — labels are world content,
+ * never screen-space overlays, and there is no legibility clamping).
  */
 
 export const DEFAULT_DOT_RADIUS = 12
+
+/** §4.5: label font size = body height × this single tuning ratio. */
+export const LABEL_HEIGHT_RATIO = 0.18
+
+const LABEL_COLOR = 0xc8cfd8
 
 export function cssColorToNumber(color: string | null, fallback = 0x4a90d9): number {
   if (!color) return fallback
@@ -110,18 +118,61 @@ function applyTransform(container: Container, item: ScenePlacement): void {
   container.scale.set(item.scale * (item.flipX ? -1 : 1), item.scale * (item.flipY ? -1 : 1))
 }
 
+/** Unscaled body extent the label hangs under (container scale applies on top). */
+function labelBasis(item: ScenePlacement): { height: number } {
+  return {
+    height: item.height ?? item.width ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2,
+  }
+}
+
+/**
+ * Creates, updates, or removes the label Text child. Called on every
+ * update so renames (new noteTitle through the scene re-query),
+ * visibility toggles, and resizes all reflow it. Flip is applied to
+ * the container as scale sign, so the label counter-flips to stay
+ * readable and stays below the body in world space.
+ */
+function syncLabel(container: Container, item: ScenePlacement): void {
+  const existing = container.children.find((child) => child.label === 'label') as
+    | Text
+    | undefined
+  const title = item.noteTitle
+  if (title === null || item.labelVisible !== 1) {
+    existing?.destroy()
+    return
+  }
+  const fontSize = labelBasis(item).height * LABEL_HEIGHT_RATIO
+  let label = existing
+  if (!label) {
+    label = new Text({ text: title, style: { fontSize, fill: LABEL_COLOR } })
+    label.label = 'label'
+    label.anchor.set(0.5, 0)
+    container.addChild(label)
+  } else {
+    label.text = title
+    label.style.fontSize = fontSize
+  }
+  const flipY = item.flipY === 1
+  label.position.set(0, (labelBasis(item).height / 2 + fontSize * 0.35) * (flipY ? -1 : 1))
+  label.scale.set(item.flipX ? -1 : 1, flipY ? -1 : 1)
+}
+
 export const placementRenderer: ItemRenderer<ScenePlacement> = {
   create(item, resources) {
     const container: PlacementObject = new Container()
     container.label = `placement:${item.id}`
     buildBody(container, item, resources)
     applyTransform(container, item)
+    syncLabel(container, item)
     return container
   },
   update(object, item, previous, resources) {
     if (appearanceSignature(item) !== appearanceSignature(previous)) {
+      // buildBody clears ALL children (label included); syncLabel below
+      // recreates it against the new body size.
       buildBody(object as PlacementObject, item, resources)
     }
     applyTransform(object, item)
+    syncLabel(object, item)
   },
 }
