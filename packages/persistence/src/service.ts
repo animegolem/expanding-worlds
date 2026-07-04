@@ -13,6 +13,7 @@ import { registerDecorationHandlers } from './handlers/decorations'
 import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
+import { registerPinHandlers } from './handlers/pin'
 import { registerPlacementHandlers } from './handlers/placements'
 import { registerTagHandlers } from './handlers/tags'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
@@ -76,6 +77,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerTagHandlers(commands)
   registerDecorationHandlers(commands)
   registerLifecycleHandlers(commands)
+  registerPinHandlers(commands)
 
   const queries = new QueryRegistry()
   registerCoreQueries(queries)

@@ -1,0 +1,468 @@
+import { mkdtempSync } from 'node:fs'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test'
+import type { EwApi } from '../src/preload/index'
+
+declare global {
+  interface Window {
+    ew: EwApi
+    __ewDebug?: {
+      sceneStats: () => { total: number; placements: number; decorations: number }
+      canvasId: () => string
+      camera: () => { x: number; y: number; zoom: number }
+      selection: () => string[]
+      interactionState: () => string
+    }
+  }
+}
+
+/**
+ * AI-IMP-020 acceptance: §6.1 import surfaces (multi-file drop with
+ * cascade, browser-drag attribution, unsupported rejection, URL-only
+ * failure, clipboard paste at view center) and the §6.2 CreatePin
+ * transaction incl. its DeleteDraftPin inverse round-trip. Drops and
+ * pastes are synthesized in-page (DataTransfer + DragEvent), which
+ * exercises the real listeners without OS-level drag simulation.
+ */
+
+const PNG_1X1_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQAB' +
+  'h6FO1AAAAABJRU5ErkJggg=='
+
+interface DropSpec {
+  /** base64 file payloads added as image/png Files. */
+  files?: Array<{ name: string; base64: string; type: string }>
+  uriList?: string
+  offsetX: number
+  offsetY: number
+}
+
+async function launch(prefix: string): Promise<{ app: ElectronApplication; win: Page }> {
+  const projectDir = mkdtempSync(join(tmpdir(), prefix))
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  })
+  const win = await app.firstWindow()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+  return { app, win }
+}
+
+function dropOnCanvas(win: Page, spec: DropSpec): Promise<void> {
+  return win.evaluate((s: DropSpec) => {
+    const dt = new DataTransfer()
+    for (const file of s.files ?? []) {
+      const bytes = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0))
+      dt.items.add(new File([bytes], file.name, { type: file.type }))
+    }
+    if (s.uriList !== undefined) dt.setData('text/uri-list', s.uriList)
+    const host = document.querySelector('[data-testid="canvas-host"]')!
+    const rect = host.getBoundingClientRect()
+    host.dispatchEvent(
+      new DragEvent('drop', {
+        dataTransfer: dt,
+        clientX: rect.left + s.offsetX,
+        clientY: rect.top + s.offsetY,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+  }, spec)
+}
+
+function placements(win: Page): Promise<number> {
+  return win.evaluate(() => window.__ewDebug!.sceneStats().placements)
+}
+
+async function query<T>(win: Page, name: string, args?: unknown): Promise<T> {
+  return win.evaluate(
+    async (q: { name: string; args?: unknown }) => {
+      const response = await window.ew.project.query(q.name, q.args)
+      if (!response.ok) throw new Error(`${q.name} failed: ${response.message}`)
+      return response.result
+    },
+    { name, args },
+  ) as Promise<T>
+}
+
+test('import surfaces: drop, attribution, rejection, URL failure, paste', async () => {
+  const { app, win } = await launch('ew-e2e-import-')
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // -- multi-file drop: two files, one drop point, cascading offsets.
+  await dropOnCanvas(win, {
+    files: [
+      { name: 'first.png', base64: PNG_1X1_BASE64, type: 'image/png' },
+      { name: 'second.png', base64: PNG_1X1_BASE64, type: 'image/png' },
+    ],
+    offsetX: 100,
+    offsetY: 80,
+  })
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(2)
+
+  // Identical bytes → dedupe keeps one blob but never merges records:
+  // two Asset rows, natural 1×1 dimensions on both placements.
+  let assets = await query<Array<{ id: string; sourceUrl: string | null }>>(win, 'listAssets')
+  expect(assets).toHaveLength(2)
+  const scene = await query<{
+    items: Array<{ itemKind: string; x: number; y: number; width: number | null; height: number | null }>
+  }>(win, 'getCanvasScene', { canvasId })
+  const dropped = scene.items
+    .filter((item) => item.itemKind === 'placement')
+    .sort((a, b) => a.x - b.x)
+  // DragEvent clientX/Y coerce to integers, so allow subpixel skew
+  // from the host element's fractional bounding rect.
+  expect(Math.abs(dropped[0]!.x - 100)).toBeLessThan(1.5)
+  expect(Math.abs(dropped[0]!.y - 80)).toBeLessThan(1.5)
+  expect(dropped[0]).toMatchObject({ width: 1, height: 1 })
+  expect(Math.abs(dropped[1]!.x - 124)).toBeLessThan(1.5)
+  expect(Math.abs(dropped[1]!.y - 104)).toBeLessThan(1.5)
+  expect(dropped[1]).toMatchObject({ width: 1, height: 1 })
+
+  // -- browser drag: bytes + uri-list → source_url recorded (§6.1).
+  await dropOnCanvas(win, {
+    files: [{ name: 'from-web.png', base64: PNG_1X1_BASE64, type: 'image/png' }],
+    uriList: 'https://example.com/gallery/from-web.png',
+    offsetX: 300,
+    offsetY: 80,
+  })
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(3)
+  assets = await query(win, 'listAssets')
+  expect(assets.map((a) => a.sourceUrl)).toContain('https://example.com/gallery/from-web.png')
+
+  // -- unsupported bytes: clear notice, zero records (§6.1).
+  await dropOnCanvas(win, {
+    files: [{ name: 'notes.txt', base64: btoa('not an image'), type: 'text/plain' }],
+    offsetX: 150,
+    offsetY: 150,
+  })
+  await expect(win.getByTestId('import-error')).toBeVisible()
+  await expect(win.getByTestId('import-error')).toContainText('not a supported raster image')
+  expect(await placements(win)).toBe(3)
+  expect(await query<unknown[]>(win, 'listAssets')).toHaveLength(3)
+  await win.getByTestId('import-error-dismiss').click()
+
+  // -- URL-only drop that cannot be fetched: error, zero records.
+  await dropOnCanvas(win, {
+    uriList: 'http://127.0.0.1:1/unreachable.png',
+    offsetX: 150,
+    offsetY: 150,
+  })
+  await expect(win.getByTestId('import-error')).toBeVisible({ timeout: 35_000 })
+  expect(await placements(win)).toBe(3)
+  expect(await query<unknown[]>(win, 'listAssets')).toHaveLength(3)
+  await win.getByTestId('import-error-dismiss').click()
+
+  // -- URL-only drop that succeeds: main fetches as a user-initiated
+  // act and the asset records the source URL (§6.1).
+  const png = Buffer.from(PNG_1X1_BASE64, 'base64')
+  const server = createServer((_req, res) => {
+    res.setHeader('content-type', 'image/png')
+    res.end(png)
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const fetchedUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/fetched.png`
+  await dropOnCanvas(win, { uriList: fetchedUrl, offsetX: 320, offsetY: 220 })
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(4)
+  assets = await query(win, 'listAssets')
+  expect(assets.map((a) => a.sourceUrl)).toContain(fetchedUrl)
+  server.close()
+
+  // -- clipboard paste with the cursor over the canvas → cursor point.
+  const paste = (name: string): Promise<void> =>
+    win.evaluate(
+      ({ png, filename }) => {
+        const bytes = Uint8Array.from(atob(png), (c) => c.charCodeAt(0))
+        const dt = new DataTransfer()
+        dt.items.add(new File([bytes], filename, { type: 'image/png' }))
+        const event = new Event('paste', { bubbles: true, cancelable: true })
+        Object.defineProperty(event, 'clipboardData', { value: dt })
+        window.dispatchEvent(event)
+      },
+      { png: PNG_1X1_BASE64, filename: name },
+    )
+  const findNear = (
+    items: Array<{ itemKind: string; x: number; y: number }>,
+    at: { x: number; y: number },
+  ) =>
+    items.filter(
+      (item) =>
+        item.itemKind === 'placement' &&
+        Math.abs(item.x - at.x) < 2 &&
+        Math.abs(item.y - at.y) < 2,
+    )
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.move(box.x + 220, box.y + 170)
+  await paste('cursor-shot.png')
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(5)
+  let pasted = await query<{ items: Array<{ itemKind: string; x: number; y: number }> }>(
+    win,
+    'getCanvasScene',
+    { canvasId },
+  )
+  // Camera is identity in a fresh project: world = canvas-local screen.
+  expect(findNear(pasted.items, { x: 220, y: 170 })).toHaveLength(1)
+
+  // -- paste with the cursor OFF the canvas → view center (§6.1).
+  await win.mouse.move(10, 10) // over the note pane, leaves the host
+  await paste('center-shot.png')
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(6)
+  pasted = await query<{ items: Array<{ itemKind: string; x: number; y: number }> }>(
+    win,
+    'getCanvasScene',
+    { canvasId },
+  )
+  expect(findNear(pasted.items, { x: box.width / 2, y: box.height / 2 })).toHaveLength(1)
+
+  await app.close()
+})
+
+test('Create Pin dialog commits one command; inverse cleans up', async () => {
+  const { app, win } = await launch('ew-e2e-createpin-')
+
+  const revisionOf = () =>
+    win.evaluate(async () => {
+      const project = await window.ew.project.query('getProject')
+      if (!project.ok) throw new Error(project.message)
+      return (project.result as { revision: number }).revision
+    })
+
+  // -- dialog-driven dot pin with a new note title.
+  const before = await revisionOf()
+  await win.getByTestId('open-create-pin').click()
+  await win.getByTestId('pin-note-new').check()
+  await win.getByTestId('pin-note-title').fill('Harbor Watch')
+  await win.getByTestId('pin-create').click()
+  await expect(win.getByTestId('create-pin-dialog')).toHaveCount(0)
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(1)
+  // Exactly ONE user-level command committed (§6.2).
+  expect(await revisionOf()).toBe(before + 1)
+
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const scene = await query<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId,
+  })
+  const pin = scene.items.find((item) => item['itemKind'] === 'placement')!
+  // §4.5: labels default visible, so the placed dot shows the title.
+  expect(pin).toMatchObject({
+    labelVisible: 1,
+    noteTitle: 'Harbor Watch',
+    appearanceKind: 'dot',
+  })
+
+  // -- dialog-driven image pin with a non-destructive crop + note.
+  const beforeImage = await revisionOf()
+  await win.getByTestId('open-create-pin').click()
+  await win.getByTestId('pin-kind-image').check()
+  await win
+    .getByTestId('pin-image-file')
+    .setInputFiles({ name: 'map.png', mimeType: 'image/png', buffer: Buffer.from(PNG_1X1_BASE64, 'base64') })
+  await win.getByTestId('pin-crop-x').fill('0')
+  await win.getByTestId('pin-crop-y').fill('0')
+  await win.getByTestId('pin-crop-width').fill('1')
+  await win.getByTestId('pin-crop-height').fill('1')
+  await win.getByTestId('pin-note-new').check()
+  await win.getByTestId('pin-note-title').fill('Cropped Map')
+  await win.getByTestId('pin-create').click()
+  await expect(win.getByTestId('create-pin-dialog')).toHaveCount(0)
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(2)
+  // Import commits as infrastructure ahead of the ONE CreatePin:
+  // exactly two commands (CommitAssetImport + CreatePin).
+  expect(await revisionOf()).toBe(beforeImage + 2)
+  const imageScene = await query<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+  })
+  const imagePin = imageScene.items.find((item) => item['noteTitle'] === 'Cropped Map')!
+  expect(imagePin).toMatchObject({
+    appearanceKind: 'image',
+    appearanceCrop: JSON.stringify({ x: 0, y: 0, width: 1, height: 1 }),
+    labelVisible: 1,
+    width: 1,
+    height: 1,
+  })
+
+  // -- duplicate title in the dialog: §7.7 error shown, nothing created.
+  await win.getByTestId('open-create-pin').click()
+  await win.getByTestId('pin-note-new').check()
+  await win.getByTestId('pin-note-title').fill('Harbor Watch')
+  await win.getByTestId('pin-create').click()
+  await expect(win.getByTestId('pin-error')).toContainText('already exists')
+  expect(await placements(win)).toBe(2)
+  await win.getByTestId('pin-cancel').click()
+
+  // -- direct CreatePin + inverse round-trip (revision +1 each).
+  const result = await win.evaluate(async (targetCanvasId) => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const outcome = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (outcome.status !== 'committed') {
+        throw new Error(`${commandType}: ${JSON.stringify(outcome)}`)
+      }
+      return outcome
+    }
+    const noteId = crypto.randomUUID()
+    const created = await run('CreatePin', {
+      nodeId: crypto.randomUUID(),
+      canvasId: targetCanvasId,
+      placementId: crypto.randomUUID(),
+      x: 400,
+      y: 300,
+      appearance: { kind: 'dot', color: '#22aa66' },
+      note: { kind: 'create', noteId, title: 'Ephemeral Pin' },
+    })
+    const undone = await run(created.inverse!.commandType, created.inverse!.payload)
+    return { noteId, createRevision: created.revision, undoRevision: undone.revision }
+  }, canvasId)
+  expect(result.undoRevision).toBe(result.createRevision + 1)
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(2)
+  const note = await query<{ lifecycleState: string }>(win, 'getNote', { noteId: result.noteId })
+  expect(note.lifecycleState).toBe('trashed')
+
+  await app.close()
+})
+
+test('placement sources (§6.3/§6.10) and node context menu (§6.6)', async () => {
+  const { app, win } = await launch('ew-e2e-sources-')
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // Seed one zero-node note and one bare node through the Project API.
+  const seeded = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const outcome = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (outcome.status !== 'committed') {
+        throw new Error(`${commandType}: ${JSON.stringify(outcome)}`)
+      }
+    }
+    const noteId = crypto.randomUUID()
+    const nodeId = crypto.randomUUID()
+    await run('CreateNote', { noteId, title: 'Wandering Isle' })
+    await run('CreateNode', { nodeId })
+    return { noteId, nodeId }
+  })
+
+  await win.getByTestId('toggle-sources').click()
+  // The bare node shows under the Unplaced filter (§14.1 minimal cut).
+  await win.getByTestId('sources-filter-unplaced').check()
+  await expect(win.locator(`[data-node-id="${seeded.nodeId}"]`)).toBeVisible()
+
+  // §6.10: Place on Current Canvas for a zero-node note commits ONE
+  // CreatePin: default dot + attach + placement; the label shows.
+  await win.getByTestId('sources-tab-notes').click()
+  const revBefore = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    return (project.result as { revision: number }).revision
+  })
+  await win.locator(`[data-note-id="${seeded.noteId}"] button`).click()
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(1)
+  const revAfter = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    return (project.result as { revision: number }).revision
+  })
+  expect(revAfter).toBe(revBefore + 1)
+  let scene = await query<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId,
+  })
+  const dot = scene.items.find((item) => item['itemKind'] === 'placement')!
+  expect(dot).toMatchObject({
+    appearanceKind: 'dot',
+    appearanceColor: '#8a94a0',
+    noteTitle: 'Wandering Isle',
+    labelVisible: 1,
+  })
+  // The note now has a node, so it leaves the zero-node list.
+  await expect(win.locator(`[data-note-id="${seeded.noteId}"]`)).toHaveCount(0)
+
+  // §6.3: drag the bare node from the panel onto the canvas → one
+  // CreatePlacement at the drop point (synthesized drop, custom mime).
+  await win.evaluate(({ nodeId }) => {
+    const dt = new DataTransfer()
+    dt.setData('application/x-ew-node', nodeId)
+    const host = document.querySelector('[data-testid="canvas-host"]')!
+    const rect = host.getBoundingClientRect()
+    host.dispatchEvent(
+      new DragEvent('drop', {
+        dataTransfer: dt,
+        clientX: rect.left + 240,
+        clientY: rect.top + 200,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+  }, seeded)
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(2)
+  scene = await query<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId,
+  })
+  expect(scene.items.filter((item) => item['nodeId'] === seeded.nodeId)).toHaveLength(1)
+
+  // §6.6 context menu on the labeled dot at the view center.
+  const dotNodeId = dot['nodeId'] as string
+  const noteIdOfNode = () =>
+    win.evaluate(async (nodeId) => {
+      const node = await window.ew.project.query('getNode', { nodeId })
+      if (!node.ok) throw new Error(node.message)
+      return (node.result as { noteId: string | null }).noteId
+    }, dotNodeId)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+
+  // Detach Note: only the node→note reference clears (§6.6).
+  await win.mouse.click(center.x, center.y, { button: 'right' })
+  await win.getByTestId('node-menu-detach').click()
+  await expect.poll(() => noteIdOfNode()).toBe(null)
+  const detachedNote = await query<{ lifecycleState: string }>(win, 'getNote', {
+    noteId: seeded.noteId,
+  })
+  expect(detachedNote.lifecycleState).toBe('active')
+
+  // Attach New Note via the inline title prompt.
+  await win.mouse.click(center.x, center.y, { button: 'right' })
+  await win.getByTestId('node-menu-attach-new').click()
+  await win.getByTestId('node-menu-title-input').fill('Newly Attached')
+  await win.getByTestId('node-menu-title-confirm').click()
+  await expect.poll(() => noteIdOfNode()).not.toBe(null)
+
+  // Make Note Independent: copy under a fresh project-unique title.
+  await win.mouse.click(center.x, center.y, { button: 'right' })
+  await win.getByTestId('node-menu-make-independent').click()
+  await win.getByTestId('node-menu-title-input').fill('Solo Copy')
+  await win.getByTestId('node-menu-title-confirm').click()
+  await expect
+    .poll(() =>
+      win.evaluate(async (nodeId) => {
+        const node = await window.ew.project.query('getNode', { nodeId })
+        if (!node.ok) return 'node-error'
+        const noteId = (node.result as { noteId: string | null }).noteId
+        if (noteId === null) return null
+        const note = await window.ew.project.query('getNote', { noteId })
+        return note.ok ? (note.result as { title: string }).title : 'note-error'
+      }, dotNodeId),
+    )
+    .toBe('Solo Copy')
+
+  await app.close()
+})
