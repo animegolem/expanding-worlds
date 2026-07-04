@@ -6,12 +6,12 @@ tags:
   - lifecycle
   - trash
   - purge
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-011, AI-IMP-012]
 parent_epic: [[AI-EPIC-003-domain-persistence-core]]
 confidence_score: 0.75
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-013-lifecycle-trash-restore-purge
