@@ -6,7 +6,7 @@ tags:
   - canvas
   - gestures
   - labels
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-018]
 parent_epic: [[AI-EPIC-004-canvas-board-loop]]
 confidence_score: 0.75

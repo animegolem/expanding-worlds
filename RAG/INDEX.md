@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 4 | 5 |
+| In Progress | 1 | 3 |
+| Planned | 4 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 3 | 18 |
@@ -21,9 +21,9 @@
 **IMPs:**
 - [[AI-IMP-017-renderer-host-and-scene-projection|IMP-017]] Renderer host and scene projection — completed
 - [[AI-IMP-018-canvas-controller-and-gesture-pipeline|IMP-018]] Canvas controller and gesture pipeline — completed
-- [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — planned
-- [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — planned
-- [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — planned
+- [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — in-progress
+- [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — in-progress
+- [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — in-progress
 - [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — planned
 - [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — planned
 
@@ -78,6 +78,7 @@ Generated from tracked files; binary assets excluded.
 - packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (304 LOC)
 - packages/persistence/src/queries-structure.ts (301 LOC)
 - packages/persistence/src/handlers/decorations.ts (301 LOC)
 

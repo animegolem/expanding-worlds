@@ -9,8 +9,10 @@ import {
   type CanvasScene,
   type ControllerHost,
   type GestureUpdate,
+  type RendererRegistry,
   type RendererResources,
   type SceneItem,
+  type ScenePlanes,
   type SnapGuide,
 } from '@ew/canvas-engine'
 import { Application, Graphics, Texture } from 'pixi.js'
@@ -25,6 +27,13 @@ import type { Rect } from '@ew/canvas-engine'
  */
 
 export interface CanvasHostHandle {
+  /** Seams for feature modules (gestures UI, import surfaces, tools). */
+  controller: CanvasController
+  gateway: CommandGateway
+  sync: SceneSync
+  registry: RendererRegistry
+  planes: ScenePlanes
+  canvasId: string
   destroy(): void
 }
 
@@ -273,6 +282,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   }
 
   return {
+    controller,
+    gateway,
+    sync,
+    registry,
+    planes,
+    canvasId,
     destroy() {
       unsubscribe()
       // Flush a pending camera persist so the last rest isn't lost.
