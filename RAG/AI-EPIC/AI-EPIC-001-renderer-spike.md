@@ -7,7 +7,7 @@ tags:
   - spike
 date_created: 2026-07-03
 date_completed:
-kanban_status: planned
+kanban_status: in-progress
 AI_IMP_spawned:
   - "[[AI-IMP-001-spike-harness-and-scenario]]"
   - "[[AI-IMP-002-pixijs-spike-implementation]]"

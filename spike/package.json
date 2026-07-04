@@ -1,0 +1,17 @@
+{
+  "name": "expanding-worlds-renderer-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.46.0",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  }
+}

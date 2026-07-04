@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Renderer Spike — expanding-worlds</title>
+    <style>
+      body { margin: 0; font: 13px/1.4 system-ui, sans-serif; display: flex; height: 100vh; }
+      #panel { width: 320px; padding: 12px; overflow-y: auto; border-right: 1px solid #ccc; }
+      #host { flex: 1; position: relative; background: #1e1e22; }
+      #host canvas { position: absolute; inset: 0; }
+      button, select { margin: 2px 4px 8px 0; }
+      #log div { padding: 1px 0; }
+      .done { color: #0a7a0a; }
+      .running { color: #b8860b; }
+      .fail { color: #b00020; }
+      pre { font-size: 11px; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div id="panel">
+      <h3>Renderer spike</h3>
+      <select id="adapter"></select>
+      <button id="run-all">Run all</button>
+      <button id="download" disabled>Download results</button>
+      <div id="log"></div>
+      <pre id="out"></pre>
+    </div>
+    <div id="host"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -6,25 +6,27 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 0 | 0 |
-| Planned | 8 | 4 |
+| In Progress | 1 | 0 |
+| Planned | 7 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 0 | 0 |
+| Completed | 0 | 1 |
 | **Total** | **8** | **4** |
 
-## Planned
+## In Progress
 
 ### [[AI-EPIC-001-renderer-spike|EPIC-001: Renderer spike]]
 > RFC-0001 open question 14 leaves the canvas renderer undecided between
 
 **IMPs:**
-- [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — planned
+- [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
 - [[AI-IMP-002-pixijs-spike-implementation|IMP-002]] PixiJS adapter covering the full spike scenario — planned
 - [[AI-IMP-003-konva-spike-implementation|IMP-003]] Konva adapter covering the full spike scenario — planned
 - [[AI-IMP-004-renderer-decision-report|IMP-004]] Renderer comparison report and RFC decision — planned
 
 ---
+
+## Planned
 
 ### [[AI-EPIC-002-workspace-scaffolding|EPIC-002: Workspace scaffolding]]
 > No application code exists. RFC-0001 §13 fixes the technology

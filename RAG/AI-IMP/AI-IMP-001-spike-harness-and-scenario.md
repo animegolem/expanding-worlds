@@ -5,12 +5,12 @@ tags:
   - Implementation
   - spike
   - tooling
-kanban_status: planned
+kanban_status: completed
 depends_on: AI-EPIC-001
 parent_epic: [[AI-EPIC-001-renderer-spike]]
 confidence_score: 0.85
 date_created: 2026-07-03
-date_completed:
+date_completed: 2026-07-03
 ---
 
 # AI-IMP-001-spike-harness-and-scenario
@@ -59,12 +59,12 @@ Output: one JSON per renderer per scenario into `spike/results/`.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Scaffold `spike/` Vite + strict TS app that builds and serves.
-- [ ] Implement seeded PRNG and fixture generators for images, pins, decorations, and the tile pyramid.
-- [ ] Define `RendererAdapter` and scenario op vocabulary covering every §12.3 bullet.
-- [ ] Implement scenario scripts: map load, 300 images, 1,000 pins, marquee, multi-drag, resize/rotate, pan/zoom, highlight, labels-at-zoom, swap-and-return, background ops, decoration suite, gesture-commit counting.
-- [ ] Implement metrics collection and per-run JSON output.
-- [ ] Add a no-op adapter and verify the full run completes and writes results.
+- [x] Scaffold `spike/` Vite + strict TS app that builds and serves.
+- [x] Implement seeded PRNG and fixture generators for images, pins, decorations, and the tile pyramid.
+- [x] Define `RendererAdapter` and scenario op vocabulary covering every §12.3 bullet.
+- [x] Implement scenario scripts: map load, 300 images, 1,000 pins, marquee, multi-drag, resize/rotate, pan/zoom, highlight, labels-at-zoom, swap-and-return, background ops, decoration suite, gesture-commit counting.
+- [x] Implement metrics collection and per-run JSON output.
+- [x] Add a no-op adapter and verify the full run completes and writes results.
 
 ### Acceptance Criteria
 
@@ -83,3 +83,18 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Verified 2026-07-03: Playwright smoke green on two consecutive runs —
+10 scenarios, exact commit counts, checksum stable for seed 20260703
+and divergent for a different seed. Noop baseline: avg frame 8.33 ms
+(the 120 Hz display budget, i.e. zero harness overhead), heap flat at
+~4 MB, results written to spike/results/noop-seed20260703.json.
+
+Deviations from the ticket: fixture and scenario modules landed as
+single files (src/fixtures.ts, src/scenarios.ts) instead of the
+directories sketched in Files to Touch; src/registry.ts was added as
+the adapter seam for IMP-002/003. The very first test invocation
+failed at page.evaluate and passed on every rerun — attributed to
+first-hit Vite transform latency inside the dev-server webServer
+startup; not reproduced, worth watching in adapter runs. @types/node
+was added for the Playwright test's fs usage.
