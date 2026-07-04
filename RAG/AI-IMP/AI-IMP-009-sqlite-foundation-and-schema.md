@@ -6,12 +6,12 @@ tags:
   - persistence
   - sqlite
   - schema
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-003-domain-persistence-core]]
 confidence_score: 0.85
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-009-sqlite-foundation-and-schema
@@ -82,17 +82,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Spike: load better-sqlite3 inside the Electron 39 utility process (throwaway script under apps/desktop); if it fails to rebuild, probe node:sqlite for FTS5; record decision + evidence in Issues Encountered.
-- [ ] `@ew/domain`: ids.ts with uuidv7() (RFC 9562: 48-bit ms timestamp, version/variant bits, random tail) and shortCode(uuid) using random-tail bytes, never the timestamp prefix (§4.11); tests assert version nibble, monotonic-ish ordering, short-code source bytes.
-- [ ] `@ew/domain`: title-key.ts implementing the four §4.2 steps; table-driven tests including Unicode NFC and case-fold cases.
-- [ ] `@ew/domain`: records.ts typing all §4 records including lifecycle fields and Asset.kind discriminator.
-- [ ] `@ew/persistence`: db.ts opening SQLite with WAL, foreign_keys ON, busy_timeout; migrate.ts applying numbered SQL files transactionally and stamping schema_version.
-- [ ] Migration 0001: all tables per §4 with FK constraints, link table per §7.1 three-state model, command_log per §10.2, settings (project tier, includes trash retention default Never per §9.1/§11.5), bookmark table.
-- [ ] Unique partial index enforcing title_key uniqueness among non-purged notes regardless of lifecycle_state (invariant 5); test proves a trashed note still blocks the title.
-- [ ] lock.ts: acquire exclusive project lock on open (lock file, pid + heartbeat timestamps, refresh interval); second acquire in-process fails with structured error; stale lock (old heartbeat) is reclaimable; tests.
-- [ ] project.ts: createProject builds project row, root node, root canvas in one transaction; root protection flags queryable (invariant 2 test: root exists, owns canvas, cannot be trashed at schema/service level).
-- [ ] FK integrity tests: placement→node/canvas, node→note, tag_assignment→tag/node, decoration→canvas cascade rules per §9.5 aggregate semantics (no ON DELETE CASCADE for soft-delete paths; purge handled later).
-- [ ] `pnpm check` green; commit.
+- [x] Spike: probed the binding inside the Electron 39 utility process; node:sqlite passed in both ABIs and was chosen (decision + evidence in Issues Encountered).
+- [x] `@ew/domain`: ids.ts with uuidv7() (RFC 9562: 48-bit ms timestamp, version/variant bits, random tail) and shortCode(uuid) using random-tail bytes, never the timestamp prefix (§4.11); tests assert version nibble, strict in-process ordering, short-code source bytes.
+- [x] `@ew/domain`: title-key.ts implementing the four §4.2 steps; table-driven tests including Unicode NFC and case-fold cases.
+- [x] `@ew/domain`: records.ts typing all §4 records including lifecycle fields and Asset.kind discriminator.
+- [x] `@ew/persistence`: db.ts opening SQLite with WAL, foreign_keys ON, busy_timeout; migrate.ts applying numbered migrations transactionally and stamping schema_version.
+- [x] Migration 0001: all tables per §4 with FK constraints, link table per §7.1 three-state model, command_log per §10.2, settings (project tier, includes trash retention default Never per §9.1/§11.5), bookmark table.
+- [x] Unique index enforcing title_key uniqueness regardless of lifecycle_state (invariant 5); tests prove a trashed note still blocks the title and purge frees it.
+- [x] lock.ts: acquire exclusive project lock on open (lock file, pid + heartbeat timestamps, refresh interval); second acquire in-process fails with structured error; stale lock (old heartbeat) is reclaimable; tests.
+- [x] project.ts: createProject builds project row, root node, root canvas in one transaction; invariant 2 enforced by schema triggers (root node/canvas can be neither trashed nor deleted), tested.
+- [x] FK integrity tests: placement→node/canvas, tag_assignment→tag/node; no ON DELETE CASCADE anywhere (soft-delete aggregates per §9.5; purge handled in AI-IMP-013).
+- [x] `pnpm check` green; commit.
 
 ### Acceptance Criteria
 
@@ -121,3 +121,30 @@ sprint.
 You MUST document any failed implementations, blockers or missing
 tests.
 -->
+
+- **Binding decision: node:sqlite, not better-sqlite3.** Probes ran
+  in both runtimes: system Node 26.4 (vitest) and the Electron 39
+  utility process (Node 22.22.1, SQLite 3.51.2) — WAL on disk and
+  FTS5 both pass. better-sqlite3 was not even attempted because the
+  mismatch is structural, not a build issue: it binds V8 APIs
+  directly (not N-API), so one node_modules build cannot serve both
+  the system-Node test runner and Electron's ABI. node:sqlite is
+  built in on both sides, needs no rebuild, and is isolated behind
+  the Db class in db.ts so a swap stays one file. Its experimental
+  warning is accepted; the API surface used (DatabaseSync,
+  prepare/get/all/run/exec) is stable across Node 22–26.
+- vitest 2's bundled vite predates the node:sqlite builtin and tried
+  to resolve it as a package. Upgraded vitest to ^4.1.9 across all
+  packages (kept versions uniform) — all suites pass unchanged.
+- Deviation: migrations are TS modules exporting SQL strings, not
+  .sql files — tsc emits no assets, so raw .sql would need a copy
+  step and runtime file resolution in both dev and bundled utility
+  contexts. String modules travel through every bundler for free.
+- title_key case folding uses the default Unicode lowercase mapping,
+  not full case folding (ß stays ß). Deterministic and
+  locale-independent per §4.2's intent; noted in code. Moving to
+  full folding later requires a migration that re-keys notes.
+- Note for AI-IMP-010: apps/desktop's rollup `external` override
+  currently lists only 'electron'. When the utility bundle starts
+  importing @ew/persistence, `/^node:/` must be added or rollup will
+  try to bundle node:sqlite.

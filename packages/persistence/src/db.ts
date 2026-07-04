@@ -1,0 +1,75 @@
+import { DatabaseSync, type StatementSync } from 'node:sqlite'
+
+/**
+ * Thin seam over node:sqlite (decision recorded in AI-IMP-009: works
+ * unmodified in both system Node and the Electron utility process,
+ * ships FTS5 and WAL, no native rebuild). Keep all driver contact
+ * behind this class so a future swap stays one-file.
+ */
+export class Db {
+  #raw: DatabaseSync
+  #txDepth = 0
+
+  private constructor(raw: DatabaseSync) {
+    this.#raw = raw
+  }
+
+  static open(path: string): Db {
+    const raw = new DatabaseSync(path)
+    raw.exec('PRAGMA journal_mode = WAL')
+    raw.exec('PRAGMA foreign_keys = ON')
+    raw.exec('PRAGMA busy_timeout = 5000')
+    return new Db(raw)
+  }
+
+  exec(sql: string): void {
+    this.#raw.exec(sql)
+  }
+
+  prepare(sql: string): StatementSync {
+    return this.#raw.prepare(sql)
+  }
+
+  get<T = Record<string, unknown>>(sql: string, ...params: SqlValue[]): T | undefined {
+    return this.#raw.prepare(sql).get(...params) as T | undefined
+  }
+
+  all<T = Record<string, unknown>>(sql: string, ...params: SqlValue[]): T[] {
+    return this.#raw.prepare(sql).all(...params) as T[]
+  }
+
+  run(sql: string, ...params: SqlValue[]): { changes: number | bigint } {
+    return this.#raw.prepare(sql).run(...params)
+  }
+
+  /**
+   * Savepoint-based so transactions nest; only the outermost commit
+   * makes work durable, and any throw rolls its level back.
+   */
+  transaction<T>(fn: () => T): T {
+    const name = `ew_tx_${this.#txDepth}`
+    this.#raw.exec(this.#txDepth === 0 ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${name}`)
+    this.#txDepth += 1
+    try {
+      const result = fn()
+      this.#txDepth -= 1
+      this.#raw.exec(this.#txDepth === 0 ? 'COMMIT' : `RELEASE ${name}`)
+      return result
+    } catch (err) {
+      this.#txDepth -= 1
+      this.#raw.exec(this.#txDepth === 0 ? 'ROLLBACK' : `ROLLBACK TO ${name}; RELEASE ${name}`)
+      throw err
+    }
+  }
+
+  pragma(name: string): unknown {
+    const row = this.#raw.prepare(`PRAGMA ${name}`).get() as Record<string, unknown> | undefined
+    return row ? Object.values(row)[0] : undefined
+  }
+
+  close(): void {
+    this.#raw.close()
+  }
+}
+
+export type SqlValue = string | number | bigint | null | Uint8Array
