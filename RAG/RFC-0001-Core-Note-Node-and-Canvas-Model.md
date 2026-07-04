@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.7          | 4 July 2026      |
+| Accepted for Phase 1 | 0.8          | 4 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -438,6 +438,15 @@ and MUST be toggleable directly from the placement's selection
 controls rather than only through an inspector. A label follows note
 renames automatically and is not a decoration or a node title.
 
+A label renders at a scale proportional to its placement's world
+size: resizing the placement resizes the label with it, and the label
+zooms with the canvas like any world content. Labels are never
+screen-space overlays. The label is deliberately the only
+relatively-sized content in the model — it has no independent
+existence to own a size of its own. The exact ratio and any
+legibility clamping are presentation tuning left to prototype feel,
+not model state.
+
 ## 4.6 Appearance
 
 Dot, icon, and image are appearances, not different node types.
@@ -570,6 +579,15 @@ connector.
 
 Canvas text is lightweight visual labeling. It is not a note, does not
 participate in wiki links, and does not receive backlinks or node tags.
+
+Canvas text — like every decoration and placement — owns an
+independent world-space size. It scales only with canvas zoom and is
+never rendered at a screen-constant size or rescaled relative to
+other content; resizing a nearby placement never affects it.
+Legibility is a property of the current zoom, and there is no
+automatic rescaling: the layout is authoritative, and zooming is how
+it is read. Newly created text SHOULD default to a world size legible
+at the creating viewport, fixed thereafter.
 
 ## 4.10 Project
 
@@ -2185,9 +2203,11 @@ canvas-local visibility and view filters.
 multi-facet sorting, richer data views, and note browsing deserve a
 dedicated design pass informed by prototype use.
 
-15. Label zoom behavior (fixed screen size versus scaling with the
-canvas) and label styling, to be settled during canvas-engine
-prototyping.
+15. Label styling (typography, chrome, and the exact
+placement-proportional ratio with any legibility clamps), to be
+settled by feel during canvas-engine prototyping. Zoom behavior
+itself is decided: labels scale with their placement, and all canvas
+content is world-space (rev 0.8, §4.5/§4.9).
 
 16. Whether note-body preview cards later join dot, icon, and image as
 an on-canvas appearance direction. The expected shape is a fourth
@@ -2228,6 +2248,12 @@ Accepted for the Phase 1 prototype:
   wiki-link token in Phase 1; renames rewrite the title half of every
   inbound token, aliased or not, leaving aliased display labels
   untouched.
+
+- All canvas content is world-space; nothing renders screen-constant.
+  Placement labels are the single relative size, scaling
+  proportionally with their placement; everything else, including
+  canvas text, owns an independent fixed world size. Zoom reads the
+  layout; it never rewrites it.
 
 - Phantom notes materialize on first edit or through equal-peer Create
   Note and Create and Place actions; materialization, note creation,
