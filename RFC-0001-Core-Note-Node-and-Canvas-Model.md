@@ -370,6 +370,9 @@ A canvas contains:
 - One optional managed-asset background with transform, fit, opacity,
   and presentation settings.
 
+- One optional solid background color, independent of the image
+  background and rendered beneath it when both exist.
+
 A canvas may contain placements of nodes that themselves own canvases.
 Containment is a graph rather than a tree: direct and indirect cycles,
 including a node placed on its own canvas, are legal. Only the active
@@ -833,7 +836,8 @@ and fit settings, and does not create a node or placement.
 The UI SHOULD support Set Image as Canvas Background, Replace
 Background, Edit Background Position, Reset Background Transform, and
 Remove Background. A placement backed by an image MAY expose Set as
-Background.
+Background. Setting or clearing the canvas background color is an
+ordinary durable command available alongside these operations.
 
 Background editing occurs through an explicit mode so the background
 cannot be accidentally selected during ordinary work. Oversized
@@ -1530,6 +1534,17 @@ exposing the project for editing. Missing regenerable derivatives are
 rebuilt lazily; missing canonical originals produce a visible integrity
 error.
 
+## 11.5 Settings
+
+Settings are two-tier, and a setting's tier follows its blast radius:
+anything affecting the durability or meaning of project data is
+project-scoped. Project settings persist inside the project database,
+travel with export and import, and include Trash retention.
+Application settings persist in the application configuration
+directory outside any project and include theme, window and layout
+preferences, the cross-canvas undo behavior toggle, and future adapter
+configuration such as a media-backup endpoint.
+
 # 12. Rendering and performance
 
 ## 12.1 Initial engineering targets
@@ -2050,6 +2065,12 @@ The model is successfully implemented when:
   replace, edit, reset, and remove operations without becoming a node or
   placement.
 
+- A canvas background color can be set and cleared independently of
+  the image background.
+
+- Trash retention persists in the project database and survives
+  export and import; application preferences persist outside projects.
+
 - UI components perform durable mutations through the Project API using
   versioned command envelopes and expected project revisions.
 
@@ -2290,6 +2311,10 @@ Accepted for the Phase 1 prototype:
 
 - Note bodies are plain text in Phase 1; asset embedding is deferred
   with a records-based shape that never requires scanning prose.
+
+- Canvases support a solid background color beneath the optional image
+  background; settings split by blast radius into project-scoped data
+  settings and application-scoped preferences.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
