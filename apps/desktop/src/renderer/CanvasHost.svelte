@@ -1,8 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import DecorationToolbar from './DecorationToolbar.svelte'
+  import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
   import { attachNodeMenu, type NodeMenuHandle } from './canvas/node-menu'
+  import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
 
   let {
     onready = undefined,
@@ -11,11 +14,14 @@
   let element: HTMLDivElement
   let error = $state<string | null>(null)
   let importError = $state<string | null>(null)
+  let handle = $state<CanvasHostHandle | null>(null)
+  let ui = $state<DecorationsUi | null>(null)
 
   onMount(() => {
-    let handle: CanvasHostHandle | null = null
+    let mounted: CanvasHostHandle | null = null
     let surfaces: ImportSurfacesHandle | null = null
     let menu: NodeMenuHandle | null = null
+    let textEntry: TextEntryController | null = null
     let disposed = false
     mountCanvasHost(element)
       .then((h) => {
@@ -23,12 +29,15 @@
           h.destroy()
           return
         }
-        handle = h
+        mounted = h
         const notify = (message: string): void => {
           importError = message
         }
         surfaces = attachImportSurfaces(h, element, notify)
         menu = attachNodeMenu(h, element, notify)
+        ui = createDecorationsUi(h)
+        textEntry = attachTextEntry(h, element)
+        handle = h
         onready?.(h, element)
       })
       .catch((err: unknown) => {
@@ -38,12 +47,17 @@
       disposed = true
       surfaces?.destroy()
       menu?.destroy()
-      handle?.destroy()
+      textEntry?.destroy()
+      ui?.destroy()
+      mounted?.destroy()
     }
   })
 </script>
 
 <div class="canvas-host" data-testid="canvas-host" bind:this={element}>
+  {#if handle && ui}
+    <DecorationToolbar {handle} {ui} />
+  {/if}
   {#if error}
     <p class="canvas-error" role="alert">Canvas failed to start: {error}</p>
   {/if}

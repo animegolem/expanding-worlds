@@ -43,12 +43,12 @@ describe('SceneSync', () => {
     sync.apply([a, b, c])
     expect(plane.children.map((ch) => ch.label)).toEqual([
       `placement:${a.id}`,
-      `stub:decoration:shape`,
+      `decoration:${b.id}`,
       `placement:${c.id}`,
     ])
     // b moves to front (§6.8 bring to front = last in paint order).
     sync.apply([a, c, b])
-    expect(plane.children[2]!.label).toBe('stub:decoration:shape')
+    expect(plane.children[2]!.label).toBe(`decoration:${b.id}`)
   })
 
   it('hides hidden decorations without destroying them', () => {

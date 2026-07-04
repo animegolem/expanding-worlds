@@ -6,11 +6,14 @@ import {
   createScenePlanes,
   itemWorldAABB,
   SceneSync,
+  ToolManager,
+  ToolOverlay,
   type CanvasScene,
   type ControllerHost,
   type GestureUpdate,
   type RendererRegistry,
   type RendererResources,
+  type SceneDecoration,
   type SceneItem,
   type ScenePlanes,
   type SnapGuide,
@@ -34,6 +37,7 @@ export interface CanvasHostHandle {
   sync: SceneSync
   registry: RendererRegistry
   planes: ScenePlanes
+  tools: ToolManager
   canvasId: string
   destroy(): void
 }
@@ -46,6 +50,10 @@ declare global {
       camera: () => { x: number; y: number; zoom: number }
       selection: () => string[]
       interactionState: () => string
+      activeTool: () => string
+      decorations: () => SceneDecoration[]
+      decorationEndpoints: (id: string) => { x1: number; y1: number; x2: number; y2: number } | null
+      decorationVisible: (id: string) => boolean | null
     }
   }
 }
@@ -194,6 +202,21 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const controller = new CanvasController(controllerHost, canvasId)
   controller.selection.onChanged(() => drawSelection())
 
+  // AI-IMP-021: draw tools sit in front of the controller; select
+  // mode passes events through unchanged. One CreateDecoration per
+  // completed gesture; previews/highlights render world-space.
+  const toolOverlay = new ToolOverlay(planes.world, () => controller.items())
+  const tools = new ToolManager(controller, {
+    create: (input) =>
+      void gateway.execute('CreateDecoration', {
+        decorationId: crypto.randomUUID(),
+        canvasId,
+        ...input,
+      }),
+    renderPreview: (preview) => toolOverlay.renderPreview(preview),
+    highlightPlacement: (id) => toolOverlay.highlightPlacement(id),
+  })
+
   let refreshing = false
   let refreshQueued = false
   async function refresh(): Promise<void> {
@@ -250,13 +273,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   })
   const onPointerDown = (event: PointerEvent): void => {
     app.canvas.setPointerCapture(event.pointerId)
-    controller.pointerDown(local(event), modifiers(event))
+    tools.pointerDown(local(event), modifiers(event))
   }
   const onPointerMove = (event: PointerEvent): void => {
-    controller.pointerMove(local(event), modifiers(event))
+    tools.pointerMove(local(event), modifiers(event))
   }
   const onPointerUp = (event: PointerEvent): void => {
-    controller.pointerUp(local(event), modifiers(event))
+    tools.pointerUp(local(event), modifiers(event))
   }
   const onWheel = (event: WheelEvent): void => {
     event.preventDefault()
@@ -264,7 +287,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   }
   const onKeyDown = (event: KeyboardEvent): void => {
     if (event.code === 'Space') spaceHeld = true
-    if (event.code === 'Escape') controller.escape()
+    if (event.code === 'Escape') tools.escape()
   }
   const onKeyUp = (event: KeyboardEvent): void => {
     if (event.code === 'Space') spaceHeld = false
@@ -282,6 +305,16 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     camera: () => controller.camera.state(),
     selection: () => controller.selection.ids(),
     interactionState: () => controller.state,
+    activeTool: () => tools.active,
+    decorations: () =>
+      controller.items().filter((item): item is SceneDecoration => item.itemKind === 'decoration'),
+    decorationEndpoints: (id: string) => {
+      const object = sync.get(id) as
+        | { __endpoints?: { x1: number; y1: number; x2: number; y2: number } }
+        | undefined
+      return object?.__endpoints ?? null
+    },
+    decorationVisible: (id: string) => sync.get(id)?.visible ?? null,
   }
 
   let detachGestures: () => void = () => {}
@@ -291,6 +324,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     sync,
     registry,
     planes,
+    tools,
     canvasId,
     destroy() {
       detachGestures()
