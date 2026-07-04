@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 1 | 0 |
 | Planned | 4 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 3 | 21 |
+| Completed | 3 | 22 |
 | **Total** | **8** | **23** |
 
 ## In Progress
@@ -24,7 +24,7 @@
 - [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — completed
 - [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — completed
 - [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — completed
-- [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — in-progress
+- [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — completed
 - [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — planned
 
 ---
@@ -76,8 +76,10 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/notes.test.ts (419 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
+- apps/desktop/e2e/board-tooling.spec.ts (370 LOC)
 - packages/persistence/src/handlers/pin.test.ts (365 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (346 LOC)
+- apps/desktop/src/renderer/canvas/board-tooling.ts (364 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (350 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
@@ -92,7 +94,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>3 EPICs, 21 IMPs completed</summary>
+<summary>3 EPICs, 22 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
