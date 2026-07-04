@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.6          | 3 July 2026      |
+| Accepted for Phase 1 | 0.7          | 4 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -288,6 +288,13 @@ The title_key is derived by:
 4. Applying locale-independent Unicode case folding.
 
 Confusable or homoglyph folding is out of scope for Phase 1.
+
+A Phase 1 note title MUST be expressible as a wiki-link token: it may
+not contain `[`, `]`, `|`, or line breaks. Such a title could never be
+written as a `[[Title]]` occurrence, and rename rewrites of inbound
+tokens would corrupt source bodies. Blocked titles return a structured
+validation error; lifting this restriction later requires an escape
+syntax for link tokens first.
 
 Wiki-link occurrences are indexed in separate link records that store
 source note, target note ID, source revision, and source range or token
@@ -934,10 +941,13 @@ trashed note binds to it, because the trashed note's title_key
 reservation would otherwise leave the token permanently unresolvable.
 No match produces an unresolved record.
 
-Markdown source remains canonical and human-readable. Renaming a target
-note transactionally rewrites inbound unaliased [[Title]] tokens and
-rebuilds affected link positions; explicitly aliased display labels
-remain unchanged. The rename and all rewrites form one user-level
+Markdown source remains canonical and human-readable. Renaming a
+target note transactionally rewrites the title text of every inbound
+token and rebuilds affected link positions. An aliased token
+[[Old|label]] becomes [[New|label]], so its displayed label is
+unchanged; leaving the old spelling in place would silently unresolve
+the token on its source's next save, because every token re-resolves
+by title_key on save. The rename and all rewrites form one user-level
 command.
 
 Creating, renaming, or restoring a note MUST, within the same
@@ -2213,6 +2223,11 @@ Accepted for the Phase 1 prototype:
 
 - Link records are bound, unresolved, or broken; unresolved records
   group into phantom notes by title_key.
+
+- Note titles are restricted to characters expressible inside a
+  wiki-link token in Phase 1; renames rewrite the title half of every
+  inbound token, aliased or not, leaving aliased display labels
+  untouched.
 
 - Phantom notes materialize on first edit or through equal-peer Create
   Note and Create and Place actions; materialization, note creation,
