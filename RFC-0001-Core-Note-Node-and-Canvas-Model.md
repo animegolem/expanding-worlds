@@ -209,6 +209,8 @@ Phase 1 does NOT require:
 
 - Automatic semantic graph relationships inferred from drawn connectors.
 
+- Note-body preview cards rendered on canvas.
+
 # 4. Normative domain model
 
 ## 4.1 Cardinality overview
@@ -380,13 +382,21 @@ A placement contains:
 - A deterministic render_order shared with decorations in the normal
   content plane.
 
-- Canvas-local presentation state.
+- Canvas-local presentation state, including label visibility.
 
 A placement is not a node. Removing a placement MUST NOT delete its
 node.
 
 The same node may have several placements on the same canvas or on
 different canvases.
+
+A placement MAY display a label showing the attached note's title.
+Labels have no independent text: a node without a note has no label,
+and attaching a note is the act that names a placed object. Label
+visibility is per-placement presentation state, defaults to visible,
+and MUST be toggleable directly from the placement's selection
+controls rather than only through an inspector. A label follows note
+renames automatically and is not a decoration or a node title.
 
 ## 4.6 Appearance
 
@@ -1391,6 +1401,9 @@ The canvas implementation SHOULD support:
 - Placement-anchored connector updates without treating connectors as
   semantic edges.
 
+- Placement labels rendered with their placements in the normal
+  content plane.
+
 - Incremental synchronization for grouping, lock, visibility, and order
   changes.
 
@@ -1419,6 +1432,8 @@ The spike SHOULD include:
 - Pan and zoom.
 
 - Highlighting several matching placements.
+
+- Placement labels at varying zoom levels.
 
 - Canvas swap and return.
 
@@ -1640,7 +1655,9 @@ on the root canvas.
 
 5. Create a pin with dot, icon, or cropped-image appearance.
 
-6. Create or attach a note.
+6. Create or attach a note and verify the placement now shows its
+title as a label, then toggle the label off from the selection
+controls.
 
 7. Create a second node sharing that note.
 
@@ -1789,6 +1806,10 @@ The model is successfully implemented when:
 
 - Dot, icon, and image remain interchangeable appearances.
 
+- A placement with an attached note shows the note title as a label by
+  default, toggleable per placement from its selection controls, and
+  the label follows note renames.
+
 - Image cropping is non-destructive.
 
 - Oversized background maps use tiled or pyramidal derivatives.
@@ -1861,6 +1882,12 @@ canvas-local visibility and view filters.
 multi-facet sorting, richer data views, and note browsing deserve a
 dedicated design pass informed by prototype use.
 
+16. Label zoom behavior (fixed screen size versus scaling with the
+canvas) and label styling, to be settled during the renderer spike.
+
+17. Whether note-body preview cards later join dot, icon, and image as
+an on-canvas appearance direction.
+
 # 20. Decision summary
 
 Accepted for the Phase 1 prototype:
@@ -1923,6 +1950,11 @@ Accepted for the Phase 1 prototype:
   edit, reset, and remove operations.
 
 - Dot, icon, and image are appearances.
+
+- Placement labels display attached note titles only; visibility is
+  per-placement presentation state defaulting to visible, with an
+  inline toggle on the selection controls. Note-body preview cards are
+  deferred.
 
 - Images selected inside Create Pin attach to that node and do not
   create a second node.
