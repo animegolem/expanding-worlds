@@ -5,6 +5,7 @@ import { titleKey, uuidv7 } from '@ew/domain'
 import { CommandRegistry, type CommittedResult, type InverseCommand } from '@ew/commands'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from '../dispatcher'
+import { refreshNoteLinks } from '../links'
 import { createProject, type ProjectHandle } from '../project'
 import { registerNodeHandlers } from './nodes'
 
@@ -282,5 +283,100 @@ describe('SetNodeAppearance (§4.6)', () => {
       appearance_asset_id: null,
       appearance_crop: null,
     })
+  })
+})
+
+/**
+ * Lead merge wiring (AI-IMP-011 × AI-IMP-012): MakeNoteIndependent
+ * creates a note, so it must index the copied body (invariant 26) and
+ * run the re-resolution sweep (invariant 27); its inverse must remove
+ * that link footprint without FK violations.
+ */
+describe('MakeNoteIndependent link integration', () => {
+  function linkCtx(): CommandContext {
+    return {
+      db: handle.db,
+      projectId: handle.projectId,
+      rootNodeId: handle.rootNodeId,
+      rootCanvasId: handle.rootCanvasId,
+      now: () => new Date().toISOString(),
+    }
+  }
+
+  it('indexes the copied body, binds matching phantoms, and reverts on undo', () => {
+    const sharedNote = insertNote('Shared Person', 'see [[Alpha Target]]')
+    const nodeA = createNode()
+    const nodeB = createNode()
+    committed('AttachNoteToNode', { nodeId: nodeA, noteId: sharedNote })
+    committed('AttachNoteToNode', { nodeId: nodeB, noteId: sharedNote })
+
+    // A third note already references the future independent title.
+    const sourceNote = insertNote('Source', 'ref [[Indie Note]]')
+    refreshNoteLinks(linkCtx(), sourceNote)
+    expect(
+      handle.db.get(
+        "SELECT id FROM link WHERE source_note_id = ? AND state = 'unresolved'",
+        sourceNote,
+      ),
+    ).toBeDefined()
+
+    const newNoteId = uuidv7()
+    const make = committed('MakeNoteIndependent', {
+      nodeId: nodeA,
+      newNoteId,
+      newTitle: 'Indie Note',
+    })
+
+    // Copied body's token is indexed for the new note (invariant 26).
+    expect(
+      handle.db.get(
+        "SELECT id FROM link WHERE source_note_id = ? AND state = 'unresolved' AND target_title_key = ?",
+        newNoteId,
+        titleKey('Alpha Target'),
+      ),
+    ).toBeDefined()
+    // The phantom reference bound project-wide (invariant 27).
+    expect(
+      handle.db.get(
+        "SELECT id FROM link WHERE source_note_id = ? AND state = 'bound' AND target_note_id = ?",
+        sourceNote,
+        newNoteId,
+      ),
+    ).toBeDefined()
+    // Node B still uses the shared note (invariant 12).
+    expect(
+      handle.db.get<{ note_id: string }>('SELECT note_id FROM node WHERE id = ?', nodeB)?.note_id,
+    ).toBe(sharedNote)
+
+    const undone = undo(make.inverse)
+    // Copied note and its entire link footprint are gone…
+    expect(handle.db.get('SELECT id FROM note WHERE id = ?', newNoteId)).toBeUndefined()
+    expect(
+      handle.db.get(
+        'SELECT id FROM link WHERE source_note_id = ?1 OR target_note_id = ?1',
+        newNoteId,
+      ),
+    ).toBeUndefined()
+    // …and the source's token is unresolved again, not dangling.
+    expect(
+      handle.db.get(
+        "SELECT id FROM link WHERE source_note_id = ? AND state = 'unresolved' AND target_title_key = ?",
+        sourceNote,
+        titleKey('Indie Note'),
+      ),
+    ).toBeDefined()
+    expect(undone.inverse?.commandType).toBe('MakeNoteIndependent')
+  })
+
+  it('applies the same Phase 1 title rules as CreateNote', () => {
+    const note = insertNote('Rules Note', '')
+    const node = createNode()
+    committed('AttachNoteToNode', { nodeId: node, noteId: note })
+    const result = exec('MakeNoteIndependent', {
+      nodeId: node,
+      newNoteId: uuidv7(),
+      newTitle: 'Bad|Title',
+    })
+    expect(result).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
   })
 })

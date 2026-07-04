@@ -7,6 +7,7 @@ import {
   COMMAND_SET_NODE_APPEARANCE,
   COMMAND_UNMAKE_NOTE_INDEPENDENT,
   DomainError,
+  type AffectedRecord,
   type AttachNoteToNodePayload,
   type CommandRegistry,
   type CreateNodePayload,
@@ -17,8 +18,9 @@ import {
   type SetNodeAppearancePayload,
   type UnmakeNoteIndependentPayload,
 } from '@ew/commands'
-import { titleKey } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
+import { bindUnresolvedMatching, refreshNoteLinks } from '../links'
+import { requireLinkableTitle, requireTitleFree } from './notes'
 
 function requireNode<T extends Record<string, unknown>>(
   ctx: CommandContext,
@@ -173,25 +175,9 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
         nodeId: payload.nodeId,
       })
     }
-    const key = titleKey(payload.newTitle)
-    if (key.length === 0) {
-      throw new DomainError('VALIDATION_FAILED', 'MakeNoteIndependent requires a non-empty title')
-    }
-    // §7.7 structured collision shape; title_key is reserved by active
-    // AND trashed notes (invariant 5).
-    const conflict = ctx.db.get<{ id: string; lifecycle_state: string }>(
-      'SELECT id, lifecycle_state FROM note WHERE project_id = ? AND title_key = ?',
-      ctx.projectId,
-      key,
-    )
-    if (conflict) {
-      throw new DomainError('NOTE_TITLE_CONFLICT', `title "${payload.newTitle}" is already taken`, {
-        existingNoteId: conflict.id,
-        requestedTitle: payload.newTitle,
-        titleKey: key,
-        conflictingLifecycle: conflict.lifecycle_state,
-      })
-    }
+    // Same title rules and §7.7 conflict shape as CreateNote/RenameNote.
+    const { title, key } = requireLinkableTitle(payload.newTitle)
+    requireTitleFree(ctx, key, title)
     const source = ctx.db.get<{ body: string }>(
       'SELECT body FROM note WHERE id = ?',
       node.note_id,
@@ -210,20 +196,23 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       now,
       now,
     )
-    // TODO(lead-merge): refresh link records for the copied body via
-    // AI-IMP-011's refreshNoteLinks so invariant 26 holds for the new
-    // note's wiki-link tokens.
     ctx.db.run(
       'UPDATE node SET note_id = ?, updated_at = ? WHERE id = ?',
       payload.newNoteId,
       now,
       payload.nodeId,
     )
+    const affected: AffectedRecord[] = [
+      { kind: 'node', id: payload.nodeId },
+      { kind: 'note', id: payload.newNoteId },
+    ]
+    // Creating a note: index its outbound tokens (invariant 26) and
+    // run the re-resolution sweep for its title (invariant 27), like
+    // CreateNote.
+    affected.push(...refreshNoteLinks(ctx, payload.newNoteId))
+    affected.push(...bindUnresolvedMatching(ctx, key, payload.newNoteId))
     return {
-      affected: [
-        { kind: 'node', id: payload.nodeId },
-        { kind: 'note', id: payload.newNoteId },
-      ],
+      affected,
       inverse: {
         commandType: COMMAND_UNMAKE_NOTE_INDEPENDENT,
         commandVersion: 1,
@@ -271,12 +260,31 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
         ctx.now(),
         payload.nodeId,
       )
+      // Undo the copied note's link footprint before the row goes:
+      // drop its outbound records, remember which sources had bound
+      // inbound records, drop those too (FK), then delete the note
+      // and re-refresh each source — with the title_key free again,
+      // their tokens re-index as unresolved rather than bound.
+      const inboundSources = ctx.db.all<{ source_note_id: string }>(
+        `SELECT DISTINCT source_note_id FROM link
+         WHERE target_note_id = ?1 AND source_note_id <> ?1`,
+        payload.newNoteId,
+      )
+      ctx.db.run(
+        'DELETE FROM link WHERE source_note_id = ?1 OR target_note_id = ?1',
+        payload.newNoteId,
+      )
       ctx.db.run('DELETE FROM note WHERE id = ?', payload.newNoteId)
+      const affected: AffectedRecord[] = [
+        { kind: 'node', id: payload.nodeId },
+        { kind: 'note', id: payload.newNoteId },
+      ]
+      for (const { source_note_id } of inboundSources) {
+        affected.push({ kind: 'note', id: source_note_id })
+        affected.push(...refreshNoteLinks(ctx, source_note_id))
+      }
       return {
-        affected: [
-          { kind: 'node', id: payload.nodeId },
-          { kind: 'note', id: payload.newNoteId },
-        ],
+        affected,
         inverse: {
           commandType: COMMAND_MAKE_NOTE_INDEPENDENT,
           commandVersion: 1,

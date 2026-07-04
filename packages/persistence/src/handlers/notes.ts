@@ -49,7 +49,7 @@ function requireActiveNote(ctx: CommandContext, noteId: string): NoteRow {
  * token, so rename rewrites of inbound tokens would corrupt source
  * bodies. Revisit if unlinkable titles become a requirement.
  */
-function requireLinkableTitle(title: unknown): { title: string; key: string } {
+export function requireLinkableTitle(title: unknown): { title: string; key: string } {
   if (typeof title !== 'string' || titleKey(title).length === 0) {
     throw new DomainError('VALIDATION_FAILED', 'title must be a non-empty string')
   }
@@ -63,7 +63,12 @@ function requireLinkableTitle(title: unknown): { title: string; key: string } {
 }
 
 /** §7.7: blocked creations and renames return a structured conflict. */
-function requireTitleFree(ctx: CommandContext, key: string, title: string, selfId?: string): void {
+export function requireTitleFree(
+  ctx: CommandContext,
+  key: string,
+  title: string,
+  selfId?: string,
+): void {
   const existing = ctx.db.get<{ id: string; lifecycle_state: string }>(
     'SELECT id, lifecycle_state FROM note WHERE project_id = ? AND title_key = ?',
     ctx.projectId,
