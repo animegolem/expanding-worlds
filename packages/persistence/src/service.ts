@@ -8,8 +8,10 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerNodeHandlers } from './handlers/nodes'
+import { registerNoteHandlers } from './handlers/notes'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
+import { registerNoteQueries } from './queries-notes'
 
 export interface ProjectInfo {
   projectId: string
@@ -45,9 +47,11 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
 
   const commands = new CommandRegistry<CommandContext>()
   registerNodeHandlers(commands)
+  registerNoteHandlers(commands)
 
   const queries = new QueryRegistry()
   registerCoreQueries(queries)
+  registerNoteQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {

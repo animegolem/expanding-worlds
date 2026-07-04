@@ -79,16 +79,16 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] `@ew/domain` wiki-links.ts: extract tokens with byte/char ranges, alias support, escaping rules documented; table-driven tests including adjacent tokens, unicode titles, `[[a|b]]`.
-- [ ] CreateNote handler: title_key uniqueness via schema + structured NOTE_TITLE_CONFLICT carrying existing note id, requested title, title_key, active-or-trashed flag (§7.7 test for both conflict flavors).
-- [ ] Link refresh on save: outbound records replaced per token; bound vs unresolved chosen by title_key against active and trashed notes (test: token matching trashed note binds to it, §7.1).
-- [ ] Invariant 26 test: after any save, each token has exactly one link record in exactly one state.
-- [ ] Re-resolution sweep on CreateNote and RenameNote binds matching unresolved records project-wide in the same transaction (invariant 27 test across two source notes); broken records untouched by sweep (test).
-- [ ] Invariant 28 test: phantom projection exists with zero note rows and no title_key reservation; materializing via CreateNote then binds all references (slice item 14 at service level).
-- [ ] RenameNote: rewrites inbound unaliased `[[Old]]` tokens to `[[New]]`, preserves `[[Old|alias]]` display text, rebuilds ranges, single command, single revision bump (test verifies bodies, link rows, one command_log row).
-- [ ] UpdateNote returns inverse with prior body; Rename returns inverse with prior title; tests round-trip via dispatcher.
-- [ ] Queries: getNote(id), suggestions(prefix→title_key match, phantom+trashed flags), phantom view (title, grouped references), notes list; tests.
-- [ ] `pnpm check` green from a fresh `pnpm -r build`; commit on worktree branch.
+- [x] `@ew/domain` wiki-links.ts: extract tokens with byte/char ranges, alias support, escaping rules documented; table-driven tests including adjacent tokens, unicode titles, `[[a|b]]`.
+- [x] CreateNote handler: title_key uniqueness via schema + structured NOTE_TITLE_CONFLICT carrying existing note id, requested title, title_key, active-or-trashed flag (§7.7 test for both conflict flavors).
+- [x] Link refresh on save: outbound records replaced per token; bound vs unresolved chosen by title_key against active and trashed notes (test: token matching trashed note binds to it, §7.1).
+- [x] Invariant 26 test: after any save, each token has exactly one link record in exactly one state.
+- [x] Re-resolution sweep on CreateNote and RenameNote binds matching unresolved records project-wide in the same transaction (invariant 27 test across two source notes); broken records untouched by sweep (test).
+- [x] Invariant 28 test: phantom projection exists with zero note rows and no title_key reservation; materializing via CreateNote then binds all references (slice item 14 at service level).
+- [x] RenameNote: rewrites inbound unaliased `[[Old]]` tokens to `[[New]]`, preserves `[[Old|alias]]` display text, rebuilds ranges, single command, single revision bump (test verifies bodies, link rows, one command_log row).
+- [x] UpdateNote returns inverse with prior body; Rename returns inverse with prior title; tests round-trip via dispatcher.
+- [x] Queries: getNote(id), suggestions(prefix→title_key match, phantom+trashed flags), phantom view (title, grouped references), notes list; tests.
+- [x] Validation green from a fresh `pnpm -r build`; commit on worktree branch. (Deviation: ran `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` per the agent brief instead of full `pnpm check` — the Electron binary does not extract in agent worktrees, so desktop tests and `check:spike` were left to the lead's master validation.)
 
 ### Acceptance Criteria
 
@@ -119,3 +119,50 @@ sprint.
 You MUST document any failed implementations, blockers or missing
 tests.
 -->
+
+Implemented as specified; all checklist tests pass (domain 17→36
+tests, persistence 38→75 tests). Decisions taken where the RFC/ticket
+left room, all flagged for lead review:
+
+- **Aliased tokens on rename.** RenameNote rewrites the *title part*
+  of aliased tokens too (`[[Old|alias]]` → `[[New|alias]]`), keeping
+  only the alias display label unchanged. Leaving `[[Old|alias]]`
+  intact would silently flip the record to unresolved on the source's
+  next save, since §7.1 re-resolves every token by title_key on save —
+  contradicting "all link records stay bound" in the acceptance
+  scenario. Read §7.1's "explicitly aliased display labels remain
+  unchanged" as referring to the rendered label.
+- **Broken-state preservation across refresh.** refreshNoteLinks
+  keeps a token broken when a prior broken record of the same source
+  has a matching title_key (derived from its display text), even if an
+  active note with that key now exists — otherwise a body edit would
+  launder broken records into unresolved ones that the sweep could
+  re-bind, violating invariant 27. All same-key occurrences in one
+  source share brokenness (occurrences are not tracked individually).
+  AI-IMP-013's purge (bound→broken conversion) builds on this.
+- **Escaping rules (wiki-links.ts).** No escape syntax; extraction is
+  purely lexical (code fences not excluded — editor-layer concern).
+  Title: no `[`, `]`, `|`, line breaks, must be non-blank. First `|`
+  splits alias; empty alias/title = plain text. Ranges are UTF-16
+  code-unit offsets (CodeMirror-compatible).
+- **Phase-1 title restriction.** CreateNote/RenameNote reject titles
+  containing `[`, `]`, `|`, or line breaks (VALIDATION_FAILED): such a
+  title can never be written as a wiki-link token, and rename rewrites
+  into token syntax would corrupt source bodies. Not in the RFC —
+  needs lead sign-off (or an RFC note).
+- **Unresolved display_text stores the token's raw title text**, not
+  the alias — the phantom view's would-be title needs the title
+  spelling; the alias lives in the body. Phantom title spelling is
+  taken from the earliest unresolved record (UUIDv7 id order).
+- **source_revision** is stamped as project_revision + 1 (the revision
+  the surrounding command commits as); any link-row write re-stamps.
+- **Undo of a materializing CreateNote refuses.** CreateNote's
+  inverse is PurgeDraftNote, which (per ticket) refuses when other
+  notes hold link records to the note — so undoing a CreateNote that
+  swept-bound other notes' references returns NOTE_NOT_DRAFT rather
+  than unbinding them. Acceptable until AI-IMP-013 swaps the inverse
+  to a purge-safe TrashNote.
+- **UpdateNote/RenameNote refuse trashed notes** (NOTE_NOT_ACTIVE);
+  trash flows own those in AI-IMP-013.
+- Full `pnpm check` not runnable in the agent worktree (Electron
+  binary missing); ran build + non-desktop tests + lint per brief.
