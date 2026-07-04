@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 5 | 3 |
+| Planned | 5 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 2 | 13 |
+| Completed | 2 | 14 |
 | **Total** | **8** | **16** |
 
 ## In Progress
@@ -25,7 +25,7 @@
 - [[AI-IMP-012-structure-commands|IMP-012]] Structure commands — completed
 - [[AI-IMP-013-lifecycle-trash-restore-purge|IMP-013]] Lifecycle trash restore purge — planned
 - [[AI-IMP-014-staged-asset-import|IMP-014]] Staged asset import — completed
-- [[AI-IMP-015-fts5-search-and-queries|IMP-015]] Fts5 search and queries — planned
+- [[AI-IMP-015-fts5-search-and-queries|IMP-015]] Fts5 search and queries — completed
 - [[AI-IMP-016-recovery-and-invariant-suite|IMP-016]] Recovery and invariant suite — planned
 
 ---
@@ -84,7 +84,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>2 EPICs, 13 IMPs completed</summary>
+<summary>2 EPICs, 14 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

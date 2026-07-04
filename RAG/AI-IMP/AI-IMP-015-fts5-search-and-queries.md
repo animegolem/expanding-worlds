@@ -5,12 +5,12 @@ tags:
   - Implementation
   - search
   - fts5
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-011, AI-IMP-012]
 parent_epic: [[AI-EPIC-003-domain-persistence-core]]
 confidence_score: 0.8
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-015-fts5-search-and-queries
@@ -74,16 +74,16 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Verify FTS5 availability in the binding chosen by AI-IMP-009 (probe test); if absent, stop and escalate to the lead before proceeding.
-- [ ] Migration adds the four FTS5 tables with UUID mapping and maintenance triggers (or post-commit indexer — record decision in Issues Encountered).
-- [ ] Note create/update/rename reflects in note_fts within the same transaction (test searches new body text immediately after commit).
-- [ ] Tag create/rename, asset commit, and canvas-text decoration create/update/delete each reflect in their index (tests per corpus).
-- [ ] Trashed records excluded from default search across all four corpora; restore returns them without rebuild (test trash→search→restore→search).
-- [ ] Purge removes rows from the index (test).
-- [ ] Search query groups results by kind with §8.3 navigation context (filename match returns the nodes using that asset — test with two nodes sharing an asset appearance).
-- [ ] Quick-open: matches by title_key over active notes and canvas-owning nodes, excludes phantoms and trashed, returns kind discriminator (test all three exclusions).
-- [ ] rebuildSearchIndex() drops and repopulates all four corpora from base tables; test corrupts an index then rebuilds.
-- [ ] `pnpm check` green from fresh `pnpm -r build`; commit on worktree branch.
+- [x] Verify FTS5 availability in the binding chosen by AI-IMP-009 (probe test); if absent, stop and escalate to the lead before proceeding.
+- [x] Migration adds the four FTS5 tables with UUID mapping and maintenance triggers (or post-commit indexer — record decision in Issues Encountered).
+- [x] Note create/update/rename reflects in note_fts within the same transaction (test searches new body text immediately after commit).
+- [x] Tag create/rename, asset commit, and canvas-text decoration create/update/delete each reflect in their index (tests per corpus).
+- [x] Trashed records excluded from default search across all four corpora; restore returns them without rebuild (test trash→search→restore→search).
+- [x] Purge removes rows from the index (test).
+- [x] Search query groups results by kind with §8.3 navigation context (filename match returns the nodes using that asset — test with two nodes sharing an asset appearance).
+- [x] Quick-open: matches by title_key over active notes and canvas-owning nodes, excludes phantoms and trashed, returns kind discriminator (test all three exclusions).
+- [x] rebuildSearchIndex() drops and repopulates all four corpora from base tables; test corrupts an index then rebuilds.
+- [x] `pnpm check` green from fresh `pnpm -r build`; commit on worktree branch. (Caveat: the `check:spike` stage fails in the fresh worktree for environmental reasons unrelated to this ticket — see Issues Encountered. Build, all non-desktop tests, and lint are green.)
 
 ### Acceptance Criteria
 
@@ -112,3 +112,56 @@ sprint.
 You MUST document any failed implementations, blockers or missing
 tests.
 -->
+
+- **Triggers chosen over a post-commit indexer.** Index maintenance
+  is pure SQLite triggers on the base tables (migration 0003), so any
+  write path — handlers, AI-IMP-013 lifecycle/purge work, raw
+  recovery SQL — keeps the index consistent with zero cooperation.
+  The external-content 'delete' subtleties never got brittle: the
+  UPDATE triggers fire on exactly the indexed columns, so the OLD
+  values replayed to the 'delete' command always match what was
+  indexed.
+- **Split index architecture.** note_fts/tag_fts/asset_fts are
+  external-content fts5 tables keyed on the base table's implicit
+  rowid (no text duplication; snippet() reads live rows).
+  canvas_text_fts cannot use external content because its source is
+  an expression — `json_extract(decoration.data, '$.text')` — which
+  fts5 content tables cannot declare; it stores its own copy of the
+  text, keyed by decoration.rowid, and only kind='text' rows are
+  indexed. UUIDs are recovered by joining the base table on rowid at
+  query time.
+- **VACUUM caveat.** Base tables have TEXT primary keys, so their
+  implicit rowids are not VACUUM-stable. Nothing in the codebase
+  VACUUMs today; if that ever changes, `rebuildSearchIndex()` must
+  run afterwards (documented in the migration header and search.ts).
+- **Protocol deviation (Files to Touch).** `packages/protocol` needed
+  no edit: AI-IMP-010 made query names/args untyped strings over IPC
+  (`RunQueryRequest {name, args}`), so the new queries flow through
+  unchanged. Result/type shapes are exported from `@ew/persistence`
+  (queries-search.ts) instead.
+- **Migration is a TS module, not .sql.** The ticket named
+  `000N-fts.sql`; repo convention (0001/0002) is TS modules exporting
+  `{id, name, sql}` so tsc emits them into dist. Implemented as
+  `0003-fts.ts`. STRICT does not apply to fts5 virtual tables.
+- **fts5 quirks.** An empty MATCH expression is an error, so
+  `ftsMatchExpression()` returns null for token-free input and the
+  queries short-circuit to empty results. User input is never parsed
+  as MATCH syntax: each whitespace token is quoted with internal
+  quotes doubled (`"weird" AND syntax` searches those literal
+  tokens); hostile-input tests cover operators, column filters, and
+  bare quotes. The `'delete-all'` command is only valid for
+  external-content/contentless tables, so the canvas_text_fts rebuild
+  path uses `DELETE FROM` + repopulate.
+- **Quick-open edge.** A canvas-owning node whose note is trashed is
+  treated as noteless: not matchable by the trashed title (§8.3
+  excludes trashed), but still addressable by short code (§4.11).
+- **Lifecycle commands absent on this base.** AI-IMP-013 runs
+  concurrently, so trash/restore/purge are exercised via raw
+  lifecycle_state UPDATEs and raw DELETEs — which is also exactly
+  what proves the triggers need no handler cooperation.
+- **`pnpm check` environment failure.** The `check:spike` stage fails
+  in this fresh worktree because `spike/` is a separate npm prefix
+  whose devDependencies are not installed (`spike/` is out of scope
+  and untouched). `pnpm -r build`, `pnpm -r --filter '!@ew/desktop'
+  test` (199/199 persistence tests, 24 new), and `pnpm lint` are all
+  green.

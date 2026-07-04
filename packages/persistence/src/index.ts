@@ -44,6 +44,16 @@ export {
   type OrderedItem,
 } from './render-order'
 export { registerStructureQueries, type CanvasContentItem } from './queries-structure'
+export { ftsMatchExpression, rebuildSearchIndex } from './search'
+export {
+  registerSearchQueries,
+  type AssetSearchResult,
+  type CanvasTextSearchResult,
+  type NoteSearchResult,
+  type QuickOpenEntry,
+  type SearchResults,
+  type TagSearchResult,
+} from './queries-search'
 export {
   openProjectService,
   type ProjectInfo,
