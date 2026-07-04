@@ -23,3 +23,4 @@ export {
 export * from './payloads/nodes'
 export * from './payloads/notes'
 export * from './payloads/assets'
+export * from './payloads/structure'

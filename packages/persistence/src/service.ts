@@ -8,12 +8,17 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
+import { registerCanvasHandlers } from './handlers/canvases'
+import { registerDecorationHandlers } from './handlers/decorations'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
+import { registerPlacementHandlers } from './handlers/placements'
+import { registerTagHandlers } from './handlers/tags'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
 import { registerNoteQueries } from './queries-notes'
+import { registerStructureQueries } from './queries-structure'
 
 export interface ProjectInfo {
   projectId: string
@@ -53,11 +58,16 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerNodeHandlers(commands)
   registerNoteHandlers(commands)
   registerAssetHandlers(commands)
+  registerCanvasHandlers(commands)
+  registerPlacementHandlers(commands)
+  registerTagHandlers(commands)
+  registerDecorationHandlers(commands)
 
   const queries = new QueryRegistry()
   registerCoreQueries(queries)
   registerNoteQueries(queries)
   registerAssetQueries(queries)
+  registerStructureQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {
