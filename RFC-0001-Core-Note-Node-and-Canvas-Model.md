@@ -148,8 +148,9 @@ Phase 1 MUST establish:
 
 - Immediate text navigation with independent spatial resolution.
 
-- Non-destructive image import, cropping, thumbnail generation, and
-  oversized-map handling.
+- Non-destructive image import from file drop, clipboard paste, and
+  browser drag, with cropping, thumbnail generation, and oversized-map
+  handling.
 
 - Clear separation between semantic objects and decorative canvas
   content.
@@ -210,6 +211,11 @@ Phase 1 does NOT require:
 - Automatic semantic graph relationships inferred from drawn connectors.
 
 - Note-body preview cards rendered on canvas.
+
+- SVG, video, audio, or PDF import.
+
+- Web-reference assets, media playback, and the media-backup adapter,
+  which remain the shaped deferred direction described in section 4.7.
 
 # 4. Normative domain model
 
@@ -421,6 +427,15 @@ overrides are deferred.
 An asset is managed imported media stored separately from node and
 placement records.
 
+Every asset carries a kind discriminator. Phase 1 uses only the image
+kind; the discriminator exists in the Phase 1 schema so future kinds
+do not require identity migration.
+
+Phase 1 imports raster images: PNG, JPEG, WebP, GIF, and AVIF. SVG,
+video, audio, and PDF are deferred. Staged-import validation rejects
+unsupported or unrecognized types with a clear notice and creates no
+records.
+
 An image asset SHOULD record:
 
 - Content hash.
@@ -453,6 +468,16 @@ A full asset-library manager, asset tagging, watched directories,
 metadata-aware cross-application drag, and Eagle or Allusion library
 import are deferred. Future vendor importers MUST remain versioned
 adapters outside the core domain model.
+
+A deferred **web-reference** asset kind is shaped as follows so the
+model leaves room for it. A web-reference stores a source URL and
+fetched metadata such as title, site, and oEmbed or OpenGraph fields,
+plus a thumbnail derivative that serves as node appearance; activating
+such a node MAY open a DOM overlay above the canvas for playback or
+preview. An optional user-configured media-backup adapter, such as a
+self-hosted yt-dlp endpoint, MAY archive the underlying media into
+managed storage; it defaults to off and remains a versioned adapter
+outside the core domain model.
 
 ## 4.8 Tags
 
@@ -650,9 +675,9 @@ a non-replayable log.
 
 # 6. Creation, reuse, and promotion flows
 
-## 6.1 Drop an image onto a canvas
+## 6.1 Import an image onto a canvas
 
-The application MUST:
+For a dropped image file, the application MUST:
 
 1. Copy or deduplicate the file into managed asset storage.
 
@@ -665,6 +690,15 @@ The application MUST:
 5. Preserve the natural aspect ratio unless the user changes it.
 
 The node initially needs no note or canvas.
+
+The same staged pipeline MUST serve OS clipboard paste of raw image
+data, such as screenshots, and of copied files; pasted content places
+at the cursor position or view center. It also serves drops
+originating in a browser: a drop carrying image bytes imports them
+directly and records the source page URL as asset attribution when
+available. A URL-only drop SHOULD fetch the image over the network as
+a user-initiated act; a failed or unsupported fetch produces a clear
+error and creates no records.
 
 ## 6.2 Create Pin
 
@@ -1637,8 +1671,10 @@ or create semantic edges through a separate operation.
 
 # 15. Future authoritative collaboration seam
 
-Phase 1 remains local-only. It should not include CRDTs or networking
-merely to prepare for Phase 2.
+Phase 1 remains local-only: no server, sync, account, or protocol
+infrastructure, and no CRDTs merely to prepare for Phase 2. The single
+permitted networking act is the user-initiated fetch of a dropped
+image URL during import.
 
 The architecture MUST preserve a future transition from:
 
@@ -1698,7 +1734,11 @@ canvas, then verify Home returns to it.
 2. Set, edit, reset, replace, and remove a managed image background
 on the root canvas.
 
-3. Drop several images and copy them into managed project storage.
+3. Drop several images, paste a screenshot from the clipboard, and
+drag an image from a browser including one URL-only drop; verify all
+enter managed project storage with source URLs recorded when
+available, and that an unsupported file is rejected with a clear
+notice and no records.
 
 4. Pan, zoom, select, move, resize, rotate, and reorder placements.
 
@@ -1908,6 +1948,16 @@ The model is successfully implemented when:
 - Imported originals remain available after their external source moves
   or disappears.
 
+- Clipboard paste of image data and copied files imports through the
+  same staged pipeline as file drop.
+
+- A URL-only browser drop fetches and imports the image or fails with
+  a clear error and no records; source URLs persist as attribution.
+
+- Asset records carry a kind discriminator, with image as the only
+  Phase 1 kind, and unsupported formats are rejected at staged-import
+  validation.
+
 # 19. Open questions
 
 The following remain deliberately unresolved:
@@ -1956,6 +2006,10 @@ canvas) and label styling, to be settled during the renderer spike.
 
 17. Whether note-body preview cards later join dot, icon, and image as
 an on-canvas appearance direction.
+
+18. When the web-reference asset kind lands, its metadata fetch
+pipeline, overlay playback behavior, and the configuration surface for
+the optional media-backup adapter.
 
 # 20. Decision summary
 
@@ -2069,6 +2123,13 @@ Accepted for the Phase 1 prototype:
 - One project service holds the authoritative project write lock.
 
 - Imported originals are copied into managed project storage.
+
+- Import surfaces are file drop, clipboard paste, and browser drag;
+  URL-only drops may fetch as the single Phase 1 networking carve-out.
+
+- Phase 1 assets are raster images only, behind a kind discriminator;
+  web-reference assets with overlay playback and a default-off
+  media-backup adapter are the shaped deferred direction.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
