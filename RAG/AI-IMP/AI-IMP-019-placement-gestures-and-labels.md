@@ -75,15 +75,15 @@ Toggle: a small control on the selection outline issuing existing
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Move gesture: multi-selection drag with SnapProvider delta applied; commit = one TransformContent with prior+next for every member; cancel restores; tests with fake gateway assert exactly one command and correct payload.
-- [ ] Resize gesture: corner/edge handles in overlay plane; aspect preserved by default for image appearances, modifier frees; multi-selection scales about anchor; commit/cancel semantics as move; unit tests for aspect math and multi-item scaling.
-- [ ] Rotate gesture: handle above selection bounds, Shift = 15° steps; single and multi (rotate about selection center, updating member x/y + rotation); tests.
-- [ ] Reorder: neighbor computation from ordered scene snapshot → ReorderContent (front/forward/backward/back) for mixed placement/decoration selections; keyboard shortcuts + context-menu entries; tests for neighbor edge cases (already-front, adjacent moves).
-- [ ] Flip: context/shortcut issuing FlipPlacement per selected placement (one gesture = user action per placement command is acceptable here — flips are instantaneous acts, not continuous gestures); renderer applies flip_x/flip_y to sprite scale sign.
-- [ ] Labels: BitmapText under placement, text = note title, size proportional to placement world height (single named ratio constant), reflows on TransformContent and on note rename (scene re-query); no label when node has no note (§4.5); renderer unit tests.
-- [ ] Label toggle on selection controls issuing SetPlacementLabelVisibility; default visible; e2e asserts toggle round-trip.
-- [ ] e2e gestures.spec.ts: drag two selected placements → command log gains exactly one TransformContent; resize an image placement preserving aspect; rotate; bring-to-front changes render order in sceneStats; flip persists; rename note → label text updates.
-- [ ] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
+- [x] Move gesture: multi-selection drag with SnapProvider delta applied; commit = one TransformContent with prior+next for every member; cancel restores; tests with fake gateway assert exactly one command and correct payload.
+- [x] Resize gesture: corner/edge handles in overlay plane; aspect preserved by default for image appearances, modifier frees; multi-selection scales about anchor; commit/cancel semantics as move; unit tests for aspect math and multi-item scaling.
+- [x] Rotate gesture: handle above selection bounds, Shift = 15° steps; single and multi (rotate about selection center, updating member x/y + rotation); tests.
+- [x] Reorder: neighbor computation from ordered scene snapshot → ReorderContent (front/forward/backward/back) for mixed placement/decoration selections; keyboard shortcuts (context-menu deferred — see Issues); tests for neighbor edge cases (already-front, adjacent moves).
+- [x] Flip: context/shortcut issuing FlipPlacement per selected placement (one gesture = user action per placement command is acceptable here — flips are instantaneous acts, not continuous gestures); renderer applies flip_x/flip_y to sprite scale sign.
+- [x] Labels: Text under placement (BitmapText deferred — see Issues), text = note title, size proportional to placement world height (single named ratio constant), reflows on TransformContent and on note rename (scene re-query); no label when node has no note (§4.5); renderer unit tests.
+- [x] Label toggle on selection controls issuing SetPlacementLabelVisibility; default visible; e2e asserts toggle round-trip.
+- [x] e2e gestures.spec.ts: drag two selected placements → exactly one durable command (asserted as revision +1 for the whole drag); resize preserving free-aspect semantics; rotate; bring-to-front changes render order in getCanvasScene; flip persists; rename note → label text updates.
+- [x] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
 
 ### Acceptance Criteria
 
@@ -105,3 +105,47 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Handle UI lives in `apps/desktop/src/renderer/canvas/gestures-ui.ts`
+  (new), not host.ts**: per the delegation brief, host.ts got only
+  minimal wiring (declare + call `attachGesturesUI(handle, app.canvas)`
+  and its detach in destroy). Handle hit-testing uses a capture-phase
+  DOM pointerdown with `stopImmediatePropagation()` so handle presses
+  never reach the controller's hit-test path.
+- **Plain `Text` instead of `BitmapText`** for labels: Pixi v8 Text
+  constructs headlessly (measurement is lazy) which keeps renderer
+  unit tests GPU-free; dynamic BitmapText needs font install/canvas
+  measurement at build time. Perf carry-forward: many labels at many
+  sizes will re-rasterize Canvas textures on every resize — revisit
+  BitmapText (or resolution capping) when label count grows (AI-IMP-022
+  or later polish).
+- **Context-menu entries for reorder deferred**: the app has no
+  context-menu infrastructure at all yet; reorder ships on
+  Cmd/Ctrl+]/[ (+Shift for front/back), flip on Shift+H/V. Menu
+  surfaces should land with the first shared context menu.
+- **Deviation — e2e "exactly one TransformContent"** is asserted as
+  project revision advancing by exactly 1 across the whole drag (plus
+  both placements landing at the dragged position); the command log
+  itself is not queryable from the renderer. The e2e resize uses a
+  dot (free aspect); image aspect-lock is covered by unit tests, since
+  seeding a real image asset in e2e belongs to AI-IMP-020's importer.
+- **Undo inverse not exercised in e2e**: TransformContent/Reorder
+  inverses are covered by persistence handler tests; there is no
+  undo-stack surface to drive from the UI yet.
+- **Ordering bug found during e2e**: `SceneSync.onItemUpdated` fires
+  inside `sync.apply()`, i.e. BEFORE host's refresh calls
+  `controller.setItems()` — a handle re-render subscribed to it read
+  stale selection items. gestures-ui defers that render by one
+  microtask; worth remembering for other onItemUpdated consumers.
+- **Resize of rotated placements** scales width/height along world
+  axes (rotation ignored in the factor math) — correct for the common
+  rotation-0 case, approximate otherwise; matches the AABB-based
+  handle frame. Rotated-frame resize is future polish.
+- **Debug seam**: e2e hooks live on a separate `window.__ewGestureDebug`
+  (handles(), labelTexts()) because widening `__ewDebug`'s type would
+  conflict with the duplicate global declaration in e2e/canvas.spec.ts
+  (TS2717 requires textual identity), which this ticket must not touch.
+- **Environment**: electron's postinstall failed silently in the
+  worktree; fixed by running `node node_modules/.pnpm/electron@39.8.10/node_modules/electron/install.js`
+  and, when zip extraction also failed silently, extracting via
+  `ditto` and writing `path.txt`/`version` by hand.

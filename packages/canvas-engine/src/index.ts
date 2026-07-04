@@ -46,6 +46,17 @@ export {
   type GestureDriver,
   type PointerModifiers,
 } from './controller'
+export { moveDriver } from './gestures/move'
+export { createResizeDriver, RESIZE_HANDLES, type ResizeHandle } from './gestures/resize'
+export { rotateDriver, ROTATE_SNAP_STEP } from './gestures/rotate'
+export {
+  mapDecorationPoints,
+  rotateDecorationData,
+  scaleDecorationData,
+  translateDecorationData,
+} from './gestures/decoration-data'
+export { reorderPayloads, type ReorderOp } from './reorder'
+export { LABEL_HEIGHT_RATIO } from './renderers/placement'
 
 /** The default registry with every built-in renderer installed. */
 export function createDefaultRegistry(): RendererRegistry {

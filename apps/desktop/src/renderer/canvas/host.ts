@@ -16,6 +16,7 @@ import {
   type SnapGuide,
 } from '@ew/canvas-engine'
 import { Application, Graphics, Texture } from 'pixi.js'
+import { attachGesturesUI } from './gestures-ui'
 import type { Rect } from '@ew/canvas-engine'
 
 /**
@@ -283,7 +284,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     interactionState: () => controller.state,
   }
 
-  return {
+  let detachGestures: () => void = () => {}
+  const handle: CanvasHostHandle = {
     controller,
     gateway,
     sync,
@@ -291,6 +293,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     planes,
     canvasId,
     destroy() {
+      detachGestures()
       unsubscribe()
       // Flush a pending camera persist so the last rest isn't lost.
       if (cameraTimer) {
@@ -303,4 +306,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       app.destroy(true, { children: true })
     },
   }
+  // AI-IMP-019: move driver, selection handles, reorder/flip/label UI.
+  detachGestures = attachGesturesUI(handle, app.canvas)
+  return handle
 }
