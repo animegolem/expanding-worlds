@@ -109,6 +109,9 @@ export {
   type ToolPreview,
 } from './tools/draw-tools'
 
+export { createSnapProvider, SNAP_THRESHOLD_PX } from './snap-provider'
+export { alignPayload, distributePayload, type AlignOp, type DistributeAxis } from './arrange'
+
 /** The default registry with every built-in renderer installed. */
 export function createDefaultRegistry(): RendererRegistry {
   const registry = new RendererRegistry()

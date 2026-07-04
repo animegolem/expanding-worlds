@@ -77,16 +77,16 @@ SetCanvasBackgroundColor rendered beneath the image (§4.4).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] SnapProvider: index of static content edges/centers built at gesture begin; per-axis nearest within zoom-adjusted threshold; returns snappedDelta + guide segments; Alt disables; unit tests for edge/center hits, threshold scaling with zoom, moving-set exclusion.
-- [ ] Guide rendering: overlay-plane lines from provider output during drag, cleared on commit/cancel (visual state never outlives the gesture).
-- [ ] arrange.ts: six align ops + two distribute ops over mixed placement/decoration selections (decoration geometry via its data bounds); each returns one TransformContent payload with prior values for inverse; unit tests incl. two-item distribute no-op and rotated-placement bounds.
-- [ ] Toolbar + shortcuts for align/distribute; disabled below the operable selection sizes (align ≥2, distribute ≥3).
-- [ ] Zoom to fit / zoom to selection via controller.fitToBounds; verify no command_log growth (camera persist is the debounced SetCanvasCamera only).
-- [ ] Set Image as Canvas Background from placement context menu (existing asset) and from file pick (importAsset first); Replace Background; both = one SetCanvasBackground each.
-- [ ] Background edit mode: explicit enter/exit, background not hittable outside the mode, drag/scale ephemerally then one SetCanvasBackground on exit; Escape reverts; Reset Background Transform and Remove Background commands wired.
-- [ ] Background color: picker sets, clear removes (SetCanvasBackgroundColor); renders beneath the image background when both exist (§4.4); e2e asserts layering.
-- [ ] e2e board-tooling.spec.ts: set/edit/reset/replace/remove an image background on the root canvas (§17 item 2, command log asserted per op); align + distribute a 3-item selection (exactly one TransformContent each); drag with snapping showing guides then commit (still one command); Alt-drag bypasses snap; zoom-to-fit and to-selection adjust camera without durable commands.
-- [ ] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
+- [x] SnapProvider: index of static content edges/centers built at gesture begin; per-axis nearest within zoom-adjusted threshold; returns snappedDelta + guide segments; Alt disables; unit tests for edge/center hits, threshold scaling with zoom, moving-set exclusion.
+- [x] Guide rendering: overlay-plane lines from provider output during drag, cleared on commit/cancel (visual state never outlives the gesture).
+- [x] arrange.ts: six align ops + two distribute ops over mixed placement/decoration selections (decoration geometry via its data bounds); each returns one TransformContent payload with prior values for inverse; unit tests incl. two-item distribute no-op and rotated-placement bounds.
+- [x] Toolbar + shortcuts for align/distribute; disabled below the operable selection sizes (align ≥2, distribute ≥3).
+- [x] Zoom to fit / zoom to selection via controller.fitToBounds; verify no command_log growth (camera persist is the debounced SetCanvasCamera only).
+- [x] Set Image as Canvas Background from placement context menu (existing asset) and from file pick (importAsset first); Replace Background; both = one SetCanvasBackground each.
+- [x] Background edit mode: explicit enter/exit, background not hittable outside the mode, drag/scale ephemerally then one SetCanvasBackground on exit; Escape reverts; Reset Background Transform and Remove Background commands wired.
+- [x] Background color: picker sets, clear removes (SetCanvasBackgroundColor); renders beneath the image background when both exist (§4.4); e2e asserts layering.
+- [x] e2e board-tooling.spec.ts: set/edit/reset/replace/remove an image background on the root canvas (§17 item 2, command log asserted per op); align + distribute a 3-item selection (exactly one TransformContent each); drag with snapping showing guides then commit (still one command); Alt-drag bypasses snap; zoom-to-fit and to-selection adjust camera without durable commands.
+- [x] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
 
 ### Acceptance Criteria
 
@@ -107,3 +107,38 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Deviations from "Files to Touch": the planned
+  `packages/canvas-engine/src/background-mode.ts` landed as
+  `apps/desktop/src/renderer/canvas/board-tooling.ts` per the lead
+  brief — the mode is DOM capture-phase pointer interception plus
+  Pixi sprite mutation, which has no clean engine-side seam. Toolbar
+  wiring went into `CanvasHost.svelte` (mount) rather than deeper
+  host.ts changes; host.ts only gained the `__ewDebug.guides()` hook
+  (3 lines + 1 declaration line).
+- Keyboard shortcuts for align/distribute were left out: the lead
+  brief marked them optional and the toolbar buttons carry the gating
+  (align ≥2, distribute ≥3, asserted disabled in e2e).
+- "Set as Background from placement context menu" is a toolbar button
+  enabled when exactly one image-appearance placement is selected
+  (per the lead brief), not a node-menu entry — node-menu.ts was
+  fenced off.
+- Set-from-file in e2e drives the real hidden `<input type=file>` via
+  Playwright setInputFiles and asserts revision +2 (CommitAssetImport
+  + SetCanvasBackground): the import pipeline commits a durable
+  CommitAssetImport even for deduplicated bytes, so "one durable
+  command" holds for the background operation itself, not the import.
+- Edit-mode commit skips the command when settings are unchanged
+  (identical enter/exit is a no-op, zero commands), mirroring the
+  gesture pipeline's no-change behavior.
+- A scene re-render during the edit mode (e.g. a debounced camera
+  persist landing mid-mode) re-applies durable settings to the
+  sprite; refreshBackground() re-applies the pending ephemeral state
+  after each project-changed to self-heal. Window is narrow and
+  untested.
+- Layering e2e asserts `scene.background.color` and `assetId` coexist
+  through replace/remove; the beneath-image rendering is structural
+  (color is the renderer clear color, behind every plane) and was not
+  pixel-asserted.
+- Worktree electron postinstall failed silently (dist missing);
+  repaired from the cached zip + path.txt as documented in the brief.

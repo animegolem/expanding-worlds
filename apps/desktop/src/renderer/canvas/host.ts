@@ -54,6 +54,7 @@ declare global {
       decorations: () => SceneDecoration[]
       decorationEndpoints: (id: string) => { x1: number; y1: number; x2: number; y2: number } | null
       decorationVisible: (id: string) => boolean | null
+      guides: () => SnapGuide[]
     }
   }
 }
@@ -125,6 +126,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
   }
 
+  let lastGuides: SnapGuide[] = []
   let cameraTimer: ReturnType<typeof setTimeout> | null = null
   function persistCameraNow(): void {
     cameraTimer = null
@@ -176,6 +178,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       }
     },
     renderGuides(guides: SnapGuide[]) {
+      lastGuides = guides
       guidesGfx.clear()
       for (const guide of guides) {
         const from =
@@ -315,6 +318,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       return object?.__endpoints ?? null
     },
     decorationVisible: (id: string) => sync.get(id)?.visible ?? null,
+    guides: () => lastGuides.map((guide) => ({ ...guide })),
   }
 
   let detachGestures: () => void = () => {}
