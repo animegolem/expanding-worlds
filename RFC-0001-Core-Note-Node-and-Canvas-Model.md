@@ -169,6 +169,9 @@ Phase 1 MUST establish:
 - A node library data view covering all active nodes with an Unplaced
   filter, so unplaced material remains discoverable.
 
+- Full-text search across notes, tag names, asset filenames, and
+  canvas text, plus a keyboard quick-open over notes and canvases.
+
 - Useful canvas-local text, shape, drawing, line, connector, grouping,
   ordering, and background operations.
 
@@ -1120,6 +1123,22 @@ rules should be tested with the intended artist user rather than frozen
 in this RFC. Architecture MUST still scope every workspace, command,
 query, subscription, and navigation record to one Project ID.
 
+## 8.3 Search and quick-open
+
+Full-text search covers note titles and bodies, tag names, asset
+original filenames, and canvas text decorations. Results open in a
+search workspace tab grouped by kind: a note result opens in the note
+pane, a tag result opens its node result view, a filename match
+surfaces the nodes using that asset, and a canvas-text match opens the
+containing canvas centered on the matching decoration. Trashed records
+are excluded by default.
+
+A keyboard-summoned quick-open MUST navigate by title across notes and
+canvas-owning nodes. Selecting a note opens the note pane; selecting a
+canvas opens it in the workspace. Quick-open matches by title_key and
+does not include phantom titles, which remain reachable through links
+and wiki-link suggestions.
+
 # 9. Deletion, trash, and resource retention
 
 ## 9.1 Lifecycle and Trash
@@ -1399,7 +1418,8 @@ The implementation SHOULD use:
 
 - Explicit schema migrations.
 
-- FTS5 for note and title search.
+- FTS5 indexes covering note titles and bodies, tag names, asset
+  original filenames, and canvas text decorations.
 
 - WAL mode.
 
@@ -1803,7 +1823,9 @@ content.
 and export do not recurse indefinitely.
 
 12. Navigate with per-workspace Back, Forward, Home, and a bookmark
-while preserving viewport and origin context.
+while preserving viewport and origin context; jump to a note and a
+canvas through quick-open; and locate a canvas text decoration through
+full-text search.
 
 13. Click a wiki link and verify immediate note navigation and
 link-table resolution.
@@ -1922,6 +1944,10 @@ The model is successfully implemented when:
 
 - The node library lists every active node with appearance, note
   title, tags, and placement count, and filters to unplaced nodes.
+
+- Full-text search finds notes, tags, asset filenames, and canvas text
+  with kind-appropriate navigation, excluding Trash by default, and
+  quick-open jumps to notes and canvases by title.
 
 - Moving a non-root canvas to Trash preserves referenced nodes and notes
   by default; the root canvas cannot be trashed.
@@ -2179,6 +2205,10 @@ Accepted for the Phase 1 prototype:
 - Align, distribute, flip, zoom to fit and selection, and snapping
   with smart guides are Phase 1 board tooling; auto-arrange and grid
   are deferred with scope in section 6.9.
+
+- Search indexes notes, tag names, asset filenames, and canvas text;
+  quick-open covers notes and canvas-owning nodes and excludes phantom
+  titles.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
