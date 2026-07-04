@@ -229,6 +229,9 @@ Phase 1 does NOT require:
 - Auto-arrange (pack) and grid display or grid snapping, which remain
   the shaped deferred direction described in section 6.9.
 
+- Embedding managed assets in note bodies, which remains the shaped
+  deferred direction described in section 4.2.
+
 # 4. Normative domain model
 
 ## 4.1 Cardinality overview
@@ -292,6 +295,15 @@ identity. Markdown remains the user-editable canonical text.
 
 A trashed note retains its title_key reservation until it is permanently
 purged, so restoration remains deterministic.
+
+A note body is plain Markdown text in Phase 1 and does not embed
+managed assets; images live on canvases, and garbage collection never
+scans prose. **Deferred with scope:** a future embed syntax SHOULD
+parse the way wiki links do, producing indexed embed records that
+reference assets, so reference tracking flows through records rather
+than text scanning; pasting an image into a note would run the staged
+import pipeline and insert a reference; and the editor would render
+embeds as inline decorations over the Markdown source.
 
 ## 4.3 Node
 
@@ -2275,6 +2287,9 @@ Accepted for the Phase 1 prototype:
 
 - Exports reimport losslessly into a new project directory with
   preserved identities; merge remains out of scope.
+
+- Note bodies are plain text in Phase 1; asset embedding is deferred
+  with a records-based shape that never requires scanning prose.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
