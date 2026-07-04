@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import BoardToolbar from './BoardToolbar.svelte'
   import DecorationToolbar from './DecorationToolbar.svelte'
+  import { attachBoardTooling, type BoardTooling } from './canvas/board-tooling'
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
@@ -16,6 +18,7 @@
   let importError = $state<string | null>(null)
   let handle = $state<CanvasHostHandle | null>(null)
   let ui = $state<DecorationsUi | null>(null)
+  let tooling = $state<BoardTooling | null>(null)
 
   onMount(() => {
     let mounted: CanvasHostHandle | null = null
@@ -36,6 +39,7 @@
         surfaces = attachImportSurfaces(h, element, notify)
         menu = attachNodeMenu(h, element, notify)
         ui = createDecorationsUi(h)
+        tooling = attachBoardTooling(h, element, notify)
         textEntry = attachTextEntry(h, element)
         handle = h
         onready?.(h, element)
@@ -48,6 +52,7 @@
       surfaces?.destroy()
       menu?.destroy()
       textEntry?.destroy()
+      tooling?.destroy()
       ui?.destroy()
       mounted?.destroy()
     }
@@ -57,6 +62,9 @@
 <div class="canvas-host" data-testid="canvas-host" bind:this={element}>
   {#if handle && ui}
     <DecorationToolbar {handle} {ui} />
+  {/if}
+  {#if handle && tooling}
+    <BoardToolbar {handle} {tooling} />
   {/if}
   {#if error}
     <p class="canvas-error" role="alert">Canvas failed to start: {error}</p>
