@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.5          | 3 July 2026      |
+| Accepted for Phase 1 | 0.6          | 3 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -46,7 +46,7 @@ UI composition remains subject to prototype feedback.
 
 12. Rendering and performance
 
-13. Provisional desktop technology direction
+13. Desktop technology direction
 
 14. Graph and data views
 
@@ -1610,10 +1610,17 @@ authoritative project model.
 
 ## 12.3 Canvas spike
 
-The leading renderer choice is PixiJS. Before locking it, the project
-will compare PixiJS and Konva through the same focused spike.
+**Resolved (rev 0.6):** the spike was executed as AI-EPIC-001 and
+decided for **PixiJS 8**. On GPU-accelerated Chromium, PixiJS held the
+vsync floor with p95 ≤ 9.3 ms across every scenario below, while
+Konva's hit-graph and Canvas2D ceiling showed frame drops at the
+2,000-node pin scenario, and Konva's expected editor-interaction
+savings did not materialize against this document's transform
+semantics. Full evidence, caveats (software-GL machines), and Konva
+revival conditions: RAG/spike-reports/renderer-comparison.md. The
+scenario list below is retained as the workload definition it proved.
 
-The spike SHOULD include:
+The spike covered:
 
 - A 20,000 by 12,000 tiled map.
 
@@ -1646,22 +1653,28 @@ The spike SHOULD include:
 
 - One durable command per completed pointer gesture.
 
-The decision should weigh implementation effort as well as frame time
-and memory. PixiJS is preferred if its control and rendering headroom
-justify the additional editor-interaction work. Konva is acceptable if
-it meets the real workload and materially reduces implementation risk.
+The decision weighed implementation effort as well as frame time and
+memory, per the original rule: PixiJS if its control and rendering
+headroom justify the additional editor-interaction work; Konva if it
+met the real workload and materially reduced implementation risk. The
+spike showed the headroom is real and the risk reduction is not.
 
-# 13. Provisional desktop technology direction
+Carry-forwards for the canvas engine: preload or asynchronously
+upload textures on canvas swap; use BitmapText or level-of-detail for
+dense pin labels; keep texture ownership explicit and outside global
+texture caches; document a minimum requirement of hardware-accelerated
+graphics, with no Canvas2D fallback renderer planned.
 
-The following choices are accepted unless the renderer spike produces
-contrary evidence:
+# 13. Desktop technology direction
+
+The following choices are accepted:
 
 | **Layer** | **Direction** | **Notes** |
 |----|----|----|
 | Desktop shell | Electron | Ships a consistent Chromium runtime and supports a future TypeScript server ecosystem. |
 | Language | TypeScript | Shared domain, command, persistence-contract, and future protocol definitions. |
 | Application UI | Svelte 5 | Owns panes, tabs, dialogs, inspectors, note shell, search, and data views. |
-| Canvas renderer | PixiJS preferred; Konva spike | Renderer remains framework-independent behind a Canvas Controller. |
+| Canvas renderer | PixiJS 8 (decided by renderer spike AI-EPIC-001) | Renderer remains framework-independent behind a Canvas Controller. |
 | Note editor | CodeMirror 6 | Markdown source with wiki-link parsing and future collaborative bindings. |
 | Persistence | SQLite | No PostgreSQL or Docker dependency in Phase 1. |
 | Assets | Managed project files | Copy originals into project storage; keep derivatives separate. |
@@ -1685,7 +1698,7 @@ A Canvas Controller owns:
 
 - Highlight mode.
 
-- Incremental synchronization to PixiJS or Konva.
+- Incremental synchronization to PixiJS.
 
 - Shared placement and decoration render ordering.
 
@@ -2158,22 +2171,21 @@ canvas-local visibility and view filters.
 
 13. Exact-node and exact-placement link syntax.
 
-14. Final PixiJS versus Konva choice after the renderer spike.
-
-15. How far the node library grows beyond the Phase 1 nodes-only list:
+14. How far the node library grows beyond the Phase 1 nodes-only list:
 multi-facet sorting, richer data views, and note browsing deserve a
 dedicated design pass informed by prototype use.
 
-16. Label zoom behavior (fixed screen size versus scaling with the
-canvas) and label styling, to be settled during the renderer spike.
+15. Label zoom behavior (fixed screen size versus scaling with the
+canvas) and label styling, to be settled during canvas-engine
+prototyping.
 
-17. Whether note-body preview cards later join dot, icon, and image as
+16. Whether note-body preview cards later join dot, icon, and image as
 an on-canvas appearance direction. The expected shape is a fourth
 appearance kind rendering the attached note's title and a body excerpt
 inside fixed card chrome, updating with note edits and reusing the
 placement, label, and render-order machinery unchanged.
 
-18. When the web-reference asset kind lands, its metadata fetch
+17. When the web-reference asset kind lands, its metadata fetch
 pipeline, overlay playback behavior, and the configuration surface for
 the optional media-backup adapter.
 
@@ -2329,7 +2341,9 @@ Accepted for the Phase 1 prototype:
 - Electron, TypeScript, Svelte 5, and CodeMirror 6 are accepted
   directions.
 
-- PixiJS is preferred, subject to a PixiJS-versus-Konva spike.
+- PixiJS 8 is the canvas renderer, decided by the AI-EPIC-001 spike;
+  evidence and Konva revival conditions live in
+  RAG/spike-reports/renderer-comparison.md.
 
 - The graph/data workspace is separate from the art canvas.
 

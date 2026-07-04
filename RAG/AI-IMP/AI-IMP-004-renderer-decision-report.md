@@ -5,12 +5,12 @@ tags:
   - Implementation
   - spike
   - decision
-kanban_status: planned
+kanban_status: completed
 depends_on: AI-EPIC-001, AI-IMP-002, AI-IMP-003
 parent_epic: [[AI-EPIC-001-renderer-spike]]
 confidence_score: 0.9
 date_created: 2026-07-03
-date_completed:
+date_completed: 2026-07-03
 ---
 
 # AI-IMP-004-renderer-decision-report
@@ -52,12 +52,12 @@ result in the epic and an AI-LOG.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Aggregate both result sets into one comparison table with identical scenario keys.
-- [ ] Summarize implementation-effort notes from 002 and 003.
-- [ ] Apply the §12.3 decision rule and write the recommendation with rationale and revival conditions.
-- [ ] Amend the RFC: §13 layer table, §12.3 outcome note, remove open question 14, update decision summary, bump revision to 0.6.
-- [ ] Update EPIC-001 frontmatter and Implementation Breakdown; regenerate INDEX.md.
-- [ ] Write the session AI-LOG.
+- [x] Aggregate both result sets into one comparison table with identical scenario keys.
+- [x] Summarize implementation-effort notes from 002 and 003.
+- [x] Apply the §12.3 decision rule and write the recommendation with rationale and revival conditions.
+- [x] Amend the RFC: §13 layer table, §12.3 outcome note, remove open question 14, update decision summary, bump revision to 0.6.
+- [x] Update EPIC-001 frontmatter and Implementation Breakdown; regenerate INDEX.md.
+- [x] Write the session AI-LOG.
 
 ### Acceptance Criteria
 
@@ -76,3 +76,10 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Completed 2026-07-03. Deviation from plan: after review of the agent
+runs, headless numbers were found to bias against WebGL (SwiftShader
+software GL), so both suites were re-run headed on real GPU; the
+report presents all four runs and bases the decision on the GPU runs
+with the software-GL caveat recorded. Benchmark JSON preserved under
+RAG/spike-reports/data/ since spike/results/ is gitignored.

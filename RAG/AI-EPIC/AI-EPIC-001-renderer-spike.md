@@ -6,8 +6,8 @@ tags:
   - renderer
   - spike
 date_created: 2026-07-03
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-03
+kanban_status: completed
 AI_IMP_spawned:
   - "[[AI-IMP-001-spike-harness-and-scenario]]"
   - "[[AI-IMP-002-pixijs-spike-implementation]]"
@@ -59,12 +59,12 @@ findings transfer, code does not.
 
 ### Functional Requirements
 
-- [ ] FR-1: A harness generates deterministic synthetic fixtures: tiled oversized map, 300 images, 1,000 pins, decoration sets.
-- [ ] FR-2: The harness records frame time (avg/p95) and JS heap per scenario and exports a comparison table.
-- [ ] FR-3: A PixiJS implementation covers every §12.3 scenario.
-- [ ] FR-4: A Konva implementation covers the same scenarios with identical fixtures.
-- [ ] FR-5: A decision report compares results and implementation effort and recommends one renderer.
-- [ ] FR-6: The RFC is amended to record the decision (open question 14 closed).
+- [x] FR-1: A harness generates deterministic synthetic fixtures: tiled oversized map, 300 images, 1,000 pins, decoration sets.
+- [x] FR-2: The harness records frame time (avg/p95) and JS heap per scenario and exports a comparison table.
+- [x] FR-3: A PixiJS implementation covers every §12.3 scenario.
+- [x] FR-4: A Konva implementation covers the same scenarios with identical fixtures.
+- [x] FR-5: A decision report compares results and implementation effort and recommends one renderer.
+- [x] FR-6: The RFC is amended to record the decision (open question 14 closed).
 
 ### Non-Functional Requirements
 
@@ -76,7 +76,7 @@ findings transfer, code does not.
 
 ## Implementation Breakdown
 
-- [[AI-IMP-001-spike-harness-and-scenario]] — harness, fixtures, metrics — planned
-- [[AI-IMP-002-pixijs-spike-implementation]] — PixiJS scenario build — planned
-- [[AI-IMP-003-konva-spike-implementation]] — Konva scenario build — planned
-- [[AI-IMP-004-renderer-decision-report]] — comparison, decision, RFC amendment — planned
+- [[AI-IMP-001-spike-harness-and-scenario]] — harness, fixtures, metrics — completed 2026-07-03
+- [[AI-IMP-002-pixijs-spike-implementation]] — PixiJS scenario build — completed 2026-07-03 (delegated worktree agent, reviewed)
+- [[AI-IMP-003-konva-spike-implementation]] — Konva scenario build — completed 2026-07-03 (delegated worktree agent, reviewed)
+- [[AI-IMP-004-renderer-decision-report]] — decision: PixiJS 8; RFC bumped to rev 0.6 — completed 2026-07-03

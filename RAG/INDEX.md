@@ -6,25 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 7 | 3 |
+| In Progress | 0 | 0 |
+| Planned | 7 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 0 | 1 |
+| Completed | 1 | 4 |
 | **Total** | **8** | **4** |
-
-## In Progress
-
-### [[AI-EPIC-001-renderer-spike|EPIC-001: Renderer spike]]
-> RFC-0001 open question 14 leaves the canvas renderer undecided between
-
-**IMPs:**
-- [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
-- [[AI-IMP-002-pixijs-spike-implementation|IMP-002]] PixiJS adapter covering the full spike scenario — planned
-- [[AI-IMP-003-konva-spike-implementation|IMP-003]] Konva adapter covering the full spike scenario — planned
-- [[AI-IMP-004-renderer-decision-report|IMP-004]] Renderer comparison report and RFC decision — planned
-
----
 
 ## Planned
 
@@ -69,7 +56,9 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2340 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2354 LOC)
+- spike/src/adapters/konva/index.ts (735 LOC)
+- spike/src/adapters/pixi/index.ts (664 LOC)
 
 ### > 300 LOC
 
@@ -77,3 +66,14 @@ Generated from tracked files; binary assets excluded.
 
 ---
 
+## Completed
+<details>
+<summary>1 EPICs, 4 IMPs completed</summary>
+
+- [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
+  - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
+  - [[AI-IMP-002-pixijs-spike-implementation|IMP-002]] PixiJS adapter covering the full spike scenario — completed
+  - [[AI-IMP-003-konva-spike-implementation|IMP-003]] Konva adapter covering the full spike scenario — completed
+  - [[AI-IMP-004-renderer-decision-report|IMP-004]] Renderer comparison report and RFC decision — completed
+
+</details>
