@@ -644,6 +644,10 @@ note body.
 30. Note-body edits are undone through editor-local history and never
 enter the structural undo stack.
 
+31. The structural undo stack is project-session-scoped, shared across
+workspace tabs, and in-memory; committed command metadata persists as
+a non-replayable log.
+
 # 6. Creation, reuse, and promotion flows
 
 ## 6.1 Drop an image onto a canvas
@@ -1282,6 +1286,25 @@ Structural undo emits an inverse command through the same command path.
 It does not pop arbitrary database state or treat the relational store
 as a disposable event-sourced projection.
 
+The structural undo stack is scoped to one open project session and is
+shared across that project's workspace tabs; there is no per-tab undo
+over shared project state. The stack is held in memory and does not
+survive application restart. Recoverable history across sessions is
+Trash's responsibility, and project time travel remains future work.
+Committing any new durable command clears the redo stack.
+
+Committed commands persist a lightweight metadata log recording
+command ID, type, version, issued_at, and resulting project_revision.
+The log supports provenance references such as trashed_by_command_id
+and diagnostics; it is not a replayable event source, and pruning it
+never affects domain records.
+
+When the effect of an undo or redo lies on a canvas other than the
+active one, the workspace navigates to that canvas and centers and
+highlights the affected content, entering navigation history like any
+other navigation. A setting MAY offer applying such undos in place
+with a non-blocking notice instead.
+
 Note-body edits do not enter the structural undo stack. Inside a
 focused editor, undo is CodeMirror's fine-grained local history, which
 MAY travel back through commits made during the same editing session.
@@ -1725,7 +1748,9 @@ make one node's note independent.
 and a placement-anchored connector.
 
 19. Reorder, lock, hide, group, move, ungroup, and undo decorations;
-confirm connectors remain visual rather than semantic edges.
+confirm connectors remain visual rather than semantic edges. Undo a
+move made on a different canvas and verify the workspace navigates to
+and highlights the affected content.
 
 20. Delete a placement; move a canvas, node, and note to Trash; inspect
 impact summaries; restore the trashed records; and verify preserved
@@ -1862,6 +1887,13 @@ The model is successfully implemented when:
 - Note-body edits undo through editor-local history only; structural
   undo never reverts prose, while note rename remains structurally
   undoable.
+
+- One structural undo stack serves all workspace tabs of an open
+  project session, is in-memory only, and clears redo on any new
+  command; command metadata persists as a non-replayable log.
+
+- Undoing a change on an inactive canvas navigates to and highlights
+  the affected content.
 
 - Canvas cycles, including self-reference, remain legal and bounded by
   visited-set traversal.
@@ -2029,6 +2061,10 @@ Accepted for the Phase 1 prototype:
 - Note text commits as debounced, gesture-style UpdateNote commands
   with forced flush before body-reading commands; body edits are
   excluded from structural undo and owned by editor-local history.
+
+- Structural undo is project-global per session and in-memory, with a
+  persisted command metadata log; cross-canvas undo navigates to its
+  effect, with apply-in-place available as a setting.
 
 - One project service holds the authoritative project write lock.
 
