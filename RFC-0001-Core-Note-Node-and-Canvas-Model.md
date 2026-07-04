@@ -3,9 +3,9 @@
 Product semantics, persistence boundaries, and provisional desktop
 architecture for the Phase 1 prototype
 
-| **STATUS**  | **REVISION** | **LAST UPDATED** |
-|-------------|--------------|------------------|
-| In revision | 0.5-draft    | 1 July 2026      |
+| **STATUS**           | **REVISION** | **LAST UPDATED** |
+|----------------------|--------------|------------------|
+| Accepted for Phase 1 | 0.5          | 3 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1372,7 +1372,11 @@ Representative commands include:
 
 - CreateTag and AssignTagToNode.
 
-- SetCanvasBackground.
+- SetCanvasBackground and SetCanvasBackgroundColor.
+
+- SetPlacementLabelVisibility and FlipPlacement.
+
+- AlignSelection and DistributeSelection.
 
 - CreateDecoration and UpdateDecoration.
 
@@ -2164,7 +2168,10 @@ dedicated design pass informed by prototype use.
 canvas) and label styling, to be settled during the renderer spike.
 
 17. Whether note-body preview cards later join dot, icon, and image as
-an on-canvas appearance direction.
+an on-canvas appearance direction. The expected shape is a fourth
+appearance kind rendering the attached note's title and a body excerpt
+inside fixed card chrome, updating with note edits and reusing the
+placement, label, and render-order machinery unchanged.
 
 18. When the web-reference asset kind lands, its metadata fetch
 pipeline, overlay playback behavior, and the configuration surface for
