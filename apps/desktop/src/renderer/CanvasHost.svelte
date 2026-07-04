@@ -1,29 +1,46 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import DecorationToolbar from './DecorationToolbar.svelte'
+  import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
+  import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
 
   let element: HTMLDivElement
   let error = $state<string | null>(null)
+  let handle = $state<CanvasHostHandle | null>(null)
+  let ui = $state<DecorationsUi | null>(null)
 
   onMount(() => {
-    let handle: CanvasHostHandle | null = null
+    let mounted: CanvasHostHandle | null = null
+    let textEntry: TextEntryController | null = null
     let disposed = false
     mountCanvasHost(element)
       .then((h) => {
-        if (disposed) h.destroy()
-        else handle = h
+        if (disposed) {
+          h.destroy()
+          return
+        }
+        mounted = h
+        ui = createDecorationsUi(h)
+        textEntry = attachTextEntry(h, element)
+        handle = h
       })
       .catch((err: unknown) => {
         error = err instanceof Error ? err.message : String(err)
       })
     return () => {
       disposed = true
-      handle?.destroy()
+      textEntry?.destroy()
+      ui?.destroy()
+      mounted?.destroy()
     }
   })
 </script>
 
 <div class="canvas-host" data-testid="canvas-host" bind:this={element}>
+  {#if handle && ui}
+    <DecorationToolbar {handle} {ui} />
+  {/if}
   {#if error}
     <p class="canvas-error" role="alert">Canvas failed to start: {error}</p>
   {/if}

@@ -75,10 +75,10 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (304 LOC)
 - packages/persistence/src/queries-structure.ts (301 LOC)
 - packages/persistence/src/handlers/decorations.ts (301 LOC)
 

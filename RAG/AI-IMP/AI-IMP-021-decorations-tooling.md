@@ -81,17 +81,17 @@ already skips them (018), and hidden decorations don't render.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] decoration-data.ts: types + runtime validators for all kinds above; unit tests for accept/reject; exported defaults (stroke, strokeWidth, fontSize ratio for legible-at-zoom).
-- [ ] Shape/line/arrow/freehand renderers: Graphics-based, world-space geometry from data, hidden ⇒ not rendered, selected bounds reported for hit-test/handles; unit tests per kind.
-- [ ] Text renderer: world-space Pixi text at data.fontSize; text stored at data.text (FTS contract preserved — add a persistence-side test asserting a canvas_text_fts hit for a decoration created with the new shape).
-- [ ] Connector renderer: free endpoints from data; anchored endpoints track placement centers live during placement transforms; deleting an anchored placement leaves the connector free at last position (domain already releases anchors — assert the renderer picks up the released point).
-- [ ] Tool modes: toolbar-selected create modes for text/rect/ellipse/triangle/line/arrow/connector/freehand; drag defines geometry; Escape cancels with zero commands; each completion issues exactly one CreateDecoration (fake-gateway tests).
-- [ ] Text entry overlay: click-to-place contenteditable positioned/scaled with camera; commit on blur/Enter creates decoration with legible-at-current-zoom fontSize; empty text creates nothing; editing an existing text decoration re-opens the overlay and commits one UpdateDecoration.
-- [ ] Connector anchor targeting: dragging an endpoint over a placement highlights it and sets anchor on commit (UpdateDecoration set anchors on create-follow-up is NOT allowed — CreateDecoration carries anchors); dropping on empty space leaves a free point.
-- [ ] Group/Ungroup on selection via existing commands; selecting a member selects the group; group drag moves members through one TransformContent; ungroup restores individual selection; tests.
-- [ ] Lock/hide/show controls issuing UpdateDecoration; locked items unselectable by click/marquee (verify against 018 hit-test skip), hidden items invisible but restorable via a simple hidden-items list in the toolbar.
-- [ ] e2e decorations.spec.ts: draw one of each kind (asserting one command each in the log), anchor a connector to a placement, drag the placement → connector follows, group two shapes and move them as one command, lock one and verify marquee skips it, hide/show round-trip.
-- [ ] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
+- [x] decoration-data.ts: types + runtime validators for all kinds above; unit tests for accept/reject; exported defaults (stroke, strokeWidth, fontSize ratio for legible-at-zoom).
+- [x] Shape/line/arrow/freehand renderers: Graphics-based, world-space geometry from data, hidden ⇒ not rendered, selected bounds reported for hit-test/handles; unit tests per kind.
+- [x] Text renderer: world-space Pixi text at data.fontSize; text stored at data.text (FTS contract preserved — add a persistence-side test asserting a canvas_text_fts hit for a decoration created with the new shape).
+- [x] Connector renderer: free endpoints from data; anchored endpoints track placement centers live during placement transforms; deleting an anchored placement leaves the connector free at last position (domain already releases anchors — assert the renderer picks up the released point).
+- [x] Tool modes: toolbar-selected create modes for text/rect/ellipse/triangle/line/arrow/connector/freehand; drag defines geometry; Escape cancels with zero commands; each completion issues exactly one CreateDecoration (fake-gateway tests).
+- [x] Text entry overlay: click-to-place contenteditable positioned/scaled with camera; commit on blur/Enter creates decoration with legible-at-current-zoom fontSize; empty text creates nothing; editing an existing text decoration re-opens the overlay and commits one UpdateDecoration.
+- [x] Connector anchor targeting: dragging an endpoint over a placement highlights it and sets anchor on commit (UpdateDecoration set anchors on create-follow-up is NOT allowed — CreateDecoration carries anchors); dropping on empty space leaves a free point.
+- [x] Group/Ungroup on selection via existing commands; selecting a member selects the group; group drag moves members through one TransformContent; ungroup restores individual selection; tests.
+- [x] Lock/hide/show controls issuing UpdateDecoration; locked items unselectable by click/marquee (verify against 018 hit-test skip), hidden items invisible but restorable via a simple hidden-items list in the toolbar.
+- [x] e2e decorations.spec.ts: draw one of each kind (asserting one command each in the log), anchor a connector to a placement, drag the placement → connector follows, group two shapes and move them as one command, lock one and verify marquee skips it, hide/show round-trip.
+- [x] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
 
 ### Acceptance Criteria
 
@@ -113,3 +113,57 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **File-plan deviations from "Files to Touch".** The freehand
+  renderer is `renderers/decorations/path.ts` (the kind column value
+  is `path`, not `freehand`). The text-entry overlay lives in
+  `apps/desktop/src/renderer/canvas/text-entry.ts`, not in
+  `packages/canvas-engine/src/tools/` — it is a DOM contenteditable
+  (§12.2) and the engine package stays DOM-free; the engine side only
+  exposes the `ToolManager.onPlaceText` hook. Selection controls
+  (group/lock/hide + hidden list) live in a new
+  `apps/desktop/src/renderer/canvas/decorations-ui.ts` +
+  `DecorationToolbar.svelte` rather than inside `host.ts`, keeping
+  host edits minimal.
+- **Two out-of-fence test/type-only edits** (no fenced source
+  changed): (1) `packages/canvas-engine/src/scene-sync.test.ts`
+  asserted the fallback-stub label `stub:decoration:shape`; once a
+  real `decoration:shape` renderer is registered in
+  `createDefaultRegistry()` (this ticket's job) the label is
+  `decoration:<id>` — updated the two assertions. (2)
+  `apps/desktop/e2e/canvas.spec.ts` re-declares the global
+  `window.__ewDebug` type; TS2717 requires duplicate declarations to
+  be identical, so the (allowed) additive debug hooks in `host.ts`
+  forced the mirrored declaration update. No test logic changed in
+  either file.
+- **019 move driver not merged into this branch.** Group drag through
+  the normal gesture pipeline could not be exercised end-to-end here
+  (no move driver is registered on this branch); the e2e issues the
+  single TransformContent for both group members directly and asserts
+  revision +1 plus data movement. Group-member selection expansion
+  (click one member → whole group selected) IS e2e-verified, so once
+  019's driver merges, a group drag flows through one GestureSession
+  → one TransformContent by construction. Recommend the lead re-runs
+  a manual group drag after merging 018/019/021.
+- **Anchor-release renderer pickup is unit-tested, not e2e.** The
+  domain writes freed endpoints to `data.start`/`data.end` (see
+  `releaseConnectorAnchors`), NOT into x1/y1/x2/y2; the connector
+  renderer resolves live anchor > freed fallback > x1..y2, and the
+  fallback path is asserted in
+  `renderers/decorations/decorations.test.ts`.
+- **Text-edit focus race in e2e (fixed).** The overlay focuses itself
+  in a `setTimeout(0)` after the placing pointer event; typing could
+  start before focus landed. The edit overlay now opens with the
+  existing text selected (type-to-replace) and the spec waits for
+  `document.activeElement` to be the overlay before typing.
+- **Electron binary missing in the agent worktree.** `pnpm install`
+  left `node_modules/.pnpm/electron@39.8.10/.../dist` without the
+  app bundle and `install.js` no-oped silently; copied `dist/` +
+  `path.txt` from the parent repo's identical electron version to run
+  the e2e suite. Environment issue only, no source impact.
+- **Toolbar refresh seam friction.** The scene handle exposes no
+  "scene applied" event, so the toolbar refreshes its hidden-items /
+  selection state from `project.onChanged` plus a 120 ms trailing
+  timeout (the host's re-query is async). Works, but a
+  `sync.onApplied`-style hook would remove the timing coupling —
+  noted for the lead's integration pass.
