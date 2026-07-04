@@ -8,4 +8,5 @@ import { createNoopAdapter } from './adapters/noop'
  */
 export const adapters: Record<string, AdapterFactory> = {
   noop: createNoopAdapter,
+  konva: () => import('./adapters/konva').then((m) => m.createKonvaAdapter()),
 }
