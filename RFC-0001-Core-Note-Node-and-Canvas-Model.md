@@ -873,7 +873,22 @@ deferred together; when revisited, the grid SHOULD be a canvas
 presentation setting whose spacing feeds the same snapping machinery
 specified above.
 
-## 6.10 Materialize a phantom note
+## 6.10 Place existing material
+
+The node library and the Uses sidebar are placement sources. A node
+MAY be dragged from the node library onto the active canvas, creating
+one placement at the drop position; a Place on Current Canvas action
+creates one placement at the view center. Both are ordinary placement
+creation and follow section 6.3 semantics.
+
+For a note with zero nodes, the note pane and the Uses sidebar's
+Unplaced group offer Place on Current Canvas, which creates a node
+with the default dot appearance, attaches the note, and creates a
+placement as one user-level transaction: the same semantics as phantom
+Create and Place, applied to an existing note. Because labels default
+to visible, the placed dot immediately shows the note's title.
+
+## 6.11 Materialize a phantom note
 
 Writing [[Title]] for a title that does not yet exist is itself a
 creation flow. The unresolved link accumulates alongside any other
@@ -1018,7 +1033,8 @@ model:
 
 5. Show node tags when present.
 
-6. Include an Unplaced group for nodes with no placements.
+6. Include an Unplaced group for nodes with no placements, each
+offering Place on Current Canvas per section 6.10.
 
 Selecting a canvas group may open that canvas with all matching
 placements highlighted. Selecting a node group may highlight all
@@ -1814,7 +1830,9 @@ controls.
 8. Create flat project tags, assign different tags to the two nodes,
 rename a tag, and open its result view.
 
-9. Place the same node more than once.
+9. Place the same node more than once, including by dragging it from
+the node library onto the canvas, and place a zero-node note from the
+Uses sidebar and verify the labeled dot appears.
 
 10. Open a node's canvas, persist it immediately, and add nested
 content.
@@ -1948,6 +1966,9 @@ The model is successfully implemented when:
 - Full-text search finds notes, tags, asset filenames, and canvas text
   with kind-appropriate navigation, excluding Trash by default, and
   quick-open jumps to notes and canvases by title.
+
+- Nodes place from the library by drag or Place on Current Canvas, and
+  a zero-node note places as a labeled dot node in one transaction.
 
 - Moving a non-root canvas to Trash preserves referenced nodes and notes
   by default; the root canvas cannot be trashed.
@@ -2209,6 +2230,10 @@ Accepted for the Phase 1 prototype:
 - Search indexes notes, tag names, asset filenames, and canvas text;
   quick-open covers notes and canvas-owning nodes and excludes phantom
   titles.
+
+- The node library and Uses sidebar are placement sources: library
+  drag and Place on Current Canvas create placements, and zero-node
+  notes embody as labeled dot nodes in one transaction.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
