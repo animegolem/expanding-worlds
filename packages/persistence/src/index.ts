@@ -21,6 +21,14 @@ export {
 export { Dispatcher, type CommandContext } from './dispatcher'
 export { QueryRegistry, registerCoreQueries, type QueryFn, type QueryResult } from './queries'
 export { registerNodeHandlers } from './handlers/nodes'
+export { registerNoteHandlers } from './handlers/notes'
+export { bindUnresolvedMatching, refreshNoteLinks } from './links'
+export {
+  registerNoteQueries,
+  type PhantomReference,
+  type PhantomView,
+  type TitleSuggestion,
+} from './queries-notes'
 export {
   openProjectService,
   type ProjectInfo,
