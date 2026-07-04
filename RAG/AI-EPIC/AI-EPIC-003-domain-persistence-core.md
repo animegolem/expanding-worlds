@@ -7,8 +7,16 @@ tags:
   - persistence
 date_created: 2026-07-03
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
+  - AI-IMP-009
+  - AI-IMP-010
+  - AI-IMP-011
+  - AI-IMP-012
+  - AI-IMP-013
+  - AI-IMP-014
+  - AI-IMP-015
+  - AI-IMP-016
 ---
 
 # AI-EPIC-003-domain-persistence-core
@@ -74,4 +82,23 @@ memory per invariant 31.
 
 ## Implementation Breakdown
 
-IMPs to be cut when this epic activates.
+- AI-IMP-009 (lead): SQLite binding decision, migrations, full §4
+  schema, UUIDv7/short codes, atomic project create, writer lock.
+- AI-IMP-010 (lead): command envelope/dispatcher/versioning, metadata
+  log, events, typed queries, Project API over utility IPC.
+- AI-IMP-011 (agent): note commands, link records, re-resolution
+  sweep, phantom projection, title conflicts.
+- AI-IMP-012 (agent): node/canvas/placement/tag/decoration commands,
+  render_order.
+- AI-IMP-013 (agent): DeletePlacement + bare-node rule, trash/restore/
+  purge aggregates, broken links, GC eligibility.
+- AI-IMP-014 (agent): staged asset import, content-addressed store,
+  dedupe, derivative queue.
+- AI-IMP-015 (agent): FTS5 corpora, search + quick-open queries,
+  index rebuild primitive.
+- AI-IMP-016 (lead): startup recovery, cross-process lock and
+  kill-during-import tests, consolidated §5 invariant suite, epic
+  close.
+
+Waves: 009→010 sequential (lead); then 011/012/014 in parallel
+worktrees; then 013/015 in parallel; 016 closes on merged master.
