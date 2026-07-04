@@ -21,6 +21,20 @@ export {
 export { Dispatcher, type CommandContext } from './dispatcher'
 export { QueryRegistry, registerCoreQueries, type QueryFn, type QueryResult } from './queries'
 export { registerNodeHandlers } from './handlers/nodes'
+export { registerCanvasHandlers } from './handlers/canvases'
+export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'
+export { registerTagHandlers } from './handlers/tags'
+export { registerDecorationHandlers } from './handlers/decorations'
+export {
+  compareOrder,
+  nextRenderOrder,
+  orderBetween,
+  orderedCanvasContent,
+  rebalanceCanvas,
+  RENDER_ORDER_GAP,
+  type OrderedItem,
+} from './render-order'
+export { registerStructureQueries, type CanvasContentItem } from './queries-structure'
 export {
   openProjectService,
   type ProjectInfo,

@@ -87,17 +87,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Node handlers: AttachNoteToNode (rejects second note — invariant 3 test), DetachNoteFromNode leaves note and other nodes untouched (invariants 4, 12 test with two nodes sharing one note), MakeNoteIndependent copies body under new unique title returning §7.7 conflict shape on collision, SetNodeAppearance (dot/icon/image referencing asset id, non-destructive crop fields §4.6).
-- [ ] CreateCanvas: one per node (invariant 10 rejection test), persisted immediately with camera defaults; optional background asset + independent background color fields (§4.4); SetCanvasBackground/SetCanvasBackgroundColor handlers with inverse.
-- [ ] Canvas cycles legal: placing a node on its own canvas commits cleanly (invariant 18 test); containment queries use visited sets (invariant 19 test on a cycle).
-- [ ] Placement handlers: CreatePlacement (FK enforcement, invariant 7), several placements of one node on one canvas (invariant 9 test), MovePlacement/ResizePlacement/RotatePlacement single-command transforms, SetPlacementLabelVisibility default-visible (§4.5), FlipPlacement.
-- [ ] render-order.ts: midpoint allocation shared placements+decorations per canvas, deterministic total order with UUID tiebreak, transactional rebalance preserving visible order (invariant 21 data-level test with interleaved kinds).
-- [ ] Tag handlers: CreateTag (name_key unique, structured conflict), RenameTag preserves assignments (§4.8 test), AssignTagToNode/UnassignTagFromNode M:N node-only.
-- [ ] Decoration handlers: CreateDecoration/UpdateDecoration/DeleteDecoration for all §4.9 kinds, GroupDecorations/UngroupDecorations (canvas-local, movement-only), connector anchor to placement follows §4.9: deleting the anchored placement frees the endpoint at last position rather than deleting the connector (test, coordinated with DeletePlacement's core in this ticket's scope ONLY for anchor release logic exposed as a helper — 013 calls it).
-- [ ] Invariant 16 test: decorations expose no note/tag/link capability in schema or API surface.
-- [ ] Queries: canvas contents (ordered placements + decorations), node library with Unplaced filter (§14.1), tag result view data (§4.8); tests.
-- [ ] All handlers return inverses; dispatcher round-trip test per handler family.
-- [ ] `pnpm check` green from fresh `pnpm -r build`; commit on worktree branch.
+- [x] Node handlers: AttachNoteToNode (rejects second note — invariant 3 test), DetachNoteFromNode leaves note and other nodes untouched (invariants 4, 12 test with two nodes sharing one note), MakeNoteIndependent copies body under new unique title returning §7.7 conflict shape on collision, SetNodeAppearance (dot/icon/image referencing asset id, non-destructive crop fields §4.6).
+- [x] CreateCanvas: one per node (invariant 10 rejection test), persisted immediately with camera defaults; optional background asset + independent background color fields (§4.4); SetCanvasBackground/SetCanvasBackgroundColor handlers with inverse.
+- [x] Canvas cycles legal: placing a node on its own canvas commits cleanly (invariant 18 test); containment queries use visited sets (invariant 19 test on a cycle).
+- [x] Placement handlers: CreatePlacement (FK enforcement, invariant 7), several placements of one node on one canvas (invariant 9 test), MovePlacement/ResizePlacement/RotatePlacement single-command transforms, SetPlacementLabelVisibility default-visible (§4.5), FlipPlacement.
+- [x] render-order.ts: midpoint allocation shared placements+decorations per canvas, deterministic total order with UUID tiebreak, transactional rebalance preserving visible order (invariant 21 data-level test with interleaved kinds).
+- [x] Tag handlers: CreateTag (name_key unique, structured conflict), RenameTag preserves assignments (§4.8 test), AssignTagToNode/UnassignTagFromNode M:N node-only.
+- [x] Decoration handlers: CreateDecoration/UpdateDecoration/DeleteDecoration for all §4.9 kinds, GroupDecorations/UngroupDecorations (canvas-local, movement-only), connector anchor to placement follows §4.9: deleting the anchored placement frees the endpoint at last position rather than deleting the connector (test, coordinated with DeletePlacement's core in this ticket's scope ONLY for anchor release logic exposed as a helper — 013 calls it).
+- [x] Invariant 16 test: decorations expose no note/tag/link capability in schema or API surface.
+- [x] Queries: canvas contents (ordered placements + decorations), node library with Unplaced filter (§14.1), tag result view data (§4.8); tests.
+- [x] All handlers return inverses; dispatcher round-trip test per handler family.
+- [x] `pnpm check` green from fresh `pnpm -r build`; commit on worktree branch. (Deviation: validated with the EPIC's agent command set — `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` — because this worktree's electron postinstall and spike node_modules are not provisioned; `pnpm check:spike` fails here for pre-existing environmental reasons unrelated to this ticket. Lead should re-run full `pnpm check` on master after merge.)
 
 ### Acceptance Criteria
 
@@ -126,3 +126,45 @@ sprint.
 You MUST document any failed implementations, blockers or missing
 tests.
 -->
+
+- **MakeNoteIndependent does not create link records** for the copied
+  body (invariant 26 gap for wiki-link tokens inside the copied
+  text). A `TODO(lead-merge)` sits at the insertion point in
+  `handlers/nodes.ts`; after merging AI-IMP-011 the lead should call
+  its link-refresh routine there and add a test with a `[[token]]` in
+  the copied body.
+- **Inverse commands needed internal command types.** CreateCanvas,
+  CreatePlacement, CreateTag, and MakeNoteIndependent have no public
+  inverse in §10.1, so the DeleteDraftNode pattern from AI-IMP-010 was
+  extended: DeleteDraftCanvas, DeleteDraftPlacement, DeleteDraftTag,
+  UnmakeNoteIndependent. DeleteDraftPlacement hard-deletes (it exists
+  only as undo-of-create) but still routes through
+  `releaseConnectorAnchors` so anchored connectors are freed, never
+  FK-orphaned. AI-IMP-013's lifecycle DeletePlacement supersedes it
+  for user-facing deletion.
+- **DeleteDecoration is a hard delete**, not a trash transition, even
+  though the schema has lifecycle columns on decoration. Rationale:
+  restore semantics belong to AI-IMP-013's RestoreRecord, and the
+  inverse (CreateDecoration with full prior state incl. render_order,
+  group, anchors) already gives exact undo. If the lead wants
+  decorations in Trash, 013 should own that switch.
+- **ResizePlacement/RotatePlacement collapsed into MovePlacement** per
+  the brief: one command carrying the full completed-gesture transform
+  (x, y, width, height, scale, rotation). The checklist's three-name
+  phrasing is satisfied by this single envelope.
+- **GroupDecorations rejects already-grouped members**
+  (DECORATION_ALREADY_GROUPED) instead of merging groups; keeps the
+  inverse trivial. Merge-on-group can be layered later if UX needs it.
+- **ReorderContent targets neighbors by id** (`afterId`/`beforeId`,
+  null = back/front) rather than raw keys, so inverses stay correct
+  across rebalances. Rebalance triggers automatically when the float
+  midpoint between the two bounds is no longer strictly between them
+  (proved by a 60-deep between-insertion test).
+- **Tests seed note and asset rows with direct SQL** because
+  CreateNote/asset-import commands belong to AI-IMP-011/014; only the
+  rows are shared, no 011 files were created or referenced.
+- `pnpm check:spike` fails in this worktree because `spike/` has its
+  own npm dependencies that are not installed here (pre-existing,
+  environmental; no spike files touched). The agent validation set
+  (`pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm
+  lint`) is green: 95 persistence tests, 17 commands, all passing.
