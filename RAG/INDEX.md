@@ -6,19 +6,27 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 0 | 0 |
-| Planned | 7 | 0 |
+| In Progress | 1 | 1 |
+| Planned | 6 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 1 | 4 |
-| **Total** | **8** | **4** |
+| **Total** | **8** | **8** |
 
-## Planned
+## In Progress
 
 ### [[AI-EPIC-002-workspace-scaffolding|EPIC-002: Workspace scaffolding]]
 > No application code exists. RFC-0001 §13 fixes the technology
 
+**IMPs:**
+- [[AI-IMP-005-monorepo-scaffold|IMP-005]] Monorepo scaffold per RFC 13.3 — in-progress
+- [[AI-IMP-006-electron-process-shell|IMP-006]] Electron three-process shell per RFC 13.2 — planned
+- [[AI-IMP-007-svelte-shell-ui|IMP-007]] Svelte 5 workspace shell in the renderer — planned
+- [[AI-IMP-008-ci-quality-gates|IMP-008]] CI workflow and root quality gates — planned
+
 ---
+
+## Planned
 
 ### [[AI-EPIC-003-domain-persistence-core|EPIC-003: Domain persistence core]]
 > RFC-0001 §4 defines eight record types, §5 defines 31 invariants, and

@@ -7,8 +7,12 @@ tags:
   - electron
 date_created: 2026-07-03
 date_completed:
-kanban_status: planned
+kanban_status: in-progress
 AI_IMP_spawned:
+  - "[[AI-IMP-005-monorepo-scaffold]]"
+  - "[[AI-IMP-006-electron-process-shell]]"
+  - "[[AI-IMP-007-svelte-shell-ui]]"
+  - "[[AI-IMP-008-ci-quality-gates]]"
 ---
 
 # AI-EPIC-002-workspace-scaffolding
