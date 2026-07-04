@@ -165,6 +165,9 @@ Phase 1 MUST establish:
 - Flat, first-class node tags that act as the user-defined
   organizational layer.
 
+- A node library data view covering all active nodes with an Unplaced
+  filter, so unplaced material remains discoverable.
+
 - Useful canvas-local text, shape, drawing, line, connector, grouping,
   ordering, and background operations.
 
@@ -568,7 +571,9 @@ Phase 1.
 
 10. A node has at most one canvas in Phase 1.
 
-11. Deleting a placement never deletes its node.
+11. Deleting a placement never purges its node. Deleting the last
+placement of a bare node moves that node to Trash within the same
+user-level command; any other node remains active.
 
 12. Detaching a note from one node never modifies other nodes using
 that note.
@@ -1051,6 +1056,19 @@ Removes one spatial placement. The node, note reference, canvas, tags,
 and appearance remain. Placement removal is normally recovered through
 command undo and does not create a separate user-visible Trash entry.
 
+A **bare node** is a node with no note reference, no tag assignments,
+no owned canvas, and no other placements. Deleting the last placement
+of a bare node moves the node to Trash within the same user-level
+command, because a bare unplaced node is otherwise invisible and reads
+as either deleted or lost. The application SHOULD show a non-blocking
+notice with a Keep in Project action that restores the node without a
+placement, leaving it findable in the node library. Placement deletion
+never purges a node.
+
+Deleting the last placement of a node with a note, tags, or an owned
+canvas leaves the node active; the notice SHOULD indicate that it
+remains available in the node library's Unplaced view.
+
 ## 9.3 Detach Note from This Node
 
 Removes only the node-to-note relationship. The note remains available,
@@ -1100,10 +1118,13 @@ The confirmation SHOULD report:
 
 - Number of referenced nodes.
 
-- Number of nodes that will become unplaced.
+- Number of nodes that will become unplaced, and how many of those are
+  bare.
 
 An unchecked option MAY offer to move newly unplaced nodes to Trash. It
-must not silently delete them.
+must not silently delete them. Because the canvas aggregate preserves
+its placements recoverably, trashing a canvas is not last-placement
+deletion and does not itself auto-trash bare nodes.
 
 ## 9.6 Delete Node
 
@@ -1502,6 +1523,22 @@ Svelte and the canvas renderer.
 
 # 14. Graph and data views
 
+## 14.1 Node library
+
+Phase 1 MUST provide a node library: a data-view workspace tab listing
+every active node in the project. Each entry SHOULD expose the node's
+appearance or thumbnail, attached note title when present, tags,
+placement count including zero, and canvas locations. The library MUST
+support filtering to unplaced nodes.
+
+The node library is the durable home for stashed and unplaced
+material: keeping an unplaced node in the project is a legitimate
+workflow, not an error state. The library covers nodes only in
+Phase 1; multi-facet sorting, richer data views, and note browsing
+remain future iterations.
+
+## 14.2 Relationship graph
+
 The relationship graph is a separate projection from the art canvas.
 
 Phase 1 MAY provide a basic graph or data workspace tab that can show:
@@ -1649,16 +1686,20 @@ confirm connectors remain visual rather than semantic edges.
 impact summaries; restore the trashed records; and verify preserved
 relationships.
 
-21. Verify a link to the trashed note presents In Trash affordances,
+21. Delete the last placement of a bare image node, verify the node
+moves to Trash in the same command, use Keep in Project to restore it
+unplaced, and locate it through the node library's Unplaced filter.
+
+22. Verify a link to the trashed note presents In Trash affordances,
 and that purging it produces a broken link offering explicit recreate.
 
-22. Verify Trash retention defaults to Never and that permanent purge
+23. Verify Trash retention defaults to Never and that permanent purge
 invalidates dependent undo and enables safe garbage collection.
 
-23. Open a minimal graph or data workspace tab and confirm Trash and
+24. Open a minimal graph or data workspace tab and confirm Trash and
 decoration edges are excluded by default.
 
-24. Close and reopen the application without data loss, duplicate
+25. Close and reopen the application without data loss, duplicate
 project writers, or unreconciled temporary imports.
 
 # 18. Acceptance criteria
@@ -1721,6 +1762,14 @@ The model is successfully implemented when:
 - Moving a node to Trash preserves its placements, canvas, appearance,
   tags, and note attachment for restoration while leaving the note
   active.
+
+- Deleting the last placement of a bare node moves the node to Trash
+  in the same user-level command, with a Keep in Project action that
+  restores it unplaced; nodes with a note, tags, or an owned canvas
+  remain active.
+
+- The node library lists every active node with appearance, note
+  title, tags, and placement count, and filters to unplaced nodes.
 
 - Moving a non-root canvas to Trash preserves referenced nodes and notes
   by default; the root canvas cannot be trashed.
@@ -1808,6 +1857,10 @@ canvas-local visibility and view filters.
 
 14. Final PixiJS versus Konva choice after the renderer spike.
 
+15. How far the node library grows beyond the Phase 1 nodes-only list:
+multi-facet sorting, richer data views, and note browsing deserve a
+dedicated design pass informed by prototype use.
+
 # 20. Decision summary
 
 Accepted for the Phase 1 prototype:
@@ -1881,6 +1934,13 @@ Accepted for the Phase 1 prototype:
 
 - Detach affects one node; recoverable deletion moves records to Trash
   while preserving identity and restoration relationships.
+
+- Deleting the last placement of a bare node auto-trashes the node in
+  the same command with a Keep in Project escape; invested nodes stay
+  active.
+
+- A nodes-only node library with an Unplaced filter is a Phase 1
+  requirement and the durable home for unplaced material.
 
 - Trash is a lifecycle state and query view, not a container; automatic
   purge defaults to Never.
