@@ -6,19 +6,30 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 0 | 0 |
-| Planned | 5 | 0 |
+| In Progress | 1 | 0 |
+| Planned | 4 | 7 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 3 | 16 |
-| **Total** | **8** | **16** |
+| **Total** | **8** | **23** |
 
-## Planned
+## In Progress
 
 ### [[AI-EPIC-004-canvas-board-loop|EPIC-004: Canvas board loop]]
 > The product must "feel first like an excellent visual board" (RFC §1),
 
+**IMPs:**
+- [[AI-IMP-017-renderer-host-and-scene-projection|IMP-017]] Renderer host and scene projection — planned
+- [[AI-IMP-018-canvas-controller-and-gesture-pipeline|IMP-018]] Canvas controller and gesture pipeline — planned
+- [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — planned
+- [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — planned
+- [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — planned
+- [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — planned
+- [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — planned
+
 ---
+
+## Planned
 
 ### [[AI-EPIC-005-notes-links-phantoms|EPIC-005: Notes links phantoms]]
 > The text half of the product (RFC §4.2, §7) has no editor. Notes,
@@ -47,7 +58,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (3309 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2369 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2395 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (772 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
