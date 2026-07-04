@@ -6,8 +6,8 @@ tags:
   - domain
   - persistence
 date_created: 2026-07-03
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-04
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-009
   - AI-IMP-010
@@ -63,15 +63,15 @@ memory per invariant 31.
 
 ### Functional Requirements
 
-- [ ] FR-1: SQLite schema + migrations for all §4 record types, WAL mode, foreign keys.
-- [ ] FR-2: UUIDv7 generation and short-code fingerprints per §4.11.
-- [ ] FR-3: Command envelope, per-type versions, upcaster hook, revision conflicts per §10.1–10.2.
-- [ ] FR-4: Project API surface per §11.3 exposed over utility-process IPC.
-- [ ] FR-5: Project locking, single-writer enforcement, startup recovery per §11.4.
-- [ ] FR-6: Staged asset import (copy, sniff, hash, atomic move, dedupe) per §11.2 with Asset.kind per §4.7.
-- [ ] FR-7: Link records with bound/unresolved/broken states and the re-resolution sweep per §7.1.
-- [ ] FR-8: FTS5 indexes over notes, tags, filenames, canvas text per §8.3.
-- [ ] FR-9: Command metadata log per §10.2.
+- [x] FR-1: SQLite schema + migrations for all §4 record types, WAL mode, foreign keys.
+- [x] FR-2: UUIDv7 generation and short-code fingerprints per §4.11.
+- [x] FR-3: Command envelope, per-type versions, upcaster hook, revision conflicts per §10.1–10.2.
+- [x] FR-4: Project API surface per §11.3 exposed over utility-process IPC.
+- [x] FR-5: Project locking, single-writer enforcement, startup recovery per §11.4.
+- [x] FR-6: Staged asset import (copy, sniff, hash, atomic move, dedupe) per §11.2 with Asset.kind per §4.7.
+- [x] FR-7: Link records with bound/unresolved/broken states and the re-resolution sweep per §7.1.
+- [x] FR-8: FTS5 indexes over notes, tags, filenames, canvas text per §8.3.
+- [x] FR-9: Command metadata log per §10.2.
 
 ### Non-Functional Requirements
 

@@ -6,29 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 5 | 1 |
+| In Progress | 0 | 0 |
+| Planned | 5 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 2 | 15 |
+| Completed | 3 | 16 |
 | **Total** | **8** | **16** |
-
-## In Progress
-
-### [[AI-EPIC-003-domain-persistence-core|EPIC-003: Domain persistence core]]
-> RFC-0001 §4 defines eight record types, §5 defines 31 invariants, and
-
-**IMPs:**
-- [[AI-IMP-009-sqlite-foundation-and-schema|IMP-009]] Sqlite foundation and schema — completed
-- [[AI-IMP-010-command-pipeline-and-project-api|IMP-010]] Command pipeline and project api — completed
-- [[AI-IMP-011-notes-titles-and-link-records|IMP-011]] Notes titles and link records — completed
-- [[AI-IMP-012-structure-commands|IMP-012]] Structure commands — completed
-- [[AI-IMP-013-lifecycle-trash-restore-purge|IMP-013]] Lifecycle trash restore purge — completed
-- [[AI-IMP-014-staged-asset-import|IMP-014]] Staged asset import — completed
-- [[AI-IMP-015-fts5-search-and-queries|IMP-015]] Fts5 search and queries — completed
-- [[AI-IMP-016-recovery-and-invariant-suite|IMP-016]] Recovery and invariant suite — planned
-
----
 
 ## Planned
 
@@ -63,11 +46,12 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (3037 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2354 LOC)
+- pnpm-lock.yaml (3309 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2369 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (772 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
+- packages/persistence/src/invariants.spec.ts (647 LOC)
 
 ### > 300 LOC
 
@@ -88,7 +72,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>2 EPICs, 15 IMPs completed</summary>
+<summary>3 EPICs, 16 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -100,5 +84,14 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-006-electron-process-shell|IMP-006]] Electron three-process shell per RFC 13.2 — completed
   - [[AI-IMP-007-svelte-shell-ui|IMP-007]] Svelte 5 workspace shell in the renderer — completed
   - [[AI-IMP-008-ci-quality-gates|IMP-008]] CI workflow and root quality gates — completed
+- [[AI-EPIC-003-domain-persistence-core|EPIC-003]] Domain persistence core — 2026-07-04
+  - [[AI-IMP-009-sqlite-foundation-and-schema|IMP-009]] Sqlite foundation and schema — completed
+  - [[AI-IMP-010-command-pipeline-and-project-api|IMP-010]] Command pipeline and project api — completed
+  - [[AI-IMP-011-notes-titles-and-link-records|IMP-011]] Notes titles and link records — completed
+  - [[AI-IMP-012-structure-commands|IMP-012]] Structure commands — completed
+  - [[AI-IMP-013-lifecycle-trash-restore-purge|IMP-013]] Lifecycle trash restore purge — completed
+  - [[AI-IMP-014-staged-asset-import|IMP-014]] Staged asset import — completed
+  - [[AI-IMP-015-fts5-search-and-queries|IMP-015]] Fts5 search and queries — completed
+  - [[AI-IMP-016-recovery-and-invariant-suite|IMP-016]] Recovery and invariant suite — completed
 
 </details>
