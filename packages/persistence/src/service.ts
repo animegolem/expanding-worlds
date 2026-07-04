@@ -10,6 +10,7 @@ import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 import { registerCanvasHandlers } from './handlers/canvases'
 import { registerDecorationHandlers } from './handlers/decorations'
+import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
 import { registerPlacementHandlers } from './handlers/placements'
@@ -17,6 +18,7 @@ import { registerTagHandlers } from './handlers/tags'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
+import { registerLifecycleQueries } from './queries-lifecycle'
 import { registerNoteQueries } from './queries-notes'
 import { registerStructureQueries } from './queries-structure'
 
@@ -62,12 +64,14 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerPlacementHandlers(commands)
   registerTagHandlers(commands)
   registerDecorationHandlers(commands)
+  registerLifecycleHandlers(commands)
 
   const queries = new QueryRegistry()
   registerCoreQueries(queries)
   registerNoteQueries(queries)
   registerAssetQueries(queries)
   registerStructureQueries(queries)
+  registerLifecycleQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {

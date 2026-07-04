@@ -2,6 +2,7 @@ import {
   COMMAND_CREATE_NOTE,
   COMMAND_PURGE_DRAFT_NOTE,
   COMMAND_RENAME_NOTE,
+  COMMAND_TRASH_NOTE,
   COMMAND_UPDATE_NOTE,
   DomainError,
   type AffectedRecord,
@@ -9,6 +10,7 @@ import {
   type CreateNotePayload,
   type PurgeDraftNotePayload,
   type RenameNotePayload,
+  type TrashNotePayload,
   type UpdateNotePayload,
 } from '@ew/commands'
 import { extractWikiLinks, titleKey } from '@ew/domain'
@@ -122,10 +124,14 @@ export function registerNoteHandlers(registry: CommandRegistry<CommandContext>):
 
     return {
       affected,
+      // AI-IMP-013: the inverse is the purge-safe TrashNote (never
+      // refuses, keeps links and the title reservation intact) rather
+      // than PurgeDraftNote, which fails once anything references the
+      // note. Redo is RestoreRecord via TrashNote's own inverse.
       inverse: {
-        commandType: COMMAND_PURGE_DRAFT_NOTE,
+        commandType: COMMAND_TRASH_NOTE,
         commandVersion: 1,
-        payload: { noteId: payload.noteId } satisfies PurgeDraftNotePayload,
+        payload: { noteId: payload.noteId } satisfies TrashNotePayload,
       },
     }
   })

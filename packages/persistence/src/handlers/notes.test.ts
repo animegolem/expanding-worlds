@@ -109,7 +109,9 @@ describe('CreateNote', () => {
       body: 'a hull',
     })
     expect(result.affected).toContainEqual({ kind: 'note', id: noteId })
-    expect(result.inverse).toMatchObject({ commandType: 'PurgeDraftNote' })
+    // AI-IMP-013: undo of CreateNote trashes rather than purges, so it
+    // never refuses once links or nodes reference the note.
+    expect(result.inverse).toMatchObject({ commandType: 'TrashNote', payload: { noteId } })
     expect(noteRow(noteId)).toMatchObject({
       title: '  Ghost   SHIP ',
       title_key: 'ghost ship',
@@ -354,16 +356,16 @@ describe('RenameNote', () => {
   })
 })
 
-describe('PurgeDraftNote (internal inverse of CreateNote)', () => {
-  it('undoes CreateNote: removes the note, its outbound records, and frees the title', () => {
-    const create = committed('CreateNote', {
-      noteId: uuidv7(),
+describe('PurgeDraftNote (standalone draft removal since AI-IMP-013)', () => {
+  it('removes the note, its outbound records, and frees the title', () => {
+    const noteId = uuidv7()
+    committed('CreateNote', {
+      noteId,
       title: 'Draft',
       body: 'links [[Elsewhere]]',
     })
-    const noteId = (create.inverse!.payload as { noteId: string }).noteId
 
-    const purge = committed(create.inverse!.commandType, create.inverse!.payload)
+    const purge = committed('PurgeDraftNote', { noteId })
     expect(noteRow(noteId)).toBeUndefined()
     expect(linksOf(noteId)).toHaveLength(0)
     // Inverse of the inverse recreates the note with title and body.
