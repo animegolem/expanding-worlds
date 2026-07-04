@@ -1,3 +1,9 @@
 .DS_Store
 RAG/.obsidian/workspace.json
 .claude/worktrees/
+
+# workspace
+node_modules/
+dist/
+out/
+*.tsbuildinfo

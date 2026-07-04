@@ -1,0 +1,10 @@
+{
+  "name": "@ew/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'desktop build lands with AI-IMP-006'",
+    "test": "echo 'desktop tests land with AI-IMP-006'"
+  }
+}
