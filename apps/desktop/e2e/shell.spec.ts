@@ -10,6 +10,8 @@ declare global {
 /**
  * AI-IMP-006 acceptance: renderer → preload → main → utility process
  * round-trip, sandboxed renderer, correct window title.
+ * AI-IMP-007 acceptance: Svelte shell regions render and the status
+ * strip shows the live ping result.
  */
 
 test('shell launches and the process seam round-trips', async () => {
@@ -25,8 +27,13 @@ test('shell launches and the process seam round-trips', async () => {
   const requireType = await win.evaluate(() => typeof (window as unknown as Record<string, unknown>)['require'])
   expect(requireType).toBe('undefined')
 
-  // The placeholder page renders the live seam result.
-  await expect(win.locator('#status')).toHaveText('{"pong":true,"from":"utility"}')
+  // The three shell regions of the provisional layout (RFC-0001 §8.2).
+  await expect(win.getByTestId('note-pane')).toBeVisible()
+  await expect(win.getByTestId('workspace')).toBeVisible()
+  await expect(win.getByTestId('status-strip')).toBeVisible()
+
+  // The status strip renders the live seam result.
+  await expect(win.getByTestId('status-strip')).toContainText('{"pong":true,"from":"utility"}')
 
   await app.close()
 })

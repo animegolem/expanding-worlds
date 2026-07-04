@@ -5,12 +5,12 @@ tags:
   - Implementation
   - svelte
   - renderer
-kanban_status: in-progress
+kanban_status: completed
 depends_on: AI-EPIC-002, AI-IMP-006
 parent_epic: [[AI-EPIC-002-workspace-scaffolding]]
 confidence_score: 0.8
 date_created: 2026-07-03
-date_completed:
+date_completed: 2026-07-03
 ---
 
 # AI-IMP-007-svelte-shell-ui
@@ -54,11 +54,11 @@ for the three regions and the ping text.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Svelte 5 renders in the sandboxed renderer via electron-vite dev and build.
-- [ ] Shell layout: note-pane region, tabbed workspace region with one placeholder tab, status strip.
-- [ ] StatusStrip displays the live ping round-trip result.
-- [ ] e2e asserts all three regions visible and ping text present; prior shell assertions still pass.
-- [ ] `pnpm -r build`, `pnpm -r test`, `pnpm lint` green.
+- [x] Svelte 5 renders in the sandboxed renderer via electron-vite dev and build.
+- [x] Shell layout: note-pane region, tabbed workspace region with one placeholder tab, status strip.
+- [x] StatusStrip displays the live ping round-trip result.
+- [x] e2e asserts all three regions visible and ping text present; prior shell assertions still pass.
+- [x] `pnpm -r build`, `pnpm -r test`, `pnpm lint` green.
 
 ### Acceptance Criteria
 
@@ -76,3 +76,28 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Svelte 5 + electron-vite integration was low-friction: adding
+  `svelte({ compilerOptions: { runes: true } })` to the renderer
+  section of `electron.vite.config.ts` was sufficient for build, dev
+  (HMR verified via the dev server's transformed `/App.svelte`), and
+  the sandboxed production bundle. Runes mode is forced explicitly so
+  legacy-mode component code cannot creep in.
+- `pnpm add` surfaced a peer warning (`electron-vite@5.0.0` wants
+  `vite ^5||^6||^7`, workspace has vite 8.1.3). Pre-existing before
+  this ticket; everything builds and runs, so left alone.
+- vite-plugin-svelte logs "no Svelte config found … using default
+  configuration" on every build. Informational only; a `svelte.config`
+  file was deliberately not added to keep the footprint minimal.
+- `tsc --noEmit` needed a `declare module '*.svelte'` ambient
+  declaration (added to `src/renderer/env.d.ts`) because the app
+  tsconfig pins `"types": ["node"]`, so Svelte's own ambient module
+  types are not auto-included.
+- The old e2e assertion on `#status` no longer matches the new DOM;
+  replaced by the `status-strip` testid assertion carrying the same
+  expected text `{"pong":true,"from":"utility"}`. All other prior
+  assertions (title, ping round-trip via `window.ew`, sandbox
+  `require` check) kept verbatim.
+- eslint ignores `*.svelte`; component TypeScript is validated by the
+  svelte compiler during build (no svelte-check added, per ticket
+  scope).
