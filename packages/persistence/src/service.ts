@@ -18,6 +18,7 @@ import { importAsset, type ImportInput, type ImportResult } from './import/pipel
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
 import { registerNoteQueries } from './queries-notes'
+import { registerSearchQueries } from './queries-search'
 import { registerStructureQueries } from './queries-structure'
 
 export interface ProjectInfo {
@@ -68,6 +69,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerNoteQueries(queries)
   registerAssetQueries(queries)
   registerStructureQueries(queries)
+  registerSearchQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {
