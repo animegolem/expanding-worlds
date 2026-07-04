@@ -7,7 +7,7 @@
   Existing branch creates one placement of an existing node (§6.3).
 
   Tag limitation (flagged in AI-IMP-020): no listTags query exists, so
-  only tags created inside this dialog session can be assigned here.
+  existing tags load via listTags; new tags issue CreateTag when added.
 -->
 <script lang="ts">
   import type { CommandResult } from '@ew/commands'
@@ -40,7 +40,7 @@
   let notes = $state<Array<{ id: string; title: string }>>([])
   let libraryNodes = $state<Array<{ id: string; noteTitle: string | null }>>([])
   let existingNodeId = $state('')
-  let sessionTags = $state<Array<{ tagId: string; name: string }>>([])
+  let availableTags = $state<Array<{ tagId: string; name: string }>>([])
   let selectedTagIds = $state<string[]>([])
   let newTagName = $state('')
   let errorMessage = $state<string | null>(null)
@@ -61,6 +61,9 @@
         libraryNodes = rows
       },
     )
+    void runQuery<Array<{ id: string; name: string }>>('listTags').then((rows) => {
+      availableTags = rows.map((row) => ({ tagId: row.id, name: row.name }))
+    })
   })
 
   function failureText(what: string, result: CommandResult): string {
@@ -78,7 +81,7 @@
       errorMessage = failureText('CreateTag', result)
       return
     }
-    sessionTags = [...sessionTags, { tagId, name }]
+    availableTags = [...availableTags, { tagId, name }]
     selectedTagIds = [...selectedTagIds, tagId]
     newTagName = ''
   }
@@ -307,7 +310,7 @@
 
       <fieldset>
         <legend>Tags</legend>
-        {#each sessionTags as tag (tag.tagId)}
+        {#each availableTags as tag (tag.tagId)}
           <label class="row">
             <input
               type="checkbox"

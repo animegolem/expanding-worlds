@@ -45,16 +45,9 @@
   async function refresh(): Promise<void> {
     try {
       nodes = await runQuery<LibraryNode[]>('listNodeLibrary', { filter })
-      // No zero-node-notes query exists: derive it from listNotes minus
-      // the note ids referenced by active nodes (listNodes).
-      const [notes, activeNodes] = await Promise.all([
-        runQuery<NoteRow[]>('listNotes'),
-        runQuery<Array<{ id: string; noteId: string | null }>>('listNodes'),
-      ])
-      const referenced = new Set(
-        activeNodes.map((node) => node.noteId).filter((id): id is string => id !== null),
-      )
-      zeroNodeNotes = notes.filter((note) => !referenced.has(note.id))
+      // §6.10: zero-node notes filter server-side on listNotes.nodeCount.
+      const notes = await runQuery<Array<NoteRow & { nodeCount: number }>>('listNotes')
+      zeroNodeNotes = notes.filter((note) => note.nodeCount === 0)
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err)
     }

@@ -56,11 +56,16 @@ export function registerNoteQueries(registry: QueryRegistry): void {
   })
 
   registry.register('listNotes', (ctx) =>
+    // nodeCount counts ACTIVE referencing nodes: zero-node views (§6.10
+    // Unplaced-note placement sources) filter on it server-side.
     ctx.db.all(
-      `SELECT id, title, title_key AS titleKey,
-              lifecycle_state AS lifecycleState
-       FROM note WHERE project_id = ? AND lifecycle_state = 'active'
-       ORDER BY title_key`,
+      `SELECT note.id, note.title, note.title_key AS titleKey,
+              note.lifecycle_state AS lifecycleState,
+              (SELECT count(*) FROM node
+                WHERE node.note_id = note.id AND node.lifecycle_state = 'active')
+                AS nodeCount
+       FROM note WHERE note.project_id = ? AND note.lifecycle_state = 'active'
+       ORDER BY note.title_key`,
       ctx.projectId,
     ),
   )

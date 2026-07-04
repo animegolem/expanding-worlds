@@ -418,3 +418,26 @@ describe('getCanvasScene', () => {
     })
   })
 })
+
+describe('listTags', () => {
+  it('lists active tags with active-node usage counts, name-key ordered', () => {
+    const zebra = uuidv7()
+    const apple = uuidv7()
+    committed('CreateTag', { tagId: zebra, name: 'Zebra' })
+    committed('CreateTag', { tagId: apple, name: 'apple' })
+    const nodeId = createNode()
+    committed('AssignTagToNode', { tagId: zebra, nodeId })
+
+    let tags = query<Array<{ id: string; name: string; nodeCount: number }>>('listTags')
+    expect(tags.map((t) => t.name)).toEqual(['apple', 'Zebra'])
+    expect(tags.find((t) => t.id === zebra)!.nodeCount).toBe(1)
+    expect(tags.find((t) => t.id === apple)!.nodeCount).toBe(0)
+
+    // Trashed nodes stop counting; trashed tags stop listing.
+    handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
+    handle.db.run("UPDATE tag SET lifecycle_state = 'trashed' WHERE id = ?", apple)
+    tags = query<Array<{ id: string; nodeCount: number }>>('listTags')
+    expect(tags).toHaveLength(1)
+    expect(tags[0]!.nodeCount).toBe(0)
+  })
+})

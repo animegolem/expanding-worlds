@@ -185,3 +185,30 @@ describe('getPhantom (§7.2, invariant 28)', () => {
     expect(run<PhantomView | null>('getPhantom', { titleKey: 'ghost fleet' })).toBeNull()
   })
 })
+
+describe('listNotes nodeCount', () => {
+  it('counts active referencing nodes so zero-node views filter server-side', () => {
+    const noteId = createNote('Unplaced Study')
+    let notes = run<Array<{ id: string; nodeCount: number }>>('listNotes')
+    expect(notes.find((n) => n.id === noteId)!.nodeCount).toBe(0)
+
+    const nodeId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO node (id, project_id, note_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      nodeId,
+      handle.projectId,
+      noteId,
+      now,
+      now,
+    )
+    notes = run<Array<{ id: string; nodeCount: number }>>('listNotes')
+    expect(notes.find((n) => n.id === noteId)!.nodeCount).toBe(1)
+
+    // A trashed node no longer counts (§6.10: the note is placeable again).
+    handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
+    notes = run<Array<{ id: string; nodeCount: number }>>('listNotes')
+    expect(notes.find((n) => n.id === noteId)!.nodeCount).toBe(0)
+  })
+})

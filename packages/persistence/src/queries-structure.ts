@@ -236,6 +236,21 @@ export function registerStructureQueries(registry: QueryRegistry): void {
     }
   })
 
+  // §4.8: flat project tag vocabulary — pickers (Create Pin dialog,
+  // tag assignment UI) list every active tag with usage counts.
+  registry.register('listTags', (ctx) =>
+    ctx.db.all(
+      `SELECT t.id, t.name, t.color, t.icon,
+              (SELECT count(*) FROM tag_assignment ta
+                JOIN node n ON n.id = ta.node_id AND n.lifecycle_state = 'active'
+                WHERE ta.tag_id = t.id) AS nodeCount
+       FROM tag t
+       WHERE t.project_id = ? AND t.lifecycle_state = 'active'
+       ORDER BY t.name_key`,
+      ctx.projectId,
+    ),
+  )
+
   // §4.8: activating a tag opens a data view of nodes carrying it.
   registry.register('getTagView', (ctx, args) => {
     const { tagId } = args as { tagId: string }
