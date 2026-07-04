@@ -158,7 +158,8 @@ Phase 1 MUST establish:
 - A command and persistence boundary that does not block an
   authoritative client/server mode later.
 
-- Portable export of notes, project structure, and original assets.
+- Portable export of notes, project structure, and original assets,
+  with lossless reimport of an exported project.
 
 - A protected project root node and root canvas used as the Home
   destination.
@@ -1809,6 +1810,15 @@ A complete project backup SHOULD preserve Trash unless the user
 explicitly requests an active-content-only export. Purged records and
 evictable derivatives are not export requirements.
 
+Export is paired with import. Phase 1 MUST import a project export,
+recreating the project in a new project directory with all record
+identities preserved so that wiki links, bookmarks, command
+provenance, and Trash survive the roundtrip losslessly; regenerable
+derivatives rebuild lazily. Import never merges into an existing
+project, and cross-project merge is out of scope. An imported project
+MAY coexist with its original because commands, queries, and locks
+scope to the project directory.
+
 # 17. Phase 1 vertical slice
 
 The first end-to-end prototype should prove:
@@ -1906,6 +1916,10 @@ decoration edges are excluded by default.
 project writers, or unreconciled temporary imports, including a note
 edit still inside its debounce window at quit.
 
+26. Export the project, import it into a fresh directory, and verify
+record identities, links, tags, placements, bookmarks, Trash, and
+original assets match the source project.
+
 # 18. Acceptance criteria
 
 The model is successfully implemented when:
@@ -1986,6 +2000,9 @@ The model is successfully implemented when:
   targets offer Restore, bookmarks to purged targets show broken and
   offer removal, and stale viewport or selection context is ignored
   gracefully.
+
+- An exported project imports losslessly into a new project directory
+  with all record identities preserved.
 
 - Moving a non-root canvas to Trash preserves referenced nodes and notes
   by default; the root canvas cannot be trashed.
@@ -2255,6 +2272,9 @@ Accepted for the Phase 1 prototype:
 - Stale navigation degrades explicitly: history skips dead targets,
   and bookmarks surface In Trash or broken states rather than being
   auto-deleted or silently retargeted.
+
+- Exports reimport losslessly into a new project directory with
+  preserved identities; merge remains out of scope.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
