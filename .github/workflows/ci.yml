@@ -1,0 +1,51 @@
+# CI quality gate (AI-IMP-008).
+#
+# Runs `pnpm check:ci` — the same chain as the local `pnpm check`
+# (workspace build, workspace tests, lint, spike typecheck) MINUS the
+# desktop Playwright e2e suite. The e2e launches a real Electron app,
+# which needs a display; a bare ubuntu-latest runner has none.
+#
+# Follow-up (not implemented here): run the desktop e2e in CI either by
+# wrapping it in xvfb (`xvfb-run -a pnpm --filter @ew/desktop test` on
+# Linux) or by adding a macos-latest job where a windowing system is
+# available. Track as a separate ticket before activating a remote.
+#
+# Electron install note: `pnpm install` runs electron's postinstall
+# (install.js) to download/extract the platform binary. This is allowed
+# via `allowBuilds.electron` in pnpm-workspace.yaml. On a local macOS
+# machine install.js was observed to silently fail to extract
+# Electron.app from the cached zip (manual `ditto` extraction was
+# needed); Linux runners are expected to be unaffected, and since the
+# e2e is excluded here the binary is not exercised in CI anyway.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version is taken from the root package.json "packageManager" field.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      # spike/ is npm-managed and outside the pnpm workspace. Its gate is a
+      # pure typecheck (spike's own tsc), so postinstall scripts (esbuild,
+      # playwright) are skipped — no binaries needed.
+      - name: Install spike dependencies (typecheck only)
+        run: npm ci --prefix spike --ignore-scripts
+
+      - name: Quality gates (build, tests minus desktop e2e, lint, spike typecheck)
+        run: pnpm check:ci
