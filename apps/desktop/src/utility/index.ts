@@ -14,7 +14,9 @@ function post(message: UtilityMessage): void {
   process.parentPort.postMessage(message)
 }
 
-function handle(request: ProjectRequest): ProjectResponse {
+// Async solely for import-asset (staged file IO); every other case
+// resolves synchronously with unchanged behavior.
+async function handle(request: ProjectRequest): Promise<ProjectResponse> {
   switch (request.type) {
     case 'ping':
       return { pong: true, from: 'utility' }
@@ -78,13 +80,31 @@ function handle(request: ProjectRequest): ProjectResponse {
         : { type: 'run-query', ok: false, code: result.code, message: result.message }
     }
 
-    case 'import-asset':
-      return {
-        type: 'import-asset',
-        ok: false,
-        code: 'NOT_IMPLEMENTED',
-        message: 'staged asset import lands with AI-IMP-014',
+    case 'import-asset': {
+      if (!service) {
+        return { type: 'import-asset', ok: false, code: 'NO_PROJECT', message: 'no project is open' }
       }
+      try {
+        const input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string } = {
+          bytes: request.bytes,
+          originalFilename: request.originalFilename,
+        }
+        if (request.sourceUrl !== undefined) input.sourceUrl = request.sourceUrl
+        const { assetId, deduplicated } = await service.importAsset(input)
+        return { type: 'import-asset', ok: true, assetId, deduplicated }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'IMPORT_FAILED'
+        return {
+          type: 'import-asset',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
 
     case 'request-derivatives':
       return {
@@ -98,5 +118,5 @@ function handle(request: ProjectRequest): ProjectResponse {
 
 process.parentPort.on('message', (event) => {
   const { id, payload } = event.data as UtilityEnvelope<ProjectRequest>
-  post({ kind: 'response', id, payload: handle(payload) })
+  void handle(payload).then((response) => post({ kind: 'response', id, payload: response }))
 })

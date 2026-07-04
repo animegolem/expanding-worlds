@@ -7,7 +7,9 @@ import {
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Dispatcher, type CommandContext } from './dispatcher'
+import { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 import { registerNodeHandlers } from './handlers/nodes'
+import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
 
@@ -28,6 +30,8 @@ export interface ProjectService {
   execute(envelope: CommandEnvelope): CommandResult
   query(name: string, args?: unknown): QueryResult
   subscribe(fn: (event: ProjectChangedEvent) => void): () => void
+  /** Staged asset import per §11.2; throws DomainError on rejection. */
+  importAsset(input: ImportInput): Promise<ImportResult>
   close(): void
 }
 
@@ -45,9 +49,11 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
 
   const commands = new CommandRegistry<CommandContext>()
   registerNodeHandlers(commands)
+  registerAssetHandlers(commands)
 
   const queries = new QueryRegistry()
   registerCoreQueries(queries)
+  registerAssetQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {
@@ -73,6 +79,17 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
     execute: (envelope) => dispatcher.execute(envelope),
     query: (name, args) => queries.run(queryCtx, name, args),
     subscribe: (fn) => dispatcher.subscribe(fn),
+    importAsset: (input) =>
+      importAsset(
+        {
+          db: handle.db,
+          projectId: handle.projectId,
+          dir: handle.dir,
+          execute: (envelope) => dispatcher.execute(envelope),
+          now: () => new Date().toISOString(),
+        },
+        input,
+      ),
     close: () => handle.close(),
   }
 }

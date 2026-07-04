@@ -21,3 +21,4 @@ export {
   type Upcaster,
 } from './registry'
 export * from './payloads/nodes'
+export * from './payloads/assets'
