@@ -6,8 +6,8 @@ tags:
   - infrastructure
   - electron
 date_created: 2026-07-03
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-03
+kanban_status: completed
 AI_IMP_spawned:
   - "[[AI-IMP-005-monorepo-scaffold]]"
   - "[[AI-IMP-006-electron-process-shell]]"
@@ -59,11 +59,11 @@ No feature code beyond a walking skeleton. Packaging polish
 
 ### Functional Requirements
 
-- [ ] FR-1: pnpm workspace monorepo matching RFC §13.3 layout.
-- [ ] FR-2: Electron main/renderer/utility process layout per §13.2 with sandboxed renderer and typed preload API.
-- [ ] FR-3: Minimal Svelte 5 shell rendering a placeholder workspace.
-- [ ] FR-4: vitest + Playwright + eslint + CI pipeline green.
-- [ ] FR-5: IPC round-trip demonstration through the preload boundary.
+- [x] FR-1: pnpm workspace monorepo matching RFC §13.3 layout.
+- [x] FR-2: Electron main/renderer/utility process layout per §13.2 with sandboxed renderer and typed preload API.
+- [x] FR-3: Minimal Svelte 5 shell rendering a placeholder workspace.
+- [x] FR-4: vitest + Playwright + eslint + CI pipeline green.
+- [x] FR-5: IPC round-trip demonstration through the preload boundary.
 
 ### Non-Functional Requirements
 
@@ -73,4 +73,7 @@ No feature code beyond a walking skeleton. Packaging polish
 
 ## Implementation Breakdown
 
-IMPs to be cut when this epic activates.
+- [[AI-IMP-005-monorepo-scaffold]] — completed 2026-07-03 (lead)
+- [[AI-IMP-006-electron-process-shell]] — completed 2026-07-03 (lead)
+- [[AI-IMP-007-svelte-shell-ui]] — completed 2026-07-03 (delegated worktree agent, reviewed)
+- [[AI-IMP-008-ci-quality-gates]] — completed 2026-07-03 (delegated worktree agent, reviewed)

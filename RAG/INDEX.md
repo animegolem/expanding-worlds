@@ -6,25 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 2 |
+| In Progress | 0 | 0 |
 | Planned | 6 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 1 | 6 |
+| Completed | 2 | 8 |
 | **Total** | **8** | **8** |
-
-## In Progress
-
-### [[AI-EPIC-002-workspace-scaffolding|EPIC-002: Workspace scaffolding]]
-> No application code exists. RFC-0001 §13 fixes the technology
-
-**IMPs:**
-- [[AI-IMP-005-monorepo-scaffold|IMP-005]] Monorepo scaffold per RFC 13.3 — completed
-- [[AI-IMP-006-electron-process-shell|IMP-006]] Electron three-process shell per RFC 13.2 — completed
-- [[AI-IMP-007-svelte-shell-ui|IMP-007]] Svelte 5 workspace shell in the renderer — in-progress
-- [[AI-IMP-008-ci-quality-gates|IMP-008]] CI workflow and root quality gates — in-progress
-
----
 
 ## Planned
 
@@ -64,7 +51,7 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (3437 LOC)
+- pnpm-lock.yaml (3581 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2354 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -77,12 +64,17 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>1 EPICs, 6 IMPs completed</summary>
+<summary>2 EPICs, 8 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
   - [[AI-IMP-002-pixijs-spike-implementation|IMP-002]] PixiJS adapter covering the full spike scenario — completed
   - [[AI-IMP-003-konva-spike-implementation|IMP-003]] Konva adapter covering the full spike scenario — completed
   - [[AI-IMP-004-renderer-decision-report|IMP-004]] Renderer comparison report and RFC decision — completed
+- [[AI-EPIC-002-workspace-scaffolding|EPIC-002]] Workspace scaffolding — 2026-07-03
+  - [[AI-IMP-005-monorepo-scaffold|IMP-005]] Monorepo scaffold per RFC 13.3 — completed
+  - [[AI-IMP-006-electron-process-shell|IMP-006]] Electron three-process shell per RFC 13.2 — completed
+  - [[AI-IMP-007-svelte-shell-ui|IMP-007]] Svelte 5 workspace shell in the renderer — completed
+  - [[AI-IMP-008-ci-quality-gates|IMP-008]] CI workflow and root quality gates — completed
 
 </details>
