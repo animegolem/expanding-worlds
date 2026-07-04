@@ -9,4 +9,5 @@ import { createNoopAdapter } from './adapters/noop'
 export const adapters: Record<string, AdapterFactory> = {
   noop: createNoopAdapter,
   pixi: () => import('./adapters/pixi').then((m) => m.createPixiAdapter()),
+  konva: () => import('./adapters/konva').then((m) => m.createKonvaAdapter()),
 }
