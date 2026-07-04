@@ -172,6 +172,11 @@ Phase 1 MUST establish:
 - Useful canvas-local text, shape, drawing, line, connector, grouping,
   ordering, and background operations.
 
+- Board arrangement tooling: align and distribute over
+  multi-selections, non-destructive horizontal and vertical flip, zoom
+  to fit and zoom to selection, and snapping with smart guides during
+  drag.
+
 - RFC 9562 UUIDv7 identities, versioned commands, and monotonic project
   revisions.
 
@@ -216,6 +221,9 @@ Phase 1 does NOT require:
 
 - Web-reference assets, media playback, and the media-backup adapter,
   which remain the shaped deferred direction described in section 4.7.
+
+- Auto-arrange (pack) and grid display or grid snapping, which remain
+  the shaped deferred direction described in section 6.9.
 
 # 4. Normative domain model
 
@@ -834,7 +842,35 @@ Connector endpoints MAY be free points or anchored to placements.
 Connector geometry remains visual decoration and does not create a
 semantic relationship.
 
-## 6.9 Materialize a phantom note
+## 6.9 Arrange, align, and navigate the board
+
+Align operations (left, horizontal center, right, top, vertical
+middle, bottom) and distribute operations (even horizontal or vertical
+spacing) act on a multi-selection of placements and decorations and
+commit one durable command each.
+
+Flip horizontal and flip vertical are non-destructive placement
+presentation state, like crop on an image appearance; the managed
+asset is never modified.
+
+Zoom to fit and zoom to selection adjust camera state only and are not
+durable commands.
+
+While dragging, placements and decorations SHOULD snap to the edges
+and centers of nearby content, with smart guides rendered in the
+temporary interaction overlay plane. Snapping is an ephemeral
+interaction aid: the gesture still commits exactly one durable command
+on completion, and a modifier key SHOULD temporarily disable snapping.
+
+**Deferred with scope.** Auto-arrange (pack) — algorithmic reflow of
+the selected placements into a compact non-overlapping arrangement —
+is deferred; when revisited it SHOULD operate on an explicit selection
+and commit as one durable command. Grid display and grid snapping are
+deferred together; when revisited, the grid SHOULD be a canvas
+presentation setting whose spacing feeds the same snapping machinery
+specified above.
+
+## 6.10 Materialize a phantom note
 
 Writing [[Title]] for a title that does not yet exist is itself a
 creation flow. The unresolved link accumulates alongside any other
@@ -1510,6 +1546,8 @@ The spike SHOULD include:
 
 - Multi-object drag.
 
+- Snapping and smart guides during multi-object drag.
+
 - Resize and rotate.
 
 - Pan and zoom.
@@ -1740,7 +1778,10 @@ enter managed project storage with source URLs recorded when
 available, and that an unsupported file is rejected with a clear
 notice and no records.
 
-4. Pan, zoom, select, move, resize, rotate, and reorder placements.
+4. Pan, zoom, select, move, resize, rotate, and reorder placements;
+align and distribute a multi-selection; flip a placement; zoom to fit
+and to selection; and verify snapping with smart guides during drag,
+including the disable modifier.
 
 5. Create a pin with dot, icon, or cropped-image appearance.
 
@@ -1905,6 +1946,10 @@ The model is successfully implemented when:
   the label follows note renames.
 
 - Image cropping is non-destructive.
+
+- Align, distribute, and flip operate as durable commands or placement
+  presentation state without modifying assets; snapping remains an
+  ephemeral drag aid within the one-command gesture rule.
 
 - Oversized background maps use tiled or pyramidal derivatives.
 
@@ -2130,6 +2175,10 @@ Accepted for the Phase 1 prototype:
 - Phase 1 assets are raster images only, behind a kind discriminator;
   web-reference assets with overlay playback and a default-off
   media-backup adapter are the shaped deferred direction.
+
+- Align, distribute, flip, zoom to fit and selection, and snapping
+  with smart guides are Phase 1 board tooling; auto-arrange and grid
+  are deferred with scope in section 6.9.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
