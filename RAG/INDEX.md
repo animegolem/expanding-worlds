@@ -7,9 +7,71 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 0 | 0 |
-| Planned | 0 | 0 |
+| Planned | 8 | 4 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 0 | 0 |
-| **Total** | **0** | **0** |
+| **Total** | **8** | **4** |
+
+## Planned
+
+### [[AI-EPIC-001-renderer-spike|EPIC-001: Renderer spike]]
+> RFC-0001 open question 14 leaves the canvas renderer undecided between
+
+**IMPs:**
+- [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — planned
+- [[AI-IMP-002-pixijs-spike-implementation|IMP-002]] PixiJS adapter covering the full spike scenario — planned
+- [[AI-IMP-003-konva-spike-implementation|IMP-003]] Konva adapter covering the full spike scenario — planned
+- [[AI-IMP-004-renderer-decision-report|IMP-004]] Renderer comparison report and RFC decision — planned
+
+---
+
+### [[AI-EPIC-002-workspace-scaffolding|EPIC-002: Workspace scaffolding]]
+> No application code exists. RFC-0001 §13 fixes the technology
+
+---
+
+### [[AI-EPIC-003-domain-persistence-core|EPIC-003: Domain persistence core]]
+> RFC-0001 §4 defines eight record types, §5 defines 31 invariants, and
+
+---
+
+### [[AI-EPIC-004-canvas-board-loop|EPIC-004: Canvas board loop]]
+> The product must "feel first like an excellent visual board" (RFC §1),
+
+---
+
+### [[AI-EPIC-005-notes-links-phantoms|EPIC-005: Notes links phantoms]]
+> The text half of the product (RFC §4.2, §7) has no editor. Notes,
+
+---
+
+### [[AI-EPIC-006-navigation-discovery|EPIC-006: Navigation discovery]]
+> RFC §8 and §14 define how users move through and find things in a
+
+---
+
+### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
+> RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
+
+---
+
+### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
+> RFC §16 requires portable export with lossless reimport, and §17–18
+
+---
+
+## Size Watch
+
+Generated from tracked files; binary assets excluded.
+
+### > 600 LOC
+
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2340 LOC)
+
+### > 300 LOC
+
+- RAG/scripts/generate-index.sh (575 LOC)
+
+---
 
