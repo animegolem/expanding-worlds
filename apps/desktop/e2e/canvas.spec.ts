@@ -4,22 +4,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
-import type { SceneDecoration } from '@ew/canvas-engine'
 
 declare global {
   interface Window {
     ew: EwApi
-    __ewDebug?: {
-      sceneStats: () => { total: number; placements: number; decorations: number }
-      canvasId: () => string
-      camera: () => { x: number; y: number; zoom: number }
-      selection: () => string[]
-      interactionState: () => string
-      activeTool: () => string
-      decorations: () => SceneDecoration[]
-      decorationEndpoints: (id: string) => { x1: number; y1: number; x2: number; y2: number } | null
-      decorationVisible: (id: string) => boolean | null
-    }
   }
 }
 

@@ -9,13 +9,6 @@ import type { EwApi } from '../src/preload/index'
 declare global {
   interface Window {
     ew: EwApi
-    __ewDebug?: {
-      sceneStats: () => { total: number; placements: number; decorations: number }
-      canvasId: () => string
-      camera: () => { x: number; y: number; zoom: number }
-      selection: () => string[]
-      interactionState: () => string
-    }
   }
 }
 

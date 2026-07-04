@@ -5,12 +5,12 @@ tags:
   - Implementation
   - decorations
   - canvas
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-018]
 parent_epic: [[AI-EPIC-004-canvas-board-loop]]
 confidence_score: 0.75
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-021-decorations-tooling
