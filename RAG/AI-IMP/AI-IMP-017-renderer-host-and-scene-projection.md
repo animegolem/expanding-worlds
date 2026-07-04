@@ -6,12 +6,12 @@ tags:
   - renderer
   - pixijs
   - canvas
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-016]
 parent_epic: [[AI-EPIC-004-canvas-board-loop]]
 confidence_score: 0.8
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-017-renderer-host-and-scene-projection
@@ -78,15 +78,15 @@ containers construct without a GPU context; vitest covers diffing.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Add `getCanvasScene` query in queries-structure.ts: background {assetContentHash, assetMimeType, settings, color}, camera, ordered items with placement appearance columns + note title + image-asset contentHash/mimeType; trashed canvas returns null scene; tests cover appearance join, title join, trashed exclusion, deterministic order.
-- [ ] Add pixi.js to canvas-engine; export ScenePlanes creating background/content/overlay containers in fixed order.
-- [ ] Implement SceneSync: apply(snapshot) creates/updates/removes/reorders content-plane children keyed by id; unit tests for each transition incl. render-order move and no-op stability (same object identity preserved).
-- [ ] Implement renderer registry (kind → {create, update, destroy}) and the placement renderer: dot (circle + color), icon (placeholder glyph), image (sprite from `ew-asset://<hash>`, natural aspect, width/height/scale/rotation/flip applied); unit tests with a fake texture loader.
-- [ ] Render canvas background color and untiled background image sprite (settings JSON transform applied) in the background plane.
-- [ ] Register `ew-asset://` in main: resolve content hash → blob path under the open project dir, stream with `Content-Type` + long-lived immutable cache header, reject traversal/unknown hashes; deny when no project open.
-- [ ] CanvasHost.svelte + host.ts: create Pixi Application, mount planes, initial `getCanvasScene` for the root canvas, re-query on `window.ew.project.onChanged`, window-resize handling, dispose on unmount; expose `window.__ewDebug.sceneStats()`.
-- [ ] e2e canvas.spec.ts: open app with EW_PROJECT_DIR; execute CreateNode+SetNodeAppearance(dot)+CreatePlacement via the page; assert sceneStats shows the placement without reload; trash the node (TrashNode) and assert removal.
-- [ ] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
+- [x] Add `getCanvasScene` query in queries-structure.ts: background {assetContentHash, assetMimeType, settings, color}, camera, ordered items with placement appearance columns + note title + image-asset contentHash/mimeType; trashed canvas returns null scene; tests cover appearance join, title join, trashed exclusion, deterministic order.
+- [x] Add pixi.js to canvas-engine; export ScenePlanes creating background/content/overlay containers in fixed order.
+- [x] Implement SceneSync: apply(snapshot) creates/updates/removes/reorders content-plane children keyed by id; unit tests for each transition incl. render-order move and no-op stability (same object identity preserved).
+- [x] Implement renderer registry (kind → {create, update, destroy}) and the placement renderer: dot (circle + color), icon (placeholder glyph), image (sprite from `ew-asset://<hash>`, natural aspect, width/height/scale/rotation/flip applied); unit tests with a fake texture loader.
+- [x] Render canvas background color and untiled background image sprite (settings JSON transform applied) in the background plane.
+- [x] Register `ew-asset://` in main: resolve content hash → blob path under the open project dir, stream with `Content-Type` + long-lived immutable cache header, reject traversal/unknown hashes; deny when no project open.
+- [x] CanvasHost.svelte + host.ts: create Pixi Application, mount planes, initial `getCanvasScene` for the root canvas, re-query on `window.ew.project.onChanged`, window-resize handling, dispose on unmount; expose `window.__ewDebug.sceneStats()`.
+- [x] e2e canvas.spec.ts: open app with EW_PROJECT_DIR; execute CreateNode+SetNodeAppearance(dot)+CreatePlacement via the page; assert sceneStats shows the placement without reload; trash the node (TrashNode) and assert removal.
+- [x] Full gates green: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint` and desktop e2e.
 
 ### Acceptance Criteria
 
@@ -106,3 +106,18 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+- The page origin (file://) cannot fetch a custom scheme without
+  CORS: the scheme needed `secure` + `corsEnabled` privileges and an
+  `access-control-allow-origin` response header. Caught by the e2e
+  protocol assertions ("Failed to fetch"), not by the build.
+- Background color is applied as the renderer clear color rather than
+  a world-space rect: the world plane is camera-transformed (018), so
+  no finite rect can cover every viewport; the clear color is beneath
+  all planes by construction (§4.4 layering preserved).
+- Textures decode via fetch + createImageBitmap instead of Pixi
+  Assets: Pixi's loader infers parsers from URL extensions and
+  ew-asset:// URLs are extensionless hashes.
+- `src/test-helpers.ts` (fake resources/items) is tsconfig-excluded so
+  dist ships no test fakes; vitest consumes it from source.
+- pixi.js resolved to ^8.19.0; headless vitest constructs Containers
+  and Graphics without GPU as expected.

@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 4 | 7 |
+| Planned | 4 | 6 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 3 | 16 |
+| Completed | 3 | 17 |
 | **Total** | **8** | **23** |
 
 ## In Progress
@@ -19,7 +19,7 @@
 > The product must "feel first like an excellent visual board" (RFC §1),
 
 **IMPs:**
-- [[AI-IMP-017-renderer-host-and-scene-projection|IMP-017]] Renderer host and scene projection — planned
+- [[AI-IMP-017-renderer-host-and-scene-projection|IMP-017]] Renderer host and scene projection — completed
 - [[AI-IMP-018-canvas-controller-and-gesture-pipeline|IMP-018]] Canvas controller and gesture pipeline — planned
 - [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — planned
 - [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — planned
@@ -57,7 +57,7 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (3309 LOC)
+- pnpm-lock.yaml (3394 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2395 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (772 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
@@ -68,6 +68,7 @@ Generated from tracked files; binary assets excluded.
 
 - RAG/scripts/generate-index.sh (575 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (538 LOC)
+- packages/persistence/src/queries-structure.test.ts (420 LOC)
 - packages/persistence/src/handlers/notes.test.ts (419 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
@@ -75,15 +76,15 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/placements.test.ts (368 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
-- packages/persistence/src/queries-structure.test.ts (311 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
+- packages/persistence/src/queries-structure.ts (301 LOC)
 - packages/persistence/src/handlers/decorations.ts (301 LOC)
 
 ---
 
 ## Completed
 <details>
-<summary>3 EPICs, 16 IMPs completed</summary>
+<summary>3 EPICs, 17 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

@@ -1,13 +1,17 @@
 <!--
-  Tabbed main workspace (RFC-0001 §8.2). One placeholder tab for now;
-  real tab management is out of scope for AI-IMP-007.
+  Tabbed main workspace (RFC-0001 §8.2). One canvas tab hosting the
+  root canvas; real tab management arrives with EPIC-006.
 -->
+<script lang="ts">
+  import CanvasHost from './CanvasHost.svelte'
+</script>
+
 <main class="workspace" data-testid="workspace">
   <div class="tab-bar" role="tablist">
     <button class="tab active" role="tab" aria-selected="true">Canvas</button>
   </div>
   <section class="tab-content" role="tabpanel">
-    <p>Workspace content lands in a later ticket.</p>
+    <CanvasHost />
   </section>
 </main>
 
@@ -43,12 +47,6 @@
 
   .tab-content {
     flex: 1;
-    overflow: auto;
-    padding: 1rem;
-  }
-
-  .tab-content p {
-    margin: 0;
-    color: #888;
+    overflow: hidden;
   }
 </style>

@@ -1,6 +1,8 @@
-import { app, BrowserWindow, ipcMain, utilityProcess, type UtilityProcess } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol, utilityProcess, type UtilityProcess } from 'electron'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
+import { blobRelativePath } from '@ew/persistence'
 import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage } from '@ew/protocol'
 
 /**
@@ -45,6 +47,45 @@ function projectDir(): string {
   return process.env['EW_PROJECT_DIR'] ?? join(app.getPath('userData'), 'projects', 'default')
 }
 
+/**
+ * ew-asset://<sha256>: managed blobs for the sandboxed renderer
+ * (RFC-0001 §11.1 — the renderer never reads project storage
+ * directly). Content-addressed, so responses are immutable forever.
+ */
+let projectReady = false
+const ASSET_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/?$/
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'ew-asset',
+    privileges: { secure: true, stream: true, supportFetchAPI: true, corsEnabled: true },
+  },
+])
+
+function registerAssetProtocol(): void {
+  protocol.handle('ew-asset', async (request) => {
+    if (!projectReady) return new Response('no project open', { status: 503 })
+    const match = ASSET_URL_RE.exec(request.url)
+    // The regex is the traversal guard: only a bare hex hash resolves.
+    if (!match) return new Response('bad asset url', { status: 400 })
+    const path = join(projectDir(), blobRelativePath(match[1]!))
+    try {
+      const file = await net.fetch(pathToFileURL(path).toString())
+      if (!file.ok) return new Response('unknown asset', { status: 404 })
+      return new Response(file.body, {
+        headers: {
+          'cache-control': 'public, max-age=31536000, immutable',
+          // Blobs are content-addressed and non-secret within the app;
+          // the page origin (file:// or the dev server) may read them.
+          'access-control-allow-origin': '*',
+        },
+      })
+    } catch {
+      return new Response('unknown asset', { status: 404 })
+    }
+  })
+}
+
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
     width: 1280,
@@ -64,6 +105,7 @@ async function createWindow(): Promise<void> {
 }
 
 void app.whenReady().then(() => {
+  registerAssetProtocol()
   startUtility()
   void callUtility({
     type: 'init-project',
@@ -73,7 +115,9 @@ void app.whenReady().then(() => {
   }).then((response) => {
     if ('ok' in response && !response.ok) {
       console.error('[main] project init failed:', response)
+      return
     }
+    projectReady = true
   })
 
   ipcMain.handle('project:ping', () => callUtility({ type: 'ping' }))

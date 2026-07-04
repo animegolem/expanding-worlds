@@ -16,6 +16,20 @@ export interface CanvasContentItem {
   [key: string]: unknown
 }
 
+export interface CanvasScene {
+  canvasId: string
+  nodeId: string
+  camera: { x: number; y: number; zoom: number }
+  background: {
+    color: string | null
+    assetId: string | null
+    assetContentHash: string | null
+    assetMimeType: string | null
+    settings: Record<string, unknown> | null
+  }
+  items: CanvasContentItem[]
+}
+
 interface NodeAppearanceColumns {
   appearanceKind: string | null
   appearanceColor: string | null
@@ -83,6 +97,103 @@ export function registerStructureQueries(registry: QueryRegistry): void {
             : 0,
     )
     return items
+  })
+
+  // §12.2/§13.1: the one-round-trip read model behind the renderer's
+  // scene projection. Same visibility rules as getCanvasContents, plus
+  // everything a display object needs: appearance, note title (label,
+  // §4.5), image-asset addressing by content hash (ew-asset://), the
+  // camera, and the background (§4.4: color renders beneath the image
+  // when both exist).
+  registry.register('getCanvasScene', (ctx, args) => {
+    const { canvasId } = args as { canvasId: string }
+    const canvas = ctx.db.get<{
+      id: string
+      nodeId: string
+      camera: string
+      backgroundColor: string | null
+      backgroundAssetId: string | null
+      backgroundSettings: string | null
+      assetContentHash: string | null
+      assetMimeType: string | null
+    }>(
+      `SELECT c.id, c.node_id AS nodeId, c.camera,
+              c.background_color AS backgroundColor,
+              c.background_asset_id AS backgroundAssetId,
+              c.background_settings AS backgroundSettings,
+              a.content_hash AS assetContentHash,
+              a.mime_type AS assetMimeType
+       FROM canvas c
+       LEFT JOIN asset a ON a.id = c.background_asset_id
+         AND a.lifecycle_state = 'active'
+       WHERE c.id = ? AND c.project_id = ? AND c.lifecycle_state = 'active'`,
+      canvasId,
+      ctx.projectId,
+    )
+    if (!canvas) return null
+    const placements = ctx.db.all<Record<string, unknown>>(
+      `SELECT p.id, p.node_id AS nodeId, p.x, p.y, p.width, p.height, p.scale,
+              p.rotation, p.flip_x AS flipX, p.flip_y AS flipY,
+              p.render_order AS renderOrder, p.label_visible AS labelVisible,
+              ${NODE_APPEARANCE_SELECT},
+              note.title AS noteTitle,
+              a.content_hash AS assetContentHash,
+              a.mime_type AS assetMimeType,
+              a.width AS assetWidth, a.height AS assetHeight
+       FROM placement p
+       JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
+       LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       LEFT JOIN asset a ON a.id = n.appearance_asset_id
+         AND a.lifecycle_state = 'active'
+       WHERE p.canvas_id = ? AND p.lifecycle_state = 'active'`,
+      canvasId,
+    )
+    const decorations = ctx.db.all<Record<string, unknown>>(
+      `SELECT id, kind, data, render_order AS renderOrder, locked, hidden,
+              group_id AS groupId,
+              anchor_start_placement_id AS anchorStartPlacementId,
+              anchor_end_placement_id AS anchorEndPlacementId
+       FROM decoration
+       WHERE canvas_id = ? AND lifecycle_state = 'active'`,
+      canvasId,
+    )
+    const items: CanvasContentItem[] = [
+      ...placements.map((p) => ({ ...p, itemKind: 'placement' }) as CanvasContentItem),
+      ...decorations.map(
+        (d) =>
+          ({
+            ...d,
+            data: JSON.parse(d.data as string) as Record<string, unknown>,
+            itemKind: 'decoration',
+          }) as unknown as CanvasContentItem,
+      ),
+    ]
+    items.sort((a, b) =>
+      a.renderOrder !== b.renderOrder
+        ? a.renderOrder - b.renderOrder
+        : a.id < b.id
+          ? -1
+          : a.id > b.id
+            ? 1
+            : 0,
+    )
+    const scene: CanvasScene = {
+      canvasId: canvas.id,
+      nodeId: canvas.nodeId,
+      camera: JSON.parse(canvas.camera) as CanvasScene['camera'],
+      background: {
+        color: canvas.backgroundColor,
+        assetId: canvas.assetContentHash === null ? null : canvas.backgroundAssetId,
+        assetContentHash: canvas.assetContentHash,
+        assetMimeType: canvas.assetMimeType,
+        settings:
+          canvas.assetContentHash !== null && canvas.backgroundSettings !== null
+            ? (JSON.parse(canvas.backgroundSettings) as Record<string, unknown>)
+            : null,
+      },
+      items,
+    }
+    return scene
   })
 
   // §14.1: every active node; unplaced (zero active placements) is a

@@ -10,9 +10,11 @@
     "test": "electron-vite build && playwright test"
   },
   "dependencies": {
-    "@ew/protocol": "workspace:*",
+    "@ew/canvas-engine": "workspace:*",
     "@ew/commands": "workspace:*",
-    "@ew/persistence": "workspace:*"
+    "@ew/persistence": "workspace:*",
+    "@ew/protocol": "workspace:*",
+    "pixi.js": "^8.19.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

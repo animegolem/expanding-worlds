@@ -12,7 +12,7 @@ import { registerPlacementHandlers } from './handlers/placements'
 import { registerTagHandlers } from './handlers/tags'
 import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry } from './queries'
-import { registerStructureQueries, type CanvasContentItem } from './queries-structure'
+import { registerStructureQueries, type CanvasContentItem, type CanvasScene } from './queries-structure'
 
 let dir: string
 let handle: ProjectHandle
@@ -307,5 +307,114 @@ describe('acceptance: shared note, tags, interleaved reorder (RFC slice 5-9)', (
     for (let i = 1; i < keys.length; i += 1) {
       expect(keys[i]!).toBeGreaterThan(keys[i - 1]!)
     }
+  })
+})
+
+describe('getCanvasScene', () => {
+  function insertAsset(contentHash: string, width = 640, height = 480): string {
+    const assetId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO asset (id, project_id, kind, content_hash, original_filename,
+                          mime_type, width, height, storage_path, created_at, updated_at)
+       VALUES (?, ?, 'image', ?, 'pic.png', 'image/png', ?, ?, ?, ?, ?)`,
+      assetId,
+      handle.projectId,
+      contentHash,
+      width,
+      height,
+      `assets/${contentHash}`,
+      now,
+      now,
+    )
+    return assetId
+  }
+
+  it('projects placements with appearance, note title, and image-asset addressing', () => {
+    const nodeId = createNode()
+    const assetId = insertAsset('a'.repeat(64), 800, 600)
+    committed('SetNodeAppearance', {
+      nodeId,
+      appearance: { kind: 'image', assetId, crop: null },
+    })
+    const noteId = insertNote('Harbor Study')
+    handle.db.run('UPDATE node SET note_id = ? WHERE id = ?', noteId, nodeId)
+    const placementId = createPlacement(nodeId)
+
+    const scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    expect(scene.canvasId).toBe(handle.rootCanvasId)
+    expect(scene.camera).toEqual({ x: 0, y: 0, zoom: 1 })
+    const item = scene.items.find((i) => i.id === placementId)!
+    expect(item).toMatchObject({
+      itemKind: 'placement',
+      nodeId,
+      appearanceKind: 'image',
+      appearanceAssetId: assetId,
+      noteTitle: 'Harbor Study',
+      assetContentHash: 'a'.repeat(64),
+      assetMimeType: 'image/png',
+      assetWidth: 800,
+      assetHeight: 600,
+      labelVisible: 1,
+    })
+  })
+
+  it('keeps the shared render order across placements and decorations', () => {
+    const nodeId = createNode()
+    const p1 = createPlacement(nodeId)
+    const d1 = createDecoration()
+    const p2 = createPlacement(nodeId)
+    const scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    expect(scene.items.map((i) => i.id)).toEqual([p1, d1, p2])
+    const keys = scene.items.map((i) => i.renderOrder)
+    for (let i = 1; i < keys.length; i += 1) expect(keys[i]!).toBeGreaterThan(keys[i - 1]!)
+  })
+
+  it('returns null for a trashed canvas and hides trashed-node placements', () => {
+    const nodeId = createNode()
+    createPlacement(nodeId)
+    handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
+    const scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    expect(scene.items).toEqual([])
+
+    // Root canvases are trigger-protected; trash an ordinary one.
+    const ownerNode = createNode()
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId: ownerNode })
+    handle.db.run("UPDATE canvas SET lifecycle_state = 'trashed' WHERE id = ?", canvasId)
+    expect(query<CanvasScene | null>('getCanvasScene', { canvasId })).toBe(null)
+  })
+
+  it('exposes the background with color beneath and drops trashed background assets', () => {
+    const assetId = insertAsset('b'.repeat(64))
+    committed('SetCanvasBackgroundColor', {
+      canvasId: handle.rootCanvasId,
+      color: '#223344',
+    })
+    committed('SetCanvasBackground', {
+      canvasId: handle.rootCanvasId,
+      assetId,
+      settings: { x: 10, y: 20, fit: 'cover' },
+    })
+    let scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    expect(scene.background).toEqual({
+      color: '#223344',
+      assetId,
+      assetContentHash: 'b'.repeat(64),
+      assetMimeType: 'image/png',
+      settings: { x: 10, y: 20, fit: 'cover' },
+    })
+
+    // Invariant-13 analogue: a trashed background asset stops being
+    // addressable but the color survives.
+    handle.db.run("UPDATE asset SET lifecycle_state = 'trashed' WHERE id = ?", assetId)
+    scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    expect(scene.background).toEqual({
+      color: '#223344',
+      assetId: null,
+      assetContentHash: null,
+      assetMimeType: null,
+      settings: null,
+    })
   })
 })
