@@ -1,11 +1,13 @@
 import { app, BrowserWindow, ipcMain, utilityProcess, type UtilityProcess } from 'electron'
 import { join } from 'node:path'
-import type { ProjectRequest, ProjectResponse, UtilityEnvelope } from '@ew/protocol'
+import type { CommandEnvelope } from '@ew/commands'
+import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage } from '@ew/protocol'
 
 /**
  * Main process: window lifecycle and narrow IPC routing only
  * (RFC-0001 §13.2). All project work lives in the utility process;
- * main forwards requests and correlates responses by envelope id.
+ * main forwards requests, correlates responses by envelope id, and
+ * fans project-changed events out to every window.
  */
 
 let utility: UtilityProcess | null = null
@@ -16,11 +18,17 @@ function startUtility(): void {
   utility = utilityProcess.fork(join(__dirname, 'utility.cjs'), [], {
     serviceName: 'ew-project-service',
   })
-  utility.on('message', (message: UtilityEnvelope<ProjectResponse>) => {
-    const resolve = pending.get(message.id)
-    if (resolve) {
-      pending.delete(message.id)
-      resolve(message.payload)
+  utility.on('message', (message: UtilityMessage) => {
+    if (message.kind === 'response') {
+      const resolve = pending.get(message.id)
+      if (resolve) {
+        pending.delete(message.id)
+        resolve(message.payload)
+      }
+      return
+    }
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('project:event', message.event)
     }
   })
 }
@@ -31,6 +39,10 @@ function callUtility(payload: ProjectRequest): Promise<ProjectResponse> {
     pending.set(id, resolve)
     utility?.postMessage({ id, payload } satisfies UtilityEnvelope<ProjectRequest>)
   })
+}
+
+function projectDir(): string {
+  return process.env['EW_PROJECT_DIR'] ?? join(app.getPath('userData'), 'projects', 'default')
 }
 
 async function createWindow(): Promise<void> {
@@ -53,7 +65,24 @@ async function createWindow(): Promise<void> {
 
 void app.whenReady().then(() => {
   startUtility()
+  void callUtility({
+    type: 'init-project',
+    dir: projectDir(),
+    createIfMissing: true,
+    title: 'Untitled Project',
+  }).then((response) => {
+    if ('ok' in response && !response.ok) {
+      console.error('[main] project init failed:', response)
+    }
+  })
+
   ipcMain.handle('project:ping', () => callUtility({ type: 'ping' }))
+  ipcMain.handle('project:execute', (_event, envelope: CommandEnvelope) =>
+    callUtility({ type: 'execute-command', envelope }),
+  )
+  ipcMain.handle('project:query', (_event, name: string, args: unknown) =>
+    callUtility({ type: 'run-query', name, args }),
+  )
   void createWindow()
 
   app.on('activate', () => {
@@ -61,7 +90,18 @@ void app.whenReady().then(() => {
   })
 })
 
+let closingCleanly = false
 app.on('window-all-closed', () => {
-  utility?.kill()
-  app.quit()
+  if (closingCleanly) return
+  closingCleanly = true
+  // Close the project first so the writer lock releases promptly
+  // rather than waiting out the stale-heartbeat window (§11.1).
+  const finish = (): void => {
+    utility?.kill()
+    app.quit()
+  }
+  void Promise.race([
+    callUtility({ type: 'close-project' }),
+    new Promise((resolve) => setTimeout(resolve, 1_000)),
+  ]).then(finish)
 })

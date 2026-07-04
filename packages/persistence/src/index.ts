@@ -18,3 +18,12 @@ export {
   type OpenOptions,
   type ProjectHandle,
 } from './project'
+export { Dispatcher, type CommandContext } from './dispatcher'
+export { QueryRegistry, registerCoreQueries, type QueryFn, type QueryResult } from './queries'
+export { registerNodeHandlers } from './handlers/nodes'
+export {
+  openProjectService,
+  type ProjectInfo,
+  type ProjectService,
+  type ServiceOptions,
+} from './service'

@@ -6,12 +6,12 @@ tags:
   - commands
   - project-api
   - ipc
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-009]
 parent_epic: [[AI-EPIC-003-domain-persistence-core]]
 confidence_score: 0.8
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-010-command-pipeline-and-project-api
@@ -86,18 +86,18 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] `@ew/commands`: envelope, result, and error types; envelope validation (required fields, issued_at ISO, payload typed per command_type) with tests.
-- [ ] Registry with (command_type, command_version) lookup and upcaster chain; test: v1 payload upcasts to v2 handler; unknown type/version yields structured error.
-- [ ] Dispatcher: one transaction per command — handler writes, project_revision increment (invariant 23), command_log row (id, type, version, issued_at, resulting_revision per §10.2) — with a forced-failure test proving no partial state (epic NFR: failed command leaves no rows, no revision bump).
-- [ ] expected_project_revision mismatch returns structured Conflict without touching state (test).
-- [ ] Handler contract returns {effects, inverse}; CreateNode reference handler implements it; dispatcher surfaces inverse in Committed result (test executes CreateNode, executes returned inverse, state returns to prior).
-- [ ] Event emission: committed command emits project-changed {revision, command_type, affected}; in-process subscriber test.
-- [ ] Typed query registry with getProject, getNode, listNodes; renderer-safe result types.
-- [ ] `@ew/protocol`: ProjectRequest/ProjectResponse/ProjectEvent unions replacing ping-only envelope (keep ping for liveness).
-- [ ] Utility process hosts the service: open/create project on init message, route execute/query, push events via parentPort; main forwards to windows; preload exposes typed execute/query/subscribe.
-- [ ] e2e: renderer executes CreateNode against a temp project and receives Committed with revision 1+; subscribe callback fires; sandbox assertions still pass.
-- [ ] importAsset and requestDerivatives endpoints exist and return structured NOT_IMPLEMENTED (replaced by 014).
-- [ ] `pnpm check` green; commit.
+- [x] `@ew/commands`: envelope, result, and error types; envelope validation (required fields, issued_at ISO, payload typed per command_type) with tests.
+- [x] Registry with (command_type, command_version) lookup and upcaster chain; test: v1 payload upcasts to v2 handler; unknown type/version yields structured error.
+- [x] Dispatcher: one transaction per command — handler writes, project_revision increment (invariant 23), command_log row (id, type, version, issued_at, resulting_revision per §10.2) — with a forced-failure test proving no partial state (epic NFR: failed command leaves no rows, no revision bump).
+- [x] expected_project_revision mismatch returns structured Conflict without touching state (test).
+- [x] Handler contract returns {effects, inverse}; CreateNode reference handler implements it; dispatcher surfaces inverse in Committed result (test executes CreateNode, executes returned inverse, state returns to prior).
+- [x] Event emission: committed command emits project-changed {revision, command_type, affected}; in-process subscriber test.
+- [x] Typed query registry with getProject, getNode, listNodes; renderer-safe result types.
+- [x] `@ew/protocol`: ProjectRequest/ProjectResponse/ProjectEvent unions replacing ping-only envelope (keep ping for liveness).
+- [x] Utility process hosts the service: open/create project on init message, route execute/query, push events via parentPort; main forwards to windows; preload exposes typed execute/query/subscribe.
+- [x] e2e: renderer executes CreateNode against a temp project and receives Committed with revision 1+; subscribe callback fires; sandbox assertions still pass.
+- [x] importAsset and requestDerivatives endpoints exist and return structured NOT_IMPLEMENTED (replaced by 014).
+- [x] `pnpm check` green; commit.
 
 ### Acceptance Criteria
 
@@ -125,3 +125,26 @@ sprint.
 You MUST document any failed implementations, blockers or missing
 tests.
 -->
+
+- The utility bundle now imports @ew/persistence → node:sqlite; as
+  predicted in AI-IMP-009, the rollup `external` override had to
+  grow `/^node:/` for main and preload (electron-vite's defaults are
+  lost when rollupOptions is overridden — same trap as EPIC-002's
+  externals bug, caught this time before it cost anything).
+- Subscribe shape decided (RFC leaves it open): one coarse
+  `project-changed` event per committed command carrying revision,
+  command type, and affected record refs — enough for re-query
+  without inventing an event-sourcing vocabulary. Recorded in
+  @ew/commands so both sides of the seam share it.
+- Inverse-command support decided: handlers return
+  {affected, inverse}; the dispatcher surfaces the inverse on the
+  Committed result for EPIC-007's in-memory undo stack (invariant
+  31); purge-class commands will return null. CreateNode's inverse
+  is an internal DeleteDraftNode that refuses non-draft nodes until
+  AI-IMP-013 lands real lifecycle commands.
+- Graceful shutdown added beyond ticket scope: window-all-closed
+  sends close-project (releasing the writer lock promptly) with a
+  1s timeout before killing the utility process.
+- Unexpected handler exceptions return a structured INTERNAL error
+  result rather than rejecting across IPC; the transaction has
+  already rolled back at that point.

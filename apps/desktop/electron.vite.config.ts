@@ -10,7 +10,10 @@ export default defineConfig({
   main: {
     build: {
       rollupOptions: {
-        external: ['electron'],
+        // Overriding rollupOptions drops electron-vite's default
+        // externals, so list them ourselves: the electron shim and
+        // every node: builtin (the utility bundle uses node:sqlite).
+        external: ['electron', /^node:/],
         input: {
           index: 'src/main/index.ts',
           utility: 'src/utility/index.ts',
@@ -22,7 +25,7 @@ export default defineConfig({
   preload: {
     build: {
       rollupOptions: {
-        external: ['electron'],
+        external: ['electron', /^node:/],
         input: { index: 'src/preload/index.ts' },
         output: { format: 'cjs', entryFileNames: '[name].cjs' },
       },

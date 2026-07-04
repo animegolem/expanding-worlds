@@ -10,7 +10,9 @@
     "test": "electron-vite build && playwright test"
   },
   "dependencies": {
-    "@ew/protocol": "workspace:*"
+    "@ew/protocol": "workspace:*",
+    "@ew/commands": "workspace:*",
+    "@ew/persistence": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

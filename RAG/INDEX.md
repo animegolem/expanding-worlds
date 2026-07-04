@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 5 | 7 |
+| Planned | 5 | 6 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 2 | 9 |
+| Completed | 2 | 10 |
 | **Total** | **8** | **16** |
 
 ## In Progress
@@ -20,7 +20,7 @@
 
 **IMPs:**
 - [[AI-IMP-009-sqlite-foundation-and-schema|IMP-009]] Sqlite foundation and schema — completed
-- [[AI-IMP-010-command-pipeline-and-project-api|IMP-010]] Command pipeline and project api — planned
+- [[AI-IMP-010-command-pipeline-and-project-api|IMP-010]] Command pipeline and project api — completed
 - [[AI-IMP-011-notes-titles-and-link-records|IMP-011]] Notes titles and link records — planned
 - [[AI-IMP-012-structure-commands|IMP-012]] Structure commands — planned
 - [[AI-IMP-013-lifecycle-trash-restore-purge|IMP-013]] Lifecycle trash restore purge — planned
@@ -63,7 +63,7 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (3024 LOC)
+- pnpm-lock.yaml (3037 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2354 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -76,7 +76,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>2 EPICs, 9 IMPs completed</summary>
+<summary>2 EPICs, 10 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

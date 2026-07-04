@@ -12,5 +12,8 @@
   "devDependencies": {
     "typescript": "^5.5.4",
     "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "@ew/commands": "workspace:*"
   }
 }

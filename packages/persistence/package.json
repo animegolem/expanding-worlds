@@ -15,6 +15,7 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
-    "@ew/domain": "workspace:*"
+    "@ew/domain": "workspace:*",
+    "@ew/commands": "workspace:*"
   }
 }
