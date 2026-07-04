@@ -22,3 +22,4 @@ export {
 } from './registry'
 export * from './payloads/nodes'
 export * from './payloads/notes'
+export * from './payloads/assets'

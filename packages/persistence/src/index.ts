@@ -29,9 +29,45 @@ export {
   type PhantomView,
   type TitleSuggestion,
 } from './queries-notes'
+export { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 export {
   openProjectService,
   type ProjectInfo,
   type ProjectService,
   type ServiceOptions,
 } from './service'
+export {
+  commitStaged,
+  hashStaged,
+  importAsset,
+  sniffStaged,
+  stageImport,
+  type ImportDeps,
+  type ImportInput,
+  type ImportResult,
+  type StagedImport,
+} from './import/pipeline'
+export {
+  ASSETS_DIR,
+  IMPORT_TMP_DIR,
+  THUMBNAILS_DIR,
+  blobPath,
+  blobRelativePath,
+  cleanImportTemp,
+  ensureLayout,
+  importTempDir,
+  importTempRelativeDir,
+  moveIntoStore,
+} from './import/store'
+export { SNIFF_HEADER_BYTES, sniff, type SniffResult, type SniffedFormat } from './import/sniff'
+export {
+  NoopThumbnailGenerator,
+  claimNextJob,
+  enqueueThumbnail,
+  markJobDone,
+  markJobFailed,
+  processNextJob,
+  type DerivativeCtx,
+  type DerivativeGenerator,
+  type DerivativeJob,
+} from './import/derivatives'
