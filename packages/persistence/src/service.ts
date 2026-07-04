@@ -22,6 +22,7 @@ import { registerLifecycleQueries } from './queries-lifecycle'
 import { registerNoteQueries } from './queries-notes'
 import { registerSearchQueries } from './queries-search'
 import { registerStructureQueries } from './queries-structure'
+import { runRecovery, type RecoveryReport } from './recovery'
 
 export interface ProjectInfo {
   projectId: string
@@ -42,6 +43,8 @@ export interface ProjectService {
   subscribe(fn: (event: ProjectChangedEvent) => void): () => void
   /** Staged asset import per §11.2; throws DomainError on rejection. */
   importAsset(input: ImportInput): Promise<ImportResult>
+  /** §11.4 startup recovery outcome for this open. */
+  recovery(): RecoveryReport
   close(): void
 }
 
@@ -56,6 +59,13 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
     !exists && options.createIfMissing
       ? createProject(dir, options.title ?? 'Untitled Project', options)
       : openProject(dir, options)
+
+  // §11.4: recover before the API accepts a single command.
+  const recoveryReport = runRecovery({
+    db: handle.db,
+    projectId: handle.projectId,
+    dir: handle.dir,
+  })
 
   const commands = new CommandRegistry<CommandContext>()
   registerNodeHandlers(commands)
@@ -99,6 +109,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
     execute: (envelope) => dispatcher.execute(envelope),
     query: (name, args) => queries.run(queryCtx, name, args),
     subscribe: (fn) => dispatcher.subscribe(fn),
+    recovery: () => recoveryReport,
     importAsset: (input) =>
       importAsset(
         {

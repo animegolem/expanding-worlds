@@ -32,8 +32,14 @@ export interface ProjectInfo {
   revision: number
 }
 
+/** §11.4 startup-recovery outcome surfaced with a successful open. */
+export interface RecoverySummary {
+  repairs: string[]
+  integrityErrors: string[]
+}
+
 export type InitProjectResponse =
-  | { type: 'init-project'; ok: true; project: ProjectInfo }
+  | { type: 'init-project'; ok: true; project: ProjectInfo; recovery: RecoverySummary }
   | { type: 'init-project'; ok: false; code: string; message: string }
 
 export interface CloseProjectRequest {

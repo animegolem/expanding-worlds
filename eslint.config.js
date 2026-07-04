@@ -17,6 +17,14 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Plain-JS Node fixtures spawned as real child processes by
+    // integration tests (they cannot be TS: raw `node` runs them).
+    files: ['packages/*/test-fixtures/**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly', setInterval: 'readonly' },
+    },
+  },
+  {
     // RFC-0001 §11.1: the renderer never touches persistence or SQL.
     files: ['apps/desktop/src/renderer/**/*.{ts,tsx,js}'],
     rules: {

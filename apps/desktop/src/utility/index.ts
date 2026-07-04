@@ -31,7 +31,13 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
         if (request.title !== undefined) initOptions.title = request.title
         service = openProjectService(request.dir, initOptions)
         unsubscribe = service.subscribe((event) => post({ kind: 'event', event }))
-        return { type: 'init-project', ok: true, project: service.info() }
+        const { repairs, integrityErrors } = service.recovery()
+        return {
+          type: 'init-project',
+          ok: true,
+          project: service.info(),
+          recovery: { repairs, integrityErrors },
+        }
       } catch (err) {
         service = null
         const code =

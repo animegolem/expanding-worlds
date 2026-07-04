@@ -65,6 +65,7 @@ export {
   type TrashView,
 } from './queries-lifecycle'
 export { computeGcEligibleBlobs, exportLeaseGuardedHashes } from './gc'
+export { runRecovery, type RecoveryCtx, type RecoveryReport } from './recovery'
 export {
   openProjectService,
   type ProjectInfo,
