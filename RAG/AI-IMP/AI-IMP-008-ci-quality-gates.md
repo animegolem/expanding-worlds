@@ -4,7 +4,7 @@ tags:
   - IMP-LIST
   - Implementation
   - ci
-kanban_status: planned
+kanban_status: in-progress
 depends_on: AI-EPIC-002, AI-IMP-005
 parent_epic: [[AI-EPIC-002-workspace-scaffolding]]
 confidence_score: 0.85

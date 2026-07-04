@@ -3,8 +3,20 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "main": "./out/main/index.cjs",
   "scripts": {
-    "build": "echo 'desktop build lands with AI-IMP-006'",
-    "test": "echo 'desktop tests land with AI-IMP-006'"
+    "dev": "electron-vite dev",
+    "build": "tsc --noEmit && electron-vite build",
+    "test": "electron-vite build && playwright test"
+  },
+  "dependencies": {
+    "@ew/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.0",
+    "electron": "^39.8.10",
+    "electron-vite": "^5.0.0",
+    "vite": "^8.1.3"
   }
 }

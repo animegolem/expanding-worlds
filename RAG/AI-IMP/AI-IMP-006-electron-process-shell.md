@@ -4,12 +4,12 @@ tags:
   - IMP-LIST
   - Implementation
   - electron
-kanban_status: planned
+kanban_status: completed
 depends_on: AI-EPIC-002, AI-IMP-005
 parent_epic: [[AI-EPIC-002-workspace-scaffolding]]
 confidence_score: 0.8
 date_created: 2026-07-03
-date_completed:
+date_completed: 2026-07-03
 ---
 
 # AI-IMP-006-electron-process-shell
@@ -57,12 +57,12 @@ launch test asserting the round-trip payload.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] electron-vite dev and build produce a launchable app window.
-- [ ] Renderer is sandboxed with context isolation; verify no `require` in renderer scope.
-- [ ] Utility process forks at startup and answers ping over MessageChannel.
-- [ ] Typed `window.ew.project.ping()` resolves `{pong: true, from: 'utility'}`.
-- [ ] Playwright `_electron` e2e asserts the round-trip and window title.
-- [ ] `pnpm -r build`, `pnpm -r test`, `pnpm lint` stay green across the workspace.
+- [x] electron-vite dev and build produce a launchable app window.
+- [x] Renderer is sandboxed with context isolation; verify no `require` in renderer scope.
+- [x] Utility process forks at startup and answers ping over MessageChannel.
+- [x] Typed `window.ew.project.ping()` resolves `{pong: true, from: 'utility'}`.
+- [x] Playwright `_electron` e2e asserts the round-trip and window title.
+- [x] `pnpm -r build`, `pnpm -r test`, `pnpm lint` stay green across the workspace.
 
 ### Acceptance Criteria
 
@@ -80,3 +80,27 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Completed 2026-07-03. Issues worth remembering:
+
+1. Playwright launch stalls were NOT version skew: custom rollupOptions
+   in electron.vite.config.ts clobbered the default externals, inlining
+   the electron npm shim into the main bundle, which threw at load
+   before any window existed. Fix: explicit external: ['electron'] in
+   main and preload. Hours of version-hunting chased this symptom.
+2. Electron 43 is genuinely incompatible with electron-vite 5
+   (getElectronMajorVer cannot resolve electron/package.json through
+   43's exports map). Pinned electron@39 until electron-vite catches
+   up.
+3. electron's install.js silently fails to extract the binary on this
+   machine (dist/ ends up with only LICENSES.chromium.html, exit 0).
+   Workaround: ditto -x -k <cached zip> dist/ plus
+   path.txt = Electron.app/Contents/MacOS/Electron. Affects every
+   fresh node_modules; carried into agent briefs and IMP-008.
+4. pnpm add/remove churn dropped the hidden hoist link
+   (.pnpm/node_modules/electron) that electron-vite resolves through;
+   only a full node_modules reinstall restored it.
+5. Deviation: main ↔ utility messaging uses utilityProcess parentPort
+   postMessage (the built-in channel) rather than an explicit
+   MessageChannelMain pair; same seam, less ceremony, revisit when the
+   Project API grows streaming responses.

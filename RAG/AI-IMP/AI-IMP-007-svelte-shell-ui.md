@@ -5,7 +5,7 @@ tags:
   - Implementation
   - svelte
   - renderer
-kanban_status: planned
+kanban_status: in-progress
 depends_on: AI-EPIC-002, AI-IMP-006
 parent_epic: [[AI-EPIC-002-workspace-scaffolding]]
 confidence_score: 0.8
