@@ -3,12 +3,14 @@ import {
   COMMAND_DELETE_DRAFT_CANVAS,
   COMMAND_SET_CANVAS_BACKGROUND,
   COMMAND_SET_CANVAS_BACKGROUND_COLOR,
+  COMMAND_SET_CANVAS_CAMERA,
   DomainError,
   type CommandRegistry,
   type CreateCanvasPayload,
   type DeleteDraftCanvasPayload,
   type SetCanvasBackgroundPayload,
   type SetCanvasBackgroundColorPayload,
+  type SetCanvasCameraPayload,
 } from '@ew/commands'
 import type { CommandContext } from '../dispatcher'
 
@@ -184,4 +186,25 @@ export function registerCanvasHandlers(registry: CommandRegistry<CommandContext>
       }
     },
   )
+
+  registry.register<SetCanvasCameraPayload>(COMMAND_SET_CANVAS_CAMERA, 1, (ctx, payload) => {
+    // §4.4 camera persistence; §6.9 keeps camera motion out of undo,
+    // so the inverse is null and the undo stack (invariant 31) skips
+    // it. Persisting via a command keeps the §10 pipeline authoritative.
+    requireCanvas(ctx, payload.canvasId, 'id')
+    const { x, y, zoom } = payload.camera
+    if (![x, y, zoom].every(Number.isFinite) || zoom <= 0) {
+      throw new DomainError('INVALID_CAMERA', `camera must be finite with zoom > 0`)
+    }
+    ctx.db.run(
+      'UPDATE canvas SET camera = ?, updated_at = ? WHERE id = ?',
+      JSON.stringify({ x, y, zoom }),
+      ctx.now(),
+      payload.canvasId,
+    )
+    return {
+      affected: [{ kind: 'canvas', id: payload.canvasId }],
+      inverse: null,
+    }
+  })
 }

@@ -284,3 +284,55 @@ export const COMMAND_UPDATE_DECORATION = 'UpdateDecoration'
 export const COMMAND_DELETE_DECORATION = 'DeleteDecoration'
 export const COMMAND_GROUP_DECORATIONS = 'GroupDecorations'
 export const COMMAND_UNGROUP_DECORATIONS = 'UngroupDecorations'
+
+// ------------------------------------------------------ batch transform
+
+/** New full transform for one placement inside TransformContent. */
+export interface PlacementTransformItem {
+  kind: 'placement'
+  placementId: string
+  x: number
+  y: number
+  width: number | null
+  height: number | null
+  scale: number
+  rotation: number
+}
+
+/**
+ * Full replacement data for one decoration inside TransformContent —
+ * decoration geometry lives inside its data JSON (§4.9).
+ */
+export interface DecorationTransformItem {
+  kind: 'decoration'
+  decorationId: string
+  data: Record<string, unknown>
+}
+
+export type TransformContentItem = PlacementTransformItem | DecorationTransformItem
+
+/**
+ * §10.2/invariant 25: one completed multi-selection gesture — drag,
+ * multi-resize, rotate, align, distribute — commits exactly one
+ * durable command carrying the full resulting transform of every
+ * member. All items must live on `canvasId` and be active. The
+ * inverse is the same command with prior values.
+ */
+export interface TransformContentPayload {
+  canvasId: string
+  items: TransformContentItem[]
+}
+
+/**
+ * §4.4 camera persistence. Not undoable (inverse null): §6.9 treats
+ * camera motion as non-durable navigation, so the application undo
+ * stack (invariant 31) skips inverse-null commands; persisting via a
+ * command keeps every write inside the §10 pipeline.
+ */
+export interface SetCanvasCameraPayload {
+  canvasId: string
+  camera: { x: number; y: number; zoom: number }
+}
+
+export const COMMAND_TRANSFORM_CONTENT = 'TransformContent'
+export const COMMAND_SET_CANVAS_CAMERA = 'SetCanvasCamera'

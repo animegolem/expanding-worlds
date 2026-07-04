@@ -63,6 +63,9 @@ importers:
 
   packages/canvas-engine:
     dependencies:
+      '@ew/commands':
+        specifier: workspace:*
+        version: link:../commands
       pixi.js:
         specifier: ^8.19.0
         version: 8.19.0

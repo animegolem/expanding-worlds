@@ -175,3 +175,40 @@ describe('canvas backgrounds (§4.4, §6.7)', () => {
     expect(row()).toEqual({ background_asset_id: assetId, background_color: null })
   })
 })
+
+describe('SetCanvasCamera (§4.4 persistence, §6.9 non-durable navigation)', () => {
+  it('persists the camera with a null inverse and a command_log row', () => {
+    const result = committed('SetCanvasCamera', {
+      canvasId: handle.rootCanvasId,
+      camera: { x: 120, y: -40, zoom: 2.5 },
+    })
+    expect(result.inverse).toBeNull()
+    const row = handle.db.get<{ camera: string }>(
+      'SELECT camera FROM canvas WHERE id = ?',
+      handle.rootCanvasId,
+    )!
+    expect(JSON.parse(row.camera)).toEqual({ x: 120, y: -40, zoom: 2.5 })
+    const logged = handle.db.get<{ n: number }>(
+      "SELECT count(*) AS n FROM command_log WHERE command_type = 'SetCanvasCamera'",
+    )!
+    expect(logged.n).toBe(1)
+  })
+
+  it('rejects non-finite values, zero zoom, and unknown canvases', () => {
+    expect(
+      exec('SetCanvasCamera', {
+        canvasId: handle.rootCanvasId,
+        camera: { x: 0, y: 0, zoom: 0 },
+      }),
+    ).toMatchObject({ status: 'error', code: 'INVALID_CAMERA' })
+    expect(
+      exec('SetCanvasCamera', {
+        canvasId: handle.rootCanvasId,
+        camera: { x: Number.NaN, y: 0, zoom: 1 },
+      }),
+    ).toMatchObject({ status: 'error', code: 'INVALID_CAMERA' })
+    expect(
+      exec('SetCanvasCamera', { canvasId: uuidv7(), camera: { x: 0, y: 0, zoom: 1 } }),
+    ).toMatchObject({ status: 'error', code: 'CANVAS_NOT_FOUND' })
+  })
+})

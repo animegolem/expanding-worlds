@@ -5,6 +5,7 @@ import {
   COMMAND_MOVE_PLACEMENT,
   COMMAND_REORDER_CONTENT,
   COMMAND_SET_PLACEMENT_LABEL_VISIBILITY,
+  COMMAND_TRANSFORM_CONTENT,
   DomainError,
   type CommandRegistry,
   type CreatePlacementPayload,
@@ -13,6 +14,8 @@ import {
   type MovePlacementPayload,
   type ReorderContentPayload,
   type SetPlacementLabelVisibilityPayload,
+  type TransformContentItem,
+  type TransformContentPayload,
 } from '@ew/commands'
 import type { CommandContext } from '../dispatcher'
 import {
@@ -372,6 +375,101 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
           afterId: priorAfterId,
           beforeId: priorBeforeId,
         } satisfies ReorderContentPayload,
+      },
+    }
+  })
+
+  registry.register<TransformContentPayload>(COMMAND_TRANSFORM_CONTENT, 1, (ctx, payload) => {
+    // Invariant 25: the whole completed multi-selection gesture —
+    // drag, resize, rotate, align, distribute — is this one command.
+    if (payload.items.length === 0) {
+      throw new DomainError('EMPTY_TRANSFORM', 'TransformContent requires at least one item')
+    }
+    const seen = new Set<string>()
+    const affected: { kind: 'placement' | 'decoration'; id: string }[] = []
+    const inverseItems: TransformContentItem[] = []
+    for (const item of payload.items) {
+      const id = item.kind === 'placement' ? item.placementId : item.decorationId
+      // A duplicate would corrupt the inverse (its prior state is the
+      // first item's result).
+      if (seen.has(id)) {
+        throw new DomainError('DUPLICATE_TRANSFORM_ITEM', `item ${id} appears twice`)
+      }
+      seen.add(id)
+      if (item.kind === 'placement') {
+        const prior = requirePlacement(ctx, item.placementId)
+        if (prior.canvas_id !== payload.canvasId) {
+          throw new DomainError(
+            'CROSS_CANVAS_TRANSFORM',
+            `placement ${item.placementId} is not on canvas ${payload.canvasId}`,
+          )
+        }
+        ctx.db.run(
+          `UPDATE placement SET x = ?, y = ?, width = ?, height = ?, scale = ?,
+                  rotation = ?, updated_at = ?
+           WHERE id = ?`,
+          item.x,
+          item.y,
+          item.width,
+          item.height,
+          item.scale,
+          item.rotation,
+          ctx.now(),
+          item.placementId,
+        )
+        inverseItems.push({
+          kind: 'placement',
+          placementId: item.placementId,
+          x: prior.x,
+          y: prior.y,
+          width: prior.width,
+          height: prior.height,
+          scale: prior.scale,
+          rotation: prior.rotation,
+        })
+        affected.push({ kind: 'placement', id: item.placementId })
+      } else {
+        const prior = ctx.db.get<{ canvas_id: string; data: string }>(
+          `SELECT canvas_id, data FROM decoration
+           WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+          item.decorationId,
+          ctx.projectId,
+        )
+        if (!prior) {
+          throw new DomainError(
+            'DECORATION_NOT_FOUND',
+            `no active decoration ${item.decorationId}`,
+          )
+        }
+        if (prior.canvas_id !== payload.canvasId) {
+          throw new DomainError(
+            'CROSS_CANVAS_TRANSFORM',
+            `decoration ${item.decorationId} is not on canvas ${payload.canvasId}`,
+          )
+        }
+        ctx.db.run(
+          'UPDATE decoration SET data = ?, updated_at = ? WHERE id = ?',
+          JSON.stringify(item.data),
+          ctx.now(),
+          item.decorationId,
+        )
+        inverseItems.push({
+          kind: 'decoration',
+          decorationId: item.decorationId,
+          data: JSON.parse(prior.data) as Record<string, unknown>,
+        })
+        affected.push({ kind: 'decoration', id: item.decorationId })
+      }
+    }
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_TRANSFORM_CONTENT,
+        commandVersion: 1,
+        payload: {
+          canvasId: payload.canvasId,
+          items: inverseItems,
+        } satisfies TransformContentPayload,
       },
     }
   })

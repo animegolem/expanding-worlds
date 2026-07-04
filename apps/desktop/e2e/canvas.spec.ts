@@ -11,6 +11,9 @@ declare global {
     __ewDebug?: {
       sceneStats: () => { total: number; placements: number; decorations: number }
       canvasId: () => string
+      camera: () => { x: number; y: number; zoom: number }
+      selection: () => string[]
+      interactionState: () => string
     }
   }
 }
@@ -115,6 +118,100 @@ test('canvas host projects the root canvas and stays in sync', async () => {
   expect(served.cache).toContain('immutable')
   expect(served.missingStatus).toBe(404)
   expect([400, 404, 'rejected']).toContain(served.malformedStatus)
+
+  await app.close()
+})
+
+test('controller: pan, zoom-at-cursor, marquee selection, camera persistence', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-controller-'))
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  })
+  const win = await app.firstWindow()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+
+  // Seed two dot placements through the Project API.
+  await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    for (const [x, y] of [
+      [150, 150],
+      [260, 200],
+    ]) {
+      const nodeId = crypto.randomUUID()
+      await run('CreateNode', { nodeId })
+      await run('CreatePlacement', {
+        placementId: crypto.randomUUID(),
+        canvasId: window.__ewDebug!.canvasId(),
+        nodeId,
+        x,
+        y,
+        width: 40,
+        height: 40,
+      })
+    }
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Marquee over both placements (camera is identity: world = screen).
+  await win.mouse.move(box.x + 80, box.y + 80)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 330, box.y + 280, { steps: 5 })
+  await win.mouse.up()
+  const selected = await win.evaluate(() => window.__ewDebug!.selection())
+  expect(selected).toHaveLength(2)
+
+  // Wheel-zoom at a point; the camera must move off identity.
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.wheel(0, -400)
+  const zoomed = await win.evaluate(() => window.__ewDebug!.camera())
+  expect(zoomed.zoom).toBeGreaterThan(1)
+
+  // Space-drag pans.
+  await win.keyboard.down('Space')
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 120, box.y + 160, { steps: 3 })
+  await win.mouse.up()
+  await win.keyboard.up('Space')
+  const panned = await win.evaluate(() => window.__ewDebug!.camera())
+  expect(panned.x).not.toBe(zoomed.x)
+
+  // The debounced SetCanvasCamera lands; a reload restores the view.
+  await expect
+    .poll(
+      () =>
+        win.evaluate(async () => {
+          const project = await window.ew.project.query('getProject')
+          if (!project.ok) return 'no-project'
+          const { rootNodeId } = project.result as { rootNodeId: string }
+          const canvas = await window.ew.project.query('getCanvasByNode', { nodeId: rootNodeId })
+          if (!canvas.ok) return 'no-canvas'
+          return (canvas.result as { camera: string }).camera
+        }),
+      { timeout: 5_000 },
+    )
+    .toBe(JSON.stringify(panned))
+  await win.reload()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+  const restored = await win.evaluate(() => window.__ewDebug!.camera())
+  expect(restored.x).toBeCloseTo(panned.x, 5)
+  expect(restored.zoom).toBeCloseTo(panned.zoom, 5)
 
   await app.close()
 })

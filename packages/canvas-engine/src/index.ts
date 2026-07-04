@@ -21,6 +21,31 @@ export {
 } from './renderers/registry'
 export { DEFAULT_DOT_RADIUS, cssColorToNumber, placementRenderer } from './renderers/placement'
 export { BackgroundSync } from './renderers/background'
+export { Camera, MAX_ZOOM, MIN_ZOOM, type Point, type Rect } from './camera'
+export {
+  hitTest,
+  isHittable,
+  itemWorldAABB,
+  marqueeHits,
+  placementSize,
+  unionBounds,
+} from './hit-test'
+export { Selection } from './selection'
+export {
+  GestureSession,
+  placementTransformOf,
+  type GestureUpdate,
+  type PlacementTransform,
+} from './gesture'
+export { noopSnapProvider, type SnapGuide, type SnapProvider, type SnapQuery, type SnapResult } from './snap'
+export { CommandGateway, type ProjectExecutor } from './command-gateway'
+export {
+  CanvasController,
+  type ControllerHost,
+  type GestureContext,
+  type GestureDriver,
+  type PointerModifiers,
+} from './controller'
 
 /** The default registry with every built-in renderer installed. */
 export function createDefaultRegistry(): RendererRegistry {

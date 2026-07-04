@@ -1,17 +1,26 @@
 import {
   BackgroundSync,
+  CanvasController,
+  CommandGateway,
   createDefaultRegistry,
   createScenePlanes,
+  itemWorldAABB,
   SceneSync,
   type CanvasScene,
+  type ControllerHost,
+  type GestureUpdate,
   type RendererResources,
+  type SceneItem,
+  type SnapGuide,
 } from '@ew/canvas-engine'
-import { Application, Texture } from 'pixi.js'
+import { Application, Graphics, Texture } from 'pixi.js'
+import type { Rect } from '@ew/canvas-engine'
 
 /**
  * Bridges the Project API to the canvas engine: mounts the Pixi
  * application, resolves the root canvas, projects `getCanvasScene`,
- * and re-projects on every project-changed event. All domain access
+ * re-projects on every project-changed event, and feeds pointer/
+ * keyboard input to the Canvas Controller (§13.1). All domain access
  * goes through window.ew (§11.1); textures arrive over ew-asset://.
  */
 
@@ -24,6 +33,9 @@ declare global {
     __ewDebug?: {
       sceneStats: () => { total: number; placements: number; decorations: number }
       canvasId: () => string
+      camera: () => { x: number; y: number; zoom: number }
+      selection: () => string[]
+      interactionState: () => string
     }
   }
 }
@@ -44,6 +56,10 @@ const textureResources: RendererResources = {
   },
 }
 
+const CAMERA_PERSIST_DEBOUNCE_MS = 500
+const SELECTION_COLOR = 0x4a9df0
+const GUIDE_COLOR = 0xf04a7d
+
 export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostHandle> {
   const app = new Application()
   await app.init({ resizeTo: element, antialias: true, background: '#17191d' })
@@ -51,14 +67,120 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
 
   const planes = createScenePlanes()
   app.stage.addChild(planes.world, planes.overlay)
-  const sync = new SceneSync(planes.content, createDefaultRegistry(), textureResources)
+  const registry = createDefaultRegistry()
+  const sync = new SceneSync(planes.content, registry, textureResources)
   const backgroundSync = new BackgroundSync(planes.background, textureResources)
 
-  const project = await runQuery<{ rootNodeId: string }>('getProject')
+  const selectionGfx = new Graphics()
+  const marqueeGfx = new Graphics()
+  const guidesGfx = new Graphics()
+  planes.overlay.addChild(selectionGfx, marqueeGfx, guidesGfx)
+
+  const project = await runQuery<{ id: string; rootNodeId: string; revision: number }>(
+    'getProject',
+  )
   const rootCanvas = await runQuery<{ id: string }>('getCanvasByNode', {
     nodeId: project.rootNodeId,
   })
   const canvasId = rootCanvas.id
+  const gateway = new CommandGateway(
+    { execute: (envelope) => window.ew.project.execute(envelope) },
+    project.id,
+    project.revision,
+  )
+
+  function drawSelection(): void {
+    selectionGfx.clear()
+    for (const item of controller.selectedItems()) {
+      const aabb = itemWorldAABB(item)
+      if (!aabb) continue
+      const tl = controller.camera.worldToScreen({ x: aabb.x, y: aabb.y })
+      const br = controller.camera.worldToScreen({
+        x: aabb.x + aabb.width,
+        y: aabb.y + aabb.height,
+      })
+      selectionGfx
+        .rect(tl.x - 2, tl.y - 2, br.x - tl.x + 4, br.y - tl.y + 4)
+        .stroke({ width: 1.5, color: SELECTION_COLOR })
+    }
+  }
+
+  let cameraTimer: ReturnType<typeof setTimeout> | null = null
+  function persistCameraNow(): void {
+    cameraTimer = null
+    // Camera motion is non-durable navigation (§6.9): no revision
+    // race can corrupt anything, so skip the optimistic check.
+    void gateway.execute(
+      'SetCanvasCamera',
+      { canvasId, camera: controller.camera.state() },
+      { checkRevision: false },
+    )
+  }
+  function persistCameraSoon(): void {
+    if (cameraTimer) clearTimeout(cameraTimer)
+    cameraTimer = setTimeout(persistCameraNow, CAMERA_PERSIST_DEBOUNCE_MS)
+  }
+
+  const controllerHost: ControllerHost = {
+    applyEphemeral(id: string, update: GestureUpdate) {
+      const object = sync.get(id)
+      const item = sync.item(id)
+      if (!object || !item) return
+      if (update.kind === 'placement' && item.itemKind === 'placement') {
+        const t = update.transform
+        registry
+          .resolve(item)
+          .update(object, { ...item, ...t } as SceneItem, item, textureResources)
+      } else if (update.kind === 'decoration' && item.itemKind === 'decoration') {
+        registry
+          .resolve(item)
+          .update(object, { ...item, data: update.data } as SceneItem, item, textureResources)
+      }
+      drawSelection()
+    },
+    restoreItem(item: SceneItem) {
+      const object = sync.get(item.id)
+      if (object) registry.resolve(item).update(object, item, item, textureResources)
+      drawSelection()
+    },
+    commitTransform(payload) {
+      void gateway.execute('TransformContent', payload)
+    },
+    renderMarquee(rect: Rect | null) {
+      marqueeGfx.clear()
+      if (rect) {
+        marqueeGfx
+          .rect(rect.x, rect.y, rect.width, rect.height)
+          .fill({ color: SELECTION_COLOR, alpha: 0.08 })
+          .stroke({ width: 1, color: SELECTION_COLOR })
+      }
+    },
+    renderGuides(guides: SnapGuide[]) {
+      guidesGfx.clear()
+      for (const guide of guides) {
+        const from =
+          guide.axis === 'x'
+            ? controller.camera.worldToScreen({ x: guide.position, y: guide.from })
+            : controller.camera.worldToScreen({ x: guide.from, y: guide.position })
+        const to =
+          guide.axis === 'x'
+            ? controller.camera.worldToScreen({ x: guide.position, y: guide.to })
+            : controller.camera.worldToScreen({ x: guide.to, y: guide.position })
+        guidesGfx.moveTo(from.x, from.y).lineTo(to.x, to.y).stroke({
+          width: 1,
+          color: GUIDE_COLOR,
+        })
+      }
+    },
+    cameraChanged() {
+      controller.camera.applyTo(planes.world)
+      drawSelection()
+      persistCameraSoon()
+    },
+  }
+
+  const controller = new CanvasController(controllerHost, canvasId)
+  controller.selection.onChanged(() => drawSelection())
 
   let refreshing = false
   let refreshQueued = false
@@ -73,11 +195,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const scene = await runQuery<CanvasScene | null>('getCanvasScene', { canvasId })
       if (!scene) {
         sync.clear()
+        controller.setItems([])
         return
       }
       const color = backgroundSync.apply(scene.background)
       app.renderer.background.color = color ?? '#17191d'
       sync.apply(scene.items)
+      controller.setItems(scene.items)
+      drawSelection()
     } finally {
       refreshing = false
       if (refreshQueued) {
@@ -87,19 +212,76 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
   }
 
+  // Restore the persisted viewpoint before first paint (§4.4).
+  const initialScene = await runQuery<CanvasScene | null>('getCanvasScene', { canvasId })
+  if (initialScene) controller.camera.set(initialScene.camera)
+  if (cameraTimer) clearTimeout(cameraTimer) // set() is a restore, not motion
+  cameraTimer = null
   await refresh()
-  const unsubscribe = window.ew.project.onChanged(() => {
+
+  const unsubscribe = window.ew.project.onChanged((event) => {
+    gateway.noteRevision(event.revision)
     void refresh()
   })
+
+  // ---- input wiring ----
+  let spaceHeld = false
+  const local = (event: PointerEvent | WheelEvent): { x: number; y: number } => {
+    const bounds = app.canvas.getBoundingClientRect()
+    return { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
+  }
+  const modifiers = (event: PointerEvent) => ({
+    shift: event.shiftKey,
+    alt: event.altKey,
+    space: spaceHeld,
+    button: event.button,
+  })
+  const onPointerDown = (event: PointerEvent): void => {
+    app.canvas.setPointerCapture(event.pointerId)
+    controller.pointerDown(local(event), modifiers(event))
+  }
+  const onPointerMove = (event: PointerEvent): void => {
+    controller.pointerMove(local(event), modifiers(event))
+  }
+  const onPointerUp = (event: PointerEvent): void => {
+    controller.pointerUp(local(event), modifiers(event))
+  }
+  const onWheel = (event: WheelEvent): void => {
+    event.preventDefault()
+    controller.wheel(local(event), event.deltaY)
+  }
+  const onKeyDown = (event: KeyboardEvent): void => {
+    if (event.code === 'Space') spaceHeld = true
+    if (event.code === 'Escape') controller.escape()
+  }
+  const onKeyUp = (event: KeyboardEvent): void => {
+    if (event.code === 'Space') spaceHeld = false
+  }
+  app.canvas.addEventListener('pointerdown', onPointerDown)
+  app.canvas.addEventListener('pointermove', onPointerMove)
+  app.canvas.addEventListener('pointerup', onPointerUp)
+  app.canvas.addEventListener('wheel', onWheel, { passive: false })
+  window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('keyup', onKeyUp)
 
   window.__ewDebug = {
     sceneStats: () => sync.stats(),
     canvasId: () => canvasId,
+    camera: () => controller.camera.state(),
+    selection: () => controller.selection.ids(),
+    interactionState: () => controller.state,
   }
 
   return {
     destroy() {
       unsubscribe()
+      // Flush a pending camera persist so the last rest isn't lost.
+      if (cameraTimer) {
+        clearTimeout(cameraTimer)
+        persistCameraNow()
+      }
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
       delete window.__ewDebug
       app.destroy(true, { children: true })
     },

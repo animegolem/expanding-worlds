@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from '../dispatcher'
 import { createProject, type ProjectHandle } from '../project'
 import { orderedCanvasContent } from '../render-order'
+import { registerCanvasHandlers } from './canvases'
 import { registerDecorationHandlers } from './decorations'
 import { registerNodeHandlers } from './nodes'
 import { registerPlacementHandlers, releaseConnectorAnchors } from './placements'
@@ -21,6 +22,7 @@ beforeEach(() => {
   handle = createProject(dir, 'Placement Test')
   const registry = new CommandRegistry<CommandContext>()
   registerNodeHandlers(registry)
+  registerCanvasHandlers(registry)
   registerPlacementHandlers(registry)
   registerDecorationHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
@@ -364,5 +366,98 @@ describe('releaseConnectorAnchors (helper for AI-IMP-013)', () => {
     )!
     expect(row.anchor_start_placement_id).toBeNull()
     expect(JSON.parse(row.data)).toEqual({ start: { x: 1, y: 2 } })
+  })
+})
+
+describe('TransformContent (invariant 25: one command per gesture)', () => {
+  function transform(placementId: string, x: number, y: number) {
+    return {
+      kind: 'placement' as const,
+      placementId,
+      x,
+      y,
+      width: null,
+      height: null,
+      scale: 1,
+      rotation: 0,
+    }
+  }
+
+  it('applies mixed placement and decoration transforms atomically', () => {
+    const p1 = createPlacement({ x: 0, y: 0 })
+    const p2 = createPlacement({ x: 10, y: 10 })
+    const d = createDecoration({ data: { x: 5, y: 5, text: 'note' } })
+    const result = committed('TransformContent', {
+      canvasId: handle.rootCanvasId,
+      items: [
+        transform(p1, 100, 50),
+        transform(p2, 110, 60),
+        { kind: 'decoration', decorationId: d, data: { x: 105, y: 55, text: 'note' } },
+      ],
+    })
+    expect(placementRow(p1)).toMatchObject({ x: 100, y: 50 })
+    expect(placementRow(p2)).toMatchObject({ x: 110, y: 60 })
+    const data = handle.db.get<{ data: string }>('SELECT data FROM decoration WHERE id = ?', d)!
+    expect(JSON.parse(data.data)).toEqual({ x: 105, y: 55, text: 'note' })
+    expect(result.affected).toHaveLength(3)
+  })
+
+  it('round-trips through its inverse', () => {
+    const p = createPlacement({ x: 1, y: 2 })
+    const d = createDecoration({ data: { x: 3, y: 4 } })
+    const result = committed('TransformContent', {
+      canvasId: handle.rootCanvasId,
+      items: [
+        transform(p, 200, 300),
+        { kind: 'decoration', decorationId: d, data: { x: 9, y: 9 } },
+      ],
+    })
+    undo(result.inverse)
+    expect(placementRow(p)).toMatchObject({ x: 1, y: 2 })
+    const data = handle.db.get<{ data: string }>('SELECT data FROM decoration WHERE id = ?', d)!
+    expect(JSON.parse(data.data)).toEqual({ x: 3, y: 4 })
+  })
+
+  it('rejects cross-canvas items and leaves no partial state', () => {
+    const nodeId = uuidv7()
+    committed('CreateNode', { nodeId })
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId })
+    const local = createPlacement({ x: 0, y: 0 })
+    const foreign = uuidv7()
+    committed('CreatePlacement', { placementId: foreign, canvasId, nodeId })
+
+    const result = exec('TransformContent', {
+      canvasId: handle.rootCanvasId,
+      items: [transform(local, 50, 50), transform(foreign, 60, 60)],
+    })
+    expect(result).toMatchObject({ status: 'error', code: 'CROSS_CANVAS_TRANSFORM' })
+    // The transaction rolled back the first item too.
+    expect(placementRow(local)).toMatchObject({ x: 0, y: 0 })
+  })
+
+  it('rejects empty payloads, duplicates, and stale revisions', () => {
+    const p = createPlacement()
+    expect(exec('TransformContent', { canvasId: handle.rootCanvasId, items: [] })).toMatchObject({
+      status: 'error',
+      code: 'EMPTY_TRANSFORM',
+    })
+    expect(
+      exec('TransformContent', {
+        canvasId: handle.rootCanvasId,
+        items: [transform(p, 1, 1), transform(p, 2, 2)],
+      }),
+    ).toMatchObject({ status: 'error', code: 'DUPLICATE_TRANSFORM_ITEM' })
+
+    const stale = dispatcher.execute({
+      commandId: uuidv7(),
+      projectId: handle.projectId,
+      commandType: 'TransformContent',
+      commandVersion: 1,
+      expectedProjectRevision: 0,
+      issuedAt: new Date().toISOString(),
+      payload: { canvasId: handle.rootCanvasId, items: [transform(p, 1, 1)] },
+    })
+    expect(stale).toMatchObject({ status: 'conflict' })
   })
 })
