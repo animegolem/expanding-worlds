@@ -637,6 +637,13 @@ never re-bind implicitly.
 28. A phantom note persists no records and reserves no title until
 materialization.
 
+29. An editing burst commits one UpdateNote command on completion, and
+pending buffers are flushed before any command reads or rewrites the
+note body.
+
+30. Note-body edits are undone through editor-local history and never
+enter the structural undo stack.
+
 # 6. Creation, reuse, and promotion flows
 
 ## 6.1 Drop an image onto a canvas
@@ -1256,13 +1263,32 @@ action. Drag, resize, rotate, freehand, and similar pointer interactions
 MAY update ephemeral renderer state continuously but commit one durable
 command when the gesture completes.
 
+Continuous text entry follows the same principle. The note editor
+buffer is ephemeral state, and an editing burst commits one UpdateNote
+command when it completes: on an idle debounce, on editor blur or pane
+or tab switch, on application quit, and as a forced flush before any
+command that reads or rewrites the note's body, including rename
+rewrites, trash, export, and link operations. There is no explicit
+save action. Each committed UpdateNote advances project_revision once
+and refreshes the note's link records and search index; saving a note,
+wherever this document says it, means committing an UpdateNote.
+
+Before a command rewrites note bodies, pending editor buffers for the
+affected notes MUST be flushed. The rewritten text arrives in open
+editors as an external change folded into the editor's local undo
+history rather than replacing the document wholesale.
+
 Structural undo emits an inverse command through the same command path.
 It does not pop arbitrary database state or treat the relational store
 as a disposable event-sourced projection.
 
-Text-editor undo inside the active CodeMirror document may remain
-fine-grained and local. Project time travel is a separate future
-feature.
+Note-body edits do not enter the structural undo stack. Inside a
+focused editor, undo is CodeMirror's fine-grained local history, which
+MAY travel back through commits made during the same editing session.
+Structural undo covers all other commands; renaming a note remains a
+structural, undoable command. Structural undo can therefore never
+silently revert prose typed elsewhere. Project time travel is a
+separate future feature.
 
 A successfully committed command increments project_revision. Commands
 with an incompatible expected_project_revision return a structured
@@ -1683,9 +1709,11 @@ verify unresolved rendering, title suggestions, and one aggregated
 phantom view; materialize through Create and Place; and verify both
 tokens bind project-wide in one command.
 
-15. Rename a linked note and verify inbound unaliased Markdown tokens
-and indexed links update transactionally, and that unresolved tokens
-matching the new title bind.
+15. Rename a linked note while another editor holds uncommitted edits
+to a source note, and verify the dirty buffer flushes before the
+rewrite, inbound unaliased Markdown tokens and indexed links update
+transactionally, unresolved tokens matching the new title bind, and
+the rewritten text folds into the open editor's local undo history.
 
 16. Verify zero-, one-, and many-location spatial behavior and the
 grouped location chooser.
@@ -1717,7 +1745,8 @@ invalidates dependent undo and enables safe garbage collection.
 decoration edges are excluded by default.
 
 25. Close and reopen the application without data loss, duplicate
-project writers, or unreconciled temporary imports.
+project writers, or unreconciled temporary imports, including a note
+edit still inside its debounce window at quit.
 
 # 18. Acceptance criteria
 
@@ -1825,6 +1854,14 @@ The model is successfully implemented when:
 
 - Continuous drag, resize, rotate, freehand, and similar gestures commit
   one durable command on completion.
+
+- Note editing has no explicit save action: an editing burst commits
+  one UpdateNote on idle, blur, quit, or forced flush, advancing
+  project_revision once and refreshing link records and search.
+
+- Note-body edits undo through editor-local history only; structural
+  undo never reverts prose, while note rename remains structurally
+  undoable.
 
 - Canvas cycles, including self-reference, remain legal and bounded by
   visited-set traversal.
@@ -1988,6 +2025,10 @@ Accepted for the Phase 1 prototype:
   committed mutations advance project_revision.
 
 - Continuous pointer gestures commit one durable command on completion.
+
+- Note text commits as debounced, gesture-style UpdateNote commands
+  with forced flush before body-reading commands; body edits are
+  excluded from structural undo and owned by editor-local history.
 
 - One project service holds the authoritative project write lock.
 
