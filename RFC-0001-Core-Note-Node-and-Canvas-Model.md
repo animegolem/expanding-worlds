@@ -1116,6 +1116,17 @@ canvas plus viewport and selection context, or another workspace
 projection. Whether bookmarks appear as a bar or dropdown remains a
 responsive UI decision.
 
+Stale navigation targets degrade explicitly, never silently. Back and
+Forward skip and collapse history entries whose target is trashed or
+purged. Bookmarks are never deleted automatically: a bookmark whose
+target is trashed presents an In Trash state with a Restore action
+instead of opening, and a bookmark whose target was purged presents a
+broken state and offers removal. Because bookmarks address stable IDs,
+restoring a target revalidates its bookmarks without further action.
+Saved viewport or selection context referencing records that no longer
+exist degrades gracefully: the target opens and the missing context is
+ignored.
+
 ## 8.2 Workspace composition
 
 The following is provisional UI direction rather than a normative
@@ -1875,7 +1886,8 @@ and highlights the affected content.
 
 20. Delete a placement; move a canvas, node, and note to Trash; inspect
 impact summaries; restore the trashed records; and verify preserved
-relationships.
+relationships, including a bookmark to the trashed canvas showing In
+Trash, offering Restore, and working again after restoration.
 
 21. Delete the last placement of a bare image node, verify the node
 moves to Trash in the same command, use Keep in Project to restore it
@@ -1969,6 +1981,11 @@ The model is successfully implemented when:
 
 - Nodes place from the library by drag or Place on Current Canvas, and
   a zero-node note places as a labeled dot node in one transaction.
+
+- History skips trashed or purged targets; bookmarks to trashed
+  targets offer Restore, bookmarks to purged targets show broken and
+  offer removal, and stale viewport or selection context is ignored
+  gracefully.
 
 - Moving a non-root canvas to Trash preserves referenced nodes and notes
   by default; the root canvas cannot be trashed.
@@ -2234,6 +2251,10 @@ Accepted for the Phase 1 prototype:
 - The node library and Uses sidebar are placement sources: library
   drag and Place on Current Canvas create placements, and zero-node
   notes embody as labeled dot nodes in one transaction.
+
+- Stale navigation degrades explicitly: history skips dead targets,
+  and bookmarks surface In Trash or broken states rather than being
+  auto-deleted or silently retargeted.
 
 - A full asset-library manager, asset tags, watched folders, and Eagle
   or Allusion importers are deferred behind future versioned adapters.
