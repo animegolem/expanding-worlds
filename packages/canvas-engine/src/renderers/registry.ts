@@ -12,6 +12,12 @@ import type { SceneItem } from '../types'
 export interface RendererResources {
   /** Resolves a texture for a managed asset URL; injectable for tests. */
   loadTexture: (url: string) => Promise<unknown>
+  /**
+   * Looks up another item's live display object (e.g. a connector
+   * following its anchor placement each frame). Optional: absent in
+   * minimal test setups.
+   */
+  resolveObject?: (id: string) => Container | undefined
 }
 
 export interface ItemRenderer<T extends SceneItem = SceneItem> {

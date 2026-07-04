@@ -56,13 +56,11 @@ async function runQuery<T>(name: string, args?: unknown): Promise<T> {
 }
 
 /** Decodes off the GPU path deliberately: no Pixi URL sniffing needed. */
-const textureResources: RendererResources = {
-  async loadTexture(url: string) {
-    const response = await fetch(url)
-    if (!response.ok) throw new Error(`asset fetch failed: ${url} (${response.status})`)
-    const bitmap = await createImageBitmap(await response.blob())
-    return Texture.from(bitmap)
-  },
+async function loadTexture(url: string): Promise<Texture> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`asset fetch failed: ${url} (${response.status})`)
+  const bitmap = await createImageBitmap(await response.blob())
+  return Texture.from(bitmap)
 }
 
 const CAMERA_PERSIST_DEBOUNCE_MS = 500
@@ -77,8 +75,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const planes = createScenePlanes()
   app.stage.addChild(planes.world, planes.overlay)
   const registry = createDefaultRegistry()
-  const sync = new SceneSync(planes.content, registry, textureResources)
-  const backgroundSync = new BackgroundSync(planes.background, textureResources)
+  const resources: RendererResources = {
+    loadTexture,
+    resolveObject: (id) => sync.get(id),
+  }
+  const sync: SceneSync = new SceneSync(planes.content, registry, resources)
+  const backgroundSync = new BackgroundSync(planes.background, resources)
 
   const selectionGfx = new Graphics()
   const marqueeGfx = new Graphics()
@@ -139,17 +141,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         const t = update.transform
         registry
           .resolve(item)
-          .update(object, { ...item, ...t } as SceneItem, item, textureResources)
+          .update(object, { ...item, ...t } as SceneItem, item, resources)
       } else if (update.kind === 'decoration' && item.itemKind === 'decoration') {
         registry
           .resolve(item)
-          .update(object, { ...item, data: update.data } as SceneItem, item, textureResources)
+          .update(object, { ...item, data: update.data } as SceneItem, item, resources)
       }
       drawSelection()
     },
     restoreItem(item: SceneItem) {
       const object = sync.get(item.id)
-      if (object) registry.resolve(item).update(object, item, item, textureResources)
+      if (object) registry.resolve(item).update(object, item, item, resources)
       drawSelection()
     },
     commitTransform(payload) {
