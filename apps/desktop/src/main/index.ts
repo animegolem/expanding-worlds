@@ -86,6 +86,113 @@ function registerAssetProtocol(): void {
   })
 }
 
+// ---- URL fetch for import (RFC-0001 §6.1, AI-IMP-020) ----
+// A URL-only drop fetches over the network as a user-initiated act;
+// main does the fetch because the renderer is sandboxed. Non-image or
+// oversized bodies are rejected here so no bytes reach the pipeline.
+
+const FETCH_URL_TIMEOUT_MS = 30_000
+const FETCH_URL_MAX_BYTES = 100 * 1024 * 1024
+
+/** Minimal magic-byte check for the Phase 1 raster formats (§4.7).
+ * Deliberately re-implemented here: main must not depend on
+ * persistence internals, and the authoritative sniff still runs in
+ * the import pipeline. */
+function looksLikeImage(bytes: Uint8Array): boolean {
+  const at = (i: number): number => bytes[i] ?? -1
+  const ascii = (offset: number, text: string): boolean =>
+    [...text].every((ch, i) => at(offset + i) === ch.charCodeAt(0))
+  if (at(0) === 0x89 && ascii(1, 'PNG')) return true
+  if (at(0) === 0xff && at(1) === 0xd8 && at(2) === 0xff) return true
+  if (ascii(0, 'GIF87a') || ascii(0, 'GIF89a')) return true
+  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return true
+  if (ascii(4, 'ftyp') && (ascii(8, 'avif') || ascii(8, 'avis'))) return true
+  return false
+}
+
+function filenameForUrl(url: URL, response: Response): string {
+  const disposition = response.headers.get('content-disposition')
+  const match = disposition ? /filename\*?=(?:utf-8'')?"?([^";]+)"?/i.exec(disposition) : null
+  if (match?.[1]) {
+    try {
+      return decodeURIComponent(match[1])
+    } catch {
+      return match[1]
+    }
+  }
+  const base = url.pathname.split('/').filter((part) => part.length > 0).pop()
+  if (!base) return 'downloaded-image'
+  try {
+    return decodeURIComponent(base)
+  } catch {
+    return base
+  }
+}
+
+export type FetchUrlForImportResult =
+  | { ok: true; bytes: Uint8Array; filename: string }
+  | { ok: false; message: string }
+
+async function fetchUrlForImport(rawUrl: string): Promise<FetchUrlForImportResult> {
+  let url: URL
+  try {
+    url = new URL(rawUrl)
+  } catch {
+    return { ok: false, message: `not a valid URL: ${rawUrl}` }
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return { ok: false, message: 'only http(s) URLs can be fetched for import' }
+  }
+  const abort = new AbortController()
+  const timer = setTimeout(() => abort.abort(), FETCH_URL_TIMEOUT_MS)
+  try {
+    const response = await net.fetch(url.toString(), { signal: abort.signal })
+    if (!response.ok) {
+      return { ok: false, message: `fetch failed: HTTP ${response.status} for ${url.toString()}` }
+    }
+    const declared = Number(response.headers.get('content-length') ?? '0')
+    if (declared > FETCH_URL_MAX_BYTES) {
+      return { ok: false, message: 'the response exceeds the 100 MB import limit' }
+    }
+    const chunks: Uint8Array[] = []
+    let total = 0
+    if (response.body) {
+      const reader = response.body.getReader()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        total += value.byteLength
+        if (total > FETCH_URL_MAX_BYTES) {
+          abort.abort()
+          return { ok: false, message: 'the response exceeds the 100 MB import limit' }
+        }
+        chunks.push(value)
+      }
+    }
+    const bytes = new Uint8Array(total)
+    let offset = 0
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    const contentType = response.headers.get('content-type') ?? ''
+    if (!contentType.toLowerCase().startsWith('image/') && !looksLikeImage(bytes)) {
+      return { ok: false, message: `the URL did not return an image: ${url.toString()}` }
+    }
+    return { ok: true, bytes, filename: filenameForUrl(url, response) }
+  } catch (err) {
+    if (abort.signal.aborted) {
+      return { ok: false, message: `fetch timed out after ${FETCH_URL_TIMEOUT_MS / 1000} s` }
+    }
+    return {
+      ok: false,
+      message: `fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+    }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
     width: 1280,
@@ -127,6 +234,17 @@ void app.whenReady().then(() => {
   ipcMain.handle('project:query', (_event, name: string, args: unknown) =>
     callUtility({ type: 'run-query', name, args }),
   )
+  ipcMain.handle(
+    'project:import-asset',
+    (_event, input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string }) =>
+      callUtility({
+        type: 'import-asset',
+        bytes: input.bytes,
+        originalFilename: input.originalFilename,
+        ...(input.sourceUrl !== undefined ? { sourceUrl: input.sourceUrl } : {}),
+      }),
+  )
+  ipcMain.handle('project:fetch-url', (_event, url: string) => fetchUrlForImport(String(url)))
   void createWindow()
 
   app.on('activate', () => {

@@ -34,6 +34,7 @@ export { registerCanvasHandlers } from './handlers/canvases'
 export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'
 export { registerTagHandlers } from './handlers/tags'
 export { registerDecorationHandlers } from './handlers/decorations'
+export { registerPinHandlers } from './handlers/pin'
 export {
   compareOrder,
   nextRenderOrder,

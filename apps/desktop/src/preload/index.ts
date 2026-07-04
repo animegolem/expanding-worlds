@@ -1,6 +1,15 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
-import type { ExecuteCommandResponse, PingResponse, RunQueryResponse } from '@ew/protocol'
+import type {
+  ExecuteCommandResponse,
+  ImportAssetResponse,
+  PingResponse,
+  RunQueryResponse,
+} from '@ew/protocol'
+
+export type FetchUrlForImportResult =
+  | { ok: true; bytes: Uint8Array; filename: string }
+  | { ok: false; message: string }
 
 /**
  * The only capability surface the sandboxed renderer receives
@@ -19,6 +28,14 @@ const api = {
     },
     query: (name: string, args?: unknown): Promise<RunQueryResponse> =>
       ipcRenderer.invoke('project:query', name, args) as Promise<RunQueryResponse>,
+    importAsset: (input: {
+      bytes: Uint8Array
+      originalFilename: string
+      sourceUrl?: string
+    }): Promise<ImportAssetResponse> =>
+      ipcRenderer.invoke('project:import-asset', input) as Promise<ImportAssetResponse>,
+    fetchUrlForImport: (url: string): Promise<FetchUrlForImportResult> =>
+      ipcRenderer.invoke('project:fetch-url', url) as Promise<FetchUrlForImportResult>,
     onChanged: (callback: (event: ProjectChangedEvent) => void): (() => void) => {
       const listener = (_event: IpcRendererEvent, change: ProjectChangedEvent): void =>
         callback(change)
