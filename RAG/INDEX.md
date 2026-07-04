@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 4 | 2 |
+| In Progress | 1 | 1 |
+| Planned | 4 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 3 | 21 |
@@ -24,7 +24,7 @@
 - [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — completed
 - [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — completed
 - [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — completed
-- [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — planned
+- [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — in-progress
 - [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — planned
 
 ---

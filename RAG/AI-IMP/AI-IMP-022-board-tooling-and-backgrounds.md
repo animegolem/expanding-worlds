@@ -6,7 +6,7 @@ tags:
   - canvas
   - snapping
   - backgrounds
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-019, AI-IMP-021]
 parent_epic: [[AI-EPIC-004-canvas-board-loop]]
 confidence_score: 0.7
