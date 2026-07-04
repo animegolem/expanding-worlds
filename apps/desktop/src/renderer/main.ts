@@ -1,5 +1,7 @@
-const statusEl = document.getElementById('status')
+import { mount } from 'svelte'
+import App from './App.svelte'
 
-void window.ew.project.ping().then((response) => {
-  if (statusEl) statusEl.textContent = JSON.stringify(response)
-})
+const target = document.getElementById('app')
+if (!target) throw new Error('renderer: #app mount point missing')
+
+mount(App, { target })
