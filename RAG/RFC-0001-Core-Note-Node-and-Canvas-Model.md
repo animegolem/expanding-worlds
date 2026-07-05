@@ -387,8 +387,8 @@ canvas is mounted as a live renderer.
 
 The canvas has three conceptual render planes: a dedicated background
 plane; one shared ordered plane for placements and decorations; and
-temporary interaction overlays such as selection boxes and handles.
-Named layers are deferred.
+temporary interaction overlays such as selection outlines, marquees,
+and smart guides. Named layers are deferred.
 
 Every placement and decoration in the normal content plane MUST have a
 canvas-scoped render_order that forms a deterministic total order. Lower
@@ -615,9 +615,9 @@ other content; resizing a nearby placement never affects it.
 Legibility is a property of the current zoom, and there is no
 automatic rescaling: the layout is authoritative, and zooming is how
 it is read. Newly created text SHOULD default to a world size legible
-at the creating viewport, fixed thereafter; resize handles on a text
-selection scale that world size uniformly (rev 0.12), so text behaves
-like scalable art text rather than reflowing.
+at the creating viewport, fixed thereafter; resizing a text selection
+scales that world size uniformly (rev 0.12), so text behaves like
+scalable art text rather than reflowing.
 
 Canvas text styling is WHOLE-OBJECT (rev 0.12): one font family —
 installed system fonts enumerated via Local Font Access (rev 0.13),
@@ -1014,7 +1014,19 @@ at the pointer; holding Space or dragging with the middle button pans.
 Whether wheel-zoom versus wheel-pan needs a user preference is an open
 question (§19). The pointer SHOULD communicate interaction state — a
 grab cursor while panning, directional cursors over resize and rotate
-handles.
+zones.
+
+**Cursor zones, not handles (rev 0.17).** Selection draws a thin
+accent outline only; no transform handles are ever rendered. The
+cursor is the affordance, driven by hot zones around the selected
+object: inside means move; within a few pixels of an edge means
+directional resize; a corner means diagonal resize; a narrow band
+just outside a corner means rotate; empty canvas means grab and pan.
+Option-drag inside duplicates (a copy per §6.5 — another placement
+of the same node). A locked object shows a refusal cursor and draws
+no further state. Zone widths are provisional feel constants. The
+label-visibility toggle and other selection controls live on the
+§8.4 charm bar rather than on drawn adornments.
 
 While dragging, placements and decorations SHOULD snap to the edges
 and centers of nearby content, with smart guides rendered in the
@@ -1431,6 +1443,92 @@ opens the note panel; selecting a canvas opens it as the active
 canvas. Quick-open matches by title_key and does not include phantom
 titles, which remain reachable through links and wiki-link
 suggestions.
+
+## 8.4 Node charms and click grammar
+
+Content-hint charms are the census of what a node holds, replacing
+any hover-to-discover scheme. Two glyphs only: **page** (has a note)
+and **frame** (has a canvas). A node shows at most one of each,
+side-by-side and never stacked, inset inside one image corner
+(lower-right default). Charms carry a subtle scrim chip so they read
+over busy art. Charms are UI, not pixels: they never appear in crop
+or flip previews or in any export, and they follow the §8.2
+engagement cadence and screen-size visibility rule. A bare node at
+rest shows no charm; ghost charms appear only inside creation flows.
+The title strip below the image belongs to the §4.5 label and never
+collides with charms.
+
+The click grammar (resolving open question 3):
+
+| **Target** | **Gesture** | **Result** |
+|----|----|----|
+| image | single click | select and show the charm bar |
+| page charm | single click | the note opens tethered beside the node; the canvas does not change |
+| frame charm | single click | dive into the nested canvas; its note stays shut |
+| image | double click | everything: dive into the canvas and open its note. A note-only node opens the note; a canvas-only node dives |
+
+Charms are the exploded view of what double-click does; there is
+nothing to memorize.
+
+**Selection and the charm bar.** Selection renders as a thin accent
+outline only — no drawn handles, ever (§6.9 cursor zones carry the
+transform affordances). The charm bar floats beneath the selected
+node: crop · flip H · flip V · divider · make-canvas · note · tags
+`#` · lock, reusing the same page/frame glyphs as the hint charms.
+`#` pops the node's tag chips; clicking a chip opens the tag panel
+(§4.8).
+
+## 8.5 Note panels
+
+Wherever this document says "note pane," the logical note surface is
+meant; the shell realizes it as floating panels. A note opens as a
+**tethered** panel beside its node, marked by a dashed tail to the
+node. The panel tracks its node as the camera moves; panel chrome
+and text render at screen scale (the tail stretches, the type does
+not). One tethered panel exists at a time — opening another note
+replaces it. A **pin** action converts the tethered panel to a
+screen-fixed panel that survives panning and navigation; pinned
+panels accumulate, and nothing ever auto-unpins them — unpinning is
+the user's act alone.
+
+**The indicator escalates with how broken the spatial link is:**
+
+- Tethered, node on-screen: nothing — the tail is the attribution.
+
+- Pinned, node on-screen: the source node wears an accent halo,
+  visually distinct from selection.
+
+- Pinned, node off-screen on the same canvas: a small edge chip
+  points toward the node; clicking it flies home.
+
+- Pinned, node on another canvas: the panel header grows an origin
+  label naming that canvas; clicking it flies across boards as a
+  navigation event (§8.1).
+
+The canvas is a node, so the active canvas's own note is "the node
+you are standing inside": a screen-fixed corner charm (lower-left)
+is its page charm — a ghost on approach when no note exists, solid
+when one does — and clicking it toggles a panel anchored to that
+charm. A phantom panel opened on a note-less node or canvas shows an
+empty editor and persists nothing until the first committed edit
+(§7.2); the hint charm turns solid at that moment. The panel
+surfaces its subject node's tags as chips when it has a node
+subject; a zero-node note shows none.
+
+## 8.6 Toasts and the ongoing-state perch
+
+Transient failures and state *transitions* surface as toasts (enter
+and resolve). An **ongoing** condition — the project service
+restarting, an integrity error, anything that holds over time — MUST
+keep a visible perch for as long as it holds: a warning charm
+appended to the mode rail, appearing only while a condition exists,
+pulsing once on arrival, and opening a detail panel anchored to
+itself. Multiple conditions stack as one charm with a count. When no
+condition holds, no slot exists and no space is reserved. This is
+the same existence rule as the §8.5 indicators: the surface lives
+exactly as long as the broken state does. The §11.4 no-silent-hang
+requirement surfaces here; a transient toast alone never satisfies
+it. The interim status strip retires only when this perch ships.
 
 # 9. Deletion, trash, and resource retention
 
