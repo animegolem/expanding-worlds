@@ -358,8 +358,9 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   await exec(ctx, 'FlipPlacement', { placementId: flipTarget, axis: 'x' })
   const flipped = await scene()
   expect(flipped.items.find((i) => i['id'] === flipTarget)!['flipX']).toBe(1)
-  // Zoom to fit / to selection: camera only, no durable command
-  // (before the 500 ms camera persist lands).
+  // Zoom to fit / to selection: camera only — no CONTENT command;
+  // the debounced camera persist lands whenever it lands, so this
+  // goes through the command log (AI-IMP-050).
   rev = await revision(win)
   const zoomBefore = await win.evaluate(() => window.__ewDebug!.camera().zoom)
   await win.getByTestId('zoom-fit').click()
@@ -367,9 +368,9 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.camera().zoom))
     .not.toBe(zoomBefore)
-  expect(await revision(win)).toBe(rev)
+  expect(await contentCommandsSince(win, rev)).toHaveLength(0)
   await win.getByTestId('zoom-selection').click()
-  expect(await revision(win)).toBe(rev)
+  expect(await contentCommandsSince(win, rev)).toHaveLength(0)
 
   // ---- Item 9: the same node placed twice, plus a zero-node note
   // placed from the sources panel (labeled dot appears).
