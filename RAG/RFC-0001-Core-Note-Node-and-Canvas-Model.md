@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.8          | 4 July 2026      |
+| Accepted for Phase 1 | 0.9          | 4 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -883,6 +883,18 @@ Moving or reordering a group preserves the relative render order of its
 members. Grouping does not create a separate render plane or permit one
 group to contain semantic nodes.
 
+Grouping is presentation state and stays that way. The relational
+model MUST NOT mirror the visual arrangement of a board: structure
+comes from content — notes, tags, links, and sub-canvases — never from
+where things happen to sit. PureRef-style parent-child image
+hierarchies are deliberately not adopted; durable containment is what
+sub-canvases are for. If prototype use shows groups need to be more
+directly manipulable than select-and-move (a dungeon board grouping
+mobs and treasure, say), the sanctioned shape is a **frame**: an
+on-canvas object placed and ordered like any other content that other
+content sits inside — not a new relational overlay. Frames are
+deferred pending artist feedback (§19).
+
 Connector endpoints MAY be free points or anchored to placements.
 Connector geometry remains visual decoration and does not create a
 semantic relationship.
@@ -901,11 +913,24 @@ asset is never modified.
 Zoom to fit and zoom to selection adjust camera state only and are not
 durable commands.
 
+**Camera input.** Input mapping follows platform muscle memory rather
+than inventing its own: on trackpads, pinch MUST zoom centered on the
+pointer and two-finger scroll SHOULD pan; a discrete mouse wheel zooms
+at the pointer; holding Space or dragging with the middle button pans.
+Whether wheel-zoom versus wheel-pan needs a user preference is an open
+question (§19). The pointer SHOULD communicate interaction state — a
+grab cursor while panning, directional cursors over resize and rotate
+handles.
+
 While dragging, placements and decorations SHOULD snap to the edges
 and centers of nearby content, with smart guides rendered in the
 temporary interaction overlay plane. Snapping is an ephemeral
 interaction aid: the gesture still commits exactly one durable command
 on completion, and a modifier key SHOULD temporarily disable snapping.
+Smart guides SHOULD be visually quiet — thin, dotted, reduced
+opacity — and appear only while a snap is actively engaged. Engagement
+SHOULD use hysteresis, releasing at a slightly larger distance than it
+engages, so content does not oscillate at the threshold.
 
 **Deferred with scope.** Auto-arrange (pack) — algorithmic reflow of
 the selected placements into a compact non-overlapping arrangement —
@@ -1189,6 +1214,13 @@ ontology rule:
 
 - Relationship/data views are separate renderers from the art canvas
   while querying the same domain model.
+
+Chrome direction: the canvas is the application, and UI chrome stays
+minimal and summonable. Tools hover at the edges of the board rather
+than framing it, the note editor reads as a sidebar the canvas yields
+to, and the overall register sits between Photoshop and an IDE —
+panels earn their pixels and collapse when idle. This is design
+language steering future panel decisions, not a normative layout.
 
 The exact split layout, docking behavior, project switching, and tab
 rules should be tested with the intended artist user rather than frozen
@@ -1827,6 +1859,22 @@ Drawn lines, arrows, and connectors are decorations and do not appear as
 semantic graph edges. A future explicit relationship feature may promote
 or create semantic edges through a separate operation.
 
+## 14.3 Canvas contents outline (deferred with scope)
+
+Deferred to the navigation iteration. A contents panel for the active
+canvas lists its placements, decorations, and sub-canvas placements —
+name or kind plus thumbnail where available — in render order, with
+presentation groups shown as nesting. Selecting an entry selects and
+reveals the object on the board, giving occluded or off-screen content
+a guaranteed recovery path. Sub-canvas entries MAY expand in place to
+show their own contents; because canvas containment is a graph and
+cycles are legal, a canvas already open on the current expansion path
+renders as a navigation link rather than expanding again. The outline
+is a read projection over existing scene queries plus the render-order
+operations of section 6.8 and introduces no new domain records. It is
+the recursive containment structure made visible — the app's thesis
+that arranging images quietly builds data.
+
 # 15. Future authoritative collaboration seam
 
 Phase 1 remains local-only: no server, sync, account, or protocol
@@ -2219,6 +2267,15 @@ placement, label, and render-order machinery unchanged.
 pipeline, overlay playback behavior, and the configuration surface for
 the optional media-backup adapter.
 
+18. Whether camera input mapping needs a user preference (mouse-wheel
+zoom versus wheel pan) once artists with mixed trackpad and mouse
+setups weigh in.
+
+19. Whether frame objects — the on-canvas containers sanctioned in
+section 6.8 — become necessary after prototype use, and what
+containment semantics they carry (spatial capture on drag versus
+explicit membership).
+
 # 20. Decision summary
 
 Accepted for the Phase 1 prototype:
@@ -2353,6 +2410,17 @@ Accepted for the Phase 1 prototype:
 - Align, distribute, flip, zoom to fit and selection, and snapping
   with smart guides are Phase 1 board tooling; auto-arrange and grid
   are deferred with scope in section 6.9.
+
+- Camera input follows platform muscle memory: pinch zooms at the
+  pointer, two-finger scroll pans, wheel zooms, Space or middle-drag
+  pans; the cursor communicates interaction state. Smart guides render
+  quiet and appear only while engaged; snapping uses hysteresis.
+
+- Grouping stays canvas-local presentation state; relational data
+  never mirrors board arrangement. Frame-like on-canvas containers are
+  the sanctioned future shape if groups need to be more (section 6.8),
+  and a cycle-safe canvas contents outline is deferred with scope
+  (section 14.3).
 
 - Search indexes notes, tag names, asset filenames, and canvas text;
   quick-open covers notes and canvas-owning nodes and excludes phantom
