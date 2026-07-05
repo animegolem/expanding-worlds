@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 4 | 5 |
+| In Progress | 1 | 1 |
+| Planned | 4 | 4 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 4 | 23 |
@@ -19,7 +19,7 @@
 > First hands-on use of the EPIC-004 build was jarring where it should
 
 **IMPs:**
-- [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — planned
+- [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — in-progress
 - [[AI-IMP-025-texture-correctness-and-drag-fidelity|IMP-025]] Texture correctness and drag fidelity — planned
 - [[AI-IMP-026-quiet-snapping|IMP-026]] Quiet snapping — planned
 - [[AI-IMP-027-decoration-geometry-pass|IMP-027]] Decoration geometry pass — planned
