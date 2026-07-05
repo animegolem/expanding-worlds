@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 3 | 3 |
+| Planned | 3 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 7 | 53 |
+| Completed | 7 | 54 |
 | **Total** | **12** | **57** |
 
 ## In Progress
@@ -42,7 +42,7 @@
 **IMPs:**
 - [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — completed
 - [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — completed
-- [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — planned
+- [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — completed
 - [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — planned
 - [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — planned
 
@@ -86,16 +86,17 @@ Generated from tracked files; binary assets excluded.
 ### > 300 LOC
 
 - RAG/scripts/generate-index.sh (575 LOC)
+- apps/desktop/e2e/decorations.spec.ts (563 LOC)
 - apps/desktop/e2e/slice.spec.ts (538 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
-- apps/desktop/e2e/decorations.spec.ts (473 LOC)
 - apps/desktop/e2e/canvas.spec.ts (469 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/e2e/import.spec.ts (461 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (458 LOC)
+- apps/desktop/src/renderer/DecorationToolbar.svelte (456 LOC)
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
@@ -109,7 +110,6 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
-- apps/desktop/src/renderer/DecorationToolbar.svelte (336 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
@@ -123,7 +123,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>7 EPICs, 53 IMPs completed</summary>
+<summary>7 EPICs, 54 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

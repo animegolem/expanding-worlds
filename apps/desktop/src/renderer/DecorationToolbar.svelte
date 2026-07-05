@@ -117,6 +117,67 @@
     // The commit's project-changed → scene-applied signal refreshes us.
     void action()
   }
+
+  // §4.9 rev 0.16 / AI-IMP-055: drawn decorations stay restylable
+  // after placement. Stroke-bearing kinds only; text has its own row.
+  const STYLED_KINDS = new Set(['shape', 'line', 'arrow', 'path', 'connector'])
+  const selectedStyled = $derived(selected.filter((d) => STYLED_KINDS.has(d.kind)))
+  const styledLead = $derived(
+    selectedStyled.length > 0
+      ? (selectedStyled[0]!.data as {
+          stroke?: string
+          strokeWidth?: number
+          fill?: string
+          cornerRadius?: number
+          shape?: string
+        })
+      : null,
+  )
+  const selectedRects = $derived(
+    selectedStyled.filter((d) => d.kind === 'shape' && (d.data as { shape?: string }).shape === 'rect'),
+  )
+  const selectedShapes = $derived(selectedStyled.filter((d) => d.kind === 'shape'))
+
+  /** One UpdateDecoration per eligible selected decoration, each
+   * composed from FRESH data (AI-IMP-049 lesson). `fill` and
+   * `cornerRadius` only apply where they mean something. */
+  function updateStyled(patch: {
+    stroke?: string
+    strokeWidth?: number
+    fill?: string | null
+    cornerRadius?: number
+  }): void {
+    const targets = selectedStyled.map((d) => ({ id: d.id, kind: d.kind }))
+    if (targets.length === 0) return
+    run(async () => {
+      const response = await window.ew.project.query('getCanvasContents', {
+        canvasId: handle.canvasId,
+      })
+      if (!response.ok) return
+      const byId = new Map(
+        (response.result as Array<{ id: string; data?: unknown }>).map((item) => [item.id, item]),
+      )
+      for (const target of targets) {
+        const fresh = byId.get(target.id)
+        if (!fresh || typeof fresh.data !== 'object' || fresh.data === null) continue
+        const base = fresh.data as Record<string, unknown>
+        const isShape = target.kind === 'shape'
+        const isRect = isShape && base['shape'] === 'rect'
+        const next: Record<string, unknown> = { ...base }
+        if (patch.stroke !== undefined) next['stroke'] = patch.stroke
+        if (patch.strokeWidth !== undefined) next['strokeWidth'] = patch.strokeWidth
+        if (patch.fill !== undefined && isShape) {
+          if (patch.fill === null) delete next['fill']
+          else next['fill'] = patch.fill
+        }
+        if (patch.cornerRadius !== undefined && isRect) next['cornerRadius'] = patch.cornerRadius
+        await handle.gateway.execute('UpdateDecoration', {
+          decorationId: target.id,
+          set: { data: next },
+        })
+      }
+    })
+  }
 </script>
 
 <div class="decoration-toolbar" data-testid="decoration-toolbar">
@@ -165,6 +226,65 @@
       <input type="color" data-testid="style-text-color" bind:value={textColor} />
     </label>
   </div>
+  {#if styledLead}
+    <div class="row" data-testid="selection-style-controls">
+      <label>
+        Stroke
+        <input
+          type="color"
+          data-testid="sel-stroke"
+          value={styledLead.stroke ?? '#dde3ea'}
+          onchange={(e) => updateStyled({ stroke: (e.currentTarget as HTMLInputElement).value })}
+        />
+      </label>
+      <label>
+        Width
+        <input
+          type="number"
+          min="0.1"
+          step="0.5"
+          data-testid="sel-stroke-width"
+          value={styledLead.strokeWidth ?? 2}
+          onchange={(e) => {
+            const width = Number((e.currentTarget as HTMLInputElement).value)
+            if (Number.isFinite(width) && width > 0) updateStyled({ strokeWidth: width })
+          }}
+        />
+      </label>
+      {#if selectedShapes.length > 0}
+        <label>
+          Fill
+          <input
+            type="color"
+            data-testid="sel-fill"
+            value={styledLead.fill ?? '#000000'}
+            onchange={(e) => updateStyled({ fill: (e.currentTarget as HTMLInputElement).value })}
+          />
+          <button type="button" data-testid="sel-fill-none" onclick={() => updateStyled({ fill: null })}>
+            none
+          </button>
+        </label>
+      {/if}
+      {#if selectedRects.length > 0}
+        <label>
+          Round %
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="5"
+            data-testid="sel-rounding"
+            value={Math.round((styledLead.cornerRadius ?? 0) * 100)}
+            onchange={(e) => {
+              const percent = Number((e.currentTarget as HTMLInputElement).value)
+              if (Number.isFinite(percent) && percent >= 0 && percent <= 100)
+                updateStyled({ cornerRadius: percent / 100 })
+            }}
+          />
+        </label>
+      {/if}
+    </div>
+  {/if}
   {#if textData}
     <div class="row" data-testid="text-style-controls">
       <label>

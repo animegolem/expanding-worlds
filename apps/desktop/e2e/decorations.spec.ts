@@ -471,3 +471,93 @@ test('shift-constrained drawing (AI-IMP-035)', async () => {
 
   await app.close()
 })
+
+test('selection restyle: stroke, fill, width, rounding after placement (AI-IMP-055)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-restyle-'))
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  })
+  const win = await app.firstWindow()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+
+  const { rectId, lineId } = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    const rectId = crypto.randomUUID()
+    const lineId = crypto.randomUUID()
+    const canvasId = window.__ewDebug!.canvasId()
+    await run('CreateDecoration', {
+      decorationId: rectId,
+      canvasId,
+      kind: 'shape',
+      data: { shape: 'rect', x: 200, y: 420, width: 100, height: 60, stroke: '#dde3ea', strokeWidth: 2 },
+    })
+    await run('CreateDecoration', {
+      decorationId: lineId,
+      canvasId,
+      kind: 'line',
+      data: { x1: 400, y1: 420, x2: 500, y2: 480, stroke: '#dde3ea', strokeWidth: 4 },
+    })
+    return { rectId, lineId }
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 2)
+
+  const dataOf = async (id: string): Promise<Record<string, unknown>> =>
+    win.evaluate(async (targetId) => {
+      const response = await window.ew.project.query('getCanvasContents', {
+        canvasId: window.__ewDebug!.canvasId(),
+      })
+      if (!response.ok) throw new Error(response.message)
+      const item = (response.result as Array<{ id: string; data?: Record<string, unknown> }>).find(
+        (candidate) => candidate.id === targetId,
+      )
+      return item!.data!
+    }, id)
+
+  // Select the rect; the selection-style row appears.
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.click(box.x + 250, box.y + 450)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
+    .toEqual([rectId])
+  await expect(win.getByTestId('selection-style-controls')).toBeVisible()
+
+  // One UpdateDecoration per edit: stroke, fill, none, rounding.
+  await win.getByTestId('sel-stroke').fill('#ff0000')
+  await expect.poll(async () => (await dataOf(rectId))['stroke']).toBe('#ff0000')
+  await win.getByTestId('sel-fill').fill('#00ff00')
+  await expect.poll(async () => (await dataOf(rectId))['fill']).toBe('#00ff00')
+  await win.getByTestId('sel-rounding').fill('50')
+  await win.getByTestId('sel-rounding').blur()
+  await expect.poll(async () => (await dataOf(rectId))['cornerRadius']).toBe(0.5)
+  await win.getByTestId('sel-fill-none').click()
+  await expect.poll(async () => (await dataOf(rectId))['fill']).toBeUndefined()
+
+  // Multi-select rect + line: stroke applies to both.
+  // keyboard.down: the click `modifiers` option doesn't reach
+  // synthesized POINTER events in Electron (only DOM mouse events).
+  await win.keyboard.down('Shift')
+  await win.mouse.click(box.x + 450, box.y + 450)
+  await win.keyboard.up('Shift')
+  await expect
+    .poll(async () => (await win.evaluate(() => window.__ewDebug!.selection())).length)
+    .toBe(2)
+  await win.getByTestId('sel-stroke').fill('#0000ff')
+  await expect.poll(async () => (await dataOf(rectId))['stroke']).toBe('#0000ff')
+  await expect.poll(async () => (await dataOf(lineId))['stroke']).toBe('#0000ff')
+
+  await app.close()
+})

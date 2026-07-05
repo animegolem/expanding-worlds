@@ -44,7 +44,11 @@ function draw(gfx: Graphics, data: ShapeData): void {
   gfx.clear()
   const w = data.width
   const h = data.height
-  if (data.shape === 'rect') gfx.rect(-w / 2, -h / 2, w, h)
+  // §4.9 rev 0.16: cornerRadius is a fraction of the shorter box
+  // dimension's half — 1 turns a square into a circle.
+  const radius = (data.cornerRadius ?? 0) * (Math.min(w, h) / 2)
+  if (data.shape === 'rect' && radius > 0) gfx.roundRect(-w / 2, -h / 2, w, h, radius)
+  else if (data.shape === 'rect') gfx.rect(-w / 2, -h / 2, w, h)
   else if (data.shape === 'ellipse') gfx.ellipse(0, 0, w / 2, h / 2)
   else if (data.shape === 'arrow') gfx.poly(shapeArrowPolygon(w, h))
   else gfx.poly([0, -h / 2, w / 2, h / 2, -w / 2, h / 2])
@@ -57,7 +61,8 @@ function draw(gfx: Graphics, data: ShapeData): void {
   gfx.stroke({
     width: data.strokeWidth,
     color: data.stroke,
-    join: data.shape === 'rect' || data.shape === 'ellipse' ? 'miter' : 'round',
+    join:
+      data.shape === 'ellipse' || (data.shape === 'rect' && radius === 0) ? 'miter' : 'round',
   })
 }
 

@@ -44,6 +44,9 @@ export interface ShapeData {
   stroke: string
   strokeWidth: number
   fill?: string
+  /** Rect corner rounding as a fraction (0–1) of the shorter box
+   * dimension's half (§4.9 rev 0.16); absent/0 = sharp. */
+  cornerRadius?: number
 }
 
 export interface PathData {
@@ -127,7 +130,9 @@ export function isShapeData(data: unknown): data is ShapeData {
     data['height'] >= 0 &&
     (data['rotation'] === undefined || isFinite_(data['rotation'])) &&
     hasStroke(data) &&
-    (data['fill'] === undefined || isNonEmptyString(data['fill']))
+    (data['fill'] === undefined || isNonEmptyString(data['fill'])) &&
+    (data['cornerRadius'] === undefined ||
+      (isFinite_(data['cornerRadius']) && data['cornerRadius'] >= 0 && data['cornerRadius'] <= 1))
   )
 }
 

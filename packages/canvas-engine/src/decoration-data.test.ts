@@ -47,6 +47,19 @@ describe('decoration data validators', () => {
     expect(
       isShapeData({ shape: 'rect', x: 0, y: 0, width: 10, height: 5, rotation: 'ccw', ...stroke }),
     ).toBe(false)
+    // §4.9 rev 0.16: cornerRadius is a 0–1 fraction.
+    expect(
+      isShapeData({ shape: 'rect', x: 0, y: 0, width: 10, height: 5, cornerRadius: 0.5, ...stroke }),
+    ).toBe(true)
+    expect(
+      isShapeData({ shape: 'rect', x: 0, y: 0, width: 10, height: 5, cornerRadius: 1, ...stroke }),
+    ).toBe(true)
+    expect(
+      isShapeData({ shape: 'rect', x: 0, y: 0, width: 10, height: 5, cornerRadius: 1.2, ...stroke }),
+    ).toBe(false)
+    expect(
+      isShapeData({ shape: 'rect', x: 0, y: 0, width: 10, height: 5, cornerRadius: -0.1, ...stroke }),
+    ).toBe(false)
   })
 
   it('accepts and rejects path data', () => {

@@ -5,12 +5,12 @@ tags:
   - Implementation
   - decorations
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-054]
 parent_epic: [[AI-EPIC-012-pre-alpha-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-055-selection-restyle-and-rounding
@@ -68,17 +68,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] cornerRadius in ShapeData: validator accepts 0–1, rejects out
+- [x] cornerRadius in ShapeData: validator accepts 0–1, rejects out
       of range; unit tests.
-- [ ] Rect renderer draws rounded corners; radius scales with the
+- [x] Rect renderer draws rounded corners; radius scales with the
       smaller box dimension; zero/absent = sharp (legacy rows
       unaffected).
-- [ ] Toolbar selection-style row: stroke, fill (+none), width,
+- [x] Toolbar selection-style row: stroke, fill (+none), width,
       rounding; each edit = one UpdateDecoration composed from
       fresh data; multi-select applies to all eligible.
-- [ ] e2e: draw shape → select → change stroke, fill, rounding →
+- [x] e2e: draw shape → select → change stroke, fill, rounding →
       data asserts each field; a line's stroke edit too.
-- [ ] RFC §4.9 field noted (rev 0.16 bundle); gates green.
+- [x] RFC §4.9 field noted (rev 0.16 bundle); gates green.
 
 ### Acceptance Criteria
 
@@ -100,3 +100,13 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+As scoped. cornerRadius renders via roundRect with radius =
+fraction × min(w,h)/2 (1.0 turns a square into a circle); rounded
+rects join 'round' instead of 'miter' since their corners are no
+longer 90°. Multi-select edits compose each decoration from freshly
+queried data and skip fields that don't apply (fill and rounding are
+shape/rect-only). e2e gotcha worth remembering: Playwright's click
+`modifiers` option does NOT reach synthesized POINTER events in
+Electron (only DOM mouse events) — canvas shift-clicks must use
+keyboard.down/up, which the spec now documents inline. The RFC §4.9
+line landed with the epic-activation commit (rev 0.16).
