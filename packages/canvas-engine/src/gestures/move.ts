@@ -46,7 +46,10 @@ export const moveDriver: GestureDriver = {
         height: bounds.height,
       },
       proposedDelta: proposed,
-      disabled: modifiers.alt ?? false,
+      // Shift promises EXACT geometry (axis constraint), so snapping
+      // yields to it entirely; Alt stays the explicit bypass
+      // (AI-IMP-043).
+      disabled: (modifiers.alt ?? false) || (modifiers.shift ?? false),
       zoom: camera.zoom,
     })
     for (const id of session.ids()) {

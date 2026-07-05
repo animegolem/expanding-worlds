@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.14         | 5 July 2026      |
+| Accepted for Phase 1 | 0.15         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1016,6 +1016,9 @@ and centers of nearby content, with smart guides rendered in the
 temporary interaction overlay plane. Snapping is an ephemeral
 interaction aid: the gesture still commits exactly one durable command
 on completion, and a modifier key SHOULD temporarily disable snapping.
+Shift's tidy constraints take precedence (rev 0.15): while Shift
+enforces an axis or proportion, snapping is disabled so nothing pulls
+the result off the enforced geometry.
 Smart guides SHOULD be visually quiet — thin, dotted, reduced
 opacity — and appear only while a snap is actively engaged. Engagement
 SHOULD use hysteresis, releasing at a slightly larger distance than it

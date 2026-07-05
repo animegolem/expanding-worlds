@@ -141,3 +141,35 @@ describe('shift axis constraint (AI-IMP-042)', () => {
     expect(constrainDeltaToAxes(0, 0)).toEqual({ dx: 0, dy: 0 })
   })
 })
+
+describe('shift silences snapping (AI-IMP-043)', () => {
+  it('disables the snap provider and keeps the exact axis delta', () => {
+    let sawDisabled: boolean | undefined
+    const recordingSnap = {
+      begin() {},
+      end() {},
+      query(q: { proposedDelta: { dx: number; dy: number }; disabled: boolean }) {
+        sawDisabled = q.disabled
+        // A snap that would yank the drag off-axis if consulted.
+        return q.disabled
+          ? { dx: q.proposedDelta.dx, dy: q.proposedDelta.dy, guides: [] }
+          : { dx: q.proposedDelta.dx, dy: q.proposedDelta.dy + 5, guides: [] }
+      },
+    }
+    const item = makePlacement({ x: 0, y: 0, width: 20, height: 20 })
+    const session = new GestureSession('canvas-1', [item])
+    moveDriver.update({
+      session,
+      startWorld: { x: 0, y: 0 },
+      currentWorld: { x: 100, y: 8 },
+      modifiers: { shift: true },
+      snap: recordingSnap,
+      camera: new Camera(),
+    })
+    expect(sawDisabled).toBe(true)
+    const update = session.get(item.id)!
+    if (update.kind !== 'placement') throw new Error('expected placement')
+    expect(update.transform.x).toBeCloseTo(100)
+    expect(update.transform.y).toBeCloseTo(0) // exactly on axis
+  })
+})

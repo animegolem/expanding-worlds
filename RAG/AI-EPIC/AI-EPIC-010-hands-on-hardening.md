@@ -23,6 +23,7 @@ AI_IMP_spawned:
   - AI-IMP-040
   - AI-IMP-041
   - AI-IMP-042
+  - AI-IMP-043
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -129,6 +130,10 @@ rotation is a recorded limitation). No new tools or panels.
 - [x] FR-17: Shift during a move drag constrains to the nearest
       horizontal/vertical/45° axis (AI-IMP-042).
 
+- [x] FR-18: Shift constraints take precedence over snapping —
+      snapping is disabled while Shift enforces geometry
+      (AI-IMP-043, RFC rev 0.15).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -158,3 +163,5 @@ rotation is a recorded limitation). No new tools or panels.
 - AI-IMP-041 (lead): Shift aspect lock on resize handles.
 - AI-IMP-042 (lead): Shift axis-constrained move — completes the
   Shift vocabulary; canvas phase hand-off point.
+- AI-IMP-043 (lead): Shift silences snapping (constraint
+  precedence).

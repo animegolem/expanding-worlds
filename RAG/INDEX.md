@@ -10,8 +10,8 @@
 | Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 41 |
-| **Total** | **10** | **42** |
+| Completed | 5 | 42 |
+| **Total** | **10** | **43** |
 
 ## In Progress
 
@@ -32,6 +32,7 @@
 - [[AI-IMP-040-render-fidelity|IMP-040]] Render fidelity — completed
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
+- [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
 
 ---
 
@@ -64,7 +65,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (3397 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2611 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2614 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (704 LOC)
@@ -109,7 +110,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>5 EPICs, 41 IMPs completed</summary>
+<summary>5 EPICs, 42 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
