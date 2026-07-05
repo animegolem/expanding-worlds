@@ -249,6 +249,111 @@ test('wiki-link states render live, sweep effects refresh, suggestions complete 
   await app.close()
 })
 
+test('phantom view aggregates references; Create and Place binds project-wide in one command (§17-14)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-phantom-'))
+  const { app, win } = await launch(projectDir)
+  const { noteId: aId } = await seedPlacedNote(win, 'A', 'hunts the [[Kestrel]] ridge', {
+    x: 300,
+    y: 240,
+  })
+  const bId = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const noteId = crypto.randomUUID()
+    const result = await window.ew.project.execute({
+      commandId: crypto.randomUUID(),
+      projectId: (project.result as { id: string }).id,
+      commandType: 'CreateNote',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: { noteId, title: 'B', body: 'the [[Kestrel]] again' },
+    })
+    if (result.status !== 'committed') throw new Error(result.status)
+    return noteId
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.getByTestId('note-editor')).toContainText('Kestrel')
+
+  // Activate the unresolved token → one aggregated phantom view.
+  const token = win.locator('.cm-content [data-link-title="Kestrel"]')
+  await token.click({ modifiers: ['ControlOrMeta'] })
+  await expect(win.getByTestId('phantom-view')).toBeVisible()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Kestrel/)
+  await expect(win.getByTestId('phantom-view')).toContainText('2 references')
+  await expect(win.getByTestId('phantom-sources')).toContainText('A')
+  await expect(win.getByTestId('phantom-sources')).toContainText('B')
+
+  // Dismissing persists nothing (invariant 28).
+  const revBefore = await projectRevision(win)
+  await win.getByTestId('phantom-dismiss').click()
+  await expect(win.getByTestId('phantom-view')).toBeHidden()
+  expect(await projectRevision(win)).toBe(revBefore)
+
+  // Create and Place: one command commits note + node + appearance +
+  // placement, and the sweep binds BOTH sources project-wide.
+  await expect(win.getByTestId('note-editor')).toContainText('Kestrel')
+  await win.locator('.cm-content [data-link-title="Kestrel"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('phantom-view')).toBeVisible()
+  await win.getByTestId('phantom-create-and-place').click()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Kestrel/)
+  await expect(win.getByTestId('note-editor')).toBeVisible()
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+  expect(await projectRevision(win)).toBe(revBefore + 1)
+
+  const linkStates = await win.evaluate(
+    async ({ aId, bId }) => {
+      const states: Record<string, string> = {}
+      for (const [name, id] of [
+        ['a', aId],
+        ['b', bId],
+      ] as const) {
+        const links = await window.ew.project.query('getNoteLinks', { noteId: id })
+        if (!links.ok) throw new Error(links.message)
+        states[name] = (links.result as Array<{ state: string }>)[0]!.state
+      }
+      return states
+    },
+    { aId, bId },
+  )
+  expect(linkStates).toEqual({ a: 'bound', b: 'bound' })
+
+  await app.close()
+})
+
+test('typing into the phantom body materializes on the first committed burst (§7.2-1)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-phantom-edit-'))
+  const { app, win } = await launch(projectDir)
+  await seedPlacedNote(win, 'A', 'a [[Wisp]] in the marsh', { x: 300, y: 240 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await win.locator('.cm-content [data-link-title="Wisp"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('phantom-view')).toBeVisible()
+
+  await win.getByTestId('phantom-draft').fill('born of marsh light')
+  // The first committed burst (idle debounce) creates the note with
+  // the typed content and the pane swaps to the real editor.
+  await expect(win.getByTestId('note-editor')).toBeVisible({ timeout: 5_000 })
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Wisp/)
+  await expect(win.getByTestId('note-editor')).toContainText('born of marsh light')
+
+  // The source token bound in the same command (sweep).
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.locator('.cm-content [data-link-title="Wisp"]')).toHaveAttribute(
+    'data-link-state',
+    'bound',
+  )
+  await app.close()
+})
+
 test('an edit inside its debounce window survives quit (§10.2 quit flush)', async () => {
   const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-quit-'))
   const first = await launch(projectDir)

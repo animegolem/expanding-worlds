@@ -29,6 +29,53 @@ export function onOpenNote(listener: (noteId: string) => void): () => void {
   return () => window.removeEventListener(OPEN_NOTE_EVENT, handler)
 }
 
+/** Activating an unresolved token opens the phantom view (§7.2). */
+export const OPEN_PHANTOM_EVENT = 'ew-open-phantom'
+
+export interface OpenPhantomDetail {
+  /** Raw token title; queries normalize to title_key. */
+  title: string
+}
+
+export function requestOpenPhantom(title: string): void {
+  window.dispatchEvent(new CustomEvent<OpenPhantomDetail>(OPEN_PHANTOM_EVENT, { detail: { title } }))
+}
+
+export function onOpenPhantom(listener: (title: string) => void): () => void {
+  const handler = (event: Event): void => {
+    const detail = (event as CustomEvent<OpenPhantomDetail>).detail
+    if (detail?.title) listener(detail.title)
+  }
+  window.addEventListener(OPEN_PHANTOM_EVENT, handler)
+  return () => window.removeEventListener(OPEN_PHANTOM_EVENT, handler)
+}
+
+/**
+ * Create and Place on Current Canvas (§7.2 action 3): the pane
+ * requests, the workspace — which owns the active canvas and view
+ * center — commits the CreatePin and opens the created note.
+ */
+export const CREATE_AND_PLACE_EVENT = 'ew-create-and-place'
+
+export interface CreateAndPlaceDetail {
+  title: string
+}
+
+export function requestCreateAndPlace(title: string): void {
+  window.dispatchEvent(
+    new CustomEvent<CreateAndPlaceDetail>(CREATE_AND_PLACE_EVENT, { detail: { title } }),
+  )
+}
+
+export function onCreateAndPlace(listener: (title: string) => void): () => void {
+  const handler = (event: Event): void => {
+    const detail = (event as CustomEvent<CreateAndPlaceDetail>).detail
+    if (detail?.title) listener(detail.title)
+  }
+  window.addEventListener(CREATE_AND_PLACE_EVENT, handler)
+  return () => window.removeEventListener(CREATE_AND_PLACE_EVENT, handler)
+}
+
 export interface OpenNoteSurfaceHandle {
   destroy(): void
 }

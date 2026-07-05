@@ -21,6 +21,29 @@ import type { LinkResolution } from './link-resolution'
 
 const resolutionChanged = StateEffect.define<null>()
 
+export interface LinkActivation {
+  state: string
+  title: string
+}
+
+/** Mod+Click activates a token (plain click keeps caret placement
+ * for editing, the Obsidian-established convention). */
+export function wikiLinkActivation(onActivate: (link: LinkActivation) => void): Extension {
+  return EditorView.domEventHandlers({
+    click: (event) => {
+      if (!event.metaKey && !event.ctrlKey) return false
+      const target = (event.target as HTMLElement).closest('[data-link-title]')
+      if (!(target instanceof HTMLElement)) return false
+      const title = target.dataset['linkTitle']
+      const state = target.dataset['linkState']
+      if (!title || !state) return false
+      event.preventDefault()
+      onActivate({ state, title })
+      return true
+    },
+  })
+}
+
 export function wikiLinkHighlighter(resolution: LinkResolution): Extension {
   const build = (view: EditorView): DecorationSet => {
     const builder = new RangeSetBuilder<Decoration>()

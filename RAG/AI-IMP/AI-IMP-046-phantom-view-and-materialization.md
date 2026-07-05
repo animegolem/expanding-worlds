@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - phantoms
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-045]
 parent_epic: [[AI-EPIC-005-notes-links-phantoms]]
 confidence_score: 0.85
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-046-phantom-view-and-materialization
@@ -69,21 +69,21 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Phantom mode renders would-be title, reference count, and
+- [x] Phantom mode renders would-be title, reference count, and
       references grouped by source note from getPhantom; source rows
       navigate to their note.
-- [ ] Create Note and Create and Place presented as equal peers;
+- [x] Create Note and Create and Place presented as equal peers;
       Create Note yields an open, editable real note; Create and
       Place commits one CreatePin (note+node+appearance+placement)
       and the labeled dot appears at view center.
-- [ ] First committed edit in the phantom body creates the note with
+- [x] First committed edit in the phantom body creates the note with
       that content as one user-level command.
-- [ ] Dismissing the phantom view persists nothing (assert no new
+- [x] Dismissing the phantom view persists nothing (assert no new
       records / unchanged project_revision).
-- [ ] Sweep visibility e2e (slice item 14): same missing title in two
+- [x] Sweep visibility e2e (slice item 14): same missing title in two
       notes → one phantom view → Create and Place → both tokens
       render bound, one command in the log.
-- [ ] Gates: full build/test/lint/e2e green.
+- [x] Gates: full build/test/lint/e2e green.
 
 ### Acceptance Criteria
 
@@ -107,3 +107,22 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+As scoped, with three wiring decisions. (1) Token activation is
+Mod+Click (the Obsidian convention — plain click keeps caret
+placement for editing); the handler routes by data-link-state, so
+IMP-048 plugs bound/trashed/broken into the same seam. (2) Create
+and Place crosses panes by event: the note pane dispatches
+ew-create-and-place, the Workspace (which owns the active canvas,
+gateway, and view center) commits the CreatePin and answers with
+ew-open-note — the pane never touches canvas state. (3) The
+phantom draft is a plain textarea, not a second CM instance; the
+first committed burst (idle debounce or blur) dispatches CreateNote
+with the typed body, and the pane swaps to the real editor.
+Collision handling on materialization currently surfaces the raw
+NOTE_TITLE_CONFLICT message in the pane's error line — IMP-047
+replaces that with the §7.7 dialog. Validation note: the decorations
+e2e failed its first attempt twice during gate runs (flat 120 s
+test-timeout, passes on retry and stays failure-free in content) —
+machine was under heavy external load (Spotlight reindex + the
+owner's live dev session, load avg ~5); same known class EPIC-010
+documented, absorbed by retries:1.

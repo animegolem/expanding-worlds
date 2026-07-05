@@ -5,10 +5,12 @@
   toolbar buttons.
 -->
 <script lang="ts">
+  import { onMount } from 'svelte'
   import CanvasHost from './CanvasHost.svelte'
   import CreatePinDialog from './CreatePinDialog.svelte'
   import PlacementSourcePanel from './PlacementSourcePanel.svelte'
   import type { CanvasHostHandle } from './canvas/host'
+  import { onCreateAndPlace, requestOpenNote } from './note/open-note'
 
   let hostHandle = $state<CanvasHostHandle | null>(null)
   let hostElement = $state<HTMLElement | null>(null)
@@ -23,6 +25,42 @@
       y: bounds.height / 2,
     })
   }
+
+  // §7.2 Create and Place on Current Canvas: phantom materialization
+  // that needs the active canvas and view center — one CreatePin
+  // (note + node + default dot + placement), then the pane opens the
+  // created note. Same semantics as §6.10.
+  onMount(() =>
+    onCreateAndPlace((title) => {
+      const h = hostHandle
+      if (!h) return
+      void (async () => {
+        const noteId = crypto.randomUUID()
+        const center = viewCenterWorld()
+        const result = await h.gateway.execute('CreatePin', {
+          nodeId: crypto.randomUUID(),
+          canvasId: h.canvasId,
+          placementId: crypto.randomUUID(),
+          x: center.x,
+          y: center.y,
+          appearance: { kind: 'dot', color: '#8ab4d8' },
+          note: { kind: 'create', noteId, title },
+        })
+        if (result.status === 'committed') {
+          requestOpenNote(noteId)
+        } else {
+          const message =
+            result.status === 'error' ? result.message : 'the project changed underneath (retry)'
+          hostElement?.dispatchEvent(
+            new CustomEvent('ew-board-notice', {
+              detail: { message: `Create and Place failed: ${message}` },
+              bubbles: true,
+            }),
+          )
+        }
+      })()
+    }),
+  )
 </script>
 
 <main class="workspace" data-testid="workspace">
