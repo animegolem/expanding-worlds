@@ -7,8 +7,14 @@ tags:
   - wiki-links
 date_created: 2026-07-03
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
+  - AI-IMP-044
+  - AI-IMP-045
+  - AI-IMP-046
+  - AI-IMP-047
+  - AI-IMP-048
+  - AI-IMP-049
 ---
 
 # AI-EPIC-005-notes-links-phantoms
@@ -43,7 +49,10 @@ chooser) belongs to EPIC-006.
 
 ## Success Metrics
 
-- RFC §17 slice items 6–8 (note halves), 13–16 pass end to end.
+- RFC §17 slice items 6–8 (note halves), 13–15 pass end to end.
+  Item 16's grouped location chooser is EPIC-006 scope (consistent
+  with Paths Not Taken); this epic delivers zero/one/many-location
+  activation with a non-blocking many-locations notice instead.
 - A typing burst produces exactly one UpdateNote and one
   project_revision increment (command-log assertion).
 - Phantom materialization binds all matching tokens project-wide in
@@ -69,4 +78,22 @@ chooser) belongs to EPIC-006.
 
 ## Implementation Breakdown
 
-IMPs to be cut when this epic activates.
+Cut 2026-07-05 after review of the EPIC-003 machinery (commands,
+sweep, rewrite, phantom queries all exist; this epic is the editor
+and its surfaces, plus two read models):
+
+- AI-IMP-044 — note pane shell: CM6 editor, §10.2 autosave gesture
+  (one UpdateNote per burst, quit flush), open-note entry points,
+  getNoteLinks/getNoteUses queries. (FR-1, FR-2)
+- AI-IMP-045 — wiki-link decorations (four states, live + sweep
+  refresh) and `[[` title suggestions with phantom indicator.
+  (FR-4, render half of FR-3)
+- AI-IMP-046 — phantom view and materialization: first-edit, Create
+  Note, Create and Place via CreatePin. (FR-5)
+- AI-IMP-047 — rename surface, dirty-buffer flush, external-change
+  folding into local undo, NOTE_TITLE_CONFLICT dialogs. (FR-6, FR-7)
+- AI-IMP-048 — link activation and degraded links: zero/one/many
+  locations, In Trash affordances, broken recreate/relink.
+  (activation half of FR-3)
+- AI-IMP-049 — attach/detach/make-independent UI, Uses sidebar,
+  zero-node Place on Current Canvas. (FR-8)

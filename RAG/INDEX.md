@@ -6,14 +6,27 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 4 | 0 |
+| In Progress | 2 | 1 |
+| Planned | 3 | 6 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 5 | 42 |
-| **Total** | **10** | **43** |
+| **Total** | **10** | **49** |
 
 ## In Progress
+
+### [[AI-EPIC-005-notes-links-phantoms|EPIC-005: Notes links phantoms]]
+> The text half of the product (RFC §4.2, §7) has no editor. Notes,
+
+**IMPs:**
+- [[AI-IMP-044-note-pane-shell-and-autosave|IMP-044]] Note pane shell and autosave — planned
+- [[AI-IMP-045-wiki-link-decorations-and-suggestions|IMP-045]] Wiki link decorations and suggestions — planned
+- [[AI-IMP-046-phantom-view-and-materialization|IMP-046]] Phantom view and materialization — planned
+- [[AI-IMP-047-rename-and-title-collisions|IMP-047]] Rename and title collisions — planned
+- [[AI-IMP-048-link-activation-and-degraded-links|IMP-048]] Link activation and degraded links — planned
+- [[AI-IMP-049-note-node-surfaces-and-uses|IMP-049]] Note node surfaces and uses — planned
+
+---
 
 ### [[AI-EPIC-010-hands-on-hardening|EPIC-010: Hands on hardening]]
 > The owner is now using the board daily and comparing it directly
@@ -37,11 +50,6 @@
 ---
 
 ## Planned
-
-### [[AI-EPIC-005-notes-links-phantoms|EPIC-005: Notes links phantoms]]
-> The text half of the product (RFC §4.2, §7) has no editor. Notes,
-
----
 
 ### [[AI-EPIC-006-navigation-discovery|EPIC-006: Navigation discovery]]
 > RFC §8 and §14 define how users move through and find things in a
