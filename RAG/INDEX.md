@@ -6,12 +6,23 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 0 | 0 |
-| Planned | 4 | 0 |
+| In Progress | 1 | 1 |
+| Planned | 4 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 5 | 29 |
-| **Total** | **9** | **29** |
+| **Total** | **10** | **31** |
+
+## In Progress
+
+### [[AI-EPIC-010-hands-on-hardening|EPIC-010: Hands on hardening]]
+> The owner is now using the board daily and comparing it directly
+
+**IMPs:**
+- [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — in-progress
+- [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — planned
+
+---
 
 ## Planned
 
