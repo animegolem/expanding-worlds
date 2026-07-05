@@ -48,11 +48,14 @@ jobs:
       # then failed). `pnpm rebuild` re-runs the build script with
       # the package's deps properly linked.
       - name: Ensure Electron binary
+        working-directory: apps/desktop
         run: |
-          pnpm --dir apps/desktop rebuild electron
-          ls apps/desktop/node_modules/electron/ | head
-          ls apps/desktop/node_modules/electron/dist/ | head || true
-          test -x apps/desktop/node_modules/electron/dist/electron
+          # The postinstall left a partially-extracted dist that
+          # install.js then treats as complete — force a clean fetch.
+          rm -rf node_modules/electron/dist node_modules/electron/path.txt
+          DEBUG='@electron/get*' node node_modules/electron/install.js
+          ls node_modules/electron/dist/ | head -30
+          test -x node_modules/electron/dist/electron
 
       - name: Electron runtime libraries
         run: |
