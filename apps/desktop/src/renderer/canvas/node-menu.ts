@@ -1,6 +1,6 @@
 import { hitTest, type CanvasScene, type SceneItem } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
-import { requestOpenNote, requestRenameNote } from '../note/open-note'
+import { requestAttachNote, requestOpenNote, requestRenameNote } from '../note/open-note'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -126,19 +126,11 @@ export function attachNodeMenu(
           })
         })
       })
+      // Search-or-create picker (AI-IMP-049) replaces the old
+      // exact-title prompt.
       addEntry('Attach Existing Note…', 'node-menu-attach-existing', () => {
-        promptTitle('Existing note title', (title) => {
-          void (async () => {
-            const notes = await runQuery<Array<{ id: string; title: string }>>('listNotes')
-            const wanted = title.toLowerCase()
-            const match = notes.find((note) => note.title.trim().toLowerCase() === wanted)
-            if (!match) {
-              onError(`no note titled "${title}"`)
-              return
-            }
-            await execute('AttachNoteToNode', { nodeId, noteId: match.id })
-          })()
-        })
+        closeMenu()
+        requestAttachNote(nodeId)
       })
     } else {
       addEntry('Open Note', 'node-menu-open-note', () => {

@@ -131,6 +131,64 @@ export function onRevealNote(listener: (detail: RevealNoteDetail) => void): () =
   return () => window.removeEventListener(REVEAL_NOTE_EVENT, handler)
 }
 
+/** Generic single-id workspace requests (AI-IMP-049): the note pane
+ * and node menu ask; the surface that owns the canvas answers. */
+function idEvent(eventName: string): {
+  request: (id: string) => void
+  on: (listener: (id: string) => void) => () => void
+} {
+  return {
+    request(id: string): void {
+      window.dispatchEvent(new CustomEvent<{ id: string }>(eventName, { detail: { id } }))
+    },
+    on(listener: (id: string) => void): () => void {
+      const handler = (event: Event): void => {
+        const detail = (event as CustomEvent<{ id: string }>).detail
+        if (detail?.id) listener(detail.id)
+      }
+      window.addEventListener(eventName, handler)
+      return () => window.removeEventListener(eventName, handler)
+    },
+  }
+}
+
+/** Node menu → CanvasHost: open the attach-note picker for a node. */
+const attachNote = idEvent('ew-attach-note')
+export const requestAttachNote = attachNote.request
+export const onAttachNote = attachNote.on
+
+/** Uses sidebar → Workspace: place an existing node at view center
+ * (§6.10 first half — ordinary CreatePlacement). */
+const placeNode = idEvent('ew-place-node')
+export const requestPlaceNode = placeNode.request
+export const onPlaceNode = placeNode.on
+
+/** Uses sidebar → Workspace: embody a zero-node note at view center
+ * (§6.10 second half — CreatePin with note attach). */
+const placeNote = idEvent('ew-place-note')
+export const requestPlaceNote = placeNote.request
+export const onPlaceNote = placeNote.on
+
+/** Uses sidebar → Workspace: select placements and fly to them. */
+export const CENTER_PLACEMENTS_EVENT = 'ew-center-placements'
+
+export function requestCenterPlacements(placementIds: string[]): void {
+  window.dispatchEvent(
+    new CustomEvent<{ placementIds: string[] }>(CENTER_PLACEMENTS_EVENT, {
+      detail: { placementIds },
+    }),
+  )
+}
+
+export function onCenterPlacements(listener: (placementIds: string[]) => void): () => void {
+  const handler = (event: Event): void => {
+    const detail = (event as CustomEvent<{ placementIds: string[] }>).detail
+    if (detail?.placementIds?.length) listener(detail.placementIds)
+  }
+  window.addEventListener(CENTER_PLACEMENTS_EVENT, handler)
+  return () => window.removeEventListener(CENTER_PLACEMENTS_EVENT, handler)
+}
+
 export interface OpenNoteSurfaceHandle {
   destroy(): void
 }

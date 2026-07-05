@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - nodes
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-044]
 parent_epic: [[AI-EPIC-005-notes-links-phantoms]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-049-note-node-surfaces-and-uses
@@ -70,22 +70,22 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Attach Note picker: search-or-create; attaching an existing
+- [x] Attach Note picker: search-or-create; attaching an existing
       note to a second node passes item 7 (shared note, independent
       node identities); created-note path routes collisions through
       the AI-IMP-047 dialog.
-- [ ] Placement label shows the note title after attach (item 6) and
+- [x] Placement label shows the note title after attach (item 6) and
       the label toggle still works.
-- [ ] Detach from This Node removes only the reference, undoable, no
+- [x] Detach from This Node removes only the reference, undoable, no
       dialog; note remains intact at zero nodes (item 17 first half).
-- [ ] Make Note Independent: title prompt, copies body, attaches new,
+- [x] Make Note Independent: title prompt, copies body, attaches new,
       detaches old (item 17 second half).
-- [ ] Uses sidebar: canvas → node grouping with placement counts and
+- [x] Uses sidebar: canvas → node grouping with placement counts and
       tags, Unplaced group, close control; active-canvas rows center
       their placement.
-- [ ] Zero-node note Place on Current Canvas commits one CreatePin
+- [x] Zero-node note Place on Current Canvas commits one CreatePin
       (attach) and the labeled dot appears at view center (§6.10).
-- [ ] Gates: full build/test/lint/e2e green.
+- [x] Gates: full build/test/lint/e2e green.
 
 ### Acceptance Criteria
 
@@ -111,3 +111,26 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Scope notes: the picker replaced only the old exact-title
+Attach Existing prompt; Attach New keeps AI-IMP-020's inline flow
+(and its e2e). Create-and-attach remains two commands (CreateNote +
+AttachNoteToNode) — parity with the existing menu behavior; a
+composite command wasn't cut because §6.6 doesn't demand it, noted
+as accepted residue. The pane derives the active canvas as the root
+canvas (workspace tabs are EPIC-006).
+
+Mid-ticket, an e2e "flake" turned out to be the OWNER'S KEYSTROKES:
+full-suite runs open ~19 visible Electron windows that each steal
+macOS focus and thrash Stage Manager, and a message the owner was
+typing landed inside a test editor (they reported motion nausea
+severe enough to turn the monitor off). Fixed for good:
+EW_TEST_HIDDEN_WINDOWS=1 (set by playwright.config, honored by main
+with show:false + dock hide + backgroundThrottling:false) runs the
+whole suite with NO visible windows; CDP input and rendering work
+unchanged, incl. the perf suite. That exposed the recurring
+decorations flake's true cause — DecorationToolbar composed text
+edits from its 120ms-stale snapshot, so a fast size→bold sequence
+reverted the size (a real user-facing race, not load noise). Fixed
+by composing from fresh queried data at click time. First
+zero-flake full-suite run of the session followed (34/34,
+first-attempt), and the suite runs faster unfocused.

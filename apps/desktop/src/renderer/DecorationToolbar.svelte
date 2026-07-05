@@ -89,11 +89,26 @@
 
   function updateText(patch: Partial<TextData>): void {
     if (!selectedText || !textData) return
-    const next = { ...textData, ...patch }
-    const measured = measureTextWorld(next.text, next)
+    const decorationId = selectedText.id
     run(async () => {
+      // Compose from FRESH data, not this component's 120ms-refreshed
+      // snapshot: two quick edits (size, then bold) would otherwise
+      // silently revert the first one (AI-IMP-049 fix; the race also
+      // hit the e2e as the recurring decorations flake).
+      const response = await window.ew.project.query('getCanvasContents', {
+        canvasId: handle.canvasId,
+      })
+      const fresh = response.ok
+        ? (response.result as Array<{ id: string; data?: unknown }>).find(
+            (item) => item.id === decorationId,
+          )
+        : null
+      const base = fresh && isTextData(fresh.data) ? fresh.data : textData
+      if (!base) return
+      const next = { ...base, ...patch }
+      const measured = measureTextWorld(next.text, next)
       await handle.gateway.execute('UpdateDecoration', {
-        decorationId: selectedText.id,
+        decorationId,
         set: { data: { ...next, ...measured } },
       })
     })

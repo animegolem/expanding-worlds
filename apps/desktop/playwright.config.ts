@@ -1,5 +1,15 @@
 import { defineConfig } from '@playwright/test'
 
+// Every spec spreads process.env into electron.launch, so this one
+// flag makes ALL test windows invisible (main honors it with
+// show:false + dock hide + backgroundThrottling off). A full suite
+// launches ~19 apps; visible windows steal focus once a second and
+// thrash Stage Manager — unusable machine, motion nausea (owner
+// feedback). Set EW_TEST_HIDDEN_WINDOWS=0 to watch a run.
+if (process.env['EW_TEST_HIDDEN_WINDOWS'] === undefined) {
+  process.env['EW_TEST_HIDDEN_WINDOWS'] = '1'
+}
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,

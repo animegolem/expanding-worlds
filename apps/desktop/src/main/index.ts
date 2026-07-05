@@ -207,16 +207,24 @@ function grantLocalFonts(): void {
   )
 }
 
+// E2E sweeps launch many sequential app instances; visible windows
+// steal OS focus on every launch. With this flag the window never
+// shows (CDP input and rendering still work) and rAF/timers keep
+// running via backgroundThrottling: false.
+const hiddenTestWindows = process.env['EW_TEST_HIDDEN_WINDOWS'] === '1'
+
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
     title: 'Expanding Worlds',
+    show: !hiddenTestWindows,
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
+      ...(hiddenTestWindows ? { backgroundThrottling: false } : {}),
     },
   })
 
@@ -243,6 +251,7 @@ async function createWindow(): Promise<void> {
 }
 
 void app.whenReady().then(() => {
+  if (hiddenTestWindows) app.dock?.hide()
   registerAssetProtocol()
   grantLocalFonts()
   startUtility()

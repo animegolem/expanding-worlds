@@ -6,27 +6,14 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 1 |
-| Planned | 3 | 1 |
+| In Progress | 1 | 1 |
+| Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 47 |
+| Completed | 6 | 48 |
 | **Total** | **10** | **49** |
 
 ## In Progress
-
-### [[AI-EPIC-005-notes-links-phantoms|EPIC-005: Notes links phantoms]]
-> The text half of the product (RFC §4.2, §7) has no editor. Notes,
-
-**IMPs:**
-- [[AI-IMP-044-note-pane-shell-and-autosave|IMP-044]] Note pane shell and autosave — completed
-- [[AI-IMP-045-wiki-link-decorations-and-suggestions|IMP-045]] Wiki link decorations and suggestions — completed
-- [[AI-IMP-046-phantom-view-and-materialization|IMP-046]] Phantom view and materialization — completed
-- [[AI-IMP-047-rename-and-title-collisions|IMP-047]] Rename and title collisions — completed
-- [[AI-IMP-048-link-activation-and-degraded-links|IMP-048]] Link activation and degraded links — completed
-- [[AI-IMP-049-note-node-surfaces-and-uses|IMP-049]] Note node surfaces and uses — planned
-
----
 
 ### [[AI-EPIC-010-hands-on-hardening|EPIC-010: Hands on hardening]]
 > The owner is now using the board daily and comparing it directly
@@ -74,10 +61,10 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (3602 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2614 LOC)
+- apps/desktop/e2e/notes.spec.ts (944 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
-- apps/desktop/e2e/notes.spec.ts (739 LOC)
+- apps/desktop/src/renderer/NotePane.svelte (755 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
-- apps/desktop/src/renderer/NotePane.svelte (727 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (704 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
@@ -109,22 +96,22 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
+- apps/desktop/src/renderer/DecorationToolbar.svelte (336 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/queries-structure.ts (323 LOC)
-- apps/desktop/src/renderer/DecorationToolbar.svelte (321 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/persistence/src/handlers/pin.ts (314 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
+- apps/desktop/src/main/index.ts (310 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
-- apps/desktop/src/main/index.ts (301 LOC)
 
 ---
 
 ## Completed
 <details>
-<summary>5 EPICs, 47 IMPs completed</summary>
+<summary>6 EPICs, 48 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -153,6 +140,13 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — completed
   - [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — completed
   - [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — completed
+- [[AI-EPIC-005-notes-links-phantoms|EPIC-005]] Notes links phantoms — 2026-07-05
+  - [[AI-IMP-044-note-pane-shell-and-autosave|IMP-044]] Note pane shell and autosave — completed
+  - [[AI-IMP-045-wiki-link-decorations-and-suggestions|IMP-045]] Wiki link decorations and suggestions — completed
+  - [[AI-IMP-046-phantom-view-and-materialization|IMP-046]] Phantom view and materialization — completed
+  - [[AI-IMP-047-rename-and-title-collisions|IMP-047]] Rename and title collisions — completed
+  - [[AI-IMP-048-link-activation-and-degraded-links|IMP-048]] Link activation and degraded links — completed
+  - [[AI-IMP-049-note-node-surfaces-and-uses|IMP-049]] Note node surfaces and uses — completed
 - [[AI-EPIC-009-canvas-feel-pass|EPIC-009]] Canvas feel pass — 2026-07-05
   - [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — completed
   - [[AI-IMP-025-texture-correctness-and-drag-fidelity|IMP-025]] Texture correctness and drag fidelity — completed

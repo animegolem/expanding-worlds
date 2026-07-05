@@ -6,8 +6,8 @@ tags:
   - notes
   - wiki-links
 date_created: 2026-07-03
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-05
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-044
   - AI-IMP-045
@@ -58,6 +58,13 @@ chooser) belongs to EPIC-006.
 - Phantom materialization binds all matching tokens project-wide in
   one command, verified across three source notes.
 
+All three metrics verified 2026-07-05: the notes e2e suite covers
+slice items 6–7 and 13–15 plus §7.2/§7.7/§6.10 flows (item 8's tag
+content predates this epic and has no note half); the burst e2e
+asserts one UpdateNote per burst by revision delta; the item-14 e2e
+materializes across three source notes. Owner hands-on feel findings
+route to EPIC-010 as usual.
+
 ## Requirements
 
 ### Functional Requirements
@@ -69,7 +76,7 @@ chooser) belongs to EPIC-006.
 - [x] FR-5: Phantom view with first-edit, Create Note, and Create and Place materialization per §7.2/§6.11.
 - [x] FR-6: Transactional rename rewrite with dirty-buffer flush and external-change folding.
 - [x] FR-7: Title collision flows per §7.7.
-- [ ] FR-8: Attach, detach, make-independent per §6.6.
+- [x] FR-8: Attach, detach, make-independent per §6.6.
 
 ### Non-Functional Requirements
 

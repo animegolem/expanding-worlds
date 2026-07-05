@@ -256,20 +256,27 @@ test('phantom view aggregates references; Create and Place binds project-wide in
     x: 300,
     y: 240,
   })
-  const bId = await win.evaluate(async () => {
+  const [bId, cId] = await win.evaluate(async () => {
     const project = await window.ew.project.query('getProject')
     if (!project.ok) throw new Error(project.message)
-    const noteId = crypto.randomUUID()
-    const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
-      projectId: (project.result as { id: string }).id,
-      commandType: 'CreateNote',
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload: { noteId, title: 'B', body: 'the [[Kestrel]] again' },
-    })
-    if (result.status !== 'committed') throw new Error(result.status)
-    return noteId
+    const ids: string[] = []
+    for (const [title, body] of [
+      ['B', 'the [[Kestrel]] again'],
+      ['C', 'always the [[Kestrel]]'],
+    ] as const) {
+      const noteId = crypto.randomUUID()
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId: (project.result as { id: string }).id,
+        commandType: 'CreateNote',
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload: { noteId, title, body },
+      })
+      if (result.status !== 'committed') throw new Error(result.status)
+      ids.push(noteId)
+    }
+    return ids as [string, string]
   })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
@@ -282,7 +289,8 @@ test('phantom view aggregates references; Create and Place binds project-wide in
   await token.click({ modifiers: ['ControlOrMeta'] })
   await expect(win.getByTestId('phantom-view')).toBeVisible()
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Kestrel/)
-  await expect(win.getByTestId('phantom-view')).toContainText('2 references')
+  await expect(win.getByTestId('phantom-view')).toContainText('3 references')
+  await expect(win.getByTestId('phantom-sources')).toContainText('C')
   await expect(win.getByTestId('phantom-sources')).toContainText('A')
   await expect(win.getByTestId('phantom-sources')).toContainText('B')
 
@@ -306,11 +314,12 @@ test('phantom view aggregates references; Create and Place binds project-wide in
   expect(await projectRevision(win)).toBe(revBefore + 1)
 
   const linkStates = await win.evaluate(
-    async ({ aId, bId }) => {
+    async ({ aId, bId, cId }) => {
       const states: Record<string, string> = {}
       for (const [name, id] of [
         ['a', aId],
         ['b', bId],
+        ['c', cId],
       ] as const) {
         const links = await window.ew.project.query('getNoteLinks', { noteId: id })
         if (!links.ok) throw new Error(links.message)
@@ -318,9 +327,9 @@ test('phantom view aggregates references; Create and Place binds project-wide in
       }
       return states
     },
-    { aId, bId },
+    { aId, bId, cId },
   )
-  expect(linkStates).toEqual({ a: 'bound', b: 'bound' })
+  expect(linkStates).toEqual({ a: 'bound', b: 'bound', c: 'bound' })
 
   await app.close()
 })
@@ -708,6 +717,202 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
   await win.getByTestId('note-restore').click()
   await expect(win.getByTestId('note-in-trash')).toBeHidden()
   await expect(win.locator('.cm-content')).toHaveAttribute('contenteditable', 'true')
+
+  await app.close()
+})
+
+async function seedBarePin(win: Page, at: { x: number; y: number }): Promise<string> {
+  return win.evaluate(async ({ at }) => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const nodeId = crypto.randomUUID()
+    const result = await window.ew.project.execute({
+      commandId: crypto.randomUUID(),
+      projectId: (project.result as { id: string }).id,
+      commandType: 'CreatePin',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: {
+        nodeId,
+        canvasId: window.__ewDebug!.canvasId(),
+        placementId: crypto.randomUUID(),
+        x: at.x,
+        y: at.y,
+        appearance: { kind: 'dot', color: '#ff7700' },
+      },
+    })
+    if (result.status !== 'committed') throw new Error(result.status)
+    return nodeId
+  }, { at })
+}
+
+async function nodeNoteId(win: Page, nodeId: string): Promise<string | null> {
+  const result = await win.evaluate(
+    (id) => window.ew.project.query('getNode', { nodeId: id }),
+    nodeId,
+  )
+  if (!result.ok) throw new Error(result.message)
+  return (result.result as { noteId: string | null }).noteId
+}
+
+test('attach, share, detach, and make independent (§17-6/7/17)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-attach-'))
+  const { app, win } = await launch(projectDir)
+  const n1 = await seedBarePin(win, { x: 300, y: 240 })
+  const n2 = await seedBarePin(win, { x: 500, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Attach a NEW note to the first bare node; the placement label
+  // shows the title (§17-6).
+  await win.mouse.click(box.x + 300, box.y + 240, { button: 'right' })
+  await win.getByTestId('node-menu-attach-new').click()
+  await win.getByTestId('node-menu-title-input').fill('Ash')
+  await win.getByTestId('node-menu-title-confirm').click()
+  await expect.poll(() => nodeNoteId(win, n1)).not.toBeNull()
+  const ashId = (await nodeNoteId(win, n1))!
+  await expect
+    .poll(async () => {
+      const scene = await win.evaluate(() =>
+        window.ew.project.query('getCanvasScene', { canvasId: window.__ewDebug!.canvasId() }),
+      )
+      if (!scene.ok) return []
+      return (scene.result as { items: Array<{ noteTitle?: string | null }> }).items.map(
+        (item) => item.noteTitle ?? null,
+      )
+    })
+    .toContain('Ash')
+  await win.evaluate(async (id) => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    await window.ew.project.execute({
+      commandId: crypto.randomUUID(),
+      projectId: (project.result as { id: string }).id,
+      commandType: 'UpdateNote',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: { noteId: id, body: 'ember lore' },
+    })
+  }, ashId)
+
+  // Share the note with the second node through the search picker
+  // (§17-7): independent nodes, one note.
+  await win.mouse.click(box.x + 500, box.y + 300, { button: 'right' })
+  await win.getByTestId('node-menu-attach-existing').click()
+  await win.getByTestId('attach-picker-query').fill('As')
+  await win.getByTestId('attach-picker-results').getByText('Ash').click()
+  await expect.poll(() => nodeNoteId(win, n2)).toBe(ashId)
+
+  // Detach removes only the reference (§17-17 first half).
+  await win.mouse.click(box.x + 500, box.y + 300, { button: 'right' })
+  await win.getByTestId('node-menu-detach').click()
+  await expect.poll(() => nodeNoteId(win, n2)).toBeNull()
+  expect(await noteBody(win, ashId)).toBe('ember lore')
+
+  // Re-attach, then Make Note Independent: copied body, new unique
+  // title, other use untouched (§17-17 second half).
+  await win.mouse.click(box.x + 500, box.y + 300, { button: 'right' })
+  await win.getByTestId('node-menu-attach-existing').click()
+  await win.getByTestId('attach-picker-query').fill('Ash')
+  await win.getByTestId('attach-picker-results').getByText('Ash').click()
+  await expect.poll(() => nodeNoteId(win, n2)).toBe(ashId)
+  await win.mouse.click(box.x + 500, box.y + 300, { button: 'right' })
+  await win.getByTestId('node-menu-make-independent').click()
+  await win.getByTestId('node-menu-title-input').fill('Ash Copy')
+  await win.getByTestId('node-menu-title-confirm').click()
+  await expect.poll(() => nodeNoteId(win, n2)).not.toBe(ashId)
+  const copyId = (await nodeNoteId(win, n2))!
+  expect(await noteBody(win, copyId)).toBe('ember lore')
+  expect(await nodeNoteId(win, n1)).toBe(ashId)
+
+  await app.close()
+})
+
+test('Uses sidebar groups locations and places unplaced material (§7.4, §6.10)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-uses-'))
+  const { app, win } = await launch(projectDir)
+  const { noteId: ashId } = await seedPlacedNote(win, 'Ash', 'ember lore', { x: 300, y: 240 })
+  // A second node shares the note but has no placement (Unplaced).
+  await win.evaluate(async (id) => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    const nodeId = crypto.randomUUID()
+    await run('CreateNode', { nodeId })
+    await run('AttachNoteToNode', { nodeId, noteId: id })
+  }, ashId)
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.getByTestId('note-editor')).toContainText('ember lore')
+  await win.getByTestId('uses-toggle').click()
+  await expect(win.getByTestId('uses-sidebar')).toBeVisible()
+  await expect(win.getByTestId('uses-sidebar')).toContainText('Root canvas')
+  await expect(win.locator('[data-testid="uses-node"]')).toHaveCount(1)
+  await expect(win.locator('[data-testid="uses-place-node"]')).toHaveCount(1)
+
+  // Place the unplaced node at view center; the sidebar regroups.
+  await win.getByTestId('uses-place-node').click()
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+  await expect(win.locator('[data-testid="uses-node"]')).toHaveCount(2)
+  await expect(win.locator('[data-testid="uses-place-node"]')).toHaveCount(0)
+
+  // Selecting a group centers and selects its placements.
+  await win.locator('[data-testid="uses-node"]').first().click()
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection().length))
+    .toBeGreaterThan(0)
+
+  // Zero-node note: Place on Current Canvas creates node + dot +
+  // placement in one command and the labeled dot appears (§6.10).
+  const loneId = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const noteId = crypto.randomUUID()
+    const result = await window.ew.project.execute({
+      commandId: crypto.randomUUID(),
+      projectId: (project.result as { id: string }).id,
+      commandType: 'CreateNote',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: { noteId, title: 'Lone' },
+    })
+    if (result.status !== 'committed') throw new Error(result.status)
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId } }))
+    return noteId
+  })
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Lone/)
+  await expect(win.getByTestId('uses-place-note')).toBeVisible()
+  await win.getByTestId('uses-place-note').click()
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 3)
+  await expect
+    .poll(async () => {
+      const scene = await win.evaluate(() =>
+        window.ew.project.query('getCanvasScene', { canvasId: window.__ewDebug!.canvasId() }),
+      )
+      if (!scene.ok) return []
+      return (scene.result as { items: Array<{ noteTitle?: string | null }> }).items.map(
+        (item) => item.noteTitle ?? null,
+      )
+    })
+    .toContain('Lone')
+  const usesResult = await win.evaluate(
+    (id) => window.ew.project.query('getNoteUses', { noteId: id }),
+    loneId,
+  )
+  expect(usesResult).toMatchObject({ ok: true, result: { totalPlacements: 1 } })
 
   await app.close()
 })

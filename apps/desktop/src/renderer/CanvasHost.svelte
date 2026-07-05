@@ -8,7 +8,8 @@
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
   import { attachNodeMenu, type NodeMenuHandle } from './canvas/node-menu'
   import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
-  import { attachOpenNoteSurface, type OpenNoteSurfaceHandle } from './note/open-note'
+  import { attachOpenNoteSurface, onAttachNote, type OpenNoteSurfaceHandle } from './note/open-note'
+  import AttachNotePicker from './note/AttachNotePicker.svelte'
 
   let {
     onready = undefined,
@@ -20,6 +21,8 @@
   let handle = $state<CanvasHostHandle | null>(null)
   let ui = $state<DecorationsUi | null>(null)
   let tooling = $state<BoardTooling | null>(null)
+  // §6.6 attach-note picker target (AI-IMP-049).
+  let attachTarget = $state<string | null>(null)
 
   // §9.2 non-blocking notice: bare nodes auto-trashed with their last
   // placement surface here with a Keep in Project escape.
@@ -52,6 +55,7 @@
       showBoardNotice({ message: detail.message, keepNodeIds: detail.keepNodeIds ?? [] })
     }
     element.addEventListener('ew-board-notice', onNotice)
+    const offAttach = onAttachNote((nodeId) => (attachTarget = nodeId))
     mountCanvasHost(element)
       .then((h) => {
         if (disposed) {
@@ -76,6 +80,7 @@
       })
     return () => {
       disposed = true
+      offAttach()
       element.removeEventListener('ew-board-notice', onNotice)
       if (noticeTimer) clearTimeout(noticeTimer)
       surfaces?.destroy()
@@ -106,6 +111,9 @@
         Dismiss
       </button>
     </div>
+  {/if}
+  {#if attachTarget && handle}
+    <AttachNotePicker {handle} nodeId={attachTarget} onclose={() => (attachTarget = null)} />
   {/if}
   {#if boardNotice}
     <div class="board-notice" role="status" data-testid="board-notice">

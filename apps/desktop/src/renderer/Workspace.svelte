@@ -10,8 +10,15 @@
   import CreatePinDialog from './CreatePinDialog.svelte'
   import PlacementSourcePanel from './PlacementSourcePanel.svelte'
   import type { CanvasHostHandle } from './canvas/host'
-  import { itemWorldAABB } from '@ew/canvas-engine'
-  import { onCreateAndPlace, onRevealNote, requestOpenNote } from './note/open-note'
+  import { itemWorldAABB, unionBounds } from '@ew/canvas-engine'
+  import {
+    onCenterPlacements,
+    onCreateAndPlace,
+    onPlaceNode,
+    onPlaceNote,
+    onRevealNote,
+    requestOpenNote,
+  } from './note/open-note'
 
   let hostHandle = $state<CanvasHostHandle | null>(null)
   let hostElement = $state<HTMLElement | null>(null)
@@ -67,6 +74,65 @@
           `“${title}” has ${uses.totalPlacements} locations — the location chooser arrives with navigation`,
         )
       })()
+    }),
+  )
+
+  // §6.10/§7.4 placement flows from the Uses sidebar (AI-IMP-049).
+  onMount(() =>
+    onPlaceNode((nodeId) => {
+      const h = hostHandle
+      if (!h) return
+      const center = viewCenterWorld()
+      void h.gateway
+        .execute('CreatePlacement', {
+          placementId: crypto.randomUUID(),
+          canvasId: h.canvasId,
+          nodeId,
+          x: center.x,
+          y: center.y,
+        })
+        .then((result) => {
+          if (result.status !== 'committed')
+            boardNotice('Place on Current Canvas failed — retry')
+        })
+    }),
+  )
+
+  // §6.10 zero-node note: node + default dot + attach + placement as
+  // one CreatePin; the label defaults visible, so the dot shows the
+  // note's title immediately.
+  onMount(() =>
+    onPlaceNote((noteId) => {
+      const h = hostHandle
+      if (!h) return
+      const center = viewCenterWorld()
+      void h.gateway
+        .execute('CreatePin', {
+          nodeId: crypto.randomUUID(),
+          canvasId: h.canvasId,
+          placementId: crypto.randomUUID(),
+          x: center.x,
+          y: center.y,
+          appearance: { kind: 'dot', color: '#8ab4d8' },
+          note: { kind: 'attach', noteId },
+        })
+        .then((result) => {
+          if (result.status !== 'committed')
+            boardNotice('Place on Current Canvas failed — retry')
+        })
+    }),
+  )
+
+  onMount(() =>
+    onCenterPlacements((placementIds) => {
+      const h = hostHandle
+      if (!h) return
+      const wanted = new Set(placementIds)
+      const items = h.controller.items().filter((item) => wanted.has(item.id))
+      if (items.length === 0) return
+      h.controller.selection.marquee(placementIds)
+      const bounds = unionBounds(items)
+      if (bounds) h.flyTo(bounds)
     }),
   )
 

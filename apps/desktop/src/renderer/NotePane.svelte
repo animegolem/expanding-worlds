@@ -27,6 +27,7 @@
   import { wikiLinkCompletion } from './note/suggestions'
   import { wikiLinkActivation, wikiLinkHighlighter } from './note/wiki-link-plugin'
   import TitleConflictDialog, { type TitleConflict } from './note/TitleConflictDialog.svelte'
+  import UsesSidebar from './note/UsesSidebar.svelte'
 
   interface PhantomView {
     titleKey: string
@@ -45,12 +46,18 @@
   let collapsed = $state(false)
   let error = $state<string | null>(null)
 
+  // §7.4 Uses sidebar (AI-IMP-049).
+  let usesOpen = $state(false)
+  let usesRefresh = $state(0)
+  // Phase 1 shows the root canvas; workspace tabs land in EPIC-006.
+  let activeCanvasId = $state<string | null>(null)
+
   // §7.2 phantom view: a projection only — nothing here persists
   // until a materialization action commits.
   let phantom = $state<PhantomView | null>(null)
   let phantomDraft = $state('')
   let returnNoteId = $state<string | null>(null)
-  let paneProject: ProjectPort | null = null
+  let paneProject = $state<ProjectPort | null>(null)
   let paneController: NoteEditorController | null = null
   let draftTimer: ReturnType<typeof setTimeout> | null = null
   let materializing = false
@@ -318,6 +325,13 @@
       paneProject = port
       paneController = controller
       if (editorHost) controller.mount(editorHost)
+      void (async () => {
+        const project = await port.query<{ rootNodeId: string }>('getProject')
+        const canvas = await port.query<{ id: string } | null>('getCanvasByNode', {
+          nodeId: project.rootNodeId,
+        })
+        activeCanvasId = canvas?.id ?? null
+      })()
 
       // Project-changed events deliver re-resolution sweep effects
       // (materialization, rename, restore) to the open editor and the
@@ -331,6 +345,7 @@
           // §10.2: rename rewrites fold into the open buffer as a
           // minimal external change inside local undo.
           void controller?.syncExternal()
+          usesRefresh += 1
           const view = phantom
           if (view && paneProject) {
             void paneProject
@@ -398,6 +413,15 @@
         />
         {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
         <span hidden data-testid="note-pane-title">{note.title}</span>
+        <button
+          type="button"
+          class="uses-toggle"
+          data-testid="uses-toggle"
+          title="Uses"
+          onclick={() => (usesOpen = !usesOpen)}
+        >
+          ⌖
+        </button>
       {:else}
         <h2 data-testid="note-pane-title">
           {phantom ? phantom.title : 'Notes'}
@@ -491,6 +515,9 @@
       Double-click a placement with a note, or use the node menu.
     </p>
   {/if}
+  {#if !collapsed && usesOpen && note && !phantom && paneProject}
+    <UsesSidebar port={paneProject} noteId={note.id} {activeCanvasId} refresh={usesRefresh} />
+  {/if}
   {#if conflict}
     <TitleConflictDialog
       {conflict}
@@ -534,7 +561,8 @@
     padding: 0.5rem 0.5rem 0.25rem;
   }
 
-  .collapse {
+  .collapse,
+  .uses-toggle {
     flex: none;
     padding: 0 0.35rem;
     border: none;
