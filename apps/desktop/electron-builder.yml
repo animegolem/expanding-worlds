@@ -1,0 +1,34 @@
+# Packaging (AI-IMP-051). The app ships with ZERO runtime
+# node_modules: persistence runs on node:sqlite (no native modules)
+# and electron-vite bundles main/preload/utility into out/*.cjs with
+# only electron and node: builtins external; the renderer is static
+# built assets. All former runtime deps are devDependencies, so
+# electron-builder collects nothing and pnpm workspace symlinks never
+# enter the picture. Unsigned builds: macOS first launch is
+# right-click -> Open; Windows SmartScreen needs "Run anyway".
+appId: io.github.animegolem.expanding-worlds
+productName: Expanding Worlds
+directories:
+  output: dist-artifacts
+files:
+  - out/**
+npmRebuild: false
+mac:
+  target:
+    - target: dmg
+      arch: [arm64]
+  category: public.app-category.graphics-design
+  # No signing identity: explicit null keeps electron-builder from
+  # hunting the keychain (ad-hoc signature is still applied).
+  identity: null
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: true
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Graphics

@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 3 | 3 |
+| Planned | 3 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 6 | 48 |
+| Completed | 6 | 50 |
 | **Total** | **11** | **52** |
 
 ## In Progress
@@ -40,8 +40,8 @@
 > The project is exiting pre-alpha: the owner's artist friend becomes
 
 **IMPs:**
-- [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — planned
-- [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — planned
+- [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — completed
+- [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — completed
 - [[AI-IMP-052-release-workflow-and-v050|IMP-052]] Release workflow and v050 — planned
 
 ---
@@ -69,9 +69,9 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (3602 LOC)
+- pnpm-lock.yaml (5045 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2614 LOC)
-- apps/desktop/e2e/notes.spec.ts (944 LOC)
+- apps/desktop/e2e/notes.spec.ts (946 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (755 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
@@ -79,12 +79,12 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
-- apps/desktop/e2e/board-tooling.spec.ts (610 LOC)
+- apps/desktop/e2e/board-tooling.spec.ts (614 LOC)
 
 ### > 300 LOC
 
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/e2e/slice.spec.ts (525 LOC)
+- apps/desktop/e2e/slice.spec.ts (538 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - apps/desktop/e2e/decorations.spec.ts (473 LOC)
@@ -109,11 +109,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/DecorationToolbar.svelte (336 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
+- packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/queries-structure.ts (323 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/persistence/src/handlers/pin.ts (314 LOC)
-- packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
 - apps/desktop/src/main/index.ts (310 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
 
@@ -121,7 +121,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>6 EPICs, 48 IMPs completed</summary>
+<summary>6 EPICs, 50 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

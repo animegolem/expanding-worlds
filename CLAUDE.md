@@ -67,3 +67,13 @@ never delegated. Implementation may be decomposed:
   (`pandoc RAG/RFC-0001-....md -o check.docx` as a sanity check).
 - `spike/` is throwaway benchmark code — findings transfer via
   `RAG/spike-reports/`, code does not.
+- Releases (AI-EPIC-011): versioning is minor = epic number
+  (EPIC-006 ships v0.6.0), patch for hotfixes. On epic close: bump
+  `apps/desktop/package.json` version, tag `vX.Y.Z`, push the tag —
+  the release workflow builds unsigned DMG/NSIS/AppImage and
+  attaches them to the GitHub Release. Perf e2e is a local hardware
+  gate only (CI runners have no GPU; the suite refuses software GL).
+- E2E runs use invisible windows (`EW_TEST_HIDDEN_WINDOWS=1`, set by
+  playwright.config) — never run the suite with visible windows on
+  the owner's machine; set the flag to 0 only to deliberately watch
+  a run.

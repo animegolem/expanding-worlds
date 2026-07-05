@@ -5,12 +5,12 @@ tags:
   - Implementation
   - infrastructure
   - ci
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-011-release-engineering]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-050-remote-push-and-ci
@@ -59,13 +59,13 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] playwright.config testIgnore excludes perf.spec.ts under CI;
-      local full run still includes it.
-- [ ] ci.yml: install → build → unit → lint → e2e (xvfb) with pnpm
+- [x] playwright.config testIgnore excludes perf.spec.ts under CI;
+      local full run still includes it (31 vs 34 via --list).
+- [x] ci.yml: install → build → unit → lint → e2e (xvfb) with pnpm
       store cache; triggers on push to main and PRs.
-- [ ] main pushed; workflow iterated to green on the actual runner
+- [x] main pushed; workflow iterated to green on the actual runner
       (verified via gh run watch).
-- [ ] Local gates unaffected (full local suite still green).
+- [x] Local gates unaffected (full local suite still green, 34/34).
 
 ### Acceptance Criteria
 
@@ -84,3 +84,22 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Took eight remote iterations (inherent to CI work — the one-commit
+convention bends here by necessity; each iteration is its own small
+commit). Three real problem classes fell out. (1) Electron's
+postinstall on the runner silently saved a truncated zip which
+@electron/get then cache-hit forever, and install.js "extracted" a
+single file and exited 0 — CI now purges the cache, uses install.js
+only to fetch, and extracts with unzip itself, asserting the
+executable exists. (2) The xvfb runner is ~10x slower than local
+hardware: CI gets 120 s test timeout, 15 s expect windows, two
+retries. (3) The runner exposed LATENT test bugs the fast local
+machine masked: exact revision-delta assertions lose a race with
+the debounced SetCanvasCamera persist on any slow machine (settling
+first was tried and was WRONG — the race is unwinnable), so a new
+`listCommandLog(sinceRevision)` read model (§10.2 log) lets tests
+assert what they mean: counts of non-camera commands. All exact
+deltas in board-tooling and slice converted. Bonus catch: the
+notes-spec redo shortcut was mac-only (CM binds Ctrl+y off-mac, not
+Ctrl+Shift+z). CI wall-clock ~14 min, dominated by the e2e suite;
+within the epic's NFR but worth watching as the suite grows.

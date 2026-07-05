@@ -1,0 +1,77 @@
+# Tag-triggered point releases (AI-IMP-052). Ritual: close an epic →
+# bump apps/desktop version (minor = epic number) → tag vX.Y.Z →
+# push the tag. Each platform builds its own unsigned artifact and
+# the release job attaches all three to one GitHub Release.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: dist:mac
+            artifact: '*.dmg'
+          - os: windows-latest
+            target: dist:win
+            artifact: '*.exe'
+          - os: ubuntu-latest
+            target: dist:linux
+            artifact: '*.AppImage'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      # Unsigned builds: never hunt the keychain for an identity.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspaces
+        run: pnpm -r build
+
+      - name: Package
+        working-directory: apps/desktop
+        run: pnpm ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}
+          path: apps/desktop/dist-artifacts/${{ matrix.artifact }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create release with assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" artifacts/* \
+            --title "Expanding Worlds $GITHUB_REF_NAME" \
+            --notes "Unsigned alpha build. First launch: macOS — right-click the app → Open (twice if needed); Windows — SmartScreen → More info → Run anyway; Linux — chmod +x the AppImage and run it. Work is tracked in RAG/AI-EPIC; this tag corresponds to the epic matching the minor version."

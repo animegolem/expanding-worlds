@@ -1,6 +1,6 @@
 {
   "name": "@ew/desktop",
-  "version": "0.0.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "main": "./out/main/index.cjs",
@@ -8,9 +8,13 @@
     "predev": "lsof -ti :5173 | xargs kill 2>/dev/null; true",
     "dev": "electron-vite dev",
     "build": "tsc --noEmit && electron-vite build",
-    "test": "electron-vite build && playwright test"
+    "test": "electron-vite build && playwright test",
+    "dist": "electron-vite build && electron-builder",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "dist:linux": "electron-vite build && electron-builder --linux"
   },
-  "dependencies": {
+  "devDependencies": {
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-markdown": "^6.5.0",
@@ -22,14 +26,13 @@
     "@ew/domain": "workspace:*",
     "@ew/persistence": "workspace:*",
     "@ew/protocol": "workspace:*",
-    "pixi.js": "^8.19.0"
-  },
-  "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@types/node": "^26.1.0",
     "electron": "^39.8.10",
+    "electron-builder": "^26.0.12",
     "electron-vite": "^5.0.0",
+    "pixi.js": "^8.19.0",
     "svelte": "^5.56.4",
     "vite": "^8.1.3"
   }

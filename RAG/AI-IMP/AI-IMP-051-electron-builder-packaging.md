@@ -5,12 +5,12 @@ tags:
   - Implementation
   - infrastructure
   - packaging
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-050]
 parent_epic: [[AI-EPIC-011-release-engineering]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-051-electron-builder-packaging
@@ -65,16 +65,20 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Runtime deps moved to devDependencies; dev session, full
-      build, and e2e all still green (vite resolves deps regardless
-      of dep type).
-- [ ] electron-builder.yml with the three targets; `npmRebuild:
+- [x] Runtime deps moved to devDependencies; full build and complete
+      e2e suite green locally (34/34) and on CI (vite resolves deps
+      regardless of dep type; dev-mode unchanged by construction —
+      the owner's live session confirms on next reload).
+- [x] electron-builder.yml with the three targets; `npmRebuild:
       false`; artifacts land in an ignored directory.
-- [ ] `pnpm dist` builds an unsigned arm64 DMG locally.
-- [ ] Packaged app smoke-tested from the DMG mount: launches,
-      default project opens, image import + draw + note editing
-      work, relaunch reopens the same project.
-- [ ] Version 0.5.0; gates green.
+- [x] `pnpm dist` builds an unsigned arm64 DMG locally (105 MB).
+- [x] Packaged app smoke-tested via Playwright against the packaged
+      .app (identical bytes to the DMG payload, hidden window,
+      isolated project dir): boots, creates its project, CreatePin +
+      note command round trip, image import through the packaged
+      utility's blob pipeline, drawn decoration, and a relaunch
+      reopens the same project with data intact.
+- [x] Version 0.5.0; gates green.
 
 ### Acceptance Criteria
 
@@ -92,3 +96,16 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Smooth ticket — the node:sqlite / bundle-everything architecture
+paid off exactly as designed: electron-builder collects ZERO
+node_modules, sidestepping the entire pnpm-workspace packaging
+problem class, and the app payload is just out/**. Deviations: the
+smoke test is automated Playwright against the packaged .app rather
+than a hand pass from the mounted DMG (same bytes; the owner is
+hands-on this week and the DMG sits in dist-artifacts/ for a visual
+pass — default Electron icon expected until the artist's icon
+lands). pnpm's approve-builds prompt during electron-builder's
+install wrote a placeholder into pnpm-workspace.yaml
+(electron-winstaller) — settled to false, as Squirrel.Windows is
+unused. Windows/Linux artifacts are built only by AI-IMP-052's
+release matrix, per scope.
