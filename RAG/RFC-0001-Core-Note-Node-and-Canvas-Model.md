@@ -1941,6 +1941,37 @@ directory outside any project and include theme, window and layout
 preferences, the cross-canvas undo behavior toggle, and future adapter
 configuration such as a media-backup endpoint.
 
+**The settings surface (rev 0.17).** Settings open as a takeover view
+like graph and tree (§8.2), entered from the ☰ charm — but the sheet
+is partially transparent and inset, so the real board stays visible
+at the edges and through it, and appearance changes apply live to the
+world behind the sheet. There are no apply or save buttons: settings
+commit on click, and Esc closes. The surface is deliberately
+exhaustible in one glance; opinions ship as defaults, not options,
+and cadence thresholds, zoom fades, and panel physics are expressly
+NOT settings. The Phase 1 inventory:
+
+- **Appearance:** theme (dark default · light · glass) · grid (none ·
+  lines · dots) · flat canvas color (small swatch set · off) ·
+  window opacity.
+
+- **Behavior:** charm corner (lower-right default · upper-right) ·
+  chrome fade delay (slider · never) · snap to grid (when grid
+  snapping ships, §6.9).
+
+- **Window:** title strip (hover-reveal · always · never) · border ·
+  rounded corners.
+
+- **Windows/Linux only:** ☰ menu in the charm rail or the system
+  bar.
+
+**Theming.** Three themes: dark (default), light, and glass — a
+translucent window whose chrome blurs what lies behind it. Glass is
+macOS-only and falls back to dark elsewhere. All chrome must read on
+every theme and over arbitrary art, using scrim chips rather than
+hard plates. Theme tokens are wired as CSS custom properties so a
+theme engine remains possible, but no theme engine is built.
+
 # 12. Rendering and performance
 
 ## 12.1 Initial engineering targets
