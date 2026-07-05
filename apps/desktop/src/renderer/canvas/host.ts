@@ -5,6 +5,7 @@ import {
   CommandGateway,
   createDefaultRegistry,
   createScenePlanes,
+  drawSnapGuides,
   hitTest,
   itemWorldAABB,
   SceneSync,
@@ -121,7 +122,6 @@ async function loadTileSource(url: string): Promise<TileTextureSource> {
 
 const CAMERA_PERSIST_DEBOUNCE_MS = 500
 const SELECTION_COLOR = 0x4a9df0
-const GUIDE_COLOR = 0xf04a7d
 
 export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostHandle> {
   const app = new Application()
@@ -149,8 +149,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
 
   const selectionGfx = new Graphics()
   const marqueeGfx = new Graphics()
+  // Guides live in the world plane: drawSnapGuides authors world-unit
+  // geometry with screen-constant dash/width divided by zoom (§6.9).
   const guidesGfx = new Graphics()
-  planes.overlay.addChild(selectionGfx, marqueeGfx, guidesGfx)
+  planes.overlay.addChild(selectionGfx, marqueeGfx)
+  planes.world.addChild(guidesGfx)
 
   const project = await runQuery<{ id: string; rootNodeId: string; revision: number }>(
     'getProject',
@@ -234,25 +237,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     },
     renderGuides(guides: SnapGuide[]) {
       lastGuides = guides
-      guidesGfx.clear()
-      for (const guide of guides) {
-        const from =
-          guide.axis === 'x'
-            ? controller.camera.worldToScreen({ x: guide.position, y: guide.from })
-            : controller.camera.worldToScreen({ x: guide.from, y: guide.position })
-        const to =
-          guide.axis === 'x'
-            ? controller.camera.worldToScreen({ x: guide.position, y: guide.to })
-            : controller.camera.worldToScreen({ x: guide.to, y: guide.position })
-        guidesGfx.moveTo(from.x, from.y).lineTo(to.x, to.y).stroke({
-          width: 1,
-          color: GUIDE_COLOR,
-        })
-      }
+      drawSnapGuides(guidesGfx, guides, controller.camera)
     },
     cameraChanged() {
       controller.camera.applyTo(planes.world)
       drawSelection()
+      // Dash/width are zoom-derived; redraw live guides at the new zoom.
+      if (lastGuides.length > 0) drawSnapGuides(guidesGfx, lastGuides, controller.camera)
       persistCameraSoon()
       scheduleCull()
     },
