@@ -2334,7 +2334,7 @@ controls.
 7. Create a second node sharing that note.
 
 8. Create flat project tags, assign different tags to the two nodes,
-rename a tag, and open its result view.
+rename a tag, and open its tag panel view.
 
 9. Place the same node more than once, including by dragging it from
 the node library onto the canvas, and place a zero-node note from the
@@ -2394,8 +2394,9 @@ and that purging it produces a broken link offering explicit recreate.
 23. Verify Trash retention defaults to Never and that permanent purge
 invalidates dependent undo and enables safe garbage collection.
 
-24. Open the tree takeover view and confirm Trash and decoration
-edges are excluded by default.
+24. Open the tree and graph takeover views and confirm trashed
+records are excluded by default and drawn connectors appear as
+edges in neither.
 
 25. Close and reopen the application without data loss, duplicate
 project writers, or unreconciled temporary imports, including a note
@@ -2503,7 +2504,7 @@ The model is successfully implemented when:
   placement-anchored connectors.
 
 - Flat project-scoped tags are assigned only to nodes, can be renamed
-  without rewriting assignments, and open node result views.
+  without rewriting assignments, and open the tag panel.
 
 - Dot, icon, and image remain interchangeable appearances.
 
@@ -2579,21 +2580,26 @@ The model is successfully implemented when:
 
 The following remain deliberately unresolved:
 
-1. Exact visual design and keyboard behavior of the location chooser,
-the phantom view, and wiki-link suggestion ranking.
+1. (Largely resolved, rev 0.17.) The location chooser is the
+link-anchored panel sharing the §7.4 row grammar, and the phantom
+view is the §8.5 panel lifecycle; wiki-link suggestion ranking
+remains open.
 
 2. Whether highlighted-placement mode activates automatically for a
 large same-canvas group or only on explicit selection.
 
-3. Default click, double-click, and primary-open behavior.
+3. (Resolved, rev 0.17.) The §8.4 click grammar: single-click
+selects, charms open their facet, double-click opens everything.
 
 4. Whether placement-specific appearance overrides are introduced
 after Phase 1.
 
-5. The first graph layout and its default semantic edge projection.
+5. (Resolved, rev 0.17.) The first graph is a force layout with
+wiki links as the only edges (§14.2).
 
-6. Exact workspace tab, docking, note-pane, and project-switching
-behavior.
+6. (Resolved, rev 0.17.) The shell model of §8.2 and the note
+panels of §8.5 replace workspace tabs, docking, and the docked note
+pane; only the project-switcher charm's menu remains undesigned.
 
 7. (Resolved, rev 0.11.) Background replacement preserves canvas
 coordinates by fitting the new image into the prior stage extent
@@ -2648,17 +2654,33 @@ explicit membership).
 CreatePin command stays regardless — it is the one-transaction
 backbone behind imports, phantom materialization, and note
 placement — but with every object a full node, a dedicated pin
-dialog duplicates the mental model. Expected resolution: the
-chrome-era tool rail (Baseline UI Vision) replaces it; the dialog
-is not removed before its replacement exists, because it is
-currently the only surface creating a standalone dot/icon node
-with tags.
+dialog duplicates the mental model. The rev 0.17 shell resolves the
+direction — the §8.4 charm bar and creation flows carry attach,
+make-canvas, and tagging — but the shell has not yet designed a
+surface for creating a standalone dot or icon node, so the dialog is
+not removed before one exists.
 
 21. Whether zero-node ("hidden") notes justify themselves —
 equivalently, whether this is the user's entire campaign wiki or
 their embodied-in-the-canvas campaign wiki. The feature stays for
 now (its cost is near zero atop the phantom/Unplaced machinery);
 the owner suspects the embodied reading ultimately wins.
+
+22. Multi-tag queries (AND/OR) over the §4.8 tag panel, whose field
+deliberately takes exactly one tag in Phase 1.
+
+23. Note-attached tags — deferred, not rejected (§4.8): reasons a
+note could own a tag exist, but they pollute the database without
+demonstrated benefit; revisit on real need.
+
+24. The hold-Mod switcher HUD (§8.1): a thumbnail flash of
+bookmarked boards as the learned-shortcut reflex path, complementing
+the bookmark menu, not replacing it.
+
+25. Side-by-side comparison of two boards, formerly implicit in
+workspace tabs. Expected shape: a second window onto the same
+project, which requires the multi-window story the §11.1
+single-writer rule already anticipates.
 
 # 20. Decision summary
 
@@ -2713,7 +2735,8 @@ Accepted for the Phase 1 prototype:
   count.
 
 - Tags are first-class, flat, project-scoped records assigned only to
-  nodes; activating a tag opens a node result view.
+  nodes, never serialized into note text; activating a tag opens the
+  tag panel (§4.8).
 
 - Pins and externally dropped images are nodes.
 
@@ -2755,7 +2778,8 @@ Accepted for the Phase 1 prototype:
   active.
 
 - A nodes-only node library with an Unplaced filter is a Phase 1
-  requirement and the durable home for unplaced material.
+  requirement and the durable home for unplaced material, realized by
+  the tree takeover view (rev 0.17).
 
 - Trash is a lifecycle state and query view, not a container; automatic
   purge defaults to Never.
@@ -2826,7 +2850,8 @@ Accepted for the Phase 1 prototype:
   length-clamped) and the arrow shape is a ShapeKind variant scaling
   with its box; every new stroke is born legible at the creating
   viewport with the weight control as a multiplier (rev 0.14); the
-  Baseline UI Vision artifact anchors the §8.2 chrome direction.
+  Baseline UI Vision's tool-rail split carried into the rev 0.17
+  shell model's dock (§8.2).
 
 - Grouping stays canvas-local presentation state; relational data
   never mirrors board arrangement. Frame-like on-canvas containers are
@@ -2869,7 +2894,8 @@ Accepted for the Phase 1 prototype:
 - The graph/data workspace is separate from the art canvas.
 
 - Back, Forward, Home, bookmarks, and viewport restoration are
-  project-scoped and per workspace.
+  project-scoped, with one session history per window rendered as
+  the path (rev 0.17).
 
 - No PostgreSQL, Docker, networking, or CRDT dependency is introduced in
   Phase 1.
@@ -2884,4 +2910,55 @@ Accepted for the Phase 1 prototype:
   (rev 0.16).
 
 - The Create Pin dialog's future and the zero-node-note question are
-  held open as questions 20 and 21 (rev 0.16).
+  held open as questions 20 and 21 (rev 0.16); rev 0.17 resolves the
+  dialog's direction but keeps it alive until a standalone dot/icon
+  creation surface exists.
+
+- The shell model (rev 0.17, from the July 2026 design-consult
+  cycle): the window is the board; chrome floats and never reflows
+  the canvas; node-local content opens as panels anchored to what
+  summoned them while project-global views (graph ⊛, tree ▤,
+  settings) take over the window, Esc-returning with the camera
+  untouched. Mode charm rail, bottom dock, hover title strip, one
+  shared engagement-fade clock, and the tooltip rule (every control
+  teaches its shortcut). Workspace tabs, the docked note pane, and
+  the persistent status strip are retired. macOS leads; Windows and
+  Linux differ only by a ☰ menu entry point.
+
+- Navigation chrome (rev 0.17): the path renders the back stack —
+  entry route, never ancestry; Back/Forward are gestures first;
+  Home is a dedicated button; the bookmark menu's row order IS the
+  Mod+1–n binding with printed shortcuts, and stale bookmarks grey
+  out in place. The switcher HUD and New Window side-by-side are
+  deferred (questions 24–25).
+
+- Node charms and click grammar (rev 0.17): page and frame hint
+  charms as a no-hover census, single-click selects and shows the
+  charm bar, charm clicks open exactly their facet, double-click
+  opens everything. Selection is a thin outline with cursor zones —
+  no drawn transform handles; Option-drag duplicates as a placement
+  copy.
+
+- Note panels (rev 0.17): one tethered panel at a time, pinned
+  panels accumulate and never auto-unpin, and the "which node am I
+  reading" indicator escalates exactly as far as the spatial link
+  is broken — tail, halo, edge chip, cross-board origin label. The
+  canvas's own note is the screen-fixed corner charm. The Uses list
+  lives in the panel behind the places header; the location chooser
+  anchors to the activated link.
+
+- Tag surfaces (rev 0.17): the tag panel with name completion and
+  the lens (a view state dimming the board to hits), reachable
+  through three doors; frontmatter-derived tags considered and
+  rejected; single-tag queries, with multi-tag and note-attached
+  tags deferred (questions 22–23).
+
+- The settings takeover (rev 0.17): translucent inset sheet from ☰,
+  live-applying, commit-on-click, one-glance inventory; opinions
+  ship as defaults and feel constants are not settings. Themes are
+  dark, light, and Mac-only glass with scrim-chip legibility and
+  CSS-custom-property tokens.
+
+- Ongoing conditions get a rail perch that exists exactly as long
+  as the condition does; transitions get toasts; the status strip
+  retires when the perch ships (rev 0.17).
