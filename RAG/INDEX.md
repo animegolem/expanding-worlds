@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 1 |
-| Planned | 4 | 1 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 29 |
+| Completed | 5 | 30 |
 | **Total** | **10** | **31** |
 
 ## In Progress
@@ -19,8 +19,8 @@
 > The owner is now using the board daily and comparing it directly
 
 **IMPs:**
-- [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — in-progress
-- [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — planned
+- [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — completed
+- [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — in-progress
 
 ---
 
@@ -53,16 +53,16 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (3397 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2463 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2497 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (604 LOC)
 
 ### > 300 LOC
 
-- apps/desktop/src/renderer/canvas/host.ts (590 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/e2e/slice.spec.ts (523 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
@@ -74,15 +74,16 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/canvas.spec.ts (423 LOC)
 - packages/persistence/src/handlers/notes.test.ts (419 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (414 LOC)
+- apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
+- apps/desktop/e2e/gestures.spec.ts (384 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (379 LOC)
 - packages/persistence/src/handlers/pin.test.ts (365 LOC)
+- apps/desktop/e2e/decorations.spec.ts (354 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
-- apps/desktop/src/renderer/canvas/gestures-ui.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
-- apps/desktop/e2e/decorations.spec.ts (328 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (327 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
@@ -95,7 +96,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>5 EPICs, 29 IMPs completed</summary>
+<summary>5 EPICs, 30 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

@@ -66,6 +66,38 @@ export function scaleDecorationData(
   return next
 }
 
+/**
+ * Rotates a shape (rect form with a `rotation` field) as a rigid
+ * body: its CENTER orbits the pivot and the delta accumulates onto
+ * its own rotation, so a sole-selected shape spins in place
+ * (AI-IMP-031 — mapping the stored top-left instead made shapes
+ * orbit without spinning). Extents are untouched.
+ */
+export function rotateShapeData(
+  data: Record<string, unknown>,
+  center: { x: number; y: number },
+  angle: number,
+): Record<string, unknown> {
+  if (!isNum(data['x']) || !isNum(data['y']) || !isNum(data['width']) || !isNum(data['height'])) {
+    return rotateDecorationData(data, center, angle)
+  }
+  const cx = data['x'] + data['width'] / 2
+  const cy = data['y'] + data['height'] / 2
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  const dx = cx - center.x
+  const dy = cy - center.y
+  const ncx = center.x + dx * cos - dy * sin
+  const ncy = center.y + dx * sin + dy * cos
+  const prior = isNum(data['rotation']) ? data['rotation'] : 0
+  return {
+    ...data,
+    x: ncx - data['width'] / 2,
+    y: ncy - data['height'] / 2,
+    rotation: prior + angle,
+  }
+}
+
 /** Rotates every coordinate pair about (cx, cy); extents untouched. */
 export function rotateDecorationData(
   data: Record<string, unknown>,

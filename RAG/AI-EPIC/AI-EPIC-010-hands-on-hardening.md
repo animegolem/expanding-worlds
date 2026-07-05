@@ -65,17 +65,17 @@ rotation is a recorded limitation). No new tools or panels.
 
 ### Functional Requirements
 
-- [ ] FR-1: Text decorations carry measured world bounds, refreshed
+- [x] FR-1: Text decorations carry measured world bounds, refreshed
       on every create/edit; hit-testing falls back to a font-size
       estimate for legacy rows (AI-IMP-030).
-- [ ] FR-2: Rotate gesture spins shapes about their own center and
+- [x] FR-2: Rotate gesture spins shapes about their own center and
       composes with multi-selection pivots; rotated shape bounds
       expand like rotated placements (AI-IMP-031).
-- [ ] FR-3: Single-selection chrome (outline, resize handles, rotate
+- [x] FR-3: Single-selection chrome (outline, resize handles, rotate
       handle) draws on the oriented box; resize of a rotated item
       scales in its local frame; multi-selection keeps the
       axis-aligned box (AI-IMP-031).
-- [ ] FR-4: Corner-hover rotate affordance with a rotate cursor just
+- [x] FR-4: Corner-hover rotate affordance with a rotate cursor just
       outside each corner handle (AI-IMP-031).
 
 ### Non-Functional Requirements

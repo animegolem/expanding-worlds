@@ -1,6 +1,7 @@
 import {
   createResizeDriver,
   moveDriver,
+  orientedCorners,
   reorderPayloads,
   rotateDriver,
   unionBounds,
@@ -61,9 +62,14 @@ export function attachGesturesUI(
       .filter((item): item is ScenePlacement => item.itemKind === 'placement')
   }
 
+  /** Angle of the currently rendered chrome (0 for AABB layouts) —
+   * feeds the angle-aware resize cursors (AI-IMP-031). */
+  let chromeAngle = 0
+
   function render(): void {
     gfx.clear()
     uiHandles = []
+    chromeAngle = 0
     // 'gesture-pending' is a mousedown that may become a drag: handles
     // must appear WITH the selection outline at pointer-down, or a
     // plain click reads as two separate draws (AI-IMP-029).
@@ -74,47 +80,99 @@ export function attachGesturesUI(
     const items = controller
       .selectedItems()
       .map((item) => handle.effectiveItem(item.id) ?? item)
-    const bounds = unionBounds(items)
-    if (!bounds) return
-    const tl = controller.camera.worldToScreen({ x: bounds.x, y: bounds.y })
-    const br = controller.camera.worldToScreen({
-      x: bounds.x + bounds.width,
-      y: bounds.y + bounds.height,
-    })
-    const cx = (tl.x + br.x) / 2
-    const cy = (tl.y + br.y) / 2
+    if (items.length === 0) return
 
-    const corners: Array<[ResizeHandle, number, number]> = [
-      ['nw', tl.x, tl.y],
-      ['n', cx, tl.y],
-      ['ne', br.x, tl.y],
-      ['e', br.x, cy],
-      ['se', br.x, br.y],
-      ['s', cx, br.y],
-      ['sw', tl.x, br.y],
-      ['w', tl.x, cy],
+    // Chrome rotates WITH a single oriented item (AI-IMP-031); a
+    // multi-selection has no shared frame and keeps the union AABB.
+    const toScreen = (p: { x: number; y: number }) => controller.camera.worldToScreen(p)
+    let box: Array<{ x: number; y: number }> | null = null
+    if (items.length === 1) {
+      const oriented = orientedCorners(items[0]!)
+      if (oriented) box = oriented.map(toScreen)
+    }
+    if (!box) {
+      const bounds = unionBounds(items)
+      if (!bounds) return
+      const tl = toScreen({ x: bounds.x, y: bounds.y })
+      const br = toScreen({ x: bounds.x + bounds.width, y: bounds.y + bounds.height })
+      box = [
+        { x: tl.x, y: tl.y },
+        { x: br.x, y: tl.y },
+        { x: br.x, y: br.y },
+        { x: tl.x, y: br.y },
+      ]
+    }
+    const [nw, ne, se, sw] = box as [
+      { x: number; y: number },
+      { x: number; y: number },
+      { x: number; y: number },
+      { x: number; y: number },
     ]
-    for (const [dir, x, y] of corners) {
-      uiHandles.push({ kind: 'resize', dir, x, y })
+    chromeAngle = Math.atan2(ne.y - nw.y, ne.x - nw.x)
+    const mid = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2,
+    })
+    const center = mid(nw, se)
+    const outward = (p: { x: number; y: number }): { x: number; y: number } => {
+      const dx = p.x - center.x
+      const dy = p.y - center.y
+      const len = Math.hypot(dx, dy) || 1
+      return { x: dx / len, y: dy / len }
+    }
+
+    const positions: Array<[ResizeHandle, { x: number; y: number }]> = [
+      ['nw', nw],
+      ['n', mid(nw, ne)],
+      ['ne', ne],
+      ['e', mid(ne, se)],
+      ['se', se],
+      ['s', mid(se, sw)],
+      ['sw', sw],
+      ['w', mid(sw, nw)],
+    ]
+    for (const [dir, p] of positions) {
+      uiHandles.push({ kind: 'resize', dir, x: p.x, y: p.y })
       gfx
-        .rect(x - HANDLE_SIZE / 2, y - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE)
+        .rect(p.x - HANDLE_SIZE / 2, p.y - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE)
         .fill({ color: HANDLE_FILL })
         .stroke({ width: 1, color: HANDLE_STROKE })
     }
 
-    const rotate = { x: cx, y: tl.y - ROTATE_OFFSET }
+    // Rotate lollipop off the oriented top edge.
+    const nMid = mid(nw, ne)
+    const oN = outward(nMid)
+    const rotate = { x: nMid.x + oN.x * ROTATE_OFFSET, y: nMid.y + oN.y * ROTATE_OFFSET }
     uiHandles.push({ kind: 'rotate', ...rotate })
     gfx
-      .moveTo(cx, tl.y - HANDLE_SIZE / 2)
+      .moveTo(nMid.x, nMid.y)
       .lineTo(rotate.x, rotate.y)
       .stroke({ width: 1, color: HANDLE_STROKE })
       .circle(rotate.x, rotate.y, HANDLE_SIZE / 2 + 1)
       .fill({ color: HANDLE_FILL })
       .stroke({ width: 1, color: HANDLE_STROKE })
 
-    if (selectedPlacements().length > 0) {
+    const showLabelButton = selectedPlacements().length > 0
+
+    // PureRef-style corner rotate zones (AI-IMP-031): invisible hover
+    // targets just outside each corner. The nw corner yields to the
+    // label button when present.
+    for (const corner of showLabelButton ? [ne, se, sw] : [nw, ne, se, sw]) {
+      const o = outward(corner)
+      uiHandles.push({
+        kind: 'rotate',
+        x: corner.x + o.x * (HANDLE_SIZE + 10),
+        y: corner.y + o.y * (HANDLE_SIZE + 10),
+      })
+    }
+
+    if (showLabelButton) {
       // §4.5: label visibility toggles from the selection controls.
-      const label = { x: tl.x - ROTATE_OFFSET / 2, y: tl.y - ROTATE_OFFSET / 2 }
+      const oNW = outward(nw)
+      const label = {
+        x: nw.x + oNW.x * (ROTATE_OFFSET * 0.7),
+        y: nw.y + oNW.y * (ROTATE_OFFSET * 0.7),
+      }
       uiHandles.push({ kind: 'label', ...label })
       gfx
         .roundRect(label.x - 7, label.y - 7, 14, 14, 3)
@@ -234,15 +292,23 @@ export function attachGesturesUI(
   // the same pointermove (canvas listeners bubble before window), so
   // setting a handle cursor here wins and the host restores default
   // on the next move once the pointer leaves the handle.
-  const RESIZE_CURSORS: Record<ResizeHandle, string> = {
-    nw: 'nwse-resize',
-    n: 'ns-resize',
-    ne: 'nesw-resize',
-    e: 'ew-resize',
-    se: 'nwse-resize',
-    s: 'ns-resize',
-    sw: 'nesw-resize',
-    w: 'ew-resize',
+  // Angle-aware (AI-IMP-031): each handle's outward direction rotates
+  // with the chrome and quantizes onto the four CSS resize axes.
+  const RESIZE_BASE_DEG: Record<ResizeHandle, number> = {
+    e: 0,
+    se: 45,
+    s: 90,
+    sw: 135,
+    w: 180,
+    nw: 225,
+    n: 270,
+    ne: 315,
+  }
+  const AXIS_CURSORS = ['ew-resize', 'nwse-resize', 'ns-resize', 'nesw-resize'] as const
+  const resizeCursor = (dir: ResizeHandle): string => {
+    const deg = RESIZE_BASE_DEG[dir] + (chromeAngle * 180) / Math.PI
+    const axis = Math.round((((deg % 180) + 180) % 180) / 45) % 4
+    return AXIS_CURSORS[axis]!
   }
   const onWindowPointerMove = (event: PointerEvent): void => {
     // Hide handles while a controller gesture/marquee is in flight.
@@ -252,7 +318,7 @@ export function attachGesturesUI(
     if (!hit) return
     canvas.style.cursor =
       hit.kind === 'resize'
-        ? RESIZE_CURSORS[hit.dir]
+        ? resizeCursor(hit.dir)
         : hit.kind === 'rotate'
           ? 'crosshair'
           : 'pointer'

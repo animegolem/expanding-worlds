@@ -79,9 +79,70 @@ function decorationAABB(item: SceneDecoration): Rect | null {
   if (num(d['x']) && num(d['y'])) {
     const width = num(d['width']) ? d['width'] : 0
     const height = num(d['height']) ? d['height'] : 0
+    const rotation = num(d['rotation']) ? d['rotation'] : 0
+    if (rotation !== 0) {
+      // Stroke-including outer box, rotated about the shape center:
+      // exact for 90° miters, and what cull/marquee/outline must see.
+      const ow = width + strokePad * 2
+      const oh = height + strokePad * 2
+      const cx = d['x'] + width / 2
+      const cy = d['y'] + height / 2
+      const cos = Math.abs(Math.cos(rotation))
+      const sin = Math.abs(Math.sin(rotation))
+      const w = ow * cos + oh * sin
+      const h = ow * sin + oh * cos
+      return { x: cx - w / 2, y: cy - h / 2, width: w, height: h }
+    }
     return inflate({ x: d['x'], y: d['y'], width, height }, strokePad)
   }
   return null
+}
+
+/**
+ * Oriented body corners for single-selection chrome (AI-IMP-031):
+ * the visual box (stroke included for shapes) rotated with the item,
+ * in nw/ne/se/sw order of the unrotated frame. Null for kinds with
+ * no oriented rect (lines, paths, text, connectors) — chrome falls
+ * back to the axis-aligned bounds.
+ */
+export function orientedCorners(item: SceneItem): [Point, Point, Point, Point] | null {
+  let cx: number
+  let cy: number
+  let halfW: number
+  let halfH: number
+  let rotation: number
+  if (item.itemKind === 'placement') {
+    const size = placementSize(item)
+    cx = item.x
+    cy = item.y
+    halfW = size.width / 2
+    halfH = size.height / 2
+    rotation = item.rotation
+  } else if (item.kind === 'shape') {
+    const d = item.data as Record<string, unknown>
+    const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+    if (!num(d['x']) || !num(d['y']) || !num(d['width']) || !num(d['height'])) return null
+    const strokePad = num(d['strokeWidth']) ? d['strokeWidth'] / 2 : 0
+    cx = d['x'] + d['width'] / 2
+    cy = d['y'] + d['height'] / 2
+    halfW = d['width'] / 2 + strokePad
+    halfH = d['height'] / 2 + strokePad
+    rotation = num(d['rotation']) ? d['rotation'] : 0
+  } else {
+    return null
+  }
+  const cos = Math.cos(rotation)
+  const sin = Math.sin(rotation)
+  const corner = (lx: number, ly: number): Point => ({
+    x: cx + lx * cos - ly * sin,
+    y: cy + lx * sin + ly * cos,
+  })
+  return [
+    corner(-halfW, -halfH),
+    corner(halfW, -halfH),
+    corner(halfW, halfH),
+    corner(-halfW, halfH),
+  ]
 }
 
 /** Axis-aligned world bounds; placements include rotation expansion. */

@@ -8,6 +8,7 @@ import {
   drawSnapGuides,
   hitTest,
   itemWorldAABB,
+  orientedCorners,
   SceneSync,
   setPlacementTextureResident,
   TextureBudget,
@@ -202,8 +203,21 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
 
   function drawSelection(): void {
     selectionGfx.clear()
-    for (const canonical of controller.selectedItems()) {
+    const selected = controller.selectedItems()
+    for (const canonical of selected) {
       const item = ephemeral.get(canonical.id) ?? canonical
+      // A single oriented item gets the PureRef-style rotated box
+      // (AI-IMP-031); everything else keeps the axis-aligned rect.
+      if (selected.length === 1) {
+        const corners = orientedCorners(item)
+        if (corners) {
+          const pts = corners.map((c) => controller.camera.worldToScreen(c))
+          selectionGfx
+            .poly(pts.flatMap((p) => [p.x, p.y]))
+            .stroke({ width: 1.5, color: SELECTION_COLOR })
+          continue
+        }
+      }
       const aabb = itemWorldAABB(item)
       if (!aabb) continue
       const tl = controller.camera.worldToScreen({ x: aabb.x, y: aabb.y })

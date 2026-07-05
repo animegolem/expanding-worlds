@@ -88,3 +88,65 @@ describe('rotateDriver', () => {
     expect(context.session.commitPayload()).toBeNull()
   })
 })
+
+describe('shape rotation (AI-IMP-031)', () => {
+  const shapeData = {
+    shape: 'rect',
+    x: 40,
+    y: 20,
+    width: 20,
+    height: 10,
+    stroke: '#fff',
+    strokeWidth: 2,
+  }
+
+  function dataOf(session: GestureSession, id: string): Record<string, unknown> {
+    const update = session.get(id)
+    if (!update || update.kind !== 'decoration') throw new Error('expected decoration update')
+    return update.data
+  }
+
+  it('spins a sole-selected shape about its own center (no orbit)', () => {
+    const shape = makeDecoration({ kind: 'shape', data: { ...shapeData } })
+    // Center (50, 25); pointer sweeps 90° around it.
+    const context = ctx([shape], { x: 70, y: 25 }, { x: 50, y: 45 })
+    rotateDriver.update(context)
+    const data = dataOf(context.session, shape.id)
+    expect(data['x']).toBeCloseTo(40)
+    expect(data['y']).toBeCloseTo(20)
+    expect(data['rotation']).toBeCloseTo(Math.PI / 2)
+  })
+
+  it('accumulates onto an existing rotation', () => {
+    const shape = makeDecoration({ kind: 'shape', data: { ...shapeData, rotation: 0.5 } })
+    const context = ctx([shape], { x: 70, y: 25 }, { x: 50, y: 45 })
+    rotateDriver.update(context)
+    expect(dataOf(context.session, shape.id)['rotation']).toBeCloseTo(0.5 + Math.PI / 2)
+  })
+
+  it('multi-select: the shape center orbits the pivot AND the shape spins', () => {
+    const shape = makeDecoration({ kind: 'shape', data: { ...shapeData, x: 90, y: -5 } })
+    const anchor = makePlacement({ x: -100, y: 0, width: 20, height: 20 })
+    // Shape center (100, 0); the stroke-padded union bounds center
+    // is (0.5, 0); sweep 90°: new center (0.5, 99.5) → top-left
+    // (−9.5, 94.5).
+    const context = ctx([shape, anchor], { x: 200, y: 0 }, { x: 0.5, y: 199.5 })
+    rotateDriver.update(context)
+    const data = dataOf(context.session, shape.id)
+    expect(data['x']).toBeCloseTo(-9.5)
+    expect(data['y']).toBeCloseTo(94.5)
+    expect(data['rotation']).toBeCloseTo(Math.PI / 2)
+  })
+
+  it('lines still rotate by coordinate pairs (no rotation field invented)', () => {
+    const line = makeDecoration({
+      kind: 'line',
+      data: { x1: 100, y1: 0, x2: 200, y2: 0, stroke: '#fff', strokeWidth: 2 },
+    })
+    const context = ctx([line], { x: 200, y: 0 }, { x: 150, y: 50 })
+    rotateDriver.update(context)
+    const update = context.session.get(line.id)!
+    expect(update.kind).toBe('decoration')
+    expect((update as { data: Record<string, unknown> }).data['rotation']).toBeUndefined()
+  })
+})

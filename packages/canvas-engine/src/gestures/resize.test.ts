@@ -120,3 +120,68 @@ describe('createResizeDriver', () => {
     expect(payload!.items[0]).toMatchObject({ width: 80 })
   })
 })
+
+describe('local-frame resize for a single rotated item (AI-IMP-031)', () => {
+  it('90°-rotated placement: dragging the local e handle changes width along world Y', () => {
+    const item = makePlacement({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 40,
+      rotation: Math.PI / 2,
+      appearanceKind: 'image',
+      assetContentHash: 'a'.repeat(64),
+    })
+    // Local e handle sits at local (50, 0) → world (0, 50). Drag it
+    // 25 world units further down = +25 local x; anchored at the
+    // opposite (w) edge: s = (75+50)/(50+50) = 1.25.
+    const session = run('e', [item], { x: 0, y: 50 }, { x: 0, y: 75 })
+    const update = session.get(item.id)!
+    if (update.kind !== 'placement') throw new Error('expected placement update')
+    const t = update.transform
+    expect(t.width).toBeCloseTo(125)
+    expect(t.height).toBeCloseTo(40)
+    expect(t.rotation!).toBeCloseTo(Math.PI / 2)
+    // Anchor (local w edge at world (0, −50)) stays pinned: the
+    // center moves half the growth along world Y.
+    expect(t.x).toBeCloseTo(0)
+    expect(t.y).toBeCloseTo(12.5)
+  })
+
+  it('45°-rotated shape: corner drag scales both axes in the local frame', () => {
+    const angle = Math.PI / 4
+    const shape = makeDecoration({
+      kind: 'shape',
+      data: {
+        shape: 'rect',
+        x: -50,
+        y: -20,
+        width: 100,
+        height: 40,
+        rotation: angle,
+        stroke: '#fff',
+        strokeWidth: 2,
+      },
+    })
+    // Local se corner (50, 20) → world via 45° rotation about (0,0).
+    const cos = Math.cos(angle)
+    const sin = Math.sin(angle)
+    const world = (lx: number, ly: number) => ({
+      x: lx * cos - ly * sin,
+      y: lx * sin + ly * cos,
+    })
+    // Anchored at the local nw corner (−50, −20):
+    // s = (100+50)/(50+50) = (40+20)/(20+20) = 1.5.
+    const session = run('se', [shape], world(50, 20), world(100, 40))
+    const update = session.get(shape.id)!
+    if (update.kind !== 'decoration') throw new Error('expected decoration update')
+    const d = update.data as Record<string, number>
+    expect(d['width']).toBeCloseTo(150)
+    expect(d['height']).toBeCloseTo(60)
+    expect(d['rotation']).toBeCloseTo(angle)
+    // New center local = anchor × (1 − s) = (25, 10), rotated out.
+    const newCenter = world(25, 10)
+    expect(d['x']).toBeCloseTo(newCenter.x - 75)
+    expect(d['y']).toBeCloseTo(newCenter.y - 30)
+  })
+})

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hitTest, itemWorldAABB, marqueeHits, unionBounds } from './hit-test'
+import { hitTest, itemWorldAABB, marqueeHits, orientedCorners, unionBounds } from './hit-test'
 import { makeDecoration, makePlacement } from './test-helpers'
 
 describe('hitTest', () => {
@@ -131,5 +131,61 @@ describe('text bounds (AI-IMP-030)', () => {
     expect(aabb.width).toBeGreaterThan(20)
     expect(aabb.height).toBeCloseTo(2 * 20 * 1.2)
     expect(hitTest({ x: aabb.width / 2, y: 20 }, [text])?.id).toBe(text.id)
+  })
+})
+
+describe('rotated shape bounds and oriented corners (AI-IMP-031)', () => {
+  it('rotated shapes expand their AABB like rotated placements', () => {
+    const shape = makeDecoration({
+      kind: 'shape',
+      data: {
+        shape: 'rect',
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 40,
+        rotation: Math.PI / 2,
+        stroke: '#fff',
+        strokeWidth: 2,
+      },
+    })
+    // Outer box 102×42 at 90° about center (50, 20) → 42×102 AABB.
+    const aabb = itemWorldAABB(shape)!
+    expect(aabb.x).toBeCloseTo(29)
+    expect(aabb.y).toBeCloseTo(-31)
+    expect(aabb.width).toBeCloseTo(42)
+    expect(aabb.height).toBeCloseTo(102)
+  })
+
+  it('orientedCorners rotates the placement body about its center', () => {
+    const item = makePlacement({ x: 0, y: 0, width: 100, height: 40, rotation: Math.PI / 2 })
+    const corners = orientedCorners(item)!
+    // Local nw (−50, −20) → world (20, −50) under a 90° turn.
+    expect(corners[0].x).toBeCloseTo(20)
+    expect(corners[0].y).toBeCloseTo(-50)
+    expect(corners[2].x).toBeCloseTo(-20)
+    expect(corners[2].y).toBeCloseTo(50)
+  })
+
+  it('orientedCorners includes shape stroke and is null for lines', () => {
+    const shape = makeDecoration({
+      kind: 'shape',
+      data: {
+        shape: 'rect',
+        x: 10,
+        y: 10,
+        width: 20,
+        height: 20,
+        stroke: '#fff',
+        strokeWidth: 4,
+      },
+    })
+    const corners = orientedCorners(shape)!
+    expect(corners[0].x).toBeCloseTo(8) // 10 − strokeWidth/2
+    const line = makeDecoration({
+      kind: 'line',
+      data: { x1: 0, y1: 0, x2: 10, y2: 10, stroke: '#fff', strokeWidth: 2 },
+    })
+    expect(orientedCorners(line)).toBeNull()
   })
 })

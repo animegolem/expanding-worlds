@@ -1,6 +1,6 @@
 import { placementTransformOf } from '../gesture'
 import { unionBounds } from '../hit-test'
-import { rotateDecorationData } from './decoration-data'
+import { rotateDecorationData, rotateShapeData } from './decoration-data'
 import type { GestureDriver } from '../controller'
 
 /**
@@ -44,7 +44,10 @@ export const rotateDriver: GestureDriver = {
       } else {
         session.set(id, {
           kind: 'decoration',
-          data: rotateDecorationData(prior.data, center, delta),
+          data:
+            prior.itemKind === 'decoration' && prior.kind === 'shape'
+              ? rotateShapeData(prior.data, center, delta)
+              : rotateDecorationData(prior.data, center, delta),
         })
       }
     }

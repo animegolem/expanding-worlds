@@ -32,6 +32,7 @@ export {
   isHittable,
   itemWorldAABB,
   marqueeHits,
+  orientedCorners,
   placementSize,
   unionBounds,
 } from './hit-test'

@@ -290,3 +290,95 @@ test('labels: follow the note title, resize with the placement, toggle from sele
 
   await app.close()
 })
+
+test('rotation fidelity: shapes spin in place, chrome and resize follow the angle (AI-IMP-031)', async () => {
+  const { app, win } = await launch('ew-e2e-rotation-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // A rect shape: center (360, 230).
+  await runCommand(win, 'CreateDecoration', {
+    decorationId: crypto.randomUUID(),
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    kind: 'shape',
+    data: { shape: 'rect', x: 300, y: 200, width: 120, height: 60, stroke: '#dde3ea', strokeWidth: 2 },
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 1)
+  await win.mouse.click(box.x + 360, box.y + 230)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+
+  // Drag the rotate lollipop a quarter turn clockwise.
+  const beforeRotate = await revision(win)
+  const rotate = await handleAt(win, 'rotate')
+  await win.mouse.move(rotate.x, rotate.y)
+  await win.mouse.down()
+  const radius = 230 - (rotate.y - box.y)
+  await win.mouse.move(box.x + 360 + radius, box.y + 230, { steps: 8 })
+  await win.mouse.up()
+  await expect.poll(() => revision(win)).toBe(beforeRotate + 1)
+
+  const shapeData = await win.evaluate(async () => {
+    const scene = await window.ew.project.query('getCanvasScene', {
+      canvasId: window.__ewDebug!.canvasId(),
+    })
+    if (!scene.ok) throw new Error(scene.message)
+    const { items } = scene.result as {
+      items: Array<{ itemKind: string; data?: Record<string, number> }>
+    }
+    return items.find((item) => item.itemKind === 'decoration')!.data!
+  })
+  // Spin in place: rotation ≈ π/2, top-left untouched (no orbit).
+  expect(shapeData['rotation']).toBeCloseTo(Math.PI / 2, 1)
+  expect(shapeData['x']).toBeCloseTo(300, 0)
+  expect(shapeData['y']).toBeCloseTo(200, 0)
+
+  // Chrome follows the angle: the local e handle now sits BELOW the
+  // center (local +x rotated 90° → world +y), at center + (0, 61).
+  await win.mouse.click(box.x + 360, box.y + 230)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  // handles() report canvas-local coordinates.
+  const eHandle = await win.evaluate(
+    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'e')!,
+  )
+  expect(eHandle.x).toBeCloseTo(360, 0)
+  expect(eHandle.y).toBeCloseTo(291, 0)
+
+  // Resize in the local frame: dragging that handle further down
+  // widens the shape along its own axis; rotation is untouched.
+  const beforeResize = await revision(win)
+  await win.mouse.move(box.x + eHandle.x, box.y + eHandle.y)
+  await win.mouse.down()
+  await win.mouse.move(box.x + eHandle.x, box.y + eHandle.y + 30, { steps: 5 })
+  await win.mouse.up()
+  await expect.poll(() => revision(win)).toBe(beforeResize + 1)
+  const resized = await win.evaluate(async () => {
+    const scene = await window.ew.project.query('getCanvasScene', {
+      canvasId: window.__ewDebug!.canvasId(),
+    })
+    if (!scene.ok) throw new Error(scene.message)
+    const { items } = scene.result as {
+      items: Array<{ itemKind: string; data?: Record<string, number> }>
+    }
+    return items.find((item) => item.itemKind === 'decoration')!.data!
+  })
+  expect(resized['width']).toBeGreaterThan(140)
+  expect(resized['height']).toBeCloseTo(60, 0)
+  expect(resized['rotation']).toBeCloseTo(Math.PI / 2, 1)
+
+  // Corner-hover rotate affordance: a rotate zone sits outside each
+  // corner and shows the rotate cursor.
+  await win.mouse.click(box.x + 360, box.y + 230)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  const cornerZone = await win.evaluate(() => {
+    const zones = window.__ewGestureDebug!.handles().filter((h) => h.kind === 'rotate')
+    return zones[zones.length - 1]!
+  })
+  await win.mouse.move(box.x + cornerZone.x, box.y + cornerZone.y)
+  const cursor = await win.evaluate(
+    () =>
+      document.querySelector<HTMLCanvasElement>('[data-testid="canvas-host"] canvas')!.style
+        .cursor,
+  )
+  expect(cursor).toBe('crosshair')
+
+  await app.close()
+})
