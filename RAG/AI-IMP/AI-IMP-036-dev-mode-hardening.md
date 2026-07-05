@@ -5,12 +5,12 @@ tags:
   - Implementation
   - tooling
   - dx
-kanban_status: in-progress
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.85
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-036-dev-mode-hardening
@@ -59,11 +59,11 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] optimizeDeps.exclude for renderer-reachable @ew packages.
-- [ ] predev port preflight (no-op when the port is free).
-- [ ] Live validation: dev boots and mounts; engine dist rebuilt
+- [x] optimizeDeps.exclude for renderer-reachable @ew packages.
+- [x] predev port preflight (no-op when the port is free).
+- [x] Live validation: dev boots and mounts; engine dist rebuilt
       mid-session is picked up by a plain reload.
-- [ ] CLAUDE.md note; full gates stay green.
+- [x] CLAUDE.md note; full gates stay green.
 
 ### Acceptance Criteria
 
@@ -79,3 +79,14 @@ restarting the dev server.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Live-validated via CDP against an isolated EW_PROJECT_DIR: engine
+modules serve from /@fs/...packages/canvas-engine/dist (25 prebundled
+deps remain — pixi/svelte internals — none @ew/*), and an appended
+dist marker executed after a plain reload (no server restart).
+Validation friction worth recording: the first probe hit
+PROJECT_LOCKED because the owner's live dev session held the default
+project (the §11.4 lock working as designed) — probes must always
+set an isolated EW_PROJECT_DIR — and its cleanup pkill pattern was
+indiscriminate enough to kill the owner's dev server wrapper;
+cleanup is now PID-scoped. @ew/persistence is main/utility-side and
+stays out of the renderer exclusion list.

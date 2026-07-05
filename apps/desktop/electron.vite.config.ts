@@ -33,5 +33,13 @@ export default defineConfig({
   },
   renderer: {
     plugins: [svelte({ compilerOptions: { runes: true } })],
+    // Workspace packages stay OUT of vite's dependency prebundle
+    // (AI-IMP-036): prebundling freezes their dist at server start,
+    // so engine rebuilds silently never reached a running dev
+    // session. Excluded, they load as live ESM — a plain window
+    // reload picks up a fresh `pnpm -r build`.
+    optimizeDeps: {
+      exclude: ['@ew/canvas-engine', '@ew/commands', '@ew/protocol', '@ew/shared-ui'],
+    },
   },
 })

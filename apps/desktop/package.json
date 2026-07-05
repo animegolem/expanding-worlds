@@ -5,6 +5,7 @@
   "type": "module",
   "main": "./out/main/index.cjs",
   "scripts": {
+    "predev": "lsof -ti :5173 | xargs kill 2>/dev/null; true",
     "dev": "electron-vite dev",
     "build": "tsc --noEmit && electron-vite build",
     "test": "electron-vite build && playwright test"

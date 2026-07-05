@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 2 |
+| In Progress | 1 | 1 |
 | Planned | 4 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 34 |
+| Completed | 5 | 35 |
 | **Total** | **10** | **38** |
 
 ## In Progress
@@ -25,7 +25,7 @@
 - [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — completed
 - [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — completed
 - [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — completed
-- [[AI-IMP-036-dev-mode-hardening|IMP-036]] Dev mode hardening — in-progress
+- [[AI-IMP-036-dev-mode-hardening|IMP-036]] Dev mode hardening — completed
 - [[AI-IMP-037-system-font-picker|IMP-037]] System font picker — planned
 - [[AI-IMP-038-two-arrows|IMP-038]] Two arrows — planned
 
@@ -105,7 +105,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>5 EPICs, 34 IMPs completed</summary>
+<summary>5 EPICs, 35 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

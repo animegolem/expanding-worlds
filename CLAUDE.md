@@ -51,6 +51,10 @@ never delegated. Implementation may be decomposed:
   false-green in EPIC-004). Use `expect.poll` with `win.evaluate`.
 - Run `pnpm -r build` before desktop e2e after touching packages/*
   (vitest and the utility bundle resolve workspace deps through dist).
+- Dev mode serves `@ew/*` live (excluded from vite's prebundle,
+  AI-IMP-036): after `pnpm -r build`, a plain window reload refreshes
+  a running `pnpm dev` session — no server restart. `predev` clears
+  stale port-5173 listeners automatically.
 
 ## Conventions
 
