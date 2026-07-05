@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.12         | 5 July 2026      |
+| Accepted for Phase 1 | 0.13         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -614,8 +614,11 @@ at the creating viewport, fixed thereafter; resize handles on a text
 selection scale that world size uniformly (rev 0.12), so text behaves
 like scalable art text rather than reflowing.
 
-Canvas text styling is WHOLE-OBJECT (rev 0.12): one font family (from
-a small curated set of stacks), bold, italic, size, and color per
+Canvas text styling is WHOLE-OBJECT (rev 0.12): one font family —
+installed system fonts enumerated via Local Font Access (rev 0.13),
+stored with a graceful generic fallback so boards opened on machines
+lacking the font degrade rather than break — bold, italic, size, and
+color per
 text decoration, editable from the selection. Per-span rich text —
 bolding one word, mixed sizes — is deliberately deferred: if it ever
 arrives it is styled runs stored in the decoration data, never HTML,
@@ -963,13 +966,20 @@ Connector geometry remains visual decoration and does not create a
 semantic relationship.
 
 While drawing (rev 0.12), Shift constrains to the tidy form: shapes
-to canonical proportions (square, circle, equilateral triangle) and
-segment kinds — lines, arrows, connectors — to 45° angle steps. A
-block arrow's thickness is form, not pen weight: it is clamped
-proportional to the arrow's length so extreme widths degrade to a
-well-proportioned stub rather than a blob, and resizing an arrow
-scales its thickness uniformly with its endpoints (plain lines keep
-constant stroke weight under resize, the annotation convention).
+to canonical proportions (square, circle, equilateral triangle; a 2:1
+box for the arrow shape) and segment kinds — lines, arrows,
+connectors — to 45° angle steps.
+
+There are TWO arrow constructs (rev 0.13), mirroring the Baseline UI
+Vision's tool rail. The ANNOTATION ARROW is a segment kind and a pen
+stroke: its head derives from its stroke thickness (tunable
+proportions), thickness stays constant under resize exactly like
+lines, and thickness clamps proportional to length so degenerate
+inputs stay arrow-shaped. The ARROW SHAPE is a ShapeKind variant: a
+block silhouette filling its bounding box that scales, rotates,
+fills, and strokes like any shape — proportions are properties of
+the box. Stretching a pointer and scaling an arrow object are
+different intents and belong to different tools.
 
 ## 6.9 Arrange, align, and navigate the board
 
@@ -1310,6 +1320,17 @@ than framing it, the note editor reads as a sidebar the canvas yields
 to, and the overall register sits between Photoshop and an IDE —
 panels earn their pixels and collapse when idle. This is design
 language steering future panel decisions, not a normative layout.
+
+The concrete reference for this direction is the owner's "Expanding
+Worlds — Baseline UI Vision" (v0.1, archived beside this RFC): a
+frameless window with self-drawn window controls, floating capsule
+rails (tools left, mirrored ops rail), one Obsidian-style switched
+sidebar (note · data · tags · search), a charm bar on single-click,
+double-click opening the contained canvas and/or note, and overlay
+chips marking what a node holds. Open question 3's click semantics
+take their direction from it without being frozen here. Notably, the
+vision's tool rail separates "shapes" (one palette entry) from the
+annotation arrow — the two-arrows decision of rev 0.13 follows it.
 
 The exact split layout, docking behavior, project switching, and tab
 rules should be tested with the intended artist user rather than frozen
@@ -2524,10 +2545,16 @@ Accepted for the Phase 1 prototype:
 
 - Rotation snaps by orientation (cardinal magnetism; Shift = 15°
   absolute steps); Shift while drawing constrains shapes to canonical
-  proportions and segments to 45° steps; arrow thickness is
-  length-clamped form that scales with resize; canvas text styling is
-  whole-object (family/bold/italic/size/color) with resize scaling the
-  world size — per-span rich text deferred as styled runs, never HTML.
+  proportions and segments to 45° steps; canvas text styling is
+  whole-object (system fonts with stack fallbacks, bold/italic/size/
+  color) with resize scaling the world size — per-span rich text
+  deferred as styled runs, never HTML.
+
+- Two arrow constructs (rev 0.13): the annotation arrow is a pen
+  stroke (head from thickness, constant weight under resize,
+  length-clamped) and the arrow shape is a ShapeKind variant scaling
+  with its box; the Baseline UI Vision artifact anchors the §8.2
+  chrome direction.
 
 - Grouping stays canvas-local presentation state; relational data
   never mirrors board arrangement. Frame-like on-canvas containers are

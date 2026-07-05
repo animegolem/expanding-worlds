@@ -16,6 +16,9 @@ AI_IMP_spawned:
   - AI-IMP-033
   - AI-IMP-034
   - AI-IMP-035
+  - AI-IMP-036
+  - AI-IMP-037
+  - AI-IMP-038
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -101,6 +104,13 @@ rotation is a recorded limitation). No new tools or panels.
       45° segments); arrow thickness clamps to length and scales
       with resize (AI-IMP-035).
 
+- [ ] FR-11: Dev mode serves workspace packages live (no stale
+      prebundle) and clears stale port listeners (AI-IMP-036).
+- [ ] FR-12: The type row enumerates installed system fonts with
+      graceful stack fallbacks (AI-IMP-037).
+- [ ] FR-13: Two arrow constructs per RFC rev 0.13 — pen-model
+      annotation arrow, box-model arrow shape (AI-IMP-038).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -118,3 +128,8 @@ rotation is a recorded limitation). No new tools or panels.
 - AI-IMP-033 (lead): orientation snapping + small-background notice.
 - AI-IMP-034 (lead): text sizing and whole-object styling.
 - AI-IMP-035 (lead): shift-canonical drawing + arrow proportions.
+- AI-IMP-036 (lead): dev-mode hardening (vite prebundle exclusion,
+  port preflight).
+- AI-IMP-037 (lead): system-font picker via Local Font Access.
+- AI-IMP-038 (lead): two arrows — annotation pen vs shape variant
+  (RFC rev 0.13).
