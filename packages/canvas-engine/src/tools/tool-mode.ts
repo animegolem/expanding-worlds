@@ -1,4 +1,4 @@
-import { DEFAULT_STROKE, DEFAULT_STROKE_WIDTH } from '../decoration-data'
+import { DEFAULT_STROKE } from '../decoration-data'
 import { beginDrawSession, type DrawSession, type ToolCreateInput, type ToolPreview } from './draw-tools'
 import type { Camera, Point } from '../camera'
 import type { PointerModifiers } from '../controller'
@@ -28,7 +28,12 @@ export type ToolKind =
 
 export interface ToolStyle {
   stroke: string
-  strokeWidth: number
+  /** Stroke WEIGHT as a multiplier on the legible-at-creation
+   * baseline (§6.8 rev 0.14): ×1 draws a stroke that reads ~2 screen
+   * px (pen arrows ~4) at the creating zoom, then stays a fixed
+   * world size. Not an absolute width — the same setting means the
+   * same visual weight at any zoom. */
+  strokeScale: number
   /** null = no fill (stroke-only shapes). */
   fill: string | null
   /** Canvas text color. */
@@ -62,7 +67,7 @@ export class ToolManager {
   #changed = new Set<(tool: ToolKind) => void>()
   style: ToolStyle = {
     stroke: DEFAULT_STROKE,
-    strokeWidth: DEFAULT_STROKE_WIDTH,
+    strokeScale: 1,
     fill: null,
     textColor: DEFAULT_STROKE,
   }

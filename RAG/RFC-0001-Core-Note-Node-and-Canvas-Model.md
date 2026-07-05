@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.13         | 5 July 2026      |
+| Accepted for Phase 1 | 0.14         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -975,7 +975,14 @@ Vision's tool rail. The ANNOTATION ARROW is a segment kind and a pen
 stroke: its head derives from its stroke thickness (tunable
 proportions), thickness stays constant under resize exactly like
 lines, and thickness clamps proportional to length so degenerate
-inputs stay arrow-shaped. The ARROW SHAPE is a ShapeKind variant: a
+inputs stay arrow-shaped. Like new canvas text, EVERY new stroke
+defaults to a width legible at the creating viewport, fixed
+thereafter (rev 0.14): the toolbar's weight control is a MULTIPLIER
+on a screen-pixel baseline (pen arrows carry a thicker baseline so
+the head reads), not an absolute world width — the same weight
+setting means the same visual weight at any zoom. Stored decoration
+data still carries absolute world widths; only the creation layer
+changed. The ARROW SHAPE is a ShapeKind variant: a
 block silhouette filling its bounding box that scales, rotates,
 fills, and strokes like any shape — proportions are properties of
 the box. Stretching a pointer and scaling an arrow object are
@@ -2553,8 +2560,9 @@ Accepted for the Phase 1 prototype:
 - Two arrow constructs (rev 0.13): the annotation arrow is a pen
   stroke (head from thickness, constant weight under resize,
   length-clamped) and the arrow shape is a ShapeKind variant scaling
-  with its box; the Baseline UI Vision artifact anchors the §8.2
-  chrome direction.
+  with its box; every new stroke is born legible at the creating
+  viewport with the weight control as a multiplier (rev 0.14); the
+  Baseline UI Vision artifact anchors the §8.2 chrome direction.
 
 - Grouping stays canvas-local presentation state; relational data
   never mirrors board arrangement. Frame-like on-canvas containers are

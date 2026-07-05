@@ -411,7 +411,7 @@ test('shift-constrained drawing (AI-IMP-035)', async () => {
   const win = await app.firstWindow()
   await win.waitForFunction(() => window.__ewDebug !== undefined)
   const box = (await win.getByTestId('canvas-host').boundingBox())!
-  const decorations = (): Promise<Array<{ kind: string; data: Record<string, number> }>> =>
+  const decorations = (): Promise<Array<{ kind: string; data: Record<string, number | string> }>> =>
     win.evaluate(() => window.__ewDebug!.decorations() as never)
 
   // Shift-rect commits a square from the dominant drag extent.
@@ -437,8 +437,8 @@ test('shift-constrained drawing (AI-IMP-035)', async () => {
   await win.keyboard.up('Shift')
   await expect.poll(async () => (await decorations()).length).toBe(2)
   const arrow = (await decorations()).find((d) => d.kind === 'arrow')!.data
-  const dx = arrow['x2']! - arrow['x1']!
-  const dy = arrow['y2']! - arrow['y1']!
+  const dx = (arrow['x2'] as number) - (arrow['x1'] as number)
+  const dy = (arrow['y2'] as number) - (arrow['y1'] as number)
   expect(Math.atan2(dy, dx)).toBeCloseTo(Math.PI / 4, 5)
 
   // AI-IMP-038: the arrow SHAPE scales with its box like any shape.

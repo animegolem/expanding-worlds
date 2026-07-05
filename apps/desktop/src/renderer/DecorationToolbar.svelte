@@ -42,7 +42,7 @@
   let stroke = $state(handle.tools.style.stroke)
   let fill = $state<string | null>(handle.tools.style.fill)
   let textColor = $state(handle.tools.style.textColor)
-  let strokeWidth = $state(handle.tools.style.strokeWidth)
+  let strokeScale = $state(handle.tools.style.strokeScale)
   let selected = $state<SceneDecoration[]>([])
   let hidden = $state<SceneDecoration[]>([])
 
@@ -71,7 +71,7 @@
     handle.tools.style.stroke = stroke
     handle.tools.style.fill = fill
     handle.tools.style.textColor = textColor
-    handle.tools.style.strokeWidth = strokeWidth
+    handle.tools.style.strokeScale = strokeScale
   })
 
   const hasGroup = $derived(selected.some((d) => d.groupId !== null))
@@ -123,8 +123,15 @@
       <input type="color" data-testid="style-stroke" bind:value={stroke} />
     </label>
     <label>
-      Width
-      <input type="number" min="1" max="64" data-testid="style-stroke-width" bind:value={strokeWidth} />
+      Weight ×
+      <input
+        type="number"
+        min="0.25"
+        max="8"
+        step="0.25"
+        data-testid="style-stroke-width"
+        bind:value={strokeScale}
+      />
     </label>
     <label>
       Fill

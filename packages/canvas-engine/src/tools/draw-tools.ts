@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js'
+import { ARROW_LEGIBLE_SCREEN_PX, STROKE_LEGIBLE_SCREEN_PX } from '../decoration-data'
 import { hitTest, itemWorldAABB } from '../hit-test'
 import { shapeArrowPolygon } from '../renderers/decorations/shape'
 import type { Point } from '../camera'
@@ -78,13 +79,21 @@ class ShapeSession implements DrawSession {
   #current: Point
   #style: ToolStyle
   #minDrag: number
+  #strokeWidth: number
 
-  constructor(shape: ShapeVariant, start: Point, style: ToolStyle, minDrag: number) {
+  constructor(
+    shape: ShapeVariant,
+    start: Point,
+    style: ToolStyle,
+    minDrag: number,
+    strokeWidth: number,
+  ) {
     this.#shape = shape
     this.#start = start
     this.#current = start
     this.#style = style
     this.#minDrag = minDrag
+    this.#strokeWidth = strokeWidth
   }
 
   #data(shift: boolean): Record<string, unknown> {
@@ -113,7 +122,7 @@ class ShapeSession implements DrawSession {
       width,
       height,
       stroke: this.#style.stroke,
-      strokeWidth: this.#style.strokeWidth,
+      strokeWidth: this.#strokeWidth,
       ...(this.#style.fill !== null ? { fill: this.#style.fill } : {}),
     }
   }
@@ -139,10 +148,12 @@ class ShapeSession implements DrawSession {
 class PathSession implements DrawSession {
   #points: Array<[number, number]>
   #style: ToolStyle
+  #strokeWidth: number
 
-  constructor(start: Point, style: ToolStyle) {
+  constructor(start: Point, style: ToolStyle, strokeWidth: number) {
     this.#points = [[start.x, start.y]]
     this.#style = style
+    this.#strokeWidth = strokeWidth
   }
 
   #push(world: Point): void {
@@ -156,7 +167,7 @@ class PathSession implements DrawSession {
     return {
       points: this.#points,
       stroke: this.#style.stroke,
-      strokeWidth: this.#style.strokeWidth,
+      strokeWidth: this.#strokeWidth,
     }
   }
 
@@ -180,6 +191,7 @@ class SegmentSession implements DrawSession {
   #minDrag: number
   #items: () => readonly SceneItem[]
   #startAnchor: ScenePlacement | null
+  #strokeWidth: number
 
   constructor(
     kind: 'line' | 'arrow' | 'connector',
@@ -187,6 +199,7 @@ class SegmentSession implements DrawSession {
     style: ToolStyle,
     minDrag: number,
     items: () => readonly SceneItem[],
+    strokeWidth: number,
   ) {
     this.#kind = kind
     this.#start = start
@@ -195,6 +208,7 @@ class SegmentSession implements DrawSession {
     this.#minDrag = minDrag
     this.#items = items
     this.#startAnchor = kind === 'connector' ? placementAt(start, items()) : null
+    this.#strokeWidth = strokeWidth
   }
 
   #data(): Record<string, unknown> {
@@ -204,7 +218,7 @@ class SegmentSession implements DrawSession {
       x2: this.#current.x,
       y2: this.#current.y,
       stroke: this.#style.stroke,
-      strokeWidth: this.#style.strokeWidth,
+      strokeWidth: this.#strokeWidth,
     }
   }
 
@@ -252,6 +266,21 @@ export type DrawToolKind =
   | 'arrow'
   | 'connector'
 
+/**
+ * §6.8 rev 0.14: strokes are born legible at the creating viewport —
+ * a screen-pixel baseline (pen arrows get a thicker one so the head
+ * reads) scaled by the toolbar's weight multiplier, converted to a
+ * fixed world width at the creating zoom.
+ */
+export function legibleStrokeWidth(
+  tool: DrawToolKind,
+  strokeScale: number,
+  zoom: number,
+): number {
+  const basePx = tool === 'arrow' ? ARROW_LEGIBLE_SCREEN_PX : STROKE_LEGIBLE_SCREEN_PX
+  return (basePx * strokeScale) / Math.max(zoom, 1e-6)
+}
+
 export function beginDrawSession(
   tool: DrawToolKind,
   startWorld: Point,
@@ -259,19 +288,20 @@ export function beginDrawSession(
   opts: { zoom: number; items: () => readonly SceneItem[] },
 ): DrawSession {
   const minDrag = MIN_DRAG_SCREEN_PX / Math.max(opts.zoom, 1e-6)
+  const strokeWidth = legibleStrokeWidth(tool, style.strokeScale, opts.zoom)
   switch (tool) {
     case 'rect':
     case 'ellipse':
     case 'triangle':
-      return new ShapeSession(tool, startWorld, style, minDrag)
+      return new ShapeSession(tool, startWorld, style, minDrag, strokeWidth)
     case 'shape-arrow':
-      return new ShapeSession('arrow', startWorld, style, minDrag)
+      return new ShapeSession('arrow', startWorld, style, minDrag, strokeWidth)
     case 'path':
-      return new PathSession(startWorld, style)
+      return new PathSession(startWorld, style, strokeWidth)
     case 'line':
     case 'arrow':
     case 'connector':
-      return new SegmentSession(tool, startWorld, style, minDrag, opts.items)
+      return new SegmentSession(tool, startWorld, style, minDrag, opts.items, strokeWidth)
   }
 }
 

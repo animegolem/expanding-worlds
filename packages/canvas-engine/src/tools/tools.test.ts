@@ -3,7 +3,7 @@ import { Camera, type Point } from '../camera'
 import { makeDecoration, makePlacement } from '../test-helpers'
 import { PATH_THIN_WORLD_UNITS, placementAt, type ToolCreateInput, type ToolPreview } from './draw-tools'
 import { ToolManager, type ToolTarget } from './tool-mode'
-import { beginDrawSession } from './draw-tools'
+import { beginDrawSession, legibleStrokeWidth } from './draw-tools'
 import type { PointerModifiers } from '../controller'
 import type { SceneItem } from '../types'
 
@@ -98,7 +98,7 @@ describe('draw gestures', () => {
         width: 60,
         height: 40,
         stroke: tools.style.stroke,
-        strokeWidth: tools.style.strokeWidth,
+        strokeWidth: 2, // STROKE_LEGIBLE_SCREEN_PX × scale 1 at zoom 1
       },
     })
     // A preview was rendered during the drag and cleared at the end.
@@ -262,7 +262,7 @@ describe('shift-constrained drawing (AI-IMP-035)', () => {
     const session = beginDrawSession(
       'rect',
       { x: 10, y: 10 },
-      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { stroke: '#fff', strokeScale: 1, fill: null, textColor: '#fff' },
       { zoom: 1, items: () => [] },
     )
     const input = session.finish({ x: 70, y: 30 }, { shift: true })!
@@ -271,7 +271,7 @@ describe('shift-constrained drawing (AI-IMP-035)', () => {
     const triangle = beginDrawSession(
       'triangle',
       { x: 0, y: 0 },
-      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { stroke: '#fff', strokeScale: 1, fill: null, textColor: '#fff' },
       { zoom: 1, items: () => [] },
     )
     const tri = triangle.finish({ x: 40, y: 10 }, { shift: true })!
@@ -283,7 +283,7 @@ describe('shift-constrained drawing (AI-IMP-035)', () => {
     const session = beginDrawSession(
       'ellipse',
       { x: 100, y: 100 },
-      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { stroke: '#fff', strokeScale: 1, fill: null, textColor: '#fff' },
       { zoom: 1, items: () => [] },
     )
     const input = session.finish({ x: 40, y: 80 }, { shift: true })!
@@ -297,7 +297,7 @@ describe('shift-constrained drawing (AI-IMP-035)', () => {
     const session = beginDrawSession(
       'arrow',
       { x: 0, y: 0 },
-      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { stroke: '#fff', strokeScale: 1, fill: null, textColor: '#fff' },
       { zoom: 1, items: () => [] },
     )
     // ~50°: snaps to 45°, length 100 kept.
@@ -313,7 +313,7 @@ describe('shift-constrained drawing (AI-IMP-035)', () => {
 })
 
 describe('arrow shape tool (AI-IMP-038)', () => {
-  const style = { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' }
+  const style = { stroke: '#fff', strokeScale: 1, fill: null, textColor: '#fff' }
 
   it('shape-arrow draws an arrow ShapeKind; shift constrains to 2:1', () => {
     const session = beginDrawSession('shape-arrow', { x: 0, y: 0 }, style, {
@@ -332,5 +332,25 @@ describe('arrow shape tool (AI-IMP-038)', () => {
     const tidy = constrained.finish({ x: 90, y: 30 }, { shift: true })!
     expect(tidy.data['width']).toBe(90)
     expect(tidy.data['height']).toBe(45)
+  })
+})
+
+describe('legible-at-creation stroke weight (AI-IMP-039)', () => {
+  it('converts the screen baseline × weight to world units at the creating zoom', () => {
+    expect(legibleStrokeWidth('rect', 1, 1)).toBe(2)
+    expect(legibleStrokeWidth('line', 1, 0.1)).toBeCloseTo(20)
+    expect(legibleStrokeWidth('arrow', 1, 0.1)).toBeCloseTo(40)
+    expect(legibleStrokeWidth('arrow', 2, 0.1)).toBeCloseTo(80)
+  })
+
+  it('an arrow drawn zoomed out is born readable at that zoom', () => {
+    const session = beginDrawSession(
+      'arrow',
+      { x: 0, y: 0 },
+      { stroke: '#fff', strokeScale: 1, fill: null, textColor: '#fff' },
+      { zoom: 0.1, items: () => [] },
+    )
+    const input = session.finish({ x: 2000, y: 0 })!
+    expect(input.data['strokeWidth']).toBeCloseTo(40)
   })
 })

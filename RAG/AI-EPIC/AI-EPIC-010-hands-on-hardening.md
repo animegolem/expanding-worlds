@@ -19,6 +19,7 @@ AI_IMP_spawned:
   - AI-IMP-036
   - AI-IMP-037
   - AI-IMP-038
+  - AI-IMP-039
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -111,6 +112,10 @@ rotation is a recorded limitation). No new tools or panels.
 - [x] FR-13: Two arrow constructs per RFC rev 0.13 — pen-model
       annotation arrow, box-model arrow shape (AI-IMP-038).
 
+- [x] FR-14: Every stroke is born legible at the creating viewport;
+      the toolbar width control is a weight multiplier on the
+      screen-pixel baseline (AI-IMP-039, RFC rev 0.14).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -133,3 +138,5 @@ rotation is a recorded limitation). No new tools or panels.
 - AI-IMP-037 (lead): system-font picker via Local Font Access.
 - AI-IMP-038 (lead): two arrows — annotation pen vs shape variant
   (RFC rev 0.13).
+- AI-IMP-039 (lead): legible-at-creation stroke weight; width
+  control becomes a multiplier (RFC rev 0.14).

@@ -192,6 +192,13 @@ export const DEFAULT_STROKE_WIDTH = 2
 /** Screen pixels a fresh text decoration should occupy when created. */
 export const TEXT_LEGIBLE_SCREEN_PX = 16
 
+/** Screen pixels a fresh stroke should span at the creating zoom
+ * (§6.8 rev 0.14), scaled by the toolbar's weight multiplier. */
+export const STROKE_LEGIBLE_SCREEN_PX = 2
+
+/** Pen arrows use a thicker baseline so the head (~3x) reads. */
+export const ARROW_LEGIBLE_SCREEN_PX = 4
+
 /**
  * §4.9 rev 0.8: new text SHOULD default to a world size legible at
  * the creating viewport, fixed thereafter. World fontSize such that
