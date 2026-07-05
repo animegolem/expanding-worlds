@@ -155,3 +155,12 @@ GONE — the idle-debounce burst is §7.2's first-committed-edit; the
 item-14 e2e now types a draft and asserts it lands in the placed
 note. Old v4 rows remain valid (ordering only matters among new
 records).
+
+Post-close follow-up: CI's slow runner failed the draft-carrying
+item-14 e2e with an unstable-element timeout, exposing a REAL UX
+race the local machine masked — the 1.5 s first-edit debounce
+materializes a placement-less note while the user is still reaching
+for Create and Place, removing the button mid-click. The phantom
+draft now has its own PHANTOM_FIRST_EDIT_IDLE_MS = 4000 (creating a
+note is a bigger commitment than saving one); note autosave keeps
+1.5 s.
