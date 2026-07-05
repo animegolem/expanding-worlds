@@ -1,0 +1,86 @@
+---
+node_id: AI-IMP-050
+tags:
+  - IMP-LIST
+  - Implementation
+  - infrastructure
+  - ci
+kanban_status: planned
+depends_on:
+parent_epic: [[AI-EPIC-011-release-engineering]]
+confidence_score: 0.75
+date_created: 2026-07-05
+date_completed:
+---
+
+# AI-IMP-050-remote-push-and-ci
+
+## Summary of Issue #1
+
+origin (github.com/animegolem/expanding-worlds, public) is ~23
+commits behind local main and nothing validates pushes. Stand up a
+GitHub Actions workflow running the full gate suite on every push to
+main and on PRs, then push local history and iterate until green.
+Done when the pushed main shows a green check running build, unit
+suites, lint, and the desktop e2e suite (minus perf) on Ubuntu.
+
+### Out of Scope
+
+Packaging and releases (AI-IMP-051/052). macOS/Windows CI runners
+(cost; Ubuntu catches logic regressions — platform-specific builds
+happen on tags). Branch protection rules.
+
+### Design/Approach
+
+Single workflow `.github/workflows/ci.yml`: checkout, pnpm via
+corepack, `pnpm install --frozen-lockfile`, `pnpm -r build`,
+`pnpm -r --filter '!@ew/desktop' test`, `pnpm lint`, then desktop
+e2e under `xvfb-run` (Electron needs a display; hidden-window mode
+still requires an X server for Chromium init on Linux). Playwright's
+`testIgnore` excludes `perf.spec.ts` when `CI` is set — the perf
+suite THROWS on software GL by design (EPIC-001 lesson) and CI
+runners are GPU-less; it stays a local gate. Apt-install Electron's
+runtime libs (libnss3, libgtk-3, libgbm, libasound2t64). Cache the
+pnpm store keyed on the lockfile. e2e uses isolated EW_PROJECT_DIR
+temp dirs already, so runner parallelism is a non-issue
+(workers: 1 regardless).
+
+### Files to Touch
+
+`.github/workflows/ci.yml`: new workflow.
+`apps/desktop/playwright.config.ts`: CI perf exclusion.
+Remote: push main; iterate on the workflow until green.
+
+### Implementation Checklist
+
+<CRITICAL_RULE>
+Before marking an item complete on the checklist MUST **stop** and
+**think**. Have you validated all aspects are **implemented** and
+**tested**?
+</CRITICAL_RULE>
+
+- [ ] playwright.config testIgnore excludes perf.spec.ts under CI;
+      local full run still includes it.
+- [ ] ci.yml: install → build → unit → lint → e2e (xvfb) with pnpm
+      store cache; triggers on push to main and PRs.
+- [ ] main pushed; workflow iterated to green on the actual runner
+      (verified via gh run watch).
+- [ ] Local gates unaffected (full local suite still green).
+
+### Acceptance Criteria
+
+**GIVEN** a push to main on GitHub
+**WHEN** the CI workflow runs
+**THEN** build, unit suites, lint, and the e2e suite (minus perf)
+all pass on the Ubuntu runner
+**AND** the perf suite still runs (and passes) in local full-suite
+runs.
+
+### Issues Encountered
+
+<!--
+The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
+This section is filled out post work as you fill out the checklists.
+You SHOULD document any issues encountered and resolved during the sprint.
+You MUST document any failed implementations, blockers or missing tests.
+-->

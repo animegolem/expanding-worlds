@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 3 | 0 |
+| In Progress | 2 | 1 |
+| Planned | 3 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 6 | 48 |
-| **Total** | **10** | **49** |
+| **Total** | **11** | **52** |
 
 ## In Progress
 
@@ -33,6 +33,16 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
+
+---
+
+### [[AI-EPIC-011-release-engineering|EPIC-011: Release engineering]]
+> The project is exiting pre-alpha: the owner's artist friend becomes
+
+**IMPs:**
+- [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — planned
+- [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — planned
+- [[AI-IMP-052-release-workflow-and-v050|IMP-052]] Release workflow and v050 — planned
 
 ---
 
