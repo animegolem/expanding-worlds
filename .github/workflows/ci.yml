@@ -50,20 +50,19 @@ jobs:
       - name: Ensure Electron binary
         working-directory: apps/desktop
         run: |
-          # install.js downloads fine on the runner but its
-          # extraction step dies instantly and silently (stderr was
-          # swallowed in earlier runs — capture it this time). Fall
-          # back to unzipping the fetched archive ourselves; the
-          # layout is exactly dist/ plus a path.txt naming the
-          # executable.
+          # install.js on the runner "succeeds" while extracting a
+          # single file (extract-zip exits clean after one entry).
+          # Use it only to fetch the archive, then extract with
+          # unzip ourselves and write path.txt (its whole job).
           rm -rf ~/.cache/electron node_modules/electron/dist node_modules/electron/path.txt
-          if ! DEBUG='@electron/get*' node node_modules/electron/install.js 2>&1; then
-            echo '::warning::install.js failed; extracting manually'
-            zip_path=$(ls ~/.cache/electron/*/electron-v*-linux-x64.zip | head -1)
-            mkdir -p node_modules/electron/dist
-            unzip -oq "$zip_path" -d node_modules/electron/dist
-            printf 'electron' > node_modules/electron/path.txt
-          fi
+          node node_modules/electron/install.js 2>&1 || true
+          zip_path=$(ls ~/.cache/electron/*/electron-v*-linux-x64.zip | head -1)
+          ls -l "$zip_path"
+          unzip -l "$zip_path" | tail -3
+          rm -rf node_modules/electron/dist
+          mkdir -p node_modules/electron/dist
+          unzip -oq "$zip_path" -d node_modules/electron/dist
+          printf 'electron' > node_modules/electron/path.txt
           ls node_modules/electron/dist/ | head -5
           test -x node_modules/electron/dist/electron
 
