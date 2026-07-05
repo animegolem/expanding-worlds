@@ -6,12 +6,26 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 0 | 0 |
-| Planned | 5 | 0 |
+| In Progress | 1 | 0 |
+| Planned | 4 | 5 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 4 | 23 |
-| **Total** | **9** | **23** |
+| **Total** | **9** | **28** |
+
+## In Progress
+
+### [[AI-EPIC-009-canvas-feel-pass|EPIC-009: Canvas feel pass]]
+> First hands-on use of the EPIC-004 build was jarring where it should
+
+**IMPs:**
+- [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — planned
+- [[AI-IMP-025-texture-correctness-and-drag-fidelity|IMP-025]] Texture correctness and drag fidelity — planned
+- [[AI-IMP-026-quiet-snapping|IMP-026]] Quiet snapping — planned
+- [[AI-IMP-027-decoration-geometry-pass|IMP-027]] Decoration geometry pass — planned
+- [[AI-IMP-028-delete-zorder-safety-nets|IMP-028]] Delete zorder safety nets — planned
+
+---
 
 ## Planned
 
@@ -32,11 +46,6 @@
 
 ### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
 > RFC §16 requires portable export with lossless reimport, and §17–18
-
----
-
-### [[AI-EPIC-009-canvas-feel-pass|EPIC-009: Canvas feel pass]]
-> First hands-on use of the EPIC-004 build was jarring where it should
 
 ---
 

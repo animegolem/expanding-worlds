@@ -8,8 +8,13 @@ tags:
   - polish
 date_created: 2026-07-04
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
+  - AI-IMP-024
+  - AI-IMP-025
+  - AI-IMP-026
+  - AI-IMP-027
+  - AI-IMP-028
 ---
 
 # AI-EPIC-009-canvas-feel-pass
@@ -124,4 +129,23 @@ the schema leaves room; only the default rendering changes.
 
 ## Implementation Breakdown
 
-To be filled as AI-IMP tickets are cut.
+- AI-IMP-024 (lead): native camera input (pinch zoom, two-finger
+  pan, wheel mapping) + cursor states + zoom tuning (FR-1, FR-2).
+- AI-IMP-025 (lead): black-box texture bug root cause + fix +
+  texture-state regression tests; same-frame adornment fidelity and
+  commit-flash audit (FR-3, FR-4).
+- AI-IMP-026 (agent, fenced to packages/canvas-engine): snap
+  hysteresis + engaged-only dotted guides via exported drawSnapGuides
+  helper (FR-5).
+- AI-IMP-027 (agent, fenced to packages/canvas-engine renderers):
+  block-polygon arrows + geometry review of all decoration kinds
+  (FR-6).
+- AI-IMP-028 (lead): DeleteContent batch command + Delete/Backspace
+  wiring with §9.2 notices, reachable z-order, Cmd+A, fit-all
+  (FR-7, FR-8, FR-9).
+
+Waves: agents 026/027 run in parallel worktrees from the start (both
+fenced inside packages/canvas-engine, non-overlapping files); lead
+builds 024 → 025 → 028, merges and integrates agent branches
+(host.ts wiring of drawSnapGuides lands at merge), re-validates all
+gates on master, closes.
