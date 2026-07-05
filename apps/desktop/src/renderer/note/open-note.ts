@@ -76,6 +76,33 @@ export function onCreateAndPlace(listener: (title: string) => void): () => void 
   return () => window.removeEventListener(CREATE_AND_PLACE_EVENT, handler)
 }
 
+/**
+ * Rename requests from surfaces that don't own the editor buffer
+ * (node menu). The note pane handles them so the §10.2 dirty-buffer
+ * flush ALWAYS precedes the rewrite, whatever surface asked.
+ */
+export const RENAME_NOTE_EVENT = 'ew-rename-note'
+
+export interface RenameNoteDetail {
+  noteId: string
+  title: string
+}
+
+export function requestRenameNote(noteId: string, title: string): void {
+  window.dispatchEvent(
+    new CustomEvent<RenameNoteDetail>(RENAME_NOTE_EVENT, { detail: { noteId, title } }),
+  )
+}
+
+export function onRenameNote(listener: (detail: RenameNoteDetail) => void): () => void {
+  const handler = (event: Event): void => {
+    const detail = (event as CustomEvent<RenameNoteDetail>).detail
+    if (detail?.noteId && detail.title) listener(detail)
+  }
+  window.addEventListener(RENAME_NOTE_EVENT, handler)
+  return () => window.removeEventListener(RENAME_NOTE_EVENT, handler)
+}
+
 export interface OpenNoteSurfaceHandle {
   destroy(): void
 }

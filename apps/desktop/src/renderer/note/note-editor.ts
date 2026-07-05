@@ -110,6 +110,61 @@ export class NoteEditorController {
   }
 
   /**
+   * Rename the open note (§7.7, AI-IMP-047). Flushes the buffer
+   * first — §10.2: pending buffers MUST commit before any command
+   * that rewrites note bodies. Returns the raw result so the caller
+   * drives conflict UX.
+   */
+  async rename(title: string): Promise<CommandResult | null> {
+    const note = this.#note
+    if (!note) return null
+    await this.flushPending()
+    const result = await this.#project.execute('RenameNote', { noteId: note.id, title })
+    if (result.status === 'committed' && this.#note?.id === note.id) {
+      this.#note = { ...this.#note, title }
+      this.#hooks.onNoteChanged?.(this.#note)
+    }
+    return result
+  }
+
+  /**
+   * Reconcile the buffer with an external body change (§10.2: a
+   * rename rewrite arrives as a minimal change folded into local
+   * undo, never a wholesale document swap). No-op while dirty — the
+   * §10.2 flush ordering means body-rewriting commands never race a
+   * dirty buffer; if one ever does, the flush commits our text and
+   * the next project-changed event lands here clean.
+   */
+  async syncExternal(): Promise<void> {
+    const note = this.#note
+    if (!note || !this.#view || this.#dirty || this.#inFlight) return
+    const fresh = await this.#project.query<NoteRecord | null>('getNote', { noteId: note.id })
+    if (!fresh || this.#note?.id !== note.id) return
+    if (fresh.title !== note.title) {
+      this.#note = { ...this.#note!, title: fresh.title }
+      this.#hooks.onNoteChanged?.(this.#note)
+    }
+    if (this.#dirty) return
+    const current = this.#view.state.doc.toString()
+    if (fresh.body === current) {
+      this.#lastSavedBody = fresh.body
+      return
+    }
+    const change = minimalChange(current, fresh.body)
+    this.#lastSavedBody = fresh.body
+    // A user-event-tagged transaction enters CM history like typing,
+    // so undo can travel back through the rewrite.
+    this.#view.dispatch({ changes: change, userEvent: 'input.external' })
+    // The dispatch marked us dirty via the update listener; the
+    // buffer now EQUALS the saved body, so settle immediately.
+    if (this.#timer !== null) {
+      clearTimeout(this.#timer)
+      this.#timer = null
+    }
+    this.#setDirty(false)
+  }
+
+  /**
    * Commit the pending burst as one UpdateNote. Safe to call at any
    * time; resolves once the buffer is durable. This is the seam
    * body-touching commands (rename, quit) MUST await.
@@ -187,6 +242,24 @@ export class NoteEditorController {
     this.#dirty = dirty
     this.#hooks.onDirtyChanged?.(dirty)
   }
+}
+
+/** Single-span diff: common prefix/suffix trimmed. Token rewrites
+ * (rename) are localized, so this folds them as one small change. */
+function minimalChange(
+  oldText: string,
+  newText: string,
+): { from: number; to: number; insert: string } {
+  let start = 0
+  const maxStart = Math.min(oldText.length, newText.length)
+  while (start < maxStart && oldText[start] === newText[start]) start++
+  let endOld = oldText.length
+  let endNew = newText.length
+  while (endOld > start && endNew > start && oldText[endOld - 1] === newText[endNew - 1]) {
+    endOld--
+    endNew--
+  }
+  return { from: start, to: endOld, insert: newText.slice(start, endNew) }
 }
 
 function describe(result: CommandResult): string {

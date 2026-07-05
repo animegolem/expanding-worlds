@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - wiki-links
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-045]
 parent_epic: [[AI-EPIC-005-notes-links-phantoms]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-047-rename-and-title-collisions
@@ -70,20 +70,20 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Title field renames via RenameNote on Enter/blur, preceded by
+- [x] Title field renames via RenameNote on Enter/blur, preceded by
       flushPending(); no-op titles and linkability-violating titles
       (`[`,`]`,`|`, newline) surface the structured error, draft kept.
-- [ ] External changes to the open note's body apply as a
+- [x] External changes to the open note's body apply as a
       diff-computed CM transaction; local undo steps back through the
       rewrite (test: type, rename elsewhere, undo restores pre-typed
       text without losing the rewrite's other lines).
-- [ ] NOTE_TITLE_CONFLICT dialog with per-flow actions (Use Existing /
+- [x] NOTE_TITLE_CONFLICT dialog with per-flow actions (Use Existing /
       Choose Different / Open Conflicting / Restore Existing when
       trashed); draft retained in every path.
-- [ ] Slice item 15 e2e: dirty source-note buffer + rename of the
+- [x] Slice item 15 e2e: dirty source-note buffer + rename of the
       linked target → flush, transactional token rewrite, unresolved
       tokens matching the new title bind, editor undo history intact.
-- [ ] Gates: full build/test/lint/e2e green.
+- [x] Gates: full build/test/lint/e2e green.
 
 ### Acceptance Criteria
 
@@ -107,3 +107,22 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Landed with one architectural addition beyond plan: renames from
+surfaces that don't own the editor buffer route through an
+ew-rename-note event handled BY the pane, so the §10.2 dirty-buffer
+flush always precedes the rewrite regardless of origin — the node
+menu's new Rename Note… entry dispatches it, and the item-15 e2e
+drives that seam directly with a dirty buffer in its debounce window
+(any mouse interaction outside the editor would blur-flush first, so
+the event path is the only honest way to exercise flush-by-rename).
+External changes fold as a single prefix/suffix-trimmed change
+tagged input.external, which enters CM history like typing: the e2e
+proves one undo steps back through the rewrite and redo reapplies
+it. The undo also demonstrates the §10.2-accepted consequence that
+local undo can travel back through commits. Conflict e2e covers
+rename-flow actions incl. Restore Existing for a trashed conflict;
+the create-flow Use Existing branch shares the same dialog and
+conflictFrom() plumbing but is only reachable through a race (title
+created between phantom open and materialize), so it has no
+deterministic e2e — noted as accepted residue. Full suite green with
+the known single load-flake (passes on retry).

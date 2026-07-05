@@ -354,6 +354,142 @@ test('typing into the phantom body materializes on the first committed burst (§
   await app.close()
 })
 
+test('rename flushes dirty buffers, rewrites transactionally, folds into local undo (§17-15)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-rename-'))
+  const { app, win } = await launch(projectDir)
+  const { noteId: oldId } = await seedPlacedNote(win, 'Old', 'the original', { x: 500, y: 240 })
+  const { noteId: aId } = await seedPlacedNote(win, 'A', 'x [[Old]] y [[NewName]] z', {
+    x: 300,
+    y: 240,
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.locator('.cm-content [data-link-title="Old"]')).toHaveAttribute(
+    'data-link-state',
+    'bound',
+  )
+  await expect(win.locator('.cm-content [data-link-title="NewName"]')).toHaveAttribute(
+    'data-link-state',
+    'unresolved',
+  )
+
+  // Dirty buffer inside its debounce window at rename time.
+  await win.locator('.cm-content').click()
+  await win.keyboard.press('Control+End')
+  await win.keyboard.type(' tail')
+  await expect(win.getByTestId('note-pane-dirty')).toBeVisible()
+
+  // Rename from another surface (the node-menu path dispatches this
+  // same event); the pane flushes BEFORE the rewrite (§10.2).
+  await win.evaluate(
+    ({ oldId }) =>
+      window.dispatchEvent(
+        new CustomEvent('ew-rename-note', { detail: { noteId: oldId, title: 'NewName' } }),
+      ),
+    { oldId },
+  )
+
+  // The rewrite + sweep land in the open editor as an external
+  // change: rewritten token AND the pre-existing unresolved token
+  // both read NewName and render bound; the typed text survived.
+  await expect(win.locator('.cm-content [data-link-title="NewName"]')).toHaveCount(2, {
+    timeout: 5_000,
+  })
+  for (const token of await win
+    .locator('.cm-content [data-link-title="NewName"]')
+    .all())
+    await expect(token).toHaveAttribute('data-link-state', 'bound')
+  await expect(win.getByTestId('note-editor')).toContainText('z tail')
+  expect(await noteBody(win, aId)).toBe('x [[NewName]] y [[NewName]] z tail')
+
+  // Folded into LOCAL undo: one undo steps back through the rewrite
+  // (no wholesale document swap), redo reapplies it.
+  await win.locator('.cm-content').click()
+  const undo = process.platform === 'darwin' ? 'Meta+z' : 'Control+z'
+  const redo = process.platform === 'darwin' ? 'Meta+Shift+z' : 'Control+Shift+z'
+  await win.keyboard.press(undo)
+  await expect(win.locator('.cm-content [data-link-title="Old"]')).toHaveCount(1)
+  await win.keyboard.press(redo)
+  await expect(win.locator('.cm-content [data-link-title="NewName"]')).toHaveCount(2)
+
+  await app.close()
+})
+
+test('title collisions retain the draft and offer per-flow actions (§7.7)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-conflict-'))
+  const { app, win } = await launch(projectDir)
+  const { noteId: alphaId } = await seedPlacedNote(win, 'Alpha', 'first', { x: 300, y: 240 })
+  await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    await run('CreateNote', { noteId: crypto.randomUUID(), title: 'Beta' })
+    const goneId = crypto.randomUUID()
+    await run('CreateNote', { noteId: goneId, title: 'Gone' })
+    await run('TrashNote', { noteId: goneId })
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  const title = win.getByTestId('note-title-input')
+  await expect(title).toHaveValue('Alpha')
+
+  // Active conflict: Open Conflicting Note + Choose Different Title,
+  // never a silent redirect; the draft survives.
+  await title.fill('Beta')
+  await title.press('Enter')
+  const dialog = win.getByTestId('title-conflict-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(win.getByTestId('conflict-open-existing')).toBeVisible()
+  await expect(win.getByTestId('conflict-restore-existing')).toBeHidden()
+  await win.getByTestId('conflict-choose-different').click()
+  await expect(dialog).toBeHidden()
+  await expect(title).toHaveValue('Beta')
+  expect(
+    await win.evaluate(
+      (id) => window.ew.project.query('getNote', { noteId: id }),
+      alphaId,
+    ),
+  ).toMatchObject({ ok: true, result: { title: 'Alpha' } })
+
+  // Trashed conflict additionally offers Restore Existing Note.
+  await title.fill('Gone')
+  await title.press('Enter')
+  await expect(dialog).toBeVisible()
+  await win.getByTestId('conflict-restore-existing').click()
+  await expect(dialog).toBeHidden()
+  await expect(title).toHaveValue('Gone')
+  await expect
+    .poll(async () => {
+      const result = await win.evaluate(() => window.ew.project.query('listNotes'))
+      if (!result.ok) return []
+      return (result.result as Array<{ title: string }>).map((n) => n.title)
+    })
+    .toContain('Gone')
+
+  // Linkability validation: structured error, draft retained.
+  await title.fill('Bad[Title')
+  await title.press('Enter')
+  await expect(win.getByTestId('note-pane-error')).toBeVisible()
+  await expect(title).toHaveValue('Bad[Title')
+
+  await app.close()
+})
+
 test('an edit inside its debounce window survives quit (§10.2 quit flush)', async () => {
   const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-quit-'))
   const first = await launch(projectDir)

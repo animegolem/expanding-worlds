@@ -67,8 +67,8 @@ chooser) belongs to EPIC-006.
 - [ ] FR-3: Link state rendering and activation behavior per §7.1–7.3.
 - [x] FR-4: Wiki-link title suggestions with phantom indicator per §7.2.
 - [x] FR-5: Phantom view with first-edit, Create Note, and Create and Place materialization per §7.2/§6.11.
-- [ ] FR-6: Transactional rename rewrite with dirty-buffer flush and external-change folding.
-- [ ] FR-7: Title collision flows per §7.7.
+- [x] FR-6: Transactional rename rewrite with dirty-buffer flush and external-change folding.
+- [x] FR-7: Title collision flows per §7.7.
 - [ ] FR-8: Attach, detach, make-independent per §6.6.
 
 ### Non-Functional Requirements

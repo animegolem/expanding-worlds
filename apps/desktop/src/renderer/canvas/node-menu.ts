@@ -1,6 +1,6 @@
 import { hitTest, type CanvasScene, type SceneItem } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
-import { requestOpenNote } from '../note/open-note'
+import { requestOpenNote, requestRenameNote } from '../note/open-note'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -144,6 +144,11 @@ export function attachNodeMenu(
       addEntry('Open Note', 'node-menu-open-note', () => {
         closeMenu()
         requestOpenNote(noteId)
+      })
+      // Routed through the note pane so the §10.2 dirty-buffer flush
+      // always precedes the rewrite (AI-IMP-047).
+      addEntry('Rename Note…', 'node-menu-rename-note', () => {
+        promptTitle('New title', (title) => requestRenameNote(noteId, title))
       })
       addEntry('Detach Note', 'node-menu-detach', () => {
         closeMenu()
