@@ -944,3 +944,67 @@ test('an edit inside its debounce window survives quit (§10.2 quit flush)', asy
   expect(await noteBody(second.win, noteId)).toBe('coral heads at low tide')
   await second.app.close()
 })
+
+test('double-clicking the label renames the note in place (AI-IMP-056)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-label-rename-'))
+  const { app, win } = await launch(projectDir)
+  await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    const noteId = crypto.randomUUID()
+    const nodeId = crypto.randomUUID()
+    await run('CreateNote', { noteId, title: 'Ash' })
+    await run('CreateNode', { nodeId })
+    await run('SetNodeAppearance', { nodeId, appearance: { kind: 'dot', color: '#ff7700' } })
+    await run('AttachNoteToNode', { nodeId, noteId })
+    await run('CreatePlacement', {
+      placementId: crypto.randomUUID(),
+      canvasId: window.__ewDebug!.canvasId(),
+      nodeId,
+      x: 300,
+      y: 300,
+      width: 200,
+      height: 150,
+    })
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  // Label band: fontSize = 150 × 0.14 = 21; top = 300 + 75 + 21×0.35.
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 393)
+  const input = win.getByTestId('label-rename-input')
+  await expect(input).toBeVisible()
+  await expect(input).toHaveValue('Ash')
+  await input.fill('Cinder')
+  await input.press('Enter')
+
+  // The rename propagates: scene label, pane title (via the seam).
+  await expect
+    .poll(async () => {
+      const scene = await win.evaluate(() =>
+        window.ew.project.query('getCanvasScene', { canvasId: window.__ewDebug!.canvasId() }),
+      )
+      if (!scene.ok) return null
+      const items = (scene.result as { items: Array<{ noteTitle?: string | null }> }).items
+      return items.find((item) => item.noteTitle)?.noteTitle ?? null
+    })
+    .toBe('Cinder')
+
+  // Body double-click still opens the note (unchanged behavior).
+  await win.mouse.dblclick(box.x + 300, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Cinder/)
+
+  await app.close()
+})

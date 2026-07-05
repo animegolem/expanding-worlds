@@ -14,7 +14,7 @@ import type { SceneCamera } from './types'
 
 /** Muted rose, distinct from the selection blue but quiet at 40%. */
 export const SNAP_GUIDE_COLOR = 0xc06a8e
-export const SNAP_GUIDE_ALPHA = 0.4
+export const SNAP_GUIDE_ALPHA = 0.5
 /** Screen-equivalent stroke width in pixels (world width = 1/zoom). */
 export const SNAP_GUIDE_WIDTH_PX = 1
 /** Dash and gap lengths in screen pixels (world length = px/zoom). */

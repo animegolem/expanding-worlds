@@ -19,7 +19,7 @@ export interface Rect {
   height: number
 }
 
-export const MIN_ZOOM = 0.02
+export const MIN_ZOOM = 0.002
 export const MAX_ZOOM = 64
 
 export class Camera {

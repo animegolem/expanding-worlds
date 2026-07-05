@@ -16,7 +16,7 @@ import type { ItemRenderer, RendererResources } from './registry'
 export const DEFAULT_DOT_RADIUS = 12
 
 /** §4.5: label font size = body height × this single tuning ratio. */
-export const LABEL_HEIGHT_RATIO = 0.18
+export const LABEL_HEIGHT_RATIO = 0.14
 
 const LABEL_COLOR = 0xc8cfd8
 

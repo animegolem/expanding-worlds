@@ -1,4 +1,10 @@
-import { hitTest } from '@ew/canvas-engine'
+import {
+  hitTest,
+  placementSize,
+  LABEL_HEIGHT_RATIO,
+  type SceneItem,
+  type ScenePlacement,
+} from '@ew/canvas-engine'
 import type { CanvasHostHandle } from '../canvas/host'
 
 /**
@@ -193,10 +199,92 @@ export interface OpenNoteSurfaceHandle {
   destroy(): void
 }
 
+/**
+ * The label band hangs BELOW the placement body (outside its hit
+ * AABB), mirroring the renderer's layout: fontSize = worldHeight ×
+ * LABEL_HEIGHT_RATIO, top edge at height/2 + fontSize × 0.35 below
+ * center. Rotated or flipped placements are skipped — their label
+ * geometry is transformed and Phase 1 falls back to opening the note.
+ */
+function labelBandHit(
+  world: { x: number; y: number },
+  items: readonly SceneItem[],
+): ScenePlacement | null {
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const item = items[i]!
+    if (item.itemKind !== 'placement') continue
+    if (item.labelVisible !== 1 || item.noteTitle == null) continue
+    if ((item.rotation ?? 0) !== 0 || item.flipX === 1 || item.flipY === 1) continue
+    const size = placementSize(item)
+    const fontSize = size.height * LABEL_HEIGHT_RATIO
+    const top = item.y + size.height / 2 + fontSize * 0.35
+    const halfWidth = Math.max(size.width / 2, fontSize * 4)
+    if (
+      world.x >= item.x - halfWidth &&
+      world.x <= item.x + halfWidth &&
+      world.y >= top &&
+      world.y <= top + fontSize * 1.3
+    ) {
+      return item
+    }
+  }
+  return null
+}
+
 export function attachOpenNoteSurface(
   host: CanvasHostHandle,
   element: HTMLElement,
 ): OpenNoteSurfaceHandle {
+  let renameInput: HTMLInputElement | null = null
+
+  function closeRename(): void {
+    renameInput?.remove()
+    renameInput = null
+  }
+
+  /** Inline title editor over the label (§4.5/AI-IMP-056): Enter or
+   * blur commits through the pane's rename seam (flush ordering,
+   * §7.7 conflicts), Escape cancels. */
+  function openRename(placement: ScenePlacement, noteId: string): void {
+    closeRename()
+    const size = placementSize(placement)
+    const fontSize = size.height * LABEL_HEIGHT_RATIO
+    const screen = host.controller.camera.worldToScreen({
+      x: placement.x,
+      y: placement.y + size.height / 2 + fontSize * 0.35,
+    })
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.value = placement.noteTitle ?? ''
+    input.dataset['testid'] = 'label-rename-input'
+    input.style.cssText =
+      `position:absolute;left:${screen.x - 100}px;top:${screen.y}px;width:200px;z-index:25;` +
+      'padding:2px 6px;font:inherit;text-align:center;background:#17191d;color:#ddd;' +
+      'border:1px solid #4a4f57;border-radius:3px;'
+    let done = false
+    const finish = (commit: boolean): void => {
+      if (done) return
+      done = true
+      const title = input.value.trim()
+      if (commit && title.length > 0 && title !== placement.noteTitle) {
+        requestRenameNote(noteId, title)
+      }
+      closeRename()
+    }
+    input.addEventListener('keydown', (event) => {
+      event.stopPropagation()
+      if (event.key === 'Enter') finish(true)
+      if (event.key === 'Escape') finish(false)
+    })
+    input.addEventListener('blur', () => finish(true))
+    element.appendChild(input)
+    renameInput = input
+    setTimeout(() => {
+      input.focus()
+      input.select()
+    }, 0)
+  }
+
   const onDblClick = (event: MouseEvent): void => {
     if (host.tools.active !== 'select') return
     const bounds = element.getBoundingClientRect()
@@ -204,18 +292,31 @@ export function attachOpenNoteSurface(
       x: event.clientX - bounds.left,
       y: event.clientY - bounds.top,
     })
-    const hit = hitTest(world, host.controller.items())
-    if (!hit || hit.itemKind !== 'placement') return
+    const items = host.controller.items()
+    const hit = hitTest(world, items)
+    const target =
+      hit && hit.itemKind === 'placement'
+        ? { placement: hit, rename: false }
+        : (() => {
+            const label = labelBandHit(world, items)
+            return label ? { placement: label, rename: true } : null
+          })()
+    if (!target) return
     void (async () => {
-      const response = await window.ew.project.query('getNode', { nodeId: hit.nodeId })
+      const response = await window.ew.project.query('getNode', {
+        nodeId: target.placement.nodeId,
+      })
       if (!response.ok) return
       const node = response.result as { noteId: string | null } | null
-      if (node?.noteId) requestOpenNote(node.noteId)
+      if (!node?.noteId) return
+      if (target.rename) openRename(target.placement, node.noteId)
+      else requestOpenNote(node.noteId)
     })()
   }
   element.addEventListener('dblclick', onDblClick)
   return {
     destroy() {
+      closeRename()
       element.removeEventListener('dblclick', onDblClick)
     },
   }

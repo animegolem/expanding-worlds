@@ -21,6 +21,8 @@ import type { LinkResolution } from './link-resolution'
 
 const resolutionChanged = StateEffect.define<null>()
 
+const FOLLOW_KEY = navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'
+
 export interface LinkActivation {
   state: string
   title: string
@@ -57,6 +59,8 @@ export function wikiLinkHighlighter(resolution: LinkResolution): Extension {
           attributes: {
             'data-link-state': state,
             'data-link-title': token.title,
+            // §7.3 rev 0.16: the follow gesture MUST be advertised.
+            title: `${FOLLOW_KEY}-click to follow`,
           },
         }),
       )

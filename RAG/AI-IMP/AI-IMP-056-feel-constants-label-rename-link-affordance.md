@@ -5,12 +5,12 @@ tags:
   - Implementation
   - feel
   - notes
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-012-pre-alpha-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-056-feel-constants-label-rename-link-affordance
@@ -69,16 +69,16 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] MIN_ZOOM 0.002, SNAP_GUIDE_ALPHA 0.5, LABEL_HEIGHT_RATIO
+- [x] MIN_ZOOM 0.002, SNAP_GUIDE_ALPHA 0.5, LABEL_HEIGHT_RATIO
       0.14; any tests pinning the old values updated deliberately.
-- [ ] Label-region dblclick on a note-bearing placement opens the
+- [x] Label-region dblclick on a note-bearing placement opens the
       inline title editor at the label; Enter commits through
       requestRenameNote (flush-first), Escape cancels; body
       dblclick still opens the note.
-- [ ] Renamed title propagates to the label, the pane, and inbound
+- [x] Renamed title propagates to the label, the pane, and inbound
       link rewrites (existing machinery; e2e asserts label + pane).
-- [ ] Wiki-link marks carry a platform-aware follow tooltip.
-- [ ] Gates green locally and on CI.
+- [x] Wiki-link marks carry a platform-aware follow tooltip.
+- [x] Gates green locally and on CI.
 
 ### Acceptance Criteria
 
@@ -100,3 +100,16 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Constants were pin-free (tests reference the symbols, not
+literals), so the retunes were pure one-liners; MIN_ZOOM kept a
+floor at 0.002 (10x more room) against the camera-lost-in-the-void
+class rather than removing the clamp. The label band lives OUTSIDE
+the placement's hit AABB, which made the seam clean: dblclick tries
+hitTest first (body -> open note, unchanged) and only then the label
+band (-> inline rename overlay committing through requestRenameNote,
+so flush ordering and the §7.7 dialog hold). Rotated or flipped
+placements skip the band and fall back to open-note — their label
+geometry is transformed; noted as accepted Phase 1 residue. The
+hover affordance is a plain title tooltip, platform-aware
+(⌘/Ctrl). e2e covers rename-via-label, propagation to the scene
+label, and unchanged body-dblclick.
