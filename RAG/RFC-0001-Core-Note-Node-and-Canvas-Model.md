@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.17         | 5 July 2026      |
+| Accepted for Phase 1 | 0.18         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -510,7 +510,10 @@ disappear.
 A full asset-library manager, asset tagging, watched directories,
 metadata-aware cross-application drag, and Eagle or Allusion library
 import are deferred. Future vendor importers MUST remain versioned
-adapters outside the core domain model.
+adapters outside the core domain model. The accepted direction for
+the library surface itself is section 14.4: library entries are
+unplaced nodes, a library is internally a project, and projects
+ingest from sources rather than referencing them.
 
 A deferred **web-reference** asset kind is shaped as follows so the
 model leaves room for it. A web-reference stores a source URL and
@@ -2240,7 +2243,63 @@ operations of section 6.8 and introduces no new domain records. It is
 the recursive containment structure made visible — the app's thesis
 that arranging images quietly builds data.
 
-# 15. Future authoritative collaboration seam
+## 14.4 Library projects and cross-project sourcing (deferred with scope)
+
+Accepted direction, rev 0.18; deferred until after the global views
+ship. This section is self-contained on purpose.
+
+The app owns the reference-library surface (the Allusion/Eagle use
+case: a browsable, taggable, locally persisted file collection)
+without adding a library concept to the domain:
+
+- **Library entries are unplaced nodes.** Bulk import runs each file
+  through the staged pipeline (§11.2) and creates one node per file
+  with an image appearance and no placement — the stashed-material
+  workflow §14.1 already blesses. Node tags carry the curation
+  facts. No new record kinds exist; this is the standing guardrail:
+  the day a library feature needs a record kind that exists only
+  for the library, stop and re-derive.
+
+- **A library is internally a project.** The application MAY create
+  or designate a library project and present it distinctly, but the
+  distinction is packaging, not schema.
+
+- **The file-browser projection** is a view any project can open:
+  a thumbnail grid over the project's nodes with sort facets, bulk
+  selection, and tag filtering, sharing query machinery with the
+  tree (§14.1) and tag panel (§4.8). It is the traditional file
+  browser as a projection over nodes, tags, and assets.
+
+- **Projects source, never reference.** A second project MAY be
+  opened read-only as an import source (§11.1 already contemplates
+  read-only opening). Placing from a source runs the ordinary
+  staged import: bytes copy by content hash into the destination's
+  managed storage and provenance is recorded. A project never holds
+  references outside itself, which is what preserves export
+  self-containment (§16), the single-writer rule (§11.1), and the
+  Phase 2 collaboration seam (§15).
+
+- **Tags cross the border by decision.** Ingesting an item asks
+  whether to carry its tags (none, all, or pick); carried tags are
+  recreated as destination tag records and assignments, merging
+  with existing tags by name_key. Whether the default differs by
+  source kind (on from a library, off otherwise) is a UI decision.
+
+- **The placement picker is the compressed browser.** One grammar,
+  three compressions: the full browser is a takeover view; placing
+  from a source presents the same rows in an anchored panel; an OS
+  drag-in routes through the §4.7 importer dialogue.
+
+- **The Allusion importer** is a versioned adapter per §4.7: walk
+  the source library's locations, stage-import each file, create an
+  unplaced node per file, and recreate tag assignments, flattening
+  Allusion's tag hierarchy into flat project tags. Before building
+  it, verify the source's application version and whether its tags
+  live in its internal database or in file metadata.
+
+The browser view depends on the thumbnail derivative pipeline and
+its main-process image codec (§4.7's shared-codec note). Watched
+directories stay deferred separately.
 
 Phase 1 remains local-only: no server, sync, account, or protocol
 infrastructure, and no CRDTs merely to prepare for Phase 2. The single
@@ -2294,6 +2353,12 @@ need not be canonical export content.
 A complete project backup SHOULD preserve Trash unless the user
 explicitly requests an active-content-only export. Purged records and
 evictable derivatives are not export requirements.
+
+Export reports rather than blocks (rev 0.18): when a project's
+export size exceeds a warn threshold, the export presents a size
+preflight and asks once; acknowledgment persists per project so the
+question is never repeated for that project. The threshold is an
+application preference. There is no hard size limiter.
 
 Export is paired with import. Phase 1 MUST import a project export,
 recreating the project in a new project directory with all record
@@ -2619,9 +2684,10 @@ canvas-local visibility and view filters.
 
 13. Exact-node and exact-placement link syntax.
 
-14. How far the node library grows beyond the Phase 1 nodes-only list:
-multi-facet sorting, richer data views, and note browsing deserve a
-dedicated design pass informed by prototype use.
+14. (Resolved in direction, rev 0.18.) The node library grows into
+the §14.4 library shape: the file-browser projection, library
+projects, and cross-project sourcing with copy-on-ingest. Note
+browsing and multi-facet detail still deserve their design pass.
 
 15. Label styling (typography, chrome, and the exact
 placement-proportional ratio with any legibility clamps), to be
@@ -2962,3 +3028,12 @@ Accepted for the Phase 1 prototype:
 - Ongoing conditions get a rail perch that exists exactly as long
   as the condition does; transitions get toasts; the status strip
   retires when the perch ships (rev 0.17).
+
+- The library direction (rev 0.18, §14.4): library entries are
+  unplaced nodes; a library is internally a project; the
+  file-browser projection is a view any project can open; projects
+  source other projects read-only and ingest by copy, never by
+  reference; tags cross that border by explicit decision; the
+  placement picker is the compressed browser; the Allusion importer
+  is a versioned adapter. Export gains a once-per-project size
+  preflight instead of any hard limiter.
