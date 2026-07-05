@@ -417,7 +417,9 @@ test('rename flushes dirty buffers, rewrites transactionally, folds into local u
   // (no wholesale document swap), redo reapplies it.
   await win.locator('.cm-content').click()
   const undo = process.platform === 'darwin' ? 'Meta+z' : 'Control+z'
-  const redo = process.platform === 'darwin' ? 'Meta+Shift+z' : 'Control+Shift+z'
+  // CM's historyKeymap binds redo to Mod-Shift-z on mac but Ctrl-y
+  // elsewhere — Ctrl+Shift+z is a silent no-op on Linux runners.
+  const redo = process.platform === 'darwin' ? 'Meta+Shift+z' : 'Control+y'
   await win.keyboard.press(undo)
   await expect(win.locator('.cm-content [data-link-title="Old"]')).toHaveCount(1)
   await win.keyboard.press(redo)
