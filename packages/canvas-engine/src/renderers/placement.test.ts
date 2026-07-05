@@ -6,7 +6,39 @@ import {
   LABEL_HEIGHT_RATIO,
   cssColorToNumber,
   placementRenderer,
+  setPlacementTextureResident,
 } from './placement'
+import { Texture } from 'pixi.js'
+import type { RendererResources } from './registry'
+
+/** Recording texture budget: resolves acquires on demand. */
+function fakeBudget() {
+  const acquired: string[] = []
+  const released: string[] = []
+  const pending: Array<() => void> = []
+  const resources: RendererResources & {
+    acquired: string[]
+    released: string[]
+    flush: () => void
+  } = {
+    acquired,
+    released,
+    flush: () => {
+      for (const resolve of pending.splice(0)) resolve()
+    },
+    loadTexture: () => Promise.resolve(Texture.WHITE),
+    textures: {
+      acquire(hash: string) {
+        acquired.push(hash)
+        return new Promise((resolve) => pending.push(() => resolve(Texture.WHITE)))
+      },
+      release(hash: string) {
+        released.push(hash)
+      },
+    },
+  }
+  return resources
+}
 
 async function settled(): Promise<void> {
   await Promise.resolve()
@@ -110,6 +142,97 @@ describe('placementRenderer', () => {
   })
 })
 
+describe('texture residency across updates (AI-IMP-025)', () => {
+  const HASH_A = 'a'.repeat(64)
+  const HASH_B = 'b'.repeat(64)
+  const image = (overrides = {}) =>
+    makePlacement({
+      appearanceKind: 'image',
+      assetContentHash: HASH_A,
+      assetWidth: 200,
+      assetHeight: 100,
+      width: 200,
+      height: 100,
+      ...overrides,
+    })
+
+  it('resizes a resident image in place — texture survives, no release', async () => {
+    const resources = fakeBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+    expect(object.getChildByLabel('image')).toBeTruthy()
+
+    // Ephemeral resize frames and the committed update: no rebuild.
+    let prev = item
+    for (const [w, h] of [
+      [220, 110],
+      [260, 130],
+      [300, 150],
+    ] as const) {
+      const next = { ...prev, width: w, height: h }
+      placementRenderer.update(object, next, prev, resources)
+      prev = next
+    }
+    const sprite = object.getChildByLabel('image') as Sprite
+    expect(sprite).toBeTruthy()
+    expect(object.getChildByLabel('image-placeholder')).toBeFalsy()
+    expect(sprite.width).toBeCloseTo(300)
+    expect(sprite.height).toBeCloseTo(150)
+    expect(resources.acquired).toEqual([HASH_A])
+    expect(resources.released).toEqual([])
+  })
+
+  it('re-acquires after an identity rebuild while resident (culler will not re-grant)', async () => {
+    const resources = fakeBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+
+    // Swap the asset: identity change → rebuild while resident.
+    const swapped = image({ assetContentHash: HASH_B })
+    placementRenderer.update(object, swapped, item, resources)
+    expect(resources.released).toEqual([HASH_A])
+    expect(resources.acquired).toEqual([HASH_A, HASH_B])
+    resources.flush()
+    await settled()
+    expect(object.getChildByLabel('image')).toBeTruthy()
+    expect(object.getChildByLabel('image-placeholder')).toBeFalsy()
+  })
+
+  it('rebuild with an acquire in flight: stale landing releases, new one attaches', async () => {
+    const resources = fakeBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    // No flush: HASH_A is still loading when the identity changes.
+    const swapped = image({ assetContentHash: HASH_B })
+    placementRenderer.update(object, swapped, item, resources)
+    resources.flush() // both loads land now
+    await settled()
+    // Stale A returned its ref; B attached and is the only live grant.
+    expect(resources.acquired).toEqual([HASH_A, HASH_B])
+    expect(resources.released).toEqual([HASH_A])
+    expect(object.getChildByLabel('image')).toBeTruthy()
+  })
+
+  it('non-resident images stay placeholders through resizes (lazy §12.2)', () => {
+    const resources = fakeBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    const resized = { ...item, width: 400, height: 200 }
+    placementRenderer.update(object, resized, item, resources)
+    const placeholder = object.getChildByLabel('image-placeholder') as Graphics
+    expect(placeholder).toBeTruthy()
+    expect(placeholder.width).toBeCloseTo(400)
+    expect(resources.acquired).toEqual([])
+  })
+})
+
 function labelOf(object: Container): Text | undefined {
   return object.children.find((child) => child.label === 'label') as Text | undefined
 }
@@ -145,7 +268,8 @@ describe('placement labels (§4.5)', () => {
     const renamed = { ...item, noteTitle: 'New' }
     placementRenderer.update(object, renamed, item, resources)
     expect(labelOf(object)!.text).toBe('New')
-    // Resize changes the appearance signature → body AND label rebuild.
+    // Resize reflows the label in place (bodies no longer rebuild on
+    // size changes — AI-IMP-025).
     const resized = { ...renamed, width: 200, height: 100 }
     placementRenderer.update(object, resized, renamed, resources)
     expect(labelOf(object)!.style.fontSize).toBeCloseTo(100 * LABEL_HEIGHT_RATIO)

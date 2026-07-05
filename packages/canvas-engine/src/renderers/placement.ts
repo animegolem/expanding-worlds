@@ -45,15 +45,16 @@ interface PlacementObject extends Container {
   __imageSize?: { width: number; height: number }
 }
 
-function appearanceSignature(item: ScenePlacement): string {
+/** What the body is made of — a change forces a full rebuild. Size is
+ * deliberately excluded: resizes adjust bodies in place so a resident
+ * image never drops to its placeholder mid-gesture (AI-IMP-025). */
+function identitySignature(item: ScenePlacement): string {
   return [
     item.appearanceKind,
     item.appearanceColor,
     item.appearanceIcon,
     item.assetContentHash,
     item.appearanceCrop,
-    item.width,
-    item.height,
   ].join('|')
 }
 
@@ -64,12 +65,18 @@ function buildBody(
 ): void {
   const generation = (container.__textureGeneration ?? 0) + 1
   container.__textureGeneration = generation
+  // The Culler only fires residency hooks on TRANSITIONS, so a body
+  // rebuilt while resident must re-acquire its texture itself — no
+  // re-grant is coming (this left permanent grey boxes, AI-IMP-025).
+  const wasEngaged = Boolean(container.__acquiredHash || container.__acquiring)
   if (container.__acquiredHash && resources.textures) {
-    // Appearance changed while resident: drop the old budget ref; the
-    // Culler re-grants residency against the new appearance.
+    // Appearance changed while resident: drop the old budget ref.
     resources.textures.release(container.__acquiredHash)
     container.__acquiredHash = null
   }
+  // Any in-flight attach is stale now (generation bumped above); its
+  // landing self-releases. Clear the flag so a re-acquire can start.
+  container.__acquiring = null
   for (const child of [...container.children]) child.destroy()
 
   const kind = item.appearanceKind
@@ -85,8 +92,12 @@ function buildBody(
     // Without a texture budget, load eagerly (tests, simple hosts).
     // With one, residency is granted by the Culler via
     // setPlacementTextureResident — the body stays a placeholder
-    // until the item nears the viewport (§12.2 lazy textures).
+    // until the item nears the viewport (§12.2 lazy textures) —
+    // unless it was already resident, in which case re-acquire now.
     if (!resources.textures) {
+      void attachTexture(container, item.assetContentHash, generation, resources)
+    } else if (wasEngaged) {
+      container.__acquiring = item.assetContentHash
       void attachTexture(container, item.assetContentHash, generation, resources)
     }
     return
@@ -239,6 +250,22 @@ function syncLabel(container: Container, item: ScenePlacement): void {
   label.scale.set(item.flipX ? -1 : 1, flipY ? -1 : 1)
 }
 
+/** In-place resize for image bodies: adjust the sprite (or its
+ * placeholder) instead of rebuilding, so ephemeral resize gestures
+ * keep the texture on screen every frame. Vector bodies (dot, icon)
+ * redraw exactly via buildBody — they have no residency state. */
+function resizeImageBody(container: PlacementObject, item: ScenePlacement): void {
+  const width = item.width ?? item.assetWidth ?? 128
+  const height = item.height ?? item.assetHeight ?? 128
+  container.__imageSize = { width, height }
+  const body =
+    container.getChildByLabel('image') ?? container.getChildByLabel('image-placeholder')
+  if (body) {
+    ;(body as Sprite).width = width
+    ;(body as Sprite).height = height
+  }
+}
+
 export const placementRenderer: ItemRenderer<ScenePlacement> = {
   create(item, resources) {
     const container: PlacementObject = new Container()
@@ -249,10 +276,18 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
     return container
   },
   update(object, item, previous, resources) {
-    if (appearanceSignature(item) !== appearanceSignature(previous)) {
+    const container = object as PlacementObject
+    const sizeChanged = item.width !== previous.width || item.height !== previous.height
+    if (identitySignature(item) !== identitySignature(previous)) {
       // buildBody clears ALL children (label included); syncLabel below
       // recreates it against the new body size.
-      buildBody(object as PlacementObject, item, resources)
+      buildBody(container, item, resources)
+    } else if (sizeChanged) {
+      if (item.appearanceKind === 'image' && item.assetContentHash) {
+        resizeImageBody(container, item)
+      } else {
+        buildBody(container, item, resources)
+      }
     }
     applyTransform(object, item)
     syncLabel(object, item)

@@ -332,3 +332,92 @@ test('§6.9 camera input mapping: pinch zooms at pointer, scroll pans, cursors t
 
   await app.close()
 })
+
+test('image texture survives move, resize, and residency round-trip (AI-IMP-025)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-texture-'))
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  })
+  const win = await app.firstWindow()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Import a generated PNG and pin it as an image placement.
+  await win.evaluate(async () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 512
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#c06a2e'
+    ctx.fillRect(0, 0, 512, 512)
+    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'))
+    const bytes = new Uint8Array(await blob.arrayBuffer())
+    const imported = await window.ew.project.importAsset({
+      bytes,
+      originalFilename: 'texture-e2e.png',
+    })
+    if (!('assetId' in imported) || !imported.assetId) throw new Error('import failed')
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const result = await window.ew.project.execute({
+      commandId: crypto.randomUUID(),
+      projectId,
+      commandType: 'CreatePin',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: {
+        nodeId: crypto.randomUUID(),
+        canvasId: window.__ewDebug!.canvasId(),
+        placementId: crypto.randomUUID(),
+        x: 350,
+        y: 250,
+        appearance: { kind: 'image', assetId: imported.assetId, crop: null },
+      },
+    })
+    if (result.status !== 'committed') throw new Error(`CreatePin: ${result.status}`)
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const placementId = await win.evaluate(async () => {
+    const scene = await window.ew.project.query('getCanvasScene', {
+      canvasId: window.__ewDebug!.canvasId(),
+    })
+    if (!scene.ok) throw new Error(scene.message)
+    return (scene.result as { items: Array<{ id: string }> }).items[0]!.id
+  })
+  const body = () => win.evaluate((id) => window.__ewDebug!.placementBody(id), placementId)
+
+  // Residency grants the texture shortly after mount.
+  await expect.poll(body, { timeout: 5_000 }).toBe('image')
+
+  // Move gesture: the texture must survive the drag and the commit.
+  await win.mouse.move(box.x + 350, box.y + 250)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 430, box.y + 290, { steps: 6 })
+  await win.mouse.up()
+  await expect.poll(body).toBe('image')
+
+  // Resize gesture via the se handle: the pre-fix regression turned
+  // the image into a permanent placeholder here.
+  const handleSe = await win.evaluate(
+    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
+  )
+  await win.mouse.move(box.x + handleSe.x, box.y + handleSe.y)
+  await win.mouse.down()
+  await win.mouse.move(box.x + handleSe.x + 50, box.y + handleSe.y + 50, { steps: 6 })
+  await win.mouse.up()
+  await expect.poll(body).toBe('image')
+  const stats = await win.evaluate(() => window.__ewDebug!.textureStats())
+  expect(stats.residentBytes).toBeGreaterThan(0)
+
+  // Pan far away: residency leaves and the texture releases…
+  await win.mouse.move(box.x + 300, box.y + 300)
+  await win.mouse.wheel(4000, 0)
+  await expect.poll(body, { timeout: 5_000 }).toBe('image-placeholder')
+  // …and panning back re-grants and re-attaches.
+  await win.mouse.wheel(-4000, 0)
+  await expect.poll(body, { timeout: 5_000 }).toBe('image')
+
+  await app.close()
+})

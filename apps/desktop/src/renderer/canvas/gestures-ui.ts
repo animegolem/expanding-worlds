@@ -65,7 +65,12 @@ export function attachGesturesUI(
     gfx.clear()
     uiHandles = []
     if (controller.state !== 'idle') return
-    const items = controller.selectedItems()
+    // Effective (ephemeral-aware) items: after a gesture commits, the
+    // canonical scene lags until the re-query lands — drawing handles
+    // from it would flash them at the pre-gesture position.
+    const items = controller
+      .selectedItems()
+      .map((item) => handle.effectiveItem(item.id) ?? item)
     const bounds = unionBounds(items)
     if (!bounds) return
     const tl = controller.camera.worldToScreen({ x: bounds.x, y: bounds.y })

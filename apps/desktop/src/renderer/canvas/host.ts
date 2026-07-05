@@ -47,6 +47,11 @@ export interface CanvasHostHandle {
   tools: ToolManager
   /** Live id of the mounted canvas (changes on openCanvas). */
   readonly canvasId: string
+  /** Item as currently displayed: ephemeral gesture values when a
+   * gesture is in flight (or committed but not yet re-queried),
+   * canonical scene values otherwise. Adornments drawn from anything
+   * else visibly detach from their objects (AI-IMP-025). */
+  effectiveItem(id: string): SceneItem | null
   /** §12.2 single live canvas: swap the mounted canvas, releasing
    * the previous scene's textures. */
   openCanvas(canvasId: string): Promise<void>
@@ -73,6 +78,9 @@ declare global {
       decorationEndpoints: (id: string) => { x1: number; y1: number; x2: number; y2: number } | null
       decorationVisible: (id: string) => boolean | null
       guides: () => SnapGuide[]
+      /** Body child label — 'image' vs 'image-placeholder' proves
+       * texture state at the pixel-adjacent level (AI-IMP-025). */
+      placementBody: (id: string) => string | null
     }
   }
 }
@@ -168,9 +176,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     project.revision,
   )
 
+  // Ephemeral gesture values, keyed by item id: the display objects
+  // are updated per pointermove, and the selection outline must track
+  // THOSE values, not the canonical scene (which only changes at
+  // commit) — otherwise chrome visibly detaches from the object
+  // during drags (AI-IMP-025). Cleared when a fresh scene lands.
+  const ephemeral = new Map<string, SceneItem>()
+
   function drawSelection(): void {
     selectionGfx.clear()
-    for (const item of controller.selectedItems()) {
+    for (const canonical of controller.selectedItems()) {
+      const item = ephemeral.get(canonical.id) ?? canonical
       const aabb = itemWorldAABB(item)
       if (!aabb) continue
       const tl = controller.camera.worldToScreen({ x: aabb.x, y: aabb.y })
@@ -206,19 +222,20 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const object = sync.get(id)
       const item = sync.item(id)
       if (!object || !item) return
+      let effective: SceneItem | null = null
       if (update.kind === 'placement' && item.itemKind === 'placement') {
-        const t = update.transform
-        registry
-          .resolve(item)
-          .update(object, { ...item, ...t } as SceneItem, item, resources)
+        effective = { ...item, ...update.transform } as SceneItem
       } else if (update.kind === 'decoration' && item.itemKind === 'decoration') {
-        registry
-          .resolve(item)
-          .update(object, { ...item, data: update.data } as SceneItem, item, resources)
+        effective = { ...item, data: update.data } as SceneItem
+      }
+      if (effective) {
+        ephemeral.set(id, effective)
+        registry.resolve(item).update(object, effective, item, resources)
       }
       drawSelection()
     },
     restoreItem(item: SceneItem) {
+      ephemeral.delete(item.id)
       const object = sync.get(item.id)
       if (object) registry.resolve(item).update(object, item, item, resources)
       drawSelection()
@@ -323,6 +340,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       app.renderer.background.color = color ?? '#17191d'
       sync.apply(scene.items)
       controller.setItems(scene.items)
+      // The canonical scene now reflects (or supersedes) any committed
+      // gesture; ephemeral overlays would only go stale from here.
+      ephemeral.clear()
       drawSelection()
       scheduleCull()
     } finally {
@@ -509,6 +529,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     },
     decorationVisible: (id: string) => sync.get(id)?.visible ?? null,
     guides: () => lastGuides.map((guide) => ({ ...guide })),
+    placementBody: (id: string) => {
+      const object = sync.get(id)
+      if (!object) return null
+      const body = object.children.find(
+        (child) => child.label === 'image' || child.label === 'image-placeholder',
+      )
+      return body?.label ?? object.children[0]?.label ?? null
+    },
   }
 
   let detachGestures: () => void = () => {}
@@ -522,6 +550,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     get canvasId() {
       return canvasId
     },
+    effectiveItem: (id: string) => ephemeral.get(id) ?? sync.item(id) ?? null,
     openCanvas,
     destroy() {
       textureBudget.releaseAll()

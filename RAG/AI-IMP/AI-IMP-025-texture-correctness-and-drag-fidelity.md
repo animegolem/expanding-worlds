@@ -6,7 +6,7 @@ tags:
   - canvas
   - renderer
   - bug
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-023]
 parent_epic: [[AI-EPIC-009-canvas-feel-pass]]
 confidence_score: 0.75
@@ -86,26 +86,26 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Script the black-box repro (import image → move → commit → pan
+- [x] Script the black-box repro (import image → move → commit → pan
       away/back) against __ewDebug texture/residency dumps; record
       the exact failing sequence in Issues Encountered.
-- [ ] Root-cause and fix; the fix must name the mechanism (stale cull
+- [x] Root-cause and fix; the fix must name the mechanism (stale cull
       after ephemeral/commit, dropped grant mid-load, or other) in
       the commit message.
-- [ ] Unit regression: texture-budget/culling race test covering the
+- [x] Unit regression: texture-budget/culling race test covering the
       identified sequence (and the revoke-while-loading neighbors).
-- [ ] e2e regression: place image, drag it, commit, assert its hash
+- [x] e2e regression: place image, drag it, commit, assert its hash
       is resident and sprite texture non-empty via __ewDebug; include
       the pan-away/pan-back cycle.
-- [ ] Adornments: drive selection outline/handles/label updates from
+- [x] Adornments: drive selection outline/handles/label updates from
       the same tick as ephemeral application; verify no one-frame
       separation (manual on hardware + ordering unit test if the
       seam allows).
-- [ ] Commit handoff: no texture re-set when hash unchanged; no
+- [x] Commit handoff: no texture re-set when hash unchanged; no
       visible flash at gesture end (manual verification on hardware,
       plus assertion that the display object identity survives the
       commit re-query).
-- [ ] Run gates: `pnpm -r build`, all unit suites, 15+ desktop e2e,
+- [x] Run gates: `pnpm -r build`, all unit suites, 15+ desktop e2e,
       §12.1 perf suite on hardware GL, lint.
 
 ### Acceptance Criteria
@@ -126,3 +126,27 @@ separation and no flash on release.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Root cause of the black box was sharper than the ticket's suspects:
+`appearanceSignature` included width/height, so ANY resize — every
+ephemeral frame of a resize gesture, and its commit — rebuilt the
+body into the lazy placeholder while the item never left residency;
+the Culler only fires hooks on transitions, so the "re-grant" the
+rebuild comment counted on never came. Grey box forever ("post move"
+in the owner's report was a corner-handle resize). Three fixes:
+(1) size left the signature — image bodies resize in place
+(sprite/placeholder dimensions), vector bodies redraw; (2) buildBody
+now records whether the container held or was acquiring a texture
+and re-acquires itself after a genuine identity rebuild;
+(3) `__acquiring` clears on rebuild so the re-acquire isn't blocked.
+Four unit tests cover resize-keeps-texture, rebuild-reacquires,
+rebuild-mid-flight, and lazy-stays-lazy; the e2e drives
+import→move→resize→pan-away→pan-back against a new
+`__ewDebug.placementBody` probe (texture state, not scene state).
+Adornment separation had a second mechanism beyond outline lag: on
+pointerup, handles redrew from canonical items before the re-query
+landed, flashing at the pre-gesture position. Host now keeps an
+ephemeral-values map (cleared when a fresh scene lands); the
+selection outline and gestures-ui handles both draw through
+`handle.effectiveItem`. Final visual confirmation of drag feel folds
+into the owner's epic-close hardware pass alongside AI-IMP-024's
+open items.
