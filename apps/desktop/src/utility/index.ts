@@ -112,13 +112,6 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
-    case 'request-derivatives':
-      return {
-        type: 'request-derivatives',
-        ok: false,
-        code: 'NOT_IMPLEMENTED',
-        message: 'derivatives land with AI-IMP-014',
-      }
   }
 }
 

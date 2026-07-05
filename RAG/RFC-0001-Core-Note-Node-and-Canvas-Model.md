@@ -1738,6 +1738,14 @@ exposing the project for editing. Missing regenerable derivatives are
 rebuilt lazily; missing canonical originals produce a visible integrity
 error.
 
+The single-writer lock records holder pid and hostname with a
+heartbeat. A lock whose recorded holder is on the same host and whose
+pid provably no longer exists is reclaimable immediately, without
+waiting out the heartbeat staleness window (rev 0.16); pid reuse errs
+toward waiting. A dead project service MUST surface as a visible
+error, never a silent hang: pending calls fail structurally and the
+application attempts one automatic service restart.
+
 ## 11.5 Settings
 
 Settings are two-tier, and a setting's tier follows its blast radius:

@@ -83,15 +83,6 @@ export type ImportAssetResponse =
   | { type: 'import-asset'; ok: true; assetId: string; deduplicated: boolean }
   | { type: 'import-asset'; ok: false; code: string; message: string }
 
-export interface RequestDerivativesRequest {
-  type: 'request-derivatives'
-  assetId: string
-}
-
-export type RequestDerivativesResponse =
-  | { type: 'request-derivatives'; ok: true }
-  | { type: 'request-derivatives'; ok: false; code: string; message: string }
-
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -99,7 +90,6 @@ export type ProjectRequest =
   | ExecuteCommandRequest
   | RunQueryRequest
   | ImportAssetRequest
-  | RequestDerivativesRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -108,7 +98,13 @@ export type ProjectResponse =
   | ExecuteCommandResponse
   | RunQueryResponse
   | ImportAssetResponse
-  | RequestDerivativesResponse
+
+/** Main → renderer service health (AI-IMP-053): broadcast when the
+ * utility process dies, restarts, or fails to come back. */
+export interface ServiceStatusEvent {
+  status: 'restarting' | 'ok' | 'failed'
+  message?: string
+}
 
 /** Envelope used on the main → utility request channel. */
 export interface UtilityEnvelope<T> {

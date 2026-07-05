@@ -3,7 +3,13 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import { blobRelativePath } from '@ew/persistence'
-import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage } from '@ew/protocol'
+import type {
+  ProjectRequest,
+  ProjectResponse,
+  ServiceStatusEvent,
+  UtilityEnvelope,
+  UtilityMessage,
+} from '@ew/protocol'
 
 /**
  * Main process: window lifecycle and narrow IPC routing only
@@ -14,18 +20,86 @@ import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage }
 
 let utility: UtilityProcess | null = null
 let nextId = 0
-const pending = new Map<number, (response: ProjectResponse) => void>()
+
+interface PendingCall {
+  resolve: (response: ProjectResponse) => void
+  request: ProjectRequest
+}
+const pending = new Map<number, PendingCall>()
+let restartAttempted = false
+
+/** Error response matching the request's shape, so callers see a
+ * structured failure instead of a promise that never settles
+ * (AI-IMP-053: a dead utility used to hang every Project API call). */
+function deadResponse(request: ProjectRequest, message: string): ProjectResponse {
+  switch (request.type) {
+    case 'execute-command':
+      return {
+        type: 'execute-command',
+        result: {
+          status: 'error',
+          commandId: request.envelope.commandId,
+          code: 'UTILITY_DIED',
+          message,
+        },
+      }
+    case 'close-project':
+      // Nothing left to close.
+      return { type: 'close-project', ok: true }
+    case 'ping':
+      return { pong: false, from: 'utility' } as unknown as ProjectResponse
+    default:
+      return { type: request.type, ok: false, code: 'UTILITY_DIED', message } as ProjectResponse
+  }
+}
+
+function broadcastService(event: ServiceStatusEvent): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('project:service', event)
+  }
+}
+
+function onUtilityDied(reason: string): void {
+  utility = null
+  projectReady = false
+  for (const call of pending.values()) call.resolve(deadResponse(call.request, reason))
+  pending.clear()
+  if (restartAttempted) {
+    console.error('[main] utility died again before recovering:', reason)
+    broadcastService({ status: 'failed', message: reason })
+    return
+  }
+  restartAttempted = true
+  console.error('[main] utility died, restarting:', reason)
+  broadcastService({ status: 'restarting', message: reason })
+  startUtility()
+  void callUtility({
+    type: 'init-project',
+    dir: projectDir(),
+    createIfMissing: true,
+    title: 'Untitled Project',
+  }).then((response) => {
+    if ('ok' in response && response.ok === false) {
+      broadcastService({ status: 'failed', message: response.message })
+      return
+    }
+    projectReady = true
+    restartAttempted = false
+    broadcastService({ status: 'ok' })
+  })
+}
 
 function startUtility(): void {
-  utility = utilityProcess.fork(join(__dirname, 'utility.cjs'), [], {
+  const proc = utilityProcess.fork(join(__dirname, 'utility.cjs'), [], {
     serviceName: 'ew-project-service',
   })
-  utility.on('message', (message: UtilityMessage) => {
+  utility = proc
+  proc.on('message', (message: UtilityMessage) => {
     if (message.kind === 'response') {
-      const resolve = pending.get(message.id)
-      if (resolve) {
+      const call = pending.get(message.id)
+      if (call) {
         pending.delete(message.id)
-        resolve(message.payload)
+        call.resolve(message.payload)
       }
       return
     }
@@ -33,13 +107,23 @@ function startUtility(): void {
       win.webContents.send('project:event', message.event)
     }
   })
+  proc.on('exit', (code) => {
+    // Deliberate shutdown kills the utility; only unexpected exits
+    // trigger recovery.
+    if (utility !== proc || closingCleanly) return
+    onUtilityDied(`project service exited unexpectedly (code ${code})`)
+  })
 }
 
 function callUtility(payload: ProjectRequest): Promise<ProjectResponse> {
   return new Promise((resolve) => {
+    if (!utility) {
+      resolve(deadResponse(payload, 'the project service is not running'))
+      return
+    }
     const id = ++nextId
-    pending.set(id, resolve)
-    utility?.postMessage({ id, payload } satisfies UtilityEnvelope<ProjectRequest>)
+    pending.set(id, { resolve, request: payload })
+    utility.postMessage({ id, payload } satisfies UtilityEnvelope<ProjectRequest>)
   })
 }
 
@@ -286,6 +370,14 @@ void app.whenReady().then(() => {
       }),
   )
   ipcMain.handle('project:fetch-url', (_event, url: string) => fetchUrlForImport(String(url)))
+  // Recovery e2e only (AI-IMP-053): the handler exists solely when
+  // the spec opts in, so a production build can never invoke it.
+  if (process.env['EW_TEST_HOOKS'] === '1') {
+    ipcMain.handle('test:kill-utility', () => {
+      utility?.kill()
+      return true
+    })
+  }
   void createWindow()
 
   app.on('activate', () => {

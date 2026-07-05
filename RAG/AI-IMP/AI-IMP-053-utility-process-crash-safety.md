@@ -5,12 +5,12 @@ tags:
   - Implementation
   - hardening
   - main-process
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-012-pre-alpha-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-053-utility-process-crash-safety
@@ -73,18 +73,18 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Utility exit rejects all pending calls with UTILITY_DIED;
+- [x] Utility exit rejects all pending calls with UTILITY_DIED;
       callUtility fails fast when no process is live.
-- [ ] One restart attempt re-forks and re-inits; service status
+- [x] One restart attempt re-forks and re-inits; service status
       events broadcast over the existing event channel; StatusStrip
       renders restarting/ok/failed.
-- [ ] Stale request-derivatives endpoint removed end to end
+- [x] Stale request-derivatives endpoint removed end to end
       (protocol, preload, utility); no callers existed.
-- [ ] .last-run.json untracked.
-- [ ] recovery.spec e2e: kill via gated test hook → in-flight and
+- [x] .last-run.json untracked.
+- [x] recovery.spec e2e: kill via gated test hook → in-flight and
       subsequent queries reject (not hang) → status surfaces →
       recovered session serves queries again.
-- [ ] Gates green locally and on CI.
+- [x] Gates green locally and on CI.
 
 ### Acceptance Criteria
 
@@ -103,3 +103,20 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+The recovery e2e's first run exposed the REAL root cause of the
+owner's black-canvas launches: the restarted utility hit the §11.4
+corpse-lock window — a killed process's heartbeat stays "fresh" for
+30 s, so every same-host relaunch inside it failed PROJECT_LOCKED.
+Scope grew deliberately: the lock now reclaims immediately when the
+recorded holder is same-host and its pid provably no longer exists
+(pid reuse errs toward waiting), unit-tested with a genuinely dead
+child pid; RFC §11.4 records both the reclaim rule and the
+no-silent-hang requirement (rev 0.16). This RESOLVES the parked
+PROJECT_LOCKED proposal's worst half — the remaining half (visible
+retry status on first boot rather than mid-session) rides the same
+StatusStrip surface and effectively ships with it. Recovery e2e:
+kill → structured rejection (raced calls may also land NO_PROJECT
+from the fresh service; both accepted) → status surfaces → recovered
+session serves the seeded note in under a second. Ping's dead-shape
+is a cast (`pong:false`) since PingResponse has no error arm — noted
+rather than reshaping the protocol for a diagnostic endpoint.

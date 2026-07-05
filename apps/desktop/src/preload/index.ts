@@ -5,6 +5,7 @@ import type {
   ImportAssetResponse,
   PingResponse,
   RunQueryResponse,
+  ServiceStatusEvent,
 } from '@ew/protocol'
 
 export type FetchUrlForImportResult =
@@ -17,6 +18,12 @@ export type FetchUrlForImportResult =
  * the bridge.
  */
 const api = {
+  test: {
+    /** Recovery e2e only: main registers the handler solely under
+     * EW_TEST_HOOKS=1, so this rejects in production. */
+    killUtility: (): Promise<boolean> =>
+      ipcRenderer.invoke('test:kill-utility') as Promise<boolean>,
+  },
   app: {
     /**
      * §10.2 quit flush: main intercepts window close, asks the
@@ -58,6 +65,13 @@ const api = {
         callback(change)
       ipcRenderer.on('project:event', listener)
       return () => ipcRenderer.removeListener('project:event', listener)
+    },
+    /** Utility-process health (AI-IMP-053): restarting / ok / failed. */
+    onServiceStatus: (callback: (event: ServiceStatusEvent) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, status: ServiceStatusEvent): void =>
+        callback(status)
+      ipcRenderer.on('project:service', listener)
+      return () => ipcRenderer.removeListener('project:service', listener)
     },
   },
 }

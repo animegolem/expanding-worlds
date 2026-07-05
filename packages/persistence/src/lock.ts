@@ -73,7 +73,11 @@ export class ProjectLock {
     }
 
     const holder = readHolder(path)
-    if (holder && Date.now() - Date.parse(holder.heartbeatAt) < staleAfterMs) {
+    if (
+      holder &&
+      Date.now() - Date.parse(holder.heartbeatAt) < staleAfterMs &&
+      !holderIsDead(holder)
+    ) {
       throw new ProjectLockedError(holder)
     }
     // Stale (or unreadable) lock: reclaim via atomic replace.
@@ -107,6 +111,25 @@ export class ProjectLock {
         // Already gone; releasing is idempotent.
       }
     }
+  }
+}
+
+/**
+ * Same-host corpse detection (AI-IMP-053): a crashed holder's
+ * heartbeat stays "fresh" for staleAfterMs, which made every
+ * relaunch inside that window fail with PROJECT_LOCKED (and blocked
+ * automatic utility-process recovery). When the recorded holder is
+ * on THIS host and its pid provably no longer exists, the lock is
+ * reclaimable immediately. PID reuse errs safe: a recycled pid looks
+ * alive, so we fall back to waiting out the heartbeat.
+ */
+function holderIsDead(holder: LockHolder): boolean {
+  if (holder.hostname !== hostname()) return false
+  try {
+    process.kill(holder.pid, 0)
+    return false
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === 'ESRCH'
   }
 }
 

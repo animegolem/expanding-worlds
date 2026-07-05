@@ -70,7 +70,7 @@ Create Pin dialog (waits for its chrome-era replacement).
 
 ### Functional Requirements
 
-- [ ] FR-1: Utility exit/error handling — pending calls reject, error surfaces, one restart attempt; stale request-derivatives endpoint removed; tracked test artifact untracked.
+- [x] FR-1: Utility exit/error handling — pending calls reject, error surfaces, one restart attempt; stale request-derivatives endpoint removed; tracked test artifact untracked.
 - [ ] FR-2: SceneSync/host emits a deterministic applied event; DecorationToolbar and NotePane refresh event-driven with no timers.
 - [ ] FR-3: Selection restyle for shape/line/path/connector stroke, fill, weight; cornerRadius on rects (validator, renderer, toolbar, RFC).
 - [ ] FR-4: MIN_ZOOM 0.002, SNAP_GUIDE_ALPHA 0.5, LABEL_HEIGHT_RATIO 0.14.

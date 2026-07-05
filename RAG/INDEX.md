@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 3 | 5 |
+| Planned | 3 | 4 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 7 | 51 |
+| Completed | 7 | 52 |
 | **Total** | **12** | **57** |
 
 ## In Progress
@@ -40,7 +40,7 @@
 > The owner's pre-release testing notes plus two external code reviews
 
 **IMPs:**
-- [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — planned
+- [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — completed
 - [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — planned
 - [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — planned
 - [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — planned
@@ -72,7 +72,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5045 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2662 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2670 LOC)
 - apps/desktop/e2e/notes.spec.ts (946 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (755 LOC)
@@ -99,6 +99,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
+- apps/desktop/src/main/index.ts (402 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
@@ -116,14 +117,13 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-structure.ts (323 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/persistence/src/handlers/pin.ts (314 LOC)
-- apps/desktop/src/main/index.ts (310 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
 
 ---
 
 ## Completed
 <details>
-<summary>7 EPICs, 51 IMPs completed</summary>
+<summary>7 EPICs, 52 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

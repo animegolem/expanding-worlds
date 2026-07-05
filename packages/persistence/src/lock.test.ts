@@ -1,5 +1,6 @@
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LOCK_FILENAME, ProjectLock, ProjectLockedError, type LockHolder } from './lock'
@@ -50,6 +51,26 @@ describe('ProjectLock', () => {
     const holder = JSON.parse(readFileSync(join(dir, LOCK_FILENAME), 'utf8')) as LockHolder
     expect(holder.pid).toBe(process.pid)
     lock.release()
+  })
+
+  it('reclaims a same-host lock whose holder pid is dead (AI-IMP-053)', () => {
+    // A guaranteed-dead same-host pid: a child that already exited.
+    const child = spawnSync(process.execPath, ['-e', ''])
+    const corpse: LockHolder = {
+      pid: child.pid!,
+      hostname: hostname(),
+      token: 'corpse-token',
+      acquiredAt: new Date().toISOString(),
+      heartbeatAt: new Date().toISOString(), // fresh heartbeat!
+    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(corpse))
+    const lock = ProjectLock.acquire(dir)
+    try {
+      const holder = JSON.parse(readFileSync(join(dir, LOCK_FILENAME), 'utf8')) as LockHolder
+      expect(holder.pid).toBe(process.pid)
+    } finally {
+      lock.release()
+    }
   })
 
   it('respects a fresh foreign lock', () => {
