@@ -17,6 +17,23 @@ export type FetchUrlForImportResult =
  * the bridge.
  */
 const api = {
+  app: {
+    /**
+     * §10.2 quit flush: main intercepts window close, asks the
+     * renderer to commit pending editor buffers, and waits for the
+     * ack (bounded by a timeout on the main side).
+     */
+    onFlushRequest: (callback: () => Promise<void>): (() => void) => {
+      const listener = (): void => {
+        void Promise.resolve()
+          .then(callback)
+          .catch(() => undefined)
+          .then(() => ipcRenderer.send('app:flush-done'))
+      }
+      ipcRenderer.on('app:flush', listener)
+      return () => ipcRenderer.removeListener('app:flush', listener)
+    },
+  },
   project: {
     ping: (): Promise<PingResponse> => ipcRenderer.invoke('project:ping') as Promise<PingResponse>,
     execute: async (envelope: CommandEnvelope): Promise<CommandResult> => {

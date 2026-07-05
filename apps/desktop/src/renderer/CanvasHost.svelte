@@ -8,6 +8,7 @@
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
   import { attachNodeMenu, type NodeMenuHandle } from './canvas/node-menu'
   import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
+  import { attachOpenNoteSurface, type OpenNoteSurfaceHandle } from './note/open-note'
 
   let {
     onready = undefined,
@@ -44,6 +45,7 @@
     let surfaces: ImportSurfacesHandle | null = null
     let menu: NodeMenuHandle | null = null
     let textEntry: TextEntryController | null = null
+    let openNote: OpenNoteSurfaceHandle | null = null
     let disposed = false
     const onNotice = (event: Event): void => {
       const detail = (event as CustomEvent<{ message: string; keepNodeIds?: string[] }>).detail
@@ -65,6 +67,7 @@
         ui = createDecorationsUi(h)
         tooling = attachBoardTooling(h, element, notify)
         textEntry = attachTextEntry(h, element)
+        openNote = attachOpenNoteSurface(h, element)
         handle = h
         onready?.(h, element)
       })
@@ -78,6 +81,7 @@
       surfaces?.destroy()
       menu?.destroy()
       textEntry?.destroy()
+      openNote?.destroy()
       tooling?.destroy()
       ui?.destroy()
       mounted?.destroy()

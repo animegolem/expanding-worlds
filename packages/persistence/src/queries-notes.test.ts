@@ -10,6 +10,8 @@ import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry } from './queries'
 import {
   registerNoteQueries,
+  type NoteLinkRecord,
+  type NoteUses,
   type PhantomView,
   type TitleSuggestion,
 } from './queries-notes'
@@ -183,6 +185,148 @@ describe('getPhantom (§7.2, invariant 28)', () => {
     // No reservation either: the title is still creatable.
     expect(createNote('Ghost Fleet')).toBeDefined()
     expect(run<PhantomView | null>('getPhantom', { titleKey: 'ghost fleet' })).toBeNull()
+  })
+})
+
+describe('getNoteLinks (§7.1, AI-IMP-044)', () => {
+  it('returns outbound records in range order with target lifecycle', () => {
+    const target = createNote('Harbor')
+    const trashedTarget = createNote('Reef')
+    trash(trashedTarget)
+    const source = createNote('Log', 'see [[Missing]] then [[Harbor]] and [[Reef]]')
+
+    const links = run<NoteLinkRecord[]>('getNoteLinks', { noteId: source })
+    expect(links).toHaveLength(3)
+    expect(links.map((l) => l.state)).toEqual(['unresolved', 'bound', 'bound'])
+    expect(links[1]).toMatchObject({ targetNoteId: target, targetLifecycleState: 'active' })
+    expect(links[2]).toMatchObject({
+      targetNoteId: trashedTarget,
+      targetLifecycleState: 'trashed',
+    })
+    expect(links[0]).toMatchObject({
+      targetNoteId: null,
+      targetTitleKey: 'missing',
+      displayText: 'Missing',
+      targetLifecycleState: null,
+    })
+  })
+
+  it('surfaces broken records as stored — never re-derived from titles', () => {
+    const target = createNote('Harbor')
+    const source = createNote('Log', 'see [[Harbor]]')
+    handle.db.run(
+      `UPDATE link SET state = 'broken', target_note_id = NULL, display_text = 'Harbor'
+       WHERE source_note_id = ? AND target_note_id = ?`,
+      source,
+      target,
+    )
+    const links = run<NoteLinkRecord[]>('getNoteLinks', { noteId: source })
+    expect(links).toHaveLength(1)
+    expect(links[0]).toMatchObject({ state: 'broken', displayText: 'Harbor', targetNoteId: null })
+  })
+})
+
+describe('getNoteUses (§7.3/§7.4, AI-IMP-044)', () => {
+  function insertNode(noteId: string | null): string {
+    const nodeId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO node (id, project_id, note_id, appearance_kind, appearance_color,
+                         created_at, updated_at)
+       VALUES (?, ?, ?, 'dot', '#fff', ?, ?)`,
+      nodeId,
+      handle.projectId,
+      noteId,
+      now,
+      now,
+    )
+    return nodeId
+  }
+
+  function insertPlacement(nodeId: string, canvasId: string, x: number, y: number): string {
+    const placementId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO placement (id, project_id, canvas_id, node_id, x, y, render_order,
+                              created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+      placementId,
+      handle.projectId,
+      canvasId,
+      nodeId,
+      x,
+      y,
+      now,
+      now,
+    )
+    return placementId
+  }
+
+  function insertCanvas(nodeId: string): string {
+    const canvasId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO canvas (id, project_id, node_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      canvasId,
+      handle.projectId,
+      nodeId,
+      now,
+      now,
+    )
+    return canvasId
+  }
+
+  it('groups placements canvas → node and lists unplaced nodes', () => {
+    const noteId = createNote('Kestrel')
+    const placed = insertNode(noteId)
+    const unplaced = insertNode(noteId)
+    insertPlacement(placed, handle.rootCanvasId, 10, 20)
+    insertPlacement(placed, handle.rootCanvasId, 30, 40)
+
+    const uses = run<NoteUses>('getNoteUses', { noteId })
+    expect(uses.totalPlacements).toBe(2)
+    expect(uses.canvases).toHaveLength(1)
+    expect(uses.canvases[0]).toMatchObject({ canvasId: handle.rootCanvasId, isRoot: true })
+    expect(uses.canvases[0].nodes).toHaveLength(1)
+    expect(uses.canvases[0].nodes[0]).toMatchObject({ nodeId: placed, appearanceKind: 'dot' })
+    expect(uses.canvases[0].nodes[0].placements).toHaveLength(2)
+    expect(uses.unplaced.map((n) => n.nodeId)).toEqual([unplaced])
+  })
+
+  it('splits one node across canvases with local placements and titles the group', () => {
+    const canvasNote = createNote('Ship Deck')
+    const canvasOwner = insertNode(canvasNote)
+    const nestedCanvas = insertCanvas(canvasOwner)
+
+    const noteId = createNote('Kestrel')
+    const nodeId = insertNode(noteId)
+    insertPlacement(nodeId, handle.rootCanvasId, 0, 0)
+    insertPlacement(nodeId, nestedCanvas, 5, 5)
+
+    const uses = run<NoteUses>('getNoteUses', { noteId })
+    expect(uses.canvases).toHaveLength(2)
+    const nested = uses.canvases.find((c) => c.canvasId === nestedCanvas)!
+    expect(nested).toMatchObject({ canvasTitle: 'Ship Deck', isRoot: false })
+    expect(nested.nodes[0].placements).toHaveLength(1)
+    const root = uses.canvases.find((c) => c.canvasId === handle.rootCanvasId)!
+    expect(root.nodes[0].placements).toHaveLength(1)
+    expect(uses.unplaced).toHaveLength(0)
+  })
+
+  it('excludes trashed nodes, placements, and canvases', () => {
+    const noteId = createNote('Kestrel')
+    const nodeId = insertNode(noteId)
+    const placementId = insertPlacement(nodeId, handle.rootCanvasId, 0, 0)
+
+    handle.db.run("UPDATE placement SET lifecycle_state = 'trashed' WHERE id = ?", placementId)
+    let uses = run<NoteUses>('getNoteUses', { noteId })
+    expect(uses.totalPlacements).toBe(0)
+    expect(uses.unplaced.map((n) => n.nodeId)).toEqual([nodeId])
+
+    handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
+    uses = run<NoteUses>('getNoteUses', { noteId })
+    expect(uses.unplaced).toHaveLength(0)
   })
 })
 

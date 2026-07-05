@@ -1,5 +1,6 @@
 import { hitTest, type CanvasScene, type SceneItem } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
+import { requestOpenNote } from '../note/open-note'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -140,6 +141,10 @@ export function attachNodeMenu(
         })
       })
     } else {
+      addEntry('Open Note', 'node-menu-open-note', () => {
+        closeMenu()
+        requestOpenNote(noteId)
+      })
       addEntry('Detach Note', 'node-menu-detach', () => {
         closeMenu()
         void execute('DetachNoteFromNode', { nodeId })

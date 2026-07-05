@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - editor
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-005-notes-links-phantoms]]
 confidence_score: 0.85
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-044-note-pane-shell-and-autosave
@@ -75,22 +75,22 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] `getNoteLinks` and `getNoteUses` queries with unit tests
+- [x] `getNoteLinks` and `getNoteUses` queries with unit tests
       (grouping, active-only nodes, unplaced group).
-- [ ] CM6 editor mounted in NotePane; loads a note by ID; title shown;
+- [x] CM6 editor mounted in NotePane; loads a note by ID; title shown;
       Markdown highlighting active.
-- [ ] NoteEditorController: dirty tracking, 1500 ms idle debounce,
+- [x] NoteEditorController: dirty tracking, 1500 ms idle debounce,
       blur / note-switch flush, `flushPending()` seam; exactly one
       UpdateNote per burst asserted in an e2e via project_revision
       delta.
-- [ ] Quit flush: main delays close until renderer flush resolves;
+- [x] Quit flush: main delays close until renderer flush resolves;
       e2e (or integration test) proves an edit inside its debounce
       window survives relaunch.
-- [ ] Local undo: Mod-z in a focused editor is CodeMirror history and
+- [x] Local undo: Mod-z in a focused editor is CodeMirror history and
       never dispatches structural undo.
-- [ ] Open-note entry points: double-click placement-with-note and
+- [x] Open-note entry points: double-click placement-with-note and
       node-menu Open Note both load the pane; e2e covers one path.
-- [ ] Gates: `pnpm -r build`, unit suites, lint, desktop e2e green.
+- [x] Gates: `pnpm -r build`, unit suites, lint, desktop e2e green.
 
 ### Acceptance Criteria
 
@@ -115,3 +115,22 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Landed as scoped with three notes. (1) Quit flush could not use
+beforeunload (a sandboxed renderer cannot await IPC there): main
+intercepts window close, requests a flush over `app:flush`, and
+proceeds on ack or a 2 s timeout — the e2e drives the REAL close
+chain via BrowserWindow.close() and proves a mid-debounce edit
+survives relaunch (first relaunch-based e2e in the suite; clean
+close releases the writer lock, so no 30 s corpse window). (2)
+UpdateNote deliberately skips the optimistic revision check
+(checkRevision: false): the editor buffer is the prose authority and
+an unrelated canvas command must never conflict an autosave; all
+other note commands keep the check. (3) The note pane builds its own
+CommandGateway over the preload bridge instead of borrowing the
+canvas host's, so the editor works even if canvas boot fails. Both
+entry points (double-click, node-menu Open Note) are e2e-covered,
+not just one. Blur-flush is implemented via CM domEventHandlers but
+only exercised indirectly (dirty-indicator e2e uses the debounce);
+IMP-047's rename flow will exercise the flush seam directly.
+Decorations/import e2e flaked once under full-suite load (known
+class, absorbed by retries:1, clean in isolation).

@@ -220,6 +220,23 @@ async function createWindow(): Promise<void> {
     },
   })
 
+  // §10.2 quit flush: hold the close until the renderer commits any
+  // editor buffer still inside its debounce window, bounded so a hung
+  // renderer can never trap the user.
+  let flushed = false
+  win.on('close', (event) => {
+    if (flushed || win.webContents.isDestroyed()) return
+    event.preventDefault()
+    const ack = new Promise<void>((resolve) => {
+      ipcMain.once('app:flush-done', () => resolve())
+    })
+    win.webContents.send('app:flush')
+    void Promise.race([ack, new Promise((resolve) => setTimeout(resolve, 2_000))]).then(() => {
+      flushed = true
+      win.close()
+    })
+  })
+
   const devUrl = process.env['ELECTRON_RENDERER_URL']
   if (devUrl) await win.loadURL(devUrl)
   else await win.loadFile(join(__dirname, '../renderer/index.html'))

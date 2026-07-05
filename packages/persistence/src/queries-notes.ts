@@ -18,6 +18,44 @@ export interface TitleSuggestion {
   referenceCount: number | null
 }
 
+export interface NoteLinkRecord {
+  linkId: string
+  rangeStart: number
+  rangeEnd: number
+  state: 'bound' | 'unresolved' | 'broken'
+  targetNoteId: string | null
+  targetTitleKey: string | null
+  displayText: string | null
+  /** Lifecycle of the bound target (In Trash rendering, §7.1); null
+   * unless state is 'bound'. */
+  targetLifecycleState: 'active' | 'trashed' | null
+}
+
+export interface NoteUsesNode {
+  nodeId: string
+  appearanceKind: string | null
+  appearanceColor: string | null
+  appearanceIcon: string | null
+  appearanceAssetId: string | null
+  tags: string[]
+  placements: Array<{ placementId: string; x: number; y: number }>
+}
+
+export interface NoteUsesCanvas {
+  canvasId: string
+  /** Title of the canvas's owning node's note; null when untitled. */
+  canvasTitle: string | null
+  isRoot: boolean
+  nodes: NoteUsesNode[]
+}
+
+export interface NoteUses {
+  canvases: NoteUsesCanvas[]
+  /** Active referencing nodes with zero active placements (§7.4). */
+  unplaced: NoteUsesNode[]
+  totalPlacements: number
+}
+
 export interface PhantomReference {
   linkId: string
   rangeStart: number
@@ -118,6 +156,125 @@ export function registerNoteQueries(registry: QueryRegistry): void {
         referenceCount: row.n,
       })),
     ]
+  })
+
+  // §7.1 outbound link records for editor decoration (AI-IMP-044):
+  // broken-ness lives ONLY here — presentation must never re-derive
+  // it from titles.
+  registry.register('getNoteLinks', (ctx, args): NoteLinkRecord[] => {
+    const { noteId } = args as { noteId: string }
+    return ctx.db.all<NoteLinkRecord>(
+      `SELECT l.id AS linkId, l.range_start AS rangeStart,
+              l.range_end AS rangeEnd, l.state,
+              l.target_note_id AS targetNoteId,
+              l.target_title_key AS targetTitleKey,
+              l.display_text AS displayText,
+              t.lifecycle_state AS targetLifecycleState
+       FROM link l LEFT JOIN note t ON t.id = l.target_note_id
+       WHERE l.project_id = ? AND l.source_note_id = ?
+       ORDER BY l.range_start`,
+      ctx.projectId,
+      noteId,
+    )
+  })
+
+  // §7.3/§7.4 location model: placements of every ACTIVE node
+  // referencing the note, grouped canvas → node, plus the Unplaced
+  // group. One query serves link activation, the Uses sidebar, and
+  // the future location chooser (EPIC-006).
+  registry.register('getNoteUses', (ctx, args): NoteUses => {
+    const { noteId } = args as { noteId: string }
+
+    const nodeRows = ctx.db.all<{
+      nodeId: string
+      appearanceKind: string | null
+      appearanceColor: string | null
+      appearanceIcon: string | null
+      appearanceAssetId: string | null
+    }>(
+      `SELECT n.id AS nodeId, n.appearance_kind AS appearanceKind,
+              n.appearance_color AS appearanceColor,
+              n.appearance_icon AS appearanceIcon,
+              n.appearance_asset_id AS appearanceAssetId
+       FROM node n
+       WHERE n.project_id = ? AND n.note_id = ? AND n.lifecycle_state = 'active'
+       ORDER BY n.id`,
+      ctx.projectId,
+      noteId,
+    )
+
+    const placementRows = ctx.db.all<{
+      placementId: string
+      x: number
+      y: number
+      nodeId: string
+      canvasId: string
+      canvasTitle: string | null
+    }>(
+      `SELECT p.id AS placementId, p.x, p.y, p.node_id AS nodeId,
+              c.id AS canvasId, cnote.title AS canvasTitle
+       FROM node n
+       JOIN placement p ON p.node_id = n.id AND p.lifecycle_state = 'active'
+       JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
+       LEFT JOIN node owner ON owner.id = c.node_id
+       LEFT JOIN note cnote ON cnote.id = owner.note_id
+       WHERE n.project_id = ? AND n.note_id = ? AND n.lifecycle_state = 'active'
+       ORDER BY c.id, p.node_id, p.id`,
+      ctx.projectId,
+      noteId,
+    )
+
+    const tagsFor = (nodeId: string): string[] =>
+      ctx.db
+        .all<{ name: string }>(
+          `SELECT t.name FROM tag t
+           JOIN tag_assignment ta ON ta.tag_id = t.id
+           WHERE ta.node_id = ? AND t.lifecycle_state = 'active'
+           ORDER BY t.name_key`,
+          nodeId,
+        )
+        .map((t) => t.name)
+
+    const nodes = new Map<string, NoteUsesNode>()
+    for (const row of nodeRows) {
+      nodes.set(row.nodeId, { ...row, tags: tagsFor(row.nodeId), placements: [] })
+    }
+
+    const canvases = new Map<string, NoteUsesCanvas>()
+    // Per-canvas node groups are rebuilt so one node placed on two
+    // canvases appears in both groups with only its local placements.
+    const groupNodes = new Map<string, Map<string, NoteUsesNode>>()
+    for (const row of placementRows) {
+      const base = nodes.get(row.nodeId)
+      if (!base) continue
+      base.placements.push({ placementId: row.placementId, x: row.x, y: row.y })
+
+      let canvas = canvases.get(row.canvasId)
+      if (!canvas) {
+        canvas = {
+          canvasId: row.canvasId,
+          canvasTitle: row.canvasTitle,
+          isRoot: row.canvasId === ctx.rootCanvasId,
+          nodes: [],
+        }
+        canvases.set(row.canvasId, canvas)
+        groupNodes.set(row.canvasId, new Map())
+      }
+      const perCanvas = groupNodes.get(row.canvasId)!
+      let grouped = perCanvas.get(row.nodeId)
+      if (!grouped) {
+        grouped = { ...base, placements: [] }
+        perCanvas.set(row.nodeId, grouped)
+        canvas.nodes.push(grouped)
+      }
+      grouped.placements.push({ placementId: row.placementId, x: row.x, y: row.y })
+    }
+
+    return {
+      canvases: [...canvases.values()],
+      unplaced: [...nodes.values()].filter((n) => n.placements.length === 0),
+      totalPlacements: placementRows.length,
+    }
   })
 
   registry.register('getPhantom', (ctx, args): PhantomView | null => {

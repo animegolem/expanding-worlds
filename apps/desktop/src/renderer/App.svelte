@@ -34,7 +34,8 @@
     grid-template-areas:
       'note-pane workspace'
       'status status';
-    grid-template-columns: 280px 1fr;
+    /* The note pane sizes itself (300px, 28px collapsed). */
+    grid-template-columns: auto 1fr;
     grid-template-rows: 1fr auto;
     height: 100%;
   }
