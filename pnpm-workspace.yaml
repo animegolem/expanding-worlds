@@ -4,3 +4,6 @@ packages:
 allowBuilds:
   esbuild: true
   electron: true
+  # electron-builder dep for the Squirrel.Windows target, which we
+  # don't use (NSIS); its postinstall stays off.
+  electron-winstaller: false

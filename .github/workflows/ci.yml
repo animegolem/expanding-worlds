@@ -43,6 +43,15 @@ jobs:
       - name: Quality gates (build, tests minus desktop e2e, lint, spike typecheck)
         run: pnpm check:ci
 
+      # pnpm's postinstall for electron proved unreliable on the
+      # runner (install finished in 5s with no binary; every launch
+      # then failed). install.js is idempotent — run it explicitly.
+      - name: Ensure Electron binary
+        working-directory: apps/desktop
+        run: |
+          node node_modules/electron/install.js
+          test -x node_modules/electron/dist/electron
+
       - name: Electron runtime libraries
         run: |
           sudo apt-get update
