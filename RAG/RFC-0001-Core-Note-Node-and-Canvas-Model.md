@@ -559,10 +559,29 @@ thin organizational layer through which users create an ad hoc schema.
 Tags do not belong to notes in Phase 1 and do not create built-in
 application behavior or entity types.
 
-Activating a tag opens a standard query or data view of nodes carrying
-that tag. Results SHOULD expose node appearance, attached note title
-when present, other tags, placement count, canvas locations, and an
-Unplaced group.
+Tags are app-managed metadata and are never serialized into or
+derived from note text (rev 0.17; an Obsidian-style frontmatter
+design was considered and rejected — bare placed art must be
+taggable, and nodes sharing a generic note must stay
+distinguishable). Note-attached tags are deferred, not rejected,
+pending demonstrated need.
+
+Activating a tag opens the **tag panel**: a search field with
+tab-completion against existing tag names, over result rows spanning
+every canvas in the project, unplaced nodes included. Rows use the
+shared §7.4 row grammar — node appearance or thumbnail, attached
+note title when present, other tags, location — with per-row
+open-note and fly-to-placement actions; a cross-canvas fly-to is a
+navigation event (§8.1). The panel header offers the **lens**: a
+toggle that dims the visible canvas to a fraction of full strength
+except matching placements, which keep full color plus an accent
+ring. The lens is a view state, not a selection — it survives pan
+and zoom until dropped (Escape or the toggle) and shares its
+implementation with §7.5 highlight mode. The panel is reachable
+through three doors that land on one surface: the charm bar's tag
+chips (§8.4), the ⌕ field's tag mode (§8.3), and tag chips on a
+note panel (§8.5). The query field takes exactly one tag in
+Phase 1; multi-tag AND/OR queries are deferred.
 
 Tag identity is independent of its name so renaming a tag does not
 rewrite assignments. Tag hierarchy, tag aliases, and tag-to-tag
