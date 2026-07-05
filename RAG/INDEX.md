@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 2 | 2 |
 | Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 8 | 56 |
-| **Total** | **12** | **57** |
+| Completed | 7 | 56 |
+| **Total** | **12** | **58** |
 
 ## In Progress
 
@@ -33,6 +33,19 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
+
+---
+
+### [[AI-EPIC-012-pre-alpha-hardening|EPIC-012: Pre alpha hardening]]
+> The owner's pre-release testing notes plus two external code reviews
+
+**IMPs:**
+- [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — completed
+- [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — completed
+- [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — completed
+- [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — completed
+- [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — completed
+- [[AI-IMP-058-external-review-follow-ups|IMP-058]] External review follow ups — in-progress
 
 ---
 
@@ -112,7 +125,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>8 EPICs, 56 IMPs completed</summary>
+<summary>7 EPICs, 56 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -159,11 +172,5 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — completed
   - [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — completed
   - [[AI-IMP-052-release-workflow-and-v050|IMP-052]] Release workflow and v050 — completed
-- [[AI-EPIC-012-pre-alpha-hardening|EPIC-012]] Pre alpha hardening — 2026-07-05
-  - [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — completed
-  - [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — completed
-  - [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — completed
-  - [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — completed
-  - [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — completed
 
 </details>

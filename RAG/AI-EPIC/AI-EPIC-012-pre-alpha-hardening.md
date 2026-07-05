@@ -6,14 +6,15 @@ tags:
   - hardening
   - feel
 date_created: 2026-07-05
-date_completed: 2026-07-05
-kanban_status: completed
+date_completed:
+kanban_status: in-progress
 AI_IMP_spawned:
   - AI-IMP-053
   - AI-IMP-054
   - AI-IMP-055
   - AI-IMP-056
   - AI-IMP-057
+  - AI-IMP-058
 ---
 
 # AI-EPIC-012-pre-alpha-hardening
@@ -78,6 +79,9 @@ Create Pin dialog (waits for its chrome-era replacement).
 - [x] FR-6: Wiki-link hover affordance names the follow gesture.
 - [x] FR-7: fetchUrlForImport rejects loopback/private/link-local targets, including post-DNS-resolution.
 - [x] FR-8: e2e envelope/query helpers consolidated; notes.spec migrated.
+- [ ] FR-9: UI-generated ids honor invariant 1 (UUIDv7); v4 command ids rejected. (owner-validated external review, AI-IMP-058)
+- [ ] FR-10: Lock reclaim verifies ownership after the rename — single writer holds. (AI-IMP-058)
+- [ ] FR-11: Phantom Create and Place carries the typed draft; blur-materialize race removed. (AI-IMP-058)
 
 ### Non-Functional Requirements
 
@@ -91,3 +95,6 @@ Create Pin dialog (waits for its chrome-era replacement).
 - AI-IMP-055 — selection restyle + corner rounding. (FR-3)
 - AI-IMP-056 — feel constants, label rename, link affordance. (FR-4..6)
 - AI-IMP-057 — SSRF guard + e2e helpers. (FR-7..8)
+- AI-IMP-058 — external-review follow-ups: UUIDv7 sweep, lock
+  reclaim verification, phantom draft threading. (FR-9..11; reopened
+  the epic after a second review pass validated three findings)
