@@ -64,7 +64,7 @@ chooser) belongs to EPIC-006.
 
 - [x] FR-1: CodeMirror 6 note pane with Markdown and wiki-link decoration.
 - [x] FR-2: Autosave gesture commits with debounce/blur/quit/forced-flush triggers per §10.2.
-- [ ] FR-3: Link state rendering and activation behavior per §7.1–7.3.
+- [x] FR-3: Link state rendering and activation behavior per §7.1–7.3.
 - [x] FR-4: Wiki-link title suggestions with phantom indicator per §7.2.
 - [x] FR-5: Phantom view with first-edit, Create Note, and Create and Place materialization per §7.2/§6.11.
 - [x] FR-6: Transactional rename rewrite with dirty-buffer flush and external-change folding.

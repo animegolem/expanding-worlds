@@ -103,6 +103,34 @@ export function onRenameNote(listener: (detail: RenameNoteDetail) => void): () =
   return () => window.removeEventListener(RENAME_NOTE_EVENT, handler)
 }
 
+/**
+ * §7.3 spatial half of bound-link activation: text already resolved
+ * (the pane loaded the note); the workspace resolves space by
+ * location count — center-and-highlight for exactly one location on
+ * the active canvas, a non-blocking notice otherwise.
+ */
+export const REVEAL_NOTE_EVENT = 'ew-reveal-note'
+
+export interface RevealNoteDetail {
+  noteId: string
+  title: string
+}
+
+export function requestRevealNote(noteId: string, title: string): void {
+  window.dispatchEvent(
+    new CustomEvent<RevealNoteDetail>(REVEAL_NOTE_EVENT, { detail: { noteId, title } }),
+  )
+}
+
+export function onRevealNote(listener: (detail: RevealNoteDetail) => void): () => void {
+  const handler = (event: Event): void => {
+    const detail = (event as CustomEvent<RevealNoteDetail>).detail
+    if (detail?.noteId) listener(detail)
+  }
+  window.addEventListener(REVEAL_NOTE_EVENT, handler)
+  return () => window.removeEventListener(REVEAL_NOTE_EVENT, handler)
+}
+
 export interface OpenNoteSurfaceHandle {
   destroy(): void
 }

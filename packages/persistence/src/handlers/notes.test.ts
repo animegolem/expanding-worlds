@@ -417,3 +417,107 @@ describe('titleKey consistency', () => {
     expect(noteRow(noteId)!.title_key).toBe(titleKey('  Ærøskøbing   HÖHLE '))
   })
 })
+
+describe('RelinkBrokenLinks / BreakNoteLinks (§7.1, AI-IMP-048)', () => {
+  function breakLinks(sourceId: string, displayText: string): void {
+    handle.db.run(
+      `UPDATE link SET state = 'broken', target_note_id = NULL,
+              target_title_key = NULL, display_text = ?
+       WHERE source_note_id = ?`,
+      displayText,
+      sourceId,
+    )
+  }
+
+  function linkStates(sourceId: string): Array<{ state: string; target_note_id: string | null }> {
+    return handle.db.all(
+      'SELECT state, target_note_id FROM link WHERE source_note_id = ? ORDER BY range_start',
+      sourceId,
+    )
+  }
+
+  it('relinks to an existing active note with a matching title_key', () => {
+    const oldId = createNote('Doomed')
+    const sourceId = createNote('Log', 'see [[Doomed]] and [[Doomed|them]]')
+    breakLinks(sourceId, 'Doomed')
+    committed('PurgeDraftNote', { noteId: oldId })
+    const newId = createNote('doomed') // same key, records stay broken
+    expect(linkStates(sourceId).every((l) => l.state === 'broken')).toBe(true)
+
+    const relink = committed('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Doomed',
+      targetNoteId: newId,
+    })
+    expect(linkStates(sourceId)).toEqual([
+      { state: 'bound', target_note_id: newId },
+      { state: 'bound', target_note_id: newId },
+    ])
+
+    // Inverse restores broken; its own inverse relinks again.
+    expect(relink.inverse).toMatchObject({ commandType: 'BreakNoteLinks' })
+    const broke = committed(relink.inverse!.commandType, relink.inverse!.payload)
+    expect(linkStates(sourceId).every((l) => l.state === 'broken')).toBe(true)
+    committed(broke.inverse!.commandType, broke.inverse!.payload)
+    expect(linkStates(sourceId).every((l) => l.state === 'bound')).toBe(true)
+  })
+
+  it('recreates from display text in the same transaction and sweeps other sources', () => {
+    const oldId = createNote('Doomed')
+    const sourceId = createNote('Log', 'see [[Doomed]]')
+    const otherId = createNote('Other', 'more [[Doomed]]')
+    breakLinks(sourceId, 'Doomed')
+    handle.db.run('DELETE FROM link WHERE source_note_id = ?', otherId)
+    committed('PurgeDraftNote', { noteId: oldId })
+    // Other's token is unresolved after a save (no note, no broken record).
+    committed('UpdateNote', { noteId: otherId, body: 'more [[Doomed]]' })
+
+    const newNoteId = uuidv7()
+    const before = handle.db.get<{ project_revision: number }>(
+      'SELECT project_revision FROM project WHERE id = ?',
+      handle.projectId,
+    )!.project_revision
+    committed('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Doomed',
+      create: { noteId: newNoteId, title: 'Doomed' },
+    })
+    const after = handle.db.get<{ project_revision: number }>(
+      'SELECT project_revision FROM project WHERE id = ?',
+      handle.projectId,
+    )!.project_revision
+    expect(after).toBe(before + 1) // one user-level command
+
+    expect(linkStates(sourceId)).toEqual([{ state: 'bound', target_note_id: newNoteId }])
+    // The sweep bound the OTHER source's unresolved token too.
+    expect(linkStates(otherId)).toEqual([{ state: 'bound', target_note_id: newNoteId }])
+  })
+
+  it('rejects key mismatches, missing broken records, and ambiguous payloads', () => {
+    const sourceId = createNote('Log', 'see [[Doomed]]')
+    const strangerId = createNote('Stranger')
+    breakLinks(sourceId, 'Doomed')
+
+    const mismatch = execute('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Doomed',
+      targetNoteId: strangerId,
+    })
+    expect(mismatch).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+
+    const none = execute('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Nothing Here',
+      create: { noteId: uuidv7(), title: 'Nothing Here' },
+    })
+    expect(none).toMatchObject({ status: 'error', code: 'NO_BROKEN_LINKS' })
+
+    const both = execute('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Doomed',
+      targetNoteId: strangerId,
+      create: { noteId: uuidv7(), title: 'Doomed' },
+    })
+    expect(both).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
+})

@@ -10,7 +10,8 @@
   import CreatePinDialog from './CreatePinDialog.svelte'
   import PlacementSourcePanel from './PlacementSourcePanel.svelte'
   import type { CanvasHostHandle } from './canvas/host'
-  import { onCreateAndPlace, requestOpenNote } from './note/open-note'
+  import { itemWorldAABB } from '@ew/canvas-engine'
+  import { onCreateAndPlace, onRevealNote, requestOpenNote } from './note/open-note'
 
   let hostHandle = $state<CanvasHostHandle | null>(null)
   let hostElement = $state<HTMLElement | null>(null)
@@ -25,6 +26,49 @@
       y: bounds.height / 2,
     })
   }
+
+  function boardNotice(message: string): void {
+    hostElement?.dispatchEvent(
+      new CustomEvent('ew-board-notice', { detail: { message }, bubbles: true }),
+    )
+  }
+
+  // §7.3 spatial resolution on bound-link activation. Zero: canvas
+  // unchanged + notice. One, on the active canvas: eased flight to
+  // the placement, selected. Anything else (many, or on another
+  // canvas — navigation is EPIC-006): viewport kept, non-blocking
+  // location-count notice; the grouped chooser is EPIC-006 scope.
+  onMount(() =>
+    onRevealNote(({ noteId, title }) => {
+      const h = hostHandle
+      if (!h) return
+      void (async () => {
+        const response = await window.ew.project.query('getNoteUses', { noteId })
+        if (!response.ok) return
+        const uses = response.result as {
+          totalPlacements: number
+          canvases: Array<{ canvasId: string; nodes: Array<{ placements: Array<{ placementId: string }> }> }>
+        }
+        if (uses.totalPlacements === 0) {
+          boardNotice(`“${title}” has no placed locations`)
+          return
+        }
+        const active = uses.canvases.find((canvas) => canvas.canvasId === h.canvasId)
+        const activePlacements = active?.nodes.flatMap((node) => node.placements) ?? []
+        if (uses.totalPlacements === 1 && activePlacements.length === 1) {
+          const placementId = activePlacements[0]!.placementId
+          const item = h.controller.items().find((candidate) => candidate.id === placementId)
+          if (!item) return
+          h.controller.selection.click(placementId)
+          h.flyTo(itemWorldAABB(item))
+          return
+        }
+        boardNotice(
+          `“${title}” has ${uses.totalPlacements} locations — the location chooser arrives with navigation`,
+        )
+      })()
+    }),
+  )
 
   // §7.2 Create and Place on Current Canvas: phantom materialization
   // that needs the active canvas and view center — one CreatePin

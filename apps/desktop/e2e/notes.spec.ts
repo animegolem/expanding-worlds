@@ -490,6 +490,228 @@ test('title collisions retain the draft and offer per-flow actions (§7.7)', asy
   await app.close()
 })
 
+test('bound activation loads the note and resolves space by location count (§17-13, §7.3)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-activate-'))
+  const { app, win } = await launch(projectDir)
+  const { noteId: alphaId, nodeId: alphaNode } = await seedPlacedNote(win, 'Alpha', 'target', {
+    x: 500,
+    y: 300,
+  })
+  const { noteId: sId } = await seedPlacedNote(win, 'S', 'go [[Alpha]] or [[NoWhere]]', {
+    x: 250,
+    y: 200,
+  })
+  await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const result = await window.ew.project.execute({
+      commandId: crypto.randomUUID(),
+      projectId: (project.result as { id: string }).id,
+      commandType: 'CreateNote',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: { noteId: crypto.randomUUID(), title: 'NoWhere' },
+    })
+    if (result.status !== 'committed') throw new Error(result.status)
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 250, box.y + 200)
+  await expect(win.getByTestId('note-editor')).toContainText('Alpha')
+
+  // One location on the active canvas: note loads, camera flies,
+  // the placement highlights (poll — the flight is eased).
+  const alphaPlacement = await win.evaluate(async (id) => {
+    const uses = await window.ew.project.query('getNoteUses', { noteId: id })
+    if (!uses.ok) throw new Error(uses.message)
+    const result = uses.result as {
+      canvases: Array<{ nodes: Array<{ placements: Array<{ placementId: string }> }> }>
+    }
+    return result.canvases[0]!.nodes[0]!.placements[0]!.placementId
+  }, alphaId)
+  await win.locator('.cm-content [data-link-title="Alpha"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Alpha/)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
+    .toContain(alphaPlacement)
+  await expect
+    .poll(async () => {
+      const camera = await win.evaluate(() => window.__ewDebug!.camera())
+      return Math.abs(camera.x) > 1 || Math.abs(camera.y) > 1 || Math.abs(camera.zoom - 1) > 0.01
+    })
+    .toBe(true)
+
+  // Zero locations: note loads, canvas untouched, non-blocking notice.
+  await win.evaluate((id) => {
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+  }, sId)
+  await expect(win.getByTestId('note-editor')).toContainText('NoWhere')
+  await win.locator('.cm-content [data-link-title="NoWhere"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/NoWhere/)
+  await expect(win.getByTestId('board-notice')).toContainText('no placed locations')
+  await win.getByTestId('board-notice-dismiss').click()
+
+  // Many locations: viewport kept, count notice (chooser is EPIC-006).
+  await win.evaluate(
+    async ({ alphaNode }) => {
+      const project = await window.ew.project.query('getProject')
+      if (!project.ok) throw new Error(project.message)
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId: (project.result as { id: string }).id,
+        commandType: 'CreatePlacement',
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload: {
+          placementId: crypto.randomUUID(),
+          canvasId: window.__ewDebug!.canvasId(),
+          nodeId: alphaNode,
+          x: 900,
+          y: 700,
+        },
+      })
+      if (result.status !== 'committed') throw new Error(result.status)
+    },
+    { alphaNode },
+  )
+  await win.evaluate((id) => {
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+  }, sId)
+  await expect(win.getByTestId('note-editor')).toContainText('Alpha')
+  // Let any in-flight camera animation land before sampling (eased
+  // camera: never read synchronously — EPIC-010 lesson).
+  await expect
+    .poll(() =>
+      win.evaluate(async () => {
+        const a = window.__ewDebug!.camera()
+        await new Promise((resolve) => setTimeout(resolve, 150))
+        const b = window.__ewDebug!.camera()
+        return a.x === b.x && a.y === b.y && a.zoom === b.zoom
+      }),
+    )
+    .toBe(true)
+  const cameraBefore = await win.evaluate(() => window.__ewDebug!.camera())
+  await win.locator('.cm-content [data-link-title="Alpha"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('board-notice')).toContainText('2 locations')
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(cameraBefore)
+
+  await app.close()
+})
+
+test('trashed and broken links offer explicit recovery (§17-22)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-degraded-'))
+  const { app, win } = await launch(projectDir)
+  // The source binds BEFORE the purges, so the purge converts its
+  // bound records to broken; the recreated Wraith proves broken
+  // records never re-bind by title (invariant 27).
+  const { sId } = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    const reefId = crypto.randomUUID()
+    const wraithId = crypto.randomUUID()
+    const ghostId = crypto.randomUUID()
+    const sId = crypto.randomUUID()
+    await run('CreateNote', { noteId: reefId, title: 'Reef' })
+    await run('CreateNote', { noteId: wraithId, title: 'Wraith' })
+    await run('CreateNote', { noteId: ghostId, title: 'Ghost' })
+    await run('CreateNote', {
+      noteId: sId,
+      title: 'S',
+      body: 'dive [[Reef]] near [[Wraith]] and [[Ghost]]',
+    })
+    await run('CreatePin', {
+      nodeId: crypto.randomUUID(),
+      canvasId: window.__ewDebug!.canvasId(),
+      placementId: crypto.randomUUID(),
+      x: 300,
+      y: 240,
+      appearance: { kind: 'dot', color: '#ff7700' },
+      note: { kind: 'attach', noteId: sId },
+    })
+    await run('TrashNote', { noteId: reefId })
+    await run('TrashNote', { noteId: wraithId })
+    await run('PurgeRecord', { kind: 'note', id: wraithId })
+    await run('TrashNote', { noteId: ghostId })
+    await run('PurgeRecord', { kind: 'note', id: ghostId })
+    await run('CreateNote', { noteId: crypto.randomUUID(), title: 'Wraith' })
+    return { sId }
+  })
+  expect(sId).toBeTruthy()
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+
+  // Broken with an active title_key match → Relink flips the records.
+  await expect(win.locator('.cm-content [data-link-title="Wraith"]')).toHaveAttribute(
+    'data-link-state',
+    'broken',
+  )
+  await win.locator('.cm-content [data-link-title="Wraith"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('broken-link-panel')).toBeVisible()
+  await win.getByTestId('broken-relink').click()
+  await expect(win.locator('.cm-content [data-link-title="Wraith"]')).toHaveAttribute(
+    'data-link-state',
+    'bound',
+    { timeout: 5_000 },
+  )
+
+  // Broken with no match → Create Note from the display text; the
+  // created note opens.
+  await win.locator('.cm-content [data-link-title="Ghost"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('broken-link-panel')).toBeVisible()
+  await win.getByTestId('broken-create').click()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Ghost/)
+
+  // Back in S, the Ghost token is bound now; Reef is bound-trashed →
+  // In Trash, read-only, Restore re-enables editing.
+  await win.evaluate((id) => {
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+  }, sId)
+  await expect(win.locator('.cm-content [data-link-title="Ghost"]')).toHaveAttribute(
+    'data-link-state',
+    'bound',
+  )
+  await expect(win.locator('.cm-content [data-link-title="Reef"]')).toHaveAttribute(
+    'data-link-state',
+    'bound-trashed',
+  )
+  await win.locator('.cm-content [data-link-title="Reef"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Reef/)
+  await expect(win.getByTestId('note-in-trash')).toBeVisible()
+  await expect(win.locator('.cm-content')).toHaveAttribute('contenteditable', 'false')
+  await win.getByTestId('note-restore').click()
+  await expect(win.getByTestId('note-in-trash')).toBeHidden()
+  await expect(win.locator('.cm-content')).toHaveAttribute('contenteditable', 'true')
+
+  await app.close()
+})
+
 test('an edit inside its debounce window survives quit (§10.2 quit flush)', async () => {
   const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-quit-'))
   const first = await launch(projectDir)

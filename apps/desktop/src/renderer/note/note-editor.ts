@@ -96,8 +96,9 @@ export class NoteEditorController {
     this.#note = note
     this.#lastSavedBody = note.body
     this.#setDirty(false)
-    // Fresh state = fresh local history: undo never crosses notes.
-    this.#view?.setState(this.#stateFor(note.body))
+    // Fresh state = fresh local history: undo never crosses notes. A
+    // trashed note opens read-only (§7.1 In Trash view).
+    this.#view?.setState(this.#stateFor(note.body, note.lifecycleState === 'trashed'))
     this.#hooks.onNoteChanged?.(note)
   }
 
@@ -204,10 +205,12 @@ export class NoteEditorController {
     await commit
   }
 
-  #stateFor(body: string): EditorState {
+  #stateFor(body: string, readOnly = false): EditorState {
     return EditorState.create({
       doc: body,
       extensions: [
+        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(!readOnly),
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         markdown(),

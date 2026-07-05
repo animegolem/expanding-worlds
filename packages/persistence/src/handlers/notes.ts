@@ -1,14 +1,18 @@
 import {
+  COMMAND_BREAK_NOTE_LINKS,
   COMMAND_CREATE_NOTE,
   COMMAND_PURGE_DRAFT_NOTE,
+  COMMAND_RELINK_BROKEN_LINKS,
   COMMAND_RENAME_NOTE,
   COMMAND_TRASH_NOTE,
   COMMAND_UPDATE_NOTE,
   DomainError,
   type AffectedRecord,
+  type BreakNoteLinksPayload,
   type CommandRegistry,
   type CreateNotePayload,
   type PurgeDraftNotePayload,
+  type RelinkBrokenLinksPayload,
   type RenameNotePayload,
   type TrashNotePayload,
   type UpdateNotePayload,
@@ -271,6 +275,145 @@ export function registerNoteHandlers(registry: CommandRegistry<CommandContext>):
         commandType: COMMAND_CREATE_NOTE,
         commandVersion: 1,
         payload: { noteId: note.id, title: note.title, body: note.body } satisfies CreateNotePayload,
+      },
+    }
+  })
+
+  // §7.1 broken-link recovery (AI-IMP-048): flips the source's broken
+  // records for one title_key to bound — the only path out of broken
+  // besides editing the token to a different title, and an explicit
+  // per-user action as invariant 27 demands.
+  registry.register<RelinkBrokenLinksPayload>(COMMAND_RELINK_BROKEN_LINKS, 1, (ctx, payload) => {
+    if (typeof payload?.sourceNoteId !== 'string' || typeof payload?.displayTitle !== 'string') {
+      throw new DomainError(
+        'VALIDATION_FAILED',
+        'RelinkBrokenLinks requires sourceNoteId and displayTitle',
+      )
+    }
+    if ((payload.targetNoteId === undefined) === (payload.create === undefined)) {
+      throw new DomainError(
+        'VALIDATION_FAILED',
+        'RelinkBrokenLinks requires exactly one of targetNoteId or create',
+      )
+    }
+    requireActiveNote(ctx, payload.sourceNoteId)
+    const key = titleKey(payload.displayTitle)
+    const broken = ctx.db
+      .all<{ id: string; display_text: string }>(
+        `SELECT id, display_text FROM link
+         WHERE source_note_id = ? AND state = 'broken'`,
+        payload.sourceNoteId,
+      )
+      .filter((row) => titleKey(row.display_text) === key)
+    if (broken.length === 0) {
+      throw new DomainError('NO_BROKEN_LINKS', `no broken links for "${payload.displayTitle}"`, {
+        sourceNoteId: payload.sourceNoteId,
+        titleKey: key,
+      })
+    }
+
+    const affected: AffectedRecord[] = []
+    let targetId: string
+    if (payload.create) {
+      // Recreate from the display text in the same transaction.
+      const { title, key: newKey } = requireLinkableTitle(payload.create.title)
+      if (newKey !== key) {
+        throw new DomainError(
+          'VALIDATION_FAILED',
+          'the created title must match the broken display text (else the next save would re-resolve the token differently)',
+        )
+      }
+      requireTitleFree(ctx, newKey, title)
+      const now = ctx.now()
+      ctx.db.run(
+        `INSERT INTO note (id, project_id, title, title_key, body, created_at, updated_at)
+         VALUES (?, ?, ?, ?, '', ?, ?)`,
+        payload.create.noteId,
+        ctx.projectId,
+        title,
+        newKey,
+        now,
+        now,
+      )
+      targetId = payload.create.noteId
+      affected.push({ kind: 'note', id: targetId })
+      // Materialization sweep for OTHER sources' unresolved tokens;
+      // broken records are only touched by the explicit flip below.
+      affected.push(...bindUnresolvedMatching(ctx, newKey, targetId))
+    } else {
+      const target = requireActiveNote(ctx, payload.targetNoteId!)
+      if (target.title_key !== key) {
+        throw new DomainError(
+          'VALIDATION_FAILED',
+          'the relink target title must match the broken display text (else the next save would re-resolve the token differently)',
+          { targetTitleKey: target.title_key, brokenTitleKey: key },
+        )
+      }
+      targetId = target.id
+    }
+
+    const now = ctx.now()
+    for (const row of broken) {
+      ctx.db.run(
+        `UPDATE link SET state = 'bound', target_note_id = ?, target_title_key = NULL,
+                display_text = NULL, updated_at = ? WHERE id = ?`,
+        targetId,
+        now,
+        row.id,
+      )
+      affected.push({ kind: 'link', id: row.id })
+    }
+
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_BREAK_NOTE_LINKS,
+        commandVersion: 1,
+        payload: {
+          linkIds: broken.map((row) => row.id),
+          displayTitle: broken[0]!.display_text,
+        } satisfies BreakNoteLinksPayload,
+      },
+    }
+  })
+
+  // Internal inverse of RelinkBrokenLinks (undo path only).
+  registry.register<BreakNoteLinksPayload>(COMMAND_BREAK_NOTE_LINKS, 1, (ctx, payload) => {
+    if (!Array.isArray(payload?.linkIds) || typeof payload?.displayTitle !== 'string') {
+      throw new DomainError(
+        'VALIDATION_FAILED',
+        'BreakNoteLinks requires linkIds and displayTitle',
+      )
+    }
+    const now = ctx.now()
+    const affected: AffectedRecord[] = []
+    const relink: RelinkBrokenLinksPayload = {
+      sourceNoteId: '',
+      displayTitle: payload.displayTitle,
+    }
+    for (const linkId of payload.linkIds) {
+      const row = ctx.db.get<{ id: string; source_note_id: string; target_note_id: string }>(
+        "SELECT id, source_note_id, target_note_id FROM link WHERE id = ? AND state = 'bound'",
+        linkId,
+      )
+      if (!row) continue
+      relink.sourceNoteId = row.source_note_id
+      relink.targetNoteId = row.target_note_id
+      ctx.db.run(
+        `UPDATE link SET state = 'broken', target_note_id = NULL, target_title_key = NULL,
+                display_text = ?, updated_at = ? WHERE id = ?`,
+        payload.displayTitle,
+        now,
+        linkId,
+      )
+      affected.push({ kind: 'link', id: linkId })
+    }
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_RELINK_BROKEN_LINKS,
+        commandVersion: 1,
+        payload: relink,
       },
     }
   })

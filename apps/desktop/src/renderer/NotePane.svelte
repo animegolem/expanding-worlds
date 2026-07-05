@@ -14,12 +14,14 @@
     type NoteRecord,
     type ProjectPort,
   } from './note/note-editor'
+  import { titleKey } from '@ew/domain'
   import {
     onOpenNote,
     onOpenPhantom,
     onRenameNote,
     requestCreateAndPlace,
     requestOpenNote,
+    requestRevealNote,
   } from './note/open-note'
   import { createNoteProjectPort } from './note/project-port'
   import { wikiLinkCompletion } from './note/suggestions'
@@ -207,6 +209,79 @@
     conflict = null
   }
 
+  // ---- link activation + degraded links (§7.1/§7.3, AI-IMP-048) ----
+
+  let brokenLink = $state<{
+    displayTitle: string
+    activeMatch: { id: string; title: string } | null
+    trashedMatch: boolean
+  } | null>(null)
+
+  async function findByTitle(
+    title: string,
+  ): Promise<{ id: string; title: string; lifecycleState: string } | null> {
+    const project = paneProject
+    if (!project) return null
+    const key = titleKey(title)
+    const rows = await project.query<
+      Array<{ id: string; title: string; titleKey: string; lifecycleState: string }>
+    >('listNoteTitles')
+    return rows.find((row) => row.titleKey === key) ?? null
+  }
+
+  /** §7.3: the note pane loads the target immediately and
+   * unconditionally; the workspace resolves space independently. */
+  async function activateBound(title: string): Promise<void> {
+    const match = await findByTitle(title)
+    if (!match) return
+    requestOpenNote(match.id)
+    if (match.lifecycleState === 'active') requestRevealNote(match.id, match.title)
+  }
+
+  async function activateBroken(title: string): Promise<void> {
+    const match = await findByTitle(title)
+    brokenLink = {
+      displayTitle: title,
+      activeMatch: match && match.lifecycleState === 'active' ? match : null,
+      trashedMatch: match?.lifecycleState === 'trashed',
+    }
+  }
+
+  /** §7.1 explicit recovery: both paths flip the RECORDS via
+   * RelinkBrokenLinks — records never re-bind by title. */
+  async function resolveBroken(kind: 'create' | 'relink'): Promise<void> {
+    const project = paneProject
+    const source = paneController?.note
+    const panel = brokenLink
+    if (!project || !source || !panel) return
+    const noteId = crypto.randomUUID()
+    const payload =
+      kind === 'create'
+        ? { sourceNoteId: source.id, displayTitle: panel.displayTitle, create: { noteId, title: panel.displayTitle } }
+        : { sourceNoteId: source.id, displayTitle: panel.displayTitle, targetNoteId: panel.activeMatch!.id }
+    const result = await project.execute('RelinkBrokenLinks', payload)
+    brokenLink = null
+    if (result.status === 'error') {
+      error = result.message
+    } else if (kind === 'create' && result.status === 'committed') {
+      requestOpenNote(noteId)
+    }
+  }
+
+  async function restoreOpenNote(): Promise<void> {
+    const controller = paneController
+    const current = controller?.note
+    const project = paneProject
+    if (!controller || !current || !project) return
+    const result = await project.execute('RestoreRecord', { kind: 'note', id: current.id })
+    if (result.status === 'error') {
+      error = result.message
+      return
+    }
+    // Reopen to rebuild the editable state.
+    await controller.open(current.id)
+  }
+
   onMount(() => {
     let controller: NoteEditorController | null = null
     let disposers: Array<() => void> = []
@@ -234,7 +309,9 @@
           wikiLinkCompletion(port),
           wikiLinkActivation((link) => {
             if (link.state === 'unresolved') void openPhantom(link.title)
-            // Bound/trashed/broken activation lands in AI-IMP-048.
+            else if (link.state === 'bound' || link.state === 'bound-trashed')
+              void activateBound(link.title)
+            else if (link.state === 'broken') void activateBroken(link.title)
           }),
         ],
       })
@@ -331,6 +408,35 @@
   </header>
   {#if error && !collapsed}
     <p class="error" data-testid="note-pane-error">{error}</p>
+  {/if}
+  {#if !collapsed && note?.lifecycleState === 'trashed'}
+    <!-- §7.1: a bound link to a trashed note opens it with a clear
+         In Trash state and a Restore action; the body is read-only. -->
+    <div class="trash-banner" data-testid="note-in-trash">
+      <span>In Trash — read-only</span>
+      <button type="button" data-testid="note-restore" onclick={() => void restoreOpenNote()}>
+        Restore
+      </button>
+    </div>
+  {/if}
+  {#if !collapsed && brokenLink}
+    <div class="broken-panel" data-testid="broken-link-panel">
+      <p>“{brokenLink.displayTitle}” was permanently deleted; this link is broken.</p>
+      {#if brokenLink.activeMatch}
+        <button type="button" data-testid="broken-relink" onclick={() => void resolveBroken('relink')}>
+          Relink to “{brokenLink.activeMatch.title}”
+        </button>
+      {:else if brokenLink.trashedMatch}
+        <p class="hint">A trashed note holds this title; restore it from Trash first.</p>
+      {:else}
+        <button type="button" data-testid="broken-create" onclick={() => void resolveBroken('create')}>
+          Create Note from “{brokenLink.displayTitle}”
+        </button>
+      {/if}
+      <button type="button" data-testid="broken-cancel" onclick={() => (brokenLink = null)}>
+        Cancel
+      </button>
+    </div>
   {/if}
   <div
     class="editor"
@@ -564,6 +670,48 @@
 
   .ref-count {
     color: #888;
+  }
+
+  .trash-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0.5rem 0.25rem;
+    padding: 0.3rem 0.5rem;
+    background: #f3ead3;
+    border: 1px solid #d9c68a;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    color: #7a5f14;
+  }
+
+  .trash-banner button,
+  .broken-panel button {
+    padding: 0.2rem 0.55rem;
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+
+  .broken-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0 0.5rem 0.25rem;
+    padding: 0.4rem 0.5rem;
+    background: #f7e4e2;
+    border: 1px solid #d9a09a;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    color: #7c2d27;
+  }
+
+  .broken-panel p {
+    margin: 0;
+  }
+
+  .broken-panel .hint {
+    color: #9a5c56;
   }
 
   .empty,
