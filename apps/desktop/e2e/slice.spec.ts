@@ -43,6 +43,19 @@ async function revision(win: Page): Promise<number> {
   })
 }
 
+/** Waits out floating camera-persist debounces (~500ms after camera
+ * motion) so exact revision-delta assertions stay deterministic on
+ * slow runners. */
+async function settledRevision(win: Page): Promise<number> {
+  let prev = await revision(win)
+  for (;;) {
+    await win.waitForTimeout(650)
+    const next = await revision(win)
+    if (next === prev) return next
+    prev = next
+  }
+}
+
 async function exec(ctx: Ctx, commandType: string, payload: unknown): Promise<unknown> {
   return ctx.win.evaluate(
     async ({ projectId, commandType, payload }) => {
@@ -210,7 +223,7 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   ).toBe(true)
   // Unsupported file: clear notice, zero new records.
   const beforeReject = await win.evaluate(() => window.__ewDebug!.sceneStats().placements)
-  const beforeRev = await revision(win)
+  const beforeRev = await settledRevision(win)
   await dropFiles([{ name: 'notes.txt', type: 'text/plain', b64: btoa('hello') }])
   await expect(win.getByTestId('import-error')).toBeVisible()
   expect(await win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(beforeReject)
