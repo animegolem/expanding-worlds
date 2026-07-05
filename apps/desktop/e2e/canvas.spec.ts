@@ -421,3 +421,49 @@ test('image texture survives move, resize, and residency round-trip (AI-IMP-025)
 
   await app.close()
 })
+
+test('sub-pixel strokes clamp to one device pixel and recover (AI-IMP-040)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-hairline-'))
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  })
+  const win = await app.firstWindow()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+
+  const decorationId = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const id = crypto.randomUUID()
+    const result = await window.ew.project.execute({
+      commandId: crypto.randomUUID(),
+      projectId: (project.result as { id: string }).id,
+      commandType: 'CreateDecoration',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: {
+        decorationId: id,
+        canvasId: window.__ewDebug!.canvasId(),
+        kind: 'line',
+        data: { x1: 0, y1: 0, x2: 400, y2: 300, stroke: '#dde3ea', strokeWidth: 2 },
+      },
+    })
+    if (result.status !== 'committed') throw new Error(result.status)
+    return id
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 1)
+
+  // Far out: 2 world units × zoom 0.05 = 0.1px → renders at 1px (20).
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.05 }))
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.renderedStroke(id), decorationId))
+    .toBeCloseTo(20)
+
+  // Back at identity the true width returns.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.renderedStroke(id), decorationId))
+    .toBeCloseTo(2)
+
+  await app.close()
+})

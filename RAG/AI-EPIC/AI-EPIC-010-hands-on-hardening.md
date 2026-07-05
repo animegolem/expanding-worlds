@@ -20,6 +20,7 @@ AI_IMP_spawned:
   - AI-IMP-037
   - AI-IMP-038
   - AI-IMP-039
+  - AI-IMP-040
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -116,6 +117,10 @@ rotation is a recorded limitation). No new tools or panels.
       the toolbar width control is a weight multiplier on the
       screen-pixel baseline (AI-IMP-039, RFC rev 0.14).
 
+- [x] FR-15: Strokes never render below 1 device pixel (render-only
+      clamp); draw previews show the final result including fill and
+      arrow silhouettes (AI-IMP-040).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -140,3 +145,5 @@ rotation is a recorded limitation). No new tools or panels.
   (RFC rev 0.13).
 - AI-IMP-039 (lead): legible-at-creation stroke weight; width
   control becomes a multiplier (RFC rev 0.14).
+- AI-IMP-040 (lead): render fidelity — minimum stroke render width,
+  WYSIWYG draw previews.

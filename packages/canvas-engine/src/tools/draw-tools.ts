@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js'
 import { ARROW_LEGIBLE_SCREEN_PX, STROKE_LEGIBLE_SCREEN_PX } from '../decoration-data'
 import { hitTest, itemWorldAABB } from '../hit-test'
+import { arrowPolygon } from '../renderers/decorations/line'
 import { shapeArrowPolygon } from '../renderers/decorations/shape'
 import type { Point } from '../camera'
 import type { ScenePlacement, SceneItem } from '../types'
@@ -378,13 +379,29 @@ export class ToolOverlay {
         } else {
           gfx.rect(d['x']!, d['y']!, d['width']!, d['height']!)
         }
+        // WYSIWYG (AI-IMP-040): the preview shows the final result —
+        // fill included — not a wireframe that pops at commit.
+        const fill = preview.data['fill'] as string | undefined
+        if (fill !== undefined) gfx.fill({ color: fill, alpha: PREVIEW_ALPHA })
         gfx.stroke(stroke)
       } else if (preview.kind === 'path' && d.points && d.points.length > 0) {
         const [first, ...rest] = d.points
         gfx.moveTo(first![0], first![1])
         for (const [x, y] of rest) gfx.lineTo(x, y)
         gfx.stroke({ ...stroke, cap: 'round', join: 'round' })
-      } else if (preview.kind === 'line' || preview.kind === 'arrow' || preview.kind === 'connector') {
+      } else if (preview.kind === 'arrow') {
+        // The pen arrow previews as its true block silhouette, not a
+        // bare segment (AI-IMP-040).
+        const points = arrowPolygon({
+          x1: d['x1']!,
+          y1: d['y1']!,
+          x2: d['x2']!,
+          y2: d['y2']!,
+          stroke: stroke.color as string,
+          strokeWidth: stroke.width,
+        })
+        if (points.length > 0) gfx.poly(points).fill({ color: stroke.color, alpha: PREVIEW_ALPHA })
+      } else if (preview.kind === 'line' || preview.kind === 'connector') {
         gfx.moveTo(d['x1']!, d['y1']!).lineTo(d['x2']!, d['y2']!).stroke(stroke)
       }
     }

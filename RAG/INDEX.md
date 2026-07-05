@@ -10,8 +10,8 @@
 | Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 38 |
-| **Total** | **10** | **39** |
+| Completed | 5 | 39 |
+| **Total** | **10** | **40** |
 
 ## In Progress
 
@@ -29,6 +29,7 @@
 - [[AI-IMP-037-system-font-picker|IMP-037]] System font picker — completed
 - [[AI-IMP-038-two-arrows|IMP-038]] Two arrows — completed
 - [[AI-IMP-039-legible-arrow-creation|IMP-039]] Legible arrow creation — completed
+- [[AI-IMP-040-render-fidelity|IMP-040]] Render fidelity — completed
 
 ---
 
@@ -64,7 +65,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2611 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (668 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (704 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -76,15 +77,15 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/slice.spec.ts (525 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - apps/desktop/e2e/decorations.spec.ts (473 LOC)
+- apps/desktop/e2e/canvas.spec.ts (469 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/e2e/import.spec.ts (461 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (458 LOC)
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
-- apps/desktop/e2e/canvas.spec.ts (423 LOC)
+- packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.test.ts (419 LOC)
-- packages/canvas-engine/src/tools/draw-tools.ts (405 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - apps/desktop/e2e/gestures.spec.ts (384 LOC)
@@ -106,7 +107,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>5 EPICs, 38 IMPs completed</summary>
+<summary>5 EPICs, 39 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

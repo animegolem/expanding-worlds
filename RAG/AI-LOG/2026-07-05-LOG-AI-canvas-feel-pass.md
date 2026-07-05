@@ -6,7 +6,7 @@ tags:
   - canvas
   - feel
   - polish
-closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-IMP-030, AI-IMP-031, AI-IMP-032, AI-IMP-033, AI-IMP-034, AI-IMP-035, AI-IMP-036, AI-IMP-037, AI-IMP-038, AI-EPIC-009]
+closed_tickets: [AI-IMP-024..040 (see epics), AI-EPIC-009]
 created_date: 2026-07-05
 related_files:
   - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md
@@ -185,3 +185,22 @@ isolated EW_PROJECT_DIR (the §11.4 lock rejects a second app on the
 default project) and clean up by PID, never pkill by pattern.
 Final: 226 engine / 340 persistence / 21 e2e (clean run, no
 retries). Owner feel pass pending across batches two through five.
+
+## Batch six (same day): legible strokes and render fidelity
+
+Owner refinement generalized IMP-039 mid-cut (RFC rev 0.14): every
+stroke is born legible at the creating viewport, and the toolbar
+width control became a WEIGHT MULTIPLIER on a screen-pixel baseline
+(2px; pen arrows 4px) — stored data stays absolute world units, so
+zoom-1 × weight-1 is byte-identical. IMP-040: strokes never RENDER
+below one device pixel (the owner's "dotted diagonal" was sub-pixel
+rasterization; render-only clamp with a 20% drift gate in the cull
+pass, e2e-probed via renderedStroke), and draw previews became
+WYSIWYG (shapes preview their fill; the pen arrow previews its true
+silhouette). Also diagnosed for the owner: the "lost grid" was a
+background set on the long-lived dev project (stage hides the grid
+by design) — a stage you can't see reads as a broken canvas, parked
+as a chrome-era affordance alongside pre-creation text styling.
+Owner signal: canvas layer nearing hand-off point; EPIC-005 (notes)
+is next after the current feel items settle. Final: 230 engine /
+340 persistence / 22 e2e.

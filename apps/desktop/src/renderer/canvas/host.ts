@@ -9,6 +9,7 @@ import {
   drawGrid,
   drawSnapGuides,
   hitTest,
+  renderStrokeWidth,
   itemWorldAABB,
   orientedCorners,
   stageExtent,
@@ -98,6 +99,9 @@ declare global {
       /** Test seam: place the camera deterministically (cancels any
        * flight through the external-change hook). */
       setCamera: (state: { x: number; y: number; zoom: number }) => void
+      /** AI-IMP-040: last clamp-applied render width, null if never
+       * clamped away from the stored width. */
+      renderedStroke: (id: string) => number | null
     }
   }
 }
@@ -366,6 +370,33 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   controller.camera.onChanged(() => flight.cancelOnExternalChange())
   app.ticker.add(() => flight.step(app.ticker.deltaMS))
 
+  // AI-IMP-040: strokes never RENDER below one device pixel — a
+  // sub-pixel line rasterizes as broken fragments. The clamp is
+  // presentation-only (data untouched) and re-applies only when the
+  // target drifts >20% from what's on the display object, so
+  // continuous zooming does a bounded number of redraws.
+  function applyStrokeClamp(): void {
+    const zoom = controller.camera.zoom
+    for (const item of controller.items()) {
+      if (item.itemKind !== 'decoration') continue
+      if (ephemeral.has(item.id)) continue // gestures own these frames
+      const data = item.data as Record<string, unknown>
+      const width = data['strokeWidth']
+      if (typeof width !== 'number' || !Number.isFinite(width)) continue
+      const object = sync.get(item.id) as
+        | ({ __renderStroke?: number } & NonNullable<ReturnType<typeof sync.get>>)
+        | undefined
+      if (!object) continue
+      const target = renderStrokeWidth(width, zoom)
+      const applied = object.__renderStroke ?? width
+      if (Math.abs(target - applied) <= applied * 0.2) continue
+      object.__renderStroke = target
+      registry
+        .resolve(item)
+        .update(object, { ...item, data: { ...data, strokeWidth: target } } as SceneItem, item, resources)
+    }
+  }
+
   let cullQueued = false
   function scheduleCull(): void {
     if (cullQueued) return
@@ -383,6 +414,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         height: br.y - tl.y,
       })
       drawStageOrGrid()
+      applyStrokeClamp()
     })
   }
 
@@ -627,6 +659,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }),
     setCamera: (state: { x: number; y: number; zoom: number }) => {
       controller.camera.set(state)
+    },
+    renderedStroke: (id: string) => {
+      const object = sync.get(id) as { __renderStroke?: number } | undefined
+      return object?.__renderStroke ?? null
     },
   }
 

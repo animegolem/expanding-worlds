@@ -136,6 +136,7 @@ export {
 export { alignPayload, distributePayload, type AlignOp, type DistributeAxis } from './arrange'
 
 export { Culler, RENDER_PADDING, RESIDENCY_PADDING, type CullerHooks } from './culling'
+export { MIN_STROKE_SCREEN_PX, renderStrokeWidth } from './stroke-render'
 export {
   DEFAULT_TEXTURE_BUDGET_BYTES,
   TextureBudget,
