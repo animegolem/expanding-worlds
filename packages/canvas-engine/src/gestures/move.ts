@@ -12,12 +12,26 @@ import type { GestureDriver } from '../controller'
  * data JSON. Nothing durable happens here: the controller commits the
  * one TransformContent when the gesture ends.
  */
+
+/** Shift = tidy (AI-IMP-042): the drag projects onto the nearest
+ * horizontal/vertical/45° ray, length along that ray preserved. */
+export function constrainDeltaToAxes(dx: number, dy: number): { dx: number; dy: number } {
+  const length = Math.hypot(dx, dy)
+  if (length === 0) return { dx, dy }
+  const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4)
+  const ux = Math.cos(angle)
+  const uy = Math.sin(angle)
+  const along = dx * ux + dy * uy
+  return { dx: along * ux, dy: along * uy }
+}
+
 export const moveDriver: GestureDriver = {
   update({ session, startWorld, currentWorld, modifiers, snap, camera }) {
-    const proposed = {
+    const raw = {
       dx: currentWorld.x - startWorld.x,
       dy: currentWorld.y - startWorld.y,
     }
+    const proposed = modifiers.shift ? constrainDeltaToAxes(raw.dx, raw.dy) : raw
     const bounds = unionBounds(session.priorItems()) ?? {
       x: startWorld.x,
       y: startWorld.y,

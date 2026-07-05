@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Camera } from '../camera'
 import { GestureSession } from '../gesture'
 import { makeDecoration, makePlacement } from '../test-helpers'
-import { moveDriver } from './move'
+import { constrainDeltaToAxes, moveDriver } from './move'
 import type { GestureContext } from '../controller'
 import type { SceneItem } from '../types'
 import type { SnapProvider, SnapQuery } from '../snap'
@@ -127,5 +127,17 @@ describe('moveDriver', () => {
     const payload = session.commitPayload()
     expect(payload!.items).toHaveLength(1)
     expect(payload!.items[0]).toMatchObject({ x: 25, y: 5 })
+  })
+})
+
+describe('shift axis constraint (AI-IMP-042)', () => {
+  it('projects onto the nearest axis and preserves along-ray travel', () => {
+    const flat = constrainDeltaToAxes(100, 12)
+    expect(flat.dy).toBe(0)
+    expect(flat.dx).toBeCloseTo(100)
+    const diag = constrainDeltaToAxes(100, 80)
+    expect(diag.dx).toBeCloseTo(diag.dy)
+    expect(Math.hypot(diag.dx, diag.dy)).toBeCloseTo((100 + 80) / Math.SQRT2)
+    expect(constrainDeltaToAxes(0, 0)).toEqual({ dx: 0, dy: 0 })
   })
 })

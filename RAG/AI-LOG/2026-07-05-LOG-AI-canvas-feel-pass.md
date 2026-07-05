@@ -204,3 +204,14 @@ as a chrome-era affordance alongside pre-creation text styling.
 Owner signal: canvas layer nearing hand-off point; EPIC-005 (notes)
 is next after the current feel items settle. Final: 230 engine /
 340 persistence / 22 e2e.
+
+## Phase hand-off
+
+IMP-041/042 completed the Shift vocabulary (draw proportions,
+orientation snap, resize aspect lock, axis-constrained move). Owner
+called the canvas layer done for this phase — "a good place in
+likely the biggest single phase." Next session: EPIC-005 (notes,
+links, phantoms) — re-read the epic and RFC §7 before cutting;
+EPIC-010 remains the rolling home for hands-on findings. Final
+canvas-phase state: 234 engine / 340 persistence / 22 e2e, RFC rev
+0.14, IMP-024..042 closed.

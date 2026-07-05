@@ -22,6 +22,7 @@ AI_IMP_spawned:
   - AI-IMP-039
   - AI-IMP-040
   - AI-IMP-041
+  - AI-IMP-042
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -125,6 +126,9 @@ rotation is a recorded limitation). No new tools or panels.
 - [x] FR-16: Shift on corner resize locks aspect for any selection;
       Shift wins over Alt (AI-IMP-041).
 
+- [x] FR-17: Shift during a move drag constrains to the nearest
+      horizontal/vertical/45° axis (AI-IMP-042).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -152,3 +156,5 @@ rotation is a recorded limitation). No new tools or panels.
 - AI-IMP-040 (lead): render fidelity — minimum stroke render width,
   WYSIWYG draw previews.
 - AI-IMP-041 (lead): Shift aspect lock on resize handles.
+- AI-IMP-042 (lead): Shift axis-constrained move — completes the
+  Shift vocabulary; canvas phase hand-off point.
