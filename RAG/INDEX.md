@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 0 | 0 |
-| Planned | 4 | 0 |
+| Planned | 5 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 4 | 23 |
-| **Total** | **8** | **23** |
+| **Total** | **9** | **23** |
 
 ## Planned
 
@@ -35,6 +35,11 @@
 
 ---
 
+### [[AI-EPIC-009-canvas-feel-pass|EPIC-009: Canvas feel pass]]
+> First hands-on use of the EPIC-004 build was jarring where it should
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -42,7 +47,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (3397 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2395 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2463 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (772 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -52,6 +57,7 @@ Generated from tracked files; binary assets excluded.
 
 - RAG/scripts/generate-index.sh (575 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (538 LOC)
+- apps/desktop/e2e/slice.spec.ts (523 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (508 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
@@ -69,6 +75,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - apps/desktop/e2e/decorations.spec.ts (328 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (327 LOC)
+- apps/desktop/e2e/perf.spec.ts (317 LOC)
 - packages/persistence/src/queries-structure.ts (316 LOC)
 - packages/persistence/src/handlers/pin.ts (314 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
