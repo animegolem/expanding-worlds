@@ -2174,53 +2174,55 @@ Svelte and the canvas renderer.
 
 # 14. Graph and data views
 
-## 14.1 Node library
+## 14.1 The tree view and the node library requirement
 
-Phase 1 MUST provide a node library: a data-view workspace tab listing
-every active node in the project. Each entry SHOULD expose the node's
-appearance or thumbnail, attached note title when present, tags,
-placement count including zero, and canvas locations. The library MUST
-support filtering to unplaced nodes.
+Phase 1 MUST provide a node library: a view covering every active
+node in the project — appearance or thumbnail, attached note title
+when present, tags, placement count including zero, and canvas
+locations — with filtering to unplaced nodes. The library is the
+durable home for stashed and unplaced material: keeping an unplaced
+node in the project is a legitimate workflow, not an error state.
 
-The node library is the durable home for stashed and unplaced
-material: keeping an unplaced node in the project is a legitimate
-workflow, not an error state. The library covers nodes only in
-Phase 1; multi-facet sorting, richer data views, and note browsing
+The **tree view** (the ▤ takeover, rev 0.17) realizes this
+requirement: the world as an outline, canvas ▸ children, using the
+same page/frame glyphs as the §8.4 charms, with bare images shown as
+their own row kind. Because containment is a graph with legal
+cycles, a canvas already rendered on the current expansion path
+renders as an alias row that flies to the real entry rather than
+unfolding again. Unplaced material gathers in a root-level loose
+bin. Tags show inline as chips, and the tree shares the graph's
+filter chips and honors the §4.8 lens. No separate flat list view
+ships; multi-facet sorting, richer data views, and note browsing
 remain future iterations.
+
+**Disconnection vocabulary (rev 0.17).** Two independent axes define
+the cleanup filters everywhere they appear: an **orphan** is a node
+with no note — it cannot carry wiki-link edges and stays permanently
+disconnected in the graph unless a note is attached. **Loose** is a
+note or node with no placement — a location fact, not a connection
+fact; a loose note may be richly linked. The "disconnected" cleanup
+filter is the union. Badges stay separate: orphan means no words,
+loose means no place.
 
 ## 14.2 Relationship graph
 
-The relationship graph is a separate projection from the art canvas.
+The relationship graph is a separate projection from the art canvas
+and SHOULD ship as the ⊛ takeover view (rev 0.17): a force layout
+with physics the user can grab. **Wiki links are the only edges** —
+structure lives in the tree, and drawn lines, arrows, and connectors
+are decorations that never appear as semantic edges; a future
+explicit relationship feature may promote semantic edges through a
+separate operation.
 
-Phase 1 MAY provide a basic graph or data workspace tab that can show:
-
-- Notes and note-to-note wiki links.
-
-- Nodes grouped under or associated with notes.
-
-- Untitled image and pin nodes.
-
-- Placement counts.
-
-- Canvas membership.
-
-- Node tags.
-
-- Tag result views that list all nodes assigned to one selected tag.
-
-- Unplaced notes and nodes.
-
-The maximal graph may show active records by default, with explicit
-options for Trash and view-local hiding, and filters for image nodes,
-untitled nodes, current-canvas scope, note links, placement
-relationships, and node tags.
+Pure notes render as dots. A note whose node has placed art renders
+as the art itself past a screen-size threshold (image-node LOD).
+Orphans wear a dashed ring and badge per §14.1's vocabulary.
+Filters: hide content-less · orphans only · one tag. Activating a
+graph node flies to its placement, or opens its note panel when
+unplaced. Trash and decoration edges are excluded by default.
 
 The graph renderer need not reuse the art-canvas renderer. Both query
 the same project model.
-
-Drawn lines, arrows, and connectors are decorations and do not appear as
-semantic graph edges. A future explicit relationship feature may promote
-or create semantic edges through a separate operation.
 
 ## 14.3 Canvas contents outline (deferred with scope)
 
