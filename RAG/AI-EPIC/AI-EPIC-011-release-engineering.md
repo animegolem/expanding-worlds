@@ -6,8 +6,8 @@ tags:
   - infrastructure
   - release
 date_created: 2026-07-05
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-05
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-050
   - AI-IMP-051
@@ -60,11 +60,11 @@ needed). Crash reporting / telemetry.
 
 ### Functional Requirements
 
-- [ ] FR-1: main pushed to origin; CI workflow green on GitHub Actions.
-- [ ] FR-2: perf suite cleanly excluded on CI, still a local gate.
-- [ ] FR-3: `pnpm dist` builds an unsigned DMG locally; packaged app launches with a working project.
-- [ ] FR-4: Tag-triggered release workflow uploads DMG + NSIS + AppImage to a GitHub Release.
-- [ ] FR-5: v0.5.0 released; versioning ritual documented in CLAUDE.md.
+- [x] FR-1: main pushed to origin; CI workflow green on GitHub Actions.
+- [x] FR-2: perf suite cleanly excluded on CI, still a local gate.
+- [x] FR-3: `pnpm dist` builds an unsigned DMG locally; packaged app launches with a working project.
+- [x] FR-4: Tag-triggered release workflow uploads DMG + NSIS + AppImage to a GitHub Release.
+- [x] FR-5: v0.5.0 released; versioning ritual documented in CLAUDE.md.
 
 ### Non-Functional Requirements
 

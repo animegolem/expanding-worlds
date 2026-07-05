@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 1 |
-| Planned | 3 | 1 |
+| In Progress | 1 | 1 |
+| Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 6 | 50 |
+| Completed | 7 | 51 |
 | **Total** | **11** | **52** |
 
 ## In Progress
@@ -33,16 +33,6 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
-
----
-
-### [[AI-EPIC-011-release-engineering|EPIC-011: Release engineering]]
-> The project is exiting pre-alpha: the owner's artist friend becomes
-
-**IMPs:**
-- [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — completed
-- [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — completed
-- [[AI-IMP-052-release-workflow-and-v050|IMP-052]] Release workflow and v050 — planned
 
 ---
 
@@ -121,7 +111,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>6 EPICs, 50 IMPs completed</summary>
+<summary>7 EPICs, 51 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -164,5 +154,9 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-027-decoration-geometry-pass|IMP-027]] Decoration geometry pass — completed
   - [[AI-IMP-028-delete-zorder-safety-nets|IMP-028]] Delete zorder safety nets — completed
   - [[AI-IMP-029-render-quality-and-selection-fidelity|IMP-029]] Render quality and selection fidelity — completed
+- [[AI-EPIC-011-release-engineering|EPIC-011]] Release engineering — 2026-07-05
+  - [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — completed
+  - [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — completed
+  - [[AI-IMP-052-release-workflow-and-v050|IMP-052]] Release workflow and v050 — completed
 
 </details>

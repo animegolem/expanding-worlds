@@ -5,12 +5,12 @@ tags:
   - Implementation
   - infrastructure
   - release
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-051]
 parent_epic: [[AI-EPIC-011-release-engineering]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-052-release-workflow-and-v050
@@ -59,13 +59,13 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] release.yml matrix builds DMG / NSIS / AppImage on tag push
+- [x] release.yml matrix builds DMG / NSIS / AppImage on tag push
       and attaches all three to one GitHub Release.
-- [ ] CLAUDE.md documents minor-equals-epic versioning and the
+- [x] CLAUDE.md documents minor-equals-epic versioning and the
       close-epic → bump → tag ritual.
-- [ ] v0.5.0 tagged; release live with all three assets and a body
+- [x] v0.5.0 tagged; release live with all three assets and a body
       covering install notes per platform (unsigned-build caveats).
-- [ ] Gates green; RAG index regenerated.
+- [x] Gates green; RAG index regenerated.
 
 ### Acceptance Criteria
 
@@ -83,3 +83,14 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+One matrix iteration: the Linux leg failed because electron-builder
+derives executableName from the package name ("@ewdesktop" —
+illegal in paths); an explicit `executableName: expanding-worlds`
+fixed it and the tag was recreated (safe — no release existed yet;
+NEVER move a tag that has a published release). macOS and Windows
+built clean on the first try. The v0.5.0 release carries
+Expanding.Worlds-0.5.0-arm64.dmg, Expanding.Worlds.Setup.0.5.0.exe,
+and Expanding.Worlds-0.5.0.AppImage, publicly downloadable (the
+repo is public). Only the mac artifact has been smoke-run
+(AI-IMP-051); the Windows and Linux artifacts are built-but-untested
+until someone runs them — worth a note when handing links out.
