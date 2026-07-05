@@ -865,7 +865,7 @@ It does not share:
 - Placements.
 
 This operation need not occupy the primary creation UI. It may appear in
-a note Uses sidebar, a title-collision flow, or a node context menu.
+a note's Uses list, a title-collision flow, or a node context menu.
 
 ## 6.5 Copy and paste
 
@@ -1068,13 +1068,13 @@ and commit as one durable command.
 
 ## 6.10 Place existing material
 
-The node library and the Uses sidebar are placement sources. A node
+The node library and the Uses list are placement sources. A node
 MAY be dragged from the node library onto the active canvas, creating
 one placement at the drop position; a Place on Current Canvas action
 creates one placement at the view center. Both are ordinary placement
 creation and follow section 6.3 semantics.
 
-For a note with zero nodes, the note pane and the Uses sidebar's
+For a note with zero nodes, the note panel and the Uses list's
 Unplaced group offer Place on Current Canvas, which creates a node
 with the default dot appearance, attaches the note, and creates a
 placement as one user-level transaction: the same semantics as phantom
@@ -1205,13 +1205,20 @@ nodes that reference the note.
 
 | **Locations** | **Behavior** |
 |----|----|
-| Zero | Keep the canvas workspace unchanged and indicate that the note has no placed locations. |
+| Zero | Keep the canvas unchanged and indicate that the note has no placed locations (the §7.4 places header reads zero). |
 | One | Open the containing canvas, center the placement, and select or highlight it. |
-| More than one | Keep the pre-link canvas viewport and present a dismissible location chooser. |
+| More than one | Keep the pre-link canvas viewport and present a dismissible location chooser anchored to the activated link. |
 
 Dismissing the chooser keeps the newly opened note visible and leaves
 the canvas where it was. The dismissal interaction MUST NOT also select
 or drag content underneath it.
+
+In the shell model (rev 0.17), a note panel opened from text anchors
+to the link that summoned it — panels grow from what you press — and
+a zero-node or zero-placement note simply stays there as a loose-note
+panel. When spatial resolution lands on a placement, the panel
+re-tethers to that placement, so the reading surface and the flown-to
+object reunite.
 
 In the Phase 1 source editor, link activation is modifier-click
 (Mod+Click, the source-mode convention), and the token MUST advertise
@@ -1228,11 +1235,17 @@ semantics are unchanged, and source mode remains available. Editor
 work of roughly epic scale; do not resolve the tension piecemeal
 before it.
 
-## 7.4 Uses sidebar and location chooser
+## 7.4 Uses list and location chooser
 
-A note MAY expose a closable Uses sidebar. The sidebar and the
-link-activation chooser SHOULD use the same location query and grouping
-model:
+Every note surfaces its uses inside its own panel (rev 0.17): the
+panel header always shows a places count ("⌖ n places"), and
+activating it unfolds the Uses list in-panel, with a marker on the
+placement currently being read. One panel owns everything about a
+note: words, tags (its node's, §8.5), and places.
+
+The Uses list and the link-activation chooser use the same location
+query, grouping model, and row grammar — the same rows as the §4.8
+tag panel (thumbnail · location · open-note and fly-to actions):
 
 1. Group by containing canvas.
 
@@ -1244,13 +1257,14 @@ model:
 
 5. Show node tags when present.
 
-6. Include an Unplaced group for nodes with no placements, each
-offering Place on Current Canvas per section 6.10.
+6. Include an Unplaced group, last, for nodes with no placements,
+each offering Place on Current Canvas per section 6.10.
 
 Selecting a canvas group may open that canvas with all matching
 placements highlighted. Selecting a node group may highlight all
 placements of that node. Selecting an individual placement may center
-it.
+it. A fly-to landing on another canvas is a navigation event and
+enters §8.1 history.
 
 ## 7.5 Highlighted-placement visualization
 
@@ -1273,6 +1287,10 @@ SHOULD support a visual resolution mode:
 
 This is a helpful navigation feature, not a requirement that every
 repeated placement be individually distinguishable in a textual picker.
+
+The §4.8 tag lens is the same dim-to-hits mechanism aimed at tag
+results; the two surfaces SHOULD share one implementation and one
+visual treatment.
 
 ## 7.6 Exact identity links
 
@@ -2268,7 +2286,7 @@ rename a tag, and open its result view.
 
 9. Place the same node more than once, including by dragging it from
 the node library onto the canvas, and place a zero-node note from the
-Uses sidebar and verify the labeled dot appears.
+Uses list and verify the labeled dot appears.
 
 10. Open a node's canvas, persist it immediately, and add nested
 content.
@@ -2768,7 +2786,7 @@ Accepted for the Phase 1 prototype:
   quick-open covers notes and canvas-owning nodes and excludes phantom
   titles.
 
-- The node library and Uses sidebar are placement sources: library
+- The node library and Uses list are placement sources: library
   drag and Place on Current Canvas create placements, and zero-node
   notes embody as labeled dot nodes in one transaction.
 
