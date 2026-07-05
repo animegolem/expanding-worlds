@@ -96,19 +96,19 @@ async function sceneBackground(win: Page): Promise<BackgroundLite> {
 }
 
 /** Renders a solid PNG in-page so each color yields distinct bytes. */
-async function pngBytes(win: Page, color: string): Promise<Buffer> {
-  const bytes = await win.evaluate(async (fill) => {
+async function pngBytes(win: Page, color: string, size = 8): Promise<Buffer> {
+  const bytes = await win.evaluate(async ({ fill, size }) => {
     const canvas = document.createElement('canvas')
-    canvas.width = 8
-    canvas.height = 8
+    canvas.width = size
+    canvas.height = size
     const ctx = canvas.getContext('2d')!
     ctx.fillStyle = fill
-    ctx.fillRect(0, 0, 8, 8)
+    ctx.fillRect(0, 0, size, size)
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'),
     )
     return Array.from(new Uint8Array(await blob.arrayBuffer()))
-  }, color)
+  }, { fill: color, size })
   return Buffer.from(bytes)
 }
 
@@ -270,10 +270,15 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   await win.getByTestId('bg-set-from-selection').click()
   await expect.poll(async () => (await sceneBackground(win)).assetId).toBe(asset1)
   expect(await revision(win)).toBe(beforeSet + 1)
-  expect((await sceneBackground(win)).settings).toEqual({ x: 0, y: 0, scale: 1, opacity: 1 })
+  // §6.7 rev 0.11: from-selection preserves the placed world rect —
+  // the 8×8 image at natural size centered on (400, 300).
+  expect((await sceneBackground(win)).settings).toEqual({ x: 396, y: 296, scale: 1, opacity: 1 })
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundSprite()))
     .not.toBeNull()
+  // Neutralize the framing flight so the drag math below stays in
+  // identity screen space.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
 
   // Edit Background Position: explicit mode, ephemeral drag, ONE
   // SetCanvasBackground on Done.
@@ -288,14 +293,14 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   await win.mouse.up()
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundSprite()))
-    .toMatchObject({ x: 40, y: 20 })
+    .toMatchObject({ x: 436, y: 316 })
   // Still ephemeral: nothing durable happened while dragging.
   expect(await revision(win)).toBe(beforeEdit)
-  expect((await sceneBackground(win)).settings).toMatchObject({ x: 0, y: 0 })
+  expect((await sceneBackground(win)).settings).toMatchObject({ x: 396, y: 296 })
   await win.getByTestId('bg-edit-done').click()
   await expect
     .poll(async () => (await sceneBackground(win)).settings)
-    .toEqual({ x: 40, y: 20, scale: 1, opacity: 1 })
+    .toEqual({ x: 436, y: 316, scale: 1, opacity: 1 })
   expect(await revision(win)).toBe(beforeEdit + 1)
   expect(await win.evaluate(() => window.__ewBoardDebug!.backgroundMode())).toBe(false)
 
@@ -311,23 +316,24 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   await win.mouse.up()
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundSprite()))
-    .toMatchObject({ x: 0, y: 0 })
+    .toMatchObject({ x: 396, y: 296 })
   await win.keyboard.press('Escape')
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundMode()))
     .toBe(false)
   expect(await win.evaluate(() => window.__ewBoardDebug!.backgroundSprite())).toMatchObject({
-    x: 40,
-    y: 20,
+    x: 436,
+    y: 316,
   })
   expect(await revision(win)).toBe(beforeCancel)
 
-  // Reset Background Transform: one command back to identity.
+  // Reset Background Transform: one command back to the normalized
+  // stage default (§6.7 rev 0.11): 2048 / 8 native px = scale 256.
   const beforeReset = await revision(win)
   await win.getByTestId('bg-reset').click()
   await expect
     .poll(async () => (await sceneBackground(win)).settings)
-    .toEqual({ x: 0, y: 0, scale: 1, opacity: 1 })
+    .toEqual({ x: 0, y: 0, scale: 256, opacity: 1 })
   expect(await revision(win)).toBe(beforeReset + 1)
 
   // Background color sits beneath the image: both fields coexist.
@@ -350,7 +356,8 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
     .not.toBe(asset1)
   const replaced = await sceneBackground(win)
   expect(replaced.assetId).not.toBeNull()
-  expect(replaced.settings).toEqual({ x: 0, y: 0, scale: 1, opacity: 1 })
+  // Replace fits the new 8×8 image into the prior 2048-unit extent.
+  expect(replaced.settings).toEqual({ x: 0, y: 0, scale: 256, opacity: 1 })
   expect(await revision(win)).toBe(beforeReplace + 2)
 
   // Remove Background: one command; the color layer stays.
@@ -464,6 +471,116 @@ test('delete selection with §9.2 notice, z-order recovery, select-all (AI-IMP-0
       return win.evaluate(() => window.__ewDebug!.selection()[0] ?? null)
     })
     .toBe(smallId)
+
+  await app.close()
+})
+
+test('background stage: grid, normalize, replace preserves extent, from-selection preserves rect (AI-IMP-032)', async () => {
+  const { app, win } = await launch('ew-e2e-stage-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Backgroundless: adaptive grid is on, no extent.
+  const initial = await win.evaluate(() => window.__ewDebug!.stage())
+  expect(initial.gridVisible).toBe(true)
+  expect(initial.extent).toBeNull()
+
+  // Set an 8×8 image from file → the STAGE normalizes to 2048 world
+  // units, the grid hides, and the camera eases to frame the extent.
+  await win.getByTestId('bg-file-input').setInputFiles({
+    name: 'tiny-map.png',
+    mimeType: 'image/png',
+    buffer: await pngBytes(win, '#446688'),
+  })
+  await expect
+    .poll(async () => (await win.evaluate(() => window.__ewDebug!.stage())).extent?.width ?? 0)
+    .toBe(2048)
+  const staged = await win.evaluate(() => window.__ewDebug!.stage())
+  expect(staged.gridVisible).toBe(false)
+  const settings = (await sceneBackground(win)).settings as { scale: number; x: number; y: number }
+  expect(settings.scale).toBe(2048 / 8)
+  // Flight settles centered on the extent.
+  await expect
+    .poll(async () => (await win.evaluate(() => window.__ewDebug!.stage())).flightActive)
+    .toBe(false)
+  const centered = await win.evaluate(() => {
+    const cam = window.__ewDebug!.camera()
+    const stage = window.__ewDebug!.stage().extent!
+    return {
+      cx: (stage.x + stage.width / 2 - cam.x) * cam.zoom,
+      cy: (stage.y + stage.height / 2 - cam.y) * cam.zoom,
+    }
+  })
+  expect(centered.cx).toBeCloseTo(box.width / 2, 0)
+  expect(centered.cy).toBeCloseTo(box.height / 2, 0)
+
+  // Shrink the stage deliberately, then REPLACE with a 16×16 image:
+  // the new image fits the edited extent (800 wide → scale 50), not
+  // the canonical width.
+  await runCommand(win, 'SetCanvasBackground', {
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    assetId: (await sceneBackground(win)).assetId,
+    settings: { x: 40, y: 60, scale: 100, opacity: 1 },
+  })
+  await expect
+    .poll(async () => ((await sceneBackground(win)).settings as { scale: number }).scale)
+    .toBe(100)
+  await win.getByTestId('bg-file-input').setInputFiles({
+    name: 'replacement.png',
+    mimeType: 'image/png',
+    buffer: await pngBytes(win, '#886644', 16),
+  })
+  await expect
+    .poll(async () => ((await sceneBackground(win)).settings as { scale: number }).scale)
+    .toBe(50)
+  const replaced = (await sceneBackground(win)).settings as { x: number; y: number }
+  expect(replaced.x).toBe(40)
+  expect(replaced.y).toBe(60)
+
+  // Remove → grid returns.
+  await win.getByTestId('bg-remove').click()
+  await expect
+    .poll(async () => (await win.evaluate(() => window.__ewDebug!.stage())).gridVisible)
+    .toBe(true)
+
+  // From-selection preserves the placed rect: an 8×8 image stretched
+  // to 400×400 at center (500, 300) becomes a 400-unit stage at
+  // (300, 100) with scale 50.
+  const assetId = await importPng(win, '#227755')
+  const placementId = crypto.randomUUID()
+  await runCommand(win, 'CreatePin', {
+    nodeId: crypto.randomUUID(),
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    placementId,
+    x: 500,
+    y: 300,
+    appearance: { kind: 'image', assetId, crop: null },
+  })
+  await runCommand(win, 'TransformContent', {
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    items: [
+      {
+        kind: 'placement',
+        placementId,
+        x: 500,
+        y: 300,
+        width: 400,
+        height: 400,
+        scale: 1,
+        rotation: 0,
+      },
+    ],
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.mouse.click(box.x + 500, box.y + 300)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await expect(win.getByTestId('bg-set-from-selection')).toBeEnabled()
+  await win.getByTestId('bg-set-from-selection').click()
+  await expect
+    .poll(async () => ((await sceneBackground(win)).settings as { scale?: number })?.scale ?? 0)
+    .toBe(400 / 8)
+  const preserved = (await sceneBackground(win)).settings as { x: number; y: number }
+  expect(preserved.x).toBe(300)
+  expect(preserved.y).toBe(100)
 
   await app.close()
 })

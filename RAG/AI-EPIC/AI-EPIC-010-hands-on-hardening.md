@@ -79,10 +79,10 @@ rotation is a recorded limitation). No new tools or panels.
 - [x] FR-4: Corner-hover rotate affordance with a rotate cursor just
       outside each corner handle (AI-IMP-031).
 
-- [ ] FR-5: Adaptive multi-scale grid on backgroundless canvases —
+- [x] FR-5: Adaptive multi-scale grid on backgroundless canvases —
       display only, hidden when a background stage exists
       (AI-IMP-032).
-- [ ] FR-6: Background-as-stage per RFC §6.7 rev 0.11 — void beyond
+- [x] FR-6: Background-as-stage per RFC §6.7 rev 0.11 — void beyond
       the extent, fit/home target, normalize-on-set with the
       from-selection exception, replace preserves the extent, eased
       camera framing (AI-IMP-032).

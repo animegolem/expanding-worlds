@@ -27,6 +27,18 @@ export {
 export { DEFAULT_DOT_RADIUS, cssColorToNumber, placementRenderer } from './renderers/placement'
 export { BackgroundSync } from './renderers/background'
 export { Camera, MAX_ZOOM, MIN_ZOOM, type Point, type Rect } from './camera'
+export { CameraFlight, FLIGHT_DURATION_MS } from './camera-flight'
+export {
+  drawGrid,
+  gridLevels,
+  gridLinePositions,
+  stageExtent,
+  GRID_BASE_SPACING,
+  GRID_COLOR,
+  GRID_MAX_ALPHA,
+  STAGE_WIDTH,
+  type GridLevel,
+} from './background-grid'
 export {
   hitTest,
   isHittable,

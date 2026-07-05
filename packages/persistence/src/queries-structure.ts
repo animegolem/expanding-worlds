@@ -25,6 +25,8 @@ export interface CanvasScene {
     assetId: string | null
     assetContentHash: string | null
     assetMimeType: string | null
+    assetWidth: number | null
+    assetHeight: number | null
     settings: Record<string, unknown> | null
   }
   items: CanvasContentItem[]
@@ -116,13 +118,16 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       backgroundSettings: string | null
       assetContentHash: string | null
       assetMimeType: string | null
+      assetWidth: number | null
+      assetHeight: number | null
     }>(
       `SELECT c.id, c.node_id AS nodeId, c.camera,
               c.background_color AS backgroundColor,
               c.background_asset_id AS backgroundAssetId,
               c.background_settings AS backgroundSettings,
               a.content_hash AS assetContentHash,
-              a.mime_type AS assetMimeType
+              a.mime_type AS assetMimeType,
+              a.width AS assetWidth, a.height AS assetHeight
        FROM canvas c
        LEFT JOIN asset a ON a.id = c.background_asset_id
          AND a.lifecycle_state = 'active'
@@ -186,6 +191,8 @@ export function registerStructureQueries(registry: QueryRegistry): void {
         assetId: canvas.assetContentHash === null ? null : canvas.backgroundAssetId,
         assetContentHash: canvas.assetContentHash,
         assetMimeType: canvas.assetMimeType,
+        assetWidth: canvas.assetContentHash === null ? null : canvas.assetWidth,
+        assetHeight: canvas.assetContentHash === null ? null : canvas.assetHeight,
         settings:
           canvas.assetContentHash !== null && canvas.backgroundSettings !== null
             ? (JSON.parse(canvas.backgroundSettings) as Record<string, unknown>)

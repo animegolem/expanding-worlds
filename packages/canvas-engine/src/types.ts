@@ -16,6 +16,10 @@ export interface SceneBackground {
   assetId: string | null
   assetContentHash: string | null
   assetMimeType: string | null
+  /** Native pixel dimensions of the background asset (AI-IMP-032):
+   * with the stored transform they define the stage extent. */
+  assetWidth: number | null
+  assetHeight: number | null
   settings: Record<string, unknown> | null
 }
 

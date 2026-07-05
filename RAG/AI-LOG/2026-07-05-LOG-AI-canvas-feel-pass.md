@@ -6,7 +6,7 @@ tags:
   - canvas
   - feel
   - polish
-closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-EPIC-009]
+closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-IMP-030, AI-IMP-031, AI-IMP-032, AI-EPIC-009]
 created_date: 2026-07-05
 related_files:
   - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md
@@ -126,3 +126,19 @@ clicks); playwright retries: 1; the click race is recorded debt.
 Owner feel pass on rotation pending; grid background (visual only,
 snapping stays content-edge per owner) queued as the next batch
 item. Final: 201 engine / 340 persistence / 19 e2e, all green.
+
+## Batch three (same day): grid + background-as-stage
+
+RFC rev 0.11: a background image defines the canvas's STAGE — the
+design answer to "what does background even mean on an infinite
+canvas". AI-IMP-032 shipped it: adaptive multi-scale grid on
+backgroundless canvases (subdivides forever, hidden under a stage),
+void treatment beyond the extent, zoom-to-fit targets the extent,
+set-from-file normalizes to STAGE_WIDTH 2048 (proportions, not
+pixels), set-from-selection preserves the placed rect, replace fits
+the prior extent (RFC Q7 closed), reset returns to the normalized
+default, and a CameraFlight eases all fit/frame actions (user input
+auto-cancels via the camera onChanged hook). getCanvasScene
+background now carries asset dims. 209 engine / 340 persistence /
+20 e2e. Owner feel pass pending on grid density, void color, flight
+duration; text/rotation feel pass also still pending from batch two.

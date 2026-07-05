@@ -6,12 +6,12 @@ tags:
   - canvas
   - background
   - feel
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-022, AI-IMP-029]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-032-grid-and-stage
@@ -87,33 +87,33 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] getCanvasScene background carries assetWidth/assetHeight;
+- [x] getCanvasScene background carries assetWidth/assetHeight;
       SceneBackground type updated; scene-query test asserts dims.
-- [ ] camera.fitTarget extracted (fitBounds delegates); CameraFlight
+- [x] camera.fitTarget extracted (fitBounds delegates); CameraFlight
       with log-zoom ease-out, step/cancel; unit tests (midpoint is
       between endpoints, terminal state exact, cancel stops).
-- [ ] background-grid.ts: STAGE_WIDTH = 2048; gridLines(camera,
+- [x] background-grid.ts: STAGE_WIDTH = 2048; gridLines(camera,
       viewport) returns two fading levels with screen-legible
       spacing; extentOf(background) helper; unit tests for level
       selection across zooms and extent math.
-- [ ] host: stage container under the background plane; grid drawn
+- [x] host: stage container under the background plane; grid drawn
       on camera change for backgroundless canvases; void renderer
       color + stage rect when a background exists; flight stepped on
       the ticker and cancelled by pointer/wheel input;
       handle.flyTo(bounds); __ewDebug.stage() probe (grid visible,
       extent, void active).
-- [ ] board-tooling: from-file normalizes (2048/width, centered on
+- [x] board-tooling: from-file normalizes (2048/width, centered on
       view) and flies to the extent; from-selection preserves the
       placed world rect; replace fits the prior extent; reset
       returns to the normalized default; zoomToFit targets the
       extent when present; both zoom buttons ease.
-- [ ] e2e: set an 8px background from file → settings.scale 256 and
+- [x] e2e: set an 8px background from file → settings.scale 256 and
       camera settles on the extent; edit scale then replace with a
       16px image → scale preserves the edited extent (not
       renormalized); set-from-selection preserves the placement
       rect; grid probe flips hidden/visible with background
       presence.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, §12.1
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, §12.1
       perf, lint.
 
 ### Acceptance Criteria
@@ -136,3 +136,21 @@ to background
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Semantics changes rippled into the AI-IMP-022 background e2e by
+design: from-selection now preserves the placed rect (the old test
+asserted identity settings), reset returns the normalized default
+(scale 256 for an 8px asset), and replace fits the prior extent —
+all assertions updated to the rev 0.11 contract, plus a new
+__ewDebug.setCamera test seam to neutralize the framing flight
+before screen-space drag math. The slice spec read camera.zoom
+synchronously after clicking zoom-fit and caught the eased flight
+mid-air — now polls. From-selection top-left math is center ∓
+half-size (my first expected values were off by the 8px asset's
+half-height). Flight cancellation needed no explicit input hooks:
+every user camera write already fires onChanged, so the
+cancel-on-external-change hook covers pan/pinch/restore for free
+(its own steps are guarded by an applying flag). The known
+machine-load align/snap flake surfaced during validation runs and
+occasionally beats one retry under repeated back-to-back full
+suites; unchanged in isolation. Owner feel items pending: grid
+look/density, void color, flight duration.

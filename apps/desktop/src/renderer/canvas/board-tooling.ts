@@ -2,8 +2,11 @@ import {
   alignPayload,
   createSnapProvider,
   distributePayload,
+  placementSize,
   reorderPayloads,
+  stageExtent,
   unionBounds,
+  STAGE_WIDTH,
   type AlignOp,
   type DistributeAxis,
   type ReorderOp,
@@ -175,13 +178,14 @@ export function attachBoardTooling(
   })
 
   function zoomToFit(): void {
-    const bounds = unionBounds(controller.items())
-    if (bounds) controller.camera.fitBounds(bounds, viewport())
+    // §6.7 rev 0.11: a background stage is the canvas's home extent.
+    const bounds = stageExtent(background) ?? unionBounds(controller.items())
+    if (bounds) handle.flyTo(bounds)
   }
 
   function zoomToSelection(): void {
     const bounds = unionBounds(controller.selectedItems())
-    if (bounds) controller.camera.fitBounds(bounds, viewport())
+    if (bounds) handle.flyTo(bounds)
   }
 
   // ---- §6.7 backgrounds ----
@@ -195,18 +199,49 @@ export function attachBoardTooling(
     return item
   }
 
+  /** §6.7 rev 0.11: promoting a placed image preserves the world
+   * rect the user already gave it — normalizing would yank the map
+   * out from under anything arranged on top. */
   async function setBackgroundFromSelection(): Promise<void> {
     const placement = selectedImagePlacement()
     if (!placement) return
-    await run('SetCanvasBackground', {
+    const size = placementSize(placement)
+    const native = placement.assetWidth
+    const settings =
+      native && native > 0 && size.width > 0
+        ? {
+            x: placement.x - size.width / 2,
+            y: placement.y - size.height / 2,
+            scale: size.width / native,
+            opacity: 1,
+          }
+        : { ...IDENTITY_SETTINGS }
+    const result = await gateway.execute('SetCanvasBackground', {
       canvasId: handle.canvasId,
       assetId: placement.appearanceAssetId,
-      settings: { ...IDENTITY_SETTINGS },
+      settings,
     })
+    if (result.status !== 'committed') {
+      onError(describeFailure('SetCanvasBackground', result))
+      return
+    }
+    handle.flyTo({ x: settings.x, y: settings.y, width: size.width, height: size.height })
   }
 
+  /** §6.7 rev 0.11: setting from a file normalizes the STAGE (world
+   * proportions, not pixels) to the canonical width, centered on the
+   * current view; replacing an existing background fits the new
+   * image into the prior extent so canvas coordinates hold (Q7). */
   async function setBackgroundFromFile(file: File): Promise<void> {
     const bytes = new Uint8Array(await file.arrayBuffer())
+    let dims: { width: number; height: number } | null = null
+    try {
+      const bitmap = await createImageBitmap(new Blob([bytes]))
+      dims = { width: bitmap.width, height: bitmap.height }
+      bitmap.close()
+    } catch {
+      /* undecodable here — import validation owns the real error */
+    }
     const imported = await window.ew.project.importAsset({
       bytes,
       originalFilename: file.name.length > 0 ? file.name : 'background-image',
@@ -215,11 +250,37 @@ export function attachBoardTooling(
       onError(imported.message)
       return
     }
-    await run('SetCanvasBackground', {
+    let settings = { ...IDENTITY_SETTINGS }
+    let extent: { x: number; y: number; width: number; height: number } | null = null
+    if (dims && dims.width > 0 && dims.height > 0) {
+      const prior = stageExtent(background)
+      if (prior) {
+        const scale = prior.width / dims.width
+        settings = { x: prior.x, y: prior.y, scale, opacity: 1 }
+        extent = { ...prior, height: dims.height * scale }
+      } else {
+        const scale = STAGE_WIDTH / dims.width
+        const width = STAGE_WIDTH
+        const height = dims.height * scale
+        const view = viewport()
+        const center = controller.camera.screenToWorld({
+          x: view.width / 2,
+          y: view.height / 2,
+        })
+        settings = { x: center.x - width / 2, y: center.y - height / 2, scale, opacity: 1 }
+        extent = { x: settings.x, y: settings.y, width, height }
+      }
+    }
+    const result = await gateway.execute('SetCanvasBackground', {
       canvasId: handle.canvasId,
       assetId: imported.assetId,
-      settings: { ...IDENTITY_SETTINGS },
+      settings,
     })
+    if (result.status !== 'committed') {
+      onError(describeFailure('SetCanvasBackground', result))
+      return
+    }
+    if (extent) handle.flyTo(extent)
   }
 
   function enterBackgroundEdit(): void {
@@ -264,10 +325,16 @@ export function attachBoardTooling(
 
   async function resetBackgroundTransform(): Promise<void> {
     if (!background?.assetId) return
+    // Reset returns to the normalized stage default at the origin
+    // (§6.7 rev 0.11), not to raw pixels.
+    const settings =
+      background.assetWidth && background.assetWidth > 0
+        ? { x: 0, y: 0, scale: STAGE_WIDTH / background.assetWidth, opacity: 1 }
+        : { ...IDENTITY_SETTINGS }
     await run('SetCanvasBackground', {
       canvasId: handle.canvasId,
       assetId: background.assetId,
-      settings: { ...IDENTITY_SETTINGS },
+      settings,
     })
   }
 

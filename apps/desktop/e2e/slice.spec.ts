@@ -351,8 +351,10 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   rev = await revision(win)
   const zoomBefore = await win.evaluate(() => window.__ewDebug!.camera().zoom)
   await win.getByTestId('zoom-fit').click()
-  const zoomAfter = await win.evaluate(() => window.__ewDebug!.camera().zoom)
-  expect(zoomAfter).not.toBe(zoomBefore)
+  // §6.9 rev 0.11: fits EASE the camera — poll past the flight.
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.camera().zoom))
+    .not.toBe(zoomBefore)
   expect(await revision(win)).toBe(rev)
   await win.getByTestId('zoom-selection').click()
   expect(await revision(win)).toBe(rev)

@@ -62,17 +62,30 @@ export class Camera {
     this.#notify()
   }
 
-  /** §6.9 zoom to fit / to selection: camera-only, never durable. */
-  fitBounds(bounds: Rect, viewport: { width: number; height: number }, padding = 48): void {
+  /** Pure §6.9 fit computation; CameraFlight eases toward it
+   * (AI-IMP-032) and fitBounds applies it instantly. */
+  fitTarget(
+    bounds: Rect,
+    viewport: { width: number; height: number },
+    padding = 48,
+  ): SceneCamera | null {
     if (bounds.width <= 0 || bounds.height <= 0 || viewport.width <= 0 || viewport.height <= 0) {
-      return
+      return null
     }
     const zoomX = (viewport.width - padding * 2) / bounds.width
     const zoomY = (viewport.height - padding * 2) / bounds.height
-    this.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min(zoomX, zoomY)))
-    this.x = bounds.x + bounds.width / 2 - viewport.width / 2 / this.zoom
-    this.y = bounds.y + bounds.height / 2 - viewport.height / 2 / this.zoom
-    this.#notify()
+    const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min(zoomX, zoomY)))
+    return {
+      x: bounds.x + bounds.width / 2 - viewport.width / 2 / zoom,
+      y: bounds.y + bounds.height / 2 - viewport.height / 2 / zoom,
+      zoom,
+    }
+  }
+
+  /** §6.9 zoom to fit / to selection: camera-only, never durable. */
+  fitBounds(bounds: Rect, viewport: { width: number; height: number }, padding = 48): void {
+    const target = this.fitTarget(bounds, viewport, padding)
+    if (target) this.set(target)
   }
 
   /** Applies to the world plane (anything with position + scale). */

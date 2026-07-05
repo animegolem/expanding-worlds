@@ -1,14 +1,17 @@
 import {
   BackgroundSync,
+  CameraFlight,
   CanvasController,
   Culler,
   CommandGateway,
   createDefaultRegistry,
   createScenePlanes,
+  drawGrid,
   drawSnapGuides,
   hitTest,
   itemWorldAABB,
   orientedCorners,
+  stageExtent,
   SceneSync,
   setPlacementTextureResident,
   TextureBudget,
@@ -21,6 +24,7 @@ import {
   type GestureUpdate,
   type RendererRegistry,
   type RendererResources,
+  type SceneBackground,
   type SceneDecoration,
   type SceneItem,
   type ScenePlanes,
@@ -53,6 +57,9 @@ export interface CanvasHostHandle {
    * canonical scene values otherwise. Adornments drawn from anything
    * else visibly detach from their objects (AI-IMP-025). */
   effectiveItem(id: string): SceneItem | null
+  /** Eased camera flight framing `bounds` (§6.9 rev 0.11); any user
+   * camera input aborts it. */
+  flyTo(bounds: Rect): void
   /** §12.2 single live canvas: swap the mounted canvas, releasing
    * the previous scene's textures. */
   openCanvas(canvasId: string): Promise<void>
@@ -82,6 +89,15 @@ declare global {
       /** Body child label — 'image' vs 'image-placeholder' proves
        * texture state at the pixel-adjacent level (AI-IMP-025). */
       placementBody: (id: string) => string | null
+      /** Stage/grid presentation state (AI-IMP-032). */
+      stage: () => {
+        gridVisible: boolean
+        extent: { x: number; y: number; width: number; height: number } | null
+        flightActive: boolean
+      }
+      /** Test seam: place the camera deterministically (cancels any
+       * flight through the external-change hook). */
+      setCamera: (state: { x: number; y: number; zoom: number }) => void
     }
   }
 }
@@ -317,6 +333,39 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     },
   })
   const viewport = () => ({ width: element.clientWidth, height: element.clientHeight })
+
+  // §6.7/§6.9 rev 0.11 (AI-IMP-032): stage-or-grid presentation. A
+  // background image defines the stage — void color beyond, stage
+  // fill beneath the image, no grid. Without one, the adaptive grid
+  // covers the visible world. Redrawn with every cull pass (camera
+  // changes and scene refreshes).
+  const VOID_COLOR = '#101215'
+  const DEFAULT_STAGE_COLOR = '#17191d'
+  const stageGfx = new Graphics()
+  stageGfx.label = 'stage'
+  planes.world.addChildAt(stageGfx, 0)
+  let sceneBackground: SceneBackground | null = null
+  function drawStageOrGrid(): void {
+    const extent = stageExtent(sceneBackground)
+    if (extent) {
+      app.renderer.background.color = VOID_COLOR
+      stageGfx.clear()
+      stageGfx
+        .rect(extent.x, extent.y, extent.width, extent.height)
+        .fill({ color: sceneBackground?.color ?? DEFAULT_STAGE_COLOR })
+    } else {
+      app.renderer.background.color = sceneBackground?.color ?? DEFAULT_STAGE_COLOR
+      drawGrid(stageGfx, controller.camera.state(), viewport())
+    }
+  }
+
+  // Eased camera flights (fit/frame actions). The flight's own steps
+  // survive the cancel hook; any other camera write — a pan, a pinch,
+  // a restore — aborts it. Human wins.
+  const flight = new CameraFlight(controller.camera)
+  controller.camera.onChanged(() => flight.cancelOnExternalChange())
+  app.ticker.add(() => flight.step(app.ticker.deltaMS))
+
   let cullQueued = false
   function scheduleCull(): void {
     if (cullQueued) return
@@ -333,6 +382,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         width: br.x - tl.x,
         height: br.y - tl.y,
       })
+      drawStageOrGrid()
     })
   }
 
@@ -365,10 +415,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       if (!scene) {
         sync.clear()
         controller.setItems([])
+        sceneBackground = null
+        drawStageOrGrid()
         return
       }
-      const color = backgroundSync.apply(scene.background)
-      app.renderer.background.color = color ?? '#17191d'
+      backgroundSync.apply(scene.background)
+      sceneBackground = scene.background
       sync.apply(scene.items)
       controller.setItems(scene.items)
       // The canonical scene now reflects (or supersedes) any committed
@@ -568,6 +620,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       )
       return body?.label ?? object.children[0]?.label ?? null
     },
+    stage: () => ({
+      gridVisible: stageExtent(sceneBackground) === null,
+      extent: stageExtent(sceneBackground),
+      flightActive: flight.active,
+    }),
+    setCamera: (state: { x: number; y: number; zoom: number }) => {
+      controller.camera.set(state)
+    },
   }
 
   let detachGestures: () => void = () => {}
@@ -582,6 +642,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       return canvasId
     },
     effectiveItem: (id: string) => ephemeral.get(id) ?? sync.item(id) ?? null,
+    flyTo: (bounds: Rect) => {
+      const target = controller.camera.fitTarget(bounds, viewport())
+      if (target) flight.flyTo(target)
+    },
     openCanvas,
     destroy() {
       textureBudget.releaseAll()

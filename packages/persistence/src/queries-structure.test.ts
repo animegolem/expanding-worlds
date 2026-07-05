@@ -402,6 +402,8 @@ describe('getCanvasScene', () => {
       assetId,
       assetContentHash: 'b'.repeat(64),
       assetMimeType: 'image/png',
+      assetWidth: 640,
+      assetHeight: 480,
       settings: { x: 10, y: 20, fit: 'cover' },
     })
 
@@ -414,6 +416,8 @@ describe('getCanvasScene', () => {
       assetId: null,
       assetContentHash: null,
       assetMimeType: null,
+      assetWidth: null,
+      assetHeight: null,
       settings: null,
     })
   })
