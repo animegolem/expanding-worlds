@@ -17,6 +17,11 @@ export interface TextData {
   color: string
   /** Optional word-wrap width in world units. */
   width?: number
+  /** Measured rendered extents in world units, refreshed on every
+   * create/edit (AI-IMP-030). Hit-testing estimates from font
+   * metrics when absent (legacy rows), so text stays selectable. */
+  measuredWidth?: number
+  measuredHeight?: number
 }
 
 export type ShapeKind = 'rect' | 'ellipse' | 'triangle'
@@ -90,7 +95,11 @@ export function isTextData(data: unknown): data is TextData {
     isFinite_(data['fontSize']) &&
     data['fontSize'] > 0 &&
     isNonEmptyString(data['color']) &&
-    (data['width'] === undefined || (isFinite_(data['width']) && data['width'] > 0))
+    (data['width'] === undefined || (isFinite_(data['width']) && data['width'] > 0)) &&
+    (data['measuredWidth'] === undefined ||
+      (isFinite_(data['measuredWidth']) && data['measuredWidth'] > 0)) &&
+    (data['measuredHeight'] === undefined ||
+      (isFinite_(data['measuredHeight']) && data['measuredHeight'] > 0))
   )
 }
 

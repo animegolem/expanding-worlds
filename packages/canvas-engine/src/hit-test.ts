@@ -1,4 +1,4 @@
-import { isLineData } from './decoration-data'
+import { isLineData, isTextData } from './decoration-data'
 import { arrowPolygon } from './renderers/decorations/line'
 import { DEFAULT_DOT_RADIUS } from './renderers/placement'
 import type { Point, Rect } from './camera'
@@ -37,6 +37,16 @@ function decorationAABB(item: SceneDecoration): Rect | null {
   const d = item.data as Record<string, unknown>
   const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
   const strokePad = num(d['strokeWidth']) ? d['strokeWidth'] / 2 : 0
+  if (item.kind === 'text' && isTextData(item.data)) {
+    // Measured extents from the entry overlay when present; a font
+    // -metric estimate otherwise so legacy rows stay selectable.
+    const t = item.data
+    const lines = t.text.split('\n')
+    const longest = lines.reduce((max, line) => Math.max(max, line.length), 1)
+    const width = t.measuredWidth ?? Math.max(longest * t.fontSize * 0.55, t.fontSize)
+    const height = t.measuredHeight ?? lines.length * t.fontSize * 1.2
+    return { x: t.x, y: t.y, width, height }
+  }
   if (item.kind === 'arrow' && isLineData(item.data)) {
     const points = arrowPolygon(item.data)
     if (points.length >= 2) {

@@ -136,3 +136,13 @@ describe('legibleFontSize', () => {
     expect(Number.isFinite(legibleFontSize(0))).toBe(true)
   })
 })
+
+describe('TextData measured extents (AI-IMP-030)', () => {
+  it('accepts optional positive measured fields and rejects invalid ones', () => {
+    const base = { x: 0, y: 0, text: 'hi', fontSize: 12, color: '#fff' }
+    expect(isTextData(base)).toBe(true)
+    expect(isTextData({ ...base, measuredWidth: 40, measuredHeight: 14 })).toBe(true)
+    expect(isTextData({ ...base, measuredWidth: 0 })).toBe(false)
+    expect(isTextData({ ...base, measuredHeight: Number.NaN })).toBe(false)
+  })
+})

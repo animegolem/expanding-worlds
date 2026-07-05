@@ -64,6 +64,15 @@ export function attachTextEntry(
       if (done) return
       done = true
       const text = div.innerText.replace(/\u00A0/g, ' ').trim()
+      // Measure BEFORE close() removes the div: the overlay renders
+      // the exact committed text at fontSize \u00D7 zoom, so its rect \u00F7
+      // zoom is the world-space extent hit-testing needs (AI-IMP-030).
+      const rect = div.getBoundingClientRect()
+      const zoom = camera.zoom || 1
+      const measured =
+        rect.width > 0 && rect.height > 0
+          ? { measuredWidth: rect.width / zoom, measuredHeight: rect.height / zoom }
+          : {}
       close()
       if (!commit) return
       if (target.existing) {
@@ -72,7 +81,7 @@ export function attachTextEntry(
         if (text.length === 0 || text === priorText) return
         void handle.gateway.execute('UpdateDecoration', {
           decorationId: target.existing.id,
-          set: { data: { ...prior, text } },
+          set: { data: { ...prior, text, ...measured } },
         })
         return
       }
@@ -87,6 +96,7 @@ export function attachTextEntry(
           text,
           fontSize: target.fontSize,
           color: target.color,
+          ...measured,
         },
       })
     }

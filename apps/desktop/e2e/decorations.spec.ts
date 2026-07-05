@@ -323,6 +323,32 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     .poll(async () => (await byKind('text'))[0]!.data['text'])
     .toBe('renamed beacon')
 
+  // AI-IMP-030: edits store measured world extents, which make the
+  // text body clickable (not just the 4-unit slop at its corner)…
+  const measured = (await byKind('text'))[0]!.data as {
+    measuredWidth?: number
+    measuredHeight?: number
+  }
+  expect(measured.measuredWidth).toBeGreaterThan(20)
+  expect(measured.measuredHeight).toBeGreaterThan(10)
+  const center: [number, number] = [
+    200 + measured.measuredWidth! / 2,
+    300 + measured.measuredHeight! / 2,
+  ]
+  await win.mouse.click(...at(...center))
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+
+  // …and draggable: one durable TransformContent moves the body.
+  const beforeMove = await revision()
+  await win.mouse.move(...at(...center))
+  await win.mouse.down()
+  await win.mouse.move(...at(320, 380), { steps: 5 })
+  await win.mouse.up()
+  await expect.poll(() => revision()).toBe(beforeMove + 1)
+  const moved = (await byKind('text'))[0]!.data as { x: number; y: number }
+  expect(moved.x).toBeGreaterThan(200)
+  expect(moved.y).toBeGreaterThan(300)
+
   expect((await decorations()).length).toBe(8)
   await app.close()
 })

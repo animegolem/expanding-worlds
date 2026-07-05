@@ -103,3 +103,33 @@ describe('visual bounds include stroke extents (AI-IMP-029)', () => {
     expect(itemWorldAABB(shape)).toEqual({ x: 0, y: 0, width: 50, height: 50 })
   })
 })
+
+describe('text bounds (AI-IMP-030)', () => {
+  it('uses measured extents when present', () => {
+    const text = makeDecoration({
+      kind: 'text',
+      data: {
+        x: 100,
+        y: 50,
+        text: 'harbor',
+        fontSize: 16,
+        color: '#fff',
+        measuredWidth: 90,
+        measuredHeight: 19,
+      },
+    })
+    expect(itemWorldAABB(text)).toEqual({ x: 100, y: 50, width: 90, height: 19 })
+    expect(hitTest({ x: 145, y: 60 }, [text])?.id).toBe(text.id)
+  })
+
+  it('estimates from font metrics for legacy rows (still selectable)', () => {
+    const text = makeDecoration({
+      kind: 'text',
+      data: { x: 0, y: 0, text: 'two\nlines here', fontSize: 20, color: '#fff' },
+    })
+    const aabb = itemWorldAABB(text)!
+    expect(aabb.width).toBeGreaterThan(20)
+    expect(aabb.height).toBeCloseTo(2 * 20 * 1.2)
+    expect(hitTest({ x: aabb.width / 2, y: 20 }, [text])?.id).toBe(text.id)
+  })
+})

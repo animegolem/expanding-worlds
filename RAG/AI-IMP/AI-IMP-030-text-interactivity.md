@@ -6,12 +6,12 @@ tags:
   - canvas
   - decorations
   - text
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-021, AI-IMP-029]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.85
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-030-text-interactivity
@@ -69,18 +69,18 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] TextData gains measuredWidth?/measuredHeight?; isTextData
+- [x] TextData gains measuredWidth?/measuredHeight?; isTextData
       accepts them (finite, positive when present); unit test.
-- [ ] hit-test decorationAABB text branch: measured fields when
+- [x] hit-test decorationAABB text branch: measured fields when
       present, font-metric estimate otherwise; unit tests for both.
-- [ ] text-entry finish(): measure the div (rect ÷ zoom), write
+- [x] text-entry finish(): measure the div (rect ÷ zoom), write
       measuredWidth/measuredHeight into CreateDecoration and
       UpdateDecoration payloads.
-- [ ] e2e: create text via tool → click selects it; drag moves it
+- [x] e2e: create text via tool → click selects it; drag moves it
       (data x/y change, one TransformContent); dblclick reopens the
       overlay seeded with the text; edit commits one
       UpdateDecoration with refreshed measured bounds.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
 
 ### Acceptance Criteria
 
@@ -100,3 +100,14 @@ an edit commits one UpdateDecoration.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Two discoveries. The existing dblclick e2e only ever passed because
+hitTest carries a 4-world-unit slop — a zero-area text was clickable
+within 4 units of its top-left corner, which is why re-edit "worked"
+in tests but never for a human clicking the middle of a word. And
+UpdateDecoration skips no-op edits (same text), so measured-bounds
+backfill for legacy rows only happens on real edits — the hit-test
+estimate covers them meanwhile, which is the designed fallback.
+Full-suite e2e flaked once (board-tooling background test), passed
+isolated and on the full rerun — same pattern as the AI-IMP-028
+session; likely resource contention across 18 Electron launches;
+watching.
