@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.11         | 5 July 2026      |
+| Accepted for Phase 1 | 0.12         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -610,7 +610,17 @@ other content; resizing a nearby placement never affects it.
 Legibility is a property of the current zoom, and there is no
 automatic rescaling: the layout is authoritative, and zooming is how
 it is read. Newly created text SHOULD default to a world size legible
-at the creating viewport, fixed thereafter.
+at the creating viewport, fixed thereafter; resize handles on a text
+selection scale that world size uniformly (rev 0.12), so text behaves
+like scalable art text rather than reflowing.
+
+Canvas text styling is WHOLE-OBJECT (rev 0.12): one font family (from
+a small curated set of stacks), bold, italic, size, and color per
+text decoration, editable from the selection. Per-span rich text —
+bolding one word, mixed sizes — is deliberately deferred: if it ever
+arrives it is styled runs stored in the decoration data, never HTML,
+and the plain string at data.text (the FTS contract) is preserved.
+The prototype does not grow a rich text editor.
 
 ## 4.10 Project
 
@@ -917,6 +927,10 @@ canvas coordinates (closing former open question 7). Reset Background
 Transform returns to the normalized default. Setting a background
 SHOULD end with the camera easing (not teleporting) to frame the new
 extent, confirming the action and landing at the stage's natural zoom.
+Because normalization governs proportions, not fidelity, setting a
+background whose native width falls below a smallness threshold SHOULD
+raise a non-blocking notice that the image may look soft as a
+background; the set still proceeds (rev 0.12).
 
 ## 6.8 Draw, connect, order, and group
 
@@ -947,6 +961,15 @@ deferred pending artist feedback (§19).
 Connector endpoints MAY be free points or anchored to placements.
 Connector geometry remains visual decoration and does not create a
 semantic relationship.
+
+While drawing (rev 0.12), Shift constrains to the tidy form: shapes
+to canonical proportions (square, circle, equilateral triangle) and
+segment kinds — lines, arrows, connectors — to 45° angle steps. A
+block arrow's thickness is form, not pen weight: it is clamped
+proportional to the arrow's length so extreme widths degrade to a
+well-proportioned stub rather than a blob, and resizing an arrow
+scales its thickness uniformly with its endpoints (plain lines keep
+constant stroke weight under resize, the annotation convention).
 
 ## 6.9 Arrange, align, and navigate the board
 
@@ -980,6 +1003,13 @@ Smart guides SHOULD be visually quiet — thin, dotted, reduced
 opacity — and appear only while a snap is actively engaged. Engagement
 SHOULD use hysteresis, releasing at a slightly larger distance than it
 engages, so content does not oscillate at the threshold.
+
+Rotation snaps by ORIENTATION, not delta (rev 0.12): a single rotated
+item magnetizes gently to the cardinal directions (returning to
+upright is "rotate near it and it clicks"), Shift quantizes the
+resulting orientation to an evenly divided circle (15° steps), and
+the snap-bypass modifier disables both. No separate reset-orientation
+control is needed.
 
 Zoom to fit and zoom to selection SHOULD ease the camera to their
 target rather than jumping.
@@ -2491,6 +2521,13 @@ Accepted for the Phase 1 prototype:
   pointer, two-finger scroll pans, wheel zooms, Space or middle-drag
   pans; the cursor communicates interaction state. Smart guides render
   quiet and appear only while engaged; snapping uses hysteresis.
+
+- Rotation snaps by orientation (cardinal magnetism; Shift = 15°
+  absolute steps); Shift while drawing constrains shapes to canonical
+  proportions and segments to 45° steps; arrow thickness is
+  length-clamped form that scales with resize; canvas text styling is
+  whole-object (family/bold/italic/size/color) with resize scaling the
+  world size — per-span rich text deferred as styled runs, never HTML.
 
 - Grouping stays canvas-local presentation state; relational data
   never mirrors board arrangement. Frame-like on-canvas containers are

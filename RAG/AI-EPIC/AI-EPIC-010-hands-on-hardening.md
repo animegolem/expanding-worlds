@@ -13,6 +13,9 @@ AI_IMP_spawned:
   - AI-IMP-030
   - AI-IMP-031
   - AI-IMP-032
+  - AI-IMP-033
+  - AI-IMP-034
+  - AI-IMP-035
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -87,6 +90,17 @@ rotation is a recorded limitation). No new tools or panels.
       from-selection exception, replace preserves the extent, eased
       camera framing (AI-IMP-032).
 
+- [ ] FR-7: Rotation snaps by orientation — cardinal magnetism,
+      absolute 15° Shift steps, Alt bypass (AI-IMP-033).
+- [ ] FR-8: Sub-threshold background images raise a non-blocking
+      softness notice (AI-IMP-033).
+- [ ] FR-9: Text scales via resize handles and carries whole-object
+      styling (size/family/bold/italic/color); rich spans deferred
+      (AI-IMP-034).
+- [ ] FR-10: Shift-canonical drawing (squares/circles/equilateral,
+      45° segments); arrow thickness clamps to length and scales
+      with resize (AI-IMP-035).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -101,3 +115,6 @@ rotation is a recorded limitation). No new tools or panels.
   chrome + local-frame resize, corner rotate affordance.
 - AI-IMP-032 (lead): adaptive grid + background-as-stage (RFC rev
   0.11) — void, extent framing, normalize-on-set, eased camera.
+- AI-IMP-033 (lead): orientation snapping + small-background notice.
+- AI-IMP-034 (lead): text sizing and whole-object styling.
+- AI-IMP-035 (lead): shift-canonical drawing + arrow proportions.

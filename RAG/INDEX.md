@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 4 | 0 |
+| In Progress | 1 | 2 |
+| Planned | 4 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 5 | 31 |
-| **Total** | **10** | **32** |
+| **Total** | **10** | **35** |
 
 ## In Progress
 
@@ -22,6 +22,9 @@
 - [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — completed
 - [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — in-progress
 - [[AI-IMP-032-grid-and-stage|IMP-032]] Grid and stage — completed
+- [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — in-progress
+- [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — planned
+- [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — planned
 
 ---
 
@@ -54,7 +57,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (3397 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2539 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2576 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (668 LOC)
