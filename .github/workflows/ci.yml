@@ -50,9 +50,11 @@ jobs:
       - name: Ensure Electron binary
         working-directory: apps/desktop
         run: |
-          # The postinstall left a partially-extracted dist that
-          # install.js then treats as complete — force a clean fetch.
-          rm -rf node_modules/electron/dist node_modules/electron/path.txt
+          # The install-step postinstall saved a truncated zip into
+          # @electron/get's cache; every retry then "cache hits" the
+          # corrupt archive and extracts one stray file. Purge both
+          # the zip cache and the partial dist, then fetch fresh.
+          rm -rf ~/.cache/electron node_modules/electron/dist node_modules/electron/path.txt
           DEBUG='@electron/get*' node node_modules/electron/install.js
           ls node_modules/electron/dist/ | head -30
           test -x node_modules/electron/dist/electron
