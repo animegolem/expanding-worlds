@@ -1,3 +1,5 @@
+import { isLineData } from './decoration-data'
+import { arrowPolygon } from './renderers/decorations/line'
 import { DEFAULT_DOT_RADIUS } from './renderers/placement'
 import type { Point, Rect } from './camera'
 import type { SceneDecoration, SceneItem, ScenePlacement } from './types'
@@ -17,13 +19,41 @@ export function placementSize(item: ScenePlacement): { width: number; height: nu
   return { width: width * item.scale, height: height * item.scale }
 }
 
+function inflate(rect: Rect, pad: number): Rect {
+  if (pad <= 0) return rect
+  return { x: rect.x - pad, y: rect.y - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }
+}
+
+/**
+ * Visual bounds, stroke included (AI-IMP-029): strokes center on the
+ * geometry edge, so the drawn body extends strokeWidth/2 beyond the
+ * raw coordinates — round caps/joins and 90° rect miters land exactly
+ * on the half-width-inflated box. Block arrows use their exact filled
+ * silhouette. Selection outlines, hit areas, marquees, snapping, and
+ * alignment all read these bounds, so they agree with what's on
+ * screen.
+ */
 function decorationAABB(item: SceneDecoration): Rect | null {
   const d = item.data as Record<string, unknown>
   const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+  const strokePad = num(d['strokeWidth']) ? d['strokeWidth'] / 2 : 0
+  if (item.kind === 'arrow' && isLineData(item.data)) {
+    const points = arrowPolygon(item.data)
+    if (points.length >= 2) {
+      const xs = points.filter((_, i) => i % 2 === 0)
+      const ys = points.filter((_, i) => i % 2 === 1)
+      const x = Math.min(...xs)
+      const y = Math.min(...ys)
+      return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y }
+    }
+  }
   if (num(d['x1']) && num(d['y1']) && num(d['x2']) && num(d['y2'])) {
     const x = Math.min(d['x1'], d['x2'])
     const y = Math.min(d['y1'], d['y2'])
-    return { x, y, width: Math.abs(d['x2'] - d['x1']), height: Math.abs(d['y2'] - d['y1']) }
+    return inflate(
+      { x, y, width: Math.abs(d['x2'] - d['x1']), height: Math.abs(d['y2'] - d['y1']) },
+      strokePad,
+    )
   }
   if (Array.isArray(d['points']) && d['points'].length > 0) {
     const points = d['points'] as Array<[number, number]>
@@ -31,12 +61,15 @@ function decorationAABB(item: SceneDecoration): Rect | null {
     const ys = points.map((p) => p[1])
     const x = Math.min(...xs)
     const y = Math.min(...ys)
-    return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y }
+    return inflate(
+      { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y },
+      strokePad,
+    )
   }
   if (num(d['x']) && num(d['y'])) {
     const width = num(d['width']) ? d['width'] : 0
     const height = num(d['height']) ? d['height'] : 0
-    return { x: d['x'], y: d['y'], width, height }
+    return inflate({ x: d['x'], y: d['y'], width, height }, strokePad)
   }
   return null
 }

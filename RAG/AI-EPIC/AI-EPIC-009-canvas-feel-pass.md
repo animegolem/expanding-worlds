@@ -7,14 +7,15 @@ tags:
   - feel
   - polish
 date_created: 2026-07-04
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-05
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-024
   - AI-IMP-025
   - AI-IMP-026
   - AI-IMP-027
   - AI-IMP-028
+  - AI-IMP-029
 ---
 
 # AI-EPIC-009-canvas-feel-pass
@@ -101,7 +102,7 @@ the schema leaves room; only the default rendering changes.
 - [x] FR-5: Snap feel per §6.9 — dotted, reduced-opacity guides
       rendered only while a snap is engaged; engage/release
       hysteresis; threshold reviewed against real drags.
-- [ ] FR-6: Arrow renders as one filled block polygon derived from
+- [x] FR-6: Arrow renders as one filled block polygon derived from
       endpoints plus thickness; geometry pass over line, shape, path,
       connector at multiple widths and zooms (visual approval by the
       project owner).
@@ -143,6 +144,10 @@ the schema leaves room; only the default rendering changes.
 - AI-IMP-028 (lead): DeleteContent batch command + Delete/Backspace
   wiring with §9.2 notices, reachable z-order, Cmd+A, fit-all
   (FR-7, FR-8, FR-9).
+- AI-IMP-029 (lead, from the owner hardware pass): device-pixel
+  rendering + mipmaps (the Retina softness gap), stroke-aware
+  decoration bounds so selection outlines hug visual edges, handles
+  drawn at mousedown (click double-draw).
 
 Waves: agents 026/027 run in parallel worktrees from the start (both
 fenced inside packages/canvas-engine, non-overlapping files); lead

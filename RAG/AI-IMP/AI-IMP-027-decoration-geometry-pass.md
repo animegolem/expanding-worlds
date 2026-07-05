@@ -6,7 +6,7 @@ tags:
   - canvas
   - decorations
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-021]
 parent_epic: [[AI-EPIC-009-canvas-feel-pass]]
 confidence_score: 0.85

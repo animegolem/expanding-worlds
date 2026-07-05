@@ -96,7 +96,11 @@ async function loadTexture(url: string): Promise<Texture> {
   const response = await fetch(url)
   if (!response.ok) throw new Error(`asset fetch failed: ${url} (${response.status})`)
   const bitmap = await createImageBitmap(await response.blob())
-  return Texture.from(bitmap)
+  const texture = Texture.from(bitmap)
+  // Mipmaps: images on a board spend their lives downscaled, and
+  // linear-only minification shimmers during camera motion.
+  texture.source.autoGenerateMipmaps = true
+  return texture
 }
 
 /**
@@ -120,7 +124,9 @@ async function loadTileSource(url: string): Promise<TileTextureSource> {
         resizeHeight: Math.max(1, Math.round(tile.sh / scale)),
         resizeQuality: 'high',
       })
-      return Texture.from(slice)
+      const texture = Texture.from(slice)
+      texture.source.autoGenerateMipmaps = true
+      return texture
     },
     destroy() {
       bitmap.close()
@@ -133,7 +139,18 @@ const SELECTION_COLOR = 0x4a9df0
 
 export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostHandle> {
   const app = new Application()
-  await app.init({ resizeTo: element, antialias: true, background: '#17191d' })
+  // Device-pixel rendering (AI-IMP-029): without an explicit
+  // resolution the canvas rasterizes at CSS pixels and the compositor
+  // upscales it — permanently soft on Retina. autoDensity keeps all
+  // screen coordinates in CSS px. (DPR is read once at mount; moving
+  // the window across monitors with different DPR keeps the old one.)
+  await app.init({
+    resizeTo: element,
+    antialias: true,
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
+    background: '#17191d',
+  })
   element.appendChild(app.canvas)
 
   const planes = createScenePlanes()

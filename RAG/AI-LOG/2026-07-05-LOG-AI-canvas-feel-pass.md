@@ -6,7 +6,7 @@ tags:
   - canvas
   - feel
   - polish
-closed_tickets: [AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028]
+closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-EPIC-009]
 created_date: 2026-07-05
 related_files:
   - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md
@@ -75,9 +75,23 @@ residency races), 340 persistence (+4 DeleteContent), 18 desktop e2e
 (+3: §6.9 input mapping incl. cursors and handle hover; texture
 residency round-trip; delete/notice/z-order/select-all).
 
-## Next Steps
+## Late addition (same day)
 
-EPIC-009 remains in-progress pending the OWNER HARDWARE PASS: pinch/
+The owner hardware pass approved pan/scroll feel, snapping, delete,
+and arrows (FR-6), and surfaced three more defects, fixed as
+AI-IMP-029: the Pixi app initialized without resolution/autoDensity
+(the whole board rendered at CSS pixels and upscaled — the dominant
+sharpness gap vs Miro) plus no texture mipmaps (motion shimmer);
+decoration bounds ignored stroke extents so selection outlines missed
+the visual edge (arrows now use the exact arrowPolygon silhouette —
+outline, hit, marquee, snap, and align all read visual bounds); and
+handles hid during 'gesture-pending', making a click read as two
+draws. 189 engine / 340 persistence tests, 18/18 e2e (perf suite at
+device resolution), lint clean. EPIC-009 closed.
+
+## Next Steps (superseded — epic closed)
+
+Original close-out note, kept for context: pinch/
 two-finger feel and zoom-speed constants (host.ts WHEEL_ZOOM_SPEED
 0.0015 / PINCH_ZOOM_SPEED 0.01), drag/resize smoothness, snap
 quietness, and FR-6 arrow visual approval (IMP-024 has the two open
@@ -85,3 +99,9 @@ checklist items). After sign-off: close 024 + the epic, then EPIC-005
 (notes/links/phantoms) per the 2026-07-04 log. The deferred contents
 outline (§14.3) belongs to EPIC-006; frames stay an open question
 (§19 #19).
+
+EPIC-005 (notes, links, phantoms) is next, per the 2026-07-04 log.
+Known limitation recorded on IMP-029: DPR is read once at mount.
+Owner ideas parked: artist-drawn SVG shapes imported as decorations
+(polish era); the owner's artist friend gets the M1 and becomes the
+first outside tester after EPIC-005-ish.

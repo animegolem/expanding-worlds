@@ -6,26 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 4 | 1 |
+| In Progress | 0 | 0 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 4 | 26 |
-| **Total** | **9** | **28** |
-
-## In Progress
-
-### [[AI-EPIC-009-canvas-feel-pass|EPIC-009: Canvas feel pass]]
-> First hands-on use of the EPIC-004 build was jarring where it should
-
-**IMPs:**
-- [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — in-progress
-- [[AI-IMP-025-texture-correctness-and-drag-fidelity|IMP-025]] Texture correctness and drag fidelity — completed
-- [[AI-IMP-026-quiet-snapping|IMP-026]] Quiet snapping — completed
-- [[AI-IMP-027-decoration-geometry-pass|IMP-027]] Decoration geometry pass — planned
-- [[AI-IMP-028-delete-zorder-safety-nets|IMP-028]] Delete zorder safety nets — completed
-
----
+| Completed | 5 | 29 |
+| **Total** | **9** | **29** |
 
 ## Planned
 
@@ -65,8 +51,8 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
+- apps/desktop/src/renderer/canvas/host.ts (590 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (573 LOC)
 - apps/desktop/e2e/slice.spec.ts (523 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (469 LOC)
@@ -83,7 +69,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.test.ts (365 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
-- apps/desktop/src/renderer/canvas/gestures-ui.ts (331 LOC)
+- apps/desktop/src/renderer/canvas/gestures-ui.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - apps/desktop/e2e/decorations.spec.ts (328 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (327 LOC)
@@ -98,7 +84,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>4 EPICs, 26 IMPs completed</summary>
+<summary>5 EPICs, 29 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -127,5 +113,12 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — completed
   - [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — completed
   - [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — completed
+- [[AI-EPIC-009-canvas-feel-pass|EPIC-009]] Canvas feel pass — 2026-07-05
+  - [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — completed
+  - [[AI-IMP-025-texture-correctness-and-drag-fidelity|IMP-025]] Texture correctness and drag fidelity — completed
+  - [[AI-IMP-026-quiet-snapping|IMP-026]] Quiet snapping — completed
+  - [[AI-IMP-027-decoration-geometry-pass|IMP-027]] Decoration geometry pass — completed
+  - [[AI-IMP-028-delete-zorder-safety-nets|IMP-028]] Delete zorder safety nets — completed
+  - [[AI-IMP-029-render-quality-and-selection-fidelity|IMP-029]] Render quality and selection fidelity — completed
 
 </details>

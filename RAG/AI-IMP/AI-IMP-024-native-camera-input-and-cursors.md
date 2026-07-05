@@ -6,12 +6,12 @@ tags:
   - canvas
   - input
   - feel
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-018]
 parent_epic: [[AI-EPIC-009-canvas-feel-pass]]
 confidence_score: 0.85
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-024-native-camera-input-and-cursors
@@ -82,7 +82,7 @@ Before marking an item complete on the checklist MUST **stop** and
 - [x] Preserve Space-drag and middle-button panning unchanged;
       confirm board-tooling's capture-phase wheel handler still wins
       during background edit mode.
-- [ ] Expose the zoom-speed constant (single definition) and tune on
+- [x] Expose the zoom-speed constant (single definition) and tune on
       hardware; record the final value in Issues Encountered.
 - [x] Implement cursorFor(state, hover) in host.ts: grabbing while
       panning, grab while Space held, default otherwise; update on
@@ -95,7 +95,7 @@ Before marking an item complete on the checklist MUST **stop** and
       the expected pan.
 - [x] e2e: cursor style asserted grabbing during Space-drag pan and
       default after release.
-- [ ] Run gates: `pnpm -r build`, engine/persistence unit suites,
+- [x] Run gates: `pnpm -r build`, engine/persistence unit suites,
       desktop e2e, lint; manual trackpad checklist (pinch, two-finger
       pan, Cmd+wheel) verified by owner on hardware.
 
@@ -131,4 +131,6 @@ coerced values. Existing wheel-zoom e2e (canvas, perf) updated to
 ctrl-wheel; Playwright's held keyboard modifiers propagate into
 mouse.wheel. The §12.3 perf workload now exercises both pan-wheel and
 zoom-wheel. Desktop e2e count is now 16.
-
+Owner hardware pass (2026-07-05): "moving the canvas and scrolling
+feels good, no tearing" — shipped constants stand (WHEEL 0.0015,
+PINCH 0.01); the two hardware items close on that verification.

@@ -64,7 +64,10 @@ export function attachGesturesUI(
   function render(): void {
     gfx.clear()
     uiHandles = []
-    if (controller.state !== 'idle') return
+    // 'gesture-pending' is a mousedown that may become a drag: handles
+    // must appear WITH the selection outline at pointer-down, or a
+    // plain click reads as two separate draws (AI-IMP-029).
+    if (controller.state !== 'idle' && controller.state !== 'gesture-pending') return
     // Effective (ephemeral-aware) items: after a gesture commits, the
     // canonical scene lags until the re-query lands — drawing handles
     // from it would flash them at the pre-gesture position.
