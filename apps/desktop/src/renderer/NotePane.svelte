@@ -8,12 +8,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { LinkResolution } from './note/link-resolution'
-  import {
-    NoteEditorController,
-    NOTE_AUTOSAVE_IDLE_MS,
-    type NoteRecord,
-    type ProjectPort,
-  } from './note/note-editor'
+  import { NoteEditorController, type NoteRecord, type ProjectPort } from './note/note-editor'
   import { uuidv7, titleKey } from '@ew/domain'
   import {
     onOpenNote,
@@ -123,12 +118,19 @@
     }
   }
 
+  // First-edit materialization gets a LONGER idle window than note
+  // autosave: creating a note is a bigger commitment than saving one,
+  // and a short window yanks the Create-and-Place button away from a
+  // user (or slow test runner) who typed a draft and is reaching for
+  // it (AI-IMP-058 — CI caught this as an unstable-element timeout).
+  const PHANTOM_FIRST_EDIT_IDLE_MS = 4000
+
   function onDraftInput(): void {
     if (draftTimer !== null) clearTimeout(draftTimer)
     draftTimer = setTimeout(() => {
       draftTimer = null
       if (phantomDraft.trim().length > 0) void materialize(phantomDraft)
-    }, NOTE_AUTOSAVE_IDLE_MS)
+    }, PHANTOM_FIRST_EDIT_IDLE_MS)
   }
 
   function createAndPlace(): void {
