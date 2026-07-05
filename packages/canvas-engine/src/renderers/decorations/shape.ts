@@ -19,7 +19,15 @@ function draw(gfx: Graphics, data: ShapeData): void {
   else if (data.shape === 'ellipse') gfx.ellipse(0, 0, w / 2, h / 2)
   else gfx.poly([0, -h / 2, w / 2, h / 2, -w / 2, h / 2])
   if (data.fill !== undefined) gfx.fill({ color: data.fill })
-  gfx.stroke({ width: data.strokeWidth, color: data.stroke })
+  // Triangles join with 'round': their apex angle is arbitrary, and
+  // the default miter join (limit 10) spikes up to 5x strokeWidth
+  // past a sharp vertex at thick strokes (AI-IMP-027). Rect corners
+  // are always 90deg (miter factor sqrt(2)) and stay crisp miters.
+  gfx.stroke({
+    width: data.strokeWidth,
+    color: data.stroke,
+    join: data.shape === 'triangle' ? 'round' : 'miter',
+  })
 }
 
 function apply(gfx: Graphics, container: Container, item: SceneDecoration): void {

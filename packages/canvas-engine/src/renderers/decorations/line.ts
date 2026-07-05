@@ -4,31 +4,76 @@ import type { SceneDecoration } from '../../types'
 import type { ItemRenderer } from '../registry'
 
 /**
- * Straight line and arrow decorations (kinds 'line' and 'arrow'):
- * one segment in absolute world coordinates; arrows add a filled
- * head at (x2, y2). Invalid data renders nothing.
+ * Straight line and arrow decorations (kinds 'line' and 'arrow'): one
+ * segment in absolute world coordinates. Lines are stroked with round
+ * caps. Arrows are a single filled block polygon (AI-IMP-027): the
+ * old stroke+triangle pair pushed a round stroke cap past the head,
+ * leaving a lump at the tip; one filled silhouette cannot seam or
+ * bulge. Invalid data renders nothing.
  */
 
+/** Head width across the barbs, in shaft thicknesses. */
+export const ARROW_HEAD_WIDTH_FACTOR = 3
+/** Head length tip-to-base, in shaft thicknesses. */
+export const ARROW_HEAD_LENGTH_FACTOR = 2.2
+/** Head length never exceeds this fraction of the segment length. */
+export const ARROW_HEAD_MAX_FRACTION = 0.6
+
+/**
+ * Pure block-arrow silhouette for (x1,y1)->(x2,y2): a rectangular
+ * shaft of thickness strokeWidth and a triangular head, as one
+ * 7-point polygon [x0,y0, ..., x6,y6]. Point 3 is the tip, exactly at
+ * (x2,y2); points 0 and 6 are the flat tail edge centered on (x1,y1).
+ * Degenerate segments (zero-length or non-finite) yield [].
+ */
+export function arrowPolygon(data: LineData): number[] {
+  const dx = data.x2 - data.x1
+  const dy = data.y2 - data.y1
+  const length = Math.hypot(dx, dy)
+  if (length === 0 || !Number.isFinite(length)) return []
+  // Unit axis (u) and unit left-normal (p).
+  const ux = dx / length
+  const uy = dy / length
+  const px = -uy
+  const py = ux
+  const shaftHalf = data.strokeWidth / 2
+  const headHalf = (data.strokeWidth * ARROW_HEAD_WIDTH_FACTOR) / 2
+  const headLength = Math.min(
+    data.strokeWidth * ARROW_HEAD_LENGTH_FACTOR,
+    length * ARROW_HEAD_MAX_FRACTION,
+  )
+  // Head base point on the axis.
+  const baseX = data.x2 - ux * headLength
+  const baseY = data.y2 - uy * headLength
+  return [
+    data.x1 + px * shaftHalf,
+    data.y1 + py * shaftHalf,
+    baseX + px * shaftHalf,
+    baseY + py * shaftHalf,
+    baseX + px * headHalf,
+    baseY + py * headHalf,
+    data.x2,
+    data.y2,
+    baseX - px * headHalf,
+    baseY - py * headHalf,
+    baseX - px * shaftHalf,
+    baseY - py * shaftHalf,
+    data.x1 - px * shaftHalf,
+    data.y1 - py * shaftHalf,
+  ]
+}
+
 export function drawSegment(gfx: Graphics, data: LineData, arrowhead: boolean): void {
+  if (arrowhead) {
+    const points = arrowPolygon(data)
+    if (points.length > 0) gfx.poly(points).fill({ color: data.stroke })
+    return
+  }
   gfx.moveTo(data.x1, data.y1).lineTo(data.x2, data.y2).stroke({
     width: data.strokeWidth,
     color: data.stroke,
     cap: 'round',
   })
-  if (!arrowhead) return
-  const angle = Math.atan2(data.y2 - data.y1, data.x2 - data.x1)
-  const size = Math.max(8, data.strokeWidth * 4)
-  const spread = Math.PI / 7
-  gfx
-    .poly([
-      data.x2,
-      data.y2,
-      data.x2 - size * Math.cos(angle - spread),
-      data.y2 - size * Math.sin(angle - spread),
-      data.x2 - size * Math.cos(angle + spread),
-      data.y2 - size * Math.sin(angle + spread),
-    ])
-    .fill({ color: data.stroke })
 }
 
 function makeRenderer(arrowhead: boolean): ItemRenderer<SceneDecoration> {

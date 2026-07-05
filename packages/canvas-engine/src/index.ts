@@ -84,7 +84,7 @@ export {
 export { textRenderer } from './renderers/decorations/text'
 export { shapeRenderer } from './renderers/decorations/shape'
 export { pathRenderer } from './renderers/decorations/path'
-export { arrowRenderer, lineRenderer } from './renderers/decorations/line'
+export { arrowPolygon, arrowRenderer, lineRenderer } from './renderers/decorations/line'
 export {
   connectorEndpoints,
   connectorRenderer,

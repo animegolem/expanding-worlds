@@ -4,7 +4,14 @@ import { DEFAULT_STROKE, DEFAULT_STROKE_WIDTH } from '../../decoration-data'
 import { fakeResources, makeDecoration, makePlacement } from '../../test-helpers'
 import { placementRenderer } from '../placement'
 import { connectorRenderer, connectorEndpoints } from './connector'
-import { arrowRenderer, lineRenderer } from './line'
+import {
+  ARROW_HEAD_LENGTH_FACTOR,
+  ARROW_HEAD_MAX_FRACTION,
+  ARROW_HEAD_WIDTH_FACTOR,
+  arrowPolygon,
+  arrowRenderer,
+  lineRenderer,
+} from './line'
 import { pathRenderer } from './path'
 import { shapeRenderer } from './shape'
 import { textRenderer } from './text'
@@ -91,6 +98,35 @@ describe('shape renderer', () => {
     expect(gfx.getLocalBounds().width).toBe(0)
   })
 
+  it('triangles stroke with round joins; rects keep miter corners', () => {
+    // A sharp triangle apex under the default miter join (limit 10)
+    // spikes up to 5x strokeWidth past the vertex at thick strokes
+    // (AI-IMP-027); rect corners are fixed 90deg and stay miters.
+    const strokeStyleOf = (shape: 'rect' | 'triangle'): string | undefined => {
+      const item = makeDecoration({
+        kind: 'shape',
+        data: { shape, x: 0, y: 0, width: 20, height: 80, stroke: DEFAULT_STROKE, strokeWidth: 12 },
+      })
+      const object = shapeRenderer.create(item, fakeResources())
+      const gfx = object.getChildByLabel('shape') as Graphics
+      const instruction = gfx.context.instructions.find((i) => i.action === 'stroke')
+      return instruction && 'style' in instruction.data ? instruction.data.style.join : undefined
+    }
+    expect(strokeStyleOf('triangle')).toBe('round')
+    expect(strokeStyleOf('rect')).toBe('miter')
+  })
+
+  it('zero-size shapes do not crash', () => {
+    for (const shape of ['rect', 'ellipse', 'triangle'] as const) {
+      const item = makeDecoration({
+        kind: 'shape',
+        data: { shape, x: 10, y: 10, width: 0, height: 0, ...stroke },
+      })
+      const object = shapeRenderer.create(item, fakeResources())
+      expect(object.getChildByLabel('shape')).not.toBeNull()
+    }
+  })
+
   it('update rewrites geometry from new data', () => {
     const item = makeDecoration({
       kind: 'shape',
@@ -127,6 +163,21 @@ describe('path renderer', () => {
     expect(gfx.getLocalBounds().width).toBeGreaterThanOrEqual(20)
   })
 
+  it('degenerate duplicate-point path does not crash', () => {
+    const item = makeDecoration({
+      kind: 'path',
+      data: {
+        points: [
+          [5, 5],
+          [5, 5],
+        ],
+        ...stroke,
+      },
+    })
+    const object = pathRenderer.create(item, fakeResources())
+    expect(object.getChildByLabel('path')).not.toBeNull()
+  })
+
   it('renders nothing for invalid data and redraws on update', () => {
     const bad = makeDecoration({ kind: 'path', data: { points: [[0, 0]], ...stroke } })
     const object = pathRenderer.create(bad, fakeResources())
@@ -151,6 +202,66 @@ describe('path renderer', () => {
   })
 })
 
+/** Element-wise closeTo comparison for polygon coordinate arrays. */
+function expectPoly(actual: number[], expected: number[]): void {
+  expect(actual.length).toBe(expected.length)
+  for (let i = 0; i < expected.length; i += 1) {
+    expect(actual[i]).toBeCloseTo(expected[i]!, 9)
+  }
+}
+
+describe('arrowPolygon', () => {
+  const sw = { stroke: DEFAULT_STROKE, strokeWidth: 12 }
+
+  it('produces the 7-point block silhouette for an axis-aligned arrow', () => {
+    // length 50, thickness 12: shaft half 6, head half-width 18,
+    // head length min(12 * 2.2, 50 * 0.6) = 26.4, base at x = 23.6.
+    const poly = arrowPolygon({ x1: 0, y1: 0, x2: 50, y2: 0, ...sw })
+    const base = 50 - 12 * ARROW_HEAD_LENGTH_FACTOR
+    expectPoly(poly, [0, 6, base, 6, base, 18, 50, 0, base, -18, base, -6, 0, -6])
+  })
+
+  it('places the tip exactly at (x2,y2) and centers the tail edge on (x1,y1)', () => {
+    const poly = arrowPolygon({ x1: 3, y1: -7, x2: 41, y2: 25, ...sw })
+    expect(poly[6]).toBe(41)
+    expect(poly[7]).toBe(25)
+    expect((poly[0]! + poly[12]!) / 2).toBeCloseTo(3, 9)
+    expect((poly[1]! + poly[13]!) / 2).toBeCloseTo(-7, 9)
+  })
+
+  it('is symmetric about the segment axis', () => {
+    const data = { x1: 10, y1: 20, x2: 70, y2: -15, ...sw }
+    const poly = arrowPolygon(data)
+    const ux = (data.x2 - data.x1) / Math.hypot(data.x2 - data.x1, data.y2 - data.y1)
+    const uy = (data.y2 - data.y1) / Math.hypot(data.x2 - data.x1, data.y2 - data.y1)
+    // Reflecting point i across the axis line must yield point 6-i.
+    for (let i = 0; i < 7; i += 1) {
+      const dx = poly[i * 2]! - data.x1
+      const dy = poly[i * 2 + 1]! - data.y1
+      const along = dx * ux + dy * uy
+      const across = dx * -uy + dy * ux
+      const j = 6 - i
+      const jdx = poly[j * 2]! - data.x1
+      const jdy = poly[j * 2 + 1]! - data.y1
+      expect(jdx * ux + jdy * uy).toBeCloseTo(along, 9)
+      expect(jdx * -uy + jdy * ux).toBeCloseTo(-across, 9)
+    }
+  })
+
+  it('clamps the head to 60% of a short segment', () => {
+    // length 10 << 12 * 2.2: head length clamps to 6, base at x = 4.
+    const poly = arrowPolygon({ x1: 0, y1: 0, x2: 10, y2: 0, ...sw })
+    const base = 10 * (1 - ARROW_HEAD_MAX_FRACTION)
+    const headHalf = (12 * ARROW_HEAD_WIDTH_FACTOR) / 2
+    expectPoly(poly, [0, 6, base, 6, base, headHalf, 10, 0, base, -headHalf, base, -6, 0, -6])
+  })
+
+  it('returns empty for zero-length or non-finite segments', () => {
+    expect(arrowPolygon({ x1: 5, y1: 5, x2: 5, y2: 5, ...sw })).toEqual([])
+    expect(arrowPolygon({ x1: 0, y1: 0, x2: Infinity, y2: 0, ...sw })).toEqual([])
+  })
+})
+
 describe('line and arrow renderers', () => {
   const data = { x1: 0, y1: 0, x2: 50, y2: 0, ...stroke }
 
@@ -167,6 +278,39 @@ describe('line and arrow renderers', () => {
     const lineH = (line.getChildByLabel('line') as Graphics).getLocalBounds().height
     const arrowH = (arrow.getChildByLabel('line') as Graphics).getLocalBounds().height
     expect(arrowH).toBeGreaterThan(lineH)
+  })
+
+  it('arrow renders one filled polygon, no strokes, bounds hugging the silhouette', () => {
+    const thick = { x1: 0, y1: 0, x2: 50, y2: 0, stroke: DEFAULT_STROKE, strokeWidth: 12 }
+    const arrow = arrowRenderer.create(makeDecoration({ kind: 'arrow', data: thick }), fakeResources())
+    const gfx = arrow.getChildByLabel('line') as Graphics
+    expect(gfx.context.instructions.map((i) => i.action)).toEqual(['fill'])
+    const bounds = gfx.getLocalBounds()
+    // No round-cap lump: nothing extends past the tail edge or the tip.
+    expect(bounds.minX).toBe(0)
+    expect(bounds.maxX).toBe(50)
+    expect(bounds.minY).toBe(-18)
+    expect(bounds.maxY).toBe(18)
+  })
+
+  it('zero-length arrow renders nothing instead of a stray head', () => {
+    const degenerate = { x1: 5, y1: 5, x2: 5, y2: 5, ...stroke }
+    const arrow = arrowRenderer.create(
+      makeDecoration({ kind: 'arrow', data: degenerate }),
+      fakeResources(),
+    )
+    const gfx = arrow.getChildByLabel('line') as Graphics
+    expect(gfx.context.instructions).toHaveLength(0)
+    expect(gfx.getLocalBounds().width).toBe(0)
+  })
+
+  it('zero-length line does not crash', () => {
+    const degenerate = { x1: 5, y1: 5, x2: 5, y2: 5, ...stroke }
+    const line = lineRenderer.create(
+      makeDecoration({ kind: 'line', data: degenerate }),
+      fakeResources(),
+    )
+    expect(line.getChildByLabel('line')).not.toBeNull()
   })
 
   it('update redraws from new endpoints', () => {
