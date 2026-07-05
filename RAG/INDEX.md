@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 3 | 4 |
+| Planned | 3 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 7 | 52 |
+| Completed | 7 | 53 |
 | **Total** | **12** | **57** |
 
 ## In Progress
@@ -41,7 +41,7 @@
 
 **IMPs:**
 - [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — completed
-- [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — planned
+- [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — completed
 - [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — planned
 - [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — planned
 - [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — planned
@@ -75,9 +75,9 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2670 LOC)
 - apps/desktop/e2e/notes.spec.ts (946 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
-- apps/desktop/src/renderer/NotePane.svelte (755 LOC)
+- apps/desktop/src/renderer/NotePane.svelte (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (704 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (719 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -123,7 +123,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>7 EPICs, 52 IMPs completed</summary>
+<summary>7 EPICs, 53 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

@@ -61,6 +61,10 @@ export interface CanvasHostHandle {
   /** Eased camera flight framing `bounds` (§6.9 rev 0.11); any user
    * camera input aborts it. */
   flyTo(bounds: Rect): void
+  /** Fires after every applied scene (AI-IMP-054): the deterministic
+   * signal for UI that reads scene/controller snapshots — replaces
+   * the 120 ms trailing-refresh heuristic. Returns an unsubscribe. */
+  onSceneApplied(listener: () => void): () => void
   /** §12.2 single live canvas: swap the mounted canvas, releasing
    * the previous scene's textures. */
   openCanvas(canvasId: string): Promise<void>
@@ -433,6 +437,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     highlightPlacement: (id) => toolOverlay.highlightPlacement(id),
   })
 
+  const sceneAppliedListeners = new Set<() => void>()
+  function notifySceneApplied(): void {
+    for (const listener of sceneAppliedListeners) listener()
+  }
+
   let refreshing = false
   let refreshQueued = false
   async function refresh(): Promise<void> {
@@ -449,6 +458,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         controller.setItems([])
         sceneBackground = null
         drawStageOrGrid()
+        notifySceneApplied()
         return
       }
       backgroundSync.apply(scene.background)
@@ -460,6 +470,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       ephemeral.clear()
       drawSelection()
       scheduleCull()
+      notifySceneApplied()
     } finally {
       refreshing = false
       if (refreshQueued) {
@@ -681,6 +692,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     flyTo: (bounds: Rect) => {
       const target = controller.camera.fitTarget(bounds, viewport())
       if (target) flight.flyTo(target)
+    },
+    onSceneApplied(listener: () => void): () => void {
+      sceneAppliedListeners.add(listener)
+      return () => sceneAppliedListeners.delete(listener)
     },
     openCanvas,
     destroy() {

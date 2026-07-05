@@ -46,16 +46,14 @@
   $effect(() => {
     const offSelection = handle.controller.selection.onChanged(() => refresh())
     const offTooling = tooling.onChanged(() => refresh())
-    // Selection callbacks fire before the host swaps in the fresh
-    // scene snapshot; re-read once that refresh has landed.
-    const offProject = window.ew.project.onChanged(() => {
-      setTimeout(refresh, 120)
-    })
+    // Deterministic (AI-IMP-054): refresh when the host has actually
+    // applied the fresh scene, not a 120 ms guess later.
+    const offScene = handle.onSceneApplied(() => refresh())
     refresh()
     return () => {
       offSelection()
       offTooling()
-      offProject()
+      offScene()
     }
   })
 

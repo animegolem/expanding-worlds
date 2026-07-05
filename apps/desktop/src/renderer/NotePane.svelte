@@ -335,26 +335,23 @@
 
       // Project-changed events deliver re-resolution sweep effects
       // (materialization, rename, restore) to the open editor and the
-      // phantom view. Small debounce coalesces command bursts.
-      let refreshTimer: ReturnType<typeof setTimeout> | null = null
+      // phantom view. Events arrive post-commit, so queries issued
+      // here already see fresh rows — no timer (AI-IMP-054); the
+      // LinkResolution epoch guard discards stale overlapping reads.
       const disposeRefresh = window.ew.project.onChanged(() => {
-        if (refreshTimer !== null) clearTimeout(refreshTimer)
-        refreshTimer = setTimeout(() => {
-          refreshTimer = null
-          void resolution.refresh(controller?.note?.id ?? null)
-          // §10.2: rename rewrites fold into the open buffer as a
-          // minimal external change inside local undo.
-          void controller?.syncExternal()
-          usesRefresh += 1
-          const view = phantom
-          if (view && paneProject) {
-            void paneProject
-              .query<PhantomView | null>('getPhantom', { titleKey: view.titleKey })
-              .then((fresh) => {
-                if (phantom?.titleKey === view.titleKey) phantom = fresh
-              })
-          }
-        }, 100)
+        void resolution.refresh(controller?.note?.id ?? null)
+        // §10.2: rename rewrites fold into the open buffer as a
+        // minimal external change inside local undo.
+        void controller?.syncExternal()
+        usesRefresh += 1
+        const view = phantom
+        if (view && paneProject) {
+          void paneProject
+            .query<PhantomView | null>('getPhantom', { titleKey: view.titleKey })
+            .then((fresh) => {
+              if (phantom?.titleKey === view.titleKey) phantom = fresh
+            })
+        }
       })
       void resolution.refresh(null)
 
@@ -362,7 +359,6 @@
         dispose,
         disposeRefresh,
         () => {
-          if (refreshTimer !== null) clearTimeout(refreshTimer)
           if (draftTimer !== null) clearTimeout(draftTimer)
         },
         onOpenNote((noteId) => {

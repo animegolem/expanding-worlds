@@ -54,16 +54,15 @@
   $effect(() => {
     const offTool = handle.tools.onChanged((tool) => (activeTool = tool))
     const offSelection = handle.controller.selection.onChanged(() => refresh())
-    // The host re-queries the scene after project-changed; read the
-    // fresh snapshot once that trailing refresh has landed.
-    const offProject = window.ew.project.onChanged(() => {
-      setTimeout(refresh, 120)
-    })
+    // Deterministic (AI-IMP-054): the host signals every applied
+    // scene, so the snapshot is fresh by construction — the old
+    // 120 ms trailing timer caused two real races.
+    const offScene = handle.onSceneApplied(() => refresh())
     refresh()
     return () => {
       offTool()
       offSelection()
-      offProject()
+      offScene()
     }
   })
 
@@ -115,7 +114,8 @@
   }
 
   function run(action: () => Promise<void>): void {
-    void action().then(() => setTimeout(refresh, 120))
+    // The commit's project-changed → scene-applied signal refreshes us.
+    void action()
   }
 </script>
 

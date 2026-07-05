@@ -5,12 +5,12 @@ tags:
   - Implementation
   - hardening
   - renderer
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-012-pre-alpha-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-054-deterministic-scene-ui-sync
@@ -65,15 +65,15 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] handle.onSceneApplied fires after every applied scene
+- [x] handle.onSceneApplied fires after every applied scene
       (initial load included); unsubscribe supported.
-- [ ] DecorationToolbar refreshes on project-changed +
+- [x] DecorationToolbar refreshes on project-changed +
       scene-applied; `setTimeout(refresh, 120)` gone; rapid
       size→bold sequences stay correct (existing e2e covers).
-- [ ] BoardToolbar audited; converted if it uses the timer pattern.
-- [ ] NotePane resolution refresh runs directly on project-changed;
+- [x] BoardToolbar audited; converted if it uses the timer pattern.
+- [x] NotePane resolution refresh runs directly on project-changed;
       100 ms timer gone.
-- [ ] grep proves no `setTimeout(refresh` remains under
+- [x] grep proves no `setTimeout(refresh` remains under
       src/renderer; full gates green locally and on CI.
 
 ### Acceptance Criteria
@@ -96,3 +96,15 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+As designed, small and clean. The host's refresh() now notifies
+scene-applied listeners on both branches (scene and cleared), so the
+signal also covers canvas swaps; the toolbar's post-action timer
+dropped entirely — its own commit's project-changed → scene-applied
+chain does the refresh. NotePane's 100 ms timer was coalescing, not
+correctness (events arrive post-commit; queries see fresh rows), so
+it went too — the LinkResolution epoch guard already discards stale
+overlapping reads. BoardToolbar used the same 120 ms pattern and
+converted identically. grep confirms zero setTimeout(refresh sites
+remain under src/renderer; the existing decorations e2e (rapid
+size→bold) covers the race this class caused. No spec waits needed
+removal.
