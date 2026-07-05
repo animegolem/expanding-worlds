@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 1 |
-| Planned | 3 | 0 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 8 | 57 |
-| **Total** | **12** | **58** |
+| **Total** | **13** | **58** |
 
 ## In Progress
 
@@ -38,8 +38,8 @@
 
 ## Planned
 
-### [[AI-EPIC-006-navigation-discovery|EPIC-006: Navigation discovery]]
-> RFC §8 and §14 define how users move through and find things in a
+### [[AI-EPIC-006-shell-and-local-scope|EPIC-006: Shell and local scope]]
+> RFC §8.2's shell model — the window is the board, floating chrome,
 
 ---
 
@@ -53,6 +53,11 @@
 
 ---
 
+### [[AI-EPIC-013-global-views|EPIC-013: Global views]]
+> The shell's second physics — project-global views that take over the
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -60,7 +65,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5045 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2670 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2964 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (753 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
