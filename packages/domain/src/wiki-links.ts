@@ -38,6 +38,37 @@ export interface WikiLinkToken {
   alias: string | null
 }
 
+/**
+ * Live display state of a wiki-link token (§7.1/§7.2, AI-IMP-045),
+ * derived the same way `refreshNoteLinks` will persist it on the next
+ * save so presentation and records cannot drift:
+ *
+ * 1. A title_key with a broken record in the SOURCE note stays broken
+ *    (invariant 27) — even when an active note now matches.
+ * 2. Otherwise a note (active or trashed) with that title_key binds;
+ *    a trashed target renders as bound-trashed (In Trash affordance).
+ * 3. Otherwise the token is unresolved (phantom).
+ */
+export type WikiLinkDisplayState = 'bound' | 'bound-trashed' | 'unresolved' | 'broken'
+
+export interface LinkResolutionContext {
+  /** title_keys with a broken record in the source note. */
+  brokenKeys: ReadonlySet<string>
+  /** title_key → lifecycle for every non-purged note in the project. */
+  titles: ReadonlyMap<string, 'active' | 'trashed'>
+}
+
+export function linkDisplayState(
+  key: string,
+  ctx: LinkResolutionContext,
+): WikiLinkDisplayState {
+  if (ctx.brokenKeys.has(key)) return 'broken'
+  const lifecycle = ctx.titles.get(key)
+  if (lifecycle === 'active') return 'bound'
+  if (lifecycle === 'trashed') return 'bound-trashed'
+  return 'unresolved'
+}
+
 const TOKEN_RE = /\[\[([^[\]|\r\n]+)(?:\|([^[\]\r\n]+))?\]\]/g
 
 /** Extract all wiki-link tokens from a Markdown body, in order. */

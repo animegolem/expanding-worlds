@@ -133,6 +133,122 @@ test('node menu Open Note loads the pane', async () => {
   await app.close()
 })
 
+test('wiki-link states render live, sweep effects refresh, suggestions complete (AI-IMP-045)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-links-'))
+  const { app, win } = await launch(projectDir)
+
+  // Seed: bound, bound-trashed, unresolved, and broken targets, all
+  // referenced from one source note placed on the canvas.
+  const { logId } = await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    const harborId = crypto.randomUUID()
+    const reefId = crypto.randomUUID()
+    const doomedId = crypto.randomUUID()
+    const logId = crypto.randomUUID()
+    await run('CreateNote', { noteId: harborId, title: 'Harbor' })
+    await run('CreateNote', { noteId: reefId, title: 'Reef' })
+    await run('CreateNote', { noteId: doomedId, title: 'Doomed' })
+    await run('CreateNote', {
+      noteId: logId,
+      title: 'Log',
+      body: 'see [[Harbor]] and [[Reef]] and [[Missing]] and [[Doomed]] and [[Kraken]]',
+    })
+    await run('TrashNote', { noteId: reefId })
+    await run('TrashNote', { noteId: doomedId })
+    await run('PurgeRecord', { kind: 'note', id: doomedId })
+    await run('CreatePin', {
+      nodeId: crypto.randomUUID(),
+      canvasId: window.__ewDebug!.canvasId(),
+      placementId: crypto.randomUUID(),
+      x: 300,
+      y: 240,
+      appearance: { kind: 'dot', color: '#ff7700' },
+      note: { kind: 'attach', noteId: logId },
+    })
+    return { logId }
+  })
+  expect(logId).toBeTruthy()
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.getByTestId('note-editor')).toContainText('Harbor')
+
+  // Four visually distinct states from one body (§7.1).
+  const stateOf = (title: string) =>
+    win.locator(`.cm-content [data-link-title="${title}"]`).first()
+  await expect(stateOf('Harbor')).toHaveAttribute('data-link-state', 'bound')
+  await expect(stateOf('Reef')).toHaveAttribute('data-link-state', 'bound-trashed')
+  await expect(stateOf('Missing')).toHaveAttribute('data-link-state', 'unresolved')
+  await expect(stateOf('Doomed')).toHaveAttribute('data-link-state', 'broken')
+
+  // Sweep visibility: creating "Missing" elsewhere re-renders the
+  // open editor; the purged "Doomed" key MUST stay broken even though
+  // an active note with that title now exists (invariant 27).
+  await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    for (const title of ['Missing', 'Doomed']) {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType: 'CreateNote',
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload: { noteId: crypto.randomUUID(), title },
+      })
+      if (result.status !== 'committed') throw new Error(`CreateNote ${title}: ${result.status}`)
+    }
+  })
+  await expect(stateOf('Missing')).toHaveAttribute('data-link-state', 'bound')
+  await expect(stateOf('Doomed')).toHaveAttribute('data-link-state', 'broken')
+
+  // Suggestions: phantom entries carry the indicator + reference
+  // count; picking one completes a well-formed token that renders
+  // bound live, before any save.
+  await win.locator('.cm-content').click()
+  await win.keyboard.press('Control+End')
+  await win.keyboard.press('Enter')
+  await win.keyboard.type('[[Kra')
+  const tooltip = win.locator('.cm-tooltip-autocomplete')
+  await expect(tooltip).toBeVisible()
+  await expect(tooltip).toContainText('Kraken')
+  await expect(tooltip).toContainText('phantom · 1 ref')
+
+  await win.keyboard.type('') // settle
+  await win.keyboard.press('Escape')
+  await win.keyboard.type('ken]]') // finish the token by hand: unresolved phantom
+  await expect(win.locator('.cm-content [data-link-title="Kraken"]')).toHaveCount(2)
+
+  // Pick from the list for a real note and verify live bound state.
+  await win.keyboard.press('Enter')
+  await win.keyboard.type('[[Har')
+  await expect(tooltip).toBeVisible()
+  await tooltip.getByText('Harbor', { exact: true }).click()
+  await expect(stateOf('Harbor')).toHaveAttribute('data-link-state', 'bound')
+  await expect(win.locator('.cm-content [data-link-title="Harbor"]')).toHaveCount(2)
+  const completed = await win.evaluate(() =>
+    document.querySelector('.cm-content')?.textContent?.includes('[[Harbor]]'),
+  )
+  expect(completed).toBe(true)
+
+  await app.close()
+})
+
 test('an edit inside its debounce window survives quit (§10.2 quit flush)', async () => {
   const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-quit-'))
   const first = await launch(projectDir)

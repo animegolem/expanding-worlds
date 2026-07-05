@@ -1,7 +1,7 @@
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
-import { EditorState } from '@codemirror/state'
+import { EditorState, type Extension } from '@codemirror/state'
 import { EditorView, keymap, placeholder } from '@codemirror/view'
 import type { CommandResult } from '@ew/commands'
 
@@ -40,6 +40,8 @@ export interface NoteEditorHooks {
   onNoteChanged?: (note: NoteRecord | null) => void
   onDirtyChanged?: (dirty: boolean) => void
   onError?: (message: string) => void
+  /** Extra editor extensions (wiki-link decoration, suggestions). */
+  extensions?: Extension[]
 }
 
 export class NoteEditorController {
@@ -165,6 +167,7 @@ export class NoteEditorController {
             void this.flushPending()
           },
         }),
+        ...(this.#hooks.extensions ?? []),
       ],
     })
   }

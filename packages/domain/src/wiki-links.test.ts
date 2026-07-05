@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { extractWikiLinks, type WikiLinkToken } from './wiki-links'
+import {
+  extractWikiLinks,
+  linkDisplayState,
+  type LinkResolutionContext,
+  type WikiLinkToken,
+} from './wiki-links'
 
 function token(start: number, end: number, title: string, alias: string | null): WikiLinkToken {
   return { start, end, title, alias }
@@ -74,5 +79,24 @@ describe('extractWikiLinks (RFC-0001 §7.1)', () => {
     const tokens = extractWikiLinks(body)
     expect(tokens).toEqual([token(3, 8, 'A', null)])
     expect(body.slice(3, 8)).toBe('[[A]]')
+  })
+})
+
+describe('linkDisplayState (§7.1/§7.2, AI-IMP-045)', () => {
+  const ctx = (
+    broken: string[],
+    titles: Array<[string, 'active' | 'trashed']>,
+  ): LinkResolutionContext => ({ brokenKeys: new Set(broken), titles: new Map(titles) })
+
+  it('binds against active and trashed notes, else unresolved', () => {
+    const resolution = ctx([], [['harbor', 'active'], ['reef', 'trashed']])
+    expect(linkDisplayState('harbor', resolution)).toBe('bound')
+    expect(linkDisplayState('reef', resolution)).toBe('bound-trashed')
+    expect(linkDisplayState('kraken', resolution)).toBe('unresolved')
+  })
+
+  it('a broken key stays broken even when an active note matches (invariant 27)', () => {
+    const resolution = ctx(['harbor'], [['harbor', 'active']])
+    expect(linkDisplayState('harbor', resolution)).toBe('broken')
   })
 })

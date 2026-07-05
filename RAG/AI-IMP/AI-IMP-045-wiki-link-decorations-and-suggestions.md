@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - wiki-links
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-044]
 parent_epic: [[AI-EPIC-005-notes-links-phantoms]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-045-wiki-link-decorations-and-suggestions
@@ -70,20 +70,20 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] ViewPlugin decorates tokens with four visually distinct states;
+- [x] ViewPlugin decorates tokens with four visually distinct states;
       unit-testable state assignment function with tests (bound,
       unresolved, broken-from-record, in-trash).
-- [ ] Resolution cache built from queries, refreshed on
+- [x] Resolution cache built from queries, refreshed on
       project-changed; typing `[[Existing]]` renders bound before any
       save; materializing elsewhere re-renders open editors (e2e).
-- [ ] Broken state comes only from saved link records, never derived
+- [x] Broken state comes only from saved link records, never derived
       from titles (test: active note with same title_key as a broken
       record's display text still renders broken).
-- [ ] `[[` autocomplete on suggestTitles: phantom indicator +
+- [x] `[[` autocomplete on suggestTitles: phantom indicator +
       reference count, In Trash mark, insertion completes the token;
       e2e exercises pick-from-list.
-- [ ] suggestTitles latency test at 10k synthetic notes (<50 ms).
-- [ ] Gates: full build/test/lint/e2e green.
+- [x] suggestTitles latency test at 10k synthetic notes (<50 ms).
+- [x] Gates: full build/test/lint/e2e green.
 
 ### Acceptance Criteria
 
@@ -107,3 +107,21 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Two deviations from the plan, both improvements. (1) The pure state
+function landed in @ew/domain as `linkDisplayState` next to
+extractWikiLinks (the desktop app has no unit-test runner, and the
+rule it encodes — broken-by-record beats bound-by-title, trashed
+targets bind — mirrors refreshNoteLinks, whose doc comment states
+brokenness is per (source note, title_key), occurrences not tracked
+across edits; live rendering by title_key is therefore EXACTLY the
+durable semantics, which killed the planned range-matching
+complexity). (2) Instead of widening suggestTitles, a new
+`listNoteTitles` query feeds the cache (every non-purged title +
+lifecycle); @ew/domain became a desktop dependency and joined the
+dev-mode prebundle exclusion list. The mark decorations carry
+data-link-state/data-link-title attributes, which IMP-046/048 will
+use for activation and the e2e reads for assertions. Enter-to-accept
+works because @codemirror/autocomplete registers its keymap at
+highest precedence, but the e2e clicks the option to stay
+deterministic. Full-suite run had the usual single decorations
+load-flake (passes on retry and in isolation).

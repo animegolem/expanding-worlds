@@ -108,6 +108,17 @@ export function registerNoteQueries(registry: QueryRegistry): void {
     ),
   )
 
+  // Live link resolution (AI-IMP-045): every non-purged title with
+  // its lifecycle, so the editor derives token states exactly the way
+  // refreshNoteLinks will persist them on the next save.
+  registry.register('listNoteTitles', (ctx) =>
+    ctx.db.all(
+      `SELECT id, title, title_key AS titleKey, lifecycle_state AS lifecycleState
+       FROM note WHERE project_id = ? ORDER BY title_key`,
+      ctx.projectId,
+    ),
+  )
+
   registry.register('suggestTitles', (ctx, args): TitleSuggestion[] => {
     const { query } = args as { query: string }
     const pattern = likePattern(titleKey(query ?? ''))

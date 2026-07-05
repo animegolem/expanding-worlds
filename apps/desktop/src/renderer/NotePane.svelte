@@ -7,9 +7,12 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { LinkResolution } from './note/link-resolution'
   import { NoteEditorController, type NoteRecord } from './note/note-editor'
   import { onOpenNote } from './note/open-note'
   import { createNoteProjectPort } from './note/project-port'
+  import { wikiLinkCompletion } from './note/suggestions'
+  import { wikiLinkHighlighter } from './note/wiki-link-plugin'
 
   let editorHost = $state<HTMLElement | null>(null)
   let note = $state<NoteRecord | null>(null)
@@ -28,18 +31,39 @@
         dispose()
         return
       }
+      const resolution = new LinkResolution(port)
       controller = new NoteEditorController(port, {
         onNoteChanged: (current) => {
           note = current
           error = null
+          // New note = new broken-record set for decoration state.
+          void resolution.refresh(current?.id ?? null)
         },
         onDirtyChanged: (value) => (dirty = value),
         onError: (message) => (error = message),
+        extensions: [wikiLinkHighlighter(resolution), wikiLinkCompletion(port)],
       })
       if (editorHost) controller.mount(editorHost)
 
+      // Project-changed events deliver re-resolution sweep effects
+      // (materialization, rename, restore) to the open editor. Small
+      // debounce coalesces command bursts.
+      let refreshTimer: ReturnType<typeof setTimeout> | null = null
+      const disposeRefresh = window.ew.project.onChanged(() => {
+        if (refreshTimer !== null) clearTimeout(refreshTimer)
+        refreshTimer = setTimeout(() => {
+          refreshTimer = null
+          void resolution.refresh(controller?.note?.id ?? null)
+        }, 100)
+      })
+      void resolution.refresh(null)
+
       disposers = [
         dispose,
+        disposeRefresh,
+        () => {
+          if (refreshTimer !== null) clearTimeout(refreshTimer)
+        },
         onOpenNote((noteId) => {
           collapsed = false
           void controller?.open(noteId)

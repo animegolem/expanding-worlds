@@ -39,7 +39,7 @@ export default defineConfig({
     // session. Excluded, they load as live ESM — a plain window
     // reload picks up a fresh `pnpm -r build`.
     optimizeDeps: {
-      exclude: ['@ew/canvas-engine', '@ew/commands', '@ew/protocol', '@ew/shared-ui'],
+      exclude: ['@ew/canvas-engine', '@ew/commands', '@ew/domain', '@ew/protocol', '@ew/shared-ui'],
     },
   },
 })

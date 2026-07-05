@@ -188,6 +188,41 @@ describe('getPhantom (§7.2, invariant 28)', () => {
   })
 })
 
+describe('listNoteTitles (AI-IMP-045)', () => {
+  it('returns active and trashed titles with lifecycle, ordered by key', () => {
+    createNote('zebra')
+    const gone = createNote('Anchor')
+    trash(gone)
+
+    const titles = run<Array<{ title: string; lifecycleState: string }>>('listNoteTitles')
+    expect(titles).toEqual([
+      expect.objectContaining({ title: 'Anchor', titleKey: 'anchor', lifecycleState: 'trashed' }),
+      expect.objectContaining({ title: 'zebra', titleKey: 'zebra', lifecycleState: 'active' }),
+    ])
+  })
+})
+
+describe('suggestTitles latency (NFR, AI-IMP-045)', () => {
+  it('answers in under 50 ms with 10k notes', () => {
+    const insert = handle.db.prepare(
+      `INSERT INTO note (id, project_id, title, title_key, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+    const now = new Date().toISOString()
+    handle.db.transaction(() => {
+      for (let i = 0; i < 10_000; i++) {
+        insert.run(uuidv7(), handle.projectId, `Note ${i}`, `note ${i}`, now, now)
+      }
+    })
+
+    const started = performance.now()
+    const suggestions = run<TitleSuggestion[]>('suggestTitles', { query: 'note 42' })
+    const elapsed = performance.now() - started
+    expect(suggestions.length).toBeGreaterThan(0)
+    expect(elapsed).toBeLessThan(50)
+  })
+})
+
 describe('getNoteLinks (§7.1, AI-IMP-044)', () => {
   it('returns outbound records in range order with target lifecycle', () => {
     const target = createNote('Harbor')

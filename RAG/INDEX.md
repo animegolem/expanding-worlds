@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 3 | 5 |
+| Planned | 3 | 4 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 43 |
+| Completed | 5 | 44 |
 | **Total** | **10** | **49** |
 
 ## In Progress
@@ -20,7 +20,7 @@
 
 **IMPs:**
 - [[AI-IMP-044-note-pane-shell-and-autosave|IMP-044]] Note pane shell and autosave — completed
-- [[AI-IMP-045-wiki-link-decorations-and-suggestions|IMP-045]] Wiki link decorations and suggestions — planned
+- [[AI-IMP-045-wiki-link-decorations-and-suggestions|IMP-045]] Wiki link decorations and suggestions — completed
 - [[AI-IMP-046-phantom-view-and-materialization|IMP-046]] Phantom view and materialization — planned
 - [[AI-IMP-047-rename-and-title-collisions|IMP-047]] Rename and title collisions — planned
 - [[AI-IMP-048-link-activation-and-degraded-links|IMP-048]] Link activation and degraded links — planned
@@ -72,7 +72,7 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (3596 LOC)
+- pnpm-lock.yaml (3602 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2614 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
@@ -98,18 +98,18 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.test.ts (419 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
+- packages/persistence/src/queries-notes.test.ts (393 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - apps/desktop/e2e/gestures.spec.ts (384 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
 - packages/persistence/src/handlers/pin.test.ts (365 LOC)
-- packages/persistence/src/queries-notes.test.ts (358 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
+- packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/queries-structure.ts (323 LOC)
-- packages/persistence/src/queries-notes.ts (323 LOC)
 - apps/desktop/src/renderer/DecorationToolbar.svelte (321 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/persistence/src/handlers/pin.ts (314 LOC)
@@ -121,7 +121,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>5 EPICs, 43 IMPs completed</summary>
+<summary>5 EPICs, 44 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
