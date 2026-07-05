@@ -11,6 +11,7 @@ closed_tickets:
   - AI-IMP-055
   - AI-IMP-056
   - AI-IMP-057
+  - AI-IMP-058
   - AI-EPIC-012
 created_date: 2026-07-05
 related_files:
@@ -95,3 +96,21 @@ root assumption breaks with tabs, and close-epic → bump version →
 tag v0.6.0 ships it. The owner's remaining parking-lot items
 (pins Q20, hidden notes Q21, curved arrows, live preview) have RFC
 homes and wait for explicit prioritization.
+
+## Addendum — AI-IMP-058 (same session)
+
+A second external review pass (owner-run) produced four findings;
+three were validated in conversation and shipped as AI-IMP-058
+(the fourth, SSRF, was stale — already landed as AI-IMP-057):
+(1) UUIDv7 invariant sweep — 29 v4 sites across 11 renderer files
+plus the gateway, envelope validator tightened to v7 command ids,
+preload util.newId for e2e envelopes (23 sites migrated); the sweep
+script's import-insertion heuristic bit once (landed an import
+inside CreatePinDialog's doc comment — builds pass on comments,
+only the runtime e2e caught it; all placements audited after).
+(2) Lock reclaim verify-after-write — the losing racer of a stale
+reclaim now throws PROJECT_LOCKED instead of running a second
+writer; unit-tested via a renameSync interleave hook. (3) Phantom
+Create and Place carries the typed draft (CreatePin note.create
+body) and the blur-materialize race is gone. EPIC-012 closed for
+the second and final time, FR-1..11, CI green.
