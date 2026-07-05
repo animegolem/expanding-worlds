@@ -6,12 +6,12 @@ tags:
   - canvas
   - text
   - feel
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-030]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-034-text-sizing-and-styling
@@ -76,20 +76,20 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] TextData fontFamily?/bold?/italic? with validation; renderer
+- [x] TextData fontFamily?/bold?/italic? with validation; renderer
       maps them; unit tests both layers.
-- [ ] Resize driver: text scales uniformly (fontSize, measured
+- [x] Resize driver: text scales uniformly (fontSize, measured
       bounds, wrap width × dominant factor, anchored position); unit
       tests single and multi-selection.
-- [ ] measureTextWorld helper shared by overlay commit and style
+- [x] measureTextWorld helper shared by overlay commit and style
       edits; overlay mirrors family/bold/italic.
-- [ ] DecorationToolbar text row on single-text selection: size,
+- [x] DecorationToolbar text row on single-text selection: size,
       family, bold, italic, color → one UpdateDecoration each with
       fresh measured bounds; testids for e2e.
-- [ ] e2e: select text → set size 32 → data.fontSize 32 and bounds
+- [x] e2e: select text → set size 32 → data.fontSize 32 and bounds
       grew; toggle bold → data.bold true and renderer shows it;
       corner-resize → fontSize scaled ≈ factor; hit box still fits.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
 
 ### Acceptance Criteria
 
@@ -108,3 +108,13 @@ restyles, and double-click editing shows the same styling.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Straightforward. Renderer test coverage rides the existing
+decorations suite (apply is exercised through create/update paths);
+the style mapping is asserted end-to-end via the bold toggle e2e
+rather than a dedicated Pixi unit test. exactOptionalPropertyTypes
+required `| undefined` on OpenTarget's optional style fields.
+fontSize edits go through measureTextWorld like face changes (always
+exact, no linear-scaling shortcut). Multi-selection resizes
+containing text scale the text by the gesture's dominant factor
+while other members scale per-axis — documented divergence, text
+aspect is owned by the font.

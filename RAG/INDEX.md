@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 2 |
-| Planned | 4 | 1 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 32 |
+| Completed | 5 | 33 |
 | **Total** | **10** | **35** |
 
 ## In Progress
@@ -23,8 +23,8 @@
 - [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — in-progress
 - [[AI-IMP-032-grid-and-stage|IMP-032]] Grid and stage — completed
 - [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — completed
-- [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — in-progress
-- [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — planned
+- [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — completed
+- [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — in-progress
 
 ---
 
@@ -83,8 +83,8 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - apps/desktop/e2e/gestures.spec.ts (384 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
+- apps/desktop/e2e/decorations.spec.ts (380 LOC)
 - packages/persistence/src/handlers/pin.test.ts (365 LOC)
-- apps/desktop/e2e/decorations.spec.ts (354 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
@@ -95,12 +95,13 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.ts (314 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
+- apps/desktop/src/renderer/DecorationToolbar.svelte (303 LOC)
 
 ---
 
 ## Completed
 <details>
-<summary>5 EPICs, 32 IMPs completed</summary>
+<summary>5 EPICs, 33 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

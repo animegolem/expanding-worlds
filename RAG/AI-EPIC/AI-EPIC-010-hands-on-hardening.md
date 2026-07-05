@@ -94,7 +94,7 @@ rotation is a recorded limitation). No new tools or panels.
       absolute 15° Shift steps, Alt bypass (AI-IMP-033).
 - [x] FR-8: Sub-threshold background images raise a non-blocking
       softness notice (AI-IMP-033).
-- [ ] FR-9: Text scales via resize handles and carries whole-object
+- [x] FR-9: Text scales via resize handles and carries whole-object
       styling (size/family/bold/italic/color); rich spans deferred
       (AI-IMP-034).
 - [ ] FR-10: Shift-canonical drawing (squares/circles/equilateral,

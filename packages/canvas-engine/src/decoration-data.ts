@@ -22,6 +22,12 @@ export interface TextData {
    * metrics when absent (legacy rows), so text stays selectable. */
   measuredWidth?: number
   measuredHeight?: number
+  /** Whole-object styling (§4.9 rev 0.12): one face per text
+   * decoration from a curated set of CSS stacks. Per-span rich text
+   * is deferred — styled runs in data if ever, never HTML. */
+  fontFamily?: string
+  bold?: boolean
+  italic?: boolean
 }
 
 export type ShapeKind = 'rect' | 'ellipse' | 'triangle'
@@ -99,7 +105,10 @@ export function isTextData(data: unknown): data is TextData {
     (data['measuredWidth'] === undefined ||
       (isFinite_(data['measuredWidth']) && data['measuredWidth'] > 0)) &&
     (data['measuredHeight'] === undefined ||
-      (isFinite_(data['measuredHeight']) && data['measuredHeight'] > 0))
+      (isFinite_(data['measuredHeight']) && data['measuredHeight'] > 0)) &&
+    (data['fontFamily'] === undefined || isNonEmptyString(data['fontFamily'])) &&
+    (data['bold'] === undefined || typeof data['bold'] === 'boolean') &&
+    (data['italic'] === undefined || typeof data['italic'] === 'boolean')
   )
 }
 

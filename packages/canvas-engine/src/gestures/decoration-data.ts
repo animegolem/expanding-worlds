@@ -67,6 +67,27 @@ export function scaleDecorationData(
 }
 
 /**
+ * Uniform text scaling (§4.9 rev 0.12): art-text behavior — resize
+ * scales the world font size (and the measured/wrap extents that
+ * track it) by ONE factor; position anchors like any scaled
+ * decoration.
+ */
+export function scaleTextData(
+  data: Record<string, unknown>,
+  anchor: { x: number; y: number },
+  s: number,
+): Record<string, unknown> {
+  const next = mapDecorationPoints(data, (x, y) => ({
+    x: anchor.x + (x - anchor.x) * s,
+    y: anchor.y + (y - anchor.y) * s,
+  }))
+  for (const key of ['fontSize', 'width', 'measuredWidth', 'measuredHeight']) {
+    if (isNum(next[key])) next[key] = next[key] * s
+  }
+  return next
+}
+
+/**
  * Rotates a shape (rect form with a `rotation` field) as a rigid
  * body: its CENTER orbits the pivot and the delta accumulates onto
  * its own rotation, so a sole-selected shape spins in place

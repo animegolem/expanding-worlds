@@ -24,6 +24,42 @@ interface OpenTarget {
   world: Point
   fontSize: number
   color: string
+  fontFamily?: string | undefined
+  bold?: boolean | undefined
+  italic?: boolean | undefined
+}
+
+/**
+ * Measures text in WORLD units via an offscreen DOM node styled
+ * exactly like the entry overlay (AI-IMP-034) — the shared metric
+ * source for overlay commits and toolbar style edits.
+ */
+export function measureTextWorld(
+  text: string,
+  style: {
+    fontSize: number
+    fontFamily?: string
+    bold?: boolean
+    italic?: boolean
+    width?: number
+  },
+): { measuredWidth: number; measuredHeight: number } {
+  const probe = document.createElement('div')
+  probe.style.position = 'absolute'
+  probe.style.left = '-99999px'
+  probe.style.visibility = 'hidden'
+  probe.style.whiteSpace = 'pre-wrap'
+  probe.style.lineHeight = '1.2'
+  probe.style.fontFamily = style.fontFamily ?? 'sans-serif'
+  probe.style.fontWeight = style.bold ? 'bold' : 'normal'
+  probe.style.fontStyle = style.italic ? 'italic' : 'normal'
+  probe.style.fontSize = `${style.fontSize}px`
+  if (style.width !== undefined) probe.style.width = `${style.width}px`
+  probe.innerText = text
+  document.body.appendChild(probe)
+  const rect = probe.getBoundingClientRect()
+  probe.remove()
+  return { measuredWidth: rect.width, measuredHeight: rect.height }
 }
 
 export function attachTextEntry(
@@ -42,7 +78,9 @@ export function attachTextEntry(
     div.style.minWidth = '2ch'
     div.style.outline = '1px dashed #4a9df0'
     div.style.color = target.color
-    div.style.fontFamily = 'sans-serif'
+    div.style.fontFamily = target.fontFamily ?? 'sans-serif'
+    div.style.fontWeight = target.bold ? 'bold' : 'normal'
+    div.style.fontStyle = target.italic ? 'italic' : 'normal'
     div.style.lineHeight = '1.2'
     div.style.whiteSpace = 'pre-wrap'
     div.style.zIndex = '10'
@@ -167,6 +205,9 @@ export function attachTextEntry(
       world: { x: hit.data.x, y: hit.data.y },
       fontSize: hit.data.fontSize,
       color: hit.data.color,
+      fontFamily: hit.data.fontFamily,
+      bold: hit.data.bold,
+      italic: hit.data.italic,
     })
   }
   element.addEventListener('dblclick', onDblClick)

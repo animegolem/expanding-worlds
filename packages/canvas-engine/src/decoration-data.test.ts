@@ -146,3 +146,12 @@ describe('TextData measured extents (AI-IMP-030)', () => {
     expect(isTextData({ ...base, measuredHeight: Number.NaN })).toBe(false)
   })
 })
+
+describe('text style fields (AI-IMP-034)', () => {
+  it('accepts whole-object style fields and rejects bad ones', () => {
+    const base = { x: 0, y: 0, text: 'hi', fontSize: 12, color: '#fff' }
+    expect(isTextData({ ...base, fontFamily: 'serif', bold: true, italic: false })).toBe(true)
+    expect(isTextData({ ...base, fontFamily: '' })).toBe(false)
+    expect(isTextData({ ...base, bold: 'yes' })).toBe(false)
+  })
+})

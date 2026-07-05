@@ -185,3 +185,46 @@ describe('local-frame resize for a single rotated item (AI-IMP-031)', () => {
     expect(d['y']).toBeCloseTo(newCenter.y - 30)
   })
 })
+
+describe('art-text scaling (AI-IMP-034)', () => {
+  it('scales fontSize, measured bounds, and wrap width uniformly', () => {
+    const text = makeDecoration({
+      kind: 'text',
+      data: {
+        x: 100,
+        y: 100,
+        text: 'label',
+        fontSize: 16,
+        color: '#fff',
+        measuredWidth: 60,
+        measuredHeight: 20,
+        width: 80,
+      },
+    })
+    // Bounds 100..160 × 100..120; se corner drag doubling x-extent:
+    // dominant factor 2 applies to everything.
+    const session = run('se', [text], { x: 160, y: 120 }, { x: 220, y: 125 })
+    const update = session.get(text.id)!
+    if (update.kind !== 'decoration') throw new Error('expected decoration update')
+    const d = update.data as Record<string, number>
+    expect(d['fontSize']).toBeCloseTo(32)
+    expect(d['measuredWidth']).toBeCloseTo(120)
+    expect(d['measuredHeight']).toBeCloseTo(40)
+    expect(d['width']).toBeCloseTo(160)
+    // Anchored at nw (100, 100): position scales from there.
+    expect(d['x']).toBeCloseTo(100)
+    expect(d['y']).toBeCloseTo(100)
+  })
+
+  it('edge handles also scale uniformly (no stretch)', () => {
+    const text = makeDecoration({
+      kind: 'text',
+      data: { x: 0, y: 0, text: 'label', fontSize: 16, color: '#fff', measuredWidth: 60, measuredHeight: 20 },
+    })
+    const session = run('e', [text], { x: 60, y: 10 }, { x: 90, y: 10 })
+    const update = session.get(text.id)!
+    if (update.kind !== 'decoration') throw new Error('expected decoration update')
+    expect((update.data as Record<string, number>)['fontSize']).toBeCloseTo(24)
+    expect((update.data as Record<string, number>)['measuredHeight']).toBeCloseTo(30)
+  })
+})

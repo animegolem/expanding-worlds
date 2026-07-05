@@ -21,6 +21,10 @@ function apply(text: Text, container: Container, item: SceneDecoration): void {
   text.text = data.text
   text.style.fontSize = data.fontSize
   text.style.fill = data.color
+  // Whole-object styling (§4.9 rev 0.12).
+  text.style.fontFamily = data.fontFamily ?? 'sans-serif'
+  text.style.fontWeight = data.bold ? 'bold' : 'normal'
+  text.style.fontStyle = data.italic ? 'italic' : 'normal'
   if (data.width !== undefined) {
     text.style.wordWrap = true
     text.style.wordWrapWidth = data.width

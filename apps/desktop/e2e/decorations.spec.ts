@@ -349,6 +349,32 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   expect(moved.x).toBeGreaterThan(200)
   expect(moved.y).toBeGreaterThan(300)
 
+  // AI-IMP-034: whole-object type controls on a single selected text.
+  await expect(win.getByTestId('text-style-controls')).toBeVisible()
+  await win.getByTestId('text-size').fill('32')
+  await win.getByTestId('text-size').press('Enter')
+  await expect
+    .poll(async () => (await byKind('text'))[0]!.data['fontSize'])
+    .toBe(32)
+  await win.getByTestId('text-bold').click()
+  await expect.poll(async () => (await byKind('text'))[0]!.data['bold']).toBe(true)
+  const sizedBounds = (await byKind('text'))[0]!.data as { measuredHeight?: number }
+  expect(sizedBounds.measuredHeight).toBeGreaterThan(30)
+
+  // Art-text resize: dragging a corner scales fontSize uniformly.
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  const seHandle = await win.evaluate(
+    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
+  )
+  const beforeScale = await revision()
+  await win.mouse.move(box.x + seHandle.x, box.y + seHandle.y)
+  await win.mouse.down()
+  await win.mouse.move(box.x + seHandle.x + 60, box.y + seHandle.y + 10, { steps: 5 })
+  await win.mouse.up()
+  await expect.poll(() => revision()).toBe(beforeScale + 1)
+  const scaled = (await byKind('text'))[0]!.data as { fontSize: number }
+  expect(scaled.fontSize).toBeGreaterThan(32)
+
   expect((await decorations()).length).toBe(8)
   await app.close()
 })

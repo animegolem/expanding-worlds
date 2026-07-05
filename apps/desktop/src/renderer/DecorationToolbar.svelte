@@ -7,11 +7,18 @@
    * changes and project-changed events (the host re-queries the
    * scene asynchronously, hence the trailing refresh).
    */
-  import type { ToolKind, SceneDecoration } from '@ew/canvas-engine'
+  import { isTextData, type TextData, type ToolKind, type SceneDecoration } from '@ew/canvas-engine'
+  import { measureTextWorld } from './canvas/text-entry'
   import type { CanvasHostHandle } from './canvas/host'
   import type { DecorationsUi } from './canvas/decorations-ui'
 
   const { handle, ui }: { handle: CanvasHostHandle; ui: DecorationsUi } = $props()
+
+  const FONT_FAMILIES = [
+    { label: 'Sans', value: 'sans-serif' },
+    { label: 'Serif', value: 'serif' },
+    { label: 'Mono', value: 'monospace' },
+  ]
 
   const tools: Array<{ kind: ToolKind; label: string }> = [
     { kind: 'select', label: 'Select' },
@@ -64,6 +71,28 @@
   const hasGroup = $derived(selected.some((d) => d.groupId !== null))
   const allLocked = $derived(selected.length > 0 && selected.every((d) => d.locked === 1))
 
+  // §4.9 rev 0.12: whole-object type controls for a single selected
+  // text decoration. One UpdateDecoration per change, with bounds
+  // re-measured through the same DOM metrics the entry overlay uses.
+  const selectedText = $derived(
+    selected.length === 1 && selected[0]!.kind === 'text' && isTextData(selected[0]!.data)
+      ? selected[0]!
+      : null,
+  )
+  const textData = $derived(selectedText ? (selectedText.data as TextData) : null)
+
+  function updateText(patch: Partial<TextData>): void {
+    if (!selectedText || !textData) return
+    const next = { ...textData, ...patch }
+    const measured = measureTextWorld(next.text, next)
+    run(async () => {
+      await handle.gateway.execute('UpdateDecoration', {
+        decorationId: selectedText.id,
+        set: { data: { ...next, ...measured } },
+      })
+    })
+  }
+
   function run(action: () => Promise<void>): void {
     void action().then(() => setTimeout(refresh, 120))
   }
@@ -108,6 +137,61 @@
       <input type="color" data-testid="style-text-color" bind:value={textColor} />
     </label>
   </div>
+  {#if textData}
+    <div class="row" data-testid="text-style-controls">
+      <label>
+        Size
+        <input
+          type="number"
+          min="1"
+          max="512"
+          data-testid="text-size"
+          value={textData.fontSize}
+          onchange={(e) => {
+            const size = Number((e.currentTarget as HTMLInputElement).value)
+            if (Number.isFinite(size) && size > 0) updateText({ fontSize: size })
+          }}
+        />
+      </label>
+      <label>
+        Font
+        <select
+          data-testid="text-family"
+          value={textData.fontFamily ?? 'sans-serif'}
+          onchange={(e) => updateText({ fontFamily: (e.currentTarget as HTMLSelectElement).value })}
+        >
+          {#each FONT_FAMILIES as family (family.value)}
+            <option value={family.value}>{family.label}</option>
+          {/each}
+        </select>
+      </label>
+      <button
+        type="button"
+        class:active={textData.bold === true}
+        data-testid="text-bold"
+        onclick={() => updateText({ bold: !textData!.bold })}
+      >
+        B
+      </button>
+      <button
+        type="button"
+        class:active={textData.italic === true}
+        data-testid="text-italic"
+        onclick={() => updateText({ italic: !textData!.italic })}
+      >
+        I
+      </button>
+      <label>
+        Color
+        <input
+          type="color"
+          data-testid="text-selected-color"
+          value={textData.color}
+          onchange={(e) => updateText({ color: (e.currentTarget as HTMLInputElement).value })}
+        />
+      </label>
+    </div>
+  {/if}
   {#if selected.length > 0}
     <div class="row" data-testid="selection-controls">
       <span>{selected.length} selected</span>

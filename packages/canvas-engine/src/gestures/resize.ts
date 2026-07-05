@@ -1,6 +1,6 @@
 import { placementTransformOf } from '../gesture'
 import { placementSize, unionBounds } from '../hit-test'
-import { scaleDecorationData } from './decoration-data'
+import { scaleDecorationData, scaleTextData } from './decoration-data'
 import type { GestureDriver } from '../controller'
 import type { Rect } from '../camera'
 import type { SceneItem } from '../types'
@@ -179,6 +179,21 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
               width: (effective.width / scale) * sx,
               height: (effective.height / scale) * sy,
             },
+          })
+        } else if (prior.itemKind === 'decoration' && prior.kind === 'text') {
+          // Art-text scaling (§4.9 rev 0.12): text scales UNIFORMLY
+          // by the gesture's dominant factor — its aspect is owned
+          // by the font, not the handles.
+          const s = corner
+            ? Math.abs(sx - 1) >= Math.abs(sy - 1)
+              ? sx
+              : sy
+            : affectsX
+              ? sx
+              : sy
+          session.set(id, {
+            kind: 'decoration',
+            data: scaleTextData(prior.data, anchor, s),
           })
         } else {
           session.set(id, {
