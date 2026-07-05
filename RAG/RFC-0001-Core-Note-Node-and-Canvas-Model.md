@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.9          | 4 July 2026      |
+| Accepted for Phase 1 | 0.10         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -522,6 +522,29 @@ self-hosted yt-dlp endpoint, MAY archive the underlying media into
 managed storage; it defaults to off and remains a versioned adapter
 outside the core domain model.
 
+**Deferred with scope: the importer dialogue and import adapters.**
+The importer dialogue is the single expansion point for what content
+can enter the app. When a dropped or pasted source is not directly
+importable — a layered or exotic image format (PSD, TIFF, KRA), an
+oversized file crossing a user-set auto-optimize threshold, or a URL
+whose media needs fetching — one dialogue pattern presents the
+applicable **adapter actions** rather than rejecting the import.
+Examples: convert a PSD to a raster image; downscale past the size
+threshold; grab a web link's thumbnail now or archive its media via a
+local tool. Conversions never discard user data: the produced raster
+becomes the rendered managed asset, and the original file is retained
+as an **archived-original** sidecar asset (kind discriminator; not
+renderable; exported, GC-tracked, and available for future
+re-extraction or opening in its native editor) — unlike tools that
+warn the original is lost. Batch imports offer apply-to-queue and
+remember-choice options. Adapters are versioned, declare the source
+patterns they claim, may be built in (image codec) or externally
+configured (yt-dlp-style endpoints), and stay outside the core domain
+model; the auto-optimize threshold is an application preference. The
+conversion adapters need a main-process image codec — the same
+dependency as the deferred thumbnail and tile derivatives, so one
+codec ticket unlocks all three.
+
 ## 4.8 Tags
 
 Tags are flat, project-scoped, first-class records assigned many-to-many
@@ -751,6 +774,10 @@ directly and records the source page URL as asset attribution when
 available. A URL-only drop SHOULD fetch the image over the network as
 a user-initiated act; a failed or unsupported fetch produces a clear
 error and creates no records.
+
+Sources that are not directly importable route through the deferred
+importer dialogue (§4.7): applicable adapter actions are offered in
+one dialogue pattern instead of a bare rejection.
 
 ## 6.2 Create Pin
 
@@ -2265,7 +2292,9 @@ placement, label, and render-order machinery unchanged.
 
 17. When the web-reference asset kind lands, its metadata fetch
 pipeline, overlay playback behavior, and the configuration surface for
-the optional media-backup adapter.
+the optional media-backup adapter — now framed as adapter actions
+inside the §4.7 importer dialogue, alongside format conversion and
+the auto-optimize threshold.
 
 18. Whether camera input mapping needs a user preference (mouse-wheel
 zoom versus wheel pan) once artists with mixed trackpad and mouse
@@ -2406,6 +2435,11 @@ Accepted for the Phase 1 prototype:
 - Phase 1 assets are raster images only, behind a kind discriminator;
   web-reference assets with overlay playback and a default-off
   media-backup adapter are the shaped deferred direction.
+
+- The importer dialogue is the deferred expansion point for content
+  entry: per-source adapter actions (format conversion, auto-optimize,
+  web fetch) in one dialogue pattern, with converted originals kept
+  as archived-original sidecar assets — nothing is discarded (§4.7).
 
 - Align, distribute, flip, zoom to fit and selection, and snapping
   with smart guides are Phase 1 board tooling; auto-arrange and grid
