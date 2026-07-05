@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 2 |
-| Planned | 4 | 2 |
+| Planned | 4 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 31 |
+| Completed | 5 | 32 |
 | **Total** | **10** | **35** |
 
 ## In Progress
@@ -22,8 +22,8 @@
 - [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — completed
 - [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — in-progress
 - [[AI-IMP-032-grid-and-stage|IMP-032]] Grid and stage — completed
-- [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — in-progress
-- [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — planned
+- [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — completed
+- [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — in-progress
 - [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — planned
 
 ---
@@ -64,18 +64,18 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
+- apps/desktop/e2e/board-tooling.spec.ts (610 LOC)
 
 ### > 300 LOC
 
-- apps/desktop/e2e/board-tooling.spec.ts (586 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/e2e/slice.spec.ts (525 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
 - apps/desktop/e2e/import.spec.ts (461 LOC)
+- apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (458 LOC)
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
-- apps/desktop/src/renderer/canvas/board-tooling.ts (446 LOC)
 - apps/desktop/e2e/canvas.spec.ts (423 LOC)
 - packages/persistence/src/handlers/notes.test.ts (419 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (414 LOC)
@@ -100,7 +100,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>5 EPICs, 31 IMPs completed</summary>
+<summary>5 EPICs, 32 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

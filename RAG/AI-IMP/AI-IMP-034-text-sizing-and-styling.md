@@ -6,7 +6,7 @@ tags:
   - canvas
   - text
   - feel
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-030]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75

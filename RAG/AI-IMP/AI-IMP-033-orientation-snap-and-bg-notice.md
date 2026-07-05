@@ -6,12 +6,12 @@ tags:
   - canvas
   - gestures
   - feel
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-031, AI-IMP-032]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.85
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-033-orientation-snap-and-bg-notice
@@ -69,19 +69,19 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] rotate.ts single-item orientation resolution: cardinal
+- [x] rotate.ts single-item orientation resolution: cardinal
       magnetism ±5°, Shift = absolute 15° steps, Alt bypass; applied
       via delta so placement/shape paths are unchanged.
-- [ ] Unit tests: item at 7° rotating near upright lands exactly 0;
+- [x] Unit tests: item at 7° rotating near upright lands exactly 0;
       near 90° lands π/2; Shift from 7° lands absolute multiples of
       15°; Alt keeps raw angles; multi-select delta behavior
       unchanged.
-- [ ] CanvasHost notice: Keep in Project button renders only with
+- [x] CanvasHost notice: Keep in Project button renders only with
       node ids; message-only notices dismiss/auto-dismiss.
-- [ ] board-tooling: BG_SMALL_WIDTH_PX = 1024; set/replace from file
+- [x] board-tooling: BG_SMALL_WIDTH_PX = 1024; set/replace from file
       under it dispatches the notice; e2e asserts it in the stage
       test (8px background).
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
 
 ### Acceptance Criteria
 
@@ -102,3 +102,15 @@ look soft.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Bonus root-cause: the recurring "align/snap flake" was not machine
+load — since AI-IMP-032 the zoom buttons EASE, and the align test
+(like the slice test before it) read the camera synchronously after
+clicking, racing the flight's first frame. Both zoom assertions now
+poll; two consecutive full-suite runs pass 20/20 with no retry
+consumed. Related determinism fix: flights schedule a debounced
+SetCanvasCamera ~500ms later, which drifted into exact
+revision-delta assertions — the background test now settles the
+revision before delta reads (settledRevision helper). The notice
+dispatches on the host element directly (the listener's node);
+dispatching on the canvas child tripped a TS narrowing quirk across
+the async boundary.

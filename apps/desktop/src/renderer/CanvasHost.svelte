@@ -46,7 +46,8 @@
     let textEntry: TextEntryController | null = null
     let disposed = false
     const onNotice = (event: Event): void => {
-      showBoardNotice((event as CustomEvent<{ message: string; keepNodeIds: string[] }>).detail)
+      const detail = (event as CustomEvent<{ message: string; keepNodeIds?: string[] }>).detail
+      showBoardNotice({ message: detail.message, keepNodeIds: detail.keepNodeIds ?? [] })
     }
     element.addEventListener('ew-board-notice', onNotice)
     mountCanvasHost(element)
@@ -105,9 +106,11 @@
   {#if boardNotice}
     <div class="board-notice" role="status" data-testid="board-notice">
       <span>{boardNotice.message}</span>
-      <button type="button" data-testid="board-notice-keep" onclick={() => void keepInProject()}>
-        Keep in Project
-      </button>
+      {#if boardNotice.keepNodeIds.length > 0}
+        <button type="button" data-testid="board-notice-keep" onclick={() => void keepInProject()}>
+          Keep in Project
+        </button>
+      {/if}
       <button type="button" data-testid="board-notice-dismiss" onclick={() => (boardNotice = null)}>
         Dismiss
       </button>

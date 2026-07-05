@@ -56,6 +56,19 @@ async function runCommand(win: Page, commandType: string, payload: unknown): Pro
   )
 }
 
+/** Waits out floating camera-persist debounces (flights schedule a
+ * SetCanvasCamera ~500ms after motion) so exact revision-delta
+ * assertions stay deterministic. */
+async function settledRevision(win: Page): Promise<number> {
+  let prev = await revision(win)
+  for (;;) {
+    await win.waitForTimeout(650)
+    const next = await revision(win)
+    if (next === prev) return next
+    prev = next
+  }
+}
+
 async function revision(win: Page): Promise<number> {
   return win.evaluate(async () => {
     const project = await window.ew.project.query('getProject')
@@ -237,12 +250,16 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   const beforeZoom = await revision(win)
   await win.getByTestId('zoom-fit').click()
   expect(await revision(win)).toBe(beforeZoom)
+  // §6.9 rev 0.11: fits EASE — poll past the flight.
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
+    .not.toEqual(cameraBefore)
   const fitted = await win.evaluate(() => window.__ewDebug!.camera())
-  expect(fitted).not.toEqual(cameraBefore)
   await win.getByTestId('zoom-selection').click()
   expect(await revision(win)).toBe(beforeZoom)
-  const toSelection = await win.evaluate(() => window.__ewDebug!.camera())
-  expect(toSelection).not.toEqual(fitted)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
+    .not.toEqual(fitted)
 
   await app.close()
 })
@@ -360,15 +377,16 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   expect(replaced.settings).toEqual({ x: 0, y: 0, scale: 256, opacity: 1 })
   expect(await revision(win)).toBe(beforeReplace + 2)
 
-  // Remove Background: one command; the color layer stays.
-  const beforeRemove = await revision(win)
+  // Remove Background: one command; the color layer stays. (The
+  // replace above flew the camera — settle its debounced persist.)
+  const beforeRemove = await settledRevision(win)
   await win.getByTestId('bg-remove').click()
   await expect.poll(async () => (await sceneBackground(win)).assetId).toBeNull()
   expect(await revision(win)).toBe(beforeRemove + 1)
   expect((await sceneBackground(win)).color).toBe('#336699')
 
   // Clear the color: one command.
-  const beforeClear = await revision(win)
+  const beforeClear = await settledRevision(win)
   await win.getByTestId('bg-color-clear').click()
   await expect.poll(async () => (await sceneBackground(win)).color).toBeNull()
   expect(await revision(win)).toBe(beforeClear + 1)
@@ -494,6 +512,12 @@ test('background stage: grid, normalize, replace preserves extent, from-selectio
   await expect
     .poll(async () => (await win.evaluate(() => window.__ewDebug!.stage())).extent?.width ?? 0)
     .toBe(2048)
+  // §6.7 rev 0.12: an 8px source raises the non-blocking softness
+  // notice — message only, no Keep in Project action.
+  await expect(win.getByTestId('board-notice')).toBeVisible()
+  await expect(win.getByTestId('board-notice')).toContainText('soft')
+  await expect(win.getByTestId('board-notice-keep')).toHaveCount(0)
+  await win.getByTestId('board-notice-dismiss').click()
   const staged = await win.evaluate(() => window.__ewDebug!.stage())
   expect(staged.gridVisible).toBe(false)
   const settings = (await sceneBackground(win)).settings as { scale: number; x: number; y: number }

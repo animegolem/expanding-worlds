@@ -150,3 +150,63 @@ describe('shape rotation (AI-IMP-031)', () => {
     expect((update as { data: Record<string, unknown> }).data['rotation']).toBeUndefined()
   })
 })
+
+describe('orientation snapping (AI-IMP-033)', () => {
+  it('magnetizes a single item to the nearest cardinal within 5°', () => {
+    const a = makePlacement({ x: 0, y: 0, width: 20, height: 20, rotation: 0.07 })
+    // Rotate by ~87°: target ≈ 88.7° → clicks to exactly 90°.
+    const rad87 = (87 * Math.PI) / 180
+    const context = ctx([a], { x: 100, y: 0 }, { x: 100 * Math.cos(rad87), y: 100 * Math.sin(rad87) })
+    rotateDriver.update(context)
+    expect(transformOf(context.session, a.id).rotation).toBeCloseTo(Math.PI / 2)
+  })
+
+  it('leaves angles outside the magnet window raw', () => {
+    const a = makePlacement({ x: 0, y: 0, width: 20, height: 20, rotation: 0.25 })
+    const rad40 = (40 * Math.PI) / 180
+    const context = ctx([a], { x: 100, y: 0 }, { x: 100 * Math.cos(rad40), y: 100 * Math.sin(rad40) })
+    rotateDriver.update(context)
+    expect(transformOf(context.session, a.id).rotation).toBeCloseTo(0.25 + rad40)
+  })
+
+  it('shift snaps the RESULTING orientation to 15° multiples, not the delta', () => {
+    const start = (7 * Math.PI) / 180
+    const a = makePlacement({ x: 0, y: 0, width: 20, height: 20, rotation: start })
+    const rad40 = (40 * Math.PI) / 180
+    const context = ctx(
+      [a],
+      { x: 100, y: 0 },
+      { x: 100 * Math.cos(rad40), y: 100 * Math.sin(rad40) },
+      true,
+    )
+    rotateDriver.update(context)
+    const result = transformOf(context.session, a.id).rotation!
+    // 7° + 40° = 47° → absolute snap to 45°, a 15° multiple.
+    expect(result).toBeCloseTo((45 * Math.PI) / 180)
+    expect((result / ROTATE_SNAP_STEP) % 1).toBeCloseTo(0)
+  })
+
+  it('alt bypasses both magnets', () => {
+    const a = makePlacement({ x: 0, y: 0, width: 20, height: 20, rotation: 0.07 })
+    const rad87 = (87 * Math.PI) / 180
+    const context = ctx([a], { x: 100, y: 0 }, { x: 100 * Math.cos(rad87), y: 100 * Math.sin(rad87) })
+    context.modifiers = { alt: true }
+    rotateDriver.update(context)
+    expect(transformOf(context.session, a.id).rotation).toBeCloseTo(0.07 + rad87)
+  })
+
+  it('multi-select keeps delta-based shift snapping', () => {
+    const a = makePlacement({ x: 100, y: 0, width: 20, height: 20, rotation: 0.07 })
+    const b = makePlacement({ x: -100, y: 0, width: 20, height: 20 })
+    const rad40 = (40 * Math.PI) / 180
+    const context = ctx(
+      [a, b],
+      { x: 200, y: 0 },
+      { x: 200 * Math.cos(rad40), y: 200 * Math.sin(rad40) },
+      true,
+    )
+    rotateDriver.update(context)
+    // Delta snapped to 45°; a's rotation = 0.07 + 45° (not absolute).
+    expect(transformOf(context.session, a.id).rotation).toBeCloseTo(0.07 + (45 * Math.PI) / 180)
+  })
+})

@@ -37,6 +37,8 @@ export interface BackgroundSettings {
 }
 
 const IDENTITY_SETTINGS: BackgroundSettings = { x: 0, y: 0, scale: 1, opacity: 1 }
+/** Below this native width a background likely reads soft (§6.7). */
+const BG_SMALL_WIDTH_PX = 1024
 
 export interface BoardTooling {
   align(op: AlignOp): Promise<void>
@@ -249,6 +251,18 @@ export function attachBoardTooling(
     if (!imported.ok) {
       onError(imported.message)
       return
+    }
+    // §6.7 rev 0.12: normalization governs proportions, not fidelity
+    // — warn (without blocking) when the source can't carry a stage.
+    if (dims && dims.width > 0 && dims.width < BG_SMALL_WIDTH_PX) {
+      element.dispatchEvent(
+        new CustomEvent('ew-board-notice', {
+          bubbles: true,
+          detail: {
+            message: `This image is ${dims.width}px wide — it may look soft as a background.`,
+          },
+        }),
+      )
     }
     let settings = { ...IDENTITY_SETTINGS }
     let extent: { x: number; y: number; width: number; height: number } | null = null
