@@ -21,6 +21,7 @@ AI_IMP_spawned:
   - AI-IMP-038
   - AI-IMP-039
   - AI-IMP-040
+  - AI-IMP-041
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -121,6 +122,9 @@ rotation is a recorded limitation). No new tools or panels.
       clamp); draw previews show the final result including fill and
       arrow silhouettes (AI-IMP-040).
 
+- [x] FR-16: Shift on corner resize locks aspect for any selection;
+      Shift wins over Alt (AI-IMP-041).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -147,3 +151,4 @@ rotation is a recorded limitation). No new tools or panels.
   control becomes a multiplier (RFC rev 0.14).
 - AI-IMP-040 (lead): render fidelity — minimum stroke render width,
   WYSIWYG draw previews.
+- AI-IMP-041 (lead): Shift aspect lock on resize handles.

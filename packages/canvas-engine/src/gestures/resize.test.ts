@@ -248,3 +248,45 @@ describe('annotation arrows keep pen weight under resize (AI-IMP-038)', () => {
     expect(lineData['strokeWidth']).toBeCloseTo(10)
   })
 })
+
+describe('shift aspect lock on resize (AI-IMP-041)', () => {
+  it('locks shape corner resizes to one factor', () => {
+    const shape = makeDecoration({
+      kind: 'shape',
+      data: { shape: 'rect', x: 0, y: 0, width: 100, height: 50, stroke: '#fff', strokeWidth: 2 },
+    })
+    // Corner drag doubling x only, shift held → both axes ×2.
+    const context = ctx([shape], { x: 101, y: 51 }, { x: 203, y: 51 }, false)
+    context.modifiers = { shift: true }
+    createResizeDriver('se').update(context)
+    const d = (context.session.get(shape.id) as { data: Record<string, number> }).data
+    expect(d['width'] / 100).toBeCloseTo(d['height'] / 50, 5)
+  })
+
+  it('shift wins over alt on images', () => {
+    const img = makePlacement({
+      x: 50,
+      y: 25,
+      width: 100,
+      height: 50,
+      appearanceKind: 'image',
+      assetContentHash: 'a'.repeat(64),
+    })
+    const context = ctx([img], { x: 100, y: 50 }, { x: 200, y: 50 }, false)
+    context.modifiers = { shift: true, alt: true }
+    createResizeDriver('se').update(context)
+    const update = context.session.get(img.id)!
+    if (update.kind !== 'placement') throw new Error('expected placement')
+    expect(update.transform.width! / 100).toBeCloseTo(update.transform.height! / 50, 5)
+  })
+
+  it('locks the rotated local-frame path too', () => {
+    const item = makePlacement({ x: 0, y: 0, width: 100, height: 40, rotation: Math.PI / 2 })
+    const context = ctx([item], { x: -20, y: 50 }, { x: -45, y: 75 }, false)
+    context.modifiers = { shift: true }
+    createResizeDriver('se').update(context)
+    const update = context.session.get(item.id)!
+    if (update.kind !== 'placement') throw new Error('expected placement')
+    expect(update.transform.width! / 100).toBeCloseTo(update.transform.height! / 40, 5)
+  })
+})

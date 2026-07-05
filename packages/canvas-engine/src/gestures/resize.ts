@@ -111,7 +111,13 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
         const currentL = toLocal(currentWorld)
         let sx = affectsX ? safeFactor(currentL.x - anchor.x, startL.x - anchor.x) : 1
         let sy = affectsY ? safeFactor(currentL.y - anchor.y, startL.y - anchor.y) : 1
-        if (affectsX && affectsY && !(modifiers.alt ?? false) && hasImageAppearance(items)) {
+        // Aspect lock: images by default (Alt frees); Shift forces it
+        // for anything and wins over Alt (AI-IMP-041).
+        if (
+          affectsX &&
+          affectsY &&
+          ((hasImageAppearance(items) && !(modifiers.alt ?? false)) || (modifiers.shift ?? false))
+        ) {
           const s = Math.abs(sx - 1) >= Math.abs(sy - 1) ? sx : sy
           sx = s
           sy = s
@@ -158,8 +164,13 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
       let sx = affectsX ? safeFactor(currentWorld.x - anchor.x, startWorld.x - anchor.x) : 1
       let sy = affectsY ? safeFactor(currentWorld.y - anchor.y, startWorld.y - anchor.y) : 1
       const corner = affectsX && affectsY
-      if (corner && !(modifiers.alt ?? false) && hasImageAppearance(items)) {
-        // Aspect lock: follow whichever axis moved further from rest.
+      // Aspect lock: images by default (Alt frees); Shift forces it
+      // for anything and wins over Alt (AI-IMP-041). Follows
+      // whichever axis moved further from rest.
+      if (
+        corner &&
+        ((hasImageAppearance(items) && !(modifiers.alt ?? false)) || (modifiers.shift ?? false))
+      ) {
         const s = Math.abs(sx - 1) >= Math.abs(sy - 1) ? sx : sy
         sx = s
         sy = s
