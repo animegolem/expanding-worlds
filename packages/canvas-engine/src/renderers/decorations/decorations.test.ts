@@ -248,12 +248,36 @@ describe('arrowPolygon', () => {
     }
   })
 
-  it('clamps the head to 60% of a short segment', () => {
-    // length 10 << 12 * 2.2: head length clamps to 6, base at x = 4.
+  it('clamps thickness to length/3 and the head to 60% of a short segment', () => {
+    // §6.8 rev 0.12: strokeWidth 12 on a length-10 segment clamps to
+    // an effective thickness of 10/3 — the silhouette stays an arrow.
     const poly = arrowPolygon({ x1: 0, y1: 0, x2: 10, y2: 0, ...sw })
-    const base = 10 * (1 - ARROW_HEAD_MAX_FRACTION)
-    const headHalf = (12 * ARROW_HEAD_WIDTH_FACTOR) / 2
-    expectPoly(poly, [0, 6, base, 6, base, headHalf, 10, 0, base, -headHalf, base, -6, 0, -6])
+    const thickness = 10 / 3
+    const shaftHalf = thickness / 2
+    const headHalf = (thickness * ARROW_HEAD_WIDTH_FACTOR) / 2
+    const base = 10 * (1 - ARROW_HEAD_MAX_FRACTION) // head length clamps to 6
+    expectPoly(poly, [
+      0,
+      shaftHalf,
+      base,
+      shaftHalf,
+      base,
+      headHalf,
+      10,
+      0,
+      base,
+      -headHalf,
+      base,
+      -shaftHalf,
+      0,
+      -shaftHalf,
+    ])
+  })
+
+  it('leaves proportioned arrows unclamped', () => {
+    // strokeWidth 12 on a length-100 segment: 12 < 100/3, no clamp.
+    const poly = arrowPolygon({ x1: 0, y1: 0, x2: 100, y2: 0, ...sw })
+    expect(poly[1]).toBeCloseTo(6) // shaft half stays strokeWidth/2
   })
 
   it('returns empty for zero-length or non-finite segments', () => {

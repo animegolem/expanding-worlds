@@ -113,6 +113,7 @@ export class ToolManager {
     if (this.#session) {
       const { preview, hoverPlacementId } = this.#session.update(
         this.#target.camera.screenToWorld(screen),
+        { shift: modifiers.shift ?? false },
       )
       this.#host.renderPreview(preview)
       this.#host.highlightPlacement(hoverPlacementId)
@@ -125,7 +126,9 @@ export class ToolManager {
 
   pointerUp(screen: Point, modifiers: PointerModifiers = {}): void {
     if (this.#session) {
-      const input = this.#session.finish(this.#target.camera.screenToWorld(screen))
+      const input = this.#session.finish(this.#target.camera.screenToWorld(screen), {
+        shift: modifiers.shift ?? false,
+      })
       this.#session = null
       this.#host.renderPreview(null)
       this.#host.highlightPlacement(null)

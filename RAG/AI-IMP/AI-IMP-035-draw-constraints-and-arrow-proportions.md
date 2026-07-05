@@ -6,12 +6,12 @@ tags:
   - canvas
   - decorations
   - feel
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-027, AI-IMP-031]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-035-draw-constraints-and-arrow-proportions
@@ -74,20 +74,20 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Shape tool Shift: square/circle from the dominant drag axis;
+- [x] Shape tool Shift: square/circle from the dominant drag axis;
       triangle equilateral; preview and committed data agree; unit
       tests.
-- [ ] Segment tools Shift: endpoint locked to nearest 45° ray;
+- [x] Segment tools Shift: endpoint locked to nearest 45° ray;
       preview and commit agree; unit tests.
-- [ ] arrowPolygon effective thickness = min(strokeWidth, length/3);
+- [x] arrowPolygon effective thickness = min(strokeWidth, length/3);
       head factors derive from it; owner-screenshot repro (width 300,
       short segment) yields a proportioned arrow; unit tests update.
-- [ ] Arrow AABB via arrowPolygon reflects the clamp (test).
-- [ ] Resize scales arrow strokeWidth by the mean axis factor; lines
+- [x] Arrow AABB via arrowPolygon reflects the clamp (test).
+- [x] Resize scales arrow strokeWidth by the mean axis factor; lines
       unchanged; unit tests.
-- [ ] e2e: draw a rect with Shift → committed width === height; draw
+- [x] e2e: draw a rect with Shift → committed width === height; draw
       an arrow with Shift at ~50° → committed segment at exactly 45°.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
 
 ### Acceptance Criteria
 
@@ -108,3 +108,12 @@ a blob.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Clean. DrawSession gained an optional modifiers parameter (threaded
+from ToolManager) so previews and commits share one constraint path;
+the connector's end-anchor lookup now uses the constrained endpoint.
+The arrow AABB inherits the clamp for free (it derives from
+arrowPolygon since AI-IMP-029) — covered by the updated short-arrow
+polygon test rather than a separate bounds test. Two low-frequency
+full-suite load races remain on the epic's ledger (snap-guide
+predicate; 120ms toolbar-refresh click class) — absorbed by the
+configured retry, specs clean in isolation.

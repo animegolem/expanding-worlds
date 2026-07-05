@@ -12,6 +12,10 @@ import type { ItemRenderer } from '../registry'
  * bulge. Invalid data renders nothing.
  */
 
+/** Thickness never exceeds this fraction of the segment length —
+ * arrow thickness is FORM (§6.8 rev 0.12), and unbounded widths on
+ * short segments degrade into blobs (owner screenshot). */
+export const ARROW_MAX_THICKNESS_FRACTION = 1 / 3
 /** Head width across the barbs, in shaft thicknesses. */
 export const ARROW_HEAD_WIDTH_FACTOR = 3
 /** Head length tip-to-base, in shaft thicknesses. */
@@ -36,10 +40,11 @@ export function arrowPolygon(data: LineData): number[] {
   const uy = dy / length
   const px = -uy
   const py = ux
-  const shaftHalf = data.strokeWidth / 2
-  const headHalf = (data.strokeWidth * ARROW_HEAD_WIDTH_FACTOR) / 2
+  const thickness = Math.min(data.strokeWidth, length * ARROW_MAX_THICKNESS_FRACTION)
+  const shaftHalf = thickness / 2
+  const headHalf = (thickness * ARROW_HEAD_WIDTH_FACTOR) / 2
   const headLength = Math.min(
-    data.strokeWidth * ARROW_HEAD_LENGTH_FACTOR,
+    thickness * ARROW_HEAD_LENGTH_FACTOR,
     length * ARROW_HEAD_MAX_FRACTION,
   )
   // Head base point on the axis.

@@ -21,9 +21,6 @@ Received:   19.1953125
 # Test source
 
 ```ts
-  262 |   // WHEN the line is hidden it stays in the scene, invisible, and the
-  263 |   // hidden list restores it.
-  264 |   const line = (await byKind('line'))[0]!
   265 |   await win.mouse.click(...at(530, 510))
   266 |   await expect
   267 |     .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
@@ -118,28 +115,73 @@ Received:   19.1953125
   356 |   await expect
   357 |     .poll(async () => (await byKind('text'))[0]!.data['fontSize'])
   358 |     .toBe(32)
-  359 |   await win.getByTestId('text-bold').click()
-  360 |   await expect.poll(async () => (await byKind('text'))[0]!.data['bold']).toBe(true)
-  361 |   const sizedBounds = (await byKind('text'))[0]!.data as { measuredHeight?: number }
-> 362 |   expect(sizedBounds.measuredHeight).toBeGreaterThan(30)
+  359 |   // The toolbar composes edits from its (120ms-refreshed) snapshot —
+  360 |   // wait for it to reflect the size before layering the bold toggle.
+  361 |   await expect(win.getByTestId('text-size')).toHaveValue('32')
+  362 |   await win.getByTestId('text-bold').click()
+  363 |   await expect.poll(async () => (await byKind('text'))[0]!.data['bold']).toBe(true)
+  364 |   const sizedBounds = (await byKind('text'))[0]!.data as { measuredHeight?: number }
+> 365 |   expect(sizedBounds.measuredHeight).toBeGreaterThan(30)
       |                                      ^ Error: expect(received).toBeGreaterThan(expected)
-  363 | 
-  364 |   // Art-text resize: dragging a corner scales fontSize uniformly.
-  365 |   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  366 |   const seHandle = await win.evaluate(
-  367 |     () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
-  368 |   )
-  369 |   const beforeScale = await revision()
-  370 |   await win.mouse.move(box.x + seHandle.x, box.y + seHandle.y)
-  371 |   await win.mouse.down()
-  372 |   await win.mouse.move(box.x + seHandle.x + 60, box.y + seHandle.y + 10, { steps: 5 })
-  373 |   await win.mouse.up()
-  374 |   await expect.poll(() => revision()).toBe(beforeScale + 1)
-  375 |   const scaled = (await byKind('text'))[0]!.data as { fontSize: number }
-  376 |   expect(scaled.fontSize).toBeGreaterThan(32)
-  377 | 
-  378 |   expect((await decorations()).length).toBe(8)
-  379 |   await app.close()
-  380 | })
-  381 | 
+  366 | 
+  367 |   // Art-text resize: dragging a corner scales fontSize uniformly.
+  368 |   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  369 |   const seHandle = await win.evaluate(
+  370 |     () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
+  371 |   )
+  372 |   const beforeScale = await revision()
+  373 |   await win.mouse.move(box.x + seHandle.x, box.y + seHandle.y)
+  374 |   await win.mouse.down()
+  375 |   await win.mouse.move(box.x + seHandle.x + 60, box.y + seHandle.y + 10, { steps: 5 })
+  376 |   await win.mouse.up()
+  377 |   await expect.poll(() => revision()).toBe(beforeScale + 1)
+  378 |   const scaled = (await byKind('text'))[0]!.data as { fontSize: number }
+  379 |   expect(scaled.fontSize).toBeGreaterThan(32)
+  380 | 
+  381 |   expect((await decorations()).length).toBe(8)
+  382 |   await app.close()
+  383 | })
+  384 | 
+  385 | test('shift-constrained drawing (AI-IMP-035)', async () => {
+  386 |   const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-shift-draw-'))
+  387 |   const app = await electron.launch({
+  388 |     args: ['out/main/index.cjs'],
+  389 |     env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  390 |   })
+  391 |   const win = await app.firstWindow()
+  392 |   await win.waitForFunction(() => window.__ewDebug !== undefined)
+  393 |   const box = (await win.getByTestId('canvas-host').boundingBox())!
+  394 |   const decorations = (): Promise<Array<{ kind: string; data: Record<string, number> }>> =>
+  395 |     win.evaluate(() => window.__ewDebug!.decorations() as never)
+  396 | 
+  397 |   // Shift-rect commits a square from the dominant drag extent.
+  398 |   await win.getByTestId('tool-rect').click()
+  399 |   await win.keyboard.down('Shift')
+  400 |   await win.mouse.move(box.x + 200, box.y + 200)
+  401 |   await win.mouse.down()
+  402 |   await win.mouse.move(box.x + 280, box.y + 230, { steps: 4 })
+  403 |   await win.mouse.up()
+  404 |   await win.keyboard.up('Shift')
+  405 |   await expect.poll(async () => (await decorations()).length).toBe(1)
+  406 |   const square = (await decorations())[0]!.data
+  407 |   expect(square['width']).toBe(80)
+  408 |   expect(square['height']).toBe(80)
+  409 | 
+  410 |   // Shift-arrow at ~50° commits at exactly 45°, length preserved.
+  411 |   await win.getByTestId('tool-arrow').click()
+  412 |   await win.keyboard.down('Shift')
+  413 |   await win.mouse.move(box.x + 400, box.y + 200)
+  414 |   await win.mouse.down()
+  415 |   await win.mouse.move(box.x + 400 + 64, box.y + 200 + 77, { steps: 4 })
+  416 |   await win.mouse.up()
+  417 |   await win.keyboard.up('Shift')
+  418 |   await expect.poll(async () => (await decorations()).length).toBe(2)
+  419 |   const arrow = (await decorations()).find((d) => d.kind === 'arrow')!.data
+  420 |   const dx = arrow['x2']! - arrow['x1']!
+  421 |   const dy = arrow['y2']! - arrow['y1']!
+  422 |   expect(Math.atan2(dy, dx)).toBeCloseTo(Math.PI / 4, 5)
+  423 | 
+  424 |   await app.close()
+  425 | })
+  426 | 
 ```

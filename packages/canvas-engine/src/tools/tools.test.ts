@@ -3,6 +3,7 @@ import { Camera, type Point } from '../camera'
 import { makeDecoration, makePlacement } from '../test-helpers'
 import { PATH_THIN_WORLD_UNITS, placementAt, type ToolCreateInput, type ToolPreview } from './draw-tools'
 import { ToolManager, type ToolTarget } from './tool-mode'
+import { beginDrawSession } from './draw-tools'
 import type { PointerModifiers } from '../controller'
 import type { SceneItem } from '../types'
 
@@ -253,5 +254,60 @@ describe('text tool', () => {
     tools.pointerUp({ x: 100, y: 40 })
     expect(placed).toEqual([{ x: 100, y: 20 }])
     expect(created).toHaveLength(0)
+  })
+})
+
+describe('shift-constrained drawing (AI-IMP-035)', () => {
+  it('shapes constrain to canonical proportions', () => {
+    const session = beginDrawSession(
+      'rect',
+      { x: 10, y: 10 },
+      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { zoom: 1, items: () => [] },
+    )
+    const input = session.finish({ x: 70, y: 30 }, { shift: true })!
+    expect(input.data['width']).toBe(60)
+    expect(input.data['height']).toBe(60)
+    const triangle = beginDrawSession(
+      'triangle',
+      { x: 0, y: 0 },
+      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { zoom: 1, items: () => [] },
+    )
+    const tri = triangle.finish({ x: 40, y: 10 }, { shift: true })!
+    expect(tri.data['width']).toBe(40)
+    expect(tri.data['height']).toBeCloseTo((40 * Math.sqrt(3)) / 2)
+  })
+
+  it('shapes drag toward negative axes keep the start corner anchored', () => {
+    const session = beginDrawSession(
+      'ellipse',
+      { x: 100, y: 100 },
+      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { zoom: 1, items: () => [] },
+    )
+    const input = session.finish({ x: 40, y: 80 }, { shift: true })!
+    expect(input.data['width']).toBe(60)
+    expect(input.data['height']).toBe(60)
+    expect(input.data['x']).toBe(40)
+    expect(input.data['y']).toBe(40)
+  })
+
+  it('segments constrain to 45° rays, length preserved', () => {
+    const session = beginDrawSession(
+      'arrow',
+      { x: 0, y: 0 },
+      { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' },
+      { zoom: 1, items: () => [] },
+    )
+    // ~50°: snaps to 45°, length 100 kept.
+    const input = session.finish(
+      { x: 100 * Math.cos((50 * Math.PI) / 180), y: 100 * Math.sin((50 * Math.PI) / 180) },
+      { shift: true },
+    )!
+    const dx = input.data['x2'] as number
+    const dy = input.data['y2'] as number
+    expect(Math.atan2(dy, dx)).toBeCloseTo(Math.PI / 4)
+    expect(Math.hypot(dx, dy)).toBeCloseTo(100)
   })
 })

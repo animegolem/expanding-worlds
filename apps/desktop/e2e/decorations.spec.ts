@@ -356,6 +356,9 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   await expect
     .poll(async () => (await byKind('text'))[0]!.data['fontSize'])
     .toBe(32)
+  // The toolbar composes edits from its (120ms-refreshed) snapshot —
+  // wait for it to reflect the size before layering the bold toggle.
+  await expect(win.getByTestId('text-size')).toHaveValue('32')
   await win.getByTestId('text-bold').click()
   await expect.poll(async () => (await byKind('text'))[0]!.data['bold']).toBe(true)
   const sizedBounds = (await byKind('text'))[0]!.data as { measuredHeight?: number }
@@ -376,5 +379,47 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   expect(scaled.fontSize).toBeGreaterThan(32)
 
   expect((await decorations()).length).toBe(8)
+  await app.close()
+})
+
+test('shift-constrained drawing (AI-IMP-035)', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-shift-draw-'))
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  })
+  const win = await app.firstWindow()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const decorations = (): Promise<Array<{ kind: string; data: Record<string, number> }>> =>
+    win.evaluate(() => window.__ewDebug!.decorations() as never)
+
+  // Shift-rect commits a square from the dominant drag extent.
+  await win.getByTestId('tool-rect').click()
+  await win.keyboard.down('Shift')
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 280, box.y + 230, { steps: 4 })
+  await win.mouse.up()
+  await win.keyboard.up('Shift')
+  await expect.poll(async () => (await decorations()).length).toBe(1)
+  const square = (await decorations())[0]!.data
+  expect(square['width']).toBe(80)
+  expect(square['height']).toBe(80)
+
+  // Shift-arrow at ~50° commits at exactly 45°, length preserved.
+  await win.getByTestId('tool-arrow').click()
+  await win.keyboard.down('Shift')
+  await win.mouse.move(box.x + 400, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 400 + 64, box.y + 200 + 77, { steps: 4 })
+  await win.mouse.up()
+  await win.keyboard.up('Shift')
+  await expect.poll(async () => (await decorations()).length).toBe(2)
+  const arrow = (await decorations()).find((d) => d.kind === 'arrow')!.data
+  const dx = arrow['x2']! - arrow['x1']!
+  const dy = arrow['y2']! - arrow['y1']!
+  expect(Math.atan2(dy, dx)).toBeCloseTo(Math.PI / 4, 5)
+
   await app.close()
 })

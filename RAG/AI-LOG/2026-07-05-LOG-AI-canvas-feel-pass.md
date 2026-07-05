@@ -6,7 +6,7 @@ tags:
   - canvas
   - feel
   - polish
-closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-IMP-030, AI-IMP-031, AI-IMP-032, AI-EPIC-009]
+closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-IMP-030, AI-IMP-031, AI-IMP-032, AI-IMP-033, AI-IMP-034, AI-IMP-035, AI-EPIC-009]
 created_date: 2026-07-05
 related_files:
   - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md
@@ -142,3 +142,22 @@ auto-cancels via the camera onChanged hook). getCanvasScene
 background now carries asset dims. 209 engine / 340 persistence /
 20 e2e. Owner feel pass pending on grid density, void color, flight
 duration; text/rotation feel pass also still pending from batch two.
+
+## Batch four (same day): orientation snap, text styling, tidy drawing
+
+RFC rev 0.12 + IMP-033/034/035. Rotation now snaps by resulting
+ORIENTATION (cardinal magnetism, absolute 15-degree Shift steps, Alt
+bypass — the old Shift snapped the delta, so 7-degree items could
+never reach upright); sub-1024px backgrounds raise a non-blocking
+softness notice. Text became scalable art text (resize scales
+fontSize uniformly — previously silently dead) with whole-object
+type controls (size/family/bold/italic/color; rich spans explicitly
+deferred, never HTML). Shift constrains drawing (squares, circles,
+equilateral triangles, 45-degree segments); arrow thickness is
+length-clamped form (min(strokeWidth, length/3)) that scales with
+resize while lines keep pen weight. Bonus root-cause: the recurring
+align "flake" was the IMP-032 eased camera racing synchronous
+post-click reads — zoom assertions now poll and revision reads
+settle past the camera-persist debounce. Final: 222 engine / 340
+persistence / 21 e2e. Owner feel pass pending across batches two,
+three, and four.

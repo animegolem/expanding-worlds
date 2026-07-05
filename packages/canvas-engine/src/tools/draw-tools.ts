@@ -32,9 +32,25 @@ export interface DrawUpdate {
 }
 
 export interface DrawSession {
-  update(world: Point): DrawUpdate
+  update(world: Point, modifiers?: DrawModifiers): DrawUpdate
   /** Null means degenerate: no command may be issued. */
-  finish(world: Point): ToolCreateInput | null
+  finish(world: Point, modifiers?: DrawModifiers): ToolCreateInput | null
+}
+
+/** §6.8 rev 0.12: Shift constrains to the tidy form while drawing —
+ * canonical shape proportions, 45°-stepped segments. */
+export interface DrawModifiers {
+  shift?: boolean
+}
+
+const OCTANT = Math.PI / 4
+
+/** Snaps `end` onto the nearest 45° ray from `start`, length kept. */
+export function constrainSegmentTo45(start: Point, end: Point): Point {
+  const length = dist(start, end)
+  if (length === 0) return end
+  const angle = Math.round(Math.atan2(end.y - start.y, end.x - start.x) / OCTANT) * OCTANT
+  return { x: start.x + length * Math.cos(angle), y: start.y + length * Math.sin(angle) }
 }
 
 /** Light freehand thinning: keep samples at least this far apart (world units). */
@@ -70,29 +86,42 @@ class ShapeSession implements DrawSession {
     this.#minDrag = minDrag
   }
 
-  #data(): Record<string, unknown> {
-    const x = Math.min(this.#start.x, this.#current.x)
-    const y = Math.min(this.#start.y, this.#current.y)
+  #data(shift: boolean): Record<string, unknown> {
+    const dx = this.#current.x - this.#start.x
+    const dy = this.#current.y - this.#start.y
+    let width = Math.abs(dx)
+    let height = Math.abs(dy)
+    if (shift) {
+      // Canonical proportions (§6.8 rev 0.12): square, circle, and an
+      // equilateral triangle grown from the dominant drag extent.
+      width = Math.max(width, height)
+      height = this.#shape === 'triangle' ? (width * Math.sqrt(3)) / 2 : width
+    }
+    const x = dx >= 0 ? this.#start.x : this.#start.x - width
+    const y = dy >= 0 ? this.#start.y : this.#start.y - height
     return {
       shape: this.#shape,
       x,
       y,
-      width: Math.abs(this.#current.x - this.#start.x),
-      height: Math.abs(this.#current.y - this.#start.y),
+      width,
+      height,
       stroke: this.#style.stroke,
       strokeWidth: this.#style.strokeWidth,
       ...(this.#style.fill !== null ? { fill: this.#style.fill } : {}),
     }
   }
 
-  update(world: Point): DrawUpdate {
+  update(world: Point, modifiers?: DrawModifiers): DrawUpdate {
     this.#current = world
-    return { preview: { kind: 'shape', data: this.#data() }, hoverPlacementId: null }
+    return {
+      preview: { kind: 'shape', data: this.#data(modifiers?.shift ?? false) },
+      hoverPlacementId: null,
+    }
   }
 
-  finish(world: Point): ToolCreateInput | null {
+  finish(world: Point, modifiers?: DrawModifiers): ToolCreateInput | null {
     this.#current = world
-    const data = this.#data()
+    const data = this.#data(modifiers?.shift ?? false)
     if ((data['width'] as number) < this.#minDrag && (data['height'] as number) < this.#minDrag) {
       return null
     }
@@ -172,20 +201,20 @@ class SegmentSession implements DrawSession {
     }
   }
 
-  update(world: Point): DrawUpdate {
-    this.#current = world
-    const hover = this.#kind === 'connector' ? placementAt(world, this.#items()) : null
+  update(world: Point, modifiers?: DrawModifiers): DrawUpdate {
+    this.#current = modifiers?.shift ? constrainSegmentTo45(this.#start, world) : world
+    const hover = this.#kind === 'connector' ? placementAt(this.#current, this.#items()) : null
     return {
       preview: { kind: this.#kind, data: this.#data() },
       hoverPlacementId: hover?.id ?? null,
     }
   }
 
-  finish(world: Point): ToolCreateInput | null {
-    this.#current = world
+  finish(world: Point, modifiers?: DrawModifiers): ToolCreateInput | null {
+    this.#current = modifiers?.shift ? constrainSegmentTo45(this.#start, world) : world
     if (dist(this.#start, this.#current) < this.#minDrag) return null
     if (this.#kind !== 'connector') return { kind: this.#kind, data: this.#data() }
-    const endAnchor = placementAt(world, this.#items())
+    const endAnchor = placementAt(this.#current, this.#items())
     // Anchored endpoints still store a point: the free/fallback
     // position, seeded with the placement's position at creation.
     const data = this.#data()

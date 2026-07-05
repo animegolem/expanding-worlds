@@ -97,7 +97,7 @@ rotation is a recorded limitation). No new tools or panels.
 - [x] FR-9: Text scales via resize handles and carries whole-object
       styling (size/family/bold/italic/color); rich spans deferred
       (AI-IMP-034).
-- [ ] FR-10: Shift-canonical drawing (squares/circles/equilateral,
+- [x] FR-10: Shift-canonical drawing (squares/circles/equilateral,
       45° segments); arrow thickness clamps to length and scales
       with resize (AI-IMP-035).
 
