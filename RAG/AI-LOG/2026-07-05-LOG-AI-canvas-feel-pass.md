@@ -105,3 +105,24 @@ Known limitation recorded on IMP-029: DPR is read once at mount.
 Owner ideas parked: artist-drawn SVG shapes imported as decorations
 (polish era); the owner's artist friend gets the M1 and becomes the
 first outside tester after EPIC-005-ish.
+
+## Batch two (same day, owner-approved batch protocol)
+
+RFC rev 0.10 reframed content entry around the importer dialogue +
+adapters (owner mental model; PSD conversion keeps an
+archived-original sidecar). AI-EPIC-010 (hands-on hardening) cut as
+the rolling home for owner-testing findings. AI-IMP-030: text
+decorations were inert because TextData stored no extents (zero-area
+hit box; the dblclick e2e only ever passed inside the 4-unit hit
+slop) — the entry overlay now measures itself at commit and stores
+measuredWidth/measuredHeight; select/move/re-edit all work.
+AI-IMP-031: shapes spun on a wheel because the rotate gesture mapped
+their top-left but never their rotation field — now rigid-body
+rotation; single-selection chrome is oriented (outline, handles,
+angle-quantized cursors, corner rotate zones) and rotated resize
+runs in the item's local frame. Full-suite e2e flake root-caused to
+machine-load races (toolbar's 120ms debounced refresh swallowing
+clicks); playwright retries: 1; the click race is recorded debt.
+Owner feel pass on rotation pending; grid background (visual only,
+snapping stays content-edge per owner) queued as the next batch
+item. Final: 201 engine / 340 persistence / 19 e2e, all green.
