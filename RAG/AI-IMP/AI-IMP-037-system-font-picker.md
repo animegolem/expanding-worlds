@@ -5,12 +5,12 @@ tags:
   - Implementation
   - canvas
   - text
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-034]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-037-system-font-picker
@@ -62,16 +62,16 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Main-process permission request + check handlers grant
+- [x] Main-process permission request + check handlers grant
       local-fonts.
-- [ ] system-fonts.ts: lazy queryLocalFonts enumeration, family
+- [x] system-fonts.ts: lazy queryLocalFonts enumeration, family
       dedupe, curated-stack fallback on error/absence.
-- [ ] Type row picker: stacks first, then system families; committed
+- [x] Type row picker: stacks first, then system families; committed
       fontFamily stores family + generic fallback.
-- [ ] e2e: picker enumerates (>3 options) after opening; selecting a
+- [x] e2e: picker enumerates (>3 options) after opening; selecting a
       real family commits data.fontFamily containing it and a
       fallback; renderer text restyles.
-- [ ] Full gates: build, unit suites, desktop e2e, lint.
+- [x] Full gates: build, unit suites, desktop e2e, lint.
 
 ### Acceptance Criteria
 
@@ -88,3 +88,10 @@ generic fallback for machines without the font.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Electron 39's TypeScript permission union lags Chromium (no
+'local-fonts' member) — handlers compare as strings. queryLocalFonts
+enumerated fine under Playwright-driven Electron (the real click
+supplies the user activation the API wants). Values already stored
+by rev 0.12 (plain stacks) keep matching the picker; a stored family
+missing from the enumerated list renders as an extra option so the
+select never shows a blank.

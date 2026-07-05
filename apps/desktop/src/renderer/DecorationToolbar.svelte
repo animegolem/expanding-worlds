@@ -9,16 +9,21 @@
    */
   import { isTextData, type TextData, type ToolKind, type SceneDecoration } from '@ew/canvas-engine'
   import { measureTextWorld } from './canvas/text-entry'
+  import { FONT_STACKS, loadFontOptions, type FontOption } from './canvas/system-fonts'
   import type { CanvasHostHandle } from './canvas/host'
   import type { DecorationsUi } from './canvas/decorations-ui'
 
   const { handle, ui }: { handle: CanvasHostHandle; ui: DecorationsUi } = $props()
 
-  const FONT_FAMILIES = [
-    { label: 'Sans', value: 'sans-serif' },
-    { label: 'Serif', value: 'serif' },
-    { label: 'Mono', value: 'monospace' },
-  ]
+  // §4.9 rev 0.13: installed fonts, enumerated lazily on the picker's
+  // first user gesture; curated stacks until then (and on failure).
+  let fontOptions = $state<FontOption[]>(FONT_STACKS)
+  let fontsLoaded = false
+  function ensureFonts(): void {
+    if (fontsLoaded) return
+    fontsLoaded = true
+    void loadFontOptions().then((options) => (fontOptions = options))
+  }
 
   const tools: Array<{ kind: ToolKind; label: string }> = [
     { kind: 'select', label: 'Select' },
@@ -158,9 +163,14 @@
         <select
           data-testid="text-family"
           value={textData.fontFamily ?? 'sans-serif'}
+          onpointerdown={ensureFonts}
+          onfocus={ensureFonts}
           onchange={(e) => updateText({ fontFamily: (e.currentTarget as HTMLSelectElement).value })}
         >
-          {#each FONT_FAMILIES as family (family.value)}
+          {#if textData.fontFamily && !fontOptions.some((f) => f.value === textData.fontFamily)}
+            <option value={textData.fontFamily}>{textData.fontFamily}</option>
+          {/if}
+          {#each fontOptions as family (family.value)}
             <option value={family.value}>{family.label}</option>
           {/each}
         </select>

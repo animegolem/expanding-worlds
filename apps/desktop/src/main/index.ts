@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, net, protocol, utilityProcess, type UtilityProcess } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
@@ -193,6 +193,20 @@ async function fetchUrlForImport(rawUrl: string): Promise<FetchUrlForImportResul
   }
 }
 
+/** §4.9 rev 0.13: the type row enumerates installed fonts through
+ * Chromium's Local Font Access API; grant it for our own renderer
+ * (there is no third-party content in the window). */
+function grantLocalFonts(): void {
+  // Electron's TS union lags Chromium's permission set; compare as
+  // strings.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback((permission as string) === 'local-fonts')
+  })
+  session.defaultSession.setPermissionCheckHandler(
+    (_wc, permission) => (permission as string) === 'local-fonts',
+  )
+}
+
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
     width: 1280,
@@ -213,6 +227,7 @@ async function createWindow(): Promise<void> {
 
 void app.whenReady().then(() => {
   registerAssetProtocol()
+  grantLocalFonts()
   startUtility()
   void callUtility({
     type: 'init-project',

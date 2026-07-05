@@ -364,6 +364,26 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   const sizedBounds = (await byKind('text'))[0]!.data as { measuredHeight?: number }
   expect(sizedBounds.measuredHeight).toBeGreaterThan(30)
 
+  // AI-IMP-037: the family picker enumerates installed fonts on its
+  // first user gesture and stores the choice with a stack fallback.
+  await win.getByTestId('text-family').click()
+  await expect
+    .poll(async () => win.locator('[data-testid="text-family"] option').count(), {
+      timeout: 10_000,
+    })
+    .toBeGreaterThan(3)
+  const systemFamily = await win.evaluate(() => {
+    const select = document.querySelector<HTMLSelectElement>('[data-testid="text-family"]')!
+    const opt = [...select.options].find((o) => o.value.includes('",'))
+    return opt?.value ?? null
+  })
+  expect(systemFamily).not.toBeNull()
+  await win.getByTestId('text-family').selectOption(systemFamily!)
+  await expect
+    .poll(async () => ((await byKind('text'))[0]!.data as { fontFamily?: string }).fontFamily)
+    .toBe(systemFamily)
+  expect(systemFamily).toContain('sans-serif')
+
   // Art-text resize: dragging a corner scales fontSize uniformly.
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
   const seHandle = await win.evaluate(
