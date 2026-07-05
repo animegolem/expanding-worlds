@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 3 | 0 |
+| In Progress | 2 | 1 |
+| Planned | 3 | 5 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 7 | 51 |
-| **Total** | **11** | **52** |
+| **Total** | **12** | **57** |
 
 ## In Progress
 
@@ -33,6 +33,18 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
+
+---
+
+### [[AI-EPIC-012-pre-alpha-hardening|EPIC-012: Pre alpha hardening]]
+> The owner's pre-release testing notes plus two external code reviews
+
+**IMPs:**
+- [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — planned
+- [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — planned
+- [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — planned
+- [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — planned
+- [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — planned
 
 ---
 
@@ -60,7 +72,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5045 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2614 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2662 LOC)
 - apps/desktop/e2e/notes.spec.ts (946 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (755 LOC)

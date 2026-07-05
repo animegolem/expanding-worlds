@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.15         | 5 July 2026      |
+| Accepted for Phase 1 | 0.16         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -594,6 +594,11 @@ semantic graph edge automatically.
 Decorations MAY be ordered with placements, locked, hidden for
 presentation, and grouped for movement or transformation. A group
 remains canvas-local and does not establish semantic containment.
+
+A drawn decoration's presentation attributes (stroke, fill, weight;
+for rectangles an optional corner-rounding fraction of the shorter
+box dimension, rev 0.16) remain editable from the selection after
+placement; each edit is one user-level command.
 
 When a connector endpoint is anchored to a placement, it follows that
 placement. If the placement is deleted, the endpoint SHOULD become a
@@ -1195,6 +1200,21 @@ nodes that reference the note.
 Dismissing the chooser keeps the newly opened note visible and leaves
 the canvas where it was. The dismissal interaction MUST NOT also select
 or drag content underneath it.
+
+In the Phase 1 source editor, link activation is modifier-click
+(Mod+Click, the source-mode convention), and the token MUST advertise
+the gesture (hover affordance). **Deferred with scope — live-preview
+reading mode:** prototype testing confirmed a standing tension
+between source editing and link/media presentation that modifier
+conventions only paper over. The accepted direction is an
+Obsidian-style live-preview mode layered over the same CodeMirror
+source buffer: rendered Markdown as inline decorations, wiki-link
+tokens presented as plainly clickable links, and (with §4.2's embed
+records) inline images. It is a presentation layer only — Markdown
+source stays canonical, the §7.1 link-record model and §10.2 save
+semantics are unchanged, and source mode remains available. Editor
+work of roughly epic scale; do not resolve the tension piecemeal
+before it.
 
 ## 7.4 Uses sidebar and location chooser
 
@@ -2399,6 +2419,22 @@ section 6.8 — become necessary after prototype use, and what
 containment semantics they carry (spatial capture on drag versus
 explicit membership).
 
+20. Whether the Create Pin dialog survives as a surface. The
+CreatePin command stays regardless — it is the one-transaction
+backbone behind imports, phantom materialization, and note
+placement — but with every object a full node, a dedicated pin
+dialog duplicates the mental model. Expected resolution: the
+chrome-era tool rail (Baseline UI Vision) replaces it; the dialog
+is not removed before its replacement exists, because it is
+currently the only surface creating a standalone dot/icon node
+with tags.
+
+21. Whether zero-node ("hidden") notes justify themselves —
+equivalently, whether this is the user's entire campaign wiki or
+their embodied-in-the-canvas campaign wiki. The feature stays for
+now (its cost is near zero atop the phantom/Unplaced machinery);
+the owner suspects the embodied reading ultimately wins.
+
 # 20. Decision summary
 
 Accepted for the Phase 1 prototype:
@@ -2612,3 +2648,15 @@ Accepted for the Phase 1 prototype:
 
 - No PostgreSQL, Docker, networking, or CRDT dependency is introduced in
   Phase 1.
+
+- Drawn decorations stay restylable after placement (stroke, fill,
+  weight, rect corner rounding), one command per edit (rev 0.16).
+
+- Wiki-link activation in the source editor is Mod+Click with a
+  mandatory hover affordance; the accepted long-term answer to the
+  source-vs-presentation tension is a live-preview reading mode over
+  the same source buffer, deferred with scope in section 7.3
+  (rev 0.16).
+
+- The Create Pin dialog's future and the zero-node-note question are
+  held open as questions 20 and 21 (rev 0.16).
