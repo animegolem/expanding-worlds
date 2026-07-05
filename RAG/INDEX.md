@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 1 | 2 |
 | Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 5 | 30 |
-| **Total** | **10** | **31** |
+| **Total** | **10** | **32** |
 
 ## In Progress
 
@@ -21,6 +21,7 @@
 **IMPs:**
 - [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — completed
 - [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — in-progress
+- [[AI-IMP-032-grid-and-stage|IMP-032]] Grid and stage — in-progress
 
 ---
 
@@ -53,7 +54,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (3397 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2497 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2539 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)

@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.10         | 5 July 2026      |
+| Accepted for Phase 1 | 0.11         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -896,6 +896,28 @@ cannot be accidentally selected during ordinary work. Oversized
 backgrounds use tiled or pyramidal derivatives while retaining the
 original Asset as canonical.
 
+**The background defines the canvas's stage (rev 0.11).** A background
+image gives the infinite canvas a home extent — presentation only,
+touching no domain invariant: placements remain legal anywhere and the
+camera is never clamped. Inside the extent the image is the surface
+and the grid hides; beyond it the renderer shows a visually distinct
+void (flat, gridless) so leaving the map is unmistakable. Zoom to fit
+with no selection frames the extent, and future canvas navigation
+(§8.1) SHOULD land entering users on it.
+
+Because world size governs proportions, not fidelity, Set as
+Background from a file normalizes the stage rather than the image: the
+background transform is set so the extent spans a canonical stage
+width (2048 world units, a tunable constant), so default pin, text,
+and stroke sizes read proportionate on any map. Set as Background from
+a placed image preserves that placement's current world rect — the
+user already expressed its size. Replace Background fits the new image
+into the prior extent, which is how replacement preserves existing
+canvas coordinates (closing former open question 7). Reset Background
+Transform returns to the normalized default. Setting a background
+SHOULD end with the camera easing (not teleporting) to frame the new
+extent, confirming the action and landing at the stage's natural zoom.
+
 ## 6.8 Draw, connect, order, and group
 
 Creating canvas text, a shape, freehand path, line, arrow, or connector
@@ -959,13 +981,23 @@ opacity — and appear only while a snap is actively engaged. Engagement
 SHOULD use hysteresis, releasing at a slightly larger distance than it
 engages, so content does not oscillate at the threshold.
 
+Zoom to fit and zoom to selection SHOULD ease the camera to their
+target rather than jumping.
+
+**Grid display (rev 0.11).** Canvases without a background image show
+an adaptive multi-scale grid: only the subdivision levels legible at
+the current zoom are drawn, with the finer level fading in as zoom
+crosses each scale threshold, so the grid subdivides indefinitely in
+both directions. The grid is presentation only and hides entirely when
+a background image defines a stage (§6.7). Grid SNAPPING remains
+deferred: snapping stays content-edge; when grid snapping is
+revisited, the grid spacing SHOULD feed the same snapping machinery
+specified above.
+
 **Deferred with scope.** Auto-arrange (pack) — algorithmic reflow of
 the selected placements into a compact non-overlapping arrangement —
 is deferred; when revisited it SHOULD operate on an explicit selection
-and commit as one durable command. Grid display and grid snapping are
-deferred together; when revisited, the grid SHOULD be a canvas
-presentation setting whose spacing feeds the same snapping machinery
-specified above.
+and commit as one durable command.
 
 ## 6.10 Place existing material
 
@@ -2257,8 +2289,9 @@ after Phase 1.
 6. Exact workspace tab, docking, note-pane, and project-switching
 behavior.
 
-7. How background replacement preserves or recalibrates existing
-canvas coordinates.
+7. (Resolved, rev 0.11.) Background replacement preserves canvas
+coordinates by fitting the new image into the prior stage extent
+(§6.7); the number is retained so later references stay stable.
 
 8. Whether flat tags later gain hierarchy, aliases, groups, or visual
 tag relationships.
@@ -2443,7 +2476,16 @@ Accepted for the Phase 1 prototype:
 
 - Align, distribute, flip, zoom to fit and selection, and snapping
   with smart guides are Phase 1 board tooling; auto-arrange and grid
-  are deferred with scope in section 6.9.
+  SNAPPING are deferred with scope in section 6.9. Adaptive
+  multi-scale grid DISPLAY ships, hidden when a background stage
+  exists.
+
+- A background image defines the canvas's stage (§6.7, presentation
+  only): grid hides inside, a distinct void renders beyond, fit/home
+  target the extent, set-from-file normalizes to the canonical stage
+  width (2048), set-from-selection preserves the placed rect, replace
+  fits the prior extent, and the camera eases to frame a newly set
+  background.
 
 - Camera input follows platform muscle memory: pinch zooms at the
   pointer, two-finger scroll pans, wheel zooms, Space or middle-drag

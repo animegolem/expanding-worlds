@@ -12,6 +12,7 @@ kanban_status: in-progress
 AI_IMP_spawned:
   - AI-IMP-030
   - AI-IMP-031
+  - AI-IMP-032
 ---
 
 # AI-EPIC-010-hands-on-hardening
@@ -78,6 +79,14 @@ rotation is a recorded limitation). No new tools or panels.
 - [x] FR-4: Corner-hover rotate affordance with a rotate cursor just
       outside each corner handle (AI-IMP-031).
 
+- [ ] FR-5: Adaptive multi-scale grid on backgroundless canvases —
+      display only, hidden when a background stage exists
+      (AI-IMP-032).
+- [ ] FR-6: Background-as-stage per RFC §6.7 rev 0.11 — void beyond
+      the extent, fit/home target, normalize-on-set with the
+      from-selection exception, replace preserves the extent, eased
+      camera framing (AI-IMP-032).
+
 ### Non-Functional Requirements
 
 - Renderer never touches persistence (RFC §11.1); all changes live
@@ -90,3 +99,5 @@ rotation is a recorded limitation). No new tools or panels.
 - AI-IMP-030 (lead): text interactivity via measured bounds.
 - AI-IMP-031 (lead): rotation fidelity — shape spin bug, oriented
   chrome + local-frame resize, corner rotate affordance.
+- AI-IMP-032 (lead): adaptive grid + background-as-stage (RFC rev
+  0.11) — void, extent framing, normalize-on-set, eased camera.
