@@ -32,3 +32,6 @@ linux:
     - target: AppImage
       arch: [x64]
   category: Graphics
+  # Derived from the package name otherwise ("@ewdesktop" — invalid
+  # in file paths).
+  executableName: expanding-worlds
