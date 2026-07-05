@@ -24,6 +24,16 @@ function query(overrides: Partial<SnapQuery>): SnapQuery {
   }
 }
 
+/**
+ * Scripted drag: queries the provider with the moving 40×40 box's
+ * left edge at `x` (y far from any stop) and reports the applied
+ * x-adjustment plus whether an x-guide is engaged.
+ */
+function step(snap: ReturnType<typeof provider>, x: number, zoom = 1) {
+  const result = snap.query(query({ movingBounds: { x, y: 300, width: 40, height: 40 }, zoom }))
+  return { adjust: result.dx, engaged: result.guides.some((g) => g.axis === 'x') }
+}
+
 describe('createSnapProvider', () => {
   it('snaps a moving edge to a static edge within the threshold', () => {
     const snap = provider()
@@ -54,19 +64,20 @@ describe('createSnapProvider', () => {
     expect(result.guides[0]).toMatchObject({ axis: 'x', position: 100 })
   })
 
-  it('scales the threshold with zoom (screen-pixel radius)', () => {
-    const snap = provider()
+  it('scales the engage threshold with zoom (screen-pixel radius)', () => {
+    // Fresh provider per zoom level: hysteresis is intentionally
+    // stateful across queries within one gesture.
     // 4 world px from the static right edge 120.
     const bounds = { x: 124, y: 300, width: 40, height: 40 }
-    // zoom 1 → threshold 6 world px: snaps.
-    expect(snap.query(query({ movingBounds: bounds, zoom: 1 })).dx).toBe(-4)
-    // zoom 2 → threshold 3 world px: no snap.
-    const zoomed = snap.query(query({ movingBounds: bounds, zoom: 2 }))
+    // zoom 1 → engage radius 6 world px: snaps.
+    expect(provider().query(query({ movingBounds: bounds, zoom: 1 })).dx).toBe(-4)
+    // zoom 2 → engage radius 3 world px: no snap.
+    const zoomed = provider().query(query({ movingBounds: bounds, zoom: 2 }))
     expect(zoomed.dx).toBe(0)
     expect(zoomed.guides).toHaveLength(0)
-    // zoom 0.5 → threshold 12 world px: an 8 px offset snaps.
+    // zoom 0.5 → engage radius 12 world px: an 8 px offset snaps.
     expect(
-      snap.query(query({ movingBounds: { ...bounds, x: 128 }, zoom: 0.5 })).dx,
+      provider().query(query({ movingBounds: { ...bounds, x: 128 }, zoom: 0.5 })).dx,
     ).toBe(-8)
   })
 
@@ -138,5 +149,112 @@ describe('createSnapProvider', () => {
     )
     expect(result.dx).toBe(0)
     expect(result.guides).toHaveLength(0)
+  })
+})
+
+describe('hysteresis (§6.9 rev 0.9)', () => {
+  it('engages at ≤6px/zoom and not beyond', () => {
+    // Static right edge at 120; distances relative to it.
+    expect(step(provider(), 126.5)).toEqual({ adjust: 0, engaged: false }) // 6.5 px: out
+    expect(step(provider(), 126)).toEqual({ adjust: -6, engaged: true }) // exactly 6: in
+  })
+
+  it('holds an engaged snap through the 6–9px band and releases beyond 9', () => {
+    const snap = provider()
+    expect(step(snap, 123)).toEqual({ adjust: -3, engaged: true }) // engage at 3
+    expect(step(snap, 127)).toEqual({ adjust: -7, engaged: true }) // 7 > engage, ≤ release: hold
+    expect(step(snap, 129)).toEqual({ adjust: -9, engaged: true }) // exactly release: hold
+    expect(step(snap, 129.5)).toEqual({ adjust: 0, engaged: false }) // 9.5 > release: gone
+    // Once released, the hold band no longer captures.
+    expect(step(snap, 127)).toEqual({ adjust: 0, engaged: false })
+    // Re-entering the engage radius re-engages.
+    expect(step(snap, 125)).toEqual({ adjust: -5, engaged: true })
+  })
+
+  it('does not flap under jitter across the 6px engage boundary', () => {
+    const snap = provider()
+    expect(step(snap, 125.5).engaged).toBe(true) // first contact at 5.5
+    // Pointer wobble across the engage boundary, all within release:
+    // every frame stays engaged and snapped to 120.
+    for (const x of [126.5, 125.8, 127, 126.2, 128, 125]) {
+      expect(step(snap, x)).toEqual({ adjust: 120 - x, engaged: true })
+    }
+    // Approaching from outside without crossing 6 never engages.
+    const cold = provider()
+    for (const x of [128, 127, 126.5]) {
+      expect(step(cold, x)).toEqual({ adjust: 0, engaged: false })
+    }
+  })
+
+  it('scales both thresholds with zoom', () => {
+    // zoom 2: engage 3 world px, release 4.5 world px.
+    const snap = provider()
+    expect(step(snap, 123.5, 2)).toEqual({ adjust: 0, engaged: false }) // 3.5 > engage
+    expect(step(snap, 122.5, 2)).toEqual({ adjust: -2.5, engaged: true }) // 2.5 ≤ engage
+    expect(step(snap, 124, 2)).toEqual({ adjust: -4, engaged: true }) // 4 ≤ release: hold
+    expect(step(snap, 125, 2)).toEqual({ adjust: 0, engaged: false }) // 5 > release
+  })
+
+  it('prefers the engaged stop over a closer new candidate while held', () => {
+    const snap = createSnapProvider()
+    // Facing edges at 100 and 108 (8 px apart, inside the release band).
+    snap.begin([
+      makePlacement({ x: 80, y: 100, width: 40, height: 40 }),
+      makePlacement({ x: 128, y: 100, width: 40, height: 40 }),
+    ])
+    const engage = snap.query(
+      query({ movingBounds: { x: 102, y: 300, width: 40, height: 40 } }),
+    )
+    expect(engage.dx).toBe(-2)
+    expect(engage.guides[0]!.position).toBe(100) // engaged on 100
+    // Left edge at 106: 6 px from 100 (held) but only 2 px from 108 —
+    // stability beats optimality, the engaged stop wins.
+    const held = snap.query(
+      query({ movingBounds: { x: 106, y: 300, width: 40, height: 40 } }),
+    )
+    expect(held.dx).toBe(-6)
+    expect(held.guides[0]!.position).toBe(100)
+  })
+
+  it('tracks engagement per axis independently', () => {
+    const snap = provider()
+    // Engage both axes near the static corner (120, 120).
+    const both = snap.query(
+      query({ movingBounds: { x: 123, y: 123, width: 40, height: 40 } }),
+    )
+    expect(both.guides.map((g) => g.axis)).toEqual(['x', 'y'])
+    // Move y out past release while x stays in the hold band.
+    const xOnly = snap.query(
+      query({ movingBounds: { x: 127, y: 133, width: 40, height: 40 } }),
+    )
+    expect(xOnly.dx).toBe(-7)
+    expect(xOnly.dy).toBe(0)
+    expect(xOnly.guides.map((g) => g.axis)).toEqual(['x'])
+  })
+
+  it('resets engaged state in begin() and end()', () => {
+    const snap = provider()
+    expect(step(snap, 123).engaged).toBe(true)
+    snap.begin([makePlacement({ x: 100, y: 100, width: 40, height: 40 })])
+    // 7 px would be held if still engaged; a fresh gesture must not be.
+    expect(step(snap, 127)).toEqual({ adjust: 0, engaged: false })
+
+    expect(step(snap, 123).engaged).toBe(true)
+    snap.end()
+    snap.begin([makePlacement({ x: 100, y: 100, width: 40, height: 40 })])
+    expect(step(snap, 127)).toEqual({ adjust: 0, engaged: false })
+  })
+
+  it('drops engagement while the disable modifier is held', () => {
+    const snap = provider()
+    expect(step(snap, 123).engaged).toBe(true)
+    const off = snap.query(
+      query({ movingBounds: { x: 123, y: 300, width: 40, height: 40 }, disabled: true }),
+    )
+    expect(off.guides).toHaveLength(0)
+    // Re-enabled inside the hold band but outside the engage radius:
+    // the broken engagement does not silently resume.
+    expect(step(snap, 127)).toEqual({ adjust: 0, engaged: false })
+    expect(step(snap, 125)).toEqual({ adjust: -5, engaged: true })
   })
 })
