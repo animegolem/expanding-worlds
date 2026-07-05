@@ -109,7 +109,17 @@ export {
   type ToolPreview,
 } from './tools/draw-tools'
 
-export { createSnapProvider, SNAP_THRESHOLD_PX } from './snap-provider'
+export { createSnapProvider, SNAP_ENGAGE_PX, SNAP_RELEASE_PX } from './snap-provider'
+export {
+  drawSnapGuides,
+  snapGuideSegments,
+  SNAP_GUIDE_ALPHA,
+  SNAP_GUIDE_COLOR,
+  SNAP_GUIDE_DASH_PX,
+  SNAP_GUIDE_GAP_PX,
+  SNAP_GUIDE_WIDTH_PX,
+  type GuideSegment,
+} from './snap-guides'
 export { alignPayload, distributePayload, type AlignOp, type DistributeAxis } from './arrange'
 
 export { Culler, RENDER_PADDING, RESIDENCY_PADDING, type CullerHooks } from './culling'
