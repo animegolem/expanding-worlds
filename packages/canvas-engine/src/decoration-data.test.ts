@@ -155,3 +155,19 @@ describe('text style fields (AI-IMP-034)', () => {
     expect(isTextData({ ...base, bold: 'yes' })).toBe(false)
   })
 })
+
+describe('arrow ShapeKind (AI-IMP-038)', () => {
+  it('accepts the arrow variant', () => {
+    expect(
+      isShapeData({
+        shape: 'arrow',
+        x: 0,
+        y: 0,
+        width: 80,
+        height: 40,
+        stroke: '#fff',
+        strokeWidth: 2,
+      }),
+    ).toBe(true)
+  })
+})

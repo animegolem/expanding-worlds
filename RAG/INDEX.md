@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 1 |
-| Planned | 4 | 2 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 5 | 35 |
+| Completed | 5 | 37 |
 | **Total** | **10** | **38** |
 
 ## In Progress
@@ -26,8 +26,8 @@
 - [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — completed
 - [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — completed
 - [[AI-IMP-036-dev-mode-hardening|IMP-036]] Dev mode hardening — completed
-- [[AI-IMP-037-system-font-picker|IMP-037]] System font picker — planned
-- [[AI-IMP-038-two-arrows|IMP-038]] Two arrows — planned
+- [[AI-IMP-037-system-font-picker|IMP-037]] System font picker — completed
+- [[AI-IMP-038-two-arrows|IMP-038]] Two arrows — completed
 
 ---
 
@@ -74,38 +74,38 @@ Generated from tracked files; binary assets excluded.
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/e2e/slice.spec.ts (525 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
+- apps/desktop/e2e/decorations.spec.ts (473 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
+- packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/e2e/import.spec.ts (461 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (458 LOC)
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
-- packages/canvas-engine/src/renderers/decorations/decorations.test.ts (438 LOC)
-- apps/desktop/e2e/decorations.spec.ts (425 LOC)
 - apps/desktop/e2e/canvas.spec.ts (423 LOC)
 - packages/persistence/src/handlers/notes.test.ts (419 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - apps/desktop/e2e/gestures.spec.ts (384 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
+- packages/canvas-engine/src/tools/draw-tools.ts (375 LOC)
 - packages/persistence/src/handlers/pin.test.ts (365 LOC)
-- packages/canvas-engine/src/tools/draw-tools.ts (356 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
+- packages/canvas-engine/src/tools/tools.test.ts (336 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/queries-structure.ts (323 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/persistence/src/handlers/pin.ts (314 LOC)
-- packages/canvas-engine/src/tools/tools.test.ts (313 LOC)
+- apps/desktop/src/renderer/DecorationToolbar.svelte (314 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (310 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
-- apps/desktop/src/renderer/DecorationToolbar.svelte (303 LOC)
 
 ---
 
 ## Completed
 <details>
-<summary>5 EPICs, 35 IMPs completed</summary>
+<summary>5 EPICs, 37 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

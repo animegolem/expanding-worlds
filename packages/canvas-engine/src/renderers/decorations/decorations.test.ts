@@ -13,7 +13,7 @@ import {
   lineRenderer,
 } from './line'
 import { pathRenderer } from './path'
-import { shapeRenderer } from './shape'
+import { shapeArrowPolygon, shapeRenderer } from './shape'
 import { textRenderer } from './text'
 import type { RendererResources } from '../registry'
 
@@ -434,5 +434,30 @@ describe('connector renderer', () => {
   it('connectorEndpoints rejects invalid data', () => {
     const item = makeDecoration({ kind: 'connector', data: { x1: 0 } })
     expect(connectorEndpoints(item, fakeResources())).toBeNull()
+  })
+})
+
+describe('arrow shape variant (AI-IMP-038)', () => {
+  it('pins the block silhouette to the box', () => {
+    // 100×50 box: head length min(50, 45) = 45, shaft half 11, head
+    // half 25; tip exactly at +w/2 on the axis.
+    const poly = shapeArrowPolygon(100, 50)
+    expectPoly(poly, [-50, -11, 5, -11, 5, -25, 50, 0, 5, 25, 5, 11, -50, 11])
+  })
+
+  it('renders the arrow variant centered with round joins', () => {
+    const item = makeDecoration({
+      kind: 'shape',
+      data: { shape: 'arrow', x: 100, y: 100, width: 80, height: 40, ...stroke },
+    })
+    const object = shapeRenderer.create(item, fakeResources())
+    expect(object.position.x).toBe(140)
+    expect(object.position.y).toBe(120)
+    const gfx = object.getChildByLabel('shape') as Graphics
+    expect(gfx.getLocalBounds().width).toBeGreaterThanOrEqual(80)
+    const instruction = gfx.context.instructions.find((i) => i.action === 'stroke')
+    expect(instruction && 'style' in instruction.data ? instruction.data.style.join : null).toBe(
+      'round',
+    )
   })
 })

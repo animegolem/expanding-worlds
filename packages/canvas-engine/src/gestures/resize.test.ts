@@ -229,8 +229,8 @@ describe('art-text scaling (AI-IMP-034)', () => {
   })
 })
 
-describe('arrow thickness scales with resize (AI-IMP-035)', () => {
-  it('scales strokeWidth by the mean axis factor for arrows only', () => {
+describe('annotation arrows keep pen weight under resize (AI-IMP-038)', () => {
+  it('leaves strokeWidth untouched for arrows and lines alike', () => {
     const arrow = makeDecoration({
       kind: 'arrow',
       data: { x1: 0, y1: 0, x2: 100, y2: 0, stroke: '#fff', strokeWidth: 10 },
@@ -243,8 +243,8 @@ describe('arrow thickness scales with resize (AI-IMP-035)', () => {
     const session = run('e', [arrow, line], { x: 105, y: 20 }, { x: 215, y: 20 })
     const arrowData = (session.get(arrow.id) as { data: Record<string, number> }).data
     const lineData = (session.get(line.id) as { data: Record<string, number> }).data
-    // sx = 2, sy = 1 → arrow thickness × 1.5; line untouched.
-    expect(arrowData['strokeWidth']).toBeCloseTo(15)
+    // §6.8 rev 0.13: both keep their pen weight; only geometry moves.
+    expect(arrowData['strokeWidth']).toBeCloseTo(10)
     expect(lineData['strokeWidth']).toBeCloseTo(10)
   })
 })

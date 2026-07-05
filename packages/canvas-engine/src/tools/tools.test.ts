@@ -311,3 +311,26 @@ describe('shift-constrained drawing (AI-IMP-035)', () => {
     expect(Math.hypot(dx, dy)).toBeCloseTo(100)
   })
 })
+
+describe('arrow shape tool (AI-IMP-038)', () => {
+  const style = { stroke: '#fff', strokeWidth: 2, fill: null, textColor: '#fff' }
+
+  it('shape-arrow draws an arrow ShapeKind; shift constrains to 2:1', () => {
+    const session = beginDrawSession('shape-arrow', { x: 0, y: 0 }, style, {
+      zoom: 1,
+      items: () => [],
+    })
+    const free = session.finish({ x: 90, y: 30 })!
+    expect(free.kind).toBe('shape')
+    expect(free.data['shape']).toBe('arrow')
+    expect(free.data['width']).toBe(90)
+    expect(free.data['height']).toBe(30)
+    const constrained = beginDrawSession('shape-arrow', { x: 0, y: 0 }, style, {
+      zoom: 1,
+      items: () => [],
+    })
+    const tidy = constrained.finish({ x: 90, y: 30 }, { shift: true })!
+    expect(tidy.data['width']).toBe(90)
+    expect(tidy.data['height']).toBe(45)
+  })
+})

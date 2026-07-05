@@ -196,16 +196,13 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
             data: scaleTextData(prior.data, anchor, s),
           })
         } else {
-          const data = scaleDecorationData(prior.data, anchor, sx, sy)
-          // Arrow thickness is form (§6.8 rev 0.12): it scales with
-          // the body. Lines/paths/shapes keep constant stroke weight.
-          if (prior.itemKind === 'decoration' && prior.kind === 'arrow') {
-            const sw = data['strokeWidth']
-            if (typeof sw === 'number' && Number.isFinite(sw)) {
-              data['strokeWidth'] = sw * ((Math.abs(sx) + Math.abs(sy)) / 2)
-            }
-          }
-          session.set(id, { kind: 'decoration', data })
+          // Annotation arrows keep constant pen weight under resize,
+          // exactly like lines (§6.8 rev 0.13) — the box-scaling
+          // arrow is the 'arrow' ShapeKind.
+          session.set(id, {
+            kind: 'decoration',
+            data: scaleDecorationData(prior.data, anchor, sx, sy),
+          })
         }
       }
       return []

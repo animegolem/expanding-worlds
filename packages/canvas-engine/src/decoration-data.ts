@@ -30,7 +30,7 @@ export interface TextData {
   italic?: boolean
 }
 
-export type ShapeKind = 'rect' | 'ellipse' | 'triangle'
+export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'arrow'
 
 export interface ShapeData {
   shape: ShapeKind
@@ -115,7 +115,10 @@ export function isTextData(data: unknown): data is TextData {
 export function isShapeData(data: unknown): data is ShapeData {
   if (!isRecord(data)) return false
   return (
-    (data['shape'] === 'rect' || data['shape'] === 'ellipse' || data['shape'] === 'triangle') &&
+    (data['shape'] === 'rect' ||
+      data['shape'] === 'ellipse' ||
+      data['shape'] === 'triangle' ||
+      data['shape'] === 'arrow') &&
     isFinite_(data['x']) &&
     isFinite_(data['y']) &&
     isFinite_(data['width']) &&

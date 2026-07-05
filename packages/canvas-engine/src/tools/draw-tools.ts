@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js'
 import { hitTest, itemWorldAABB } from '../hit-test'
+import { shapeArrowPolygon } from '../renderers/decorations/shape'
 import type { Point } from '../camera'
 import type { ScenePlacement, SceneItem } from '../types'
 import type { ToolStyle } from './tool-mode'
@@ -69,7 +70,7 @@ export function placementAt(world: Point, items: readonly SceneItem[]): ScenePla
   return (hitTest(world, placements) as ScenePlacement | null) ?? null
 }
 
-type ShapeVariant = 'rect' | 'ellipse' | 'triangle'
+type ShapeVariant = 'rect' | 'ellipse' | 'triangle' | 'arrow'
 
 class ShapeSession implements DrawSession {
   #shape: ShapeVariant
@@ -92,10 +93,16 @@ class ShapeSession implements DrawSession {
     let width = Math.abs(dx)
     let height = Math.abs(dy)
     if (shift) {
-      // Canonical proportions (§6.8 rev 0.12): square, circle, and an
-      // equilateral triangle grown from the dominant drag extent.
+      // Canonical proportions (§6.8 rev 0.12/0.13): square, circle,
+      // an equilateral triangle, or a 2:1 arrow box, grown from the
+      // dominant drag extent.
       width = Math.max(width, height)
-      height = this.#shape === 'triangle' ? (width * Math.sqrt(3)) / 2 : width
+      height =
+        this.#shape === 'triangle'
+          ? (width * Math.sqrt(3)) / 2
+          : this.#shape === 'arrow'
+            ? width / 2
+            : width
     }
     const x = dx >= 0 ? this.#start.x : this.#start.x - width
     const y = dy >= 0 ? this.#start.y : this.#start.y - height
@@ -239,6 +246,7 @@ export type DrawToolKind =
   | 'rect'
   | 'ellipse'
   | 'triangle'
+  | 'shape-arrow'
   | 'path'
   | 'line'
   | 'arrow'
@@ -256,6 +264,8 @@ export function beginDrawSession(
     case 'ellipse':
     case 'triangle':
       return new ShapeSession(tool, startWorld, style, minDrag)
+    case 'shape-arrow':
+      return new ShapeSession('arrow', startWorld, style, minDrag)
     case 'path':
       return new PathSession(startWorld, style)
     case 'line':
@@ -315,7 +325,16 @@ export class ToolOverlay {
       }
       if (preview.kind === 'shape') {
         const shape = preview.data['shape'] as string
-        if (shape === 'ellipse') {
+        if (shape === 'arrow') {
+          const cx = d['x']! + d['width']! / 2
+          const cy = d['y']! + d['height']! / 2
+          const points = shapeArrowPolygon(d['width']!, d['height']!)
+          const world: number[] = []
+          for (let i = 0; i < points.length; i += 2) {
+            world.push(cx + points[i]!, cy + points[i + 1]!)
+          }
+          gfx.poly(world)
+        } else if (shape === 'ellipse') {
           gfx.ellipse(d['x']! + d['width']! / 2, d['y']! + d['height']! / 2, d['width']! / 2, d['height']! / 2)
         } else if (shape === 'triangle') {
           gfx.poly([

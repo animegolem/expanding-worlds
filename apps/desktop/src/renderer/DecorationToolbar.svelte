@@ -31,6 +31,7 @@
     { kind: 'rect', label: 'Rect' },
     { kind: 'ellipse', label: 'Ellipse' },
     { kind: 'triangle', label: 'Triangle' },
+    { kind: 'shape-arrow', label: 'Arrow shape' },
     { kind: 'path', label: 'Draw' },
     { kind: 'line', label: 'Line' },
     { kind: 'arrow', label: 'Arrow' },

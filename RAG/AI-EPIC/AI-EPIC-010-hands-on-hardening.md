@@ -104,11 +104,11 @@ rotation is a recorded limitation). No new tools or panels.
       45° segments); arrow thickness clamps to length and scales
       with resize (AI-IMP-035).
 
-- [ ] FR-11: Dev mode serves workspace packages live (no stale
+- [x] FR-11: Dev mode serves workspace packages live (no stale
       prebundle) and clears stale port listeners (AI-IMP-036).
-- [ ] FR-12: The type row enumerates installed system fonts with
+- [x] FR-12: The type row enumerates installed system fonts with
       graceful stack fallbacks (AI-IMP-037).
-- [ ] FR-13: Two arrow constructs per RFC rev 0.13 — pen-model
+- [x] FR-13: Two arrow constructs per RFC rev 0.13 — pen-model
       annotation arrow, box-model arrow shape (AI-IMP-038).
 
 ### Non-Functional Requirements

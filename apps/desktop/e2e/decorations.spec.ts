@@ -441,5 +441,33 @@ test('shift-constrained drawing (AI-IMP-035)', async () => {
   const dy = arrow['y2']! - arrow['y1']!
   expect(Math.atan2(dy, dx)).toBeCloseTo(Math.PI / 4, 5)
 
+  // AI-IMP-038: the arrow SHAPE scales with its box like any shape.
+  await win.getByTestId('tool-shape-arrow').click()
+  await win.mouse.move(box.x + 600, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 700, box.y + 250, { steps: 4 })
+  await win.mouse.up()
+  await expect.poll(async () => (await decorations()).length).toBe(3)
+  const arrowShape = (await decorations()).find((d) => d.data['shape'] === 'arrow')!
+  expect(arrowShape.data['width']).toBe(100)
+  await win.getByTestId('tool-select').click()
+  await win.mouse.click(box.x + 650, box.y + 225)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  const se = await win.evaluate(
+    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
+  )
+  await win.mouse.move(box.x + se.x, box.y + se.y)
+  await win.mouse.down()
+  await win.mouse.move(box.x + se.x + 100, box.y + se.y + 50, { steps: 5 })
+  await win.mouse.up()
+  await expect
+    .poll(async () => {
+      const d = (await decorations()).find((dd) => dd.data['shape'] === 'arrow')!.data
+      return d['width']
+    })
+    .toBeGreaterThan(150)
+  const scaledArrowShape = (await decorations()).find((d) => d.data['shape'] === 'arrow')!.data
+  expect(scaledArrowShape['height']).toBeGreaterThan(75)
+
   await app.close()
 })

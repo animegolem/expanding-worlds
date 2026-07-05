@@ -6,12 +6,12 @@ tags:
   - canvas
   - decorations
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-035]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-038-two-arrows
@@ -71,17 +71,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] ShapeKind 'arrow' accepted by the validator (+ test).
-- [ ] Shape renderer arrow silhouette (7-point block polygon in the
+- [x] ShapeKind 'arrow' accepted by the validator (+ test).
+- [x] Shape renderer arrow silhouette (7-point block polygon in the
       box, round joins); renderer test pins the polygon.
-- [ ] Tool: 'shape-arrow' draws ShapeSession('arrow'); Shift = 2:1
+- [x] Tool: 'shape-arrow' draws ShapeSession('arrow'); Shift = 2:1
       box; toolbar button with testid; unit tests.
-- [ ] Resize revert: annotation arrows keep constant thickness (test
+- [x] Resize revert: annotation arrows keep constant thickness (test
       updated); clamp and head constants unchanged and exported.
-- [ ] e2e: draw an arrow shape, corner-resize → width/height scale
+- [x] e2e: draw an arrow shape, corner-resize → width/height scale
       with the box (silhouette proportional); annotation arrow
       resize leaves strokeWidth untouched.
-- [ ] Full gates: build, unit suites, desktop e2e, perf, lint.
+- [x] Full gates: build, unit suites, desktop e2e, perf, lint.
 
 ### Acceptance Criteria
 
@@ -98,3 +98,13 @@ pen weight.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Smooth — the shape machinery hardened across IMP-029/031/032 meant
+the arrow variant inherited stroke-aware bounds, oriented chrome,
+rotation, box resize, and Shift constraints without a single special
+case outside the renderer polygon and the tool mapping. The overlay
+preview draws the real silhouette via the exported
+shapeArrowPolygon. The 'else' triangle branch in the shape renderer
+was reached by the new variant before the explicit arrow case was
+added — the pinned-polygon test would have caught any regression.
+Annotation-arrow resize is back to line semantics; head proportion
+constants remain exported for owner feel-tuning.

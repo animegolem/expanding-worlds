@@ -6,7 +6,7 @@ tags:
   - canvas
   - feel
   - polish
-closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-IMP-030, AI-IMP-031, AI-IMP-032, AI-IMP-033, AI-IMP-034, AI-IMP-035, AI-EPIC-009]
+closed_tickets: [AI-IMP-024, AI-IMP-025, AI-IMP-026, AI-IMP-027, AI-IMP-028, AI-IMP-029, AI-IMP-030, AI-IMP-031, AI-IMP-032, AI-IMP-033, AI-IMP-034, AI-IMP-035, AI-IMP-036, AI-IMP-037, AI-IMP-038, AI-EPIC-009]
 created_date: 2026-07-05
 related_files:
   - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md
@@ -161,3 +161,27 @@ post-click reads — zoom assertions now poll and revision reads
 settle past the camera-persist debounce. Final: 222 engine / 340
 persistence / 21 e2e. Owner feel pass pending across batches two,
 three, and four.
+
+## Batch five (same day): two arrows, system fonts, dev hardening
+
+An alignment pause (owner) resolved the arrow model: one kind was
+straddling two mental models. RFC rev 0.13 + IMP-036/037/038. The
+annotation arrow reverted to pure pen semantics (constant weight
+under resize, head-from-thickness, clamp kept, proportion constants
+exported for tuning); a new 'arrow' ShapeKind renders a block
+silhouette that inherits box scaling, rotation, oriented chrome, and
+Shift 2:1 canonical drawing from the existing shape machinery — the
+owner's "Expanding Worlds — Baseline UI Vision" artifact (added to
+RAG/, unpacked from its bundled HTML) anchors §8.2 and already
+separates the two tools on its rail. The type row enumerates
+installed fonts via Local Font Access (lazy, user-gesture, stack
+fallbacks stored with selections; Electron's TS permission union
+lags Chromium — compare as strings). Dev mode now serves @ew/* live
+(vite optimizeDeps exclusion — validated over CDP: a dist marker
+executed after a plain reload) with a predev port preflight; this
+closes the stale-prebundle foot-gun that burned three sessions.
+Probe lesson recorded: always launch validation instances with an
+isolated EW_PROJECT_DIR (the §11.4 lock rejects a second app on the
+default project) and clean up by PID, never pkill by pattern.
+Final: 226 engine / 340 persistence / 21 e2e (clean run, no
+retries). Owner feel pass pending across batches two through five.

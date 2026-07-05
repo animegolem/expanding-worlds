@@ -20,6 +20,7 @@ export type ToolKind =
   | 'rect'
   | 'ellipse'
   | 'triangle'
+  | 'shape-arrow'
   | 'path'
   | 'line'
   | 'arrow'
