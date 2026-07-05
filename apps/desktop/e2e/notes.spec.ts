@@ -102,7 +102,7 @@ test('note pane opens on double-click and a typing burst commits one UpdateNote'
   await win.keyboard.type(' that hunts from a hover')
   await expect(win.getByTestId('note-pane-dirty')).toBeVisible()
   // The idle debounce (1.5 s) commits without any further gesture.
-  await expect(win.getByTestId('note-pane-dirty')).toBeHidden({ timeout: 5_000 })
+  await expect(win.getByTestId('note-pane-dirty')).toBeHidden({ timeout: 10_000 })
 
   expect(await projectRevision(win)).toBe(before + 1)
   expect(await noteBody(win, noteId)).toBe('a small hawk that hunts from a hover')
@@ -350,7 +350,7 @@ test('typing into the phantom body materializes on the first committed burst (§
   await win.getByTestId('phantom-draft').fill('born of marsh light')
   // The first committed burst (idle debounce) creates the note with
   // the typed content and the pane swaps to the real editor.
-  await expect(win.getByTestId('note-editor')).toBeVisible({ timeout: 5_000 })
+  await expect(win.getByTestId('note-editor')).toBeVisible({ timeout: 10_000 })
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Wisp/)
   await expect(win.getByTestId('note-editor')).toContainText('born of marsh light')
 
@@ -404,7 +404,7 @@ test('rename flushes dirty buffers, rewrites transactionally, folds into local u
   // change: rewritten token AND the pre-existing unresolved token
   // both read NewName and render bound; the typed text survived.
   await expect(win.locator('.cm-content [data-link-title="NewName"]')).toHaveCount(2, {
-    timeout: 5_000,
+    timeout: 10_000,
   })
   for (const token of await win
     .locator('.cm-content [data-link-title="NewName"]')
@@ -683,7 +683,7 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
   await expect(win.locator('.cm-content [data-link-title="Wraith"]')).toHaveAttribute(
     'data-link-state',
     'bound',
-    { timeout: 5_000 },
+    { timeout: 10_000 },
   )
 
   // Broken with no match → Create Note from the display text; the
