@@ -45,12 +45,14 @@ jobs:
 
       # pnpm's postinstall for electron proved unreliable on the
       # runner (install finished in 5s with no binary; every launch
-      # then failed). install.js is idempotent — run it explicitly.
+      # then failed). `pnpm rebuild` re-runs the build script with
+      # the package's deps properly linked.
       - name: Ensure Electron binary
-        working-directory: apps/desktop
         run: |
-          node node_modules/electron/install.js
-          test -x node_modules/electron/dist/electron
+          pnpm --dir apps/desktop rebuild electron
+          ls apps/desktop/node_modules/electron/ | head
+          ls apps/desktop/node_modules/electron/dist/ | head || true
+          test -x apps/desktop/node_modules/electron/dist/electron
 
       - name: Electron runtime libraries
         run: |
