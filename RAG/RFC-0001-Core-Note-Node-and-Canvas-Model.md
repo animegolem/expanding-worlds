@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.16         | 5 July 2026      |
+| Accepted for Phase 1 | 0.17         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -652,10 +652,10 @@ The root node MUST belong to the project, MUST own a canvas, and MUST
 NOT be trashed. The root canvas MUST NOT be deleted. Home always opens
 the root canvas.
 
-Commands, queries, subscriptions, workspace history, bookmarks, and tabs
-MUST be scoped to one project. The initial UI MAY support one open
-project per application window without defining a final multi-project
-interface.
+Commands, queries, subscriptions, workspace history, bookmarks, and
+open views MUST be scoped to one project. The initial UI MAY support
+one open project per application window without defining a final
+multi-project interface.
 
 ## 4.11 Identity and ordering
 
@@ -763,8 +763,8 @@ note body.
 enter the structural undo stack.
 
 31. The structural undo stack is project-session-scoped, shared across
-workspace tabs, and in-memory; committed command metadata persists as
-a non-replayable log.
+all of the session's views, and in-memory; committed command metadata
+persists as a non-replayable log.
 
 # 6. Creation, reuse, and promotion flows
 
@@ -1288,14 +1288,12 @@ preserves the copied body while requesting another unique title.
 
 ## 8.1 Canvas navigation
 
-Opening a node's canvas replaces the active canvas workspace or opens it
-in a workspace tab. Descendant canvases are not rendered live inside the
-parent. Home opens the current project's protected root canvas.
+Opening a node's canvas replaces the active canvas view. Descendant
+canvases are not rendered live inside the parent. Home opens the
+current project's protected root canvas.
 
-Navigation records per-workspace, project-scoped session history rather
-than structural ancestry. Each workspace tab SHOULD retain:
-
-- Independent Back and Forward history.
+Navigation records one project-scoped session history per window
+rather than structural ancestry. The history SHOULD retain per entry:
 
 - The route used to enter a canvas.
 
@@ -1303,17 +1301,40 @@ than structural ancestry. Each workspace tab SHOULD retain:
 
 - The originating placement when practical.
 
-- The view kind and target identity when the workspace contains a graph,
-  query, search result, or other projection.
+- The view kind and target identity when the entry is a graph, query,
+  search result, or other projection.
 
-No canonical parent is assumed. A new navigation after Back clears that
-workspace tab's Forward stack. Changing projects changes the applicable
-history rather than sharing one global stack.
+No canonical parent is assumed. A new navigation after Back clears the
+Forward stack. Changing projects changes the applicable history rather
+than sharing one global stack. Cross-canvas jumps from any surface — a
+pinned panel's origin label, a Uses row, a tag-panel row — are
+navigation events and enter this history.
 
 Bookmarks are durable project-scoped records. A bookmark MAY target a
 canvas plus viewport and selection context, or another workspace
-projection. Whether bookmarks appear as a bar or dropdown remains a
-responsive UI decision.
+projection.
+
+**Navigation chrome (rev 0.17).** The path, upper-left beside the
+window controls, renders the entry route — the back stack — as a
+breadcrumb: visually a file path, semantically history. It never
+renders structural ancestry, which does not exist (§4.4: containment
+is a graph with legal cycles). Clicking a crumb returns to that canvas
+with its viewport restored. Back and Forward are primarily gestures —
+trackpad swipe, mouse buttons 4/5, Mod+[ and Mod+] — with
+hover-revealed ‹ › affordances beside the path for mouse users; there
+are no permanent buttons. Home is a dedicated ⌂ button at the path's
+head.
+
+Bookmarks surface through one control at the path's tail (drawn as a
+small map pin with a generous hit target) opening one menu that does
+everything: click a row to jump, drag rows to reorder, ✕ to remove,
+and a bottom row to bookmark the current board. Row order IS the
+Mod+1–n shortcut binding, and each row prints its current shortcut,
+so the bindings are self-teaching. A bookmark whose target is trashed
+greys out with an In Trash label per the degradation rules below — it
+never silently vanishes from the menu. A hold-Mod switcher HUD
+(thumbnail flash of bookmarked boards) is deferred as a complement
+once the shortcuts are learned, not a replacement for the menu.
 
 Stale navigation targets degrade explicitly, never silently. Back and
 Forward skip and collapse history entries whose target is trashed or
@@ -1326,62 +1347,90 @@ Saved viewport or selection context referencing records that no longer
 exist degrades gracefully: the target opens and the missing context is
 ignored.
 
-## 8.2 Workspace composition
+## 8.2 Shell and workspace model
 
-The following is provisional UI direction rather than a normative
-ontology rule:
+The shell model was decided in the owner's design-consult wireframe
+cycle (July 2026; Design Spec v1 plus its reply turn — a consolidated
+Spec v2 will be archived beside this RFC). It supersedes the earlier
+tabbed-workspace direction and the Baseline UI Vision v0.1 sidebar:
+there are no workspace tabs, no docked sidebar, and no persistent
+status strip. Its stance: **the window is the board.** Chrome is
+minimal, floating, and never causes canvas reflow; the app's
+aesthetic job is neutrality. PureRef anchors the chrome weight,
+Obsidian the data model's visibility. Nothing has invisible state:
+every grouping, link, mode, or ongoing condition is visible on some
+surface.
 
-- The note editor remains persistently available in a pane or note tab
-  area.
+**Two scopes, two physics.** Node-local content floats as panels
+above the canvas (notes, choosers, tag chips); project-global views —
+graph, tree/wiki, settings — take over the window. Esc or the
+originating control returns from a takeover, and the canvas camera is
+untouched by it. Panels open anchored to the control that summoned
+them — one physics rule everywhere.
 
-- The main workspace supports tabs.
+**Shell layout.**
 
-- A workspace tab may contain a canvas, relationship graph, table or
-  data view, search result, or other project projection.
+- Window controls upper-left, with the §8.1 path beside them.
 
-- Notes may also be tabbed or pinned depending on prototype feedback.
+- A vertical mode charm rail, upper-right: project switcher · search
+  ⌕ · graph ⊛ · tree/wiki ▤ · menu ☰. Icon-only, generous hit
+  targets.
 
-- Relationship/data views are separate renderers from the art canvas
-  while querying the same domain model.
+- One floating dock, bottom-center: tool modes (select · text ·
+  shape with press-and-hold flyout · draw · line · arrow ·
+  connector) · divider · zoom out · percentage · zoom in · fit.
+  Render-order send-forward and send-backward join the dock only
+  while a selection exists.
 
-Chrome direction: the canvas is the application, and UI chrome stays
-minimal and summonable. Tools hover at the edges of the board rather
-than framing it, the note editor reads as a sidebar the canvas yields
-to, and the overall register sits between Photoshop and an IDE —
-panels earn their pixels and collapse when idle. This is design
-language steering future panel decisions, not a normative layout.
+- A hover-revealed title strip at the top edge carries file and view
+  functions (and system menus on Windows and Linux); it is hidden
+  otherwise.
 
-The concrete reference for this direction is the owner's "Expanding
-Worlds — Baseline UI Vision" (v0.1, archived beside this RFC): a
-frameless window with self-drawn window controls, floating capsule
-rails (tools left, mirrored ops rail), one Obsidian-style switched
-sidebar (note · data · tags · search), a charm bar on single-click,
-double-click opening the contained canvas and/or note, and overlay
-chips marking what a node holds. Open question 3's click semantics
-take their direction from it without being frozen here. Notably, the
-vision's tool rail separates "shapes" (one palette entry) from the
-annotation arrow — the two-arrows decision of rev 0.13 follows it.
+- Errors surface as transient toasts; ongoing conditions use the
+  §8.6 perch. Nothing docks and nothing reflows the canvas.
 
-The exact split layout, docking behavior, project switching, and tab
-rules should be tested with the intended artist user rather than frozen
-in this RFC. Architecture MUST still scope every workspace, command,
-query, subscription, and navigation record to one Project ID.
+**Engagement cadence.** While the cursor is in the window, chrome is
+visible: dock, rail, and node charms at partial opacity — a
+glanceable census requiring no hovering. When the cursor leaves the
+window or rests beyond an idle delay, the entire chrome layer fades
+together on one shared clock and the board becomes wallpaper; any
+element fading independently is a bug. Hovering a control lights that
+control alone to full opacity. Charm visibility keys on the node's
+rendered screen size, never on zoom percentage. All cadence numbers
+are provisional feel constants, not model state.
+
+**Tooltip rule.** Every hoverable control shows a tooltip naming the
+control and printing its keyboard shortcut, in one chip style
+app-wide, after a short delay. No control ships without one: the GUI
+is the tutorial for the keyboard-driven app.
+
+macOS is the lead platform. Windows and Linux gain a ☰ menu entry
+point and diverge nowhere else. Side-by-side comparison of two boards
+is deferred (expected shape: a second window per project), recorded
+in section 19 so it does not vanish silently.
+
+Relationship and data views remain separate renderers from the art
+canvas while querying the same domain model. Architecture MUST still
+scope every view, command, query, subscription, and navigation record
+to one Project ID.
 
 ## 8.3 Search and quick-open
 
 Full-text search covers note titles and bodies, tag names, asset
-original filenames, and canvas text decorations. Results open in a
-search workspace tab grouped by kind: a note result opens in the note
-pane, a tag result opens its node result view, a filename match
+original filenames, and canvas text decorations. Search lives in the
+⌕ charm's panel; results group by kind: a note result opens the note
+panel, a tag result opens the tag panel (§4.8), a filename match
 surfaces the nodes using that asset, and a canvas-text match opens the
 containing canvas centered on the matching decoration. Trashed records
-are excluded by default.
+are excluded by default. Typing a leading # switches the field to tag
+mode with tag-name completion.
 
 A keyboard-summoned quick-open MUST navigate by title across notes and
-canvas-owning nodes. Selecting a note opens the note pane; selecting a
-canvas opens it in the workspace. Quick-open matches by title_key and
-does not include phantom titles, which remain reachable through links
-and wiki-link suggestions.
+canvas-owning nodes; the ⌕ panel is its realization. Selecting a note
+opens the note panel; selecting a canvas opens it as the active
+canvas. Quick-open matches by title_key and does not include phantom
+titles, which remain reachable through links and wiki-link
+suggestions.
 
 # 9. Deletion, trash, and resource retention
 
@@ -1606,8 +1655,8 @@ command when the gesture completes.
 
 Continuous text entry follows the same principle. The note editor
 buffer is ephemeral state, and an editing burst commits one UpdateNote
-command when it completes: on an idle debounce, on editor blur or pane
-or tab switch, on application quit, and as a forced flush before any
+command when it completes: on an idle debounce, on editor blur or
+panel switch or close, on application quit, and as a forced flush before any
 command that reads or rewrites the note's body, including rename
 rewrites, trash, export, and link operations. There is no explicit
 save action. Each committed UpdateNote advances project_revision once
@@ -1624,7 +1673,7 @@ It does not pop arbitrary database state or treat the relational store
 as a disposable event-sourced projection.
 
 The structural undo stack is scoped to one open project session and is
-shared across that project's workspace tabs; there is no per-tab undo
+shared across all of that session's views; there is no per-view undo
 over shared project state. The stack is held in memory and does not
 survive application restart. Recoverable history across sessions is
 Trash's responsibility, and project time travel remains future work.
@@ -1881,7 +1930,7 @@ The following choices are accepted:
 |----|----|----|
 | Desktop shell | Electron | Ships a consistent Chromium runtime and supports a future TypeScript server ecosystem. |
 | Language | TypeScript | Shared domain, command, persistence-contract, and future protocol definitions. |
-| Application UI | Svelte 5 | Owns panes, tabs, dialogs, inspectors, note shell, search, and data views. |
+| Application UI | Svelte 5 | Owns floating panels, takeover views, dialogs, inspectors, note shell, and search. |
 | Canvas renderer | PixiJS 8 (decided by renderer spike AI-EPIC-001) | Renderer remains framework-independent behind a Canvas Controller. |
 | Note editor | CodeMirror 6 | Markdown source with wiki-link parsing and future collaborative bindings. |
 | Persistence | SQLite | No PostgreSQL or Docker dependency in Phase 1. |
@@ -2129,7 +2178,7 @@ content.
 11. Create a legal canvas cycle and verify navigation, graph queries,
 and export do not recurse indefinitely.
 
-12. Navigate with per-workspace Back, Forward, Home, and a bookmark
+12. Navigate with Back, Forward, Home, the path, and a bookmark
 while preserving viewport and origin context; jump to a note and a
 canvas through quick-open; and locate a canvas text decoration through
 full-text search.
@@ -2177,8 +2226,8 @@ and that purging it produces a broken link offering explicit recreate.
 23. Verify Trash retention defaults to Never and that permanent purge
 invalidates dependent undo and enables safe garbage collection.
 
-24. Open a minimal graph or data workspace tab and confirm Trash and
-decoration edges are excluded by default.
+24. Open the tree takeover view and confirm Trash and decoration
+edges are excluded by default.
 
 25. Close and reopen the application without data loss, duplicate
 project writers, or unreconciled temporary imports, including a note
@@ -2328,9 +2377,9 @@ The model is successfully implemented when:
   undo never reverts prose, while note rename remains structurally
   undoable.
 
-- One structural undo stack serves all workspace tabs of an open
-  project session, is in-memory only, and clears redo on any new
-  command; command metadata persists as a non-replayable log.
+- One structural undo stack serves all views of an open project
+  session, is in-memory only, and clears redo on any new command;
+  command metadata persists as a non-replayable log.
 
 - Undoing a change on an inactive canvas navigates to and highlights
   the affected content.
