@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 1 |
-| Planned | 4 | 0 |
+| Planned | 5 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 8 | 57 |
-| **Total** | **13** | **58** |
+| **Total** | **14** | **58** |
 
 ## In Progress
 
@@ -58,6 +58,11 @@
 
 ---
 
+### [[AI-EPIC-014-library-and-cross-project-sourcing|EPIC-014: Library and cross project sourcing]]
+> The first outside tester's reference library lives in Allusion,
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -65,7 +70,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5045 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2964 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3039 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (753 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
