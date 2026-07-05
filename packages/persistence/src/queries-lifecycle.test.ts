@@ -308,3 +308,23 @@ describe('trashed records are excluded from ordinary queries', () => {
     expect(trash.canvases.map((c) => c.id)).toEqual([doomedCanvasId])
   })
 })
+
+describe('listCommandLog (§10.2 metadata log, AI-IMP-050)', () => {
+  it('returns committed commands after a revision, in order', () => {
+    const first = createNote('One')
+    const sinceRevision = query<{ revision: number }>('getProject').revision
+    committed('UpdateNote', { noteId: first, body: 'a' })
+    committed('RenameNote', { noteId: first, title: 'One Renamed' })
+
+    const log = query<Array<{ commandType: string; resultingRevision: number }>>(
+      'listCommandLog',
+      { sinceRevision },
+    )
+    expect(log.map((row) => row.commandType)).toEqual(['UpdateNote', 'RenameNote'])
+    expect(log[0]!.resultingRevision).toBe(sinceRevision + 1)
+
+    // No args = the full log.
+    const all = query<Array<{ commandType: string }>>('listCommandLog')
+    expect(all.length).toBeGreaterThanOrEqual(3)
+  })
+})

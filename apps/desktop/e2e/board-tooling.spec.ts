@@ -56,17 +56,21 @@ async function runCommand(win: Page, commandType: string, payload: unknown): Pro
   )
 }
 
-/** Waits out floating camera-persist debounces (flights schedule a
- * SetCanvasCamera ~500ms after motion) so exact revision-delta
- * assertions stay deterministic. */
-async function settledRevision(win: Page): Promise<number> {
-  let prev = await revision(win)
-  for (;;) {
-    await win.waitForTimeout(650)
-    const next = await revision(win)
-    if (next === prev) return next
-    prev = next
-  }
+/**
+ * Content commands committed after `sinceRevision`, camera persists
+ * excluded. Exact revision arithmetic is unwinnable on slow runners:
+ * flights schedule a debounced SetCanvasCamera whose landing time is
+ * machine-dependent, so delta assertions go through the §10.2
+ * command log instead (AI-IMP-050).
+ */
+async function contentCommandsSince(win: Page, sinceRevision: number): Promise<string[]> {
+  return win.evaluate(async (since) => {
+    const log = await window.ew.project.query('listCommandLog', { sinceRevision: since })
+    if (!log.ok) throw new Error(log.message)
+    return (log.result as Array<{ commandType: string }>)
+      .map((row) => row.commandType)
+      .filter((type) => type !== 'SetCanvasCamera')
+  }, sinceRevision)
 }
 
 async function revision(win: Page): Promise<number> {
@@ -184,20 +188,20 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 3)
 
   // Align Top: exactly one TransformContent; every center lands on 150.
-  const beforeAlign = await settledRevision(win)
+  const beforeAlign = await revision(win)
   await win.getByTestId('align-top').click()
   await expect
     .poll(async () => (await scenePlacements(win)).map((p) => p.y))
     .toEqual([150, 150, 150])
-  expect(await revision(win)).toBe(beforeAlign + 1)
+  expect(await contentCommandsSince(win, beforeAlign)).toHaveLength(1)
 
   // Distribute horizontally: gaps equalize (75 each), one command.
-  const beforeDistribute = await settledRevision(win)
+  const beforeDistribute = await revision(win)
   await win.getByTestId('distribute-horizontal').click()
   await expect
     .poll(async () => (await scenePlacements(win)).map((p) => p.x))
     .toEqual([150, 265, 380])
-  expect(await revision(win)).toBe(beforeDistribute + 1)
+  expect(await contentCommandsSince(win, beforeDistribute)).toHaveLength(1)
 
   // Drag the middle placement toward the first one's right edge
   // (world 170): at proposed left 173 the snap pulls it flush, a
@@ -207,7 +211,7 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 0)
   await win.mouse.click(box.x + 265, box.y + 150)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  const beforeSnap = await settledRevision(win)
+  const beforeSnap = await revision(win)
   await win.mouse.move(box.x + 265, box.y + 150)
   await win.mouse.down()
   await win.mouse.move(box.x + 193, box.y + 150, { steps: 6 })
@@ -226,12 +230,12 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
       [190, 150], // left edge 170 = first placement's right edge
       [380, 150],
     ])
-  expect(await revision(win)).toBe(beforeSnap + 1)
+  expect(await contentCommandsSince(win, beforeSnap)).toHaveLength(1)
   // Guides never outlive the gesture.
   expect(await win.evaluate(() => window.__ewDebug!.guides().length)).toBe(0)
 
   // Alt-drag repeats a near-edge drop without snapping.
-  const beforeAlt = await settledRevision(win)
+  const beforeAlt = await revision(win)
   await win.keyboard.down('Alt')
   await win.mouse.move(box.x + 190, box.y + 150)
   await win.mouse.down()
@@ -242,21 +246,21 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   await expect
     .poll(async () => (await scenePlacements(win))[1])
     .toMatchObject({ x: 192, y: 154 }) // exact pointer delta, no snap
-  expect(await revision(win)).toBe(beforeAlt + 1)
+  expect(await contentCommandsSince(win, beforeAlt)).toHaveLength(1)
 
   // Zoom to fit / to selection: camera-only, no durable command (the
   // revision is read before the debounced camera persist can land).
   const cameraBefore = await win.evaluate(() => window.__ewDebug!.camera())
-  const beforeZoom = await settledRevision(win)
+  const beforeZoom = await revision(win)
   await win.getByTestId('zoom-fit').click()
-  expect(await revision(win)).toBe(beforeZoom)
+  expect(await contentCommandsSince(win, beforeZoom)).toHaveLength(0)
   // §6.9 rev 0.11: fits EASE — poll past the flight.
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
     .not.toEqual(cameraBefore)
   const fitted = await win.evaluate(() => window.__ewDebug!.camera())
   await win.getByTestId('zoom-selection').click()
-  expect(await revision(win)).toBe(beforeZoom)
+  expect(await contentCommandsSince(win, beforeZoom)).toHaveLength(0)
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
     .not.toEqual(fitted)
@@ -283,10 +287,10 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   await win.mouse.click(box.x + 400, box.y + 300)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
   await expect(win.getByTestId('bg-set-from-selection')).toBeEnabled()
-  const beforeSet = await settledRevision(win)
+  const beforeSet = await revision(win)
   await win.getByTestId('bg-set-from-selection').click()
   await expect.poll(async () => (await sceneBackground(win)).assetId).toBe(asset1)
-  expect(await revision(win)).toBe(beforeSet + 1)
+  expect(await contentCommandsSince(win, beforeSet)).toHaveLength(1)
   // §6.7 rev 0.11: from-selection preserves the placed world rect —
   // the 8×8 image at natural size centered on (400, 300).
   expect((await sceneBackground(win)).settings).toEqual({ x: 396, y: 296, scale: 1, opacity: 1 })
@@ -303,7 +307,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundMode()))
     .toBe(true)
-  const beforeEdit = await settledRevision(win)
+  const beforeEdit = await revision(win)
   await win.mouse.move(box.x + 600, box.y + 400)
   await win.mouse.down()
   await win.mouse.move(box.x + 640, box.y + 420, { steps: 4 })
@@ -312,13 +316,13 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundSprite()))
     .toMatchObject({ x: 436, y: 316 })
   // Still ephemeral: nothing durable happened while dragging.
-  expect(await revision(win)).toBe(beforeEdit)
+  expect(await contentCommandsSince(win, beforeEdit)).toHaveLength(0)
   expect((await sceneBackground(win)).settings).toMatchObject({ x: 396, y: 296 })
   await win.getByTestId('bg-edit-done').click()
   await expect
     .poll(async () => (await sceneBackground(win)).settings)
     .toEqual({ x: 436, y: 316, scale: 1, opacity: 1 })
-  expect(await revision(win)).toBe(beforeEdit + 1)
+  expect(await contentCommandsSince(win, beforeEdit)).toHaveLength(1)
   expect(await win.evaluate(() => window.__ewBoardDebug!.backgroundMode())).toBe(false)
 
   // Escape reverts the sprite and commits nothing.
@@ -326,7 +330,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundMode()))
     .toBe(true)
-  const beforeCancel = await settledRevision(win)
+  const beforeCancel = await revision(win)
   await win.mouse.move(box.x + 600, box.y + 400)
   await win.mouse.down()
   await win.mouse.move(box.x + 560, box.y + 380, { steps: 4 })
@@ -342,27 +346,27 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
     x: 436,
     y: 316,
   })
-  expect(await revision(win)).toBe(beforeCancel)
+  expect(await contentCommandsSince(win, beforeCancel)).toHaveLength(0)
 
   // Reset Background Transform: one command back to the normalized
   // stage default (§6.7 rev 0.11): 2048 / 8 native px = scale 256.
-  const beforeReset = await settledRevision(win)
+  const beforeReset = await revision(win)
   await win.getByTestId('bg-reset').click()
   await expect
     .poll(async () => (await sceneBackground(win)).settings)
     .toEqual({ x: 0, y: 0, scale: 256, opacity: 1 })
-  expect(await revision(win)).toBe(beforeReset + 1)
+  expect(await contentCommandsSince(win, beforeReset)).toHaveLength(1)
 
   // Background color sits beneath the image: both fields coexist.
-  const beforeColor = await settledRevision(win)
+  const beforeColor = await revision(win)
   await win.getByTestId('bg-color').fill('#336699')
   await expect.poll(async () => (await sceneBackground(win)).color).toBe('#336699')
-  expect(await revision(win)).toBe(beforeColor + 1)
+  expect(await contentCommandsSince(win, beforeColor)).toHaveLength(1)
   expect((await sceneBackground(win)).assetId).toBe(asset1)
 
   // Replace from a file pick: the hidden input feeds importAsset then
   // one SetCanvasBackground (revision +2: CommitAssetImport + set).
-  const beforeReplace = await settledRevision(win)
+  const beforeReplace = await revision(win)
   await win.getByTestId('bg-file-input').setInputFiles({
     name: 'bg-green.png',
     mimeType: 'image/png',
@@ -375,21 +379,21 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   expect(replaced.assetId).not.toBeNull()
   // Replace fits the new 8×8 image into the prior 2048-unit extent.
   expect(replaced.settings).toEqual({ x: 0, y: 0, scale: 256, opacity: 1 })
-  expect(await revision(win)).toBe(beforeReplace + 2)
+  expect(await contentCommandsSince(win, beforeReplace)).toHaveLength(2)
 
   // Remove Background: one command; the color layer stays. (The
   // replace above flew the camera — settle its debounced persist.)
-  const beforeRemove = await settledRevision(win)
+  const beforeRemove = await revision(win)
   await win.getByTestId('bg-remove').click()
   await expect.poll(async () => (await sceneBackground(win)).assetId).toBeNull()
-  expect(await revision(win)).toBe(beforeRemove + 1)
+  expect(await contentCommandsSince(win, beforeRemove)).toHaveLength(1)
   expect((await sceneBackground(win)).color).toBe('#336699')
 
   // Clear the color: one command.
-  const beforeClear = await settledRevision(win)
+  const beforeClear = await revision(win)
   await win.getByTestId('bg-color-clear').click()
   await expect.poll(async () => (await sceneBackground(win)).color).toBeNull()
-  expect(await revision(win)).toBe(beforeClear + 1)
+  expect(await contentCommandsSince(win, beforeClear)).toHaveLength(1)
 
   await app.close()
 })
@@ -428,10 +432,10 @@ test('delete selection with §9.2 notice, z-order recovery, select-all (AI-IMP-0
   await win.mouse.move(box.x + 450, box.y + 300, { steps: 5 })
   await win.mouse.up()
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 3)
-  const beforeDelete = await settledRevision(win)
+  const beforeDelete = await revision(win)
   await win.keyboard.press('Backspace')
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().total === 0)
-  expect(await revision(win)).toBe(beforeDelete + 1)
+  expect(await contentCommandsSince(win, beforeDelete)).toHaveLength(1)
   await expect(win.getByTestId('board-notice')).toBeVisible()
   await expect(win.getByTestId('board-notice')).toContainText('moved to Trash')
   await win.getByTestId('board-notice-keep').click()

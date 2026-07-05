@@ -72,4 +72,21 @@ export function registerCoreQueries(registry: QueryRegistry): void {
       ctx.projectId,
     ),
   )
+
+  // §10.2 command-log read model (AI-IMP-050): diagnostics and
+  // deterministic test assertions ("exactly one UpdateNote", "nothing
+  // but camera persists") that exact revision arithmetic can't give —
+  // debounced SetCanvasCamera commits land at machine-dependent times.
+  registry.register('listCommandLog', (ctx, args) => {
+    const { sinceRevision } = (args ?? {}) as { sinceRevision?: number }
+    return ctx.db.all(
+      `SELECT command_id AS commandId, command_type AS commandType,
+              resulting_revision AS resultingRevision
+       FROM command_log
+       WHERE project_id = ? AND resulting_revision > ?
+       ORDER BY resulting_revision`,
+      ctx.projectId,
+      sinceRevision ?? 0,
+    )
+  })
 }

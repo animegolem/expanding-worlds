@@ -43,17 +43,16 @@ async function revision(win: Page): Promise<number> {
   })
 }
 
-/** Waits out floating camera-persist debounces (~500ms after camera
- * motion) so exact revision-delta assertions stay deterministic on
- * slow runners. */
-async function settledRevision(win: Page): Promise<number> {
-  let prev = await revision(win)
-  for (;;) {
-    await win.waitForTimeout(650)
-    const next = await revision(win)
-    if (next === prev) return next
-    prev = next
-  }
+/** Content commands after `sinceRevision`, camera persists excluded —
+ * timing-immune replacement for exact revision deltas (AI-IMP-050). */
+async function contentCommandsSince(win: Page, sinceRevision: number): Promise<string[]> {
+  return win.evaluate(async (since) => {
+    const log = await window.ew.project.query('listCommandLog', { sinceRevision: since })
+    if (!log.ok) throw new Error(log.message)
+    return (log.result as Array<{ commandType: string }>)
+      .map((row) => row.commandType)
+      .filter((type) => type !== 'SetCanvasCamera')
+  }, sinceRevision)
 }
 
 async function exec(ctx: Ctx, commandType: string, payload: unknown): Promise<unknown> {
@@ -223,11 +222,11 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   ).toBe(true)
   // Unsupported file: clear notice, zero new records.
   const beforeReject = await win.evaluate(() => window.__ewDebug!.sceneStats().placements)
-  const beforeRev = await settledRevision(win)
+  const beforeRev = await revision(win)
   await dropFiles([{ name: 'notes.txt', type: 'text/plain', b64: btoa('hello') }])
   await expect(win.getByTestId('import-error')).toBeVisible()
   expect(await win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(beforeReject)
-  expect(await revision(win)).toBe(beforeRev)
+  expect(await contentCommandsSince(win, beforeRev)).toHaveLength(0)
   await win.getByTestId('import-error-dismiss').click()
 
   // ---- Item 5: pins with dot, icon, and cropped-image appearance.
