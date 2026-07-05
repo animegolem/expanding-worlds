@@ -50,13 +50,21 @@ jobs:
       - name: Ensure Electron binary
         working-directory: apps/desktop
         run: |
-          # The install-step postinstall saved a truncated zip into
-          # @electron/get's cache; every retry then "cache hits" the
-          # corrupt archive and extracts one stray file. Purge both
-          # the zip cache and the partial dist, then fetch fresh.
+          # install.js downloads fine on the runner but its
+          # extraction step dies instantly and silently (stderr was
+          # swallowed in earlier runs — capture it this time). Fall
+          # back to unzipping the fetched archive ourselves; the
+          # layout is exactly dist/ plus a path.txt naming the
+          # executable.
           rm -rf ~/.cache/electron node_modules/electron/dist node_modules/electron/path.txt
-          DEBUG='@electron/get*' node node_modules/electron/install.js
-          ls node_modules/electron/dist/ | head -30
+          if ! DEBUG='@electron/get*' node node_modules/electron/install.js 2>&1; then
+            echo '::warning::install.js failed; extracting manually'
+            zip_path=$(ls ~/.cache/electron/*/electron-v*-linux-x64.zip | head -1)
+            mkdir -p node_modules/electron/dist
+            unzip -oq "$zip_path" -d node_modules/electron/dist
+            printf 'electron' > node_modules/electron/path.txt
+          fi
+          ls node_modules/electron/dist/ | head -5
           test -x node_modules/electron/dist/electron
 
       - name: Electron runtime libraries
