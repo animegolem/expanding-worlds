@@ -86,32 +86,32 @@ the schema leaves room; only the default rendering changes.
 
 ### Functional Requirements
 
-- [ ] FR-1: Trackpad/mouse camera input per §6.9 — pinch (ctrl-wheel)
+- [x] FR-1: Trackpad/mouse camera input per §6.9 — pinch (ctrl-wheel)
       zooms at the pointer, plain two-finger scroll pans by delta,
       Space/middle-drag pans; wheel-zoom speed tuned on hardware.
-- [ ] FR-2: Cursor state feedback — grab/grabbing while panning,
+- [x] FR-2: Cursor state feedback — grab/grabbing while panning,
       directional resize/rotate cursors over handles, default
       otherwise.
-- [ ] FR-3: Black-box texture bug reproduced, root-caused in the
+- [x] FR-3: Black-box texture bug reproduced, root-caused in the
       residency/cull path, fixed, and regression-tested at the
       texture-state level.
-- [ ] FR-4: Drag fidelity — selection outline, handles, and labels
+- [x] FR-4: Drag fidelity — selection outline, handles, and labels
       update in the same frame as the object during ephemeral
       gestures; no repaint flash at gesture commit.
-- [ ] FR-5: Snap feel per §6.9 — dotted, reduced-opacity guides
+- [x] FR-5: Snap feel per §6.9 — dotted, reduced-opacity guides
       rendered only while a snap is engaged; engage/release
       hysteresis; threshold reviewed against real drags.
 - [ ] FR-6: Arrow renders as one filled block polygon derived from
       endpoints plus thickness; geometry pass over line, shape, path,
       connector at multiple widths and zooms (visual approval by the
       project owner).
-- [ ] FR-7: Delete/Backspace removes selected placements per §9.2
+- [x] FR-7: Delete/Backspace removes selected placements per §9.2
       (bare-node auto-trash + Keep in Project notice; invested-node
       notice) and selected decorations with a tested inverse.
-- [ ] FR-8: Z-order controls (bring forward/backward, to front/back)
+- [x] FR-8: Z-order controls (bring forward/backward, to front/back)
       reachable on any selection — keyboard and context surface —
       covering both placements and decorations.
-- [ ] FR-9: Select All (Cmd+A) and zoom-to-fit-everything when
+- [x] FR-9: Select All (Cmd+A) and zoom-to-fit-everything when
       nothing is selected.
 
 ### Non-Functional Requirements
