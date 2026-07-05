@@ -6,7 +6,7 @@ tags:
   - canvas
   - lifecycle
   - feel
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-019, AI-IMP-021]
 parent_epic: [[AI-EPIC-009-canvas-feel-pass]]
 confidence_score: 0.8
