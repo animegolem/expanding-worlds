@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { uuidv7 } from '@ew/domain'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
 import type {
   ExecuteCommandResponse,
@@ -18,6 +19,12 @@ export type FetchUrlForImportResult =
  * the bridge.
  */
 const api = {
+  util: {
+    /** Invariant 1: UUIDv7 for application-generated persisted ids.
+     * Exposed so e2e evaluate blocks (which cannot import workspace
+     * packages) mint compliant command ids. */
+    newId: (): string => uuidv7(),
+  },
   test: {
     /** Recovery e2e only: main registers the handler solely under
      * EW_TEST_HOOKS=1, so this rejects in production. */

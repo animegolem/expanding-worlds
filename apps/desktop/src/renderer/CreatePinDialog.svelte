@@ -10,6 +10,7 @@
   existing tags load via listTags; new tags issue CreateTag when added.
 -->
 <script lang="ts">
+  import { uuidv7 } from '@ew/domain'
   import type { CommandResult } from '@ew/commands'
   import type { CanvasHostHandle } from './canvas/host'
 
@@ -75,7 +76,7 @@
   async function addTag(): Promise<void> {
     const name = newTagName.trim()
     if (name.length === 0) return
-    const tagId = crypto.randomUUID()
+    const tagId = uuidv7()
     const result = await handle.gateway.execute('CreateTag', { tagId, name })
     if (result.status !== 'committed') {
       errorMessage = failureText('CreateTag', result)
@@ -118,7 +119,7 @@
           return
         }
         const result = await handle.gateway.execute('CreatePlacement', {
-          placementId: crypto.randomUUID(),
+          placementId: uuidv7(),
           canvasId: handle.canvasId,
           nodeId: existingNodeId,
           x: center.x,
@@ -173,7 +174,7 @@
           errorMessage = 'enter a note title'
           return
         }
-        note = { kind: 'create', noteId: crypto.randomUUID(), title: noteTitle.trim() }
+        note = { kind: 'create', noteId: uuidv7(), title: noteTitle.trim() }
       } else if (noteMode === 'existing') {
         if (existingNoteId.length === 0) {
           errorMessage = 'choose a note to attach'
@@ -183,9 +184,9 @@
       }
 
       const result = await handle.gateway.execute('CreatePin', {
-        nodeId: crypto.randomUUID(),
+        nodeId: uuidv7(),
         canvasId: handle.canvasId,
-        placementId: crypto.randomUUID(),
+        placementId: uuidv7(),
         x: center.x,
         y: center.y,
         appearance,

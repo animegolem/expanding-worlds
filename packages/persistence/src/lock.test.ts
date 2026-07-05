@@ -2,7 +2,22 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// Interception point for the reclaim-race test: fires after every
+// renameSync so a "racing winner" can land between our rename and
+// the verify read-back. Null for every other test.
+const renameHook = vi.hoisted(() => ({ after: null as ((to: string) => void) | null }))
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return {
+    ...actual,
+    renameSync: (from: Parameters<typeof actual.renameSync>[0], to: Parameters<typeof actual.renameSync>[1]) => {
+      actual.renameSync(from, to)
+      renameHook.after?.(String(to))
+    },
+  }
+})
 import { LOCK_FILENAME, ProjectLock, ProjectLockedError, type LockHolder } from './lock'
 
 let dir: string
@@ -70,6 +85,34 @@ describe('ProjectLock', () => {
       expect(holder.pid).toBe(process.pid)
     } finally {
       lock.release()
+    }
+  })
+
+  it('refuses when another racer wins the stale reclaim (AI-IMP-058)', () => {
+    // Simulate the losing interleave: our rename lands, then the
+    // racing winner's rename lands before the verify read-back.
+    const stale: LockHolder = {
+      pid: process.pid,
+      hostname: hostname(),
+      token: 'stale-token',
+      acquiredAt: new Date(Date.now() - 120_000).toISOString(),
+      heartbeatAt: new Date(Date.now() - 120_000).toISOString(),
+    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(stale))
+    renameHook.after = (to) => {
+      const winner: LockHolder = {
+        pid: 424242,
+        hostname: hostname(),
+        token: 'racing-winner',
+        acquiredAt: new Date().toISOString(),
+        heartbeatAt: new Date().toISOString(),
+      }
+      writeFileSync(to, JSON.stringify(winner))
+    }
+    try {
+      expect(() => ProjectLock.acquire(dir)).toThrowError(ProjectLockedError)
+    } finally {
+      renameHook.after = null
     }
   })
 

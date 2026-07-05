@@ -363,3 +363,26 @@ describe('DeleteDraftPin (inverse round-trip)', () => {
     ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
   })
 })
+
+describe('CreatePin note body (§7.2, AI-IMP-058)', () => {
+  it('persists the phantom draft body and indexes its outbound tokens', () => {
+    const noteId = uuidv7()
+    committed('CreatePin', pinPayload({
+      note: { kind: 'create', noteId, title: 'Kestrel', body: 'hunts near [[Harbor]]' },
+    }))
+    const note = handle.db.get<{ body: string }>('SELECT body FROM note WHERE id = ?', noteId)!
+    expect(note.body).toBe('hunts near [[Harbor]]')
+    const links = handle.db.all<{ state: string; target_title_key: string | null }>(
+      'SELECT state, target_title_key FROM link WHERE source_note_id = ?',
+      noteId,
+    )
+    expect(links).toEqual([{ state: 'unresolved', target_title_key: 'harbor' }])
+  })
+
+  it('rejects a non-string body', () => {
+    const result = exec('CreatePin', pinPayload({
+      note: { kind: 'create', noteId: uuidv7(), title: 'X', body: 42 as unknown as string },
+    }))
+    expect(result).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
+})

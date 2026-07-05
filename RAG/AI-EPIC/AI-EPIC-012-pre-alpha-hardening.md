@@ -6,8 +6,8 @@ tags:
   - hardening
   - feel
 date_created: 2026-07-05
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-05
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-053
   - AI-IMP-054
@@ -79,9 +79,9 @@ Create Pin dialog (waits for its chrome-era replacement).
 - [x] FR-6: Wiki-link hover affordance names the follow gesture.
 - [x] FR-7: fetchUrlForImport rejects loopback/private/link-local targets, including post-DNS-resolution.
 - [x] FR-8: e2e envelope/query helpers consolidated; notes.spec migrated.
-- [ ] FR-9: UI-generated ids honor invariant 1 (UUIDv7); v4 command ids rejected. (owner-validated external review, AI-IMP-058)
-- [ ] FR-10: Lock reclaim verifies ownership after the rename — single writer holds. (AI-IMP-058)
-- [ ] FR-11: Phantom Create and Place carries the typed draft; blur-materialize race removed. (AI-IMP-058)
+- [x] FR-9: UI-generated ids honor invariant 1 (UUIDv7); v4 command ids rejected. (owner-validated external review, AI-IMP-058)
+- [x] FR-10: Lock reclaim verifies ownership after the rename — single writer holds. (AI-IMP-058)
+- [x] FR-11: Phantom Create and Place carries the typed draft; blur-materialize race removed. (AI-IMP-058)
 
 ### Non-Functional Requirements
 

@@ -19,8 +19,12 @@ export interface CreatePinPayload {
    * 'create' makes a new note (linkable-title + title-free rules,
    * §4.2/§7.7) and attaches it; 'attach' shares an existing active
    * note (§6.10). Omitted = a note-less pin (§6.1 image import).
+   * `body` carries phantom draft content (§7.2 — Create and Place
+   * must not drop typed text; AI-IMP-058).
    */
-  note?: { kind: 'create'; noteId: string; title: string } | { kind: 'attach'; noteId: string }
+  note?:
+    | { kind: 'create'; noteId: string; title: string; body?: string }
+    | { kind: 'attach'; noteId: string }
   /** Existing active tags only; new tags are separate CreateTag commands. */
   tagIds?: string[]
 }

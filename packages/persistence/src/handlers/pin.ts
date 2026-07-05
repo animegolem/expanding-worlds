@@ -86,14 +86,20 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
     const note = payload.note
     let noteId: string | null = null
     let createTitle: { title: string; key: string } | null = null
+    let createBody = ''
     if (note !== undefined) {
       if (note.kind === 'create') {
         if (typeof note.noteId !== 'string' || note.noteId.length === 0) {
           throw new DomainError('VALIDATION_FAILED', 'note.create requires noteId')
         }
+        if (note.body !== undefined && typeof note.body !== 'string') {
+          throw new DomainError('VALIDATION_FAILED', 'note.create body must be a string')
+        }
         createTitle = requireLinkableTitle(note.title)
         requireTitleFree(ctx, createTitle.key, createTitle.title)
         noteId = note.noteId
+        // §7.2/AI-IMP-058: Create and Place carries the phantom draft.
+        createBody = note.body ?? ''
       } else if (note.kind === 'attach') {
         const existing = ctx.db.get<{ id: string; lifecycle_state: string }>(
           'SELECT id, lifecycle_state FROM note WHERE id = ? AND project_id = ?',
@@ -142,7 +148,7 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
         ctx.projectId,
         createTitle.title,
         createTitle.key,
-        '',
+        createBody,
         now,
         now,
       )
@@ -169,7 +175,7 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
 
     if (noteId !== null) affected.push({ kind: 'note', id: noteId })
     if (createTitle !== null && noteId !== null) {
-      // Mirrors CreateNote: index the (empty) body's outbound tokens
+      // Mirrors CreateNote: index the body's outbound tokens
       // (invariant 26), then the re-resolution sweep (invariant 27).
       affected.push(...refreshNoteLinks(ctx, noteId))
       affected.push(...bindUnresolvedMatching(ctx, titleKey(createTitle.title), noteId))

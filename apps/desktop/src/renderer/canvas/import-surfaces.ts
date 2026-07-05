@@ -1,3 +1,4 @@
+import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from './host'
 
@@ -74,9 +75,9 @@ export function attachImportSurfaces(
 
   async function createImagePin(assetId: string, world: Point): Promise<void> {
     const result = await host.gateway.execute('CreatePin', {
-      nodeId: crypto.randomUUID(),
+      nodeId: uuidv7(),
       canvasId: host.canvasId,
-      placementId: crypto.randomUUID(),
+      placementId: uuidv7(),
       x: world.x,
       y: world.y,
       appearance: { kind: 'image', assetId, crop: null },
@@ -131,7 +132,7 @@ export function attachImportSurfaces(
   /** §6.3: a node dragged from the placement sources creates one placement. */
   async function placeNode(nodeId: string, world: Point): Promise<void> {
     const result = await host.gateway.execute('CreatePlacement', {
-      placementId: crypto.randomUUID(),
+      placementId: uuidv7(),
       canvasId: host.canvasId,
       nodeId,
       x: world.x,
@@ -144,9 +145,9 @@ export function attachImportSurfaces(
    * transaction; the labeled dot shows the title immediately. */
   async function placeZeroNodeNote(noteId: string, world: Point): Promise<void> {
     const result = await host.gateway.execute('CreatePin', {
-      nodeId: crypto.randomUUID(),
+      nodeId: uuidv7(),
       canvasId: host.canvasId,
-      placementId: crypto.randomUUID(),
+      placementId: uuidv7(),
       x: world.x,
       y: world.y,
       appearance: { kind: 'dot', color: ZERO_NODE_NOTE_DOT_COLOR },

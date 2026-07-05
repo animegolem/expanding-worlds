@@ -298,7 +298,7 @@ test('Create Pin dialog commits one command; inverse cleans up', async () => {
     const { id: projectId } = project.result as { id: string }
     const run = async (commandType: string, payload: unknown) => {
       const outcome = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,
@@ -342,7 +342,7 @@ test('placement sources (§6.3/§6.10) and node context menu (§6.6)', async () 
     const { id: projectId } = project.result as { id: string }
     const run = async (commandType: string, payload: unknown) => {
       const outcome = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,

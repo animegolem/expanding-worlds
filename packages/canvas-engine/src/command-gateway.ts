@@ -12,18 +12,21 @@ export interface ProjectExecutor {
   execute(envelope: CommandEnvelope): Promise<CommandResult>
 }
 
-declare const crypto: { randomUUID(): string }
-
 export class CommandGateway {
   #executor: ProjectExecutor
   #projectId: string
   #revision: number
+  #newId: () => string
   #conflict = new Set<(result: Extract<CommandResult, { status: 'conflict' }>) => void>()
 
-  constructor(executor: ProjectExecutor, projectId: string, revision: number) {
+  /** `newId` mints command ids — invariant 1 requires UUIDv7, so
+   * callers inject @ew/domain's uuidv7 (this package stays
+   * domain-free; AI-IMP-058). */
+  constructor(executor: ProjectExecutor, projectId: string, revision: number, newId: () => string) {
     this.#executor = executor
     this.#projectId = projectId
     this.#revision = revision
+    this.#newId = newId
   }
 
   get revision(): number {
@@ -41,7 +44,7 @@ export class CommandGateway {
     opts: { commandVersion?: number; checkRevision?: boolean } = {},
   ): Promise<CommandResult> {
     const result = await this.#executor.execute({
-      commandId: crypto.randomUUID(),
+      commandId: this.#newId(),
       projectId: this.#projectId,
       commandType,
       commandVersion: opts.commandVersion ?? 1,

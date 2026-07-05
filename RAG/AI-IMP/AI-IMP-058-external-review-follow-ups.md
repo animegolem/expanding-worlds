@@ -5,12 +5,12 @@ tags:
   - Implementation
   - hardening
   - correctness
-kanban_status: in-progress
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-012-pre-alpha-hardening]]
 confidence_score: 0.85
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-058-external-review-follow-ups
@@ -98,18 +98,18 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] All renderer id mints are uuidv7; gateway injected; grep shows
+- [x] All renderer id mints are uuidv7; gateway injected; grep shows
       zero crypto.randomUUID under src/renderer and canvas-engine.
-- [ ] Envelope validator rejects v4 command ids (unit test); preload
+- [x] Envelope validator rejects v4 command ids (unit test); preload
       util.newId; every spec's envelope builder migrated; suite
       green.
-- [ ] Lock verify-after-reclaim throws PROJECT_LOCKED for the losing
+- [x] Lock verify-after-reclaim throws PROJECT_LOCKED for the losing
       racer; unit test with mocked rename interleave; recovery e2e
       still green.
-- [ ] CreatePin note.create.body persists (handler unit test);
+- [x] CreatePin note.create.body persists (handler unit test);
       Create and Place threads the draft; blur-materialize removed;
       e2e proves draft → placed note body in one command.
-- [ ] Full gates green locally and on CI.
+- [x] Full gates green locally and on CI.
 
 ### Acceptance Criteria
 
@@ -135,3 +135,23 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+All three landed. UUIDv7: 29 sites across 11 files swept; the
+gateway takes an injected generator (canvas-engine stays
+domain-free); preload exposes util.newId so every spec's envelope
+builder mints v7 (23 e2e sites migrated); the envelope validator now
+rejects non-v7 command ids, and the whole e2e suite running against
+it IS the end-to-end proof. One self-inflicted casualty: the sweep
+script's import-insertion heuristic matched the word "import" inside
+CreatePinDialog's doc comment, landing the statement in HTML — the
+build passed (comments don't compile) and only the runtime
+"uuidv7 is not defined" in the dialog e2e caught it; placement
+audited across all nine other files. Lock: verify-after-reclaim
+throws PROJECT_LOCKED for the losing racer, unit-tested via a
+vi.mock renameSync hook (ESM namespaces can't be spied). Phantom:
+CreatePin note.create carries body (handler validates + indexes its
+outbound tokens; unit tests), Create and Place threads the trimmed
+draft and cancels the first-edit timer, and blur-materialize is
+GONE — the idle-debounce burst is §7.2's first-committed-edit; the
+item-14 e2e now types a draft and asserts it lands in the placed
+note. Old v4 rows remain valid (ordering only matters among new
+records).

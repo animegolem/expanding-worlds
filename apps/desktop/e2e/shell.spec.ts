@@ -59,7 +59,7 @@ test('shell launches and the Project API round-trips', async () => {
 
     const nodeId = crypto.randomUUID()
     const executed = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
+      commandId: window.ew.util.newId(),
       projectId: project.id,
       commandType: 'CreateNode',
       commandVersion: 1,
@@ -69,7 +69,7 @@ test('shell launches and the Project API round-trips', async () => {
     })
 
     const stale = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
+      commandId: window.ew.util.newId(),
       projectId: project.id,
       commandType: 'CreateNode',
       commandVersion: 1,

@@ -1,3 +1,4 @@
+import { uuidv7 } from '@ew/domain'
 import { hitTest, isTextData, legibleFontSize, type Point, type SceneDecoration } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from './host'
 
@@ -125,7 +126,7 @@ export function attachTextEntry(
       }
       if (text.length === 0) return
       void handle.gateway.execute('CreateDecoration', {
-        decorationId: crypto.randomUUID(),
+        decorationId: uuidv7(),
         canvasId: handle.canvasId,
         kind: 'text',
         data: {

@@ -5,6 +5,7 @@
   toolbar buttons.
 -->
 <script lang="ts">
+  import { uuidv7 } from '@ew/domain'
   import { onMount } from 'svelte'
   import CanvasHost from './CanvasHost.svelte'
   import CreatePinDialog from './CreatePinDialog.svelte'
@@ -85,7 +86,7 @@
       const center = viewCenterWorld()
       void h.gateway
         .execute('CreatePlacement', {
-          placementId: crypto.randomUUID(),
+          placementId: uuidv7(),
           canvasId: h.canvasId,
           nodeId,
           x: center.x,
@@ -108,9 +109,9 @@
       const center = viewCenterWorld()
       void h.gateway
         .execute('CreatePin', {
-          nodeId: crypto.randomUUID(),
+          nodeId: uuidv7(),
           canvasId: h.canvasId,
-          placementId: crypto.randomUUID(),
+          placementId: uuidv7(),
           x: center.x,
           y: center.y,
           appearance: { kind: 'dot', color: '#8ab4d8' },
@@ -141,20 +142,20 @@
   // (note + node + default dot + placement), then the pane opens the
   // created note. Same semantics as §6.10.
   onMount(() =>
-    onCreateAndPlace((title) => {
+    onCreateAndPlace(({ title, body }) => {
       const h = hostHandle
       if (!h) return
       void (async () => {
-        const noteId = crypto.randomUUID()
+        const noteId = uuidv7()
         const center = viewCenterWorld()
         const result = await h.gateway.execute('CreatePin', {
-          nodeId: crypto.randomUUID(),
+          nodeId: uuidv7(),
           canvasId: h.canvasId,
-          placementId: crypto.randomUUID(),
+          placementId: uuidv7(),
           x: center.x,
           y: center.y,
           appearance: { kind: 'dot', color: '#8ab4d8' },
-          note: { kind: 'create', noteId, title },
+          note: { kind: 'create', noteId, title, ...(body !== undefined ? { body } : {}) },
         })
         if (result.status === 'committed') {
           requestOpenNote(noteId)

@@ -80,10 +80,20 @@ export class ProjectLock {
     ) {
       throw new ProjectLockedError(holder)
     }
-    // Stale (or unreadable) lock: reclaim via atomic replace.
+    // Stale (or unreadable) lock: reclaim via atomic replace, then
+    // VERIFY we won (AI-IMP-058) — two processes racing this path
+    // both rename, and before this check both returned live locks
+    // with open DB handles, breaking single-writer. Last rename owns
+    // the file; everyone else must refuse. A rename landing after
+    // this read remains a (vastly narrower) window, accepted for a
+    // local-disk lock.
     const tmp = `${path}.${token}.tmp`
     writeFileSync(tmp, JSON.stringify(payload))
     renameSync(tmp, path)
+    const winner = readHolder(path)
+    if (!winner || winner.token !== token) {
+      throw new ProjectLockedError(winner ?? payload)
+    }
     return new ProjectLock(path, token, heartbeatMs)
   }
 

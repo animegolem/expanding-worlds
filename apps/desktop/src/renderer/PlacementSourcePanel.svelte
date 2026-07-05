@@ -6,6 +6,7 @@
   transaction). The full node library view is EPIC-005/006 scope.
 -->
 <script lang="ts">
+  import { uuidv7 } from '@ew/domain'
   import type { CommandResult } from '@ew/commands'
   import type { CanvasHostHandle } from './canvas/host'
   import { NODE_DRAG_MIME, ZERO_NODE_NOTE_DOT_COLOR } from './canvas/import-surfaces'
@@ -75,7 +76,7 @@
   async function placeNode(nodeId: string): Promise<void> {
     const center = viewCenter()
     const result = await handle.gateway.execute('CreatePlacement', {
-      placementId: crypto.randomUUID(),
+      placementId: uuidv7(),
       canvasId: handle.canvasId,
       nodeId,
       x: center.x,
@@ -89,9 +90,9 @@
   async function placeNote(noteId: string): Promise<void> {
     const center = viewCenter()
     const result = await handle.gateway.execute('CreatePin', {
-      nodeId: crypto.randomUUID(),
+      nodeId: uuidv7(),
       canvasId: handle.canvasId,
-      placementId: crypto.randomUUID(),
+      placementId: uuidv7(),
       x: center.x,
       y: center.y,
       appearance: { kind: 'dot', color: ZERO_NODE_NOTE_DOT_COLOR },

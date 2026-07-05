@@ -48,7 +48,7 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     const { id: projectId } = project.result as { id: string }
     const run = async (commandType: string, payload: unknown) => {
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,
@@ -140,7 +140,7 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
       const project = await window.ew.project.query('getProject')
       if (!project.ok) throw new Error(project.message)
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId: (project.result as { id: string }).id,
         commandType: 'TransformContent',
         commandVersion: 1,
@@ -208,7 +208,7 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
       const project = await window.ew.project.query('getProject')
       if (!project.ok) throw new Error(project.message)
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId: (project.result as { id: string }).id,
         commandType: 'TransformContent',
         commandVersion: 1,
@@ -487,7 +487,7 @@ test('selection restyle: stroke, fill, width, rounding after placement (AI-IMP-0
     const { id: projectId } = project.result as { id: string }
     const run = async (commandType: string, payload: unknown) => {
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,

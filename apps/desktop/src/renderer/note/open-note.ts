@@ -65,18 +65,22 @@ export const CREATE_AND_PLACE_EVENT = 'ew-create-and-place'
 
 export interface CreateAndPlaceDetail {
   title: string
+  /** Phantom draft content — must not be dropped (§7.2, AI-IMP-058). */
+  body?: string
 }
 
-export function requestCreateAndPlace(title: string): void {
+export function requestCreateAndPlace(title: string, body?: string): void {
   window.dispatchEvent(
-    new CustomEvent<CreateAndPlaceDetail>(CREATE_AND_PLACE_EVENT, { detail: { title } }),
+    new CustomEvent<CreateAndPlaceDetail>(CREATE_AND_PLACE_EVENT, {
+      detail: { title, ...(body !== undefined && body.length > 0 ? { body } : {}) },
+    }),
   )
 }
 
-export function onCreateAndPlace(listener: (title: string) => void): () => void {
+export function onCreateAndPlace(listener: (detail: CreateAndPlaceDetail) => void): () => void {
   const handler = (event: Event): void => {
     const detail = (event as CustomEvent<CreateAndPlaceDetail>).detail
-    if (detail?.title) listener(detail.title)
+    if (detail?.title) listener(detail)
   }
   window.addEventListener(CREATE_AND_PLACE_EVENT, handler)
   return () => window.removeEventListener(CREATE_AND_PLACE_EVENT, handler)

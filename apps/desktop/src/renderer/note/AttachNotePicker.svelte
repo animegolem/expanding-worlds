@@ -5,6 +5,7 @@
   the §7.7 dialog — Use Existing attaches the conflicting note.
 -->
 <script lang="ts">
+  import { uuidv7 } from '@ew/domain'
   import type { CanvasHostHandle } from '../canvas/host'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
 
@@ -43,7 +44,7 @@
   async function createAndAttach(): Promise<void> {
     const title = query.trim()
     if (title.length === 0) return
-    const noteId_ = crypto.randomUUID()
+    const noteId_ = uuidv7()
     const created = await handle.gateway.execute('CreateNote', { noteId: noteId_, title })
     if (created.status === 'committed') {
       await attach(noteId_)

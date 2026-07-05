@@ -1,3 +1,4 @@
+import { uuidv7 } from '@ew/domain'
 import { isHittable, type SceneDecoration } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from './host'
 
@@ -77,7 +78,7 @@ export function createDecorationsUi(handle: CanvasHostHandle): DecorationsUi {
       const ids = selectedDecorations().map((d) => d.id)
       if (ids.length < 2) return
       await gateway.execute('GroupDecorations', {
-        groupId: crypto.randomUUID(),
+        groupId: uuidv7(),
         canvasId: handle.canvasId,
         decorationIds: ids,
       })

@@ -38,7 +38,7 @@ test('canvas host projects the root canvas and stays in sync', async () => {
     const nodeId = crypto.randomUUID()
     const run = async (commandType: string, payload: unknown) => {
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,
@@ -70,7 +70,7 @@ test('canvas host projects the root canvas and stays in sync', async () => {
     if (!project.ok) throw new Error(project.message)
     const { id: projectId } = project.result as { id: string }
     const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
+      commandId: window.ew.util.newId(),
       projectId,
       commandType: 'TrashNode',
       commandVersion: 1,
@@ -131,7 +131,7 @@ test('controller: pan, zoom-at-cursor, marquee selection, camera persistence', a
     const { id: projectId } = project.result as { id: string }
     const run = async (commandType: string, payload: unknown) => {
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,
@@ -294,7 +294,7 @@ test('§6.9 camera input mapping: pinch zooms at pointer, scroll pans, cursors t
     const { id: projectId } = project.result as { id: string }
     const run = async (commandType: string, payload: unknown) => {
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,
@@ -362,7 +362,7 @@ test('image texture survives move, resize, and residency round-trip (AI-IMP-025)
     if (!project.ok) throw new Error(project.message)
     const { id: projectId } = project.result as { id: string }
     const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
+      commandId: window.ew.util.newId(),
       projectId,
       commandType: 'CreatePin',
       commandVersion: 1,
@@ -436,7 +436,7 @@ test('sub-pixel strokes clamp to one device pixel and recover (AI-IMP-040)', asy
     if (!project.ok) throw new Error(project.message)
     const id = crypto.randomUUID()
     const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
+      commandId: window.ew.util.newId(),
       projectId: (project.result as { id: string }).id,
       commandType: 'CreateDecoration',
       commandVersion: 1,

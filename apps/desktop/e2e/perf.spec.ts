@@ -59,7 +59,7 @@ async function seedPins(
       const target = canvasId ?? window.__ewDebug!.canvasId()
       for (let i = 0; i < count; i += 1) {
         const result = await window.ew.project.execute({
-          commandId: crypto.randomUUID(),
+          commandId: window.ew.util.newId(),
           projectId,
           commandType: 'CreatePin',
           commandVersion: 1,
@@ -190,7 +190,7 @@ test('150 visible images + 1,000 stress icons + decorations; memory releases on 
     const { id: projectId } = project.result as { id: string }
     const run = async (commandType: string, payload: unknown) => {
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,
@@ -283,7 +283,7 @@ test('oversized background renders tiled with the original untouched', async () 
     if (!project.ok) throw new Error(project.message)
     const { id: projectId } = project.result as { id: string }
     const set = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
+      commandId: window.ew.util.newId(),
       projectId,
       commandType: 'SetCanvasBackground',
       commandVersion: 1,

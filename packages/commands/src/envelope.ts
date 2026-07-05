@@ -95,7 +95,10 @@ export interface ProjectChangedEvent {
   affected: AffectedRecord[]
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Invariant 1 (§5, AI-IMP-058): application-generated persisted
+// identities are RFC 9562 UUIDv7 — command ids persist in the
+// command log, so the version nibble is checked here.
+const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** Structural validation only; domain checks belong to handlers. */
 export function validateEnvelope(envelope: unknown): string[] {
@@ -104,8 +107,8 @@ export function validateEnvelope(envelope: unknown): string[] {
     return ['envelope must be an object']
   }
   const e = envelope as Partial<CommandEnvelope>
-  if (typeof e.commandId !== 'string' || !UUID_RE.test(e.commandId)) {
-    errors.push('commandId must be a UUID')
+  if (typeof e.commandId !== 'string' || !UUID_V7_RE.test(e.commandId)) {
+    errors.push('commandId must be a UUIDv7 (invariant 1)')
   }
   if (typeof e.projectId !== 'string' || e.projectId.length === 0) {
     errors.push('projectId must be a non-empty string')

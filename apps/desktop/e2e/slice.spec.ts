@@ -59,7 +59,7 @@ async function exec(ctx: Ctx, commandType: string, payload: unknown): Promise<un
   return ctx.win.evaluate(
     async ({ projectId, commandType, payload }) => {
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,
@@ -517,7 +517,7 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
         return { kind: 'decoration', decorationId: id, data }
       })
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType: 'TransformContent',
         commandVersion: 1,

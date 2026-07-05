@@ -52,7 +52,7 @@ async function runCommand(win: Page, commandType: string, payload: unknown): Pro
       if (!project.ok) throw new Error(project.message)
       const { id: projectId } = project.result as { id: string }
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId,
         commandType,
         commandVersion: 1,

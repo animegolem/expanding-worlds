@@ -29,6 +29,8 @@ describe('validateEnvelope', () => {
 
   it.each([
     ['commandId', { commandId: 'not-a-uuid' }],
+    // Invariant 1: a syntactically valid UUIDv4 command id rejects.
+    ['commandId', { commandId: 'a2f6f854-9c39-4d8f-9d40-16cf0f0a1a2b' }],
     ['projectId', { projectId: '' }],
     ['commandType', { commandType: '' }],
     ['commandVersion', { commandVersion: 0 }],

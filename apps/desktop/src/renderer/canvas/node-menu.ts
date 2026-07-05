@@ -1,3 +1,4 @@
+import { uuidv7 } from '@ew/domain'
 import { hitTest, type CanvasScene, type SceneItem } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
 import { requestAttachNote, requestOpenNote, requestRenameNote } from '../note/open-note'
@@ -120,7 +121,7 @@ export function attachNodeMenu(
     if (noteId === null) {
       addEntry('Attach New Note…', 'node-menu-attach-new', () => {
         promptTitle('New note title', (title) => {
-          const newNoteId = crypto.randomUUID()
+          const newNoteId = uuidv7()
           void execute('CreateNote', { noteId: newNoteId, title }).then((ok) => {
             if (ok) void execute('AttachNoteToNode', { nodeId, noteId: newNoteId })
           })
@@ -150,7 +151,7 @@ export function attachNodeMenu(
         promptTitle('New unique title', (newTitle) => {
           void execute('MakeNoteIndependent', {
             nodeId,
-            newNoteId: crypto.randomUUID(),
+            newNoteId: uuidv7(),
             newTitle,
           })
         })

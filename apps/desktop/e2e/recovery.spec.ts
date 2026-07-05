@@ -32,7 +32,7 @@ test('utility death rejects calls, surfaces status, and recovers', async () => {
     if (!project.ok) throw new Error(project.message)
     const noteId = crypto.randomUUID()
     const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
+      commandId: window.ew.util.newId(),
       projectId: (project.result as { id: string }).id,
       commandType: 'CreateNote',
       commandVersion: 1,

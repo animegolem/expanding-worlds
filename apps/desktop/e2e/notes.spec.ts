@@ -186,9 +186,13 @@ test('phantom view aggregates references; Create and Place binds project-wide in
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('phantom-view')).toBeVisible()
+  // Typed draft rides along with Create and Place (AI-IMP-058); the
+  // click must not race a blur-materialize (that path is gone).
+  await win.getByTestId('phantom-draft').fill('seen over the ridge at dusk')
   await win.getByTestId('phantom-create-and-place').click()
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Kestrel/)
   await expect(win.getByTestId('note-editor')).toBeVisible()
+  await expect(win.getByTestId('note-editor')).toContainText('seen over the ridge at dusk')
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
   expect(await revision(win)).toBe(revBefore + 1)
 

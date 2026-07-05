@@ -14,7 +14,7 @@
     type NoteRecord,
     type ProjectPort,
   } from './note/note-editor'
-  import { titleKey } from '@ew/domain'
+  import { uuidv7, titleKey } from '@ew/domain'
   import {
     onOpenNote,
     onOpenPhantom,
@@ -98,7 +98,7 @@
     if (draftTimer !== null) clearTimeout(draftTimer)
     draftTimer = null
     try {
-      const noteId = crypto.randomUUID()
+      const noteId = uuidv7()
       const result = await project.execute('CreateNote', {
         noteId,
         title: view.title,
@@ -131,17 +131,18 @@
     }, NOTE_AUTOSAVE_IDLE_MS)
   }
 
-  function onDraftBlur(): void {
-    if (phantomDraft.trim().length > 0) void materialize(phantomDraft)
-  }
-
   function createAndPlace(): void {
     const view = phantom
     if (!view) return
+    // The typed draft rides along (§7.2, AI-IMP-058); the pending
+    // first-edit timer is cancelled so it can't double-materialize.
+    if (draftTimer !== null) clearTimeout(draftTimer)
+    draftTimer = null
+    const body = phantomDraft.trim()
     phantom = null
     phantomDraft = ''
     returnNoteId = null
-    requestCreateAndPlace(view.title)
+    requestCreateAndPlace(view.title, body)
   }
 
   // ---- §7.7 rename + title collisions (AI-IMP-047) ----
@@ -261,7 +262,7 @@
     const source = paneController?.note
     const panel = brokenLink
     if (!project || !source || !panel) return
-    const noteId = crypto.randomUUID()
+    const noteId = uuidv7()
     const payload =
       kind === 'create'
         ? { sourceNoteId: source.id, displayTitle: panel.displayTitle, create: { noteId, title: panel.displayTitle } }
@@ -485,7 +486,6 @@
         placeholder="Start writing to create this note…"
         bind:value={phantomDraft}
         oninput={onDraftInput}
-        onblur={onDraftBlur}
       ></textarea>
       <h3>References</h3>
       <ul class="phantom-sources" data-testid="phantom-sources">

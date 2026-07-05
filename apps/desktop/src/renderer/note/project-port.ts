@@ -1,3 +1,4 @@
+import { uuidv7 } from '@ew/domain'
 import { CommandGateway } from '@ew/canvas-engine'
 import type { ProjectPort } from './note-editor'
 
@@ -23,6 +24,7 @@ export async function createNoteProjectPort(): Promise<{
     { execute: (envelope) => window.ew.project.execute(envelope) },
     project.id,
     project.revision,
+    uuidv7,
   )
   const dispose = window.ew.project.onChanged((event) => {
     gateway.noteRevision(event.revision)

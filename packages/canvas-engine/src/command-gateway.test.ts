@@ -24,7 +24,7 @@ const committed = (revision: number): CommandResult => ({
 describe('CommandGateway', () => {
   it('threads the tracked revision and advances it on commit', async () => {
     const executor = fakeExecutor(() => committed(6))
-    const gateway = new CommandGateway(executor, 'project-1', 5)
+    const gateway = new CommandGateway(executor, 'project-1', 5, () => '01890a5d-ac96-774b-bcce-b302099a8057')
     await gateway.execute('MovePlacement', { placementId: 'p' })
     expect(executor.envelopes[0]).toMatchObject({
       projectId: 'project-1',
@@ -42,7 +42,7 @@ describe('CommandGateway', () => {
       expectedRevision: 5,
       actualRevision: 9,
     }))
-    const gateway = new CommandGateway(executor, 'project-1', 5)
+    const gateway = new CommandGateway(executor, 'project-1', 5, () => '01890a5d-ac96-774b-bcce-b302099a8057')
     const conflicts: number[] = []
     gateway.onConflict((c) => conflicts.push(c.actualRevision))
     const result = await gateway.execute('TransformContent', {})
@@ -53,13 +53,13 @@ describe('CommandGateway', () => {
 
   it('omits the revision check when asked (camera persistence)', async () => {
     const executor = fakeExecutor(() => committed(2))
-    const gateway = new CommandGateway(executor, 'project-1', 1)
+    const gateway = new CommandGateway(executor, 'project-1', 1, () => '01890a5d-ac96-774b-bcce-b302099a8057')
     await gateway.execute('SetCanvasCamera', {}, { checkRevision: false })
     expect(executor.envelopes[0]).not.toHaveProperty('expectedProjectRevision')
   })
 
   it('never regresses the revision from stale events', () => {
-    const gateway = new CommandGateway(fakeExecutor(() => committed(1)), 'p', 10)
+    const gateway = new CommandGateway(fakeExecutor(() => committed(1)), 'p', 10, () => '01890a5d-ac96-774b-bcce-b302099a8057')
     gateway.noteRevision(4)
     expect(gateway.revision).toBe(10)
     gateway.noteRevision(12)

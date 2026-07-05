@@ -1,3 +1,4 @@
+import { uuidv7 } from '@ew/domain'
 import {
   BackgroundSync,
   CameraFlight,
@@ -216,6 +217,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     { execute: (envelope) => window.ew.project.execute(envelope) },
     project.id,
     project.revision,
+    uuidv7,
   )
 
   // Ephemeral gesture values, keyed by item id: the display objects
@@ -429,7 +431,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const tools = new ToolManager(controller, {
     create: (input) =>
       void gateway.execute('CreateDecoration', {
-        decorationId: crypto.randomUUID(),
+        decorationId: uuidv7(),
         canvasId,
         ...input,
       }),

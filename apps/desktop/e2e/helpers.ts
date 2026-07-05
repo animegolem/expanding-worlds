@@ -45,7 +45,7 @@ export async function exec(win: Page, commandType: string, payload: unknown): Pr
       const project = await window.ew.project.query('getProject')
       if (!project.ok) throw new Error(project.message)
       const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
+        commandId: window.ew.util.newId(),
         projectId: (project.result as { id: string }).id,
         commandType: input.commandType,
         commandVersion: 1,
