@@ -78,6 +78,7 @@ DAM feature race with Eagle.
 - [ ] FR-6: Placement picker as compressed browser per §14.4.
 - [ ] FR-7: Allusion importer as a versioned adapter per §14.4/§4.7.
 - [ ] FR-8: Export size preflight, asked once per project, per §16.
+- [ ] FR-9: First-open seeded example (public-domain set, ordinary records) with the one-time clear affordance per §14.4.
 
 ### Non-Functional Requirements
 

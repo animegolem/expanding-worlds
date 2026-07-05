@@ -2297,6 +2297,17 @@ without adding a library concept to the domain:
   it, verify the source's application version and whether its tags
   live in its internal database or in file metadata.
 
+- **First open teaches by example.** The first time the library
+  surface opens, it is pre-seeded with a small public-domain art
+  set arranged the intended way — a root board of artists whose
+  nodes dive into per-artist boards with placed works, notes, and
+  tags — so the user sees what the surface is for before owning
+  it. The seed is ordinary records (nodes, placements, notes,
+  tags), not a special content class; a one-time affordance on the
+  seeded canvas clears the example through an ordinary trash
+  command, after which it is a normal canvas. Nothing special-class
+  persists after clearing.
+
 The browser view depends on the thumbnail derivative pipeline and
 its main-process image codec (§4.7's shared-codec note). Watched
 directories stay deferred separately.
