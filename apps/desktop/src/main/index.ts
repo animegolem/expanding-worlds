@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import { blobRelativePath } from '@ew/persistence'
+import { assertPublicHost } from './net-guard'
 import type {
   ProjectRequest,
   ProjectResponse,
@@ -226,6 +227,13 @@ async function fetchUrlForImport(rawUrl: string): Promise<FetchUrlForImportResul
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return { ok: false, message: 'only http(s) URLs can be fetched for import' }
+  }
+  // SSRF guard (AI-IMP-057): user-initiated, but a dropped link must
+  // not poke loopback/private targets. The env bypass exists solely
+  // for e2e fixtures that serve test images from 127.0.0.1.
+  if (process.env['EW_TEST_ALLOW_PRIVATE_FETCH'] !== '1') {
+    const refusal = await assertPublicHost(url)
+    if (refusal) return { ok: false, message: refusal }
   }
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), FETCH_URL_TIMEOUT_MS)

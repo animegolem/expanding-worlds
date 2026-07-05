@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 1 |
-| Planned | 3 | 1 |
+| In Progress | 1 | 1 |
+| Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 7 | 55 |
+| Completed | 8 | 56 |
 | **Total** | **12** | **57** |
 
 ## In Progress
@@ -33,18 +33,6 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
-
----
-
-### [[AI-EPIC-012-pre-alpha-hardening|EPIC-012: Pre alpha hardening]]
-> The owner's pre-release testing notes plus two external code reviews
-
-**IMPs:**
-- [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — completed
-- [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — completed
-- [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — completed
-- [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — completed
-- [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — planned
 
 ---
 
@@ -73,10 +61,10 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5045 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (2670 LOC)
-- apps/desktop/e2e/notes.spec.ts (1010 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
+- apps/desktop/e2e/notes.spec.ts (727 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (719 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
@@ -87,20 +75,20 @@ Generated from tracked files; binary assets excluded.
 
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/e2e/decorations.spec.ts (563 LOC)
-- apps/desktop/e2e/slice.spec.ts (538 LOC)
+- apps/desktop/e2e/slice.spec.ts (541 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
+- apps/desktop/e2e/import.spec.ts (480 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - apps/desktop/e2e/canvas.spec.ts (469 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
-- apps/desktop/e2e/import.spec.ts (461 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (458 LOC)
 - apps/desktop/src/renderer/DecorationToolbar.svelte (456 LOC)
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
-- apps/desktop/src/main/index.ts (402 LOC)
+- apps/desktop/src/main/index.ts (410 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
@@ -124,7 +112,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>7 EPICs, 55 IMPs completed</summary>
+<summary>8 EPICs, 56 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -171,5 +159,11 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — completed
   - [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — completed
   - [[AI-IMP-052-release-workflow-and-v050|IMP-052]] Release workflow and v050 — completed
+- [[AI-EPIC-012-pre-alpha-hardening|EPIC-012]] Pre alpha hardening — 2026-07-05
+  - [[AI-IMP-053-utility-process-crash-safety|IMP-053]] Utility process crash safety — completed
+  - [[AI-IMP-054-deterministic-scene-ui-sync|IMP-054]] Deterministic scene ui sync — completed
+  - [[AI-IMP-055-selection-restyle-and-rounding|IMP-055]] Selection restyle and rounding — completed
+  - [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — completed
+  - [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — completed
 
 </details>

@@ -1,89 +1,21 @@
-import { mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test'
-import type { EwApi } from '../src/preload/index'
-
-declare global {
-  interface Window {
-    ew: EwApi
-  }
-}
+import { expect, test, type Page } from '@playwright/test'
+import { exec, launchApp, launchAppInDir, revision, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * AI-IMP-044 acceptance: the CodeMirror note pane with §10.2 autosave
  * gestures — one UpdateNote per editing burst, note-switch and quit
  * flushes, editor-local undo staying out of the structural stack, and
- * the canvas entry points.
+ * the canvas entry points. Envelope plumbing lives in ./helpers
+ * (AI-IMP-057).
  */
 
-async function launch(projectDir: string): Promise<{ app: ElectronApplication; win: Page }> {
-  const app = await electron.launch({
-    args: ['out/main/index.cjs'],
-    env: { ...process.env, EW_PROJECT_DIR: projectDir },
-  })
-  const win = await app.firstWindow()
-  await expect(win.getByTestId('canvas-host')).toBeVisible()
-  await win.waitForFunction(() => window.__ewDebug !== undefined)
-  return { app, win }
-}
-
-/** Create a note + dot node + placement; returns ids. */
-async function seedPlacedNote(
-  win: Page,
-  title: string,
-  body: string,
-  at: { x: number; y: number },
-): Promise<{ noteId: string; nodeId: string }> {
-  return win.evaluate(
-    async ({ title, body, at }) => {
-      const project = await window.ew.project.query('getProject')
-      if (!project.ok) throw new Error(project.message)
-      const { id: projectId } = project.result as { id: string }
-      const run = async (commandType: string, payload: unknown) => {
-        const result = await window.ew.project.execute({
-          commandId: crypto.randomUUID(),
-          projectId,
-          commandType,
-          commandVersion: 1,
-          issuedAt: new Date().toISOString(),
-          payload,
-        })
-        if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
-      }
-      const noteId = crypto.randomUUID()
-      const nodeId = crypto.randomUUID()
-      await run('CreateNote', { noteId, title, body })
-      await run('CreatePin', {
-        nodeId,
-        canvasId: window.__ewDebug!.canvasId(),
-        placementId: crypto.randomUUID(),
-        x: at.x,
-        y: at.y,
-        appearance: { kind: 'dot', color: '#ff7700' },
-        note: { kind: 'attach', noteId },
-      })
-      return { noteId, nodeId }
-    },
-    { title, body, at },
-  )
-}
-
-async function projectRevision(win: Page): Promise<number> {
-  const result = await win.evaluate(() => window.ew.project.query('getProject'))
-  if (!result.ok) throw new Error(result.message)
-  return (result.result as { revision: number }).revision
-}
-
 async function noteBody(win: Page, noteId: string): Promise<string> {
-  const result = await win.evaluate((id) => window.ew.project.query('getNote', { noteId: id }), noteId)
-  if (!result.ok) throw new Error(result.message)
-  return (result.result as { body: string }).body
+  const note = await runQuery<{ body: string }>(win, 'getNote', { noteId })
+  return note.body
 }
 
 test('note pane opens on double-click and a typing burst commits one UpdateNote', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-notes-')
   const { noteId } = await seedPlacedNote(win, 'Kestrel', 'a small hawk', { x: 300, y: 240 })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
@@ -96,7 +28,7 @@ test('note pane opens on double-click and a typing burst commits one UpdateNote'
   await expect(win.getByTestId('note-editor')).toContainText('a small hawk')
 
   // One burst of typing → exactly one UpdateNote (one revision step).
-  const before = await projectRevision(win)
+  const before = await revision(win)
   await win.locator('.cm-content').click()
   await win.keyboard.press('End')
   await win.keyboard.type(' that hunts from a hover')
@@ -104,23 +36,22 @@ test('note pane opens on double-click and a typing burst commits one UpdateNote'
   // The idle debounce (1.5 s) commits without any further gesture.
   await expect(win.getByTestId('note-pane-dirty')).toBeHidden({ timeout: 10_000 })
 
-  expect(await projectRevision(win)).toBe(before + 1)
+  expect(await revision(win)).toBe(before + 1)
   expect(await noteBody(win, noteId)).toBe('a small hawk that hunts from a hover')
 
   // Editor-local undo (invariant 30): Mod-z reverts the buffer via
   // CodeMirror history without touching the structural stack.
-  const revBeforeUndo = await projectRevision(win)
+  const revBeforeUndo = await revision(win)
   await win.locator('.cm-content').click()
   await win.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z')
   await expect(win.getByTestId('note-editor')).not.toContainText('hover')
-  expect(await projectRevision(win)).toBe(revBeforeUndo)
+  expect(await revision(win)).toBe(revBeforeUndo)
 
   await app.close()
 })
 
 test('node menu Open Note loads the pane', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-menu-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-notes-menu-')
   await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 260, y: 200 })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
@@ -134,53 +65,34 @@ test('node menu Open Note loads the pane', async () => {
 })
 
 test('wiki-link states render live, sweep effects refresh, suggestions complete (AI-IMP-045)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-links-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-notes-links-')
 
   // Seed: bound, bound-trashed, unresolved, and broken targets, all
   // referenced from one source note placed on the canvas.
-  const { logId } = await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const { id: projectId } = project.result as { id: string }
-    const run = async (commandType: string, payload: unknown) => {
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId,
-        commandType,
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload,
-      })
-      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
-    }
-    const harborId = crypto.randomUUID()
-    const reefId = crypto.randomUUID()
-    const doomedId = crypto.randomUUID()
-    const logId = crypto.randomUUID()
-    await run('CreateNote', { noteId: harborId, title: 'Harbor' })
-    await run('CreateNote', { noteId: reefId, title: 'Reef' })
-    await run('CreateNote', { noteId: doomedId, title: 'Doomed' })
-    await run('CreateNote', {
-      noteId: logId,
-      title: 'Log',
-      body: 'see [[Harbor]] and [[Reef]] and [[Missing]] and [[Doomed]] and [[Kraken]]',
-    })
-    await run('TrashNote', { noteId: reefId })
-    await run('TrashNote', { noteId: doomedId })
-    await run('PurgeRecord', { kind: 'note', id: doomedId })
-    await run('CreatePin', {
-      nodeId: crypto.randomUUID(),
-      canvasId: window.__ewDebug!.canvasId(),
-      placementId: crypto.randomUUID(),
-      x: 300,
-      y: 240,
-      appearance: { kind: 'dot', color: '#ff7700' },
-      note: { kind: 'attach', noteId: logId },
-    })
-    return { logId }
+  const reefId = crypto.randomUUID()
+  const doomedId = crypto.randomUUID()
+  const logId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'Harbor' })
+  await exec(win, 'CreateNote', { noteId: reefId, title: 'Reef' })
+  await exec(win, 'CreateNote', { noteId: doomedId, title: 'Doomed' })
+  await exec(win, 'CreateNote', {
+    noteId: logId,
+    title: 'Log',
+    body: 'see [[Harbor]] and [[Reef]] and [[Missing]] and [[Doomed]] and [[Kraken]]',
   })
-  expect(logId).toBeTruthy()
+  await exec(win, 'TrashNote', { noteId: reefId })
+  await exec(win, 'TrashNote', { noteId: doomedId })
+  await exec(win, 'PurgeRecord', { kind: 'note', id: doomedId })
+  await exec(win, 'CreatePin', {
+    nodeId: crypto.randomUUID(),
+    canvasId,
+    placementId: crypto.randomUUID(),
+    x: 300,
+    y: 240,
+    appearance: { kind: 'dot', color: '#ff7700' },
+    note: { kind: 'attach', noteId: logId },
+  })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -198,22 +110,8 @@ test('wiki-link states render live, sweep effects refresh, suggestions complete 
   // Sweep visibility: creating "Missing" elsewhere re-renders the
   // open editor; the purged "Doomed" key MUST stay broken even though
   // an active note with that title now exists (invariant 27).
-  await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const { id: projectId } = project.result as { id: string }
-    for (const title of ['Missing', 'Doomed']) {
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId,
-        commandType: 'CreateNote',
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload: { noteId: crypto.randomUUID(), title },
-      })
-      if (result.status !== 'committed') throw new Error(`CreateNote ${title}: ${result.status}`)
-    }
-  })
+  await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'Missing' })
+  await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'Doomed' })
   await expect(stateOf('Missing')).toHaveAttribute('data-link-state', 'bound')
   await expect(stateOf('Doomed')).toHaveAttribute('data-link-state', 'broken')
 
@@ -250,34 +148,15 @@ test('wiki-link states render live, sweep effects refresh, suggestions complete 
 })
 
 test('phantom view aggregates references; Create and Place binds project-wide in one command (§17-14)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-phantom-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-phantom-')
   const { noteId: aId } = await seedPlacedNote(win, 'A', 'hunts the [[Kestrel]] ridge', {
     x: 300,
     y: 240,
   })
-  const [bId, cId] = await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const ids: string[] = []
-    for (const [title, body] of [
-      ['B', 'the [[Kestrel]] again'],
-      ['C', 'always the [[Kestrel]]'],
-    ] as const) {
-      const noteId = crypto.randomUUID()
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId: (project.result as { id: string }).id,
-        commandType: 'CreateNote',
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload: { noteId, title, body },
-      })
-      if (result.status !== 'committed') throw new Error(result.status)
-      ids.push(noteId)
-    }
-    return ids as [string, string]
-  })
+  const bId = crypto.randomUUID()
+  const cId = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: bId, title: 'B', body: 'the [[Kestrel]] again' })
+  await exec(win, 'CreateNote', { noteId: cId, title: 'C', body: 'always the [[Kestrel]]' })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -295,10 +174,10 @@ test('phantom view aggregates references; Create and Place binds project-wide in
   await expect(win.getByTestId('phantom-sources')).toContainText('B')
 
   // Dismissing persists nothing (invariant 28).
-  const revBefore = await projectRevision(win)
+  const revBefore = await revision(win)
   await win.getByTestId('phantom-dismiss').click()
   await expect(win.getByTestId('phantom-view')).toBeHidden()
-  expect(await projectRevision(win)).toBe(revBefore)
+  expect(await revision(win)).toBe(revBefore)
 
   // Create and Place: one command commits note + node + appearance +
   // placement, and the sweep binds BOTH sources project-wide.
@@ -311,32 +190,18 @@ test('phantom view aggregates references; Create and Place binds project-wide in
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Kestrel/)
   await expect(win.getByTestId('note-editor')).toBeVisible()
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
-  expect(await projectRevision(win)).toBe(revBefore + 1)
+  expect(await revision(win)).toBe(revBefore + 1)
 
-  const linkStates = await win.evaluate(
-    async ({ aId, bId, cId }) => {
-      const states: Record<string, string> = {}
-      for (const [name, id] of [
-        ['a', aId],
-        ['b', bId],
-        ['c', cId],
-      ] as const) {
-        const links = await window.ew.project.query('getNoteLinks', { noteId: id })
-        if (!links.ok) throw new Error(links.message)
-        states[name] = (links.result as Array<{ state: string }>)[0]!.state
-      }
-      return states
-    },
-    { aId, bId, cId },
-  )
-  expect(linkStates).toEqual({ a: 'bound', b: 'bound', c: 'bound' })
+  for (const id of [aId, bId, cId]) {
+    const links = await runQuery<Array<{ state: string }>>(win, 'getNoteLinks', { noteId: id })
+    expect(links[0]!.state).toBe('bound')
+  }
 
   await app.close()
 })
 
 test('typing into the phantom body materializes on the first committed burst (§7.2-1)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-phantom-edit-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-phantom-edit-')
   await seedPlacedNote(win, 'A', 'a [[Wisp]] in the marsh', { x: 300, y: 240 })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
@@ -364,8 +229,7 @@ test('typing into the phantom body materializes on the first committed burst (§
 })
 
 test('rename flushes dirty buffers, rewrites transactionally, folds into local undo (§17-15)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-rename-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-rename-')
   const { noteId: oldId } = await seedPlacedNote(win, 'Old', 'the original', { x: 500, y: 240 })
   const { noteId: aId } = await seedPlacedNote(win, 'A', 'x [[Old]] y [[NewName]] z', {
     x: 300,
@@ -429,29 +293,12 @@ test('rename flushes dirty buffers, rewrites transactionally, folds into local u
 })
 
 test('title collisions retain the draft and offer per-flow actions (§7.7)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-conflict-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-conflict-')
   const { noteId: alphaId } = await seedPlacedNote(win, 'Alpha', 'first', { x: 300, y: 240 })
-  await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const { id: projectId } = project.result as { id: string }
-    const run = async (commandType: string, payload: unknown) => {
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId,
-        commandType,
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload,
-      })
-      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
-    }
-    await run('CreateNote', { noteId: crypto.randomUUID(), title: 'Beta' })
-    const goneId = crypto.randomUUID()
-    await run('CreateNote', { noteId: goneId, title: 'Gone' })
-    await run('TrashNote', { noteId: goneId })
-  })
+  const goneId = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'Beta' })
+  await exec(win, 'CreateNote', { noteId: goneId, title: 'Gone' })
+  await exec(win, 'TrashNote', { noteId: goneId })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -470,12 +317,7 @@ test('title collisions retain the draft and offer per-flow actions (§7.7)', asy
   await win.getByTestId('conflict-choose-different').click()
   await expect(dialog).toBeHidden()
   await expect(title).toHaveValue('Beta')
-  expect(
-    await win.evaluate(
-      (id) => window.ew.project.query('getNote', { noteId: id }),
-      alphaId,
-    ),
-  ).toMatchObject({ ok: true, result: { title: 'Alpha' } })
+  expect(await runQuery(win, 'getNote', { noteId: alphaId })).toMatchObject({ title: 'Alpha' })
 
   // Trashed conflict additionally offers Restore Existing Note.
   await title.fill('Gone')
@@ -485,11 +327,9 @@ test('title collisions retain the draft and offer per-flow actions (§7.7)', asy
   await expect(dialog).toBeHidden()
   await expect(title).toHaveValue('Gone')
   await expect
-    .poll(async () => {
-      const result = await win.evaluate(() => window.ew.project.query('listNotes'))
-      if (!result.ok) return []
-      return (result.result as Array<{ title: string }>).map((n) => n.title)
-    })
+    .poll(async () =>
+      (await runQuery<Array<{ title: string }>>(win, 'listNotes')).map((n) => n.title),
+    )
     .toContain('Gone')
 
   // Linkability validation: structured error, draft retained.
@@ -502,8 +342,7 @@ test('title collisions retain the draft and offer per-flow actions (§7.7)', asy
 })
 
 test('bound activation loads the note and resolves space by location count (§17-13, §7.3)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-activate-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-activate-')
   const { noteId: alphaId, nodeId: alphaNode } = await seedPlacedNote(win, 'Alpha', 'target', {
     x: 500,
     y: 300,
@@ -512,19 +351,7 @@ test('bound activation loads the note and resolves space by location count (§17
     x: 250,
     y: 200,
   })
-  await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
-      projectId: (project.result as { id: string }).id,
-      commandType: 'CreateNote',
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload: { noteId: crypto.randomUUID(), title: 'NoWhere' },
-    })
-    if (result.status !== 'committed') throw new Error(result.status)
-  })
+  await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'NoWhere' })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -533,14 +360,10 @@ test('bound activation loads the note and resolves space by location count (§17
 
   // One location on the active canvas: note loads, camera flies,
   // the placement highlights (poll — the flight is eased).
-  const alphaPlacement = await win.evaluate(async (id) => {
-    const uses = await window.ew.project.query('getNoteUses', { noteId: id })
-    if (!uses.ok) throw new Error(uses.message)
-    const result = uses.result as {
-      canvases: Array<{ nodes: Array<{ placements: Array<{ placementId: string }> }> }>
-    }
-    return result.canvases[0]!.nodes[0]!.placements[0]!.placementId
-  }, alphaId)
+  const alphaUses = await runQuery<{
+    canvases: Array<{ nodes: Array<{ placements: Array<{ placementId: string }> }> }>
+  }>(win, 'getNoteUses', { noteId: alphaId })
+  const alphaPlacement = alphaUses.canvases[0]!.nodes[0]!.placements[0]!.placementId
   await win.locator('.cm-content [data-link-title="Alpha"]').click({
     modifiers: ['ControlOrMeta'],
   })
@@ -568,28 +391,13 @@ test('bound activation loads the note and resolves space by location count (§17
   await win.getByTestId('board-notice-dismiss').click()
 
   // Many locations: viewport kept, count notice (chooser is EPIC-006).
-  await win.evaluate(
-    async ({ alphaNode }) => {
-      const project = await window.ew.project.query('getProject')
-      if (!project.ok) throw new Error(project.message)
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId: (project.result as { id: string }).id,
-        commandType: 'CreatePlacement',
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload: {
-          placementId: crypto.randomUUID(),
-          canvasId: window.__ewDebug!.canvasId(),
-          nodeId: alphaNode,
-          x: 900,
-          y: 700,
-        },
-      })
-      if (result.status !== 'committed') throw new Error(result.status)
-    },
-    { alphaNode },
-  )
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    nodeId: alphaNode,
+    x: 900,
+    y: 700,
+  })
   await win.evaluate((id) => {
     window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
   }, sId)
@@ -617,56 +425,37 @@ test('bound activation loads the note and resolves space by location count (§17
 })
 
 test('trashed and broken links offer explicit recovery (§17-22)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-degraded-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-degraded-')
   // The source binds BEFORE the purges, so the purge converts its
   // bound records to broken; the recreated Wraith proves broken
   // records never re-bind by title (invariant 27).
-  const { sId } = await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const { id: projectId } = project.result as { id: string }
-    const run = async (commandType: string, payload: unknown) => {
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId,
-        commandType,
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload,
-      })
-      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
-    }
-    const reefId = crypto.randomUUID()
-    const wraithId = crypto.randomUUID()
-    const ghostId = crypto.randomUUID()
-    const sId = crypto.randomUUID()
-    await run('CreateNote', { noteId: reefId, title: 'Reef' })
-    await run('CreateNote', { noteId: wraithId, title: 'Wraith' })
-    await run('CreateNote', { noteId: ghostId, title: 'Ghost' })
-    await run('CreateNote', {
-      noteId: sId,
-      title: 'S',
-      body: 'dive [[Reef]] near [[Wraith]] and [[Ghost]]',
-    })
-    await run('CreatePin', {
-      nodeId: crypto.randomUUID(),
-      canvasId: window.__ewDebug!.canvasId(),
-      placementId: crypto.randomUUID(),
-      x: 300,
-      y: 240,
-      appearance: { kind: 'dot', color: '#ff7700' },
-      note: { kind: 'attach', noteId: sId },
-    })
-    await run('TrashNote', { noteId: reefId })
-    await run('TrashNote', { noteId: wraithId })
-    await run('PurgeRecord', { kind: 'note', id: wraithId })
-    await run('TrashNote', { noteId: ghostId })
-    await run('PurgeRecord', { kind: 'note', id: ghostId })
-    await run('CreateNote', { noteId: crypto.randomUUID(), title: 'Wraith' })
-    return { sId }
+  const reefId = crypto.randomUUID()
+  const wraithId = crypto.randomUUID()
+  const ghostId = crypto.randomUUID()
+  const sId = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: reefId, title: 'Reef' })
+  await exec(win, 'CreateNote', { noteId: wraithId, title: 'Wraith' })
+  await exec(win, 'CreateNote', { noteId: ghostId, title: 'Ghost' })
+  await exec(win, 'CreateNote', {
+    noteId: sId,
+    title: 'S',
+    body: 'dive [[Reef]] near [[Wraith]] and [[Ghost]]',
   })
-  expect(sId).toBeTruthy()
+  await exec(win, 'CreatePin', {
+    nodeId: crypto.randomUUID(),
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    placementId: crypto.randomUUID(),
+    x: 300,
+    y: 240,
+    appearance: { kind: 'dot', color: '#ff7700' },
+    note: { kind: 'attach', noteId: sId },
+  })
+  await exec(win, 'TrashNote', { noteId: reefId })
+  await exec(win, 'TrashNote', { noteId: wraithId })
+  await exec(win, 'PurgeRecord', { kind: 'note', id: wraithId })
+  await exec(win, 'TrashNote', { noteId: ghostId })
+  await exec(win, 'PurgeRecord', { kind: 'note', id: ghostId })
+  await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'Wraith' })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -724,42 +513,25 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
 })
 
 async function seedBarePin(win: Page, at: { x: number; y: number }): Promise<string> {
-  return win.evaluate(async ({ at }) => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const nodeId = crypto.randomUUID()
-    const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
-      projectId: (project.result as { id: string }).id,
-      commandType: 'CreatePin',
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload: {
-        nodeId,
-        canvasId: window.__ewDebug!.canvasId(),
-        placementId: crypto.randomUUID(),
-        x: at.x,
-        y: at.y,
-        appearance: { kind: 'dot', color: '#ff7700' },
-      },
-    })
-    if (result.status !== 'committed') throw new Error(result.status)
-    return nodeId
-  }, { at })
+  const nodeId = crypto.randomUUID()
+  await exec(win, 'CreatePin', {
+    nodeId,
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    placementId: crypto.randomUUID(),
+    x: at.x,
+    y: at.y,
+    appearance: { kind: 'dot', color: '#ff7700' },
+  })
+  return nodeId
 }
 
 async function nodeNoteId(win: Page, nodeId: string): Promise<string | null> {
-  const result = await win.evaluate(
-    (id) => window.ew.project.query('getNode', { nodeId: id }),
-    nodeId,
-  )
-  if (!result.ok) throw new Error(result.message)
-  return (result.result as { noteId: string | null }).noteId
+  const node = await runQuery<{ noteId: string | null }>(win, 'getNode', { nodeId })
+  return node.noteId
 }
 
 test('attach, share, detach, and make independent (§17-6/7/17)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-attach-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-attach-')
   const n1 = await seedBarePin(win, { x: 300, y: 240 })
   const n2 = await seedBarePin(win, { x: 500, y: 300 })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
@@ -775,27 +547,16 @@ test('attach, share, detach, and make independent (§17-6/7/17)', async () => {
   const ashId = (await nodeNoteId(win, n1))!
   await expect
     .poll(async () => {
-      const scene = await win.evaluate(() =>
-        window.ew.project.query('getCanvasScene', { canvasId: window.__ewDebug!.canvasId() }),
+      const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+      const scene = await runQuery<{ items: Array<{ noteTitle?: string | null }> }>(
+        win,
+        'getCanvasScene',
+        { canvasId },
       )
-      if (!scene.ok) return []
-      return (scene.result as { items: Array<{ noteTitle?: string | null }> }).items.map(
-        (item) => item.noteTitle ?? null,
-      )
+      return scene.items.map((item) => item.noteTitle ?? null)
     })
     .toContain('Ash')
-  await win.evaluate(async (id) => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
-      projectId: (project.result as { id: string }).id,
-      commandType: 'UpdateNote',
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload: { noteId: id, body: 'ember lore' },
-    })
-  }, ashId)
+  await exec(win, 'UpdateNote', { noteId: ashId, body: 'ember lore' })
 
   // Share the note with the second node through the search picker
   // (§17-7): independent nodes, one note.
@@ -831,29 +592,12 @@ test('attach, share, detach, and make independent (§17-6/7/17)', async () => {
 })
 
 test('Uses sidebar groups locations and places unplaced material (§7.4, §6.10)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-uses-'))
-  const { app, win } = await launch(projectDir)
+  const { app, win } = await launchApp('ew-e2e-uses-')
   const { noteId: ashId } = await seedPlacedNote(win, 'Ash', 'ember lore', { x: 300, y: 240 })
   // A second node shares the note but has no placement (Unplaced).
-  await win.evaluate(async (id) => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const { id: projectId } = project.result as { id: string }
-    const run = async (commandType: string, payload: unknown) => {
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId,
-        commandType,
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload,
-      })
-      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
-    }
-    const nodeId = crypto.randomUUID()
-    await run('CreateNode', { nodeId })
-    await run('AttachNoteToNode', { nodeId, noteId: id })
-  }, ashId)
+  const shareNodeId = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: shareNodeId })
+  await exec(win, 'AttachNoteToNode', { nodeId: shareNodeId, noteId: ashId })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -879,49 +623,35 @@ test('Uses sidebar groups locations and places unplaced material (§7.4, §6.10)
 
   // Zero-node note: Place on Current Canvas creates node + dot +
   // placement in one command and the labeled dot appears (§6.10).
-  const loneId = await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const noteId = crypto.randomUUID()
-    const result = await window.ew.project.execute({
-      commandId: crypto.randomUUID(),
-      projectId: (project.result as { id: string }).id,
-      commandType: 'CreateNote',
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload: { noteId, title: 'Lone' },
-    })
-    if (result.status !== 'committed') throw new Error(result.status)
-    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId } }))
-    return noteId
-  })
+  const loneId = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: loneId, title: 'Lone' })
+  await win.evaluate((id) => {
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+  }, loneId)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Lone/)
   await expect(win.getByTestId('uses-place-note')).toBeVisible()
   await win.getByTestId('uses-place-note').click()
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 3)
   await expect
     .poll(async () => {
-      const scene = await win.evaluate(() =>
-        window.ew.project.query('getCanvasScene', { canvasId: window.__ewDebug!.canvasId() }),
+      const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+      const scene = await runQuery<{ items: Array<{ noteTitle?: string | null }> }>(
+        win,
+        'getCanvasScene',
+        { canvasId },
       )
-      if (!scene.ok) return []
-      return (scene.result as { items: Array<{ noteTitle?: string | null }> }).items.map(
-        (item) => item.noteTitle ?? null,
-      )
+      return scene.items.map((item) => item.noteTitle ?? null)
     })
     .toContain('Lone')
-  const usesResult = await win.evaluate(
-    (id) => window.ew.project.query('getNoteUses', { noteId: id }),
-    loneId,
-  )
-  expect(usesResult).toMatchObject({ ok: true, result: { totalPlacements: 1 } })
+  expect(await runQuery(win, 'getNoteUses', { noteId: loneId })).toMatchObject({
+    totalPlacements: 1,
+  })
 
   await app.close()
 })
 
 test('an edit inside its debounce window survives quit (§10.2 quit flush)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-notes-quit-'))
-  const first = await launch(projectDir)
+  const first = await launchApp('ew-e2e-notes-quit-')
   const { noteId } = await seedPlacedNote(first.win, 'Reef', '', { x: 300, y: 240 })
   await first.win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
@@ -940,44 +670,30 @@ test('an edit inside its debounce window survives quit (§10.2 quit flush)', asy
   })
   await closed
 
-  const second = await launch(projectDir)
+  const second = await launchAppInDir(first.projectDir)
   expect(await noteBody(second.win, noteId)).toBe('coral heads at low tide')
   await second.app.close()
 })
 
 test('double-clicking the label renames the note in place (AI-IMP-056)', async () => {
-  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-label-rename-'))
-  const { app, win } = await launch(projectDir)
-  await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    const { id: projectId } = project.result as { id: string }
-    const run = async (commandType: string, payload: unknown) => {
-      const result = await window.ew.project.execute({
-        commandId: crypto.randomUUID(),
-        projectId,
-        commandType,
-        commandVersion: 1,
-        issuedAt: new Date().toISOString(),
-        payload,
-      })
-      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
-    }
-    const noteId = crypto.randomUUID()
-    const nodeId = crypto.randomUUID()
-    await run('CreateNote', { noteId, title: 'Ash' })
-    await run('CreateNode', { nodeId })
-    await run('SetNodeAppearance', { nodeId, appearance: { kind: 'dot', color: '#ff7700' } })
-    await run('AttachNoteToNode', { nodeId, noteId })
-    await run('CreatePlacement', {
-      placementId: crypto.randomUUID(),
-      canvasId: window.__ewDebug!.canvasId(),
-      nodeId,
-      x: 300,
-      y: 300,
-      width: 200,
-      height: 150,
-    })
+  const { app, win } = await launchApp('ew-e2e-label-rename-')
+  const renameNoteId = crypto.randomUUID()
+  const renameNodeId = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: renameNoteId, title: 'Ash' })
+  await exec(win, 'CreateNode', { nodeId: renameNodeId })
+  await exec(win, 'SetNodeAppearance', {
+    nodeId: renameNodeId,
+    appearance: { kind: 'dot', color: '#ff7700' },
+  })
+  await exec(win, 'AttachNoteToNode', { nodeId: renameNodeId, noteId: renameNoteId })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    nodeId: renameNodeId,
+    x: 300,
+    y: 300,
+    width: 200,
+    height: 150,
   })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
@@ -993,12 +709,13 @@ test('double-clicking the label renames the note in place (AI-IMP-056)', async (
   // The rename propagates: scene label, pane title (via the seam).
   await expect
     .poll(async () => {
-      const scene = await win.evaluate(() =>
-        window.ew.project.query('getCanvasScene', { canvasId: window.__ewDebug!.canvasId() }),
+      const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+      const scene = await runQuery<{ items: Array<{ noteTitle?: string | null }> }>(
+        win,
+        'getCanvasScene',
+        { canvasId },
       )
-      if (!scene.ok) return null
-      const items = (scene.result as { items: Array<{ noteTitle?: string | null }> }).items
-      return items.find((item) => item.noteTitle)?.noteTitle ?? null
+      return scene.items.find((item) => item.noteTitle)?.noteTitle ?? null
     })
     .toBe('Cinder')
 

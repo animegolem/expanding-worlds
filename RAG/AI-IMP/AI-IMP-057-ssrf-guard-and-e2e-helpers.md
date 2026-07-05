@@ -5,12 +5,12 @@ tags:
   - Implementation
   - hardening
   - testing
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-012-pre-alpha-hardening]]
 confidence_score: 0.85
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-057-ssrf-guard-and-e2e-helpers
@@ -65,15 +65,15 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] net-guard rejects IP-literal and resolved loopback/private/
+- [x] net-guard rejects IP-literal and resolved loopback/private/
       link-local/ULA targets with a clear message; public hosts
       unaffected.
-- [ ] fetchUrlForImport calls the guard before fetching; e2e
+- [x] fetchUrlForImport calls the guard before fetching; e2e
       asserts a loopback URL drop is rejected with the notice and
       zero records.
-- [ ] e2e/helpers.ts with launchApp/exec/runQuery/revision;
+- [x] e2e/helpers.ts with launchApp/exec/runQuery/revision;
       notes.spec fully migrated, behavior identical.
-- [ ] Gates green locally and on CI.
+- [x] Gates green locally and on CI.
 
 ### Acceptance Criteria
 
@@ -94,3 +94,14 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+The guard needed a test-only bypass (EW_TEST_ALLOW_PRIVATE_FETCH=1)
+because the import spec's SUCCESS path legitimately serves fixtures
+from 127.0.0.1; the rejection is asserted in a separate launch
+without the bypass (loopback URL -> "private or local" notice, zero
+records). notes.spec migrated fully to the new helpers (launchApp /
+launchAppInDir / exec / runQuery / revision / seedPlacedNote) —
+zero inline envelopes or raw query calls remain in it; other specs
+migrate opportunistically. The full-suite run after migration
+surfaced one more latent sync-read race in slice.spec (synchronous
+decorationVisible read after an async scene apply) — converted to a
+poll; suite green 38/38.

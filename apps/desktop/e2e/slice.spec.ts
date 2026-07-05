@@ -490,7 +490,10 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   expect(await revision(win)).toBe(rev + 1)
   await exec(ctx, 'UpdateDecoration', { decorationId: d1, set: { locked: true } })
   await exec(ctx, 'UpdateDecoration', { decorationId: d2, set: { hidden: true } })
-  expect(await win.evaluate((id) => window.__ewDebug!.decorationVisible(id), d2)).toBe(false)
+  // Poll: the scene applies asynchronously after the commit.
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.decorationVisible(id), d2))
+    .toBe(false)
   await exec(ctx, 'UpdateDecoration', { decorationId: d2, set: { hidden: false } })
   const groupId = crypto.randomUUID()
   const groupMembers = decorationIds.slice(2, 4) as [string, string]

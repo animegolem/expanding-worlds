@@ -6,8 +6,8 @@ tags:
   - hardening
   - feel
 date_created: 2026-07-05
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-05
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-053
   - AI-IMP-054
@@ -76,8 +76,8 @@ Create Pin dialog (waits for its chrome-era replacement).
 - [x] FR-4: MIN_ZOOM 0.002, SNAP_GUIDE_ALPHA 0.5, LABEL_HEIGHT_RATIO 0.14.
 - [x] FR-5: Double-click a placement label → inline rename routed through the pane's rename seam.
 - [x] FR-6: Wiki-link hover affordance names the follow gesture.
-- [ ] FR-7: fetchUrlForImport rejects loopback/private/link-local targets, including post-DNS-resolution.
-- [ ] FR-8: e2e envelope/query helpers consolidated; notes.spec migrated.
+- [x] FR-7: fetchUrlForImport rejects loopback/private/link-local targets, including post-DNS-resolution.
+- [x] FR-8: e2e envelope/query helpers consolidated; notes.spec migrated.
 
 ### Non-Functional Requirements
 

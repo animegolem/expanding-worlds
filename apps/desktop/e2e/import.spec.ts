@@ -33,11 +33,14 @@ interface DropSpec {
   offsetY: number
 }
 
-async function launch(prefix: string): Promise<{ app: ElectronApplication; win: Page }> {
+async function launch(
+  prefix: string,
+  extraEnv: Record<string, string> = {},
+): Promise<{ app: ElectronApplication; win: Page }> {
   const projectDir = mkdtempSync(join(tmpdir(), prefix))
   const app = await electron.launch({
     args: ['out/main/index.cjs'],
-    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+    env: { ...process.env, EW_PROJECT_DIR: projectDir, ...extraEnv },
   })
   const win = await app.firstWindow()
   await win.waitForFunction(() => window.__ewDebug !== undefined)
@@ -82,7 +85,9 @@ async function query<T>(win: Page, name: string, args?: unknown): Promise<T> {
 }
 
 test('import surfaces: drop, attribution, rejection, URL failure, paste', async () => {
-  const { app, win } = await launch('ew-e2e-import-')
+  // The success-path fixture serves from 127.0.0.1, which the SSRF
+  // guard refuses; the guard itself is tested separately below.
+  const { app, win } = await launch('ew-e2e-import-', { EW_TEST_ALLOW_PRIVATE_FETCH: '1' })
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
 
   // -- multi-file drop: two files, one drop point, cascading offsets.
@@ -457,5 +462,19 @@ test('placement sources (§6.3/§6.10) and node context menu (§6.6)', async () 
     )
     .toBe('Solo Copy')
 
+  await app.close()
+})
+
+test('URL import refuses private and loopback targets (AI-IMP-057)', async () => {
+  const { app, win } = await launch('ew-e2e-ssrf-')
+  await dropOnCanvas(win, {
+    uriList: 'http://127.0.0.1:5173/steal.png',
+    offsetX: 200,
+    offsetY: 200,
+  })
+  await expect(win.getByTestId('import-error')).toBeVisible({ timeout: 15_000 })
+  await expect(win.getByTestId('import-error')).toContainText('private or local')
+  expect(await placements(win)).toBe(0)
+  expect(await query<unknown[]>(win, 'listAssets')).toHaveLength(0)
   await app.close()
 })
