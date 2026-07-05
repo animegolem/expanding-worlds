@@ -33,7 +33,7 @@ interface DecorationRow {
 const DECORATION_COLUMNS = `id, canvas_id, kind, data, render_order, locked, hidden,
   group_id, anchor_start_placement_id, anchor_end_placement_id`
 
-function requireDecoration(ctx: CommandContext, decorationId: string): DecorationRow {
+export function requireDecoration(ctx: CommandContext, decorationId: string): DecorationRow {
   const row = ctx.db.get<DecorationRow>(
     `SELECT ${DECORATION_COLUMNS} FROM decoration
      WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
@@ -78,51 +78,79 @@ function validateAnchor(
  * (invariant 16 — this API surface exposes no note, tag, link, or
  * graph fields for decorations). Groups are movement aids only.
  */
+/** Validated decoration insert — shared by CreateDecoration and the
+ * DeleteContent inverse (AI-IMP-028). */
+export function insertDecoration(ctx: CommandContext, payload: CreateDecorationPayload): void {
+  if (!DECORATION_KINDS.has(payload.kind)) {
+    throw new DomainError('VALIDATION_FAILED', `unknown decoration kind "${payload.kind}"`)
+  }
+  const canvas = ctx.db.get<{ id: string }>(
+    `SELECT id FROM canvas
+     WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+    payload.canvasId,
+    ctx.projectId,
+  )
+  if (!canvas) throw new DomainError('CANVAS_NOT_FOUND', `no active canvas ${payload.canvasId}`)
+  validateAnchor(ctx, payload.kind, payload.anchorStartPlacementId, 'start')
+  validateAnchor(ctx, payload.kind, payload.anchorEndPlacementId, 'end')
+  if (payload.groupId !== undefined && payload.groupId !== null) {
+    const group = ctx.db.get<{ id: string }>(
+      'SELECT id FROM decoration_group WHERE id = ? AND canvas_id = ?',
+      payload.groupId,
+      payload.canvasId,
+    )
+    if (!group) {
+      throw new DomainError('GROUP_NOT_FOUND', `no decoration group ${payload.groupId}`)
+    }
+  }
+  const now = ctx.now()
+  ctx.db.run(
+    `INSERT INTO decoration
+       (id, project_id, canvas_id, kind, data, render_order, locked, hidden,
+        group_id, anchor_start_placement_id, anchor_end_placement_id,
+        created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    payload.decorationId,
+    ctx.projectId,
+    payload.canvasId,
+    payload.kind,
+    JSON.stringify(payload.data),
+    payload.renderOrder ?? nextRenderOrder(ctx, payload.canvasId),
+    payload.locked ? 1 : 0,
+    payload.hidden ? 1 : 0,
+    payload.groupId ?? null,
+    payload.anchorStartPlacementId ?? null,
+    payload.anchorEndPlacementId ?? null,
+    now,
+    now,
+  )
+}
+
+/** Hard-deletes one active decoration and returns the exact payload
+ * that recreates it — shared by DeleteDecoration and DeleteContent. */
+export function deleteDecorationRow(
+  ctx: CommandContext,
+  decorationId: string,
+): CreateDecorationPayload {
+  const prior = requireDecoration(ctx, decorationId)
+  ctx.db.run('DELETE FROM decoration WHERE id = ?', decorationId)
+  return {
+    decorationId: prior.id,
+    canvasId: prior.canvas_id,
+    kind: prior.kind as CreateDecorationPayload['kind'],
+    data: JSON.parse(prior.data) as Record<string, unknown>,
+    anchorStartPlacementId: prior.anchor_start_placement_id,
+    anchorEndPlacementId: prior.anchor_end_placement_id,
+    renderOrder: prior.render_order,
+    groupId: prior.group_id,
+    locked: prior.locked === 1,
+    hidden: prior.hidden === 1,
+  }
+}
+
 export function registerDecorationHandlers(registry: CommandRegistry<CommandContext>): void {
   registry.register<CreateDecorationPayload>(COMMAND_CREATE_DECORATION, 1, (ctx, payload) => {
-    if (!DECORATION_KINDS.has(payload.kind)) {
-      throw new DomainError('VALIDATION_FAILED', `unknown decoration kind "${payload.kind}"`)
-    }
-    const canvas = ctx.db.get<{ id: string }>(
-      `SELECT id FROM canvas
-       WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
-      payload.canvasId,
-      ctx.projectId,
-    )
-    if (!canvas) throw new DomainError('CANVAS_NOT_FOUND', `no active canvas ${payload.canvasId}`)
-    validateAnchor(ctx, payload.kind, payload.anchorStartPlacementId, 'start')
-    validateAnchor(ctx, payload.kind, payload.anchorEndPlacementId, 'end')
-    if (payload.groupId !== undefined && payload.groupId !== null) {
-      const group = ctx.db.get<{ id: string }>(
-        'SELECT id FROM decoration_group WHERE id = ? AND canvas_id = ?',
-        payload.groupId,
-        payload.canvasId,
-      )
-      if (!group) {
-        throw new DomainError('GROUP_NOT_FOUND', `no decoration group ${payload.groupId}`)
-      }
-    }
-    const now = ctx.now()
-    ctx.db.run(
-      `INSERT INTO decoration
-         (id, project_id, canvas_id, kind, data, render_order, locked, hidden,
-          group_id, anchor_start_placement_id, anchor_end_placement_id,
-          created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      payload.decorationId,
-      ctx.projectId,
-      payload.canvasId,
-      payload.kind,
-      JSON.stringify(payload.data),
-      payload.renderOrder ?? nextRenderOrder(ctx, payload.canvasId),
-      payload.locked ? 1 : 0,
-      payload.hidden ? 1 : 0,
-      payload.groupId ?? null,
-      payload.anchorStartPlacementId ?? null,
-      payload.anchorEndPlacementId ?? null,
-      now,
-      now,
-    )
+    insertDecoration(ctx, payload)
     return {
       affected: [{ kind: 'decoration', id: payload.decorationId }],
       inverse: {
@@ -193,25 +221,13 @@ export function registerDecorationHandlers(registry: CommandRegistry<CommandCont
     // Hard delete: decorations are canvas-local visual content, and
     // the inverse recreates the exact prior row, so no trash round
     // trip is needed (AI-IMP-013 owns lifecycle semantics).
-    const prior = requireDecoration(ctx, payload.decorationId)
-    ctx.db.run('DELETE FROM decoration WHERE id = ?', payload.decorationId)
+    const recreate = deleteDecorationRow(ctx, payload.decorationId)
     return {
       affected: [{ kind: 'decoration', id: payload.decorationId }],
       inverse: {
         commandType: COMMAND_CREATE_DECORATION,
         commandVersion: 1,
-        payload: {
-          decorationId: prior.id,
-          canvasId: prior.canvas_id,
-          kind: prior.kind as CreateDecorationPayload['kind'],
-          data: JSON.parse(prior.data) as Record<string, unknown>,
-          anchorStartPlacementId: prior.anchor_start_placement_id,
-          anchorEndPlacementId: prior.anchor_end_placement_id,
-          renderOrder: prior.render_order,
-          groupId: prior.group_id,
-          locked: prior.locked === 1,
-          hidden: prior.hidden === 1,
-        } satisfies CreateDecorationPayload,
+        payload: recreate,
       },
     }
   })

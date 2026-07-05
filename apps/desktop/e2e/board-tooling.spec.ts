@@ -368,3 +368,102 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
 
   await app.close()
 })
+
+test('delete selection with §9.2 notice, z-order recovery, select-all (AI-IMP-028)', async () => {
+  const { app, win } = await launch('ew-e2e-delete-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // Two bare pins and a rect decoration.
+  for (const [x, y] of [
+    [150, 150],
+    [260, 200],
+  ]) {
+    await runCommand(win, 'CreatePin', {
+      nodeId: crypto.randomUUID(),
+      canvasId,
+      placementId: crypto.randomUUID(),
+      x,
+      y,
+      appearance: { kind: 'dot', color: '#4a90d9' },
+    })
+  }
+  await runCommand(win, 'CreateDecoration', {
+    decorationId: crypto.randomUUID(),
+    canvasId,
+    kind: 'shape',
+    data: { shape: 'rect', x: 330, y: 130, width: 60, height: 60, stroke: '#dde3ea', strokeWidth: 2 },
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().total === 3)
+
+  // Marquee everything, Delete: one durable command empties the board
+  // and the bare-node auto-trash surfaces the Keep in Project notice.
+  await win.mouse.move(box.x + 80, box.y + 80)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 450, box.y + 300, { steps: 5 })
+  await win.mouse.up()
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 3)
+  const beforeDelete = await revision(win)
+  await win.keyboard.press('Backspace')
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().total === 0)
+  expect(await revision(win)).toBe(beforeDelete + 1)
+  await expect(win.getByTestId('board-notice')).toBeVisible()
+  await expect(win.getByTestId('board-notice')).toContainText('moved to Trash')
+  await win.getByTestId('board-notice-keep').click()
+  await expect(win.getByTestId('board-notice')).toBeHidden()
+
+  // Z-order recovery: a small rect fully covered by a later big rect
+  // becomes clickable after Send to Back on the big one.
+  const smallId = crypto.randomUUID()
+  const bigId = crypto.randomUUID()
+  await runCommand(win, 'CreateDecoration', {
+    decorationId: smallId,
+    canvasId,
+    kind: 'shape',
+    data: { shape: 'rect', x: 280, y: 280, width: 40, height: 40, stroke: '#dde3ea', strokeWidth: 2 },
+  })
+  await runCommand(win, 'CreateDecoration', {
+    decorationId: bigId,
+    canvasId,
+    kind: 'shape',
+    data: {
+      shape: 'rect',
+      x: 200,
+      y: 200,
+      width: 200,
+      height: 200,
+      stroke: '#8a94a0',
+      strokeWidth: 2,
+      fill: '#2b2f36',
+    },
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 2)
+  await win.mouse.click(box.x + 300, box.y + 300)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  expect(await win.evaluate(() => window.__ewDebug!.selection()[0])).toBe(bigId)
+  await win.keyboard.press('Control+Shift+BracketLeft') // send to back
+  await expect
+    .poll(async () => {
+      await win.mouse.click(box.x + 300, box.y + 300)
+      return win.evaluate(() => window.__ewDebug!.selection()[0] ?? null)
+    })
+    .toBe(smallId)
+
+  // Select all, then the toolbar's To front on the small rect.
+  await win.keyboard.press('Control+KeyA')
+  expect(await win.evaluate(() => window.__ewDebug!.selection().length)).toBe(2)
+  // Clear first: clicking an already-selected item keeps the multi
+  // selection (it may be a drag start), so it can't collapse to one.
+  await win.mouse.click(box.x + 550, box.y + 450)
+  await win.mouse.click(box.x + 300, box.y + 300)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await win.getByTestId('order-front').click()
+  await expect
+    .poll(async () => {
+      await win.mouse.click(box.x + 300, box.y + 300)
+      return win.evaluate(() => window.__ewDebug!.selection()[0] ?? null)
+    })
+    .toBe(smallId)
+
+  await app.close()
+})

@@ -156,6 +156,51 @@ export function attachGesturesUI(
     }
   }
 
+  /** Delete/Backspace: one DeleteContent command for the whole
+   * selection (§9.2 per placement; decorations hard-delete). Bare
+   * nodes auto-trashed by the command surface a non-blocking notice
+   * with a Keep in Project action (handled by CanvasHost). */
+  async function deleteSelection(): Promise<void> {
+    const items = controller.selectedItems()
+    if (items.length === 0) return
+    const result = await gateway.execute('DeleteContent', {
+      canvasId: handle.canvasId,
+      placementIds: items.filter((i) => i.itemKind === 'placement').map((i) => i.id),
+      decorationIds: items.filter((i) => i.itemKind === 'decoration').map((i) => i.id),
+    })
+    if (result.status !== 'committed') return
+    controller.selection.clear()
+    const trashedNodes = result.affected
+      .filter((record) => record.kind === 'node')
+      .map((record) => record.id)
+    if (trashedNodes.length > 0) {
+      canvas.dispatchEvent(
+        new CustomEvent('ew-board-notice', {
+          bubbles: true,
+          detail: {
+            message:
+              trashedNodes.length === 1
+                ? 'Node moved to Trash with its last placement.'
+                : `${trashedNodes.length} nodes moved to Trash with their last placements.`,
+            keepNodeIds: trashedNodes,
+          },
+        }),
+      )
+    }
+  }
+
+  /** Cmd+A: every selectable item — locked or hidden decorations stay
+   * out so a sweep-select can't move or delete them. */
+  function selectAll(): void {
+    const ids = controller
+      .items()
+      .filter(
+        (item) => !(item.itemKind === 'decoration' && (item.locked === 1 || item.hidden === 1)),
+      )
+      .map((item) => item.id)
+    controller.selection.set(ids)
+  }
+
   const local = (event: PointerEvent): { x: number; y: number } => {
     const rect = canvas.getBoundingClientRect()
     return { x: event.clientX - rect.left, y: event.clientY - rect.top }
@@ -230,6 +275,12 @@ export function attachGesturesUI(
       void flipSelection('x')
     } else if (!meta && event.shiftKey && event.code === 'KeyV') {
       void flipSelection('y')
+    } else if (!meta && (event.code === 'Delete' || event.code === 'Backspace')) {
+      event.preventDefault()
+      void deleteSelection()
+    } else if (meta && event.code === 'KeyA') {
+      event.preventDefault()
+      selectAll()
     }
   }
 

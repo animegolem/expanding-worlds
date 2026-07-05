@@ -5,7 +5,7 @@
    * selection, and the §6.7 background operation set including the
    * explicit background edit mode and the color-beneath-image picker.
    */
-  import type { AlignOp, DistributeAxis, SceneBackground } from '@ew/canvas-engine'
+  import type { AlignOp, DistributeAxis, ReorderOp, SceneBackground } from '@ew/canvas-engine'
   import type { CanvasHostHandle } from './canvas/host'
   import type { BoardTooling } from './canvas/board-tooling'
 
@@ -22,6 +22,12 @@
   const distributeOps: Array<{ axis: DistributeAxis; label: string }> = [
     { axis: 'horizontal', label: 'Distribute H' },
     { axis: 'vertical', label: 'Distribute V' },
+  ]
+  const reorderOps: Array<{ op: ReorderOp; label: string }> = [
+    { op: 'forward', label: 'Forward' },
+    { op: 'backward', label: 'Backward' },
+    { op: 'front', label: 'To front' },
+    { op: 'back', label: 'To back' },
   ]
 
   let selectionCount = $state(handle.controller.selection.size)
@@ -82,6 +88,16 @@
         data-testid={`distribute-${entry.axis}`}
         disabled={selectionCount < 3}
         onclick={() => void tooling.distribute(entry.axis)}
+      >
+        {entry.label}
+      </button>
+    {/each}
+    {#each reorderOps as entry (entry.op)}
+      <button
+        type="button"
+        data-testid={`order-${entry.op}`}
+        disabled={selectionCount < 1}
+        onclick={() => void tooling.reorder(entry.op)}
       >
         {entry.label}
       </button>

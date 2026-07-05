@@ -691,6 +691,133 @@ describe('SetTrashRetention (§9.1)', () => {
  * hash becomes GC-eligible when the purge chain removes that last
  * appearance reference.
  */
+describe('DeleteContent / RestoreContent (AI-IMP-028)', () => {
+  function decorate(overrides: Record<string, unknown> = {}): string {
+    const decorationId = uuidv7()
+    committed('CreateDecoration', {
+      decorationId,
+      canvasId: handle.rootCanvasId,
+      kind: 'shape',
+      data: { shape: 'rect' },
+      ...overrides,
+    })
+    return decorationId
+  }
+
+  it('deletes a mixed selection as one command with a composite inverse', () => {
+    const nodeA = createNode()
+    const nodeB = createNode()
+    const canvasId = handle.rootCanvasId
+    const pA = place(canvasId, nodeA, { x: 10, y: 10 })
+    const pB = place(canvasId, nodeB, { x: 50, y: 50 })
+    const shape = decorate()
+    const connector = decorate({
+      kind: 'connector',
+      data: { x1: 0, y1: 0, x2: 1, y2: 1 },
+      anchorStartPlacementId: pA,
+      anchorEndPlacementId: pB,
+    })
+
+    const before = commandLogCount()
+    const del = committed('DeleteContent', {
+      canvasId,
+      placementIds: [pA, pB],
+      decorationIds: [shape, connector],
+    })
+    expect(commandLogCount()).toBe(before + 1)
+    expect(row('placement', pA)).toBeUndefined()
+    expect(row('placement', pB)).toBeUndefined()
+    expect(row('decoration', shape)).toBeUndefined()
+    expect(row('decoration', connector)).toBeUndefined()
+    // Both bare nodes lost their last placement → auto-trashed (§9.2).
+    expect(row('node', nodeA)!.lifecycle_state).toBe('trashed')
+
+    // Decorations were captured before placement deletion nulled
+    // anchors: the recreate payload keeps both endpoints.
+    const inverse = del.inverse!
+    expect(inverse.commandType).toBe('RestoreContent')
+    const payload = inverse.payload as {
+      placements: Array<{ placementId: string; restoreNodeId: string | null }>
+      decorations: Array<{
+        decorationId: string
+        anchorStartPlacementId: string | null
+        anchorEndPlacementId: string | null
+      }>
+    }
+    const connectorEntry = payload.decorations.find((d) => d.decorationId === connector)!
+    expect(connectorEntry.anchorStartPlacementId).toBe(pA)
+    expect(connectorEntry.anchorEndPlacementId).toBe(pB)
+    expect(payload.placements.find((p) => p.placementId === pA)!.restoreNodeId).toBe(nodeA)
+
+    // Round trip: RestoreContent revives everything, anchors intact.
+    const restore = undo(del.inverse)
+    expect(row('placement', pA)).toMatchObject({ x: 10, y: 10, lifecycle_state: 'active' })
+    expect(row('node', nodeA)!.lifecycle_state).toBe('active')
+    expect(row('decoration', connector)).toMatchObject({
+      anchor_start_placement_id: pA,
+      anchor_end_placement_id: pB,
+    })
+    // And the redo inverse is DeleteContent over the same ids.
+    expect(restore.inverse!.commandType).toBe('DeleteContent')
+    const redo = committed(restore.inverse!.commandType, restore.inverse!.payload)
+    expect(row('placement', pA)).toBeUndefined()
+    expect(row('decoration', connector)).toBeUndefined()
+    expect(redo.inverse!.commandType).toBe('RestoreContent')
+  })
+
+  it('leaves invested nodes active and reports outcomes in affected', () => {
+    const nodeId = createNode()
+    const noteId = createNote('Keeps the node invested')
+    committed('AttachNoteToNode', { nodeId, noteId })
+    const placementId = place(handle.rootCanvasId, nodeId)
+    const del = committed('DeleteContent', {
+      canvasId: handle.rootCanvasId,
+      placementIds: [placementId],
+      decorationIds: [],
+    })
+    expect(row('node', nodeId)!.lifecycle_state).toBe('active')
+    expect(del.affected).not.toContainEqual({ kind: 'node', id: nodeId })
+  })
+
+  it('validates before deleting: cross-canvas content rejects atomically', () => {
+    const owner = createNode()
+    const otherCanvas = uuidv7()
+    committed('CreateCanvas', { canvasId: otherCanvas, nodeId: owner })
+    const nodeId = createNode()
+    const onRoot = place(handle.rootCanvasId, nodeId)
+    const elsewhere = place(otherCanvas, createNode())
+    expect(
+      exec('DeleteContent', {
+        canvasId: handle.rootCanvasId,
+        placementIds: [onRoot, elsewhere],
+        decorationIds: [],
+      }),
+    ).toMatchObject({ status: 'error', code: 'CROSS_CANVAS_CONTENT' })
+    // Nothing was deleted.
+    expect(row('placement', onRoot)).toBeDefined()
+    expect(row('placement', elsewhere)).toBeDefined()
+  })
+
+  it('rejects empty and duplicate-id payloads', () => {
+    expect(
+      exec('DeleteContent', {
+        canvasId: handle.rootCanvasId,
+        placementIds: [],
+        decorationIds: [],
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    const nodeId = createNode()
+    const placementId = place(handle.rootCanvasId, nodeId)
+    expect(
+      exec('DeleteContent', {
+        canvasId: handle.rootCanvasId,
+        placementIds: [placementId, placementId],
+        decorationIds: [],
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
+})
+
 describe('acceptance: bare-node delete, trash, purge end to end', () => {
   it('runs the §17 slice scenario', () => {
     // GIVEN a canvas holding placements of two nodes, one bare image

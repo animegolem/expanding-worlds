@@ -4,6 +4,8 @@
  * commands, restore, and permanent purge.
  */
 
+import type { CreateDecorationPayload } from './structure'
+
 /** Record kinds that support user-visible Trash entries (§9.1). */
 export type LifecycleRecordKind = 'note' | 'node' | 'canvas'
 
@@ -41,6 +43,33 @@ export interface RestorePlacementPayload {
   labelVisible: boolean
   /** Set when DeletePlacement trashed the bare node (§9.2). */
   restoreNodeId?: string | null
+}
+
+/**
+ * Batch removal of board content (AI-IMP-028): deleting a
+ * multi-selection is ONE durable command — one command_log row, one
+ * future undo step. Placements follow §9.2 semantics each (hard
+ * delete, bare-node auto-trash on the node's last placement);
+ * decorations hard-delete with recreating inverses. Everything must
+ * be active and on `canvasId`. Decorations delete before placements
+ * so connector inverses capture their anchors intact.
+ */
+export interface DeleteContentPayload {
+  canvasId: string
+  placementIds: string[]
+  decorationIds: string[]
+}
+
+/**
+ * Internal inverse of DeleteContent: restores every placement (and
+ * any bare-trashed node) first, then recreates decorations so
+ * connector anchors resolve. Not part of the public UI command set.
+ */
+export interface RestoreContentPayload {
+  canvasId: string
+  placements: RestorePlacementPayload[]
+  /** CreateDecoration-shaped rows captured at delete time. */
+  decorations: CreateDecorationPayload[]
 }
 
 /**
@@ -103,6 +132,8 @@ export interface SetTrashRetentionPayload {
 
 export const COMMAND_DELETE_PLACEMENT = 'DeletePlacement'
 export const COMMAND_RESTORE_PLACEMENT = 'RestorePlacement'
+export const COMMAND_DELETE_CONTENT = 'DeleteContent'
+export const COMMAND_RESTORE_CONTENT = 'RestoreContent'
 export const COMMAND_TRASH_NOTE = 'TrashNote'
 export const COMMAND_TRASH_NODE = 'TrashNode'
 export const COMMAND_TRASH_CANVAS = 'TrashCanvas'

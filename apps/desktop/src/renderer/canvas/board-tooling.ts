@@ -2,9 +2,11 @@ import {
   alignPayload,
   createSnapProvider,
   distributePayload,
+  reorderPayloads,
   unionBounds,
   type AlignOp,
   type DistributeAxis,
+  type ReorderOp,
   type SceneBackground,
   type ScenePlacement,
 } from '@ew/canvas-engine'
@@ -36,6 +38,8 @@ const IDENTITY_SETTINGS: BackgroundSettings = { x: 0, y: 0, scale: 1, opacity: 1
 export interface BoardTooling {
   align(op: AlignOp): Promise<void>
   distribute(axis: DistributeAxis): Promise<void>
+  /** §6.8 z-order on the current selection (placements + decorations). */
+  reorder(op: ReorderOp): Promise<void>
   zoomToFit(): void
   zoomToSelection(): void
   /** The single image-appearance placement selected, if any (§6.7). */
@@ -153,6 +157,16 @@ export function attachBoardTooling(
   async function distribute(axis: DistributeAxis): Promise<void> {
     const payload = distributePayload(handle.canvasId, controller.selectedItems(), axis)
     if (payload) await run('TransformContent', payload)
+  }
+
+  async function reorder(op: ReorderOp): Promise<void> {
+    const payloads = reorderPayloads(
+      handle.canvasId,
+      controller.items(),
+      controller.selection.ids(),
+      op,
+    )
+    for (const payload of payloads) await run('ReorderContent', payload)
   }
 
   const viewport = (): { width: number; height: number } => ({
@@ -332,6 +346,7 @@ export function attachBoardTooling(
   return {
     align,
     distribute,
+    reorder,
     zoomToFit,
     zoomToSelection,
     selectedImagePlacement,

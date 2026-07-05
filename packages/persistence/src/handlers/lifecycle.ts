@@ -1,6 +1,8 @@
 import {
+  COMMAND_DELETE_CONTENT,
   COMMAND_DELETE_PLACEMENT,
   COMMAND_PURGE_RECORD,
+  COMMAND_RESTORE_CONTENT,
   COMMAND_RESTORE_PLACEMENT,
   COMMAND_RESTORE_RECORD,
   COMMAND_SET_TRASH_RETENTION,
@@ -10,8 +12,10 @@ import {
   DomainError,
   type AffectedRecord,
   type CommandRegistry,
+  type DeleteContentPayload,
   type DeletePlacementPayload,
   type PurgeRecordPayload,
+  type RestoreContentPayload,
   type RestorePlacementPayload,
   type RestoreRecordPayload,
   type SetTrashRetentionPayload,
@@ -23,6 +27,7 @@ import {
 import { extractWikiLinks } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching } from '../links'
+import { deleteDecorationRow, insertDecoration, requireDecoration } from './decorations'
 import { releaseConnectorAnchors } from './placements'
 
 const TRASH_RETENTION_KEY = 'trash_retention'
@@ -99,6 +104,126 @@ function isBareNode(ctx: CommandContext, nodeId: string): boolean {
     nodeId,
   )!
   return counts.notes === 0 && counts.tags === 0 && counts.canvases === 0 && counts.placements === 0
+}
+
+/**
+ * §9.2 placement delete, shared by DeletePlacement and DeleteContent:
+ * command-undo-recoverable hard delete that frees anchored connector
+ * endpoints immediately, and — when this was the last placement of a
+ * bare node — trashes that node within the same user-level command
+ * (never the root node, never a purge; invariants 2/11). The node's
+ * presence in `affected` is the Keep in Project signal. Returns the
+ * payload that restores the exact prior row.
+ */
+function deletePlacementRow(
+  ctx: CommandContext,
+  placementId: string,
+  commandId: string,
+  affected: AffectedRecord[],
+): RestorePlacementPayload {
+  const prior = ctx.db.get<{
+    id: string
+    canvas_id: string
+    node_id: string
+    x: number
+    y: number
+    width: number | null
+    height: number | null
+    scale: number
+    rotation: number
+    flip_x: number
+    flip_y: number
+    render_order: number
+    label_visible: number
+  }>(
+    `SELECT id, canvas_id, node_id, x, y, width, height, scale, rotation,
+            flip_x, flip_y, render_order, label_visible
+     FROM placement
+     WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+    placementId,
+    ctx.projectId,
+  )
+  if (!prior) {
+    throw new DomainError('PLACEMENT_NOT_FOUND', `no active placement ${placementId}`)
+  }
+
+  const freed = releaseConnectorAnchors(ctx, placementId)
+  ctx.db.run('DELETE FROM placement WHERE id = ?', placementId)
+  affected.push(
+    { kind: 'placement', id: placementId },
+    ...freed.map((id) => ({ kind: 'decoration' as const, id })),
+  )
+
+  let restoreNodeId: string | null = null
+  const nodeActive = ctx.db.get<{ id: string }>(
+    "SELECT id FROM node WHERE id = ? AND lifecycle_state = 'active'",
+    prior.node_id,
+  )
+  if (nodeActive && prior.node_id !== ctx.rootNodeId && isBareNode(ctx, prior.node_id)) {
+    trashRow(ctx, 'node', prior.node_id, commandId)
+    affected.push({ kind: 'node', id: prior.node_id })
+    restoreNodeId = prior.node_id
+  }
+
+  return {
+    placementId: prior.id,
+    canvasId: prior.canvas_id,
+    nodeId: prior.node_id,
+    x: prior.x,
+    y: prior.y,
+    width: prior.width,
+    height: prior.height,
+    scale: prior.scale,
+    rotation: prior.rotation,
+    flipX: prior.flip_x === 1,
+    flipY: prior.flip_y === 1,
+    renderOrder: prior.render_order,
+    labelVisible: prior.label_visible === 1,
+    restoreNodeId,
+  }
+}
+
+/** Recreates a deleted placement row (and revives a bare-trashed
+ * node) — shared by RestorePlacement and RestoreContent. */
+function restorePlacementRow(
+  ctx: CommandContext,
+  payload: RestorePlacementPayload,
+  affected: AffectedRecord[],
+): void {
+  if (payload.restoreNodeId) {
+    // Undo of the bare-node auto-trash; a no-op when the node was
+    // already restored via Keep in Project (RestoreRecord).
+    const node = requireLifecycleRow(ctx, 'node', payload.restoreNodeId)
+    if (node.lifecycle_state === 'trashed') {
+      restoreRow(ctx, 'node', payload.restoreNodeId)
+      affected.push({ kind: 'node', id: payload.restoreNodeId })
+    }
+  }
+  const now = ctx.now()
+  ctx.db.run(
+    `INSERT INTO placement
+       (id, project_id, canvas_id, node_id, x, y, width, height, scale,
+        rotation, flip_x, flip_y, render_order, label_visible,
+        created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    payload.placementId,
+    ctx.projectId,
+    payload.canvasId,
+    payload.nodeId,
+    payload.x,
+    payload.y,
+    payload.width,
+    payload.height,
+    payload.scale,
+    payload.rotation,
+    payload.flipX ? 1 : 0,
+    payload.flipY ? 1 : 0,
+    payload.renderOrder,
+    payload.labelVisible ? 1 : 0,
+    now,
+    now,
+  )
+  affected.push({ kind: 'placement', id: payload.placementId })
 }
 
 /**
@@ -239,119 +364,113 @@ export function registerLifecycleHandlers(registry: CommandRegistry<CommandConte
     COMMAND_DELETE_PLACEMENT,
     1,
     (ctx, payload, envelope) => {
-      const prior = ctx.db.get<{
-        id: string
-        canvas_id: string
-        node_id: string
-        x: number
-        y: number
-        width: number | null
-        height: number | null
-        scale: number
-        rotation: number
-        flip_x: number
-        flip_y: number
-        render_order: number
-        label_visible: number
-      }>(
-        `SELECT id, canvas_id, node_id, x, y, width, height, scale, rotation,
-                flip_x, flip_y, render_order, label_visible
-         FROM placement
-         WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
-        payload.placementId,
-        ctx.projectId,
-      )
-      if (!prior) {
-        throw new DomainError('PLACEMENT_NOT_FOUND', `no active placement ${payload.placementId}`)
-      }
-
-      // §9.2: the placement leaves rendering via command-undo-recoverable
-      // hard delete, so anchored connector endpoints free immediately.
-      const freed = releaseConnectorAnchors(ctx, payload.placementId)
-      ctx.db.run('DELETE FROM placement WHERE id = ?', payload.placementId)
-
-      const affected: AffectedRecord[] = [
-        { kind: 'placement', id: payload.placementId },
-        ...freed.map((id) => ({ kind: 'decoration' as const, id })),
-      ]
-
-      // §9.2/invariant 11: the last placement of a bare node trashes the
-      // node within this same user-level command (one command_log row);
-      // the node's presence in `affected` is the Keep in Project signal.
-      // Never a purge, and never for the root node (invariant 2).
-      let restoreNodeId: string | null = null
-      const nodeActive = ctx.db.get<{ id: string }>(
-        "SELECT id FROM node WHERE id = ? AND lifecycle_state = 'active'",
-        prior.node_id,
-      )
-      if (nodeActive && prior.node_id !== ctx.rootNodeId && isBareNode(ctx, prior.node_id)) {
-        trashRow(ctx, 'node', prior.node_id, envelope.commandId)
-        affected.push({ kind: 'node', id: prior.node_id })
-        restoreNodeId = prior.node_id
-      }
-
+      const affected: AffectedRecord[] = []
+      const restore = deletePlacementRow(ctx, payload.placementId, envelope.commandId, affected)
       return {
         affected,
         inverse: {
           commandType: COMMAND_RESTORE_PLACEMENT,
           commandVersion: 1,
-          payload: {
-            placementId: prior.id,
-            canvasId: prior.canvas_id,
-            nodeId: prior.node_id,
-            x: prior.x,
-            y: prior.y,
-            width: prior.width,
-            height: prior.height,
-            scale: prior.scale,
-            rotation: prior.rotation,
-            flipX: prior.flip_x === 1,
-            flipY: prior.flip_y === 1,
-            renderOrder: prior.render_order,
-            labelVisible: prior.label_visible === 1,
-            restoreNodeId,
-          } satisfies RestorePlacementPayload,
+          payload: restore,
         },
       }
     },
   )
 
-  registry.register<RestorePlacementPayload>(COMMAND_RESTORE_PLACEMENT, 1, (ctx, payload) => {
-    const affected: AffectedRecord[] = []
-    if (payload.restoreNodeId) {
-      // Undo of the bare-node auto-trash; a no-op when the node was
-      // already restored via Keep in Project (RestoreRecord).
-      const node = requireLifecycleRow(ctx, 'node', payload.restoreNodeId)
-      if (node.lifecycle_state === 'trashed') {
-        restoreRow(ctx, 'node', payload.restoreNodeId)
-        affected.push({ kind: 'node', id: payload.restoreNodeId })
+  registry.register<DeleteContentPayload>(COMMAND_DELETE_CONTENT, 1, (ctx, payload, envelope) => {
+    // One user action — clearing a selection — is ONE durable command
+    // and one future undo step (AI-IMP-028), whatever the mix of
+    // placements and decorations selected.
+    const total = payload.placementIds.length + payload.decorationIds.length
+    if (total === 0) {
+      throw new DomainError('VALIDATION_FAILED', 'DeleteContent requires at least one item')
+    }
+    if (
+      new Set(payload.placementIds).size !== payload.placementIds.length ||
+      new Set(payload.decorationIds).size !== payload.decorationIds.length
+    ) {
+      throw new DomainError('VALIDATION_FAILED', 'duplicate ids in DeleteContent')
+    }
+    // Validate everything before touching anything: all items must be
+    // active and on the named canvas.
+    for (const placementId of payload.placementIds) {
+      const row = ctx.db.get<{ canvas_id: string }>(
+        `SELECT canvas_id FROM placement
+         WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+        placementId,
+        ctx.projectId,
+      )
+      if (!row) throw new DomainError('PLACEMENT_NOT_FOUND', `no active placement ${placementId}`)
+      if (row.canvas_id !== payload.canvasId) {
+        throw new DomainError('CROSS_CANVAS_CONTENT', 'DeleteContent items must share one canvas', {
+          placementId,
+        })
       }
     }
-    const now = ctx.now()
-    ctx.db.run(
-      `INSERT INTO placement
-         (id, project_id, canvas_id, node_id, x, y, width, height, scale,
-          rotation, flip_x, flip_y, render_order, label_visible,
-          created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      payload.placementId,
-      ctx.projectId,
-      payload.canvasId,
-      payload.nodeId,
-      payload.x,
-      payload.y,
-      payload.width,
-      payload.height,
-      payload.scale,
-      payload.rotation,
-      payload.flipX ? 1 : 0,
-      payload.flipY ? 1 : 0,
-      payload.renderOrder,
-      payload.labelVisible ? 1 : 0,
-      now,
-      now,
+    for (const decorationId of payload.decorationIds) {
+      const row = requireDecoration(ctx, decorationId)
+      if (row.canvas_id !== payload.canvasId) {
+        throw new DomainError('CROSS_CANVAS_CONTENT', 'DeleteContent items must share one canvas', {
+          decorationId,
+        })
+      }
+    }
+
+    const affected: AffectedRecord[] = []
+    // Decorations first: a connector being deleted alongside its
+    // anchor placement keeps its anchor ids in the recreate payload
+    // (placement deletion would null them via releaseConnectorAnchors).
+    const decorations = payload.decorationIds.map((id) => {
+      const recreate = deleteDecorationRow(ctx, id)
+      affected.push({ kind: 'decoration', id })
+      return recreate
+    })
+    const placements = payload.placementIds.map((id) =>
+      deletePlacementRow(ctx, id, envelope.commandId, affected),
     )
-    affected.push({ kind: 'placement', id: payload.placementId })
+
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_RESTORE_CONTENT,
+        commandVersion: 1,
+        payload: {
+          canvasId: payload.canvasId,
+          placements,
+          decorations,
+        } satisfies RestoreContentPayload,
+      },
+    }
+  })
+
+  registry.register<RestoreContentPayload>(COMMAND_RESTORE_CONTENT, 1, (ctx, payload) => {
+    const affected: AffectedRecord[] = []
+    // Placements first (reviving any bare-trashed nodes), then
+    // decorations so connector anchors resolve against live rows.
+    for (const placement of payload.placements) {
+      restorePlacementRow(ctx, placement, affected)
+    }
+    for (const decoration of payload.decorations) {
+      insertDecoration(ctx, decoration)
+      affected.push({ kind: 'decoration', id: decoration.decorationId })
+    }
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_DELETE_CONTENT,
+        commandVersion: 1,
+        payload: {
+          canvasId: payload.canvasId,
+          placementIds: payload.placements.map((p) => p.placementId),
+          decorationIds: payload.decorations.map((d) => d.decorationId),
+        } satisfies DeleteContentPayload,
+      },
+    }
+  })
+
+  registry.register<RestorePlacementPayload>(COMMAND_RESTORE_PLACEMENT, 1, (ctx, payload) => {
+    const affected: AffectedRecord[] = []
+    restorePlacementRow(ctx, payload, affected)
     return {
       affected,
       inverse: {

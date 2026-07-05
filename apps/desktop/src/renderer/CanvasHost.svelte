@@ -20,12 +20,35 @@
   let ui = $state<DecorationsUi | null>(null)
   let tooling = $state<BoardTooling | null>(null)
 
+  // §9.2 non-blocking notice: bare nodes auto-trashed with their last
+  // placement surface here with a Keep in Project escape.
+  let boardNotice = $state<{ message: string; keepNodeIds: string[] } | null>(null)
+  let noticeTimer: ReturnType<typeof setTimeout> | null = null
+  function showBoardNotice(detail: { message: string; keepNodeIds: string[] }): void {
+    boardNotice = detail
+    if (noticeTimer) clearTimeout(noticeTimer)
+    noticeTimer = setTimeout(() => (boardNotice = null), 8000)
+  }
+  async function keepInProject(): Promise<void> {
+    const h = handle
+    const notice = boardNotice
+    boardNotice = null
+    if (!h || !notice) return
+    for (const id of notice.keepNodeIds) {
+      await h.gateway.execute('RestoreRecord', { kind: 'node', id })
+    }
+  }
+
   onMount(() => {
     let mounted: CanvasHostHandle | null = null
     let surfaces: ImportSurfacesHandle | null = null
     let menu: NodeMenuHandle | null = null
     let textEntry: TextEntryController | null = null
     let disposed = false
+    const onNotice = (event: Event): void => {
+      showBoardNotice((event as CustomEvent<{ message: string; keepNodeIds: string[] }>).detail)
+    }
+    element.addEventListener('ew-board-notice', onNotice)
     mountCanvasHost(element)
       .then((h) => {
         if (disposed) {
@@ -49,6 +72,8 @@
       })
     return () => {
       disposed = true
+      element.removeEventListener('ew-board-notice', onNotice)
+      if (noticeTimer) clearTimeout(noticeTimer)
       surfaces?.destroy()
       menu?.destroy()
       textEntry?.destroy()
@@ -73,6 +98,17 @@
     <div class="import-error" role="alert" data-testid="import-error">
       <span>{importError}</span>
       <button type="button" data-testid="import-error-dismiss" onclick={() => (importError = null)}>
+        Dismiss
+      </button>
+    </div>
+  {/if}
+  {#if boardNotice}
+    <div class="board-notice" role="status" data-testid="board-notice">
+      <span>{boardNotice.message}</span>
+      <button type="button" data-testid="board-notice-keep" onclick={() => void keepInProject()}>
+        Keep in Project
+      </button>
+      <button type="button" data-testid="board-notice-dismiss" onclick={() => (boardNotice = null)}>
         Dismiss
       </button>
     </div>
@@ -123,6 +159,28 @@
   }
 
   .import-error button {
+    flex: none;
+    padding: 0.15rem 0.6rem;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .board-notice {
+    position: absolute;
+    inset: auto 1rem 1rem auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #23272e;
+    color: #c8cfd8;
+    border: 1px solid #3a4048;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    z-index: 20;
+  }
+
+  .board-notice button {
     flex: none;
     padding: 0.15rem 0.6rem;
     font: inherit;

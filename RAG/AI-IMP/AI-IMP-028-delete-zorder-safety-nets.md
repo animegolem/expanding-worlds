@@ -6,12 +6,12 @@ tags:
   - canvas
   - lifecycle
   - feel
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-019, AI-IMP-021]
 parent_epic: [[AI-EPIC-009-canvas-feel-pass]]
 confidence_score: 0.8
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-028-delete-zorder-safety-nets
@@ -87,33 +87,33 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Add DeleteContentPayload (+ composite restore payload) to
+- [x] Add DeleteContentPayload (+ composite restore payload) to
       @ew/commands with type tests if the package has them.
-- [ ] Extract DeletePlacement/DeleteDecoration internals into shared
+- [x] Extract DeletePlacement/DeleteDecoration internals into shared
       helpers; existing single commands keep passing their suites
       unchanged.
-- [ ] Implement DeleteContent v1: validate-first, per-item §9.2
+- [x] Implement DeleteContent v1: validate-first, per-item §9.2
       semantics, one command_log row, composite inverse; register in
       lifecycle handlers.
-- [ ] Persistence tests: mixed placements+decorations batch; last
+- [x] Persistence tests: mixed placements+decorations batch; last
       placement of bare node auto-trashes with restoreNodeId; root
       node never trashed; invested node stays active; inverse
       round-trips to identical rows; connector anchors release.
-- [ ] Wire Delete/Backspace in gestures-ui to DeleteContent for the
+- [x] Wire Delete/Backspace in gestures-ui to DeleteContent for the
       current selection; suppressed while text entry or an input has
       focus; selection clears on success.
-- [ ] Non-blocking notice in CanvasHost for §9.2 outcomes (bare-node
+- [x] Non-blocking notice in CanvasHost for §9.2 outcomes (bare-node
       trashed / node unplaced), auto-dismissing, with data-testid.
-- [ ] Z-order: Cmd+]/Cmd+[ (forward/backward), Cmd+Shift+]/[
+- [x] Z-order: Cmd+]/Cmd+[ (forward/backward), Cmd+Shift+]/[
       (front/back) via ReorderContent on the selection; BoardToolbar
       buttons for the same; decorations included.
-- [ ] Cmd+A selects all active items; zoom-fit with nothing selected
+- [x] Cmd+A selects all active items; zoom-fit with nothing selected
       fits union bounds of all content.
-- [ ] e2e: place 3 items, marquee, Delete → board empties, revision
+- [x] e2e: place 3 items, marquee, Delete → board empties, revision
       +1 (one command), notice shown for a bare pin; send occluding
       image to back via keyboard → covered text hit-testable; Cmd+A
       then zoom-fit frames all content.
-- [ ] Run gates: `pnpm -r build`, all unit suites, desktop e2e,
+- [x] Run gates: `pnpm -r build`, all unit suites, desktop e2e,
       lint.
 
 ### Acceptance Criteria
@@ -135,3 +135,23 @@ non-blocking "moved to Trash — Keep in Project" notice.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Deviations from plan, all small. Cmd+]/[ z-order keybindings already
+existed from AI-IMP-019 (including decorations via reorderPayloads) —
+this ticket added the BoardToolbar buttons (order-forward/-backward/
+-front/-back) via a new tooling.reorder(op) rather than duplicating
+gestures-ui internals. zoomToFit already fit ALL content, so FR-9's
+"fit-all fallback" needed nothing. The notice channel is a bubbling
+`ew-board-notice` CustomEvent from gestures-ui to CanvasHost.svelte
+(gestures-ui is attached inside host.ts, so the import-surfaces
+notify-callback pattern wasn't reachable); the notice auto-dismisses
+after 8s and its Keep in Project button executes RestoreRecord per
+node. DeleteContent deletes decorations BEFORE placements so
+connector recreate payloads keep their anchor ids (placement delete
+nulls them); RestoreContent restores placements first for the same
+reason. Cmd+A excludes locked/hidden decorations so sweep-select
+can't move or delete them. e2e used a rect decoration instead of the
+ticket's text (schema-simpler, same hit-test path) and taught me the
+controller deliberately does not collapse a multi-selection when
+clicking a selected item (drag start ambiguity) — test clears first.
+One flake observed: the AI-IMP-022 snap e2e failed once in a full
+run, passed isolated and on full rerun; watch at epic close.
