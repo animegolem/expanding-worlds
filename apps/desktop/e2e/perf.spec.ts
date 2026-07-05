@@ -103,8 +103,13 @@ async function interactAndMeasure(win: Page, box: Box) {
   await win.mouse.move(box.x + 500, box.y + 400, { steps: 25 })
   await win.mouse.up()
   await win.keyboard.up('Space')
+  // §6.9 mapping: plain wheel pans, ctrl-wheel zooms — do both.
+  for (let i = 0; i < 3; i += 1) await win.mouse.wheel(0, -120)
+  for (let i = 0; i < 3; i += 1) await win.mouse.wheel(0, 120)
+  await win.keyboard.down('Control')
   for (let i = 0; i < 6; i += 1) await win.mouse.wheel(0, -120)
   for (let i = 0; i < 6; i += 1) await win.mouse.wheel(0, 120)
+  await win.keyboard.up('Control')
   await win.mouse.move(box.x + 60, box.y + 60)
   await win.mouse.down()
   await win.mouse.move(box.x + 700, box.y + 500, { steps: 25 })
@@ -124,7 +129,9 @@ test('500 pins: interaction stays under the collapse threshold', async () => {
 
   // Culling holds: zoomed in on a corner, most pins stop rendering.
   await win.mouse.move(box.x + 100, box.y + 100)
+  await win.keyboard.down('Control')
   for (let i = 0; i < 10; i += 1) await win.mouse.wheel(0, -240)
+  await win.keyboard.up('Control')
   await win.waitForFunction(() => {
     const s = window.__ewDebug!.cullStats()
     return s.total === 500 && s.renderable < 100

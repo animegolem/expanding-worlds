@@ -177,9 +177,32 @@ export function attachGesturesUI(
     render() // hides handles while the gesture runs
   }
 
-  const onWindowPointerMove = (): void => {
+  // §6.9 cursor feedback: runs after the host's base-cursor write on
+  // the same pointermove (canvas listeners bubble before window), so
+  // setting a handle cursor here wins and the host restores default
+  // on the next move once the pointer leaves the handle.
+  const RESIZE_CURSORS: Record<ResizeHandle, string> = {
+    nw: 'nwse-resize',
+    n: 'ns-resize',
+    ne: 'nesw-resize',
+    e: 'ew-resize',
+    se: 'nwse-resize',
+    s: 'ns-resize',
+    sw: 'nesw-resize',
+    w: 'ew-resize',
+  }
+  const onWindowPointerMove = (event: PointerEvent): void => {
     // Hide handles while a controller gesture/marquee is in flight.
     if (controller.state !== 'idle' && uiHandles.length > 0) render()
+    if (controller.state !== 'idle' || uiHandles.length === 0) return
+    const hit = hitHandle(local(event))
+    if (!hit) return
+    canvas.style.cursor =
+      hit.kind === 'resize'
+        ? RESIZE_CURSORS[hit.dir]
+        : hit.kind === 'rotate'
+          ? 'crosshair'
+          : 'pointer'
   }
   const onWindowPointerUp = (): void => render()
 

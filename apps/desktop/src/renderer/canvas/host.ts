@@ -5,6 +5,7 @@ import {
   CommandGateway,
   createDefaultRegistry,
   createScenePlanes,
+  hitTest,
   itemWorldAABB,
   SceneSync,
   setPlacementTextureResident,
@@ -355,6 +356,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   })
 
   // ---- input wiring ----
+  // §6.9 camera input: platform muscle memory. Chromium delivers macOS
+  // trackpad pinch as ctrl-flagged wheel events with small fractional
+  // deltas; plain wheel events are two-finger scroll (or a discrete
+  // wheel, which Phase 1 lets pan — Cmd+wheel zooms deliberately).
+  const WHEEL_ZOOM_SPEED = 0.0015 // Cmd+wheel; ~×1.2 per 120px notch
+  const PINCH_ZOOM_SPEED = 0.01 // ctrl-flagged pinch deltas run 1–10px
   let spaceHeld = false
   const local = (event: PointerEvent | WheelEvent): { x: number; y: number } => {
     const bounds = app.canvas.getBoundingClientRect()
@@ -366,26 +373,64 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     space: spaceHeld,
     button: event.button,
   })
+  /** Base cursor for the host's interaction state; gestures-ui runs
+   * after this on the same pointermove and overrides on handle hover. */
+  const cursorFor = (point?: { x: number; y: number }): string => {
+    if (tools.active !== 'select') return 'crosshair'
+    const state = controller.state
+    if (state === 'panning' || state === 'gesture' || state === 'gesture-pending')
+      return 'grabbing'
+    if (spaceHeld) return 'grab'
+    if (point && state === 'idle') {
+      const hit = hitTest(controller.camera.screenToWorld(point), controller.items())
+      if (hit) return 'move'
+    }
+    return 'default'
+  }
+  const updateCursor = (point?: { x: number; y: number }): void => {
+    // Unconditional write: gestures-ui may have overridden last frame,
+    // so caching the previous value here would leave stale cursors.
+    app.canvas.style.cursor = cursorFor(point)
+  }
   const onPointerDown = (event: PointerEvent): void => {
     app.canvas.setPointerCapture(event.pointerId)
     tools.pointerDown(local(event), modifiers(event))
+    updateCursor(local(event))
   }
   const onPointerMove = (event: PointerEvent): void => {
     tools.pointerMove(local(event), modifiers(event))
+    updateCursor(local(event))
   }
   const onPointerUp = (event: PointerEvent): void => {
     tools.pointerUp(local(event), modifiers(event))
+    updateCursor(local(event))
   }
   const onWheel = (event: WheelEvent): void => {
     event.preventDefault()
-    controller.wheel(local(event), event.deltaY)
+    // deltaMode 1 = lines, 2 = pages; normalize to pixels before use.
+    const unit =
+      event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? app.canvas.clientHeight || 800 : 1
+    const dx = event.deltaX * unit
+    const dy = event.deltaY * unit
+    if (event.ctrlKey || event.metaKey) {
+      const speed = event.ctrlKey ? PINCH_ZOOM_SPEED : WHEEL_ZOOM_SPEED
+      controller.camera.zoomAt(local(event), Math.exp(-dy * speed))
+    } else {
+      controller.camera.panByScreen(-dx, -dy)
+    }
   }
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (event.code === 'Space') spaceHeld = true
+    if (event.code === 'Space') {
+      spaceHeld = true
+      updateCursor()
+    }
     if (event.code === 'Escape') tools.escape()
   }
   const onKeyUp = (event: KeyboardEvent): void => {
-    if (event.code === 'Space') spaceHeld = false
+    if (event.code === 'Space') {
+      spaceHeld = false
+      updateCursor()
+    }
   }
   app.canvas.addEventListener('pointerdown', onPointerDown)
   app.canvas.addEventListener('pointermove', onPointerMove)

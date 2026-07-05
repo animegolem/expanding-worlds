@@ -169,9 +169,12 @@ test('controller: pan, zoom-at-cursor, marquee selection, camera persistence', a
   const selected = await win.evaluate(() => window.__ewDebug!.selection())
   expect(selected).toHaveLength(2)
 
-  // Wheel-zoom at a point; the camera must move off identity.
+  // Ctrl-wheel (pinch) zooms at a point; the camera must move off
+  // identity (§6.9: plain wheel pans — covered by the mapping test).
   await win.mouse.move(box.x + 200, box.y + 200)
+  await win.keyboard.down('Control')
   await win.mouse.wheel(0, -400)
+  await win.keyboard.up('Control')
   const zoomed = await win.evaluate(() => window.__ewDebug!.camera())
   expect(zoomed.zoom).toBeGreaterThan(1)
 
@@ -205,6 +208,127 @@ test('controller: pan, zoom-at-cursor, marquee selection, camera persistence', a
   const restored = await win.evaluate(() => window.__ewDebug!.camera())
   expect(restored.x).toBeCloseTo(panned.x, 5)
   expect(restored.zoom).toBeCloseTo(panned.zoom, 5)
+
+  await app.close()
+})
+
+test('§6.9 camera input mapping: pinch zooms at pointer, scroll pans, cursors track state', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-input-'))
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir },
+  })
+  const win = await app.firstWindow()
+  await win.waitForFunction(() => window.__ewDebug !== undefined)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Pinch: ctrl-flagged wheel zooms and keeps the world point under
+  // the pointer invariant (synthetic event pins the exact deltas).
+  const pinch = await win.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="canvas-host"] canvas')!
+    const rect = canvas.getBoundingClientRect()
+    // MouseEvent client coords coerce to integers; derive the local
+    // point from the coerced values so the anchor math is exact.
+    const clientX = Math.round(rect.left + 240)
+    const clientY = Math.round(rect.top + 180)
+    const at = { x: clientX - rect.left, y: clientY - rect.top }
+    const before = window.__ewDebug!.camera()
+    const worldBefore = {
+      x: before.x + at.x / before.zoom,
+      y: before.y + at.y / before.zoom,
+    }
+    canvas.dispatchEvent(
+      new WheelEvent('wheel', {
+        clientX,
+        clientY,
+        deltaY: -50,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    const after = window.__ewDebug!.camera()
+    const worldAfter = {
+      x: after.x + at.x / after.zoom,
+      y: after.y + at.y / after.zoom,
+    }
+    return { before, after, worldBefore, worldAfter }
+  })
+  expect(pinch.after.zoom).toBeGreaterThan(pinch.before.zoom)
+  expect(pinch.worldAfter.x).toBeCloseTo(pinch.worldBefore.x, 5)
+  expect(pinch.worldAfter.y).toBeCloseTo(pinch.worldBefore.y, 5)
+
+  // Two-finger scroll: plain wheel pans; zoom is untouched.
+  const beforePan = await win.evaluate(() => window.__ewDebug!.camera())
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.wheel(60, 80)
+  const afterPan = await win.evaluate(() => window.__ewDebug!.camera())
+  expect(afterPan.zoom).toBeCloseTo(beforePan.zoom, 5)
+  expect(afterPan.x).toBeCloseTo(beforePan.x + 60 / beforePan.zoom, 3)
+  expect(afterPan.y).toBeCloseTo(beforePan.y + 80 / beforePan.zoom, 3)
+
+  // Cursor feedback: grab while Space is held, grabbing during the
+  // drag, default again after release.
+  const cursorOf = () =>
+    win.evaluate(
+      () =>
+        document.querySelector<HTMLCanvasElement>('[data-testid="canvas-host"] canvas')!.style
+          .cursor,
+    )
+  await win.mouse.move(box.x + 150, box.y + 150)
+  await win.keyboard.down('Space')
+  expect(await cursorOf()).toBe('grab')
+  await win.mouse.down()
+  await win.mouse.move(box.x + 100, box.y + 120, { steps: 2 })
+  expect(await cursorOf()).toBe('grabbing')
+  await win.mouse.up()
+  await win.keyboard.up('Space')
+  await win.mouse.move(box.x + 155, box.y + 155)
+  expect(await cursorOf()).toBe('default')
+
+  // Handle hover: select a placement, hover its resize handle, and
+  // the directional cursor from gestures-ui wins over the base cursor.
+  await win.evaluate(async () => {
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const run = async (commandType: string, payload: unknown) => {
+      const result = await window.ew.project.execute({
+        commandId: crypto.randomUUID(),
+        projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      })
+      if (result.status !== 'committed') throw new Error(`${commandType}: ${result.status}`)
+    }
+    const nodeId = crypto.randomUUID()
+    await run('CreateNode', { nodeId })
+    await run('CreatePlacement', {
+      placementId: crypto.randomUUID(),
+      canvasId: window.__ewDebug!.canvasId(),
+      nodeId,
+      x: 300,
+      y: 300,
+      width: 80,
+      height: 80,
+    })
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  // Camera moved during the pan assertions above — select via world
+  // coords projected through the current camera.
+  const target = await win.evaluate(() => {
+    const cam = window.__ewDebug!.camera()
+    return { x: (300 - cam.x) * cam.zoom, y: (300 - cam.y) * cam.zoom }
+  })
+  await win.mouse.click(box.x + target.x, box.y + target.y)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  const handle = await win.evaluate(
+    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
+  )
+  await win.mouse.move(box.x + handle.x, box.y + handle.y)
+  expect(await cursorOf()).toBe('nwse-resize')
 
   await app.close()
 })

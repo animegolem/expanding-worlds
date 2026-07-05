@@ -76,24 +76,24 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Add wheel-delta normalization (deltaMode 1/2 → px) and split
+- [x] Add wheel-delta normalization (deltaMode 1/2 → px) and split
       onWheel in host.ts: ctrlKey/metaKey → controller.wheel (zoom at
       pointer), plain → camera pan by −deltaX/−deltaY.
-- [ ] Preserve Space-drag and middle-button panning unchanged;
+- [x] Preserve Space-drag and middle-button panning unchanged;
       confirm board-tooling's capture-phase wheel handler still wins
       during background edit mode.
 - [ ] Expose the zoom-speed constant (single definition) and tune on
       hardware; record the final value in Issues Encountered.
-- [ ] Implement cursorFor(state, hover) in host.ts: grabbing while
+- [x] Implement cursorFor(state, hover) in host.ts: grabbing while
       panning, grab while Space held, default otherwise; update on
       pointermove, keydown/keyup, and state transitions.
-- [ ] Add directional resize/rotate/move cursors on handle hover in
+- [x] Add directional resize/rotate/move cursors on handle hover in
       gestures-ui.ts using its existing handle hit-test.
-- [ ] e2e: dispatch ctrl-wheel at an offset point → camera zoom
+- [x] e2e: dispatch ctrl-wheel at an offset point → camera zoom
       changes and the world point under the pointer is invariant;
       dispatch plain wheel → zoom unchanged, camera x/y shifted by
       the expected pan.
-- [ ] e2e: cursor style asserted grabbing during Space-drag pan and
+- [x] e2e: cursor style asserted grabbing during Space-drag pan and
       default after release.
 - [ ] Run gates: `pnpm -r build`, engine/persistence unit suites,
       desktop e2e, lint; manual trackpad checklist (pinch, two-finger
@@ -115,4 +115,20 @@ duration.
 ### Issues Encountered
 
 <!-- Filled out post-work. -->
+Implementation complete and gated; two checklist items stay open
+pending the owner's hardware pass (zoom-speed tune, manual trackpad
+checklist). Decisions taken: pinch and wheel zoom get separate speed
+constants (PINCH_ZOOM_SPEED 0.01 for small ctrl-flagged deltas,
+WHEEL_ZOOM_SPEED 0.0015 ≈ ×1.2 per notch for Cmd+wheel); the host
+zooms via controller.camera.zoomAt directly, leaving controller.wheel
+as a now-unused engine API. Cursor writes are unconditional per
+pointermove — caching the last value would go stale because
+gestures-ui overrides on handle hover (bubble order canvas→window
+makes the override deterministic). Synthetic WheelEvent client coords
+coerce to integers, which broke zoom-anchor assertions against a
+fractional rect.top — the e2e derives the local point from the
+coerced values. Existing wheel-zoom e2e (canvas, perf) updated to
+ctrl-wheel; Playwright's held keyboard modifiers propagate into
+mouse.wheel. The §12.3 perf workload now exercises both pan-wheel and
+zoom-wheel. Desktop e2e count is now 16.
 
