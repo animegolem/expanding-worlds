@@ -98,7 +98,7 @@ export function attachBoardTooling(
   element: HTMLElement,
   onError: (message: string) => void,
 ): BoardTooling {
-  const { controller, gateway, planes, canvasId } = handle
+  const { controller, gateway, planes } = handle
   const canvas = element.querySelector('canvas')
   if (!canvas) throw new Error('board tooling needs the mounted canvas element')
 
@@ -127,7 +127,7 @@ export function attachBoardTooling(
   }
 
   async function refreshBackground(): Promise<void> {
-    const response = await window.ew.project.query('getCanvasScene', { canvasId })
+    const response = await window.ew.project.query('getCanvasScene', { canvasId: handle.canvasId })
     if (!response.ok) return
     const scene = response.result as { background: SceneBackground } | null
     background = scene?.background ?? null
@@ -146,12 +146,12 @@ export function attachBoardTooling(
   // ---- §6.9 arrange + navigate ----
 
   async function align(op: AlignOp): Promise<void> {
-    const payload = alignPayload(canvasId, controller.selectedItems(), op)
+    const payload = alignPayload(handle.canvasId, controller.selectedItems(), op)
     if (payload) await run('TransformContent', payload)
   }
 
   async function distribute(axis: DistributeAxis): Promise<void> {
-    const payload = distributePayload(canvasId, controller.selectedItems(), axis)
+    const payload = distributePayload(handle.canvasId, controller.selectedItems(), axis)
     if (payload) await run('TransformContent', payload)
   }
 
@@ -185,7 +185,7 @@ export function attachBoardTooling(
     const placement = selectedImagePlacement()
     if (!placement) return
     await run('SetCanvasBackground', {
-      canvasId,
+      canvasId: handle.canvasId,
       assetId: placement.appearanceAssetId,
       settings: { ...IDENTITY_SETTINGS },
     })
@@ -202,7 +202,7 @@ export function attachBoardTooling(
       return
     }
     await run('SetCanvasBackground', {
-      canvasId,
+      canvasId: handle.canvasId,
       assetId: imported.assetId,
       settings: { ...IDENTITY_SETTINGS },
     })
@@ -225,7 +225,7 @@ export function attachBoardTooling(
     notify()
     if (!background?.assetId || sameSettings(original, pending)) return
     const result = await gateway.execute('SetCanvasBackground', {
-      canvasId,
+      canvasId: handle.canvasId,
       assetId: background.assetId,
       settings: { ...pending },
     })
@@ -251,7 +251,7 @@ export function attachBoardTooling(
   async function resetBackgroundTransform(): Promise<void> {
     if (!background?.assetId) return
     await run('SetCanvasBackground', {
-      canvasId,
+      canvasId: handle.canvasId,
       assetId: background.assetId,
       settings: { ...IDENTITY_SETTINGS },
     })
@@ -259,11 +259,11 @@ export function attachBoardTooling(
 
   async function removeBackground(): Promise<void> {
     if (mode) cancelBackgroundEdit()
-    await run('SetCanvasBackground', { canvasId, assetId: null, settings: null })
+    await run('SetCanvasBackground', { canvasId: handle.canvasId, assetId: null, settings: null })
   }
 
   async function setBackgroundColor(color: string | null): Promise<void> {
-    await run('SetCanvasBackgroundColor', { canvasId, color })
+    await run('SetCanvasBackgroundColor', { canvasId: handle.canvasId, color })
   }
 
   // ---- background edit mode: capture-phase interception ----

@@ -47,7 +47,7 @@ export function attachGesturesUI(
   handle: CanvasHostHandle,
   canvas: HTMLCanvasElement,
 ): () => void {
-  const { controller, gateway, sync, planes, canvasId } = handle
+  const { controller, gateway, sync, planes } = handle
   controller.registerMoveDriver(moveDriver)
 
   const gfx = new Graphics()
@@ -145,7 +145,7 @@ export function attachGesturesUI(
   }
 
   async function reorderSelection(op: ReorderOp): Promise<void> {
-    const payloads = reorderPayloads(canvasId, controller.items(), controller.selection.ids(), op)
+    const payloads = reorderPayloads(handle.canvasId, controller.items(), controller.selection.ids(), op)
     for (const payload of payloads) {
       await gateway.execute('ReorderContent', payload)
     }

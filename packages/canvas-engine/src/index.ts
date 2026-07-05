@@ -112,6 +112,24 @@ export {
 export { createSnapProvider, SNAP_THRESHOLD_PX } from './snap-provider'
 export { alignPayload, distributePayload, type AlignOp, type DistributeAxis } from './arrange'
 
+export { Culler, RENDER_PADDING, RESIDENCY_PADDING, type CullerHooks } from './culling'
+export {
+  DEFAULT_TEXTURE_BUDGET_BYTES,
+  TextureBudget,
+  type BudgetTexture,
+} from './texture-budget'
+export {
+  levelForZoom,
+  maxLevel,
+  planLevelTiles,
+  tileVisible,
+  TILE_SIZE,
+  type TileAddress,
+  type TileTextureSource,
+  type WorldRect,
+} from './background-tiles'
+export { setPlacementTextureResident } from './renderers/placement'
+
 /** The default registry with every built-in renderer installed. */
 export function createDefaultRegistry(): RendererRegistry {
   const registry = new RendererRegistry()

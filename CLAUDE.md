@@ -44,7 +44,13 @@ never delegated. Implementation may be decomposed:
   `.claude/worktrees/` (gitignored, but stay alert).
 - Benchmark review check: verify the measurement environment before
   trusting numbers (headless Chromium runs WebGL on SwiftShader —
-  this nearly inverted the renderer decision).
+  this nearly inverted the renderer decision). The desktop perf suite
+  refuses software GL for the same reason.
+- Playwright: never hand `waitForFunction` an async closure — a
+  Promise is truthy, so the wait passes vacuously (produced a
+  false-green in EPIC-004). Use `expect.poll` with `win.evaluate`.
+- Run `pnpm -r build` before desktop e2e after touching packages/*
+  (vitest and the utility bundle resolve workspace deps through dist).
 
 ## Conventions
 

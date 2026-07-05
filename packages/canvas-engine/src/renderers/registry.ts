@@ -13,11 +13,27 @@ export interface RendererResources {
   /** Resolves a texture for a managed asset URL; injectable for tests. */
   loadTexture: (url: string) => Promise<unknown>
   /**
+   * §12.2 lazy textures: when present, image bodies stay placeholders
+   * until residency is granted (Culler enter/leave drives
+   * setPlacementTextureResident), and loads/releases are refcounted
+   * by content hash through the budget.
+   */
+  textures?: {
+    acquire(hash: string, url: string): Promise<unknown>
+    release(hash: string): void
+  }
+  /**
    * Looks up another item's live display object (e.g. a connector
    * following its anchor placement each frame). Optional: absent in
    * minimal test setups.
    */
   resolveObject?: (id: string) => Container | undefined
+  /**
+   * §12.2 tiled backgrounds: decodes an original into a sliceable
+   * source. When present, BackgroundSync tiles any image whose
+   * largest dimension exceeds its texture cap.
+   */
+  loadTileSource?: (url: string) => Promise<import('../background-tiles').TileTextureSource>
 }
 
 export interface ItemRenderer<T extends SceneItem = SceneItem> {

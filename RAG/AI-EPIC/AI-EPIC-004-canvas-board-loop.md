@@ -6,8 +6,8 @@ tags:
   - canvas
   - renderer
 date_created: 2026-07-03
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-04
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-017
   - AI-IMP-018
@@ -60,16 +60,16 @@ RFC). The graph/data views and the note editor belong to EPIC-005/006.
 
 ### Functional Requirements
 
-- [ ] FR-1: Canvas Controller with camera, selection, hit testing, and renderer sync per §13.1.
-- [ ] FR-2: Three render planes with deterministic shared render_order per §4.4.
-- [ ] FR-3: Import surfaces (drop, paste, browser drag, URL fetch) per §6.1.
-- [ ] FR-4: Create Pin flow per §6.2; Place Existing per §6.3.
-- [ ] FR-5: Gesture pipeline: ephemeral state, one durable command per completed gesture.
-- [ ] FR-6: Decorations with grouping, ordering, lock, hide, anchored connectors per §4.9/§6.8.
-- [ ] FR-7: Image background operations and background color per §6.7.
-- [ ] FR-8: Placement labels with inline visibility toggle per §4.5.
-- [ ] FR-9: Align, distribute, flip, zoom-to-fit/selection, snapping with smart guides per §6.9.
-- [ ] FR-10: Culling, lazy textures, eviction, tiled oversized backgrounds per §12.2.
+- [x] FR-1: Canvas Controller with camera, selection, hit testing, and renderer sync per §13.1.
+- [x] FR-2: Three render planes with deterministic shared render_order per §4.4.
+- [x] FR-3: Import surfaces (drop, paste, browser drag, URL fetch) per §6.1.
+- [x] FR-4: Create Pin flow per §6.2; Place Existing per §6.3.
+- [x] FR-5: Gesture pipeline: ephemeral state, one durable command per completed gesture.
+- [x] FR-6: Decorations with grouping, ordering, lock, hide, anchored connectors per §4.9/§6.8.
+- [x] FR-7: Image background operations and background color per §6.7.
+- [x] FR-8: Placement labels with inline visibility toggle per §4.5.
+- [x] FR-9: Align, distribute, flip, zoom-to-fit/selection, snapping with smart guides per §6.9.
+- [x] FR-10: Culling, lazy textures, eviction, tiled oversized backgrounds per §12.2.
 
 ### Non-Functional Requirements
 

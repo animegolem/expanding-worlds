@@ -1,14 +1,19 @@
 import {
   BackgroundSync,
   CanvasController,
+  Culler,
   CommandGateway,
   createDefaultRegistry,
   createScenePlanes,
   itemWorldAABB,
   SceneSync,
+  setPlacementTextureResident,
+  TextureBudget,
   ToolManager,
   ToolOverlay,
   type CanvasScene,
+  type TileAddress,
+  type TileTextureSource,
   type ControllerHost,
   type GestureUpdate,
   type RendererRegistry,
@@ -38,7 +43,11 @@ export interface CanvasHostHandle {
   registry: RendererRegistry
   planes: ScenePlanes
   tools: ToolManager
-  canvasId: string
+  /** Live id of the mounted canvas (changes on openCanvas). */
+  readonly canvasId: string
+  /** §12.2 single live canvas: swap the mounted canvas, releasing
+   * the previous scene's textures. */
+  openCanvas(canvasId: string): Promise<void>
   destroy(): void
 }
 
@@ -51,6 +60,13 @@ declare global {
       selection: () => string[]
       interactionState: () => string
       activeTool: () => string
+      cullStats: () => { total: number; renderable: number; resident: number }
+      textureStats: () => { textures: number; residentBytes: number; idleBytes: number }
+      frameStats: () => { frames: number; p50: number; p95: number; max: number }
+      resetFrameStats: () => void
+      glInfo: () => { type: string; renderer: string }
+      openCanvas: (canvasId: string) => Promise<void>
+      backgroundTiled: () => boolean
       decorations: () => SceneDecoration[]
       decorationEndpoints: (id: string) => { x1: number; y1: number; x2: number; y2: number } | null
       decorationVisible: (id: string) => boolean | null
@@ -73,6 +89,35 @@ async function loadTexture(url: string): Promise<Texture> {
   return Texture.from(bitmap)
 }
 
+/**
+ * §12.2 tiled backgrounds: ImageBitmap decodes originals far beyond
+ * the GPU texture cap; tiles slice (and downscale by 2^level) on
+ * demand. The original asset is never modified — this is a read-time
+ * derivative (disk-cached pyramids stay deferred with the thumbnail
+ * generator scope).
+ */
+async function loadTileSource(url: string): Promise<TileTextureSource> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`asset fetch failed: ${url} (${response.status})`)
+  const bitmap = await createImageBitmap(await response.blob())
+  return {
+    width: bitmap.width,
+    height: bitmap.height,
+    async texture(tile: TileAddress) {
+      const scale = 2 ** tile.level
+      const slice = await createImageBitmap(bitmap, tile.sx, tile.sy, tile.sw, tile.sh, {
+        resizeWidth: Math.max(1, Math.round(tile.sw / scale)),
+        resizeHeight: Math.max(1, Math.round(tile.sh / scale)),
+        resizeQuality: 'high',
+      })
+      return Texture.from(slice)
+    },
+    destroy() {
+      bitmap.close()
+    },
+  }
+}
+
 const CAMERA_PERSIST_DEBOUNCE_MS = 500
 const SELECTION_COLOR = 0x4a9df0
 const GUIDE_COLOR = 0xf04a7d
@@ -85,12 +130,21 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const planes = createScenePlanes()
   app.stage.addChild(planes.world, planes.overlay)
   const registry = createDefaultRegistry()
+  const textureBudget = new TextureBudget(loadTexture)
   const resources: RendererResources = {
     loadTexture,
+    loadTileSource,
+    textures: {
+      acquire: (hash, url) => textureBudget.acquire(hash, url),
+      release: (hash) => textureBudget.release(hash),
+    },
     resolveObject: (id) => sync.get(id),
   }
   const sync: SceneSync = new SceneSync(planes.content, registry, resources)
-  const backgroundSync = new BackgroundSync(planes.background, resources)
+  const maxTextureSize =
+    (app.renderer as unknown as { limits?: { maxTextureSize?: number } }).limits
+      ?.maxTextureSize ?? 4096
+  const backgroundSync = new BackgroundSync(planes.background, resources, maxTextureSize)
 
   const selectionGfx = new Graphics()
   const marqueeGfx = new Graphics()
@@ -103,7 +157,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const rootCanvas = await runQuery<{ id: string }>('getCanvasByNode', {
     nodeId: project.rootNodeId,
   })
-  const canvasId = rootCanvas.id
+  let canvasId = rootCanvas.id
   const gateway = new CommandGateway(
     { execute: (envelope) => window.ew.project.execute(envelope) },
     project.id,
@@ -199,11 +253,48 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       controller.camera.applyTo(planes.world)
       drawSelection()
       persistCameraSoon()
+      scheduleCull()
     },
   }
 
   const controller = new CanvasController(controllerHost, canvasId)
   controller.selection.onChanged(() => drawSelection())
+
+  // §12.2: culling + lazy texture residency, coalesced to one pass
+  // per rendered frame (camera events arrive per pointer move).
+  const culler = new Culler(sync, controller.camera, {
+    onEnterResidency: (id, item) => {
+      const object = sync.get(id)
+      if (object && item.itemKind === 'placement') {
+        setPlacementTextureResident(object, item, resources, true)
+      }
+    },
+    onLeaveResidency: (id, item) => {
+      const object = sync.get(id)
+      if (object && item.itemKind === 'placement') {
+        setPlacementTextureResident(object, item, resources, false)
+      }
+    },
+  })
+  const viewport = () => ({ width: element.clientWidth, height: element.clientHeight })
+  let cullQueued = false
+  function scheduleCull(): void {
+    if (cullQueued) return
+    cullQueued = true
+    requestAnimationFrame(() => {
+      cullQueued = false
+      culler.apply(controller.items(), viewport())
+      const view = viewport()
+      const tl = controller.camera.screenToWorld({ x: 0, y: 0 })
+      const br = controller.camera.screenToWorld({ x: view.width, y: view.height })
+      backgroundSync.updateView(controller.camera.zoom, {
+        x: tl.x,
+        y: tl.y,
+        width: br.x - tl.x,
+        height: br.y - tl.y,
+      })
+    })
+  }
 
   // AI-IMP-021: draw tools sit in front of the controller; select
   // mode passes events through unchanged. One CreateDecoration per
@@ -241,6 +332,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       sync.apply(scene.items)
       controller.setItems(scene.items)
       drawSelection()
+      scheduleCull()
     } finally {
       refreshing = false
       if (refreshQueued) {
@@ -302,6 +394,59 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
 
+  // §12.1 frame probe: rolling deltaMS samples off the app ticker.
+  const FRAME_RING = 600
+  let frameSamples: number[] = []
+  app.ticker.add(() => {
+    frameSamples.push(app.ticker.deltaMS)
+    if (frameSamples.length > FRAME_RING) frameSamples.shift()
+  })
+  function frameStats(): { frames: number; p50: number; p95: number; max: number } {
+    if (frameSamples.length === 0) return { frames: 0, p50: 0, p95: 0, max: 0 }
+    const sorted = [...frameSamples].sort((a, b) => a - b)
+    const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))]!
+    return {
+      frames: sorted.length,
+      p50: at(0.5),
+      p95: at(0.95),
+      max: sorted[sorted.length - 1]!,
+    }
+  }
+
+  /** Benchmark lesson (EPIC-001): numbers off software GL are noise —
+   * expose the real GL renderer string so perf specs can refuse it. */
+  function glInfo(): { type: string; renderer: string } {
+    const gl = (app.renderer as unknown as { gl?: WebGL2RenderingContext }).gl
+    if (!gl) return { type: 'unknown', renderer: 'unknown' }
+    const info = gl.getExtension('WEBGL_debug_renderer_info')
+    const renderer = info
+      ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL))
+      : String(gl.getParameter(gl.RENDERER))
+    return { type: 'webgl', renderer }
+  }
+
+  async function openCanvas(nextCanvasId: string): Promise<void> {
+    if (nextCanvasId === canvasId) return
+    // Flush the outgoing camera before re-targeting (§4.4 viewpoint).
+    if (cameraTimer) {
+      clearTimeout(cameraTimer)
+      persistCameraNow()
+    }
+    canvasId = nextCanvasId
+    controller.setCanvas(nextCanvasId)
+    // Memory release on swap (§12.2): an empty cull pass fires the
+    // residency-leave hooks (each releases its budget ref) while the
+    // display objects still exist; then the scene and the idle pool go.
+    culler.apply([], viewport())
+    sync.clear()
+    textureBudget.releaseAll()
+    const scene = await runQuery<CanvasScene | null>('getCanvasScene', { canvasId })
+    if (scene) controller.camera.set(scene.camera)
+    if (cameraTimer) clearTimeout(cameraTimer)
+    cameraTimer = null
+    await refresh()
+  }
+
   window.__ewDebug = {
     sceneStats: () => sync.stats(),
     canvasId: () => canvasId,
@@ -309,6 +454,15 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     selection: () => controller.selection.ids(),
     interactionState: () => controller.state,
     activeTool: () => tools.active,
+    cullStats: () => culler.stats(controller.items()),
+    textureStats: () => textureBudget.stats(),
+    frameStats,
+    resetFrameStats: () => {
+      frameSamples = []
+    },
+    glInfo,
+    openCanvas,
+    backgroundTiled: () => backgroundSync.tiled,
     decorations: () =>
       controller.items().filter((item): item is SceneDecoration => item.itemKind === 'decoration'),
     decorationEndpoints: (id: string) => {
@@ -329,8 +483,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     registry,
     planes,
     tools,
-    canvasId,
+    get canvasId() {
+      return canvasId
+    },
+    openCanvas,
     destroy() {
+      textureBudget.releaseAll()
       detachGestures()
       unsubscribe()
       // Flush a pending camera persist so the last rest isn't lost.

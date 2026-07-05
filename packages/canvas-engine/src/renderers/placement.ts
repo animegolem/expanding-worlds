@@ -37,6 +37,12 @@ export function cssColorToNumber(color: string | null, fallback = 0x4a90d9): num
 interface PlacementObject extends Container {
   /** Generation guard so a stale async texture never lands. */
   __textureGeneration?: number
+  /** Content hash currently acquired from the texture budget. */
+  __acquiredHash?: string | null
+  /** Hash with an acquire in flight (double-grant guard). */
+  __acquiring?: string | null
+  /** Body natural size the sprite renders at when the texture lands. */
+  __imageSize?: { width: number; height: number }
 }
 
 function appearanceSignature(item: ScenePlacement): string {
@@ -58,32 +64,31 @@ function buildBody(
 ): void {
   const generation = (container.__textureGeneration ?? 0) + 1
   container.__textureGeneration = generation
+  if (container.__acquiredHash && resources.textures) {
+    // Appearance changed while resident: drop the old budget ref; the
+    // Culler re-grants residency against the new appearance.
+    resources.textures.release(container.__acquiredHash)
+    container.__acquiredHash = null
+  }
   for (const child of [...container.children]) child.destroy()
 
   const kind = item.appearanceKind
   if (kind === 'image' && item.assetContentHash) {
     const width = item.width ?? item.assetWidth ?? 128
     const height = item.height ?? item.assetHeight ?? 128
+    container.__imageSize = { width, height }
     const placeholder = new Graphics()
       .rect(-width / 2, -height / 2, width, height)
       .fill({ color: 0x2b2b2b })
     placeholder.label = 'image-placeholder'
     container.addChild(placeholder)
-    void resources
-      .loadTexture(assetUrl(item.assetContentHash))
-      .then((texture) => {
-        if (container.destroyed || container.__textureGeneration !== generation) return
-        placeholder.destroy()
-        const sprite = new Sprite(texture as Texture)
-        sprite.label = 'image'
-        sprite.anchor.set(0.5)
-        sprite.width = width
-        sprite.height = height
-        container.addChildAt(sprite, 0)
-      })
-      .catch(() => {
-        /* placeholder stays; a broken blob must not take down the scene */
-      })
+    // Without a texture budget, load eagerly (tests, simple hosts).
+    // With one, residency is granted by the Culler via
+    // setPlacementTextureResident — the body stays a placeholder
+    // until the item nears the viewport (§12.2 lazy textures).
+    if (!resources.textures) {
+      void attachTexture(container, item.assetContentHash, generation, resources)
+    }
     return
   }
 
@@ -110,6 +115,83 @@ function buildBody(
   }
   dot.label = kind === 'dot' ? 'dot' : 'bare-node'
   container.addChild(dot)
+}
+
+async function attachTexture(
+  container: PlacementObject,
+  contentHash: string,
+  generation: number,
+  resources: RendererResources,
+): Promise<void> {
+  const url = assetUrl(contentHash)
+  try {
+    const texture = resources.textures
+      ? await resources.textures.acquire(contentHash, url)
+      : await resources.loadTexture(url)
+    if (container.destroyed || container.__textureGeneration !== generation) {
+      // Stale landing (rebuilt, revoked, or destroyed): return the ref.
+      if (resources.textures) resources.textures.release(contentHash)
+      return
+    }
+    const size = container.__imageSize ?? { width: 128, height: 128 }
+    container.getChildByLabel('image-placeholder')?.destroy()
+    const sprite = new Sprite(texture as Texture)
+    sprite.label = 'image'
+    sprite.anchor.set(0.5)
+    sprite.width = size.width
+    sprite.height = size.height
+    container.addChildAt(sprite, 0)
+    if (resources.textures) container.__acquiredHash = contentHash
+  } catch {
+    /* placeholder stays; a broken blob must not take down the scene */
+  } finally {
+    if (container.__acquiring === contentHash) container.__acquiring = null
+  }
+}
+
+/**
+ * Residency switch driven by the Culler (§12.2). Granting residency
+ * acquires the texture through the budget and swaps the sprite in;
+ * revoking swaps the placeholder back and releases the budget ref.
+ * No-ops for non-image bodies and when no budget is configured.
+ */
+export function setPlacementTextureResident(
+  object: Container,
+  item: ScenePlacement,
+  resources: RendererResources,
+  resident: boolean,
+): void {
+  const container = object as PlacementObject
+  if (!resources.textures) return
+  if (item.appearanceKind !== 'image' || !item.assetContentHash) return
+  if (resident) {
+    if (container.__acquiredHash === item.assetContentHash) return
+    if (container.__acquiring === item.assetContentHash) return
+    container.__acquiring = item.assetContentHash
+    void attachTexture(
+      container,
+      item.assetContentHash,
+      container.__textureGeneration ?? 0,
+      resources,
+    )
+  } else if (container.__acquiredHash || container.__acquiring) {
+    // Invalidate any in-flight attach: its landing self-releases.
+    container.__textureGeneration = (container.__textureGeneration ?? 0) + 1
+    container.__acquiring = null
+    const hash = container.__acquiredHash
+    container.__acquiredHash = null
+    const sprite = container.getChildByLabel('image')
+    if (sprite) {
+      sprite.destroy()
+      const size = container.__imageSize ?? { width: 128, height: 128 }
+      const placeholder = new Graphics()
+        .rect(-size.width / 2, -size.height / 2, size.width, size.height)
+        .fill({ color: 0x2b2b2b })
+      placeholder.label = 'image-placeholder'
+      container.addChildAt(placeholder, 0)
+    }
+    if (hash) resources.textures.release(hash)
+  }
 }
 
 function applyTransform(container: Container, item: ScenePlacement): void {

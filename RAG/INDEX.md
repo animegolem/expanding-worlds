@@ -6,28 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 4 | 1 |
+| In Progress | 0 | 0 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 3 | 22 |
+| Completed | 4 | 23 |
 | **Total** | **8** | **23** |
-
-## In Progress
-
-### [[AI-EPIC-004-canvas-board-loop|EPIC-004: Canvas board loop]]
-> The product must "feel first like an excellent visual board" (RFC §1),
-
-**IMPs:**
-- [[AI-IMP-017-renderer-host-and-scene-projection|IMP-017]] Renderer host and scene projection — completed
-- [[AI-IMP-018-canvas-controller-and-gesture-pipeline|IMP-018]] Canvas controller and gesture pipeline — completed
-- [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — completed
-- [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — completed
-- [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — completed
-- [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — completed
-- [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — planned
-
----
 
 ## Planned
 
@@ -68,6 +52,7 @@ Generated from tracked files; binary assets excluded.
 
 - RAG/scripts/generate-index.sh (575 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (538 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (508 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
 - apps/desktop/e2e/import.spec.ts (461 LOC)
@@ -79,7 +64,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/board-tooling.spec.ts (370 LOC)
 - packages/persistence/src/handlers/pin.test.ts (365 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (364 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (350 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
@@ -94,7 +78,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>3 EPICs, 22 IMPs completed</summary>
+<summary>4 EPICs, 23 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -115,5 +99,13 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-014-staged-asset-import|IMP-014]] Staged asset import — completed
   - [[AI-IMP-015-fts5-search-and-queries|IMP-015]] Fts5 search and queries — completed
   - [[AI-IMP-016-recovery-and-invariant-suite|IMP-016]] Recovery and invariant suite — completed
+- [[AI-EPIC-004-canvas-board-loop|EPIC-004]] Canvas board loop — 2026-07-04
+  - [[AI-IMP-017-renderer-host-and-scene-projection|IMP-017]] Renderer host and scene projection — completed
+  - [[AI-IMP-018-canvas-controller-and-gesture-pipeline|IMP-018]] Canvas controller and gesture pipeline — completed
+  - [[AI-IMP-019-placement-gestures-and-labels|IMP-019]] Placement gestures and labels — completed
+  - [[AI-IMP-020-import-surfaces-and-creation-flows|IMP-020]] Import surfaces and creation flows — completed
+  - [[AI-IMP-021-decorations-tooling|IMP-021]] Decorations tooling — completed
+  - [[AI-IMP-022-board-tooling-and-backgrounds|IMP-022]] Board tooling and backgrounds — completed
+  - [[AI-IMP-023-performance-e2e-and-epic-close|IMP-023]] Performance e2e and epic close — completed
 
 </details>

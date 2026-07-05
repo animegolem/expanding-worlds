@@ -23,7 +23,7 @@ export interface DecorationsUi {
 }
 
 export function createDecorationsUi(handle: CanvasHostHandle): DecorationsUi {
-  const { controller, gateway, canvasId } = handle
+  const { controller, gateway } = handle
 
   const decorations = (): SceneDecoration[] =>
     controller
@@ -78,7 +78,7 @@ export function createDecorationsUi(handle: CanvasHostHandle): DecorationsUi {
       if (ids.length < 2) return
       await gateway.execute('GroupDecorations', {
         groupId: crypto.randomUUID(),
-        canvasId,
+        canvasId: handle.canvasId,
         decorationIds: ids,
       })
     },

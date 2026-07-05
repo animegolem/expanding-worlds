@@ -6,12 +6,12 @@ tags:
   - performance
   - e2e
   - canvas
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-019, AI-IMP-020, AI-IMP-021, AI-IMP-022]
 parent_epic: [[AI-EPIC-004-canvas-board-loop]]
 confidence_score: 0.7
 date_created: 2026-07-04
-date_completed:
+date_completed: 2026-07-04
 ---
 
 # AI-IMP-023-performance-e2e-and-epic-close
@@ -80,15 +80,15 @@ epic completion, INDEX regen, AI-LOG.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Culling pass on camera/content change: off-viewport items non-renderable, re-entering items restored; unit tests over synthetic scenes incl. rotated bounds and padding hysteresis.
-- [ ] TextureBudget: explicit acquire/release keyed by content hash, LRU eviction under a byte budget, eviction downgrades sprites to placeholder; unit tests for budget math, LRU order, double-acquire refcount.
-- [ ] Lazy loading: textures requested on first viewport entry only; canvas swap releases all textures and empty GPU residency verified via debug counters in e2e (open large canvas → swap away → budget reports zero resident bytes).
-- [ ] Background tiling: pyramid generation for originals exceeding the GPU cap (detect cap at runtime; test fixture uses a synthetic large image), per-zoom tile selection in the background renderer, original untouched; unit tests for level selection and tile addressing; recorded-derivative rows reuse the derivative_jobs seam.
-- [ ] Perf spec: seed §12.1 scenes via service; assert hardware GL (fail with clear message on SwiftShader); p95 frame-time thresholds during pan/zoom/marquee/multi-drag for 500 pins, 150 images, 1,000 icons, mixed-decoration scene; memory-release assertion on swap.
-- [ ] Slice spec covering §17 items 2, 3, 4, 5, 6, 9, 10, 17, 18, 19 (item 19's cross-canvas-undo clause deferred to EPIC-007 — note in spec) with command-log gesture assertions throughout.
-- [ ] Verify epic success metrics, check FR-1..FR-10 in AI-EPIC-004 honestly (deviations documented), set epic completed, run `./RAG/scripts/generate-index.sh`.
-- [ ] Full gates green on merged master: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint`, desktop e2e incl. perf + slice specs.
-- [ ] Session AI-LOG entry written.
+- [x] Culling pass on camera/content change: off-viewport items non-renderable, re-entering items restored; unit tests over synthetic scenes incl. rotated bounds and padding hysteresis.
+- [x] TextureBudget: explicit acquire/release keyed by content hash, LRU eviction under a byte budget, eviction downgrades sprites to placeholder; unit tests for budget math, LRU order, double-acquire refcount.
+- [x] Lazy loading: textures requested on first viewport entry only; canvas swap releases all textures and empty GPU residency verified via debug counters in e2e (open large canvas → swap away → budget reports zero resident bytes).
+- [x] Background tiling: pyramid generation for originals exceeding the GPU cap (detect cap at runtime; test fixture uses a synthetic large image), per-zoom tile selection in the background renderer, original untouched; unit tests for level selection and tile addressing; recorded-derivative rows reuse the derivative_jobs seam.
+- [x] Perf spec: seed §12.1 scenes via service; assert hardware GL (fail with clear message on SwiftShader); p95 frame-time thresholds during pan/zoom/marquee/multi-drag for 500 pins, 150 images, 1,000 icons, mixed-decoration scene; memory-release assertion on swap.
+- [x] Slice spec covering §17 items 2, 3, 4, 5, 6, 9, 10, 17, 18, 19 (item 19's cross-canvas-undo clause deferred to EPIC-007 — note in spec) with command-log gesture assertions throughout.
+- [x] Verify epic success metrics, check FR-1..FR-10 in AI-EPIC-004 honestly (deviations documented), set epic completed, run `./RAG/scripts/generate-index.sh`.
+- [x] Full gates green on merged master: `pnpm -r build && pnpm -r --filter '!@ew/desktop' test && pnpm lint`, desktop e2e incl. perf + slice specs.
+- [x] Session AI-LOG entry written.
 
 ### Acceptance Criteria
 
@@ -110,3 +110,36 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+- **Tiling deviation (recorded scope)**: tiles are sliced at load
+  time in the renderer via ImageBitmap (`createImageBitmap` decodes
+  originals beyond the GPU cap and downscales per level) rather than
+  generated as disk-cached derivatives in the utility process — Node
+  has no image codec until the real DerivativeGenerator lands, so
+  disk-cached pyramids are deferred WITH the thumbnail-generator
+  scope (§11.2 deferral). The §12.2 requirement (tiled rendering at
+  every zoom, original canonical and untouched) is met and e2e-proven
+  with a 17,000 px original against the live GPU cap; per-tile
+  visibility culling and level selection are unit-tested. No
+  derivative_jobs rows are recorded for tiles.
+- openCanvas initially leaked the texture set on swap: sync.clear()
+  destroyed display objects without firing residency-leave hooks.
+  Fixed by running an empty cull pass (which releases every budget
+  ref) before clearing the scene; the perf e2e's zero-resident-bytes
+  assertion caught it.
+- The perf suite refuses software GL (UNMASKED_RENDERER_WEBGL probe)
+  per the EPIC-001 benchmark lesson; on this machine (hardware GL)
+  p95 stayed under the 25 ms collapse tripwire in all three §12.1
+  scenarios (spike reference: ≤ 9.3 ms).
+- "Original untouched" was first asserted via canvas.toBlob dedupe —
+  wrong premise, PNG encoding is not byte-deterministic across calls;
+  replaced with a SHA-256 round-trip through ew-asset://.
+- Wave-2 friction addressed here as lead integration: handle.canvasId
+  became a live getter, controller.setCanvas added, and the three
+  feature modules that had destructured canvasId at attach now read
+  it per call — the stale-canvas latency that canvas swapping would
+  have exposed in EPIC-006 is closed.
+- Slice item 19's cross-canvas-undo clause is deferred to EPIC-007
+  (no interactive undo stack yet); inverse-command round-trips stand
+  in at data level, noted in the spec header.
+- Fast-return navigation is exercised as canvas swap + rebuild; the
+  history/bookmark UX itself is EPIC-006.

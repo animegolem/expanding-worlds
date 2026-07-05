@@ -93,6 +93,15 @@ export class CanvasController {
     return this.#canvasId
   }
 
+  /** Canvas swap (§12.2 single live canvas): resets interaction state;
+   * the host re-feeds items from the new scene. */
+  setCanvas(canvasId: string): void {
+    this.#canvasId = canvasId
+    this.#state = { kind: 'idle' }
+    this.#items = []
+    this.selection.clear()
+  }
+
   setSnapProvider(provider: SnapProvider): void {
     this.#snap = provider
   }
