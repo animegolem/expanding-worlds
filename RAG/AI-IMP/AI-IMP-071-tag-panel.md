@@ -83,26 +83,50 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] getTagView returns per-node active placement locations with
+- [x] getTagView returns per-node active placement locations with
       canvas labels; persistence units cover placed, multi-placed,
       and unplaced carriers.
-- [ ] tag-panel store: one instance, anchor-positioned, Escape
+      (Also gained `noteId` and `childCanvasId` per carrier — the
+      row's open-note action and ⊡ glyph need them and the ticket's
+      no-N+1 rule forbids fetching them per row. Labels follow the
+      outline convention: owner's note title, else short code; the
+      root canvas reads "Home" like the navigation stack's root
+      entry. Trashed placements excluded, unit-covered.)
+- [x] tag-panel store: one instance, anchor-positioned, Escape
       closes, reopen replaces tag and anchor.
-- [ ] TagPanel rows via NodeRow + location line; unplaced carriers
+      (`tags/tag-panel.ts`; anchor is the §8.5 client-point grammar
+      the location chooser uses, clamped by the component. Escape is
+      LAYERED — see Issues.)
+- [x] TagPanel rows via NodeRow + location line; unplaced carriers
       row with loose badge; per-row open-note works.
-- [ ] Fly-to: same-canvas selects + flyTo; cross-canvas goes
+- [x] Fly-to: same-canvas selects + flyTo; cross-canvas goes
       through navigateTo (history entry) then centers after the
       scene applies.
-- [ ] Completion field: type-ahead against listTags, picking swaps
+      (Both through the onCenterPlacements seam; e2e also asserts
+      same-canvas fly-to adds NO history entry.)
+- [x] Completion field: type-ahead against listTags, picking swaps
       the panel's tag; exactly one tag at a time.
-- [ ] Door 1: charm-bar # chip click opens the panel on that tag,
+      (Custom list per the AI-IMP-069 rule — never <datalist>;
+      Enter on an exact name also swaps.)
+- [x] Door 1: charm-bar # chip click opens the panel on that tag,
       anchored to the chip. Door 2: note-panel tag chip ditto.
-- [ ] Lens toggle rendered in the header; wired to the 072 host API
+- [x] Lens toggle rendered in the header; wired to the 072 host API
       when present, else disabled with an "arrives with the lens"
       tooltip.
-- [ ] e2e: both doors, cross-canvas fly-to lands centered with a
+      (072 merged before this ticket ran, so the toggle is wired
+      LIVE — no feature-detect, no deferred tooltip. On =
+      setLens(carrier placements on the active canvas), off =
+      clearLens; onLensChanged unsets the toggle when Escape peels
+      the lens engine-side; disabled only when the tag has no
+      carrier on the active board.)
+- [x] e2e: both doors, cross-canvas fly-to lands centered with a
       Back entry, unplaced carrier listed.
-- [ ] `pnpm -r build`, full gates green.
+      (`e2e/tags.spec.ts`: plus lens dim/toggle sync, layered
+      Escape, viewport restore on Back, completion swap.)
+- [x] `pnpm -r build`, full gates green.
+      (build + lint green; persistence 381 passed — baseline 379 +
+      2 new units; desktop unit 11 passed; full Playwright suite
+      58 passed, 0 flaky — baseline 56 + 2 new.)
 
 ### Acceptance Criteria
 
@@ -126,3 +150,40 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Lens toggle wired live, not disabled.** The ticket predates the
+  072 merge order; 072's host API (`setLens`/`clearLens`/`lens`/
+  `onLensChanged` on CanvasHostHandle) was merged before this ticket
+  ran, so the "disabled with a deferred tooltip" fallback was never
+  built. The two riding checklist items in AI-IMP-072 are checked
+  off there with a delivered-here note.
+- **Layered Escape needed capture-phase handling.** "Escape closes
+  the panel" collides with 072's engine Escape (peels lens, then
+  selection) — both listen on window, and the host registered
+  first. The panel uses a capture-phase window keydown: with a lens
+  active it declines the event (the host peels the lens; the toggle
+  follows via onLensChanged; the panel stays — matching 072's
+  "toggle resets" acceptance), with no lens it closes the panel AND
+  consumes the press (stopPropagation) so the host does not also
+  clear the board selection under the closing panel. One layer per
+  press, e2e-asserted. Reviewer note: the stopPropagation also
+  suppresses gestures-ui's window keydown (duplicate-drag cancel)
+  for that single press — only reachable mid-drag with the panel
+  open and no lens.
+- **getTagView note join tightened.** The old query LEFT JOINed
+  `note` without a lifecycle filter, so a trashed note's title
+  could label a carrier row; the rewrite filters
+  `lifecycle_state = 'active'` like getCanvasScene/getOutlineTree
+  do. Behavior change visible only with a trashed shared note.
+- **Same-canvas fly-to is deliberately not a history event** —
+  requestCenterPlacements only; the e2e pins this (§8.1 says
+  cross-canvas jumps enter history, and the Workspace seam already
+  handles the bounded scene-wait for the cross-canvas case).
+- **Worktree friction (same as 072's session):** fresh worktree had
+  no workspace dists (`pnpm -r build` needed before anything) and
+  Electron's package was a husk (dist/ contained only
+  LICENSES.chromium.html, no path.txt); copied `dist/` + `path.txt`
+  from the main repo's electron@39.8.10 store per the known repair.
+- `RAG/scripts/generate-index.sh` NOT run and kanban_status left
+  untouched — lead's merge-time call; regenerating INDEX.md from a
+  worktree collides with parallel agents.

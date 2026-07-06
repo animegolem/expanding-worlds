@@ -15,6 +15,8 @@
   import { attachPanels } from './note/panels'
   import AttachNotePicker from './note/AttachNotePicker.svelte'
   import NotePanels from './note/NotePanels.svelte'
+  import TagPanel from './tags/TagPanel.svelte'
+  import { onTagPanelChanged, type TagPanelState } from './tags/tag-panel'
 
   let {
     onready = undefined,
@@ -27,6 +29,9 @@
   let tooling = $state<BoardTooling | null>(null)
   // §6.6 attach-note picker target (AI-IMP-049).
   let attachTarget = $state<string | null>(null)
+  // §4.8 tag panel (AI-IMP-071): the one instance, store-driven.
+  let tagPanel = $state<TagPanelState | null>(null)
+  $effect(() => onTagPanelChanged((next) => (tagPanel = next)))
 
   onMount(() => {
     let mounted: CanvasHostHandle | null = null
@@ -101,6 +106,9 @@
   {/if}
   {#if attachTarget && handle}
     <AttachNotePicker {handle} nodeId={attachTarget} onclose={() => (attachTarget = null)} />
+  {/if}
+  {#if tagPanel && handle}
+    <TagPanel {handle} hostElement={element} panel={tagPanel} />
   {/if}
 </div>
 
