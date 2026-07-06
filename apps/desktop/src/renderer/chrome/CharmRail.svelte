@@ -149,9 +149,9 @@
     display: grid;
     place-items: center;
     font-size: 1rem;
-    background: rgba(23, 25, 29, 0.88);
-    color: #dde3ea;
-    border: 1px solid #2e3138;
+    background: var(--ew-surface-rail);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border);
     border-radius: 7px;
     cursor: pointer;
   }
@@ -162,9 +162,9 @@
   }
 
   .charm.active {
-    background: #4a9df0;
-    border-color: #4a9df0;
-    color: #10131a;
+    background: var(--ew-accent);
+    border-color: var(--ew-accent);
+    color: var(--ew-on-accent);
   }
 
   .menu-slot,
@@ -174,8 +174,8 @@
 
   .charm.perch {
     position: relative;
-    color: #e6b34a;
-    border-color: #6b5426;
+    color: var(--ew-warn);
+    border-color: var(--ew-warn-border);
     animation: perch-pulse var(--perch-pulse-ms) ease-out 1;
   }
 
@@ -188,8 +188,8 @@
     padding: 0 0.15rem;
     display: grid;
     place-items: center;
-    background: #b3403a;
-    color: #fff;
+    background: var(--ew-danger);
+    color: var(--ew-on-danger);
     border-radius: 0.45rem;
     font-size: 0.6rem;
     line-height: 1;
@@ -198,14 +198,14 @@
   @keyframes perch-pulse {
     0% {
       transform: scale(0.6);
-      box-shadow: 0 0 0 0 rgba(230, 179, 74, 0.7);
+      box-shadow: 0 0 0 0 var(--ew-warn-pulse);
     }
     45% {
       transform: scale(1.18);
     }
     100% {
       transform: scale(1);
-      box-shadow: 0 0 0 10px rgba(230, 179, 74, 0);
+      box-shadow: 0 0 0 10px var(--ew-warn-pulse-fade);
     }
   }
 </style>

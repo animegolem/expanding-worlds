@@ -54,7 +54,7 @@
                   placement.placementId,
                 )}
             >
-              <span class="dot" style={`background:${node.appearanceColor ?? '#8ab4d8'}`}></span>
+              <span class="dot" style={`background:${node.appearanceColor ?? 'var(--ew-node-dot-default)'}`}></span>
               Fly here
             </button>
           </li>
@@ -72,13 +72,13 @@
     max-height: 230px;
     overflow: auto;
     padding: 0.4rem 0.55rem 0.55rem;
-    background: #fafafa;
-    border: 1px solid #c9ced6;
+    background: var(--ew-paper-surface);
+    border: 1px solid var(--ew-paper-border-strong);
     border-radius: 9px;
-    box-shadow: 0 6px 22px rgba(8, 10, 14, 0.35);
+    box-shadow: 0 6px 22px var(--ew-shadow);
     pointer-events: auto;
     font-size: 0.78rem;
-    color: #333;
+    color: var(--ew-paper-text);
   }
 
   header {
@@ -99,14 +99,14 @@
     flex: none;
     border: none;
     background: transparent;
-    color: #888;
+    color: var(--ew-paper-text-muted);
     font: inherit;
     cursor: pointer;
   }
 
   .group-title {
     margin: 0.35rem 0 0.1rem;
-    color: #555;
+    color: var(--ew-paper-text-subtle);
     font-weight: 600;
   }
 
@@ -131,7 +131,7 @@
   }
 
   .row:hover {
-    background: #eee;
+    background: var(--ew-paper-hover);
   }
 
   .dot {

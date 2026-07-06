@@ -80,16 +80,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--ew-dialog-scrim);
   }
 
   .dialog {
     max-width: 90%;
     padding: 0.75rem 1rem;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: var(--ew-paper-page);
+    border: 1px solid var(--ew-paper-border-focus);
     border-radius: 6px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 6px 18px var(--ew-dialog-scrim);
   }
 
   .dialog p {

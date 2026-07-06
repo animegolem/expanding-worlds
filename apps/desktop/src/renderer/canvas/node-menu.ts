@@ -70,8 +70,8 @@ export function attachNodeMenu(
     button.dataset['testid'] = testId
     button.style.cssText =
       'display:block;width:100%;text-align:left;padding:4px 12px;border:none;' +
-      'background:transparent;color:#ddd;font:inherit;cursor:pointer;'
-    button.addEventListener('mouseenter', () => (button.style.background = '#3a3f47'))
+      'background:transparent;color:var(--ew-text-dialog);font:inherit;cursor:pointer;'
+    button.addEventListener('mouseenter', () => (button.style.background = 'var(--ew-surface-control-hover)'))
     button.addEventListener('mouseleave', () => (button.style.background = 'transparent'))
     button.addEventListener('click', onPick)
     menu?.appendChild(button)
@@ -87,7 +87,7 @@ export function attachNodeMenu(
     input.dataset['testid'] = 'node-menu-title-input'
     input.style.cssText =
       'display:block;margin:8px;padding:4px 6px;width:200px;font:inherit;' +
-      'background:#17191d;color:#ddd;border:1px solid #4a4f57;border-radius:3px;'
+      'background:var(--ew-surface-solid);color:var(--ew-text-dialog);border:1px solid var(--ew-border-control);border-radius:3px;'
     const confirm = document.createElement('button')
     confirm.type = 'button'
     confirm.textContent = 'OK'
@@ -115,8 +115,8 @@ export function attachNodeMenu(
     menu.dataset['testid'] = 'node-menu'
     menu.style.cssText =
       `position:absolute;left:${local.x}px;top:${local.y}px;z-index:30;min-width:180px;` +
-      'padding:4px 0;background:#22262c;border:1px solid #4a4f57;border-radius:4px;' +
-      'box-shadow:0 4px 12px rgba(0,0,0,0.4);font-size:0.85rem;'
+      'padding:4px 0;background:var(--ew-surface-modal);border:1px solid var(--ew-border-control);border-radius:4px;' +
+      'box-shadow:0 4px 12px var(--ew-menu-shadow);font-size:0.85rem;'
 
     if (noteId === null) {
       addEntry('Attach New Note…', 'node-menu-attach-new', () => {

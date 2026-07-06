@@ -68,7 +68,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   bar.dataset['testid'] = 'charm-bar'
   bar.style.cssText =
     'position:absolute;display:none;gap:2px;align-items:center;' +
-    'padding:3px 5px;background:rgba(23,25,29,0.92);border:1px solid #2e3138;' +
+    'padding:3px 5px;background:var(--ew-surface);border:1px solid var(--ew-border);' +
     'border-radius:7px;pointer-events:auto;font-size:13px;'
   layer.appendChild(bar)
 
@@ -76,9 +76,9 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   chips.dataset['testid'] = 'charm-tag-chips'
   chips.style.cssText =
     'position:absolute;display:none;gap:4px;align-items:center;flex-wrap:wrap;' +
-    'max-width:280px;padding:4px 6px;background:rgba(23,25,29,0.95);' +
-    'border:1px solid #2e3138;border-radius:7px;pointer-events:auto;font-size:11px;' +
-    'color:#dde3ea;'
+    'max-width:280px;padding:4px 6px;background:var(--ew-surface-menu);' +
+    'border:1px solid var(--ew-border);border-radius:7px;pointer-events:auto;font-size:11px;' +
+    'color:var(--ew-text);'
   layer.appendChild(chips)
   let chipsFor: string | null = null
 
@@ -93,8 +93,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     button.dataset['testid'] = testId
     button.textContent = glyph
     button.style.cssText =
-      'min-width:24px;height:24px;padding:0 5px;background:#23262c;color:#dde3ea;' +
-      'border:1px solid #3a3e46;border-radius:5px;cursor:pointer;font-size:12px;'
+      'min-width:24px;height:24px;padding:0 5px;background:var(--ew-surface-raised);color:var(--ew-text);' +
+      'border:1px solid var(--ew-border-strong);border-radius:5px;cursor:pointer;font-size:12px;'
     button.addEventListener('click', (event) => {
       event.stopPropagation()
       onClick()
@@ -107,7 +107,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
 
   function divider(): void {
     const line = document.createElement('span')
-    line.style.cssText = 'width:1px;height:16px;background:#3a3e46;margin:0 3px;'
+    line.style.cssText = 'width:1px;height:16px;background:var(--ew-border-strong);margin:0 3px;'
     bar.appendChild(line)
   }
 
@@ -179,8 +179,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
         chip.dataset['testid'] = `tag-chip-${tag.id}`
         chip.textContent = `#${tag.name}`
         chip.style.cssText =
-          'padding:1px 7px;border-radius:9px;border:1px solid #3a3e46;cursor:pointer;' +
-          `background:#23262c;color:${tag.color ?? '#a8c7e8'};font-size:11px;`
+          'padding:1px 7px;border-radius:9px;border:1px solid var(--ew-border-strong);cursor:pointer;' +
+          `background:var(--ew-surface-raised);color:${tag.color ?? 'var(--ew-tag-default)'};font-size:11px;`
         const tip = tooltip(chip, { name: 'The tag panel arrives with global views (EPIC-013)' })
         disposers.push(tip.destroy)
         chips.appendChild(chip)
@@ -211,8 +211,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   corner.textContent = PAGE_GLYPH
   corner.style.cssText =
     'position:absolute;left:12px;bottom:12px;width:26px;height:26px;display:grid;' +
-    'place-items:center;padding:0;background:rgba(16,19,26,0.72);color:#dde3ea;' +
-    'border:1px solid #2e3138;border-radius:6px;cursor:pointer;font-size:13px;' +
+    'place-items:center;padding:0;background:var(--ew-art-chip-scrim);color:var(--ew-text);' +
+    'border:1px solid var(--ew-border);border-radius:6px;cursor:pointer;font-size:13px;' +
     'pointer-events:auto;transition:opacity 120ms ease-out;'
   const cornerTip = tooltip(corner, { name: 'This board’s note' })
   disposers.push(cornerTip.destroy)
@@ -255,7 +255,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     button.textContent = glyph
     button.style.cssText =
       'width:18px;height:18px;display:grid;place-items:center;padding:0;' +
-      'background:rgba(16,19,26,0.72);color:#dde3ea;border:none;border-radius:4px;' +
+      'background:var(--ew-art-chip-scrim);color:var(--ew-text);border:none;border-radius:4px;' +
       'cursor:pointer;font-size:11px;pointer-events:auto;'
     const tip = tooltip(button, { name })
     disposers.push(tip.destroy)
@@ -279,7 +279,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     group.className = 'hint-group'
     group.style.cssText =
       'position:absolute;display:flex;gap:2px;padding:1px;border-radius:5px;' +
-      'background:rgba(16,19,26,0.35);pointer-events:none;'
+      'background:var(--ew-art-chip-scrim-soft);pointer-events:none;'
     const created: CharmEntry = { group, page: null, frame: null, disposers: [] }
     if (wantsPage) {
       const page = hintButton(`hint-page-${item.id}`, PAGE_GLYPH, 'Open note')

@@ -151,11 +151,11 @@
     align-items: center;
     gap: 0.15rem;
     padding: 0.15rem 0.3rem;
-    background: rgba(23, 25, 29, 0.82);
-    border: 1px solid #2e3138;
+    background: var(--ew-surface-subtle);
+    border: 1px solid var(--ew-border);
     border-radius: 7px;
     font-size: 0.75rem;
-    color: #dde3ea;
+    color: var(--ew-text);
     pointer-events: auto;
     overflow: hidden;
   }
@@ -163,7 +163,7 @@
   button {
     padding: 0.1rem 0.4rem;
     background: transparent;
-    color: #dde3ea;
+    color: var(--ew-text);
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -171,7 +171,7 @@
   }
 
   button:hover {
-    background: #2a2e35;
+    background: var(--ew-surface-hover);
   }
 
   /* Hover-revealed, never permanent (§8.1). Playwright still clicks
@@ -192,7 +192,7 @@
   }
 
   .crumb.current {
-    color: #8ec2f5;
+    color: var(--ew-accent-soft);
   }
 
   .sep {
@@ -214,7 +214,7 @@
   .pin-shape {
     width: 9px;
     height: 9px;
-    border: 1.5px solid #dde3ea;
+    border: 1.5px solid var(--ew-text);
     border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg) translateY(-1px);
     transition:
@@ -223,8 +223,8 @@
   }
 
   .pin.open .pin-shape {
-    background: #8ec2f5;
-    border-color: #8ec2f5;
+    background: var(--ew-accent-soft);
+    border-color: var(--ew-accent-soft);
     transform: rotate(-45deg) translateY(1px);
   }
 </style>

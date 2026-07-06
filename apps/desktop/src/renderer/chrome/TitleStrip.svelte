@@ -11,6 +11,7 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { SceneBackground, SceneDecoration } from '@ew/canvas-engine'
+  import { themeTokenValue } from '../theme'
   import { tooltip } from './tooltip'
   import { TITLE_STRIP_REVEAL_PX } from './feel'
 
@@ -168,7 +169,7 @@
         <input
           type="color"
           data-testid="bg-color"
-          value={color ?? '#17191d'}
+          value={color ?? themeTokenValue('--ew-surface-solid')}
           onchange={(e) => void tooling.setBackgroundColor((e.currentTarget as HTMLInputElement).value)}
         />
       </label>
@@ -234,10 +235,10 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.3rem 0.6rem;
-    background: rgba(23, 25, 29, 0.92);
-    border-bottom: 1px solid #2e3138;
+    background: var(--ew-surface);
+    border-bottom: 1px solid var(--ew-border);
     font-size: 0.75rem;
-    color: #dde3ea;
+    color: var(--ew-text);
     pointer-events: auto;
   }
 
@@ -254,11 +255,11 @@
     flex-direction: column;
     gap: 0.35rem;
     padding: 0.5rem 0.6rem;
-    background: rgba(23, 25, 29, 0.95);
-    border: 1px solid #2e3138;
+    background: var(--ew-surface-menu);
+    border: 1px solid var(--ew-border);
     border-radius: 0 0 7px 7px;
     font-size: 0.75rem;
-    color: #dde3ea;
+    color: var(--ew-text);
     pointer-events: auto;
   }
 
@@ -272,11 +273,11 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.35rem 0.6rem;
-    background: rgba(23, 25, 29, 0.95);
-    border: 1px solid #2e3138;
+    background: var(--ew-surface-menu);
+    border: 1px solid var(--ew-border);
     border-radius: 7px;
     font-size: 0.75rem;
-    color: #dde3ea;
+    color: var(--ew-text);
     pointer-events: auto;
   }
 
@@ -289,17 +290,17 @@
 
   button {
     padding: 0.15rem 0.45rem;
-    background: #23262c;
-    color: #dde3ea;
-    border: 1px solid #3a3e46;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
     border-radius: 4px;
     cursor: pointer;
   }
 
   button.active {
-    background: #4a9df0;
-    border-color: #4a9df0;
-    color: #10131a;
+    background: var(--ew-accent);
+    border-color: var(--ew-accent);
+    color: var(--ew-on-accent);
   }
 
   button:disabled {
@@ -317,7 +318,7 @@
     width: 1.6rem;
     height: 1.3rem;
     padding: 0;
-    border: 1px solid #3a3e46;
+    border: 1px solid var(--ew-border-strong);
     background: transparent;
   }
 

@@ -31,6 +31,10 @@ const api = {
     killUtility: (): Promise<boolean> =>
       ipcRenderer.invoke('test:kill-utility') as Promise<boolean>,
   },
+  window: {
+    setVibrancy: (enabled: boolean): Promise<boolean> =>
+      ipcRenderer.invoke('window:set-vibrancy', enabled) as Promise<boolean>,
+  },
   app: {
     /**
      * §10.2 quit flush: main intercepts window close, asks the

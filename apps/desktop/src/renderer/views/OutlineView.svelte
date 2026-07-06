@@ -194,7 +194,7 @@
           <span class="caret-space"></span>
         {/if}
         {#if child.appearanceKind === 'dot'}
-          <span class="swatch" style={`background:${child.appearanceColor ?? '#8ab4d8'}`}></span>
+          <span class="swatch" style={`background:${child.appearanceColor ?? 'var(--ew-node-dot-default)'}`}></span>
         {:else if child.appearanceKind === 'icon'}
           <span class="swatch icon">{child.appearanceIcon ?? '◇'}</span>
         {:else}
@@ -325,7 +325,7 @@
             <div class="row" data-testid="loose-node-row" data-node-id={node.id}>
               <span class="caret-space"></span>
               {#if node.appearanceKind === 'dot'}
-                <span class="swatch" style={`background:${node.appearanceColor ?? '#8ab4d8'}`}></span>
+                <span class="swatch" style={`background:${node.appearanceColor ?? 'var(--ew-node-dot-default)'}`}></span>
               {:else if node.appearanceKind === 'icon'}
                 <span class="swatch icon">{node.appearanceIcon ?? '◇'}</span>
               {:else}
@@ -366,11 +366,11 @@
 <style>
   .outline {
     font-size: 0.8rem;
-    color: var(--ew-text, #dde3ea);
+    color: var(--ew-text);
   }
 
   .error {
-    color: var(--ew-danger, #b3403a);
+    color: var(--ew-danger);
   }
 
   .filters {
@@ -382,18 +382,18 @@
 
   .chip {
     padding: 0.15rem 0.55rem;
-    background: var(--ew-surface-raised, #23262c);
-    color: var(--ew-text-muted, #9aa3ad);
-    border: 1px solid var(--ew-border-strong, #3a3e46);
+    background: var(--ew-surface-raised);
+    color: var(--ew-text-muted);
+    border: 1px solid var(--ew-border-strong);
     border-radius: 999px;
     font-size: 0.72rem;
     cursor: pointer;
   }
 
   .chip.on {
-    background: var(--ew-accent, #4a9df0);
-    border-color: var(--ew-accent, #4a9df0);
-    color: var(--ew-on-accent, #10131a);
+    background: var(--ew-accent);
+    border-color: var(--ew-accent);
+    color: var(--ew-on-accent);
   }
 
   .tag-filter-wrap {
@@ -402,9 +402,9 @@
 
   .tag-filter {
     padding: 0.15rem 0.5rem;
-    background: var(--ew-surface-raised, #23262c);
-    color: var(--ew-text, #dde3ea);
-    border: 1px solid var(--ew-border-strong, #3a3e46);
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
     border-radius: 999px;
     font-size: 0.72rem;
   }
@@ -417,8 +417,8 @@
     display: flex;
     flex-direction: column;
     min-width: 8rem;
-    background: var(--ew-surface-menu, rgba(23, 25, 29, 0.95));
-    border: 1px solid var(--ew-border, #2e3138);
+    background: var(--ew-surface-menu);
+    border: 1px solid var(--ew-border);
     border-radius: 6px;
     overflow: hidden;
   }
@@ -427,14 +427,14 @@
     padding: 0.2rem 0.55rem;
     background: transparent;
     border: none;
-    color: var(--ew-text, #dde3ea);
+    color: var(--ew-text);
     font-size: 0.72rem;
     text-align: left;
     cursor: pointer;
   }
 
   .tag-completions button:hover {
-    background: var(--ew-surface-raised, #23262c);
+    background: var(--ew-surface-raised);
   }
 
   ul {
@@ -458,7 +458,7 @@
   }
 
   .row:hover {
-    background: var(--ew-surface-raised, #23262c);
+    background: var(--ew-surface-raised);
   }
 
   .outline :global(.flash) {
@@ -467,7 +467,7 @@
 
   @keyframes outline-flash {
     0% {
-      background: var(--ew-accent, #4a9df0);
+      background: var(--ew-accent);
     }
     100% {
       background: transparent;
@@ -485,7 +485,7 @@
   }
 
   .alias {
-    color: var(--ew-text-muted, #9aa3ad);
+    color: var(--ew-text-muted);
     font-style: italic;
   }
 
@@ -495,7 +495,7 @@
     padding: 0;
     background: transparent;
     border: none;
-    color: var(--ew-text-muted, #9aa3ad);
+    color: var(--ew-text-muted);
     font-size: 0.7rem;
     cursor: pointer;
   }
@@ -521,7 +521,7 @@
 
   .swatch.image {
     border-radius: 2px;
-    background: var(--ew-border-strong, #3a3e46);
+    background: var(--ew-border-strong);
   }
 
   .glyphs {
@@ -531,7 +531,7 @@
   }
 
   .glyph {
-    color: var(--ew-text-muted, #9aa3ad);
+    color: var(--ew-text-muted);
     font-size: 0.72rem;
   }
 
@@ -546,7 +546,7 @@
   }
 
   .count {
-    color: var(--ew-text-muted, #9aa3ad);
+    color: var(--ew-text-muted);
     font-size: 0.72rem;
   }
 
@@ -554,9 +554,9 @@
     flex: none;
     padding: 0 0.35rem;
     border-radius: 7px;
-    background: var(--ew-surface-raised, #23262c);
-    border: 1px solid var(--ew-border-strong, #3a3e46);
-    color: var(--ew-warn, #e6b34a);
+    background: var(--ew-surface-raised);
+    border: 1px solid var(--ew-border-strong);
+    color: var(--ew-warn);
     font-size: 0.62rem;
   }
 
@@ -569,8 +569,8 @@
   .tag-chip {
     padding: 0 0.35rem;
     border-radius: 7px;
-    background: var(--ew-surface-raised, #23262c);
-    color: var(--ew-text-muted, #9aa3ad);
+    background: var(--ew-surface-raised);
+    color: var(--ew-text-muted);
     font-size: 0.62rem;
     white-space: nowrap;
   }
@@ -578,18 +578,18 @@
   .loose-bin {
     margin-top: 1rem;
     padding-top: 0.6rem;
-    border-top: 1px solid var(--ew-border, #2e3138);
+    border-top: 1px solid var(--ew-border);
   }
 
   .bin-title {
     margin: 0 0 0.3rem;
     font-weight: 600;
-    color: var(--ew-text-muted, #9aa3ad);
+    color: var(--ew-text-muted);
   }
 
   .bin-empty {
     margin: 0;
-    color: var(--ew-text-muted, #9aa3ad);
+    color: var(--ew-text-muted);
     font-size: 0.72rem;
   }
 </style>

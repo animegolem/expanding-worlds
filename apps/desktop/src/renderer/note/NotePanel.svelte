@@ -35,6 +35,7 @@
   import { createNoteProjectPort } from './project-port'
   import { wikiLinkCompletion } from './suggestions'
   import { wikiLinkActivation, wikiLinkHighlighter } from './wiki-link-plugin'
+  import { themeTokenValue } from '../theme'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
   import UsesList, { type UsesData } from './UsesList.svelte'
 
@@ -228,7 +229,7 @@
           placementId,
           x: request.x,
           y: request.y,
-          appearance: { kind: 'dot', color: '#8ab4d8' },
+          appearance: { kind: 'dot', color: themeTokenValue('--ew-node-dot-default') },
           note: { kind: 'create', noteId, title, ...(body.length > 0 ? { body } : {}) },
         })
         if (result.status === 'error') {
@@ -895,7 +896,7 @@
   }
 
   .tail line {
-    stroke: #7f8898;
+    stroke: var(--ew-paper-tail);
     stroke-width: 1.5;
     stroke-dasharray: 4 4;
     opacity: 0.75;
@@ -909,16 +910,16 @@
     max-height: 55vh;
     min-height: 0;
     overflow: hidden;
-    background: #fafafa;
-    border: 1px solid #c9ced6;
+    background: var(--ew-paper-surface);
+    border: 1px solid var(--ew-paper-border-strong);
     border-radius: 9px;
-    box-shadow: 0 6px 22px rgba(8, 10, 14, 0.35);
+    box-shadow: 0 6px 22px var(--ew-shadow);
     pointer-events: auto;
     z-index: 8;
   }
 
   .note-panel.pinned {
-    border-color: #9db7d3;
+    border-color: var(--ew-paper-pinned-border);
   }
 
   .note-panel.pulse {
@@ -927,10 +928,10 @@
 
   @keyframes panel-pulse {
     0% {
-      box-shadow: 0 0 0 0 rgba(74, 157, 240, 0.8);
+      box-shadow: 0 0 0 0 var(--ew-focus-ring);
     }
     100% {
-      box-shadow: 0 0 0 14px rgba(74, 157, 240, 0);
+      box-shadow: 0 0 0 14px var(--ew-focus-ring-fade);
     }
   }
 
@@ -952,7 +953,7 @@
     border: none;
     background: transparent;
     font: inherit;
-    color: #888;
+    color: var(--ew-paper-text-muted);
     cursor: pointer;
   }
 
@@ -968,10 +969,10 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     padding: 0.05rem 0.4rem;
-    border: 1px solid #b9c6d6;
+    border: 1px solid var(--ew-paper-info-border);
     border-radius: 9px;
-    background: #eef3f9;
-    color: #33628f;
+    background: var(--ew-paper-info-panel);
+    color: var(--ew-paper-info-text);
     font-size: 0.7rem;
     cursor: pointer;
   }
@@ -982,7 +983,7 @@
     overflow: hidden;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #444;
+    color: var(--ew-paper-text-heading);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -997,19 +998,19 @@
     font: inherit;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #444;
+    color: var(--ew-paper-text-heading);
   }
 
   .title-input:hover,
   .title-input:focus {
-    border-color: #ccc;
-    background: #fff;
+    border-color: var(--ew-paper-border-focus);
+    background: var(--ew-paper-page);
     outline: none;
   }
 
   .dirty {
     margin-left: 0.3rem;
-    color: #c90;
+    color: var(--ew-paper-dirty);
     font-size: 0.6rem;
     vertical-align: middle;
   }
@@ -1023,10 +1024,10 @@
 
   .tag-chip {
     padding: 0 0.45rem;
-    border: 1px solid #d3d9e1;
+    border: 1px solid var(--ew-paper-chip-border);
     border-radius: 8px;
-    background: #eef1f5;
-    color: #557;
+    background: var(--ew-paper-chip-surface);
+    color: var(--ew-paper-chip-text);
     font-size: 0.7rem;
   }
 
@@ -1042,7 +1043,7 @@
      cursor at document end, as in the docked pane). */
   .editor :global(.cm-editor) {
     height: 16rem;
-    background: #fff;
+    background: var(--ew-paper-page);
   }
 
   .editor :global(.cm-editor.cm-focused) {
@@ -1067,7 +1068,7 @@
 
   .phantom-summary {
     margin: 0;
-    color: #7c4dbe;
+    color: var(--ew-link-unresolved);
     font-size: 0.8rem;
   }
 
@@ -1088,7 +1089,7 @@
   .phantom-draft {
     min-height: 6rem;
     padding: 0.4rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--ew-paper-border);
     border-radius: 3px;
     font: inherit;
     font-size: 0.85rem;
@@ -1099,7 +1100,7 @@
     margin: 0.25rem 0 0;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #666;
+    color: var(--ew-paper-text-subtle);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -1124,11 +1125,11 @@
   }
 
   .phantom-source:hover {
-    background: #eee;
+    background: var(--ew-paper-hover);
   }
 
   .ref-count {
-    color: #888;
+    color: var(--ew-paper-text-muted);
   }
 
   .trash-banner {
@@ -1137,11 +1138,11 @@
     justify-content: space-between;
     margin: 0 0.5rem 0.25rem;
     padding: 0.3rem 0.5rem;
-    background: #f3ead3;
-    border: 1px solid #d9c68a;
+    background: var(--ew-paper-trash-surface);
+    border: 1px solid var(--ew-paper-trash-border);
     border-radius: 4px;
     font-size: 0.78rem;
-    color: #7a5f14;
+    color: var(--ew-paper-trash-text);
   }
 
   .trash-banner button,
@@ -1158,11 +1159,11 @@
     gap: 0.35rem;
     margin: 0 0.5rem 0.25rem;
     padding: 0.4rem 0.5rem;
-    background: #f7e4e2;
-    border: 1px solid #d9a09a;
+    background: var(--ew-paper-broken-surface);
+    border: 1px solid var(--ew-paper-broken-border);
     border-radius: 4px;
     font-size: 0.78rem;
-    color: #7c2d27;
+    color: var(--ew-paper-broken-text);
   }
 
   .broken-panel p {
@@ -1170,12 +1171,12 @@
   }
 
   .broken-panel .hint {
-    color: #9a5c56;
+    color: var(--ew-paper-broken-muted);
   }
 
   .error {
     margin: 0.4rem 0.6rem;
-    color: #b3403a;
+    color: var(--ew-danger);
     font-size: 0.8rem;
   }
 </style>

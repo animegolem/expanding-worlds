@@ -25,7 +25,7 @@
 
   :global(body) {
     font: 14px/1.5 system-ui, sans-serif;
-    color: #222;
+    color: var(--ew-body-text);
   }
 
   :global(#app) {

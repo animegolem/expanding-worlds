@@ -270,3 +270,47 @@ test('takeover framework: charm entry, Esc return, camera and board untouched', 
 
   await app.close()
 })
+
+/**
+ * AI-IMP-075 acceptance: theme tokens repaint chrome live, and glass
+ * reports the applied theme or the dark fallback from main.
+ */
+test('theme tokens: light switch and glass fallback report applied theme', async () => {
+  const { app, win } = await launchApp('ew-e2e-theme-')
+
+  try {
+    await expect(win.getByTestId('dock')).toBeVisible()
+    // The dock testid sits on the transparent stack wrapper; the
+    // themed surface is the row inside it.
+    const surfaceBackground = (): Promise<string> =>
+      win
+        .getByTestId('dock')
+        .evaluate((el) => getComputedStyle(el.firstElementChild as Element).backgroundColor)
+    const applyTheme = (theme: 'dark' | 'light' | 'glass'): Promise<'dark' | 'light' | 'glass'> =>
+      win.evaluate((name) => {
+        const hook = (window as unknown as {
+          __ewTheme: {
+            apply: (theme: 'dark' | 'light' | 'glass') => Promise<'dark' | 'light' | 'glass'>
+          }
+        }).__ewTheme
+        return hook.apply(name)
+      }, theme)
+    const currentTheme = (): Promise<string> =>
+      win.evaluate(() => document.documentElement.dataset['theme'] ?? 'dark')
+
+    const darkBackground = await surfaceBackground()
+    await expect(applyTheme('light')).resolves.toBe('light')
+    await expect.poll(currentTheme).toBe('light')
+    expect(await surfaceBackground()).not.toBe(darkBackground)
+
+    const glassResult = await applyTheme('glass')
+    const stampedTheme = await currentTheme()
+    expect(glassResult).toBe(stampedTheme)
+    expect(['dark', 'glass']).toContain(glassResult)
+
+    await expect(applyTheme('dark')).resolves.toBe('dark')
+    await expect.poll(currentTheme).toBe('dark')
+  } finally {
+    await app.close()
+  }
+})

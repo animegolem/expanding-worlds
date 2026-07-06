@@ -164,9 +164,9 @@
 
   .halo {
     position: absolute;
-    border: 2px solid rgba(74, 157, 240, 0.85);
+    border: 2px solid var(--ew-accent-halo);
     border-radius: 7px;
-    box-shadow: 0 0 10px rgba(74, 157, 240, 0.45);
+    box-shadow: 0 0 10px var(--ew-accent-halo-shadow);
     pointer-events: none;
   }
 
@@ -177,9 +177,9 @@
     display: grid;
     place-items: center;
     padding: 0;
-    background: rgba(23, 25, 29, 0.92);
-    color: #8ec2f5;
-    border: 1px solid #3a4a5e;
+    background: var(--ew-surface);
+    color: var(--ew-accent-soft);
+    border: 1px solid var(--ew-border-accent-subtle);
     border-radius: 50%;
     cursor: pointer;
     font-size: 11px;

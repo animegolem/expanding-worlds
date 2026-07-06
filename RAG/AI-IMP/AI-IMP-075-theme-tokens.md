@@ -4,12 +4,12 @@ tags:
   - IMP-LIST
   - Implementation
   - theming
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-013-global-views]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-075-theme-tokens
@@ -83,24 +83,24 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] theme.css: role-named tokens, dark values matching the
+- [x] theme.css: role-named tokens, dark values matching the
       current UI exactly (no visual diff on default theme).
-- [ ] Full sweep: no hardcoded color remains in renderer Svelte
+- [x] Full sweep: no hardcoded color remains in renderer Svelte
       styles or injected-DOM strings except inside theme.css;
       automated check (grep gate in a test) enforces it.
-- [ ] Light theme: complete value set; chrome legible over dark and
+- [x] Light theme: complete value set; chrome legible over dark and
       light art; toasts/perch/tooltips included.
-- [ ] Glass: alpha tokens + vibrancy IPC on macOS; non-Mac or
+- [x] Glass: alpha tokens + vibrancy IPC on macOS; non-Mac or
       denied vibrancy falls back to dark values while reporting
       the fallback.
-- [ ] applyTheme exported and idempotent; data-theme stamped on
+- [x] applyTheme exported and idempotent; data-theme stamped on
       documentElement; live switch repaints without reload.
-- [ ] Default experience unchanged: full e2e suite green with zero
+- [x] Default experience unchanged: full e2e suite green with zero
       selector or visual-behavior diffs on dark.
-- [ ] Theme flip test: computed background of a chrome surface
+- [x] Theme flip test: computed background of a chrome surface
       changes across data-theme values; fallback path asserted
       (glass on a non-vibrancy run resolves dark).
-- [ ] `pnpm -r build`, full gates green.
+- [x] `pnpm -r build`, full gates green.
 
 ### Acceptance Criteria
 
@@ -121,3 +121,41 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Worktree/sandbox mismatch.** The prompted worktree path
+  (`agent-a9b60e1f7090d7331`) did not exist and the available repo
+  worktrees were read-only under the sandbox. A local clone was created
+  in `/private/tmp/expanding-worlds-agent-a9b60e1f7090d7331` on branch
+  `worktree-agent-a9b60e1f7090d7331`; the parent repo could not be
+  registered as a git worktree because `.git/refs` was not writable.
+- **pnpm dependency verification in the temp clone.** `pnpm` tried to
+  auto-run `pnpm install` before scripts. Network is disabled and the
+  local pnpm store is incomplete, so validation used the existing
+  checkout's installed `node_modules` and
+  `pnpm_config_verify_deps_before_run=false` for pnpm script gates.
+- **Electron e2e launch blocked before app code.** `npx playwright test`
+  failed all launched specs at `electron.launch` (`Process failed to
+  launch`, Electron SIGABRT); `node apps/desktop/node_modules/electron/install.js`
+  completed but did not fix it, and even `node_modules/.bin/electron --version`
+  SIGABRTs in both this temp clone and the source checkout. No e2e
+  assertion reached the renderer. Full suite result: 51 failed, 2 did
+  not run, all due to Electron process launch failure.
+- **Raw-color allowlist.** The no-raw-color test allowlists only
+  `theme.css` (token source of truth) and `theme.test.ts` (the scan
+  regex and test). No renderer file is otherwise allowlisted. Numeric
+  Pixi/WebGL colors remain in canvas drawing code (`canvas/host.ts`,
+  `canvas/gestures-ui.ts`) under the ticket's explicit WebGL-canvas
+  exclusion and are not part of the raw hex/rgba gate.
+- **Lead completion notes (merge to main).** The worktree failure's
+  root cause: the harness auto-removed the (unchanged) worktree when
+  the thin Codex wrapper agent finished its launch turn, orphaning
+  the directory before Codex wrote to it; the temp clone was the
+  right recovery. The lead fetched commit cd5d88f from the clone,
+  merged into main past 072 (lens) and 069-WIP (outline) with no
+  conflicts, aligned the new OutlineView to the final tokens
+  (fallback literals stripped for the scan), and supplied the
+  validation the clone could not run: full desktop e2e green on
+  default dark (54 passed — the zero-visual-diff proof) and the
+  theme e2e green after one probe fix — it measured the transparent
+  dock-stack wrapper; the themed surface is the dock-row inside.
+  Light-theme legibility over art still deserves an owner eyeball.

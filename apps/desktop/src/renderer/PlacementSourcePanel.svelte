@@ -9,7 +9,7 @@
   import { uuidv7 } from '@ew/domain'
   import type { CommandResult } from '@ew/commands'
   import type { CanvasHostHandle } from './canvas/host'
-  import { NODE_DRAG_MIME, ZERO_NODE_NOTE_DOT_COLOR } from './canvas/import-surfaces'
+  import { NODE_DRAG_MIME, zeroNodeNoteDotColor } from './canvas/import-surfaces'
 
   let {
     handle,
@@ -95,7 +95,7 @@
       placementId: uuidv7(),
       x: center.x,
       y: center.y,
-      appearance: { kind: 'dot', color: ZERO_NODE_NOTE_DOT_COLOR },
+      appearance: { kind: 'dot', color: zeroNodeNoteDotColor() },
       note: { kind: 'attach', noteId },
     })
     if (result.status !== 'committed') errorMessage = failureText('CreatePin', result)
@@ -177,14 +177,14 @@
     flex: none;
     width: 230px;
     overflow: auto;
-    border-right: 1px solid #ddd;
-    background: #fafafa;
+    border-right: 1px solid var(--ew-paper-border);
+    background: var(--ew-paper-surface);
     font-size: 0.85rem;
   }
 
   .tabs {
     display: flex;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--ew-paper-border);
   }
 
   .tabs button {
@@ -193,20 +193,20 @@
     border: none;
     background: transparent;
     font: inherit;
-    color: #666;
+    color: var(--ew-paper-text-subtle);
     cursor: pointer;
   }
 
   .tabs button.active {
-    background: #fff;
-    color: #222;
+    background: var(--ew-paper-page);
+    color: var(--ew-body-text);
     font-weight: 600;
   }
 
   .filter {
     display: block;
     padding: 0.4rem 0.75rem;
-    color: #555;
+    color: var(--ew-paper-text-subtle);
   }
 
   ul {
@@ -221,12 +221,12 @@
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.3rem 0.75rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--ew-paper-hover);
     cursor: grab;
   }
 
   li.empty {
-    color: #999;
+    color: var(--ew-paper-text-soft);
     cursor: default;
   }
 
@@ -237,7 +237,7 @@
   }
 
   .label small {
-    color: #999;
+    color: var(--ew-paper-text-soft);
   }
 
   li button {
@@ -251,7 +251,7 @@
   .error {
     margin: 0;
     padding: 0.4rem 0.75rem;
-    background: #fbeaea;
-    color: #8c2f2f;
+    background: var(--ew-paper-danger-surface);
+    color: var(--ew-paper-danger-text);
   }
 </style>

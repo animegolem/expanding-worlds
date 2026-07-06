@@ -50,7 +50,7 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
     dot.dataset['testid'] = 'pin-provisional-dot'
     dot.style.cssText =
       'position:absolute;width:12px;height:12px;border-radius:50%;z-index:7;' +
-      'background:#8ab4d8;border:2px solid #dde3ea;opacity:0.85;pointer-events:none;'
+      'background:var(--ew-node-dot-default);border:2px solid var(--ew-text);opacity:0.85;pointer-events:none;'
     element.appendChild(dot)
     dotWorld = { ...world, canvasId: host.canvasId }
     layout()
