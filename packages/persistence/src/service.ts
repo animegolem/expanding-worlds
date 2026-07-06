@@ -8,6 +8,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
+import { registerBookmarkHandlers } from './handlers/bookmarks'
 import { registerCanvasHandlers } from './handlers/canvases'
 import { registerDecorationHandlers } from './handlers/decorations'
 import { registerLifecycleHandlers } from './handlers/lifecycle'
@@ -78,6 +79,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerDecorationHandlers(commands)
   registerLifecycleHandlers(commands)
   registerPinHandlers(commands)
+  registerBookmarkHandlers(commands)
 
   const queries = new QueryRegistry()
   registerCoreQueries(queries)

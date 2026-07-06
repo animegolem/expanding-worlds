@@ -32,6 +32,18 @@ export interface CanvasScene {
   items: CanvasContentItem[]
 }
 
+/** One §8.1 bookmark menu row (AI-IMP-061). */
+export interface BookmarkListRow {
+  id: string
+  targetKind: 'canvas'
+  canvasId: string
+  label: string
+  viewport: { x: number; y: number; zoom: number } | null
+  sortKey: number
+  /** §8.1 degradation: trashed greys with Restore; purged is broken. */
+  targetState: 'active' | 'trashed' | 'purged'
+}
+
 interface NodeAppearanceColumns {
   appearanceKind: string | null
   appearanceColor: string | null
@@ -324,6 +336,37 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       }))
     return { tag, nodes }
   })
+
+  // §8.1 (AI-IMP-061): the bookmark menu's one read model — every
+  // bookmark in menu order (row order IS the Mod+1–n binding) with
+  // its target's degradation state joined in, so trashed targets grey
+  // out and purged targets present broken WITHOUT an N+1 sweep.
+  // LEFT JOIN because bookmarks have no FK: a missing canvas row IS
+  // the purged state, never a silent vanish.
+  registry.register('listBookmarks', (ctx): BookmarkListRow[] =>
+    ctx.db
+      .all<Omit<BookmarkListRow, 'viewport'> & { viewport: string | null }>(
+        `SELECT b.id, b.target_kind AS targetKind, b.canvas_id AS canvasId,
+                b.label, b.viewport, b.sort_key AS sortKey,
+                CASE
+                  WHEN c.id IS NULL THEN 'purged'
+                  WHEN c.lifecycle_state = 'trashed' THEN 'trashed'
+                  ELSE 'active'
+                END AS targetState
+         FROM bookmark b
+         LEFT JOIN canvas c ON c.id = b.canvas_id
+         WHERE b.project_id = ?
+         ORDER BY b.sort_key, b.id`,
+        ctx.projectId,
+      )
+      .map((row) => ({
+        ...row,
+        viewport:
+          row.viewport === null
+            ? null
+            : (JSON.parse(row.viewport) as BookmarkListRow['viewport']),
+      })),
+  )
 
   registry.register('getCanvasByNode', (ctx, args) => {
     const { nodeId } = args as { nodeId: string }

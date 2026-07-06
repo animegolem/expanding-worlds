@@ -76,25 +76,26 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Migration 0004 with target_kind seam; migration test passes
-      on fresh + existing DB fixtures.
-- [ ] CreateBookmark/RemoveBookmark/ReorderBookmark payload
+- [x] Migration 0005 (0004 taken by a parallel branch) with
+      target_kind seam; migration test passes on fresh + existing DB
+      fixtures.
+- [x] CreateBookmark/RemoveBookmark/ReorderBookmark payload
       validators + handlers + unit tests (ordering semantics
       covered, undo round-trip covered).
-- [ ] listBookmarks query returns rows in sort order with target
+- [x] listBookmarks query returns rows in sort order with target
       trash/purge state; unit test.
-- [ ] Pin button at path tail; press morphs to teardrop anchoring
+- [x] Pin button at path tail; press morphs to teardrop anchoring
       the menu (the button is its own anchor tail).
-- [ ] Menu rows: drag-handle reorder (commits ReorderBookmark),
+- [x] Menu rows: drag-handle reorder (commits ReorderBookmark),
       name, printed current shortcut, ✕ remove; bottom row
       bookmarks the current board with its viewport.
-- [ ] Mod+1–9 bound to current row order; bindings update on
+- [x] Mod+1–9 bound to current row order; bindings update on
       reorder without restart; jumps go through navigateTo.
-- [ ] Degradation: trashed target row greys with In Trash label +
+- [x] Degradation: trashed target row greys with In Trash label +
       Restore action (restores then jumps); purged target shows
       broken state offering removal; restoring a target
       revalidates its bookmark with no user action.
-- [ ] e2e: add two bookmarks, reorder, assert Mod+1/Mod+2 swap
+- [x] e2e: add two bookmarks, reorder, assert Mod+1/Mod+2 swap
       targets and printed shortcuts update; trash a target and
       assert grey-out + Restore path; full gates green.
 
@@ -122,3 +123,33 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Migration is 0005, not 0004** (per lead's brief): 0004-placement-lock
+  is landing on a parallel branch; `MIGRATIONS` here is `[1, 2, 3, 5]`
+  and the lead resolves the index merge. Ids need not be contiguous —
+  `migrate()` applies any unapplied entry in array order.
+- **0001 already had a placeholder `bookmark` table** (id, canvas_id,
+  name, viewport, created_at) with an FK on canvas_id. 0005 rebuilds
+  it (copy → drop → rename) rather than ALTERing, because the FK had
+  to GO AWAY: §8.1 says a purged target presents a broken bookmark,
+  which is impossible if the row is FK-bound to the canvas.
+- **Pre-existing §8.1 violation fixed**: `purgeCanvasAggregate`
+  (lifecycle.ts) deleted bookmark rows on canvas/node purge — a
+  silent vanish. It now leaves them (broken state) and still names
+  them in `affected` so menus re-query; the lifecycle test asserting
+  deletion was updated to assert survival. Lead should re-review this
+  behavior change.
+- **CreateBookmark does not validate target existence** (decision):
+  removal of a broken bookmark must be undoable, and its inverse
+  recreates a row whose canvas no longer exists. Documented in the
+  payload/handler comments; covered by unit test.
+- The e2e suite initially failed to launch: this worktree's
+  node_modules had no Electron binary (postinstall never ran). Copied
+  `dist/` + `path.txt` from the main repo's identical electron@39.8.10
+  install; no repo files affected.
+- `domain/records.ts` BookmarkRecord updated to the new shape
+  (targetKind/label/sortKey); nothing else referenced it.
+- PathBar's menu anchoring required replacing the absolutely
+  positioned nav with a `.path-wrap` container (the old
+  `overflow: hidden` on the bar would have clipped the menu); visual
+  layout of the path itself is unchanged.

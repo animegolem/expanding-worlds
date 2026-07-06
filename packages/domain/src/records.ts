@@ -170,14 +170,22 @@ export interface LinkRecord {
   updatedAt: string
 }
 
-/** §8.1 bookmarks target stable canvas identity plus viewport. */
+/**
+ * §8.1 bookmarks target stable canvas identity plus viewport; never
+ * deleted automatically (trashed/purged targets degrade explicitly).
+ * `sortKey` carries drag order — row order IS the Mod+1–n binding.
+ * `targetKind` is the EPIC-013 projection seam; only 'canvas' ships.
+ */
 export interface BookmarkRecord {
   id: string
   projectId: string
+  targetKind: 'canvas'
   canvasId: string
-  name: string
+  label: string
   viewport: CanvasCamera | null
+  sortKey: number
   createdAt: string
+  updatedAt: string
 }
 
 /** §10.2 committed-command metadata log entry (not replayable). */

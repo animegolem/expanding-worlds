@@ -5,14 +5,21 @@ import { titleKey, uuidv7 } from '@ew/domain'
 import { CommandRegistry, type CommittedResult } from '@ew/commands'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
+import { registerBookmarkHandlers } from './handlers/bookmarks'
 import { registerCanvasHandlers } from './handlers/canvases'
 import { registerDecorationHandlers } from './handlers/decorations'
+import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerPlacementHandlers } from './handlers/placements'
 import { registerTagHandlers } from './handlers/tags'
 import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry } from './queries'
-import { registerStructureQueries, type CanvasContentItem, type CanvasScene } from './queries-structure'
+import {
+  registerStructureQueries,
+  type BookmarkListRow,
+  type CanvasContentItem,
+  type CanvasScene,
+} from './queries-structure'
 
 let dir: string
 let handle: ProjectHandle
@@ -29,6 +36,8 @@ beforeEach(() => {
   registerPlacementHandlers(registry)
   registerTagHandlers(registry)
   registerDecorationHandlers(registry)
+  registerLifecycleHandlers(registry)
+  registerBookmarkHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
   queries = new QueryRegistry()
   registerStructureQueries(queries)
@@ -475,5 +484,74 @@ describe('listTags', () => {
     tags = query<Array<{ id: string; nodeCount: number }>>('listTags')
     expect(tags).toHaveLength(1)
     expect(tags[0]!.nodeCount).toBe(0)
+  })
+})
+
+describe('listBookmarks (§8.1)', () => {
+  function seedCanvas(): string {
+    const nodeId = createNode()
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId })
+    return canvasId
+  }
+
+  it('returns rows in menu order with parsed viewports and joined target state', () => {
+    const alive = seedCanvas()
+    const doomedTrash = seedCanvas()
+    const doomedPurge = seedCanvas()
+    const first = uuidv7()
+    const second = uuidv7()
+    const third = uuidv7()
+    committed('CreateBookmark', {
+      bookmarkId: first,
+      canvasId: alive,
+      label: 'Harbor',
+      viewport: { x: 5, y: 6, zoom: 1.5 },
+    })
+    committed('CreateBookmark', {
+      bookmarkId: second,
+      canvasId: doomedTrash,
+      label: 'Keep',
+      viewport: null,
+    })
+    committed('CreateBookmark', {
+      bookmarkId: third,
+      canvasId: doomedPurge,
+      label: 'Ruin',
+      viewport: null,
+    })
+
+    committed('TrashCanvas', { canvasId: doomedTrash })
+    committed('TrashCanvas', { canvasId: doomedPurge })
+    committed('PurgeRecord', { kind: 'canvas', id: doomedPurge })
+
+    // Degradation is explicit, never a silent vanish: all three rows
+    // list, each with its target state, in one query (no N+1).
+    const rows = query<BookmarkListRow[]>('listBookmarks')
+    expect(rows.map((r) => [r.id, r.targetState])).toEqual([
+      [first, 'active'],
+      [second, 'trashed'],
+      [third, 'purged'],
+    ])
+    expect(rows[0]!.viewport).toEqual({ x: 5, y: 6, zoom: 1.5 })
+    expect(rows[0]!).toMatchObject({ targetKind: 'canvas', canvasId: alive, label: 'Harbor' })
+    expect(rows[1]!.viewport).toBeNull()
+
+    // Restore revalidates the bookmark with no user action (§8.1:
+    // stable ids — no bookmark write happened at all).
+    committed('RestoreRecord', { kind: 'canvas', id: doomedTrash })
+    const after = query<BookmarkListRow[]>('listBookmarks')
+    expect(after.find((r) => r.id === second)!.targetState).toBe('active')
+  })
+
+  it('reflects reorder: row order (the Mod+1-n binding) follows sort keys', () => {
+    const canvasId = seedCanvas()
+    const a = uuidv7()
+    const b = uuidv7()
+    committed('CreateBookmark', { bookmarkId: a, canvasId, label: 'A', viewport: null })
+    committed('CreateBookmark', { bookmarkId: b, canvasId, label: 'B', viewport: null })
+    expect(query<BookmarkListRow[]>('listBookmarks').map((r) => r.id)).toEqual([a, b])
+    committed('ReorderBookmark', { bookmarkId: b, afterId: null, beforeId: a })
+    expect(query<BookmarkListRow[]>('listBookmarks').map((r) => r.id)).toEqual([b, a])
   })
 })
