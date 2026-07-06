@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.33         | 6 July 2026      |
+| Accepted for Phase 1 | 0.34         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -562,6 +562,24 @@ grammar, not new domain surface, and it composes with the §11.5
 settings tiers (attachment is app-level; per-project behavior stays
 project-level). Held as a musing: the shape needs talking over with
 the first tester before it hardens.
+
+**Second citizen (rev 0.34, from the first tester's Pinterest
+habit): a Pinterest connector.** "Connect your Pinterest account to
+seed your library" — boards become bulk imports with real pin
+dates, and an ongoing-import mode tops the library up with new pins
+so no local folder is hand-maintained ("wouldn't have to manually
+update local folder with new pins"). Feasibility ladder, cheapest
+first: (1) a board-export ZIP (LocalBoard-style) through the
+ordinary bulk import — works today, file dates only; (2) per-board
+RSS (no auth, recent pins only) as the ongoing trickle, pending
+verification the feeds still exist; (3) the official API v5 under
+OAuth — reads the user's own boards and pins with dates and media
+URLs, but Pinterest gates apps behind Trial/Standard access reviews
+(video-recorded app review for Standard), so the account-connect
+version is a Pinterest-review problem, not a technical one. All
+three are versioned adapters behind the connector store, and the
+ongoing-import mode obeys the same never-blocks rules as the §14.4
+mirror.
 
 **Deferred with scope: the importer dialogue and import adapters.**
 The importer dialogue is the single expansion point for what content
