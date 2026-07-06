@@ -10,3 +10,12 @@ out/
 test-results/
 playwright-report/
 dist-artifacts/
+
+# Loose extractions of RAG/Design-Artifacts-v*.zip — the zip is the
+# canonical committed artifact; extracted copies stay local.
+RAG/canonical/
+RAG/Design Spec v2.html
+RAG/Design-reply-letter-2.md
+RAG/Expanding Worlds - UI Vision.html
+RAG/How It Works.html
+RAG/Shell Wireframes (standalone).html
