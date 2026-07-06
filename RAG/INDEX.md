@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 2 |
+| In Progress | 1 | 1 |
 | Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 79 |
+| Completed | 11 | 80 |
 | **Total** | **15** | **81** |
 
 ## In Progress
@@ -48,23 +48,8 @@
 
 ---
 
-### [[AI-EPIC-014-library-and-cross-project-sourcing|EPIC-014: Library and cross project sourcing]]
+### [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015: Library and cross project sourcing]]
 > The first outside tester's reference library lives in Allusion,
-
-**IMPs:**
-- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
-- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
-- [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — completed
-- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
-- [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — completed
-- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
-
----
-
-## Anomalies
-
-### Status Mismatches
-- [[AI-IMP-066-toasts-and-perch|IMP-066]] — open but parent epic AI-EPIC-006 is completed
 
 ---
 
@@ -143,7 +128,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 79 IMPs completed</summary>
+<summary>11 EPICs, 80 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -187,7 +172,7 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-063-charms-and-click-grammar|IMP-063]] Charms and click grammar — completed
   - [[AI-IMP-064-note-panel-rehost|IMP-064]] Note panel rehost — completed
   - [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — completed
-  - [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — in-progress
+  - [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — completed
   - [[AI-IMP-067-pin-dock-tool|IMP-067]] Pin dock tool — completed
 - [[AI-EPIC-009-canvas-feel-pass|EPIC-009]] Canvas feel pass — 2026-07-05
   - [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — completed

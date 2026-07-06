@@ -144,3 +144,9 @@ fail twice); the debounced-toolbar-refresh click race is recorded
 debt for whenever the §8.2 chrome pass touches toolbars. Text
 decorations under group rotation orbit without spinning (no rotation
 field) — recorded limitation per ticket scope.
+
+Owner feel pass landed 2026-07-06: resize on rotated content feels
+fine, but (1) the rotate cursor state never appears on corner hover
+— the acceptance scenario's "rotate cursor appears" line is not met
+in practice — and (2) the rotate hover zone is too narrow to find
+by feel; pad it. Both fixed under this ticket before close.

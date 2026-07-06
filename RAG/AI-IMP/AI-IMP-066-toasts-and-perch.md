@@ -5,7 +5,7 @@ tags:
   - Implementation
   - shell
   - status
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-059]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.8
