@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 3 | 2 |
+| Planned | 4 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 85 |
-| **Total** | **15** | **87** |
+| **Total** | **16** | **87** |
 
 ## In Progress
 
@@ -59,6 +59,11 @@
 
 ---
 
+### [[AI-EPIC-016-context-click-menus|EPIC-016: Context click menus]]
+> Right-click surfaces have accreted per-feature rather than by
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -66,7 +71,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3525 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3635 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)

@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.36         | 6 July 2026      |
+| Accepted for Phase 1 | 0.37         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2469,10 +2469,28 @@ operations of section 6.8 and introduces no new domain records. It is
 the recursive containment structure made visible — the app's thesis
 that arranging images quietly builds data.
 
-## 14.4 Library projects and cross-project sourcing (deferred with scope)
+## 14.4 Library projects and cross-project sourcing
 
-Accepted direction, rev 0.18; deferred until after the global views
-ship. This section is self-contained on purpose.
+Accepted direction, rev 0.18; the in-project half (gallery, bulk
+import, thumbnails) shipped with AI-EPIC-014, and the cross-project
+half below ships with AI-EPIC-015 (rev 0.37): the read-only
+secondary seam, the this world · everything scope toggle,
+ingest-by-copy with the tag border, open-as-source panels, the
+inbox mirror, and the first-open seed. Still open: the Allusion
+adapter (stretch, unbuilt), the OS-drop importer dialogue (question
+27), and the export size preflight (rides EPIC-008 with §16's
+export surface). This section stays self-contained on purpose.
+
+**Shipped deviation (rev 0.37): clear-the-example.** The RFC below
+wants clearing as "the explainer note's one power," but as shipped
+the library opens as a SECONDARY beside the world the user stands
+in — the explainer lives in the library, the note UI in the
+primary, and no execute verb crosses that seam by design. V1: the
+explainer's body instructs, and the action is a "Clear the example
+set" button in the gallery's everything-scope header riding a
+narrow clear-library-example verb (ordinary TrashNode commands;
+recoverable from the library's Trash). Revisit if project
+switching makes standing IN the library ordinary.
 
 The app owns the reference-library surface (the Allusion/Eagle use
 case: a browsable, taggable, locally persisted file collection)
@@ -3604,3 +3622,14 @@ Accepted for the Phase 1 prototype:
   the panel). Screen-space panels carry a drop shadow, board cards
   render flat — the shadow is the depth cue. Sizes are presentation
   state, and no surface changes §7.1 commit semantics.
+
+- The library ecosystem shipped (rev 0.37, §14.4, AI-EPIC-015): a
+  read-only secondary open takes no lock, refuses every write, and
+  demands the current schema; two utility slots (source · library)
+  live beside the primary; the gallery's this world · everything
+  toggle, ingest-by-copy with the none/all/pick tag border merging
+  by name_key, open-as-source panels with drag-out pulls, the
+  once-per-project inbox mirror with hash recognition, and the
+  seeded first-open example with clear-the-example (shipped as a
+  gallery-header action over the seam — deviation recorded in
+  §14.4). Connector re-scans dedupe by source identity (rev 0.35).
