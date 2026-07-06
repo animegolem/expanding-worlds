@@ -80,21 +80,21 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] snap.ts: add `edges` mask to SnapQuery; noop provider unchanged.
-- [ ] snap-provider.ts: masked queries offer only the named edges as
+- [x] snap.ts: add `edges` mask to SnapQuery; noop provider unchanged.
+- [x] snap-provider.ts: masked queries offer only the named edges as
       moving candidates; unmasked behavior byte-identical (existing
       tests stay green untouched).
-- [ ] resize.ts: union-AABB path builds proposed bounds, queries with
+- [x] resize.ts: union-AABB path builds proposed bounds, queries with
       the handle's edge mask, recomputes sx/sy from adjusted pointer,
       returns provider guides; `disabled` when shift or alt held;
       rotated single-item path never queries.
-- [ ] Units: edge-mask provider tests; resize snaps e/se/n handles to
+- [x] Units: edge-mask provider tests; resize snaps e/se/n handles to
       a static edge; shift/alt produce zero snap and zero guides;
       rotated item skips; guides array surfaces through update().
-- [ ] e2e: drag-resize an image edge to within threshold of a
+- [x] e2e: drag-resize an image edge to within threshold of a
       neighbor edge → committed width lands exactly on the neighbor
       edge coordinate.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
 
 ### Acceptance Criteria
 
@@ -118,3 +118,32 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Deviation (refinement, not a change of behavior): the ticket says
+  "applies the returned dx/dy to `currentWorld`" — applied verbatim
+  that is only exact when the grab started precisely on the dragged
+  edge. The driver instead maps the edge adjustment into pointer
+  travel by the ratio of start offsets about the shared anchor
+  (`(startWorld − anchor) / (edge − anchor)`, guarded against a
+  zero-width axis), so the snapped edge lands on the stop to the
+  world unit even when the grab started a few px inside the edge
+  band. One recompute of sx/sy, as specified.
+- Aspect-lock interplay: the dominant axis is decided ONCE from the
+  raw pointer and pinned through the snap recompute; otherwise a
+  snap adjustment could shrink the dominant factor below the other
+  axis and flip dominance, pulling the snapped edge back off its
+  guide. Under a lock only the dominant axis' edge enters the mask,
+  so the single drawn guide is always honest.
+- `edges` mask type carries explicit `| undefined` members — the
+  repo builds with `exactOptionalPropertyTypes` and the driver
+  constructs the mask with conditional (possibly undefined) values.
+- e2e note: the acceptance scenario's Shift variant is covered in
+  engine units, not e2e — Shift's aspect force makes an edge-handle
+  Shift drag geometry-identical to the raw drag only for non-corner
+  handles, and the Alt phase already proves the disable path
+  end-to-end through the real modifier plumbing. Alt is pressed
+  MID-drag in the e2e (option-at-start means duplicate, §6.9
+  rev 0.21).
+- Existing snap-provider and resize suites pass untouched; unmasked
+  candidate arrays are byte-identical (mask absent → same
+  edge/center/edge triple).

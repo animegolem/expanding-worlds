@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { Camera } from '../camera'
 import { GestureSession } from '../gesture'
 import { noopSnapProvider } from '../snap'
+import { createSnapProvider } from '../snap-provider'
 import { makeDecoration, makePlacement } from '../test-helpers'
 import { createResizeDriver, type ResizeHandle } from './resize'
 import type { GestureContext } from '../controller'
 import type { Point } from '../camera'
+import type { SnapProvider, SnapQuery } from '../snap'
 import type { SceneItem } from '../types'
 
 function ctx(items: SceneItem[], start: Point, current: Point, alt = false): GestureContext {
@@ -288,5 +290,152 @@ describe('shift aspect lock on resize (AI-IMP-041)', () => {
     const update = context.session.get(item.id)!
     if (update.kind !== 'placement') throw new Error('expected placement')
     expect(update.transform.width! / 100).toBeCloseTo(update.transform.height! / 40, 5)
+  })
+})
+
+describe('resize snapping (AI-IMP-082)', () => {
+  /** Real provider indexed with one static 40×40 placement. */
+  function snapCtx(
+    items: SceneItem[],
+    staticCenter: Point,
+    start: Point,
+    current: Point,
+    modifiers: GestureContext['modifiers'] = {},
+  ): GestureContext {
+    const snap = createSnapProvider()
+    snap.begin([makePlacement({ x: staticCenter.x, y: staticCenter.y, width: 40, height: 40 })])
+    return {
+      session: new GestureSession('canvas-1', items),
+      startWorld: start,
+      currentWorld: current,
+      modifiers,
+      snap,
+      camera: new Camera(),
+    }
+  }
+
+  /** Provider that records queries; adjusts nothing. */
+  function recordingProvider(): { provider: SnapProvider; calls: SnapQuery[] } {
+    const calls: SnapQuery[] = []
+    return {
+      calls,
+      provider: {
+        begin() {},
+        end() {},
+        query(q) {
+          calls.push(q)
+          return { dx: q.proposedDelta.dx, dy: q.proposedDelta.dy, guides: [] }
+        },
+      },
+    }
+  }
+
+  it('e handle snaps the dragged max edge to a static edge and surfaces the guide', () => {
+    // Moving 40×40 at center (100, 100): bounds 80..120. Static at
+    // (200, 100): x edges 180..220. Dragging the e edge to 177 puts
+    // it 3 px from 180 → snap. The moving y edges sit EXACTLY on the
+    // static y stops (80/120), so an unmasked y would engage a guide
+    // — its absence proves the mask dropped the undriven axis.
+    const a = makePlacement({ x: 100, y: 100, width: 40, height: 40 })
+    const context = snapCtx([a], { x: 200, y: 100 }, { x: 120, y: 100 }, { x: 177, y: 100 })
+    const guides = createResizeDriver('e').update(context)
+    expect(context.session.get(a.id)).toMatchObject({
+      transform: { x: 130, y: 100, width: 100, height: 40 },
+    })
+    expect(guides).toHaveLength(1)
+    expect(guides[0]).toMatchObject({ axis: 'x', position: 180 })
+  })
+
+  it('n handle snaps the dragged min edge', () => {
+    // Moving bounds y 230..270; static y edges 180..220. Dragging the
+    // n edge to 223 (3 px from 220) snaps onto 220.
+    const a = makePlacement({ x: 100, y: 250, width: 40, height: 40 })
+    const context = snapCtx([a], { x: 100, y: 200 }, { x: 100, y: 230 }, { x: 100, y: 223 })
+    const guides = createResizeDriver('n').update(context)
+    expect(context.session.get(a.id)).toMatchObject({
+      transform: { x: 100, y: 245, width: 40, height: 50 },
+    })
+    expect(guides.map((g) => g.axis)).toEqual(['y'])
+    expect(guides[0]).toMatchObject({ axis: 'y', position: 220 })
+  })
+
+  it('se corner snaps both dragged edges independently (free aspect)', () => {
+    // Static corner at (180, 180); proposed edges land at (177, 178).
+    const a = makePlacement({ x: 100, y: 100, width: 40, height: 40 })
+    const context = snapCtx([a], { x: 200, y: 200 }, { x: 120, y: 120 }, { x: 177, y: 178 })
+    const guides = createResizeDriver('se').update(context)
+    expect(context.session.get(a.id)).toMatchObject({
+      transform: { x: 130, y: 130, width: 100, height: 100 },
+    })
+    expect(guides.map((g) => g.axis)).toEqual(['x', 'y'])
+  })
+
+  it('shift and alt produce zero snap and zero guides', () => {
+    const a = makePlacement({ x: 100, y: 100, width: 40, height: 40 })
+    for (const modifiers of [{ shift: true }, { alt: true }]) {
+      const context = snapCtx(
+        [a],
+        { x: 200, y: 100 },
+        { x: 120, y: 100 },
+        { x: 177, y: 100 },
+        modifiers,
+      )
+      const guides = createResizeDriver('e').update(context)
+      // Raw factor 97/40: the edge follows the pointer exactly.
+      expect(context.session.get(a.id)).toMatchObject({ transform: { width: 97 } })
+      expect(guides).toHaveLength(0)
+    }
+  })
+
+  it('image aspect lock keeps snapping on the dominant axis; aspect follows', () => {
+    // Raw sx = 2.425 (dominant), raw sy = 1.25. Only the x max edge
+    // is a candidate: it snaps 177 → 180 (s = 2.5) and the lock makes
+    // the height follow — one honest guide, no y guide even though
+    // the proposed y edge (177) is nowhere near a stop anyway.
+    const img = makePlacement({
+      x: 100,
+      y: 100,
+      width: 40,
+      height: 40,
+      appearanceKind: 'image',
+      assetContentHash: 'a'.repeat(64),
+    })
+    const context = snapCtx([img], { x: 200, y: 100 }, { x: 120, y: 120 }, { x: 177, y: 130 })
+    const guides = createResizeDriver('se').update(context)
+    expect(context.session.get(img.id)).toMatchObject({
+      transform: { x: 130, y: 130, width: 100, height: 100 },
+    })
+    expect(guides).toHaveLength(1)
+    expect(guides[0]).toMatchObject({ axis: 'x', position: 180 })
+  })
+
+  it('queries with the handle-mapped edge mask on the union path', () => {
+    const a = makePlacement({ x: 100, y: 100, width: 40, height: 40 })
+    const cases: Array<[ResizeHandle, { x?: 'min' | 'max'; y?: 'min' | 'max' }]> = [
+      ['e', { x: 'max', y: undefined }],
+      ['w', { x: 'min', y: undefined }],
+      ['n', { x: undefined, y: 'min' }],
+      ['s', { x: undefined, y: 'max' }],
+      ['nw', { x: 'min', y: 'min' }],
+      ['se', { x: 'max', y: 'max' }],
+    ]
+    for (const [handle, edges] of cases) {
+      const { provider, calls } = recordingProvider()
+      const context = ctx([a], { x: 120, y: 120 }, { x: 130, y: 130 })
+      context.snap = provider
+      createResizeDriver(handle).update(context)
+      expect(calls).toHaveLength(1)
+      expect(calls[0]!.edges).toEqual(edges)
+    }
+  })
+
+  it('never queries on the rotated single-item local-frame path', () => {
+    const item = makePlacement({ x: 0, y: 0, width: 100, height: 40, rotation: Math.PI / 2 })
+    const { provider, calls } = recordingProvider()
+    const context = ctx([item], { x: 0, y: 50 }, { x: 0, y: 75 })
+    context.snap = provider
+    const guides = createResizeDriver('e').update(context)
+    expect(calls).toHaveLength(0)
+    expect(guides).toEqual([])
   })
 })
