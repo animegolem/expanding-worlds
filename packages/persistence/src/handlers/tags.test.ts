@@ -70,6 +70,30 @@ function assignments(tagId: string): string[] {
     .map((r) => r.node_id)
 }
 
+/** Full assignment rows (with created_at) for byte-exact comparison. */
+function assignmentRows(tagId: string): Array<{ node_id: string; created_at: string }> {
+  return handle.db.all<{ node_id: string; created_at: string }>(
+    'SELECT node_id, created_at FROM tag_assignment WHERE tag_id = ? ORDER BY node_id',
+    tagId,
+  )
+}
+
+/** Whole tag row minus updated_at (AI-IMP-086 comparison precedent). */
+function tagRow(tagId: string): Record<string, unknown> | undefined {
+  const row = handle.db.get<Record<string, unknown>>('SELECT * FROM tag WHERE id = ?', tagId)
+  if (!row) return undefined
+  const copy = { ...row }
+  delete copy['updated_at']
+  return copy
+}
+
+function revision(): number {
+  return handle.db.get<{ project_revision: number }>(
+    'SELECT project_revision FROM project WHERE id = ?',
+    handle.projectId,
+  )!.project_revision
+}
+
 describe('CreateTag / RenameTag (§4.8)', () => {
   it('creates a tag with a normalized unique name_key', () => {
     const tagId = uuidv7()
@@ -188,5 +212,177 @@ describe('tag assignment (invariant 8: node-only, M:N)', () => {
       status: 'error',
       code: 'TAG_NOT_ASSIGNED',
     })
+  })
+})
+
+describe('DeleteTag (§4.8 lifecycle-aware, AI-IMP-105)', () => {
+  it('unassigns everywhere and removes the row; inverse restores byte-exact', () => {
+    const tagId = createTag('scout')
+    const nodeA = createNode()
+    const nodeB = createNode()
+    committed('AssignTagToNode', { tagId, nodeId: nodeA })
+    committed('AssignTagToNode', { tagId, nodeId: nodeB })
+    const beforeRow = tagRow(tagId)
+    const beforeAssignments = assignmentRows(tagId)
+    expect(beforeAssignments).toHaveLength(2)
+
+    const del = committed('DeleteTag', { tagId })
+    expect(handle.db.get('SELECT id FROM tag WHERE id = ?', tagId)).toBeUndefined()
+    expect(assignments(tagId)).toEqual([])
+    // affected names the tag and both formerly-tagged nodes.
+    expect(del.affected).toEqual(
+      expect.arrayContaining([
+        { kind: 'tag', id: tagId },
+        { kind: 'node', id: nodeA },
+        { kind: 'node', id: nodeB },
+      ]),
+    )
+
+    undo(del.inverse)
+    expect(tagRow(tagId)).toEqual(beforeRow)
+    expect(assignmentRows(tagId)).toEqual(beforeAssignments)
+  })
+
+  it('deletes an empty (unassigned) tag and restores it exactly', () => {
+    const tagId = createTag('lonely')
+    const beforeRow = tagRow(tagId)
+    const del = committed('DeleteTag', { tagId })
+    expect(handle.db.get('SELECT id FROM tag WHERE id = ?', tagId)).toBeUndefined()
+    undo(del.inverse)
+    expect(tagRow(tagId)).toEqual(beforeRow)
+    expect(assignments(tagId)).toEqual([])
+  })
+
+  it('refuses an unknown / already-deleted tag with no writes or revision bump', () => {
+    const tagId = createTag('scout')
+    const nodeA = createNode()
+    committed('AssignTagToNode', { tagId, nodeId: nodeA })
+    committed('DeleteTag', { tagId })
+    const r0 = revision()
+    // Second delete: the tag is gone.
+    expect(exec('DeleteTag', { tagId })).toMatchObject({
+      status: 'error',
+      code: 'TAG_NOT_FOUND',
+    })
+    expect(exec('DeleteTag', { tagId: uuidv7() })).toMatchObject({
+      status: 'error',
+      code: 'TAG_NOT_FOUND',
+    })
+    expect(revision()).toBe(r0)
+    expect(handle.db.get<{ n: number }>('SELECT count(*) AS n FROM tag_assignment')!.n).toBe(0)
+  })
+
+  it('round-trips the inverse chain (restore inverse re-deletes)', () => {
+    const tagId = createTag('scout')
+    const nodeA = createNode()
+    committed('AssignTagToNode', { tagId, nodeId: nodeA })
+    const del = committed('DeleteTag', { tagId })
+    const restore = undo(del.inverse)
+    expect(assignments(tagId)).toEqual([nodeA])
+    undo(restore.inverse)
+    expect(handle.db.get('SELECT id FROM tag WHERE id = ?', tagId)).toBeUndefined()
+    expect(assignments(tagId)).toEqual([])
+  })
+})
+
+describe('MergeTag (§4.8, AI-IMP-105)', () => {
+  it('winner absorbs the union with overlap dedupe; one undo restores both exactly', () => {
+    const loser = createTag('injured')
+    const winner = createTag('wounded')
+    const n1 = createNode()
+    const n2 = createNode() // overlap: both tags carry n2
+    const n3 = createNode()
+    committed('AssignTagToNode', { tagId: loser, nodeId: n1 })
+    committed('AssignTagToNode', { tagId: loser, nodeId: n2 })
+    committed('AssignTagToNode', { tagId: winner, nodeId: n2 })
+    committed('AssignTagToNode', { tagId: winner, nodeId: n3 })
+
+    const loserRowBefore = tagRow(loser)
+    const loserAssignBefore = assignmentRows(loser)
+    const winnerAssignBefore = assignmentRows(winner)
+
+    const merge = committed('MergeTag', { loserTagId: loser, winnerTagId: winner })
+    // Loser gone, winner owns the union exactly once each.
+    expect(handle.db.get('SELECT id FROM tag WHERE id = ?', loser)).toBeUndefined()
+    expect(assignments(winner)).toEqual([n1, n2, n3].sort())
+    // n2 appears exactly once (dedupe).
+    expect(
+      handle.db.get<{ n: number }>(
+        'SELECT count(*) AS n FROM tag_assignment WHERE tag_id = ? AND node_id = ?',
+        winner,
+        n2,
+      )!.n,
+    ).toBe(1)
+
+    undo(merge.inverse)
+    // Loser row + its exact original assignments are back.
+    expect(tagRow(loser)).toEqual(loserRowBefore)
+    expect(assignmentRows(loser)).toEqual(loserAssignBefore)
+    // Winner is byte-exact to before: only the merge's additions removed.
+    expect(assignmentRows(winner)).toEqual(winnerAssignBefore)
+  })
+
+  it('refuses identical, unknown-loser, and unknown-winner without writes', () => {
+    const loser = createTag('injured')
+    const winner = createTag('wounded')
+    const n1 = createNode()
+    committed('AssignTagToNode', { tagId: loser, nodeId: n1 })
+    const r0 = revision()
+
+    expect(exec('MergeTag', { loserTagId: loser, winnerTagId: loser })).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+    })
+    expect(exec('MergeTag', { loserTagId: uuidv7(), winnerTagId: winner })).toMatchObject({
+      status: 'error',
+      code: 'TAG_NOT_FOUND',
+    })
+    expect(exec('MergeTag', { loserTagId: loser, winnerTagId: uuidv7() })).toMatchObject({
+      status: 'error',
+      code: 'TAG_NOT_FOUND',
+    })
+    expect(revision()).toBe(r0)
+    expect(assignments(loser)).toEqual([n1])
+    expect(handle.db.get('SELECT id FROM tag WHERE id = ?', loser)).toBeDefined()
+  })
+})
+
+describe('SetTagAppearance (§4.8 presentation, AI-IMP-105)', () => {
+  it('writes color and icon with a prior-state inverse', () => {
+    const tagId = uuidv7()
+    committed('CreateTag', { tagId, name: 'scout', color: '#111', icon: 'star' })
+    const set = committed('SetTagAppearance', { tagId, color: '#f00', icon: 'leaf' })
+    expect(handle.db.get('SELECT color, icon FROM tag WHERE id = ?', tagId)).toMatchObject({
+      color: '#f00',
+      icon: 'leaf',
+    })
+    undo(set.inverse)
+    expect(handle.db.get('SELECT color, icon FROM tag WHERE id = ?', tagId)).toMatchObject({
+      color: '#111',
+      icon: 'star',
+    })
+  })
+
+  it('clears fields (omitted = null) and restores the prior nulls on undo', () => {
+    const tagId = createTag('plain') // color/icon null by default
+    const set = committed('SetTagAppearance', { tagId, color: '#0f0' })
+    expect(handle.db.get('SELECT color, icon FROM tag WHERE id = ?', tagId)).toMatchObject({
+      color: '#0f0',
+      icon: null,
+    })
+    undo(set.inverse)
+    expect(handle.db.get('SELECT color, icon FROM tag WHERE id = ?', tagId)).toMatchObject({
+      color: null,
+      icon: null,
+    })
+  })
+
+  it('refuses an unknown tag without a revision bump', () => {
+    const r0 = revision()
+    expect(exec('SetTagAppearance', { tagId: uuidv7(), color: '#f00' })).toMatchObject({
+      status: 'error',
+      code: 'TAG_NOT_FOUND',
+    })
+    expect(revision()).toBe(r0)
   })
 })
