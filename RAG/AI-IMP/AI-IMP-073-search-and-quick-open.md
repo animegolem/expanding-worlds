@@ -4,12 +4,12 @@ tags:
   - IMP-LIST
   - Implementation
   - search
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-068, AI-IMP-071]
 parent_epic: [[AI-EPIC-013-global-views]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-073-search-and-quick-open
