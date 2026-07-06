@@ -81,16 +81,16 @@ ships beside the outline. No theme engine is built.
 
 ### Functional Requirements
 
-- [ ] FR-1: Takeover framework — rail-charm entry, Esc/charm return, camera untouched per §8.2.
-- [ ] FR-2: Outline view with alias-row cycle handling, loose bin, filter chips per §14.1.
-- [ ] FR-3: Outline realizes library placement flows: drag-to-canvas and Place on Current Canvas per §6.10.
-- [ ] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8 (tags are flat, rev 0.20).
-- [ ] FR-5: Lens view state sharing the §7.5 highlight implementation per §4.8.
-- [ ] FR-6: Three tag doors landing on one panel per §4.8.
-- [ ] FR-7: ⌕ search with kind-grouped results and navigation per §8.3.
-- [ ] FR-8: Quick-open over notes and canvas-owning nodes, excluding phantoms, per §8.3.
-- [ ] FR-9: Settings takeover with live apply and the §11.5 inventory.
-- [ ] FR-10: Theme tokens as CSS custom properties; dark/light; glass Mac-only fallback per §11.5.
+- [x] FR-1: Takeover framework — rail-charm entry, Esc/charm return, camera untouched per §8.2.
+- [x] FR-2: Outline view with alias-row cycle handling, loose bin, filter chips per §14.1.
+- [x] FR-3: Outline realizes library placement flows: drag-to-canvas and Place on Current Canvas per §6.10.
+- [x] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8 (tags are flat, rev 0.20).
+- [x] FR-5: Lens view state sharing the §7.5 highlight implementation per §4.8.
+- [x] FR-6: Three tag doors landing on one panel per §4.8.
+- [x] FR-7: ⌕ search with kind-grouped results and navigation per §8.3.
+- [x] FR-8: Quick-open over notes and canvas-owning nodes, excluding phantoms, per §8.3.
+- [x] FR-9: Settings takeover with live apply and the §11.5 inventory.
+- [x] FR-10: Theme tokens as CSS custom properties; dark/light; glass Mac-only fallback per §11.5.
 
 ### Non-Functional Requirements
 
