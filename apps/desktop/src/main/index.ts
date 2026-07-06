@@ -64,6 +64,9 @@ function broadcastService(event: ServiceStatusEvent): void {
 function onUtilityDied(reason: string): void {
   utility = null
   projectReady = false
+  // The secondary slots died with the process; asset requests
+  // carrying ?scope must 404 rather than read a stale root.
+  secondaryDirs.clear()
   for (const call of pending.values()) call.resolve(deadResponse(call.request, reason))
   pending.clear()
   if (restartAttempted) {
@@ -142,6 +145,28 @@ function projectDir(): string {
   return process.env['EW_PROJECT_DIR'] ?? join(app.getPath('userData'), 'projects', 'default')
 }
 
+// ---- §14.4 secondary store roots (AI-IMP-089) ----
+// The ew-asset protocol serves the PRIMARY project's store; a
+// `?scope=source` query re-roots a request at the open secondary's
+// directory instead. Main records target→dir on a successful
+// secondary open (the utility owns the slot; this map only mirrors
+// where its store lives) and forgets it on close, on project close,
+// and on utility death — the slots die with the process.
+const secondaryDirs = new Map<'source' | 'library', string>()
+
+/** Resolve an ew-asset request's serving root from its `scope`
+ * query param: absent → the primary project; `source` → the open
+ * source slot's dir; anything else (or a closed slot) → null, which
+ * the handler answers 404 — the renderer's ordinary fallback path. */
+function assetScopeDir(url: string): string | null {
+  const q = url.indexOf('?')
+  if (q === -1) return projectDir()
+  const scope = new URLSearchParams(url.slice(q + 1)).get('scope')
+  if (scope === null) return projectDir()
+  if (scope === 'source') return secondaryDirs.get('source') ?? null
+  return null
+}
+
 // ---- §11.5 app-tier settings (AI-IMP-074) ----
 // Preferences that follow the application rather than any project:
 // one flat JSON file in the configuration directory, loaded once,
@@ -190,9 +215,10 @@ function setAppSetting(key: string, value: unknown): void {
  * directly). Content-addressed, so responses are immutable forever.
  */
 let projectReady = false
-const ASSET_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/?$/
 // The trailing query tolerates the renderer's ?v= cache-bust on
-// thumbnail-ready repaints (PR #3 review): same file, fresh fetch.
+// thumbnail-ready repaints (PR #3 review) and the ?scope=source
+// store re-root (AI-IMP-089): same guard, params handled after.
+const ASSET_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/?(?:\?[^#]*)?$/
 const THUMB_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/thumb\/?(?:\?[^#]*)?$/
 
 protocol.registerSchemesAsPrivileged([
@@ -208,11 +234,16 @@ function registerAssetProtocol(): void {
     // <hash>/thumb serves the WebP derivative (AI-IMP-076); 404 when
     // not (yet) generated — the renderer falls back to the original.
     // Derivatives regenerate, so no immutable cache header here.
+    // `?scope=source` re-roots the request at the open secondary's
+    // store (AI-IMP-089); a closed slot answers 404 like a missing
+    // file — the renderer's fallback chain already absorbs it.
+    const servingDir = assetScopeDir(request.url)
+    if (servingDir === null) return new Response('no such scope', { status: 404 })
     const thumb = THUMB_URL_RE.exec(request.url)
     if (thumb) {
       try {
         const file = await net.fetch(
-          pathToFileURL(join(projectDir(), thumbnailRelativePath(thumb[1]!))).toString(),
+          pathToFileURL(join(servingDir, thumbnailRelativePath(thumb[1]!))).toString(),
         )
         if (!file.ok) return new Response('no thumbnail', { status: 404 })
         return new Response(file.body, {
@@ -229,7 +260,7 @@ function registerAssetProtocol(): void {
     const match = ASSET_URL_RE.exec(request.url)
     // The regex is the traversal guard: only a bare hex hash resolves.
     if (!match) return new Response('bad asset url', { status: 400 })
-    const path = join(projectDir(), blobRelativePath(match[1]!))
+    const path = join(servingDir, blobRelativePath(match[1]!))
     try {
       const file = await net.fetch(pathToFileURL(path).toString())
       if (!file.ok) return new Response('unknown asset', { status: 404 })
@@ -517,12 +548,20 @@ void app.whenReady().then(() => {
   })
   // §14.4 secondary slots (AI-IMP-088): source (read-only browse)
   // and library (writable mirror target) ride the same utility.
-  ipcMain.handle('secondary:open', (_event, target: 'source' | 'library', dir: string) =>
-    callUtility({ type: 'open-secondary', target, dir: String(dir) }),
-  )
-  ipcMain.handle('secondary:close', (_event, target: 'source' | 'library') =>
-    callUtility({ type: 'close-secondary', target }),
-  )
+  ipcMain.handle('secondary:open', async (_event, target: 'source' | 'library', dir: string) => {
+    const response = await callUtility({ type: 'open-secondary', target, dir: String(dir) })
+    // Mirror the slot's store root for the ew-asset scope param
+    // (AI-IMP-089). A failed open also clears any prior recording:
+    // the utility's replace-on-open closed the old slot first.
+    if ('ok' in response && response.ok) secondaryDirs.set(target, String(dir))
+    else secondaryDirs.delete(target)
+    return response
+  })
+  ipcMain.handle('secondary:close', async (_event, target: 'source' | 'library') => {
+    const response = await callUtility({ type: 'close-secondary', target })
+    secondaryDirs.delete(target)
+    return response
+  })
   ipcMain.handle(
     'secondary:query',
     (_event, target: 'source' | 'library', name: string, args: unknown) =>
@@ -595,6 +634,9 @@ app.on('window-all-closed', () => {
     utility?.kill()
     app.quit()
   }
+  // close-project closes the secondaries with it (utility side);
+  // the store-root mirror follows.
+  secondaryDirs.clear()
   void Promise.race([
     callUtility({ type: 'close-project' }),
     new Promise((resolve) => setTimeout(resolve, 1_000)),

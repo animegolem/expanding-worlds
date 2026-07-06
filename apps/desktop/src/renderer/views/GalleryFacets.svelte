@@ -9,6 +9,12 @@
   owns (untagged · unplaced). Every control commits on click; the
   parent re-queries live. Facet state is view state — nothing here
   writes.
+
+  089: the tag facet always shows the ACTIVE scope's vocabulary
+  (§14.4) — in everything scope the counts query rides the secondary
+  seam against the library, same name, different transport; until
+  the parent reports the scope ready, the vocabulary is empty rather
+  than stale.
 -->
 <script lang="ts">
   type GalleryKind = 'image' | 'note' | 'board'
@@ -29,6 +35,8 @@
     tags,
     untagged,
     unplaced,
+    queryScope = 'this-world',
+    scopeReady = true,
     onSort,
     onToggleKind,
     onAddTag,
@@ -41,6 +49,8 @@
     tags: TagRef[]
     untagged: boolean
     unplaced: boolean
+    queryScope?: 'this-world' | 'everything'
+    scopeReady?: boolean
     onSort: (sort: GallerySort) => void
     onToggleKind: (kind: GalleryKind) => void
     onAddTag: (tag: TagRef) => void
@@ -65,7 +75,10 @@
   let counts = $state<TagCount[]>([])
 
   async function runQuery<T>(name: string, args?: unknown): Promise<T> {
-    const response = await window.ew.project.query(name, args)
+    const response =
+      queryScope === 'everything'
+        ? await window.ew.secondary.query('source', name, args)
+        : await window.ew.project.query(name, args)
     if (!response.ok) throw new Error(response.message)
     return response.result as T
   }
@@ -81,9 +94,17 @@
   }
 
   $effect(() => {
+    if (!scopeReady) {
+      counts = []
+      return
+    }
     void loadCounts([...kinds])
   })
-  $effect(() => window.ew.project.onChanged(() => void loadCounts(kinds)))
+  $effect(() =>
+    window.ew.project.onChanged(() => {
+      if (scopeReady) void loadCounts(kinds)
+    }),
+  )
 
   // Count order IS the suggestion order; active chips drop out, and
   // an empty field on focus offers the top of the vocabulary.
