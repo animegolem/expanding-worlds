@@ -8,8 +8,16 @@ tags:
   - theming
 date_created: 2026-07-05
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
+  - AI-IMP-068
+  - AI-IMP-069
+  - AI-IMP-070
+  - AI-IMP-071
+  - AI-IMP-072
+  - AI-IMP-073
+  - AI-IMP-074
+  - AI-IMP-075
 ---
 
 # AI-EPIC-013-global-views
@@ -94,4 +102,10 @@ ships beside the outline. No theme engine is built.
 
 ## Implementation Breakdown
 
-IMPs to be cut when this epic activates.
+Cut 2026-07-05: AI-IMP-068 takeover framework (FR-1) →
+AI-IMP-069 outline view (FR-2) → AI-IMP-070 outline placement
+flows (FR-3) · AI-IMP-071 tag panel (FR-4, FR-6) · AI-IMP-072 lens
+(FR-5) · AI-IMP-073 search and quick-open (FR-7, FR-8) ·
+AI-IMP-074 settings takeover (FR-9, depends on 075) · AI-IMP-075
+theme tokens (FR-10). 072 and 075 are framework-independent and
+fan out first; 070/071/073 parallelize after 069.

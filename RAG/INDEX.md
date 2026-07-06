@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 2 |
-| Planned | 4 | 0 |
+| In Progress | 2 | 2 |
+| Planned | 3 | 8 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 9 | 65 |
-| **Total** | **14** | **67** |
+| **Total** | **14** | **75** |
 
 ## In Progress
 
@@ -36,6 +36,21 @@
 
 ---
 
+### [[AI-EPIC-013-global-views|EPIC-013: Global views]]
+> The shell's second physics — project-global views that take over the
+
+**IMPs:**
+- [[AI-IMP-068-takeover-framework|IMP-068]] Takeover framework — planned
+- [[AI-IMP-069-outline-view|IMP-069]] Outline view — planned
+- [[AI-IMP-070-outline-placement-flows|IMP-070]] Outline placement flows — planned
+- [[AI-IMP-071-tag-panel|IMP-071]] Tag panel — planned
+- [[AI-IMP-072-lens|IMP-072]] Lens — planned
+- [[AI-IMP-073-search-and-quick-open|IMP-073]] Search and quick open — planned
+- [[AI-IMP-074-settings-takeover|IMP-074]] Settings takeover — planned
+- [[AI-IMP-075-theme-tokens|IMP-075]] Theme tokens — planned
+
+---
+
 ## Planned
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
@@ -45,11 +60,6 @@
 
 ### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
 > RFC §16 requires portable export with lossless reimport, and §17–18
-
----
-
-### [[AI-EPIC-013-global-views|EPIC-013: Global views]]
-> The shell's second physics — project-global views that take over the
 
 ---
 
@@ -72,7 +82,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3273 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3309 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1181 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (908 LOC)
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
