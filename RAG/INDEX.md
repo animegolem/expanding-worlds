@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 3 |
+| In Progress | 2 | 2 |
 | Planned | 3 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 10 | 75 |
+| Completed | 10 | 76 |
 | **Total** | **15** | **81** |
 
 ## In Progress
@@ -45,7 +45,7 @@
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
-- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — in-progress
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
 
 ---
 
@@ -70,7 +70,7 @@
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
-- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — in-progress
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
 
 ---
 
@@ -125,6 +125,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
 - apps/desktop/src/renderer/note/panels.ts (413 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (396 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
@@ -152,7 +153,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>10 EPICs, 75 IMPs completed</summary>
+<summary>10 EPICs, 76 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

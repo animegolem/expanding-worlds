@@ -5,11 +5,12 @@ tags:
   - Implementation
   - import
   - gallery
-kanban_status: in-progress
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-014-gallery]]
 confidence_score: 0.65
 date_created: 2026-07-06
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-081-import-progress-strip
