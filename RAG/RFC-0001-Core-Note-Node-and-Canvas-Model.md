@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.25         | 6 July 2026      |
+| Accepted for Phase 1 | 0.26         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -3016,6 +3016,25 @@ bucket jumps (§14.4).
 
 27. The OS-drop importer dialogue as the third compression of the
 gallery grammar (§14.4, §4.7) awaits its design turn.
+
+28. (Shaped, rev 0.26 — early musing, deliberately unclosed.) The
+iPad direction: the web renderer carries over through a WKWebView
+shell (Tauri-class), macOS becoming the WebKit lead platform when
+that work actually starts — not before; Windows/Linux stay on
+Electron/Chromium (WebKitGTK is the weak WebGL target). Persistence
+authority STAYS a desktop feature: the iPad is a satellite holding
+a read replica (the §16 export as the snapshot vehicle) plus a
+command outbox the desktop grabs and replays through the real
+pipeline — the single-writer rule (§11.1) is preserved, asset
+transfer is idempotent by content hash, and §15's
+command-as-sync-unit becomes concrete. Two live writers stay out
+of scope; a server-authoritative client would be a different
+product. The open half is the rejected-replay surface: outbox
+commands that no longer apply need a picker presented not as a
+merge but as superposition (jj-style) — both versions persist as
+ordinary records, the user only picks which one the board shows,
+and nothing is destroyed. Awaits its design turn with the
+satellite work.
 
 # 20. Decision summary
 
