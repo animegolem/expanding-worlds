@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 1 | 0 |
 | Planned | 8 | 3 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 110 |
+| Completed | 13 | 111 |
 | **Total** | **22** | **115** |
 
 ## In Progress
@@ -32,7 +32,7 @@
 
 **IMPs:**
 - [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
-- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — in-progress
+- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
 
 ---
 
@@ -96,7 +96,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4031 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4042 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1450 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (999 LOC)
@@ -182,7 +182,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 110 IMPs completed</summary>
+<summary>13 EPICs, 111 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

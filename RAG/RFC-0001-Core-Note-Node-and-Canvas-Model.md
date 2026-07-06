@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.48         | 6 July 2026      |
+| Accepted for Phase 1 | 0.49         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1145,7 +1145,12 @@ displaced node survives as an unplaced node — note, canvas, tags
 intact, findable through §14.1 — destroy-nothing default. The
 "node" term itself stays a docs-and-graph word; UI copy avoids
 needing a noun, and where one is unavoidable the working choice is
-"item" (final tone at the design pass).
+"item" (final tone at the design pass). **Impact confirm
+(rev 0.49, owner):** when the node is placed more than once, BOTH
+verbs confirm with the count before acting — "this will affect 35
+placements — are you sure?" — a passive teaching moment for the
+one-item-many-places model, not a friction gate: single-placement
+swaps and replaces run without the ask.
 
 ## 6.6 Attach, detach, and make independent
 
@@ -4029,3 +4034,9 @@ Accepted for the Phase 1 prototype:
   tooltips and a view-only Keyboard settings section, rebinding
   deferred. AI-IMP-107, the first M-ticket, closes with every
   item decided or explicitly moved to the design-letter scope.
+
+- Swap/replace impact confirm (rev 0.49, §6.5): multi-placement
+  nodes confirm with the count before either verb acts — the
+  passive teaching moment; single placements run without the ask.
+  (0.49 also carries the design-assets pointer move to
+  RAG/design/.)

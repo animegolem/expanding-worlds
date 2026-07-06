@@ -5,12 +5,12 @@ tags:
   - Implementation
   - undo
   - commands
-kanban_status: in-progress
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-114-undo-redo-core
