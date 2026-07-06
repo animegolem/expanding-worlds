@@ -207,6 +207,55 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
+    case 'mirror-to-library': {
+      // §14.4 inbox mirror (AI-IMP-092): the exact inverse of
+      // ingest-from-secondary — reads from the PRIMARY's {db, dir}
+      // handle, WRITES into the library slot. Border 'none' by
+      // construction: the mirror is one-way and carries bytes plus
+      // provenance, never world curation.
+      if (!service) {
+        return {
+          type: 'mirror-to-library',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no project is open',
+        }
+      }
+      const library = secondaries.library
+      if (!library) {
+        return {
+          type: 'mirror-to-library',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: 'no library project is open',
+        }
+      }
+      try {
+        const result = await library.ingestFrom(service.ingestSource(), {
+          contentHash: request.contentHash,
+          border: 'none',
+        })
+        return {
+          type: 'mirror-to-library',
+          ok: true,
+          nodeId: result.nodeId,
+          assetId: result.assetId,
+          deduplicated: result.deduplicated,
+        }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'MIRROR_FAILED'
+        return {
+          type: 'mirror-to-library',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'execute-command': {
       if (!service) {
         return {

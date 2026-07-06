@@ -7,6 +7,7 @@ import type {
   ExecuteCommandResponse,
   ImportAssetResponse,
   IngestFromSecondaryResponse,
+  MirrorToLibraryResponse,
   OpenSecondaryResponse,
   PingResponse,
   RunQueryResponse,
@@ -157,6 +158,11 @@ const api = {
       input: { contentHash: string; border: 'none' | 'all' | string[] },
     ): Promise<IngestFromSecondaryResponse> =>
       ipcRenderer.invoke('secondary:ingest', target, input) as Promise<IngestFromSecondaryResponse>,
+    /** §14.4 inbox mirror (AI-IMP-092): the inverse direction —
+     * ingest the primary's bytes (by content hash) into the LIBRARY
+     * slot as an unplaced node, border 'none' by construction. */
+    mirrorToLibrary: (input: { contentHash: string }): Promise<MirrorToLibraryResponse> =>
+      ipcRenderer.invoke('secondary:mirror', input) as Promise<MirrorToLibraryResponse>,
   },
   /** §11.2 renderer-driven thumbnail pipeline (AI-IMP-076): the
    * renderer claims queued jobs, generates WebP thumbnails with

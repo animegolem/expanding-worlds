@@ -596,6 +596,12 @@ void app.whenReady().then(() => {
         border: input.border,
       }),
   )
+  // §14.4 inbox mirror (AI-IMP-092): primary → library, the inverse
+  // of secondary:ingest. The utility refuses without an open library
+  // slot; the renderer owns opening it lazily.
+  ipcMain.handle('secondary:mirror', (_event, input: { contentHash: string }) =>
+    callUtility({ type: 'mirror-to-library', contentHash: String(input.contentHash) }),
+  )
   ipcMain.handle('app-settings:get', () => loadAppSettings())
   ipcMain.handle('app-settings:set', (_event, key: string, value: unknown) => {
     setAppSetting(String(key), value)

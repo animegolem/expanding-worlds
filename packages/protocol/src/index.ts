@@ -206,6 +206,20 @@ export type IngestFromSecondaryResponse =
     }
   | { type: 'ingest-from-secondary'; ok: false; code: string; message: string }
 
+/** §14.4 inbox mirror (AI-IMP-092): the INVERSE of ingest — read the
+ * just-imported bytes from the PRIMARY and ingest them into the
+ * LIBRARY slot as an unplaced node with provenance. Border is always
+ * 'none' on this direction: world curation never leaks into the
+ * library; library tags travel the other way via recognition. */
+export interface MirrorToLibraryRequest {
+  type: 'mirror-to-library'
+  contentHash: string
+}
+
+export type MirrorToLibraryResponse =
+  | { type: 'mirror-to-library'; ok: true; nodeId: string; assetId: string; deduplicated: boolean }
+  | { type: 'mirror-to-library'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -221,6 +235,7 @@ export type ProjectRequest =
   | SecondaryQueryRequest
   | SecondaryImportRequest
   | IngestFromSecondaryRequest
+  | MirrorToLibraryRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -237,6 +252,7 @@ export type ProjectResponse =
   | SecondaryQueryResponse
   | SecondaryImportResponse
   | IngestFromSecondaryResponse
+  | MirrorToLibraryResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. */

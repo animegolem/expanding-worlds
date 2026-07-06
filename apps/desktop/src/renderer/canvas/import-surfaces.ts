@@ -7,6 +7,7 @@ import {
   isImportBatchActive,
   type ImportOutcome,
 } from '../chrome/import-progress'
+import { queueMirrorForDrop } from '../chrome/mirror'
 import { sourceBorder } from '../chrome/source-slot'
 import { themeTokenValue } from '../theme'
 
@@ -90,11 +91,17 @@ export function attachImportSurfaces(
   /** canvasId is BOUND AT GESTURE TIME by every caller: the import
    * awaits before this runs, and a user who navigates mid-import
    * must get the pin on the board they dropped on, not wherever
-   * they are now (AI-IMP-085). Returns commit success so batch
-   * outcomes stay honest. */
-  async function createImagePin(assetId: string, world: Point, canvasId: string): Promise<boolean> {
+   * they are now (AI-IMP-085). Returns the fresh nodeId on commit
+   * (the §14.4 mirror's tag-offer target), null on failure — so
+   * batch outcomes stay honest. */
+  async function createImagePin(
+    assetId: string,
+    world: Point,
+    canvasId: string,
+  ): Promise<string | null> {
+    const nodeId = uuidv7()
     const result = await host.gateway.execute('CreatePin', {
-      nodeId: uuidv7(),
+      nodeId,
       canvasId,
       placementId: uuidv7(),
       x: world.x,
@@ -103,18 +110,23 @@ export function attachImportSurfaces(
     })
     if (result.status !== 'committed') {
       onError(describeFailure('CreatePin', result))
-      return false
+      return null
     }
-    return true
+    return nodeId
   }
 
   /** One file through the staged pipeline, then its CreatePin. A
    * sniff rejection surfaces its notice and issues zero commands;
-   * the outcome feeds the §14.4 batch counts. */
+   * the outcome feeds the §14.4 batch counts. A committed import is
+   * then OFFERED to the inbox mirror — fire-and-forget, never
+   * awaited: the drop's latency owes the mirror nothing (§14.4).
+   * 'deduped' still mirrors: the world holding the bytes says
+   * nothing about the library. */
   async function importOneFile(
     file: File,
     world: Point,
     canvasId: string,
+    mirror: { anchor: Point; bulk: boolean },
     sourceUrl?: string,
   ): Promise<ImportOutcome> {
     const bytes = new Uint8Array(await file.arrayBuffer())
@@ -131,7 +143,15 @@ export function attachImportSurfaces(
     // A committed asset with no pin is invisible (the gallery is
     // node-backed) — report it as the failure it is; the orphaned
     // bytes stay GC-eligible per §9.8 and hash dedupe re-finds them.
-    if (!(await createImagePin(imported.assetId, world, canvasId))) return 'failed'
+    const nodeId = await createImagePin(imported.assetId, world, canvasId)
+    if (nodeId === null) return 'failed'
+    queueMirrorForDrop({
+      assetId: imported.assetId,
+      nodeId,
+      clientX: mirror.anchor.x,
+      clientY: mirror.anchor.y,
+      bulk: mirror.bulk,
+    })
     return imported.deduplicated ? 'deduped' : 'imported'
   }
 
@@ -140,12 +160,18 @@ export function attachImportSurfaces(
    * threshold — or ANY drop while a batch runs — queues into the
    * progress strip instead (each file stays its own committed
    * import, so strip cancel never rolls anything back). */
-  async function importFiles(files: File[], world: Point, sourceUrl?: string): Promise<void> {
+  async function importFiles(
+    files: File[],
+    world: Point,
+    anchor: Point,
+    sourceUrl?: string,
+  ): Promise<void> {
     const canvasId = host.canvasId // gesture-time board, not import-completion board
     if (files.length > IMPORT_BATCH_THRESHOLD || isImportBatchActive()) {
       // The pump runs tasks strictly in order, so a shared per-drop
       // success count keeps the cascade offsets identical to the
-      // quiet path's placement semantics.
+      // quiet path's placement semantics. bulk:true collapses the
+      // mirror's recognition chips into one summary chip (§14.4).
       const drop = { placed: 0 }
       enqueueImportBatch(
         files.map((file) => async () => {
@@ -156,6 +182,7 @@ export function attachImportSurfaces(
               y: world.y + drop.placed * MULTI_DROP_OFFSET,
             },
             canvasId,
+            { anchor, bulk: true },
             sourceUrl,
           )
           if (outcome !== 'failed') drop.placed += 1
@@ -173,6 +200,7 @@ export function attachImportSurfaces(
           y: world.y + placed * MULTI_DROP_OFFSET,
         },
         canvasId,
+        { anchor, bulk: false },
         sourceUrl,
       )
       if (outcome !== 'failed') placed += 1
@@ -181,7 +209,7 @@ export function attachImportSurfaces(
 
   /** §6.1 URL-only drop: main fetches as a user-initiated act; any
    * failure surfaces a clear error and creates zero records. */
-  async function importFromUrl(url: string, world: Point): Promise<void> {
+  async function importFromUrl(url: string, world: Point, anchor: Point): Promise<void> {
     const canvasId = host.canvasId // gesture-time board (AI-IMP-085)
     const fetched = await window.ew.project.fetchUrlForImport(url)
     if (!fetched.ok) {
@@ -197,7 +225,18 @@ export function attachImportSurfaces(
       onError(imported.message)
       return
     }
-    await createImagePin(imported.assetId, world, canvasId)
+    const nodeId = await createImagePin(imported.assetId, world, canvasId)
+    // A URL drop is a capture like any other (§14.4) — offer it to
+    // the mirror; provenance rides the asset's source_url.
+    if (nodeId !== null) {
+      queueMirrorForDrop({
+        assetId: imported.assetId,
+        nodeId,
+        clientX: anchor.x,
+        clientY: anchor.y,
+        bulk: false,
+      })
+    }
   }
 
   /** §14.4 pull from the source panel (AI-IMP-091): ingest-by-copy
@@ -285,10 +324,15 @@ export function attachImportSurfaces(
     } else if (noteId.length > 0) {
       void placeZeroNodeNote(noteId, world)
     } else if (files.length > 0) {
-      void importFiles(files, world, sourceUrlFrom(uriList, html))
+      void importFiles(
+        files,
+        world,
+        { x: event.clientX, y: event.clientY },
+        sourceUrlFrom(uriList, html),
+      )
     } else {
       const url = firstUri(uriList)
-      if (url) void importFromUrl(url, world)
+      if (url) void importFromUrl(url, world, { x: event.clientX, y: event.clientY })
     }
   }
 
@@ -309,7 +353,13 @@ export function attachImportSurfaces(
     const world = lastCursor
       ? host.controller.camera.screenToWorld(lastCursor)
       : viewCenterWorld()
-    void importFiles([...dt.files], world)
+    // Chip/ask anchor in client coordinates: the paste point when the
+    // cursor is over the canvas, else the view center.
+    const bounds = element.getBoundingClientRect()
+    const anchor = lastCursor
+      ? { x: bounds.left + lastCursor.x, y: bounds.top + lastCursor.y }
+      : { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 }
+    void importFiles([...dt.files], world, anchor)
   }
 
   element.addEventListener('dragover', onDragOver)
