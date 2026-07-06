@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.39         | 6 July 2026      |
+| Accepted for Phase 1 | 0.40         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -900,7 +900,11 @@ habit).** A node's image is replaceable in place — right-click →
 replace file (picker or drop) imports the new bytes as an ordinary
 asset, repoints the node's appearance, and updates source
 attribution; every placement, tag, and note stays. The old asset
-becomes unreferenced and GC-eligible (§9.8). Consequence for
+becomes unreferenced and GC-eligible (§9.8). Explicit invariant
+(rev 0.40): replacement FORKS the pointer — it never mutates bytes.
+Other nodes whose assets share the old content hash keep rendering
+exactly what they rendered; blobs by hash persist while anything
+references them. Consequence for
 connectors: after a replacement the original bytes' hash may be
 purged, so connector re-scans MUST dedupe by SOURCE IDENTITY (pin
 or post id, recorded as provenance) and not by content hash alone —
@@ -1801,7 +1805,11 @@ compositor-dependent and MAY degrade to opacity-without-
 click-through. Fullscreen-space interaction on macOS needs the
 elevated window level. Ghost mode is presentation state only:
 no domain records change, and the mode never enters the command
-log.
+log. Implementation note (rev 0.40): forwarding mouse events
+surrenders window focus, so the exit keybind MUST register as an
+Electron globalShortcut for exactly the duration of ghost mode —
+the OS routes it to us even while the painting app holds focus —
+and MUST unregister on exit.
 
 # 9. Deletion, trash, and resource retention
 
@@ -1951,6 +1959,11 @@ independently when not actively in use.
 Temporary imports and orphaned files left by interruption are reconciled
 during project recovery using age, transaction, and database-reference
 checks.
+
+When purge nonetheless outruns a stale inverse (rev 0.40): every
+inverse command VALIDATES like any command and refuses with a typed
+error when its records are gone — undo after purge degrades to a
+clear refusal, never a broken render or a half-restored state.
 
 # 10. Commands and undo
 
@@ -2747,6 +2760,11 @@ multi-master merging is outside the current design.
 The versioned command envelope, project-scoped subscriptions, expected
 project revisions, and monotonic project_revision are the compatibility
 seam for this transition.
+
+Standing constraint for that layer (rev 0.40): UUIDv7 timestamps are
+NEVER a conflict tie-breaker — clock skew across clients makes them
+lies. Ordering authority is monotonic project_revision (or the sync
+layer's own logical clock), full stop.
 
 # 16. Export contract
 

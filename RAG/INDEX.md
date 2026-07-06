@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 6 | 0 |
+| Planned | 6 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 88 |
-| **Total** | **18** | **88** |
+| **Total** | **18** | **90** |
 
 ## In Progress
 
@@ -40,6 +40,8 @@
 - [[AI-IMP-086-compound-commands|IMP-086]] Compound commands — completed
 - [[AI-IMP-087-label-outline-avoidance|IMP-087]] Label outline avoidance — completed
 - [[AI-IMP-095-token-exists-guard|IMP-095]] Token exists guard — completed
+- [[AI-IMP-096-checkpoint-on-suspend|IMP-096]] Checkpoint on suspend — backlog
+- [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
 
 ---
 
@@ -82,7 +84,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3699 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3717 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1373 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)

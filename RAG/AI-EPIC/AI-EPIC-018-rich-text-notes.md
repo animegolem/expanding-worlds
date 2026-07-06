@@ -13,10 +13,11 @@ AI_IMP_spawned:
 
 # AI-EPIC-018-rich-text-notes
 
-> MAYBE-epic, stubbed 2026-07-06 (RFC rev 0.39): explicitly not a
-> promise — "a modest and real lift but a real thing i've
-> considered." Holds the slot and the constraints so the decision
-> can be made cleanly later.
+> Stubbed 2026-07-06 as a maybe (RFC rev 0.39); FIRMED to "probably
+> proceeding" the same day (rev 0.40): the canvas text controls get
+> built regardless, and the Gemini review's point landed — Obsidian
+> muscle memory drags images into the editor, and artist-focused
+> note apps are the actual competitive set.
 
 ## Problem Statement/Feature Scope
 
@@ -39,6 +40,29 @@ epic stalls): paste-as-plain-text everywhere text is accepted.
 Gated stretch riding this epic if it activates: the rev 0.39
 AI-over-a-text-region verbs (format/extract/dictate-cleanup),
 double-gated per §11.5, tiny on-device model.
+
+**Library direction (rev 0.40, owner + lead):** TipTap
+(ProseMirror lineage — the Linear-class shape) as the lead
+candidate: headless, Svelte-workable, and its schema is a
+WHITELIST — register only markdown-round-trippable nodes/marks and
+the editor cannot produce an incompatible shape, which turns the
+"never offer anything non-markdown" constraint into a type system.
+Milkdown (markdown-native ProseMirror) is the named runner-up.
+The real cost center is porting the CM6 wiki-link plugin
+(suggestions, phantom styling, rename rewrites) onto ProseMirror
+suggestion machinery. The canvas text overlay MAY share a
+minimal-schema instance of the same editor; the Pixi render side
+shares nothing.
+
+**Images in notes join this scope (rev 0.40, owner decision — not
+a priority, rides the epic):** markdown-compatible embeds only
+(`![alt](ew-asset://hash)` or `![[...]]` — pick ONE at design
+time), rendering managed assets via the existing protocol. Named
+consequences from the original deferral (the old cluster-L
+reasons): §9.8 GC must scan note bodies for asset references
+before sweep; §16 export and the vault mirror must handle embeds;
+the note-pane image drop (AI-IMP-097 near-term: redirect to board
++ toast) upgrades to embed-on-drop when this lands.
 
 ## Path(s) Not Taken
 
