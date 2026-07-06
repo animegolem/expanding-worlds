@@ -258,6 +258,12 @@ test('§6.9 camera input mapping: pinch zooms at pointer, scroll pans, cursors t
   expect(pinch.worldAfter.x).toBeCloseTo(pinch.worldBefore.x, 5)
   expect(pinch.worldAfter.y).toBeCloseTo(pinch.worldBefore.y, 5)
 
+  // AI-IMP-098: zoom now GLIDES to its target instead of jumping, so
+  // let the chase come to rest before the pan block measures zoom.
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.zoomChase().active), { timeout: 5_000 })
+    .toBe(false)
+
   // Two-finger scroll: plain wheel pans; zoom is untouched.
   const beforePan = await win.evaluate(() => window.__ewDebug!.camera())
   await win.mouse.move(box.x + 200, box.y + 200)

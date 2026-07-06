@@ -2,6 +2,7 @@ import { uuidv7 } from '@ew/domain'
 import {
   BackgroundSync,
   CameraFlight,
+  CameraZoomChase,
   CanvasController,
   Culler,
   CommandGateway,
@@ -146,6 +147,18 @@ declare global {
       lensAlpha: (id: string) => number | null
       /** Ids ringed by the last lens adornment pass. */
       lensRings: () => string[]
+      /** AI-IMP-098 zoom-feel dial: read current values with no
+       * argument, set any subset live with a partial. Dev/test
+       * surface ONLY — feel constants are not settings (§11.5); the
+       * dialed-in numbers get frozen into the code. */
+      zoomTuning: (partial?: { tau?: number; wheelSpeed?: number; pinchSpeed?: number }) => {
+        tau: number
+        wheelSpeed: number
+        pinchSpeed: number
+      }
+      /** Live chase state: is a wheel/pinch glide in flight, and
+       * toward what resting zoom. */
+      zoomChase: () => { active: boolean; targetZoom: number | null }
     }
   }
 }
@@ -495,6 +508,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   controller.camera.onChanged(() => flight.cancelOnExternalChange())
   app.ticker.add(() => flight.step(app.ticker.deltaMS))
 
+  // AI-IMP-098: wheel/pinch zoom chases a cursor-anchored target
+  // instead of jumping per event. Same cancel discipline as the
+  // flight — any external camera write (a pan, a restore, a flight
+  // step) aborts the chase; a chase tick aborts a flight (human
+  // input wins). The chase owns its clock: zoomBy ticks with true
+  // elapsed time at the event, the ticker keeps it moving between
+  // events, and the two compose exactly (exponential smoothing).
+  const zoomChase = new CameraZoomChase(controller.camera)
+  controller.camera.onChanged(() => zoomChase.cancelOnExternalChange())
+  app.ticker.add(() => zoomChase.tick())
+
   // AI-IMP-040: strokes never RENDER below one device pixel — a
   // sub-pixel line rasterizes as broken fragments. The clamp is
   // presentation-only (data untouched) and re-applies only when the
@@ -640,8 +664,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // trackpad pinch as ctrl-flagged wheel events with small fractional
   // deltas; plain wheel events are two-finger scroll (or a discrete
   // wheel, which Phase 1 lets pan — Cmd+wheel zooms deliberately).
-  const WHEEL_ZOOM_SPEED = 0.0015 // Cmd+wheel; ~×1.2 per 120px notch
-  const PINCH_ZOOM_SPEED = 0.01 // ctrl-flagged pinch deltas run 1–10px
+  // `let` deliberately (AI-IMP-098): live-tunable via
+  // __ewDebug.zoomTuning so the owner dials feel against PureRef;
+  // the dialed numbers then freeze here as constants (§11.5 — feel
+  // constants are not settings; no UI, no persistence).
+  let wheelZoomSpeed = 0.0015 // Cmd+wheel; ~×1.2 per 120px notch
+  let pinchZoomSpeed = 0.01 // ctrl-flagged pinch deltas run 1–10px
   let spaceHeld = false
   const local = (event: PointerEvent | WheelEvent): { x: number; y: number } => {
     const bounds = app.canvas.getBoundingClientRect()
@@ -673,6 +701,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     app.canvas.style.cursor = cursorFor(point)
   }
   const onPointerDown = (event: PointerEvent): void => {
+    // A touch stops the glide (AI-IMP-098): any drag/pan gesture must
+    // start from a camera at rest, never mid-chase under its feet.
+    zoomChase.cancel()
     app.canvas.setPointerCapture(event.pointerId)
     tools.pointerDown(local(event), modifiers(event))
     updateCursor(local(event))
@@ -693,9 +724,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     const dx = event.deltaX * unit
     const dy = event.deltaY * unit
     if (event.ctrlKey || event.metaKey) {
-      const speed = event.ctrlKey ? PINCH_ZOOM_SPEED : WHEEL_ZOOM_SPEED
-      controller.camera.zoomAt(local(event), Math.exp(-dy * speed))
+      // AI-IMP-098: feed the chase target; the camera glides to the
+      // exact zoom the old instant zoomAt chain would have produced.
+      const speed = event.ctrlKey ? pinchZoomSpeed : wheelZoomSpeed
+      flight.cancel() // zoom input wins over a flight, at event time
+      zoomChase.zoomBy(local(event), Math.exp(-dy * speed))
     } else {
+      // Pan stays 1:1 passthrough (Apple's deltas ARE the tuned
+      // curve); the camera write cancels any chase via the hook.
       controller.camera.panByScreen(-dx, -dy)
     }
   }
@@ -840,6 +876,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     clearLens: () => controller.lens.clear(),
     lensAlpha: (id: string) => sync.get(id)?.alpha ?? null,
     lensRings: () => [...lensRingIds],
+    zoomTuning: (partial?: { tau?: number; wheelSpeed?: number; pinchSpeed?: number }) => {
+      if (partial?.tau !== undefined) zoomChase.tau = partial.tau
+      if (partial?.wheelSpeed !== undefined) wheelZoomSpeed = partial.wheelSpeed
+      if (partial?.pinchSpeed !== undefined) pinchZoomSpeed = partial.pinchSpeed
+      return { tau: zoomChase.tau, wheelSpeed: wheelZoomSpeed, pinchSpeed: pinchZoomSpeed }
+    },
+    zoomChase: () => ({ active: zoomChase.active, targetZoom: zoomChase.targetZoom }),
   }
 
   let detachGestures: () => void = () => {}
@@ -856,7 +899,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     effectiveItem: (id: string) => ephemeral.get(id) ?? sync.item(id) ?? null,
     flyTo: (bounds: Rect) => {
       const target = controller.camera.fitTarget(bounds, viewport())
-      if (target) flight.flyTo(target)
+      if (target) {
+        // An explicit framing action supersedes a wheel glide
+        // (AI-IMP-098) — cancel first so the chase's next tick
+        // cannot abort the flight through the external-change hook.
+        zoomChase.cancel()
+        flight.flyTo(target)
+      }
     },
     setLens: (ids: readonly string[]) => controller.lens.set(ids),
     clearLens: () => controller.lens.clear(),
