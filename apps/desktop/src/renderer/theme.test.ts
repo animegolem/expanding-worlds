@@ -22,6 +22,30 @@ function filesUnder(dir: string): string[] {
 }
 
 describe('renderer theme tokens', () => {
+  it('every referenced --ew- token is defined in theme.css (AI-IMP-095)', () => {
+    // The raw-color guard's twin: an invented token name falls back
+    // silently in the browser (--ew-text-dim shipped that way in
+    // EPIC-014). References anywhere in renderer sources must
+    // resolve to a theme.css definition.
+    const themeCss = readFileSync(resolve(rendererDir, 'theme.css'), 'utf8')
+    const defined = new Set(
+      [...themeCss.matchAll(/(--ew-[a-z0-9-]+)\s*:/g)].map((m) => m[1]!),
+    )
+    const reference = /var\(\s*(--ew-[a-z0-9-]+)/g
+    const failures: string[] = []
+    for (const file of filesUnder(rendererDir)) {
+      const rel = relative(rendererDir, file)
+      if (rel === 'theme.css') continue
+      const text = readFileSync(file, 'utf8')
+      for (const match of text.matchAll(reference)) {
+        if (defined.has(match[1]!)) continue
+        const line = text.slice(0, match.index).split('\n').length
+        failures.push(`${rel}:${line}: ${match[1]}`)
+      }
+    }
+    expect(failures, failures.join('\n')).toEqual([])
+  })
+
   it('keeps raw chrome colors confined to theme.css', () => {
     const rawColor = /#[0-9a-fA-F]{3,8}\b|rgba\(/g
     const failures: string[] = []

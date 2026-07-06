@@ -10,8 +10,8 @@
 | Planned | 6 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 87 |
-| **Total** | **18** | **87** |
+| Completed | 11 | 88 |
+| **Total** | **18** | **88** |
 
 ## In Progress
 
@@ -39,6 +39,7 @@
 - [[AI-IMP-085-review-ingest-hardening|IMP-085]] Review ingest hardening — completed
 - [[AI-IMP-086-compound-commands|IMP-086]] Compound commands — completed
 - [[AI-IMP-087-label-outline-avoidance|IMP-087]] Label outline avoidance — completed
+- [[AI-IMP-095-token-exists-guard|IMP-095]] Token exists guard — completed
 
 ---
 
@@ -153,7 +154,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 87 IMPs completed</summary>
+<summary>11 EPICs, 88 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
