@@ -63,17 +63,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Seed asset set chosen (public domain, license notes in the
+- [x] Seed asset set chosen (public domain, license notes in the
       seed dir) and bundled; owner eyeball queued.
-- [ ] Create-new-library seeds through ordinary commands: artist
+- [x] Create-new-library seeds through ordinary commands: artist
       root board, per-artist boards, placed works, notes, tags,
       pinned explainer.
-- [ ] Clear-the-example trashes every example record + explainer in
+- [x] Clear-the-example trashes every example record + explainer in
       one action; nothing else touched; empty-trash purges cleanly.
-- [ ] Designating an EXISTING project as library seeds nothing.
-- [ ] e2e: create library → example present → clear → gallery
+- [x] Designating an EXISTING project as library seeds nothing.
+- [x] e2e: create library → example present → clear → gallery
       empty except user content.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -93,3 +93,55 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Clear-action deviation from the RFC's shape (record for the
+  epic-close RFC consistency pass).** §14.4 wants the clear to be
+  "the explainer note's one power" — but the explainer note lives IN
+  the library while the user stands in a primary project
+  (switch-project is deferred), and executing commands against a
+  secondary has no cross-process verb. Shipped shape: the explainer
+  BODY instructs, and the actual action is a "Clear the example set"
+  button in the gallery's everything-scope header, visible only
+  while example-tagged content exists. It rides a narrow new utility
+  verb `clear-library-example` (deliberately not a general
+  secondary-execute door) that enumerates by the shared `example`
+  tag and trashes via ordinary TrashNode commands. Consequence: the
+  acceptance line "undo restores them like any trash" holds only via
+  the library's Trash (RestoreRecord) — the primary's renderer undo
+  stack never saw these commands, so Cmd+Z in the current world does
+  not restore the example. Restore-from-trash works once the user
+  can stand in the library.
+- **Seed images are GENERATED placeholders, not public-domain works
+  yet** (no network access in the implementation environment): nine
+  distinct gradient/pattern PNGs (`scripts/generate-seed.mjs`,
+  committed output, 83 KB total) grouped under three FICTIONAL
+  artist names so no real artist is misattributed.
+  `resources/seed/LICENSE.md` records provenance (CC0, generated)
+  and queues the curated public-domain swap — content, not code
+  (the seeder reads whatever images live in the directory).
+  HUMAN-TESTING entry is the lead's to add (file outside this
+  ticket's fence).
+- **Seeding runs inside the utility at creation time** against the
+  fresh service directly (`open-secondary` gained `createIfMissing`
+  + `title` + `seedDir`, library target only; source refuses
+  INVALID_TARGET) — the alternative, a general secondary-execute
+  verb, is a much wider protocol door than this ticket justifies.
+  Main resolves `seedDir` because the utility knows no app paths.
+- **Resources path**: `app.getAppPath()` resolves to `out/main`
+  when Electron is launched pointing at the entry file (how e2e
+  launches), so the seed dir resolves `__dirname/../../resources/
+  seed` unpackaged. PACKAGED BUILDS NEED A ONE-LINE
+  electron-builder addition (out of this ticket's file fence):
+  `extraResources: [{ from: resources/seed, to: seed }]` — main
+  already looks in `process.resourcesPath/seed` when packaged.
+- **"Empty-trash purges cleanly" is validated by composition, not
+  directly**: the clear produces perfectly ordinary trashed nodes
+  (e2e asserts all 13 appear in the library's `getTrashView`), and
+  PurgeRecord over ordinary trashed nodes is covered by existing
+  persistence lifecycle tests. It cannot be exercised end-to-end
+  over the seam today for the same reason as the clear deviation —
+  no execute verb against a secondary.
+- The clear borrows the WRITABLE library slot for the duration
+  (open → clear → close) while the everything scope keeps browsing
+  through the read-only source slot; a read-only open holds no lock,
+  so the two coexist on the same directory by design (AI-IMP-088).

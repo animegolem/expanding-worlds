@@ -145,6 +145,11 @@
   let libraryError = $state<string | null>(null)
   let mirrorOff = $state(false)
   let libraryDirInput = $state('')
+  // 094: create-new-library path + clear-the-example affordance.
+  let creatingLibrary = $state(false)
+  let hasExample = $state(false)
+  let clearingExample = $state(false)
+  let clearError = $state<string | null>(null)
   // 091: the source panel evicted this view from the source slot —
   // everything degraded to this-world; one honest notice line says so.
   let evictedNotice = $state(false)
@@ -328,6 +333,106 @@
     const dir = libraryDirInput.trim()
     if (dir.length === 0) return
     void openLibrary(dir, scopeEpoch, true)
+  }
+
+  /** 094 create-new (§14.4): make a fresh library project at main's
+   * default location. Creation borrows the WRITABLE library slot —
+   * the utility creates the project and seeds the first-open example
+   * into it there — then releases it and browses through the source
+   * slot exactly like a designated library (openLibrary stores the
+   * setting only after the open validated the directory). */
+  async function createLibrary(): Promise<void> {
+    if (creatingLibrary) return
+    const epoch = scopeEpoch
+    creatingLibrary = true
+    libraryError = null
+    try {
+      const dir = await window.ew.secondary.defaultLibraryDir()
+      const created = await window.ew.secondary.open('library', dir, {
+        createIfMissing: true,
+        title: 'Library',
+      })
+      if (!created.ok) {
+        if (epoch === scopeEpoch) libraryError = created.message
+        return
+      }
+      await window.ew.secondary.close('library')
+      if (epoch !== scopeEpoch) return
+      await openLibrary(dir, epoch, true)
+    } finally {
+      creatingLibrary = false
+    }
+  }
+
+  // ------------------------------------------- 094 clear-the-example
+  // §14.4: the explainer's one power. HONEST V1 SHAPE: the explainer
+  // NOTE lives in the library while the user stands in a primary
+  // project (switch-project is deferred), so the note body instructs
+  // and the actual action is this header affordance — visible only
+  // while example-tagged content exists in the everything scope.
+  $effect(() => {
+    if (scope === 'everything' && sourceOpen) void checkExample(scopeEpoch)
+    else {
+      hasExample = false
+      clearError = null
+    }
+  })
+
+  async function checkExample(epoch: number): Promise<void> {
+    try {
+      const tags = await window.ew.secondary.query('source', 'listTags')
+      if (epoch !== scopeEpoch) return
+      const example = tags.ok
+        ? (tags.result as Array<{ id: string; name: string }>).find(
+            (tag) => tag.name.trim().toLowerCase() === 'example',
+          )
+        : undefined
+      if (!example) {
+        hasExample = false
+        return
+      }
+      const index = await window.ew.secondary.query('source', 'getGalleryIndex', {
+        tagIds: [example.id],
+      })
+      if (epoch !== scopeEpoch) return
+      hasExample = index.ok && Array.isArray(index.result) && index.result.length > 0
+    } catch {
+      hasExample = false
+    }
+  }
+
+  /** Trash every example-tagged record + the explainer through the
+   * seam: borrow the writable library slot (the source slot is
+   * read-only by construction), run the utility's clear verb —
+   * ordinary TrashNode commands — release the slot, refresh. */
+  async function clearExample(): Promise<void> {
+    if (clearingExample) return
+    const epoch = scopeEpoch
+    clearingExample = true
+    clearError = null
+    try {
+      const settings = await window.ew.settings.appAll()
+      const dir = settings['libraryProjectDir']
+      if (typeof dir !== 'string' || dir.length === 0) return
+      const opened = await window.ew.secondary.open('library', dir)
+      if (!opened.ok) {
+        if (epoch === scopeEpoch) clearError = opened.message
+        return
+      }
+      const cleared = await window.ew.secondary.clearLibraryExample()
+      await window.ew.secondary.close('library')
+      if (epoch !== scopeEpoch) return
+      if (!cleared.ok) {
+        clearError = cleared.message
+        return
+      }
+      itemsGeneration += 1
+      items = {}
+      void refresh(facetArgs)
+      void checkExample(epoch)
+    } finally {
+      clearingExample = false
+    }
   }
 
   // Unmount (the takeover closing) releases the source slot; scope
@@ -794,6 +899,23 @@
       everything may be incomplete — this world doesn't mirror
     </p>
   {/if}
+  {#if scope === 'everything' && sourceOpen && hasExample}
+    <!-- 094: the clear-the-example affordance (§14.4) — present only
+         while example-tagged content exists in the library. -->
+    <div class="example-bar">
+      <button
+        type="button"
+        data-testid="gallery-clear-example"
+        onclick={() => void clearExample()}
+        disabled={clearingExample}
+      >
+        {clearingExample ? 'Clearing…' : 'Clear the example set'}
+      </button>
+      {#if clearError}
+        <span class="clear-error" data-testid="gallery-clear-example-error">{clearError}</span>
+      {/if}
+    </div>
+  {/if}
   {#if evictedNotice}
     <!-- 091: the source panel replaced everything's transport. -->
     <p class="mirror-notice" data-testid="gallery-evicted-notice">
@@ -878,6 +1000,21 @@
           >
             use as library
           </button>
+        </div>
+        <!-- 094: the create-new path — a fresh library at the app's
+             default location, seeded with the §14.4 example set. -->
+        <div class="designate-create">
+          <button
+            type="button"
+            data-testid="gallery-create-library"
+            onclick={() => void createLibrary()}
+            disabled={creatingLibrary}
+          >
+            {creatingLibrary ? 'Creating…' : 'create a new library'}
+          </button>
+          <span class="create-hint">
+            …at the default location, seeded with a small example set
+          </span>
         </div>
         {#if libraryError}
           <p class="designate-error" data-testid="gallery-designate-error">{libraryError}</p>
@@ -1035,6 +1172,34 @@
     color: var(--ew-text-muted);
   }
 
+  /* 094 clear-the-example: one quiet row in the everything header. */
+  .example-bar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.1rem 1rem 0.35rem;
+    font-size: 0.78rem;
+  }
+
+  .example-bar button {
+    padding: 0.2rem 0.65rem;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 999px;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .example-bar button:hover:not(:disabled) {
+    background: var(--ew-surface-subtle);
+  }
+
+  .example-bar .clear-error {
+    color: var(--ew-danger);
+  }
+
   .designate {
     max-width: 34rem;
     padding: 2rem 1rem;
@@ -1080,6 +1245,33 @@
   .designate .designate-error {
     margin: 0.6rem 0 0;
     color: var(--ew-danger);
+  }
+
+  /* 094: the create-new alternative under the designate row. */
+  .designate-create {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+  }
+
+  .designate-create button {
+    padding: 0.3rem 0.75rem;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 6px;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .designate-create button:hover:not(:disabled) {
+    background: var(--ew-surface-subtle);
+  }
+
+  .designate-create .create-hint {
+    font-size: 0.78rem;
+    color: var(--ew-text-muted);
   }
 
   .current-header {

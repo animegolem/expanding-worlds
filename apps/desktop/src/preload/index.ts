@@ -3,6 +3,7 @@ import { uuidv7 } from '@ew/domain'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
 import type {
   ClaimThumbnailJobResponse,
+  ClearLibraryExampleResponse,
   CloseSecondaryResponse,
   ExecuteCommandResponse,
   ImportAssetResponse,
@@ -138,8 +139,22 @@ const api = {
    * Same query vocabulary as the primary; writes into source refuse
    * EW_READ_ONLY at the service. */
   secondary: {
-    open: (target: SecondaryTarget, dir: string): Promise<OpenSecondaryResponse> =>
-      ipcRenderer.invoke('secondary:open', target, dir) as Promise<OpenSecondaryResponse>,
+    /** `options.createIfMissing` (AI-IMP-094, library target only)
+     * creates the project when the directory holds none — and seeds
+     * the §14.4 first-open example into a fresh create. */
+    open: (
+      target: SecondaryTarget,
+      dir: string,
+      options?: { createIfMissing?: boolean; title?: string },
+    ): Promise<OpenSecondaryResponse> =>
+      ipcRenderer.invoke('secondary:open', target, dir, options) as Promise<OpenSecondaryResponse>,
+    /** The default location the create-new-library path proposes. */
+    defaultLibraryDir: (): Promise<string> =>
+      ipcRenderer.invoke('library:default-dir') as Promise<string>,
+    /** §14.4 clear-the-example (AI-IMP-094): trash every node tagged
+     * 'example' in the OPEN library slot via ordinary commands. */
+    clearLibraryExample: (): Promise<ClearLibraryExampleResponse> =>
+      ipcRenderer.invoke('secondary:clear-library-example') as Promise<ClearLibraryExampleResponse>,
     close: (target: SecondaryTarget): Promise<CloseSecondaryResponse> =>
       ipcRenderer.invoke('secondary:close', target) as Promise<CloseSecondaryResponse>,
     query: (target: SecondaryTarget, name: string, args?: unknown): Promise<SecondaryQueryResponse> =>

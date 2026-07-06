@@ -145,6 +145,25 @@ function projectDir(): string {
   return process.env['EW_PROJECT_DIR'] ?? join(app.getPath('userData'), 'projects', 'default')
 }
 
+/** §14.4 create-new library (AI-IMP-094): the default location the
+ * gallery's create path proposes. Env override mirrors projectDir's —
+ * e2e must not write into the real userData. */
+function defaultLibraryDir(): string {
+  return process.env['EW_LIBRARY_DIR'] ?? join(app.getPath('userData'), 'projects', 'library')
+}
+
+/** The bundled seed-image set for the first-open library example
+ * (AI-IMP-094). Dev and e2e resolve relative to the built main entry
+ * (out/main/ → ../../resources/seed; app.getAppPath() is unreliable
+ * when Electron is launched pointing at the entry file, as e2e
+ * does); a packaged app expects the directory under
+ * process.resourcesPath (electron-builder extraResources). */
+function seedResourcesDir(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'seed')
+    : join(__dirname, '..', '..', 'resources', 'seed')
+}
+
 // ---- §14.4 secondary store roots (AI-IMP-089) ----
 // The ew-asset protocol serves the PRIMARY project's store; a
 // `?scope=source` query re-roots a request at the open secondary's
@@ -548,15 +567,38 @@ void app.whenReady().then(() => {
   })
   // §14.4 secondary slots (AI-IMP-088): source (read-only browse)
   // and library (writable mirror target) ride the same utility.
-  ipcMain.handle('secondary:open', async (_event, target: 'source' | 'library', dir: string) => {
-    const response = await callUtility({ type: 'open-secondary', target, dir: String(dir) })
-    // Mirror the slot's store root for the ew-asset scope param
-    // (AI-IMP-089). A failed open also clears any prior recording:
-    // the utility's replace-on-open closed the old slot first.
-    if ('ok' in response && response.ok) secondaryDirs.set(target, String(dir))
-    else secondaryDirs.delete(target)
-    return response
-  })
+  ipcMain.handle(
+    'secondary:open',
+    async (
+      _event,
+      target: 'source' | 'library',
+      dir: string,
+      options?: { createIfMissing?: boolean; title?: string },
+    ) => {
+      // §14.4 create-new library (AI-IMP-094): main resolves the
+      // bundled seed dir — the utility knows no app paths.
+      const creating = options?.createIfMissing === true
+      const response = await callUtility({
+        type: 'open-secondary',
+        target,
+        dir: String(dir),
+        ...(creating
+          ? { createIfMissing: true, seedDir: seedResourcesDir() }
+          : {}),
+        ...(options?.title !== undefined ? { title: String(options.title) } : {}),
+      })
+      // Mirror the slot's store root for the ew-asset scope param
+      // (AI-IMP-089). A failed open also clears any prior recording:
+      // the utility's replace-on-open closed the old slot first.
+      if ('ok' in response && response.ok) secondaryDirs.set(target, String(dir))
+      else secondaryDirs.delete(target)
+      return response
+    },
+  )
+  ipcMain.handle('library:default-dir', () => defaultLibraryDir())
+  ipcMain.handle('secondary:clear-library-example', () =>
+    callUtility({ type: 'clear-library-example' }),
+  )
   ipcMain.handle('secondary:close', async (_event, target: 'source' | 'library') => {
     const response = await callUtility({ type: 'close-secondary', target })
     secondaryDirs.delete(target)
