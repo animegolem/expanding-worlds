@@ -111,6 +111,12 @@ record — history lives in the tickets.
   source from the new live ⧉ charm, browse the mini grid, set the
   tag border, drag a cell onto the board — does the pull feel like
   one motion?
+- [ ] **Small states** (AI-IMP-106, 2026-07-06): type a wiki link
+  to a note, trash the note, purge it — the link should go red
+  with a wavy underline (grey means recoverable trash); clicking
+  it should offer create/relink. Gut call wanted: does red/wavy
+  read "dead" or "spelling error"? Flag for the design pass if
+  the latter.
 - [ ] **Image drop on an open note** (AI-IMP-097, 2026-07-06): drag
   an image from Finder onto a note panel and onto the big editor —
   it should land on the board beside the note (view center if the
