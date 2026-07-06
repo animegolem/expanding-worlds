@@ -77,7 +77,7 @@ export function attachTextEntry(
     div.dataset['testid'] = 'text-entry'
     div.style.position = 'absolute'
     div.style.minWidth = '2ch'
-    div.style.outline = '1px dashed #4a9df0'
+    div.style.outline = '1px dashed var(--ew-accent)'
     div.style.color = target.color
     div.style.fontFamily = target.fontFamily ?? 'sans-serif'
     div.style.fontWeight = target.bold ? 'bold' : 'normal'

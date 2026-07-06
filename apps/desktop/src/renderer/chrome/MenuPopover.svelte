@@ -62,8 +62,8 @@
     flex-direction: column;
     gap: 0.2rem;
     padding: 0.35rem;
-    background: rgba(23, 25, 29, 0.95);
-    border: 1px solid #2e3138;
+    background: var(--ew-surface-menu);
+    border: 1px solid var(--ew-border);
     border-radius: 7px;
     white-space: nowrap;
   }
@@ -72,7 +72,7 @@
     padding: 0.25rem 0.6rem;
     text-align: left;
     background: transparent;
-    color: #dde3ea;
+    color: var(--ew-text);
     border: none;
     border-radius: 4px;
     font-size: 0.75rem;
@@ -80,7 +80,7 @@
   }
 
   button:hover {
-    background: #23262c;
+    background: var(--ew-surface-raised);
   }
 
   button.deferred {

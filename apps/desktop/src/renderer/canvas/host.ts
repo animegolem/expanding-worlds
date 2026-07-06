@@ -34,6 +34,7 @@ import {
 } from '@ew/canvas-engine'
 import { Application, Graphics, Texture } from 'pixi.js'
 import { takeoverActive } from '../chrome/takeover'
+import { themeTokenValue } from '../theme'
 import { attachGesturesUI } from './gestures-ui'
 import type { Rect } from '@ew/canvas-engine'
 
@@ -176,7 +177,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     antialias: true,
     resolution: window.devicePixelRatio || 1,
     autoDensity: true,
-    background: '#17191d',
+    background: themeTokenValue('--ew-surface-solid'),
   })
   element.appendChild(app.canvas)
 
@@ -350,8 +351,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // fill beneath the image, no grid. Without one, the adaptive grid
   // covers the visible world. Redrawn with every cull pass (camera
   // changes and scene refreshes).
-  const VOID_COLOR = '#101215'
-  const DEFAULT_STAGE_COLOR = '#17191d'
+  const VOID_COLOR = 0x101215
+  const DEFAULT_STAGE_COLOR = themeTokenValue('--ew-surface-solid')
   const stageGfx = new Graphics()
   stageGfx.label = 'stage'
   planes.world.addChildAt(stageGfx, 0)

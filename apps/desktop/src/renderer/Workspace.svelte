@@ -12,6 +12,7 @@
   import PlacementSourcePanel from './PlacementSourcePanel.svelte'
   import type { CanvasHostHandle } from './canvas/host'
   import { unionBounds } from '@ew/canvas-engine'
+  import { themeTokenValue } from './theme'
   import {
     onCenterPlacements,
     onCreateAndPlace,
@@ -75,7 +76,7 @@
           placementId: uuidv7(),
           x: center.x,
           y: center.y,
-          appearance: { kind: 'dot', color: '#8ab4d8' },
+          appearance: { kind: 'dot', color: themeTokenValue('--ew-node-dot-default') },
           note: { kind: 'attach', noteId },
         })
         .then((result) => {
@@ -138,7 +139,7 @@
           placementId: uuidv7(),
           x: center.x,
           y: center.y,
-          appearance: { kind: 'dot', color: '#8ab4d8' },
+          appearance: { kind: 'dot', color: themeTokenValue('--ew-node-dot-default') },
           note: { kind: 'create', noteId, title, ...(body !== undefined ? { body } : {}) },
         })
         if (result.status === 'committed') {

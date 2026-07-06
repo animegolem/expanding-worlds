@@ -78,7 +78,7 @@
     z-index: 9;
     display: flex;
     pointer-events: auto;
-    background: rgba(12, 13, 16, 0.55);
+    background: var(--ew-scrim);
   }
 
   .sheet {
@@ -86,8 +86,8 @@
     display: flex;
     flex-direction: column;
     margin: 0;
-    background: rgba(23, 25, 29, 0.97);
-    color: #dde3ea;
+    background: var(--ew-surface-overlay);
+    color: var(--ew-text);
     outline: none;
   }
 
@@ -95,9 +95,9 @@
      board stays visible at the edges and through it. */
   .sheet.inset {
     margin: 3rem 4rem;
-    border: 1px solid #2e3138;
+    border: 1px solid var(--ew-border);
     border-radius: 10px;
-    background: rgba(23, 25, 29, 0.82);
+    background: var(--ew-surface-subtle);
   }
 
   .sheet-header {
@@ -105,7 +105,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.7rem 1rem;
-    border-bottom: 1px solid #2e3138;
+    border-bottom: 1px solid var(--ew-border);
   }
 
   .sheet-header h1 {
@@ -116,9 +116,9 @@
 
   .close {
     padding: 0.15rem 0.5rem;
-    background: #23262c;
-    color: #9aa3ad;
-    border: 1px solid #3a3e46;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text-muted);
+    border: 1px solid var(--ew-border-strong);
     border-radius: 4px;
     font-size: 0.7rem;
     cursor: pointer;

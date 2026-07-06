@@ -288,8 +288,8 @@ export function attachOpenNoteSurface(
     input.dataset['testid'] = 'label-rename-input'
     input.style.cssText =
       `position:absolute;left:${screen.x - 100}px;top:${screen.y}px;width:200px;z-index:25;` +
-      'padding:2px 6px;font:inherit;text-align:center;background:#17191d;color:#ddd;' +
-      'border:1px solid #4a4f57;border-radius:3px;'
+      'padding:2px 6px;font:inherit;text-align:center;background:var(--ew-surface-solid);color:var(--ew-text-dialog);' +
+      'border:1px solid var(--ew-border-control);border-radius:3px;'
     let done = false
     const finish = (commit: boolean): void => {
       if (done) return

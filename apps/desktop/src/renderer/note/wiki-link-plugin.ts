@@ -104,23 +104,23 @@ export function wikiLinkHighlighter(resolution: LinkResolution): Extension {
   const theme = EditorView.baseTheme({
     '.ew-link': { cursor: 'pointer' },
     '.ew-link--bound': {
-      color: '#2563b0',
+      color: 'var(--ew-link-bound)',
       textDecoration: 'underline',
-      textDecorationColor: '#2563b080',
+      textDecorationColor: 'var(--ew-link-bound-decoration)',
     },
     '.ew-link--bound-trashed': {
-      color: '#6b7684',
+      color: 'var(--ew-link-muted)',
       textDecoration: 'underline dotted',
     },
     '.ew-link--unresolved': {
-      color: '#7c4dbe',
+      color: 'var(--ew-link-unresolved)',
       textDecoration: 'underline dashed',
-      textDecorationColor: '#7c4dbe80',
+      textDecorationColor: 'var(--ew-link-unresolved-decoration)',
     },
     '.ew-link--broken': {
-      color: '#b3403a',
+      color: 'var(--ew-link-broken)',
       textDecoration: 'underline wavy',
-      textDecorationColor: '#b3403a80',
+      textDecorationColor: 'var(--ew-link-broken-decoration)',
     },
   })
 

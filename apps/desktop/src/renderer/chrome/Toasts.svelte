@@ -75,21 +75,21 @@
     gap: 0.75rem;
     max-width: 26rem;
     padding: 0.5rem 0.75rem;
-    background: rgba(23, 25, 29, 0.92);
-    color: #c8cfd8;
-    border: 1px solid #3a4048;
+    background: var(--ew-surface);
+    color: var(--ew-text-soft);
+    border: 1px solid var(--ew-border-panel);
     border-radius: 7px;
     font-size: 0.85rem;
   }
 
   .toast.error {
-    background: rgba(59, 31, 31, 0.95);
-    color: #f3c9c9;
-    border-color: #7c3a3a;
+    background: var(--ew-danger-surface);
+    color: var(--ew-danger-text);
+    border-color: var(--ew-danger-border);
   }
 
   .toast.success {
-    border-color: #2e5c3a;
+    border-color: var(--ew-success-border);
   }
 
   .toast button {
@@ -97,8 +97,8 @@
     padding: 0.15rem 0.6rem;
     font: inherit;
     color: inherit;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid #3a4048;
+    background: var(--ew-control-tint);
+    border: 1px solid var(--ew-border-panel);
     border-radius: 5px;
     cursor: pointer;
   }

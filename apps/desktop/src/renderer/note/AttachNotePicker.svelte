@@ -126,7 +126,7 @@
     align-items: flex-start;
     justify-content: center;
     padding-top: 15%;
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--ew-dialog-scrim);
   }
 
   .picker {
@@ -136,19 +136,19 @@
     width: 280px;
     max-height: 60%;
     padding: 0.6rem;
-    background: #22262c;
-    border: 1px solid #4a4f57;
+    background: var(--ew-surface-modal);
+    border: 1px solid var(--ew-border-control);
     border-radius: 6px;
-    color: #ddd;
+    color: var(--ew-text-dialog);
     font-size: 0.85rem;
   }
 
   input {
     padding: 0.3rem 0.45rem;
-    border: 1px solid #4a4f57;
+    border: 1px solid var(--ew-border-control);
     border-radius: 3px;
-    background: #17191d;
-    color: #ddd;
+    background: var(--ew-surface-solid);
+    color: var(--ew-text-dialog);
     font: inherit;
   }
 
@@ -165,14 +165,14 @@
     padding: 0.25rem 0.4rem;
     border: none;
     background: transparent;
-    color: #ddd;
+    color: var(--ew-text-dialog);
     font: inherit;
     text-align: left;
     cursor: pointer;
   }
 
   ul button:hover {
-    background: #3a3f47;
+    background: var(--ew-surface-control-hover);
   }
 
   .create,
@@ -185,7 +185,7 @@
 
   .error {
     margin: 0;
-    color: #e8a49f;
+    color: var(--ew-danger-muted);
     font-size: 0.78rem;
   }
 </style>

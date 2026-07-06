@@ -18,6 +18,7 @@
     type ToolKind,
     type SceneDecoration,
   } from '@ew/canvas-engine'
+  import { themeTokenValue } from '../theme'
   import { measureTextWorld } from '../canvas/text-entry'
   import { FONT_STACKS, loadFontOptions, type FontOption } from '../canvas/system-fonts'
   import type { CanvasHostHandle } from '../canvas/host'
@@ -307,7 +308,7 @@
         <input
           type="color"
           data-testid="style-fill"
-          value={fill ?? '#000000'}
+          value={fill ?? themeTokenValue('--ew-color-input-empty')}
           oninput={(e) => (fill = (e.currentTarget as HTMLInputElement).value)}
         />
         <button type="button" data-testid="style-fill-none" disabled={fill === null} onclick={() => (fill = null)}>
@@ -328,7 +329,7 @@
         <input
           type="color"
           data-testid="sel-stroke"
-          value={styledLead.stroke ?? '#dde3ea'}
+          value={styledLead.stroke ?? themeTokenValue('--ew-text')}
           onchange={(e) => updateStyled({ stroke: (e.currentTarget as HTMLInputElement).value })}
         />
       </label>
@@ -352,7 +353,7 @@
           <input
             type="color"
             data-testid="sel-fill"
-            value={styledLead.fill ?? '#000000'}
+            value={styledLead.fill ?? themeTokenValue('--ew-color-input-empty')}
             onchange={(e) => updateStyled({ fill: (e.currentTarget as HTMLInputElement).value })}
           />
           <button type="button" data-testid="sel-fill-none" onclick={() => updateStyled({ fill: null })}>
@@ -626,11 +627,11 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0.3rem 0.45rem;
-    background: rgba(23, 25, 29, 0.92);
-    border: 1px solid #2e3138;
+    background: var(--ew-surface);
+    border: 1px solid var(--ew-border);
     border-radius: 9px;
     font-size: 0.75rem;
-    color: #dde3ea;
+    color: var(--ew-text);
     pointer-events: auto;
     flex-wrap: wrap;
     justify-content: center;
@@ -648,7 +649,7 @@
   .divider {
     width: 1px;
     height: 1.4rem;
-    background: #3a3e46;
+    background: var(--ew-border-strong);
     margin: 0 0.25rem;
   }
 
@@ -670,17 +671,17 @@
 
   button {
     padding: 0.15rem 0.45rem;
-    background: #23262c;
-    color: #dde3ea;
-    border: 1px solid #3a3e46;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
     border-radius: 5px;
     cursor: pointer;
   }
 
   button.active {
-    background: #4a9df0;
-    border-color: #4a9df0;
-    color: #10131a;
+    background: var(--ew-accent);
+    border-color: var(--ew-accent);
+    color: var(--ew-on-accent);
   }
 
   button:disabled {
@@ -698,22 +699,22 @@
     width: 1.6rem;
     height: 1.3rem;
     padding: 0;
-    border: 1px solid #3a3e46;
+    border: 1px solid var(--ew-border-strong);
     background: transparent;
   }
 
   input[type='number'] {
     width: 3rem;
-    background: #23262c;
-    color: #dde3ea;
-    border: 1px solid #3a3e46;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
     border-radius: 4px;
   }
 
   select {
-    background: #23262c;
-    color: #dde3ea;
-    border: 1px solid #3a3e46;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
     border-radius: 4px;
   }
 </style>

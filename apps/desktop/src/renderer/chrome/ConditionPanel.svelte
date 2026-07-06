@@ -44,9 +44,9 @@
     min-width: 15rem;
     max-width: 22rem;
     padding: 0.5rem 0.65rem;
-    background: rgba(23, 25, 29, 0.95);
-    color: #dde3ea;
-    border: 1px solid #3a4048;
+    background: var(--ew-surface-menu);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-panel);
     border-radius: 7px;
     font-size: 0.82rem;
     pointer-events: auto;
@@ -69,6 +69,6 @@
 
   li::before {
     content: '⚠';
-    color: #e6b34a;
+    color: var(--ew-warn);
   }
 </style>

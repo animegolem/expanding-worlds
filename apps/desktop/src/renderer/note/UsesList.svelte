@@ -48,7 +48,7 @@
   } = $props()
 
   function dotStyle(node: UsesNode): string {
-    return `background:${node.appearanceColor ?? '#8ab4d8'}`
+    return `background:${node.appearanceColor ?? 'var(--ew-node-dot-default)'}`
   }
 
   function isHere(node: UsesNode): boolean {
@@ -139,13 +139,13 @@
     max-height: 11rem;
     overflow: auto;
     padding: 0.3rem 0.6rem 0.5rem;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--ew-paper-border);
     font-size: 0.8rem;
   }
 
   .group-title {
     margin: 0.3rem 0 0.15rem;
-    color: #555;
+    color: var(--ew-paper-text-subtle);
     font-weight: 600;
   }
 
@@ -170,7 +170,7 @@
   }
 
   .row:hover {
-    background: #eee;
+    background: var(--ew-paper-hover);
   }
 
   .dot {
@@ -181,20 +181,20 @@
   }
 
   .count {
-    color: #666;
+    color: var(--ew-paper-text-subtle);
   }
 
   .here {
     padding: 0 0.35rem;
     border-radius: 7px;
-    background: #dce9f7;
-    color: #33628f;
+    background: var(--ew-paper-info-surface);
+    color: var(--ew-paper-info-text);
     font-size: 0.68rem;
   }
 
   .tags {
     overflow: hidden;
-    color: #888;
+    color: var(--ew-paper-text-muted);
     text-overflow: ellipsis;
     white-space: nowrap;
   }

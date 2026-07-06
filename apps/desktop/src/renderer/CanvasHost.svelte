@@ -110,7 +110,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #17191d;
+    background: var(--ew-surface-solid);
   }
 
   .canvas-host :global(canvas) {
@@ -124,8 +124,8 @@
     inset: auto 1rem 1rem 1rem;
     margin: 0;
     padding: 0.5rem 0.75rem;
-    background: #3b1f1f;
-    color: #f3c9c9;
+    background: var(--ew-danger-surface-solid);
+    color: var(--ew-danger-text);
     border-radius: 4px;
     font-size: 0.85rem;
   }

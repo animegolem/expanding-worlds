@@ -240,11 +240,11 @@
     min-width: 15rem;
     max-width: 22rem;
     padding: 0.3rem;
-    background: rgba(23, 25, 29, 0.95);
-    border: 1px solid #2e3138;
+    background: var(--ew-surface-menu);
+    border: 1px solid var(--ew-border);
     border-radius: 7px;
     font-size: 0.75rem;
-    color: #dde3ea;
+    color: var(--ew-text);
     pointer-events: auto;
     z-index: 20;
   }
@@ -264,11 +264,11 @@
   }
 
   li.dragging {
-    background: #2a2e35;
+    background: var(--ew-surface-hover);
   }
 
   li.degraded .jump {
-    color: #79808a;
+    color: var(--ew-text-subtle);
   }
 
   .drag {
@@ -285,7 +285,7 @@
 
   button {
     background: transparent;
-    color: #dde3ea;
+    color: var(--ew-text);
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -293,7 +293,7 @@
   }
 
   button:hover {
-    background: #2a2e35;
+    background: var(--ew-surface-hover);
   }
 
   .jump {
@@ -310,20 +310,20 @@
 
   .state {
     font-size: 0.65rem;
-    color: #a7844e;
-    border: 1px solid #4d4231;
+    color: var(--ew-warn-muted);
+    border: 1px solid var(--ew-warn-muted-border);
     border-radius: 4px;
     padding: 0 0.25rem;
     white-space: nowrap;
   }
 
   .state.broken {
-    color: #b06060;
-    border-color: #4d3131;
+    color: var(--ew-danger-muted);
+    border-color: var(--ew-danger-border);
   }
 
   .restore {
-    color: #8ec2f5;
+    color: var(--ew-accent-soft);
     white-space: nowrap;
   }
 
@@ -340,7 +340,7 @@
   .remove:hover,
   .remove.offered {
     opacity: 1;
-    color: #e08a8a;
+    color: var(--ew-danger-muted);
   }
 
   .add {
@@ -348,10 +348,10 @@
     width: 100%;
     text-align: left;
     margin-top: 0.2rem;
-    border-top: 1px solid #2e3138;
+    border-top: 1px solid var(--ew-border);
     border-radius: 0 0 5px 5px;
     padding-top: 0.3rem;
-    color: #8ec2f5;
+    color: var(--ew-accent-soft);
   }
 
   .empty {

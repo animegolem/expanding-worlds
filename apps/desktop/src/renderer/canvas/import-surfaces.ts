@@ -1,6 +1,7 @@
 import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from './host'
+import { themeTokenValue } from '../theme'
 
 /**
  * Import surfaces (RFC-0001 §6.1, AI-IMP-020): OS file drop, clipboard
@@ -15,7 +16,9 @@ export const NODE_DRAG_MIME = 'application/x-ew-node'
 export const NOTE_DRAG_MIME = 'application/x-ew-note'
 
 /** §6.10: default dot appearance for placing a zero-node note. */
-export const ZERO_NODE_NOTE_DOT_COLOR = '#8a94a0'
+export function zeroNodeNoteDotColor(): string {
+  return themeTokenValue('--ew-zero-node-note-dot')
+}
 
 /** Cascading offset between placements of a multi-file drop. */
 const MULTI_DROP_OFFSET = 24
@@ -150,7 +153,7 @@ export function attachImportSurfaces(
       placementId: uuidv7(),
       x: world.x,
       y: world.y,
-      appearance: { kind: 'dot', color: ZERO_NODE_NOTE_DOT_COLOR },
+      appearance: { kind: 'dot', color: zeroNodeNoteDotColor() },
       note: { kind: 'attach', noteId },
     })
     if (result.status !== 'committed') onError(describeFailure('CreatePin', result))

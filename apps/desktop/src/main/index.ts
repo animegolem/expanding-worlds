@@ -305,6 +305,25 @@ function grantLocalFonts(): void {
 // running via backgroundThrottling: false.
 const hiddenTestWindows = process.env['EW_TEST_HIDDEN_WINDOWS'] === '1'
 
+function setWindowVibrancy(win: BrowserWindow, enabled: boolean): boolean {
+  if (!enabled) {
+    if (process.platform === 'darwin') win.setVibrancy(null)
+    win.setBackgroundColor('#17191d')
+    return true
+  }
+  if (process.platform !== 'darwin') return false
+  try {
+    win.setBackgroundColor('#00000000')
+    win.setVibrancy('under-window')
+    return true
+  } catch (err) {
+    win.setVibrancy(null)
+    win.setBackgroundColor('#17191d')
+    console.error('[main] failed to enable vibrancy:', err)
+    return false
+  }
+}
+
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
     width: 1280,
@@ -374,6 +393,10 @@ void app.whenReady().then(() => {
     projectReady = true
   })
 
+  ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return win ? setWindowVibrancy(win, Boolean(enabled)) : false
+  })
   ipcMain.handle('project:ping', () => callUtility({ type: 'ping' }))
   ipcMain.handle('project:execute', (_event, envelope: CommandEnvelope) =>
     callUtility({ type: 'execute-command', envelope }),

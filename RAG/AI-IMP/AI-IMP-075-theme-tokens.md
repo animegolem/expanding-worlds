@@ -83,17 +83,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] theme.css: role-named tokens, dark values matching the
+- [x] theme.css: role-named tokens, dark values matching the
       current UI exactly (no visual diff on default theme).
-- [ ] Full sweep: no hardcoded color remains in renderer Svelte
+- [x] Full sweep: no hardcoded color remains in renderer Svelte
       styles or injected-DOM strings except inside theme.css;
       automated check (grep gate in a test) enforces it.
 - [ ] Light theme: complete value set; chrome legible over dark and
       light art; toasts/perch/tooltips included.
-- [ ] Glass: alpha tokens + vibrancy IPC on macOS; non-Mac or
+- [x] Glass: alpha tokens + vibrancy IPC on macOS; non-Mac or
       denied vibrancy falls back to dark values while reporting
       the fallback.
-- [ ] applyTheme exported and idempotent; data-theme stamped on
+- [x] applyTheme exported and idempotent; data-theme stamped on
       documentElement; live switch repaints without reload.
 - [ ] Default experience unchanged: full e2e suite green with zero
       selector or visual-behavior diffs on dark.
@@ -121,3 +121,28 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Worktree/sandbox mismatch.** The prompted worktree path
+  (`agent-a9b60e1f7090d7331`) did not exist and the available repo
+  worktrees were read-only under the sandbox. A local clone was created
+  in `/private/tmp/expanding-worlds-agent-a9b60e1f7090d7331` on branch
+  `worktree-agent-a9b60e1f7090d7331`; the parent repo could not be
+  registered as a git worktree because `.git/refs` was not writable.
+- **pnpm dependency verification in the temp clone.** `pnpm` tried to
+  auto-run `pnpm install` before scripts. Network is disabled and the
+  local pnpm store is incomplete, so validation used the existing
+  checkout's installed `node_modules` and
+  `pnpm_config_verify_deps_before_run=false` for pnpm script gates.
+- **Electron e2e launch blocked before app code.** `npx playwright test`
+  failed all launched specs at `electron.launch` (`Process failed to
+  launch`, Electron SIGABRT); `node apps/desktop/node_modules/electron/install.js`
+  completed but did not fix it, and even `node_modules/.bin/electron --version`
+  SIGABRTs in both this temp clone and the source checkout. No e2e
+  assertion reached the renderer. Full suite result: 51 failed, 2 did
+  not run, all due to Electron process launch failure.
+- **Raw-color allowlist.** The no-raw-color test allowlists only
+  `theme.css` (token source of truth) and `theme.test.ts` (the scan
+  regex and test). No renderer file is otherwise allowlisted. Numeric
+  Pixi/WebGL colors remain in canvas drawing code (`canvas/host.ts`,
+  `canvas/gestures-ui.ts`) under the ticket's explicit WebGL-canvas
+  exclusion and are not part of the raw hex/rgba gate.
