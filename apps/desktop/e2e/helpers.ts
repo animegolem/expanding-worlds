@@ -30,7 +30,15 @@ export async function launchAppInDir(
 ): Promise<{ app: ElectronApplication; win: Page; projectDir: string }> {
   const app = await electron.launch({
     args: ['out/main/index.cjs'],
-    env: { ...process.env, EW_PROJECT_DIR: projectDir, ...extraEnv },
+    env: {
+      ...process.env,
+      EW_PROJECT_DIR: projectDir,
+      // §11.5 app-tier settings isolation: without this every test
+      // instance reads/writes the SHARED default Electron userData.
+      // Callers override via extraEnv when a test needs persistence.
+      EW_APP_CONFIG_DIR: mkdtempSync(join(tmpdir(), 'ew-e2e-appcfg-')),
+      ...extraEnv,
+    },
   })
   const win = await app.firstWindow()
   await expect(win.getByTestId('canvas-host')).toBeVisible()

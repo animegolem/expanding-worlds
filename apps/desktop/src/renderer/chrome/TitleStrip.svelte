@@ -11,6 +11,7 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { SceneBackground, SceneDecoration } from '@ew/canvas-engine'
+  import { appSettings, onAppSettingsChanged } from '../settings/settings'
   import { themeTokenValue } from '../theme'
   import { tooltip } from './tooltip'
   import { TITLE_STRIP_REVEAL_PX } from './feel'
@@ -23,6 +24,17 @@
 
   let revealed = $state(false)
   let boardMenuOpen = $state(false)
+  // §11.5 title-strip mode: hover-reveal (default) · always · never.
+  let stripMode = $state(appSettings().titleStrip)
+  $effect(() => onAppSettingsChanged((settings) => (stripMode = settings.titleStrip)))
+  const stripVisible = $derived(
+    stripMode === 'always' || (stripMode === 'hover' && (revealed || boardMenuOpen)),
+  )
+  // Switching to never while the Board menu is up would strand an
+  // unreachable menu — fold it with the strip.
+  $effect(() => {
+    if (stripMode === 'never') boardMenuOpen = false
+  })
   let hasImageSelected = $state(tooling.selectedImagePlacement() !== null)
   let background = $state<SceneBackground | null>(tooling.background())
   let editing = $state(tooling.backgroundEditActive())
@@ -76,15 +88,17 @@
   })
 </script>
 
-<div
-  class="reveal-zone"
-  style={`height: ${TITLE_STRIP_REVEAL_PX}px`}
-  data-testid="title-strip-reveal"
-  role="presentation"
-  onpointerenter={() => (revealed = true)}
-></div>
+{#if stripMode === 'hover'}
+  <div
+    class="reveal-zone"
+    style={`height: ${TITLE_STRIP_REVEAL_PX}px`}
+    data-testid="title-strip-reveal"
+    role="presentation"
+    onpointerenter={() => (revealed = true)}
+  ></div>
+{/if}
 
-{#if revealed || boardMenuOpen}
+{#if stripVisible}
   <div class="title-strip" data-testid="title-strip" role="toolbar" tabindex="-1" onpointerleave={hide}>
     <button
       type="button"

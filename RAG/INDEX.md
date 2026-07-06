@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 2 |
-| Planned | 3 | 1 |
+| Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 9 | 72 |
+| Completed | 9 | 73 |
 | **Total** | **14** | **75** |
 
 ## In Progress
@@ -46,7 +46,7 @@
 - [[AI-IMP-071-tag-panel|IMP-071]] Tag panel — completed
 - [[AI-IMP-072-lens|IMP-072]] Lens — completed
 - [[AI-IMP-073-search-and-quick-open|IMP-073]] Search and quick open — completed
-- [[AI-IMP-074-settings-takeover|IMP-074]] Settings takeover — planned
+- [[AI-IMP-074-settings-takeover|IMP-074]] Settings takeover — completed
 - [[AI-IMP-075-theme-tokens|IMP-075]] Theme tokens — completed
 
 ---
@@ -132,12 +132,12 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/handlers/pin.ts (320 LOC)
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/shell.spec.ts (317 LOC)
-- apps/desktop/src/renderer/chrome/TitleStrip.svelte (316 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
 
@@ -145,7 +145,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>9 EPICs, 72 IMPs completed</summary>
+<summary>9 EPICs, 73 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

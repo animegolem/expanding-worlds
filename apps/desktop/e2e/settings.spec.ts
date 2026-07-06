@@ -53,6 +53,14 @@ test('settings commit on click, apply live, and persist per tier across relaunch
     )
     .toBe(true)
 
+  // Window opacity applies to the real BrowserWindow.
+  await win.getByTestId('settings-opacity').fill('0.8')
+  await expect
+    .poll(() =>
+      app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getOpacity()),
+    )
+    .toBeCloseTo(0.8, 2)
+
   // App-tier changes never enter command history: same revision.
   expect(await revision(win)).toBe(revisionBefore)
 
@@ -66,6 +74,10 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   await win.keyboard.press('Escape')
   await expect(win.getByTestId('settings-view')).toHaveCount(0)
   await expect.poll(() => currentTheme(win)).toBe('light')
+
+  // Title strip 'always': visible with no hover, reveal zone retired.
+  await expect(win.getByTestId('title-strip')).toBeVisible()
+  await expect(win.getByTestId('title-strip-reveal')).toHaveCount(0)
 
   await app.close()
 
@@ -84,6 +96,9 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   const second = await launchAppInDir(projectDir, { EW_APP_CONFIG_DIR: configDir })
   await expect.poll(() => currentTheme(second.win)).toBe('light')
   expect(await runQuery<string>(second.win, 'getTrashRetention')).toBe('30d')
+  // 'always' survived the relaunch: strip up at boot, no hover.
+  // (Asserted before opening settings — a takeover unmounts it.)
+  await expect(second.win.getByTestId('title-strip')).toBeVisible()
   await openSettings(second.win)
   await expect(second.win.getByTestId('settings-theme-light')).toHaveAttribute(
     'aria-pressed',
@@ -98,6 +113,13 @@ test('settings commit on click, apply live, and persist per tier across relaunch
     'title',
     'arrives with the grid feature',
   )
+
+  // 'never' kills both the strip and its reveal zone live.
+  await second.win.getByTestId('settings-title-strip-never').click()
+  await second.win.keyboard.press('Escape')
+  await expect(second.win.getByTestId('settings-view')).toHaveCount(0)
+  await expect(second.win.getByTestId('title-strip')).toHaveCount(0)
+  await expect(second.win.getByTestId('title-strip-reveal')).toHaveCount(0)
   await second.app.close()
 })
 
