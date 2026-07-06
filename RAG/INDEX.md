@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 2 |
-| Planned | 4 | 0 |
+| In Progress | 2 | 2 |
+| Planned | 3 | 6 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 10 | 73 |
-| **Total** | **15** | **75** |
+| **Total** | **15** | **81** |
 
 ## In Progress
 
@@ -36,6 +36,19 @@
 
 ---
 
+### [[AI-EPIC-014-gallery|EPIC-014: Gallery]]
+> Reference material is only visible where it is placed. A project
+
+**IMPs:**
+- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — planned
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — planned
+- [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
+- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
+- [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — planned
+
+---
+
 ## Planned
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
@@ -48,13 +61,16 @@
 
 ---
 
-### [[AI-EPIC-014-gallery|EPIC-014: Gallery]]
-> Reference material is only visible where it is placed. A project
-
----
-
 ### [[AI-EPIC-014-library-and-cross-project-sourcing|EPIC-014: Library and cross project sourcing]]
 > The first outside tester's reference library lives in Allusion,
+
+**IMPs:**
+- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — planned
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — planned
+- [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
+- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
+- [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — planned
 
 ---
 

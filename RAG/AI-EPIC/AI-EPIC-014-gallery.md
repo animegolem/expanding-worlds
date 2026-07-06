@@ -8,8 +8,14 @@ tags:
   - import
 date_created: 2026-07-06
 date_completed:
-kanban_status: planned
+kanban_status: in-progress
 AI_IMP_spawned:
+  - AI-IMP-076
+  - AI-IMP-077
+  - AI-IMP-078
+  - AI-IMP-079
+  - AI-IMP-080
+  - AI-IMP-081
 ---
 
 # AI-EPIC-014-gallery
@@ -141,4 +147,12 @@ importer dialogue (open question 27) stays deferred.
 
 ## Implementation Breakdown
 
-<!-- Filled as AI-IMP tickets are cut. -->
+Cut 2026-07-06: AI-IMP-076 thumbnail pipeline (FR-1, the codec
+decision ticket — lead) → AI-IMP-077 gallery takeover: grid +
+grouped time (FR-2, FR-4 — lead, interface-defining) →
+AI-IMP-078 facets + text posts (FR-3, FR-8) · AI-IMP-079 bulk
+selection + action bar + placement (FR-5, FR-6) in parallel →
+AI-IMP-080 keyboard model (FR-9, rides 079's selection).
+AI-IMP-081 import progress strip (FR-7) is independent and can
+fan out alongside 076. The §14.4 text-post amendment (FR-8's
+design turn) is folded by the lead at the 078 merge.
