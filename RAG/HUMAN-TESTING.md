@@ -111,6 +111,11 @@ record — history lives in the tickets.
   source from the new live ⧉ charm, browse the mini grid, set the
   tag border, drag a cell onto the board — does the pull feel like
   one motion?
+- [ ] **The ☰ menu** (AI-IMP-110, 2026-07-06): open it — the full
+  ratified geography should read as one stable place (Undo · Redo
+  greyed with their printed shortcuts, Trash…, End Session,
+  Settings live, Help/About shows the real version). Does the
+  disabled-but-visible undo row read as a promise or as broken?
 - [ ] **Small states** (AI-IMP-106, 2026-07-06): type a wiki link
   to a note, trash the note, purge it — the link should go red
   with a wavy underline (grey means recoverable trash); clicking

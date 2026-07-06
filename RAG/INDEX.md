@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 2 |
-| Planned | 8 | 6 |
+| In Progress | 1 | 0 |
+| Planned | 8 | 5 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 102 |
+| Completed | 13 | 105 |
 | **Total** | **22** | **111** |
 
 ## In Progress
@@ -19,8 +19,8 @@
 > (1) Electron's postinstall silently ships a husk `dist/` in every
 
 **IMPs:**
-- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — in-progress
-- [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — in-progress
+- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
+- [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
 - [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — planned
 
 ---
@@ -50,7 +50,7 @@
 - [[AI-IMP-107-design-session-one|IMP-107]] Design session one — planned
 - [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — planned
 - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — planned
-- [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — planned
+- [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 
 ---
 
@@ -175,7 +175,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 102 IMPs completed</summary>
+<summary>13 EPICs, 105 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
