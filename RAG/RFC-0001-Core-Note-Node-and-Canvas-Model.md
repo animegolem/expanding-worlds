@@ -2318,8 +2318,25 @@ without adding a library concept to the domain:
 - **Tags cross the border by decision.** Ingesting an item asks
   whether to carry its tags (none, all, or pick); carried tags are
   recreated as destination tag records and assignments, merging
-  with existing tags by name_key. Whether the default differs by
-  source kind (on from a library, off otherwise) is a UI decision.
+  with existing tags by name_key. A carried tag that is new to the
+  destination brings its missing ancestor chain (§4.8 tree); a tag
+  the destination already has keeps its existing position —
+  destination wins, so an import never rearranges a project's
+  taxonomy. Whether the default differs by source kind (on from a
+  library, off otherwise) is a UI decision.
+
+- **Capture flows to the library (the inbox mirror).** Optionally,
+  per project, asked once: a drop into a world also performs a
+  second ordinary import into the library project — bytes copied,
+  an unplaced node created, provenance recorded. This makes "drop
+  anything in the app and it is in your library" literally true
+  while every project stays hermetic. Content hashes provide
+  recognition without reference: when the library already holds the
+  dropped bytes, the mirror is skipped and the drop border MAY
+  offer the library's tags for the incoming item. The mirror is
+  strictly one-way — nothing ever syncs out of the library — and a
+  locked or unavailable library never blocks the foreground drop
+  (queue or notice instead).
 
 - **The placement picker is the compressed browser.** One grammar,
   three compressions: the full browser is a takeover view; placing
@@ -2328,10 +2345,15 @@ without adding a library concept to the domain:
 
 - **The Allusion importer** is a versioned adapter per §4.7: walk
   the source library's locations, stage-import each file, create an
-  unplaced node per file, and recreate tag assignments, flattening
-  Allusion's tag hierarchy into flat project tags. Before building
-  it, verify the source's application version and whether its tags
-  live in its internal database or in file metadata.
+  unplaced node per file, and recreate tag assignments and the tag
+  tree (§4.8's organizing hierarchy carries it directly). Duplicate
+  leaf names under different parents disambiguate by rename, since
+  name identity stays globally unique. Before building it, verify
+  the source's application version and whether its tags live in its
+  internal database or in file metadata. Deprioritized (rev 0.19):
+  with the inbox mirror and a native browser, the tester's library
+  can re-accrete through use, so this adapter is a convenience, not
+  a gate.
 
 - **First open teaches by example.** The first time the library
   surface opens, it is pre-seeded with a small public-domain art
