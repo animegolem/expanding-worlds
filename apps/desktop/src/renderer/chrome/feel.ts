@@ -26,3 +26,9 @@ export const CHARM_MIN_SCREEN_PX = 48
 /** §8.4: hint charms rest as a glanceable census; hover lights the
  * hovered charm alone to full opacity. */
 export const HINT_CHARM_REST_OPACITY = 0.7
+
+/** Lifetime of a non-sticky toast before it dissolves (§8.6). */
+export const TOAST_DURATION_MS = 6000
+
+/** Length of the perch's single arrival pulse (§8.6). */
+export const PERCH_PULSE_MS = 700

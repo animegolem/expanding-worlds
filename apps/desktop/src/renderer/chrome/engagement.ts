@@ -54,6 +54,14 @@ function attach(): void {
   poke()
 }
 
+/** Programmatic engagement: something demands attention NOW (§11.4 —
+ * an ongoing condition arriving while the board is wallpaper must
+ * not fade in silence). Same effect as the user moving the mouse. */
+export function wake(): void {
+  attach()
+  poke()
+}
+
 /** Subscribe to engagement changes; fires immediately with the
  * current state and returns an unsubscribe. */
 export function onEngagementChanged(listener: Listener): () => void {

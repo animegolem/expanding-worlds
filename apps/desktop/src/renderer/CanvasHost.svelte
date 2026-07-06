@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import ChromeLayer from './chrome/ChromeLayer.svelte'
+  import { toast } from './chrome/status'
   import { attachBoardTooling, type BoardTooling } from './canvas/board-tooling'
   import { attachCharmsUi, type CharmsUiHandle } from './canvas/charms-ui'
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
@@ -17,31 +18,11 @@
 
   let element: HTMLDivElement
   let error = $state<string | null>(null)
-  let importError = $state<string | null>(null)
   let handle = $state<CanvasHostHandle | null>(null)
   let ui = $state<DecorationsUi | null>(null)
   let tooling = $state<BoardTooling | null>(null)
   // §6.6 attach-note picker target (AI-IMP-049).
   let attachTarget = $state<string | null>(null)
-
-  // §9.2 non-blocking notice: bare nodes auto-trashed with their last
-  // placement surface here with a Keep in Project escape.
-  let boardNotice = $state<{ message: string; keepNodeIds: string[] } | null>(null)
-  let noticeTimer: ReturnType<typeof setTimeout> | null = null
-  function showBoardNotice(detail: { message: string; keepNodeIds: string[] }): void {
-    boardNotice = detail
-    if (noticeTimer) clearTimeout(noticeTimer)
-    noticeTimer = setTimeout(() => (boardNotice = null), 8000)
-  }
-  async function keepInProject(): Promise<void> {
-    const h = handle
-    const notice = boardNotice
-    boardNotice = null
-    if (!h || !notice) return
-    for (const id of notice.keepNodeIds) {
-      await h.gateway.execute('RestoreRecord', { kind: 'node', id })
-    }
-  }
 
   onMount(() => {
     let mounted: CanvasHostHandle | null = null
@@ -51,11 +32,8 @@
     let openNote: OpenNoteSurfaceHandle | null = null
     let charms: CharmsUiHandle | null = null
     let disposed = false
-    const onNotice = (event: Event): void => {
-      const detail = (event as CustomEvent<{ message: string; keepNodeIds?: string[] }>).detail
-      showBoardNotice({ message: detail.message, keepNodeIds: detail.keepNodeIds ?? [] })
-    }
-    element.addEventListener('ew-board-notice', onNotice)
+    // §9.2 board notices ride the ew-board-notice event to the §8.6
+    // toast stack (chrome/status.ts) — no rendering here anymore.
     const offAttach = onAttachNote((nodeId) => (attachTarget = nodeId))
     mountCanvasHost(element)
       .then((h) => {
@@ -64,8 +42,15 @@
           return
         }
         mounted = h
+        // Import/command failures keep their pre-toast contract: one
+        // sticky import-error surface, replaced by the next failure.
         const notify = (message: string): void => {
-          importError = message
+          toast(message, {
+            kind: 'error',
+            sticky: true,
+            surface: 'import-error',
+            dismissTestid: 'import-error-dismiss',
+          })
         }
         surfaces = attachImportSurfaces(h, element, notify)
         menu = attachNodeMenu(h, element, notify)
@@ -83,8 +68,6 @@
     return () => {
       disposed = true
       offAttach()
-      element.removeEventListener('ew-board-notice', onNotice)
-      if (noticeTimer) clearTimeout(noticeTimer)
       surfaces?.destroy()
       menu?.destroy()
       textEntry?.destroy()
@@ -104,29 +87,8 @@
   {#if error}
     <p class="canvas-error" role="alert">Canvas failed to start: {error}</p>
   {/if}
-  {#if importError}
-    <div class="import-error" role="alert" data-testid="import-error">
-      <span>{importError}</span>
-      <button type="button" data-testid="import-error-dismiss" onclick={() => (importError = null)}>
-        Dismiss
-      </button>
-    </div>
-  {/if}
   {#if attachTarget && handle}
     <AttachNotePicker {handle} nodeId={attachTarget} onclose={() => (attachTarget = null)} />
-  {/if}
-  {#if boardNotice}
-    <div class="board-notice" role="status" data-testid="board-notice">
-      <span>{boardNotice.message}</span>
-      {#if boardNotice.keepNodeIds.length > 0}
-        <button type="button" data-testid="board-notice-keep" onclick={() => void keepInProject()}>
-          Keep in Project
-        </button>
-      {/if}
-      <button type="button" data-testid="board-notice-dismiss" onclick={() => (boardNotice = null)}>
-        Dismiss
-      </button>
-    </div>
   {/if}
 </div>
 
@@ -154,51 +116,5 @@
     color: #f3c9c9;
     border-radius: 4px;
     font-size: 0.85rem;
-  }
-
-  .import-error {
-    position: absolute;
-    inset: 0.75rem 1rem auto 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    margin: 0;
-    padding: 0.5rem 0.75rem;
-    background: #3b1f1f;
-    color: #f3c9c9;
-    border: 1px solid #7c3a3a;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    z-index: 20;
-  }
-
-  .import-error button {
-    flex: none;
-    padding: 0.15rem 0.6rem;
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .board-notice {
-    position: absolute;
-    inset: auto 1rem 1rem auto;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    background: #23272e;
-    color: #c8cfd8;
-    border: 1px solid #3a4048;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    z-index: 20;
-  }
-
-  .board-notice button {
-    flex: none;
-    padding: 0.15rem 0.6rem;
-    font: inherit;
-    cursor: pointer;
   }
 </style>

@@ -14,8 +14,9 @@ declare global {
 /**
  * AI-IMP-006 acceptance: renderer → preload → main → utility process
  * round-trip, sandboxed renderer, correct window title.
- * AI-IMP-007 acceptance: Svelte shell regions render and the status
- * strip shows the live ping result.
+ * AI-IMP-007 acceptance: Svelte shell regions render; the ping seam
+ * is asserted directly (the interim status strip retired with the
+ * §8.6 toasts + perch, AI-IMP-066).
  * AI-IMP-010 acceptance: the Project API executes a real command
  * against a real project with revision, conflict, and event flow.
  */
@@ -39,13 +40,15 @@ test('shell launches and the Project API round-trips', async () => {
   )
   expect(requireType).toBe('undefined')
 
-  // The three shell regions of the provisional layout (RFC-0001 §8.2).
+  // The shell regions of the provisional layout (RFC-0001 §8.2). The
+  // interim status strip retired with the §8.6 toasts + perch
+  // (AI-IMP-066): no persistent status chrome exists, and no ongoing
+  // condition means no perch slot at all.
   await expect(win.getByTestId('note-pane')).toBeVisible()
   await expect(win.getByTestId('workspace')).toBeVisible()
-  await expect(win.getByTestId('status-strip')).toBeVisible()
-
-  // The status strip renders the live seam result.
-  await expect(win.getByTestId('status-strip')).toContainText('{"pong":true,"from":"utility"}')
+  await expect(win.getByTestId('status-strip')).toHaveCount(0)
+  await expect(win.getByTestId('service-status')).toHaveCount(0)
+  await expect(win.getByTestId('perch')).toHaveCount(0)
 
   // AI-IMP-010: execute CreateNode end to end and observe revision,
   // query visibility, the pushed project-changed event, and a stale

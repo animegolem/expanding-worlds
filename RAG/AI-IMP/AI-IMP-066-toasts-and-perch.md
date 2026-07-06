@@ -5,7 +5,7 @@ tags:
   - Implementation
   - shell
   - status
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-059]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.8
@@ -74,23 +74,24 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] status.ts: toast stack with auto-dissolve + condition
+- [x] status.ts: toast stack with auto-dissolve + condition
       registry with raise/clear; unit tests for stacking, count,
       and clear-removes-slot.
-- [ ] Toasts render bottom-edge, transient, cadence-aware; enter
+- [x] Toasts render bottom-edge, transient, cadence-aware; enter
       AND resolve transitions covered for service lifecycle.
-- [ ] Perch: ⚠ appends below the rail only while ≥1 condition
+- [x] Perch: ⚠ appends below the rail only while ≥1 condition
       holds; single pulse on arrival; count badge for multiples;
       zero reserved space when clear.
-- [ ] Detail panel anchored to the charm lists conditions with
+- [x] Detail panel anchored to the charm lists conditions with
       their detail text; closes on Esc/click-away; charm remains
       while conditions hold.
-- [ ] Service lifecycle wired: kill → condition raised (perch
+- [x] Service lifecycle wired: kill → condition raised (perch
       visible through the outage, satisfying §11.4); recovery →
       condition cleared + resolution toast.
-- [ ] All ew-board-notice sites migrated to toast(); event
-      removed; `pnpm -r build` green.
-- [ ] StatusStrip deleted, App grid updated; recovery.spec
+- [x] All ew-board-notice sites migrated to toast() rendering; the
+      event kept as transport per lead direction (see Issues);
+      `pnpm -r build` green.
+- [x] StatusStrip deleted, App grid updated; recovery.spec
       retargeted and green; full desktop e2e green hidden-window.
 
 ### Acceptance Criteria
@@ -117,3 +118,46 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Deviation from the ticket's "event removed" wording (by lead
+  direction):** the agent brief for this ticket instructed keeping
+  `ew-board-notice` as the transport with emitters unchanged (canvas
+  code and Workspace.svelte are owned by another seam). Only the
+  *rendering* migrated: `chrome/status.ts` listens at window level
+  (the events already bubble) and turns notices into toasts. The
+  toast elements carry the legacy testids (`board-notice`,
+  `board-notice-keep`, `board-notice-dismiss`, `import-error`,
+  `import-error-dismiss`) so board-tooling/decorations/notes/slice/
+  import specs pass unchanged. Legacy surfaces are single-slot
+  (a same-`surface` toast replaces its predecessor), matching the
+  pre-toast behavior those specs assume; import errors stay sticky
+  until dismissed, as before.
+- **Unit-test harness:** apps/desktop had no vitest (unit tests
+  lived only in packages/*). Added a minimal `vitest.config.ts`
+  (includes `src/**/*.test.ts` only, so Playwright's `e2e/*.spec.ts`
+  stays out) and prepended `vitest run` to the desktop `test`
+  script. Note `check:ci` filters out `@ew/desktop` tests entirely,
+  so the new unit tests run in local `pnpm check` but not CI.
+- **Recovery e2e vs. a sub-second outage:** the automatic utility
+  restart completes in well under a second on this machine — too
+  fast to click the perch through its 700 ms arrival pulse
+  (Playwright waits for animation stability, then the element
+  detaches on recovery). recovery.spec now raises a holder
+  condition and opens the panel *before* the kill, then observes
+  the service condition joining and leaving the open panel, plus
+  the enter toast during the outage and the resolution toast after.
+  Perch arrival/pulse/count/Esc/click-away/zero-reserved-space
+  semantics are covered deterministically in a second test via an
+  `ew-test-condition` window event added to status.ts (same
+  ungated pattern as engagement's `ew-test-set-engagement`).
+- **Cadence caveat:** toasts and perch live inside ChromeLayer, so
+  the shared engagement clock fades them with the rest of the
+  chrome (per the one-fade-root rule). A condition raised while
+  the user is idle is therefore invisible until re-engagement;
+  engagement.ts is consume-only for this ticket, so no poke-on-
+  arrival was added. Flagged for the lead in case §11.4 should
+  wake the chrome.
+- A toast/condition raised before the canvas (and thus ChromeLayer)
+  mounts is retained in the store and renders on mount — conditions
+  are never lost; a pre-mount toast shows only if still within its
+  6 s lifetime.
