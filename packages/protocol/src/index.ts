@@ -181,6 +181,31 @@ export type SecondaryImportResponse =
   | { type: 'secondary-import'; ok: true; assetId: string; deduplicated: boolean }
   | { type: 'secondary-import'; ok: false; code: string; message: string }
 
+/** §14.4 ingest-by-copy (AI-IMP-090): pull one asset (identified by
+ * content hash) plus its tag facts from a secondary INTO THE PRIMARY,
+ * applying the session's tag border. Bytes hash-copy through the
+ * ordinary staged pipeline (dedupe free); carried tags find-or-create
+ * by name_key. The border is 'none' | 'all' | picked tag names. */
+export interface IngestFromSecondaryRequest {
+  type: 'ingest-from-secondary'
+  target: SecondaryTarget
+  contentHash: string
+  border: 'none' | 'all' | string[]
+}
+
+export type IngestFromSecondaryResponse =
+  | {
+      type: 'ingest-from-secondary'
+      ok: true
+      nodeId: string
+      assetId: string
+      deduplicated: boolean
+      /** §14.4 provenance: the source project's id — no schema home
+       * in Phase 1, so it rides the response for the caller. */
+      sourceProjectId: string
+    }
+  | { type: 'ingest-from-secondary'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -195,6 +220,7 @@ export type ProjectRequest =
   | CloseSecondaryRequest
   | SecondaryQueryRequest
   | SecondaryImportRequest
+  | IngestFromSecondaryRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -210,6 +236,7 @@ export type ProjectResponse =
   | CloseSecondaryResponse
   | SecondaryQueryResponse
   | SecondaryImportResponse
+  | IngestFromSecondaryResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. */

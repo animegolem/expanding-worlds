@@ -23,6 +23,12 @@ import {
   enqueueMissingThumbnails,
   type ThumbnailJob,
 } from './import/derivatives'
+import {
+  ingestFromSource,
+  type IngestInput,
+  type IngestResult,
+  type IngestSource,
+} from './import/ingest'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
@@ -60,6 +66,14 @@ export interface ProjectService {
   subscribe(fn: (event: ProjectChangedEvent) => void): () => void
   /** Staged asset import per §11.2; throws DomainError on rejection. */
   importAsset(input: ImportInput): Promise<ImportResult>
+  /** §14.4 ingest-by-copy (AI-IMP-090): pull one asset + node facts
+   * from another project's read handle into THIS project, applying
+   * the tag border. Rejects EW_READ_ONLY on a read-only open. */
+  ingestFrom(source: IngestSource, input: IngestInput): Promise<IngestResult>
+  /** The {db, dir} read handle this service presents when it is the
+   * SOURCE of an ingest. Reads only — hand it to another service's
+   * ingestFrom, never mutate through it. */
+  ingestSource(): IngestSource
   /** §11.2 derivative queue, renderer-driven (AI-IMP-076): the
    * oldest queued thumbnail job, or null when drained. */
   claimThumbnailJob(): ThumbnailJob | null
@@ -190,6 +204,21 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
         input,
       )
     },
+    ingestFrom: (source, input) => {
+      if (handle.readOnly) return Promise.reject(readOnlyError())
+      return ingestFromSource(
+        {
+          db: handle.db,
+          projectId: handle.projectId,
+          dir: handle.dir,
+          execute: (envelope) => dispatcher.execute(envelope),
+          now: () => new Date().toISOString(),
+        },
+        source,
+        input,
+      )
+    },
+    ingestSource: () => ({ db: handle.db, dir: handle.dir }),
     // Claiming mutates the queue: a read-only source reports drained
     // and lands nothing — it serves the derivatives it already has.
     claimThumbnailJob: () => (handle.readOnly ? null : claimNextThumbnailJob(derivCtx, handle.dir)),

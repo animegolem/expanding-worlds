@@ -158,6 +158,55 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
+    case 'ingest-from-secondary': {
+      // §14.4 ingest-by-copy (AI-IMP-090): reads from the secondary,
+      // WRITES into the primary. The secondary's {db, dir} read
+      // handle comes from its own service (ingestSource()), so no
+      // separate dir bookkeeping exists to drift out of sync.
+      if (!service) {
+        return {
+          type: 'ingest-from-secondary',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no project is open',
+        }
+      }
+      const secondary = secondaries[request.target]
+      if (!secondary) {
+        return {
+          type: 'ingest-from-secondary',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: `no ${request.target} project is open`,
+        }
+      }
+      try {
+        const result = await service.ingestFrom(secondary.ingestSource(), {
+          contentHash: request.contentHash,
+          border: request.border,
+        })
+        return {
+          type: 'ingest-from-secondary',
+          ok: true,
+          nodeId: result.nodeId,
+          assetId: result.assetId,
+          deduplicated: result.deduplicated,
+          sourceProjectId: result.sourceProjectId,
+        }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'INGEST_FAILED'
+        return {
+          type: 'ingest-from-secondary',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'execute-command': {
       if (!service) {
         return {

@@ -64,17 +64,22 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Ingest verb: hash-copy through the staged pipeline, unplaced
+- [x] Ingest verb: hash-copy through the staged pipeline, unplaced
       node, provenance recorded; dedupe path (bytes already in
       destination) creates the node without recopying.
-- [ ] Tag border: none/all/pick applied; name_key merge with
+- [x] Tag border: none/all/pick applied; name_key merge with
       existing destination tags; units for all three modes +
       merge-vs-create.
 - [ ] Seam exposure: verb reachable from the renderer with a
       secondary open; typed failures (no secondary, unknown hash).
-- [ ] Units cover provenance fields and §16 self-containment (the
+      (Utility verb + preload shipped and typed failures covered;
+      the ipcMain route in main/index.ts was outside the agent's
+      fence — see Issues Encountered. Renderer reachability is one
+      ~10-line router away.)
+- [x] Units cover provenance fields and §16 self-containment (the
       destination references nothing outside itself afterward).
-- [ ] Full gates.
+- [x] Full gates (persistence 431, desktop unit 36, lint, -r build;
+      e2e deferred with the main-route gap).
 
 ### Acceptance Criteria
 
@@ -96,3 +101,44 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Fence gap — main/index.ts route missing.** The renderer path is
+  preload `ew.secondary.ingest` → `ipcRenderer.invoke('secondary:ingest',
+  target, input)`, but main/index.ts registers an explicit
+  `ipcMain.handle` per channel (no generic passthrough) and main was
+  outside the agent's fence. The lead must add, beside
+  `secondary:import-asset`: `ipcMain.handle('secondary:ingest',
+  (_e, target, input) => callUtility({ type: 'ingest-from-secondary',
+  target, contentHash: input.contentHash, border: input.border }))`.
+  Until then the verb is fully live at the service/utility seams but
+  not renderer-reachable; the optional e2e was skipped for the same
+  reason.
+- **Node-creation command shape (undo).** No compound command exists
+  (AI-IMP-086's scope), so one ingest commits CreateNode →
+  SetNodeAppearance → per carried tag (CreateTag?) + AssignTagToNode
+  as SEPARATE history entries; undoing an ingest is several undos,
+  and CommitAssetImport is not undoable at all (§11.2). If
+  SetNodeAppearance fails, ingest rolls the draft node back via
+  DeleteDraftNode before rethrowing.
+- **Provenance.** source_url rides the pipeline's existing asset
+  column (copied from the source asset row). The source PROJECT id
+  has no schema home (schema changes forbidden here; `asset.attribution`
+  exists but CommitAssetImport does not accept it and a raw UPDATE
+  would bypass the single write path) — it is returned in
+  `IngestResult.sourceProjectId` and on the protocol response for
+  AI-IMP-091 to surface.
+- **Deviation from the brief: no `secondaryDirs` map.** Instead of a
+  parallel dir map in the utility (which could not supply the source
+  Db anyway), ProjectService gained `ingestSource(): { db, dir }` —
+  the secondary service hands its own read handle to the primary's
+  `ingestFrom`, so there is no bookkeeping to drift on open/close.
+- **Trashed-tag name_key collision.** A trashed destination tag still
+  owns its name_key (unique index), so a carried tag hitting one can
+  be neither recreated nor assigned; it is skipped (documented in
+  ingest.ts) rather than silently restoring trash.
+- Multiple source asset rows may share one hash (§4.7 dedupe never
+  merges): ingest resolves the newest active row for filename/URL
+  provenance and UNIONs tags across all nodes referencing the hash,
+  deduplicated by name_key.
+- The agent worktree branch was stale (forked from main before
+  epic-015); fast-forwarded to the epic-015 tip before starting.
