@@ -133,14 +133,20 @@ export function registerNoteQueries(registry: QueryRegistry): void {
     // Would-be title spelling: the earliest record's display text
     // (UUIDv7 ids order by creation) so suggestions converge on one
     // spelling (§7.2).
+    // Links whose SOURCE note sits in Trash don't exist for ordinary
+    // surfaces (§9 projections filter trash; AI-IMP-085).
     const phantoms = ctx.db.all<{ target_title_key: string; display_text: string; n: number }>(
       `SELECT target_title_key, count(*) AS n,
               (SELECT l2.display_text FROM link l2
+               JOIN note sn2 ON sn2.id = l2.source_note_id
+                 AND sn2.lifecycle_state = 'active'
                WHERE l2.project_id = l.project_id
                  AND l2.state = 'unresolved'
                  AND l2.target_title_key = l.target_title_key
                ORDER BY l2.id LIMIT 1) AS display_text
        FROM link l
+       JOIN note sn ON sn.id = l.source_note_id
+         AND sn.lifecycle_state = 'active'
        WHERE l.project_id = ? AND l.state = 'unresolved'
          AND l.target_title_key LIKE ? ESCAPE '\\'
        GROUP BY l.target_title_key
@@ -302,6 +308,7 @@ export function registerNoteQueries(registry: QueryRegistry): void {
       `SELECT l.id, l.source_note_id, n.title AS source_title,
               l.range_start, l.range_end, l.display_text
        FROM link l JOIN note n ON n.id = l.source_note_id
+         AND n.lifecycle_state = 'active'
        WHERE l.project_id = ? AND l.state = 'unresolved' AND l.target_title_key = ?
        ORDER BY l.id`,
       ctx.projectId,

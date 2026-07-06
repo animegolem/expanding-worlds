@@ -190,14 +190,20 @@ export class NoteEditorController {
    * body-touching commands (rename, quit) MUST await.
    */
   async flushPending(): Promise<void> {
-    while (this.#inFlight) await this.#inFlight
-    if (!this.#dirty || !this.#note || !this.#view) return
+    // Capture BEFORE any await: a closing panel destroys the view on
+    // unmount, and a flush that waits first reads a nulled buffer
+    // and silently drops the burst (AI-IMP-085).
+    if (!this.#dirty || !this.#note || !this.#view) {
+      while (this.#inFlight) await this.#inFlight
+      return
+    }
     if (this.#timer !== null) {
       clearTimeout(this.#timer)
       this.#timer = null
     }
     const note = this.#note
     const body = this.#view.state.doc.toString()
+    while (this.#inFlight) await this.#inFlight
     if (body === this.#lastSavedBody) {
       this.#setDirty(false)
       return

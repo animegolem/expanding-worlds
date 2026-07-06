@@ -334,6 +334,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
                 AS placementCount
        FROM node n
        LEFT JOIN note ON note.id = n.note_id
+         AND note.lifecycle_state = 'active'
        WHERE n.project_id = ? AND n.lifecycle_state = 'active'
        ORDER BY n.id`,
       ctx.projectId,

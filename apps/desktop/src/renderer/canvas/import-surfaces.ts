@@ -82,16 +82,25 @@ export function attachImportSurfaces(
     return host.controller.camera.screenToWorld({ x: bounds.width / 2, y: bounds.height / 2 })
   }
 
-  async function createImagePin(assetId: string, world: Point): Promise<void> {
+  /** canvasId is BOUND AT GESTURE TIME by every caller: the import
+   * awaits before this runs, and a user who navigates mid-import
+   * must get the pin on the board they dropped on, not wherever
+   * they are now (AI-IMP-085). Returns commit success so batch
+   * outcomes stay honest. */
+  async function createImagePin(assetId: string, world: Point, canvasId: string): Promise<boolean> {
     const result = await host.gateway.execute('CreatePin', {
       nodeId: uuidv7(),
-      canvasId: host.canvasId,
+      canvasId,
       placementId: uuidv7(),
       x: world.x,
       y: world.y,
       appearance: { kind: 'image', assetId, crop: null },
     })
-    if (result.status !== 'committed') onError(describeFailure('CreatePin', result))
+    if (result.status !== 'committed') {
+      onError(describeFailure('CreatePin', result))
+      return false
+    }
+    return true
   }
 
   /** One file through the staged pipeline, then its CreatePin. A
@@ -100,6 +109,7 @@ export function attachImportSurfaces(
   async function importOneFile(
     file: File,
     world: Point,
+    canvasId: string,
     sourceUrl?: string,
   ): Promise<ImportOutcome> {
     const bytes = new Uint8Array(await file.arrayBuffer())
@@ -113,7 +123,10 @@ export function attachImportSurfaces(
       onError(imported.message)
       return 'failed'
     }
-    await createImagePin(imported.assetId, world)
+    // A committed asset with no pin is invisible (the gallery is
+    // node-backed) — report it as the failure it is; the orphaned
+    // bytes stay GC-eligible per §9.8 and hash dedupe re-finds them.
+    if (!(await createImagePin(imported.assetId, world, canvasId))) return 'failed'
     return imported.deduplicated ? 'deduped' : 'imported'
   }
 
@@ -123,6 +136,7 @@ export function attachImportSurfaces(
    * progress strip instead (each file stays its own committed
    * import, so strip cancel never rolls anything back). */
   async function importFiles(files: File[], world: Point, sourceUrl?: string): Promise<void> {
+    const canvasId = host.canvasId // gesture-time board, not import-completion board
     if (files.length > IMPORT_BATCH_THRESHOLD || isImportBatchActive()) {
       // The pump runs tasks strictly in order, so a shared per-drop
       // success count keeps the cascade offsets identical to the
@@ -136,6 +150,7 @@ export function attachImportSurfaces(
               x: world.x + drop.placed * MULTI_DROP_OFFSET,
               y: world.y + drop.placed * MULTI_DROP_OFFSET,
             },
+            canvasId,
             sourceUrl,
           )
           if (outcome !== 'failed') drop.placed += 1
@@ -152,6 +167,7 @@ export function attachImportSurfaces(
           x: world.x + placed * MULTI_DROP_OFFSET,
           y: world.y + placed * MULTI_DROP_OFFSET,
         },
+        canvasId,
         sourceUrl,
       )
       if (outcome !== 'failed') placed += 1
@@ -161,6 +177,7 @@ export function attachImportSurfaces(
   /** §6.1 URL-only drop: main fetches as a user-initiated act; any
    * failure surfaces a clear error and creates zero records. */
   async function importFromUrl(url: string, world: Point): Promise<void> {
+    const canvasId = host.canvasId // gesture-time board (AI-IMP-085)
     const fetched = await window.ew.project.fetchUrlForImport(url)
     if (!fetched.ok) {
       onError(fetched.message)
@@ -175,7 +192,7 @@ export function attachImportSurfaces(
       onError(imported.message)
       return
     }
-    await createImagePin(imported.assetId, world)
+    await createImagePin(imported.assetId, world, canvasId)
   }
 
   /** §6.3: a node dragged from an outline row creates one placement. */

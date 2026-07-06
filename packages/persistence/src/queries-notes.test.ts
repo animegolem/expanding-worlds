@@ -131,6 +131,20 @@ describe('suggestTitles (§7.2)', () => {
     })
   })
 
+  it('ignores unresolved links whose source note is in Trash (AI-IMP-085)', () => {
+    const a = createNote('A', 'see [[Ghost Fleet]]')
+    const b = createNote('B', 'also [[Ghost Fleet]]')
+    trash(a)
+
+    const partial = run<TitleSuggestion[]>('suggestTitles', { query: 'ghost fleet' })
+    expect(partial).toHaveLength(1)
+    expect(partial[0]).toMatchObject({ phantom: true, referenceCount: 1 })
+
+    // Every source trashed: the phantom vanishes entirely.
+    trash(b)
+    expect(run<TitleSuggestion[]>('suggestTitles', { query: 'ghost fleet' })).toHaveLength(0)
+  })
+
   it('matches by title_key substring, normalizing the query', () => {
     createNote('Ghost Ship')
     expect(run<TitleSuggestion[]>('suggestTitles', { query: '  ST   SH ' })).toHaveLength(1)
@@ -168,6 +182,20 @@ describe('getPhantom (§7.2, invariant 28)', () => {
     const bodyA = 'one [[Ghost Fleet]] and two [[Ghost Fleet|them]]'
     const ref = sourceA.references[0]
     expect(bodyA.slice(ref.rangeStart, ref.rangeEnd)).toBe('[[Ghost Fleet]]')
+  })
+
+  it('drops sources in Trash, and returns null when only trashed sources remain (AI-IMP-085)', () => {
+    const a = createNote('A', 'see [[Ghost Fleet]]')
+    createNote('B', 'also [[Ghost Fleet]]')
+    trash(a)
+
+    const phantom = run<PhantomView>('getPhantom', { titleKey: 'ghost fleet' })
+    expect(phantom).not.toBeNull()
+    expect(phantom.sources).toHaveLength(1)
+    expect(phantom.referenceCount).toBe(1)
+
+    trash(phantom.sources[0]!.noteId)
+    expect(run<PhantomView>('getPhantom', { titleKey: 'ghost fleet' })).toBeNull()
   })
 
   it('normalizes the requested key and returns null when no phantom exists', () => {

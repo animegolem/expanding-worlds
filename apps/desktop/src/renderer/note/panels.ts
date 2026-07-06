@@ -148,7 +148,13 @@ function setTethered(request: PanelRequest, anchor: PanelAnchor): void {
   notify()
 }
 
+/** Orders async anchor resolves: only the LATEST open request may
+ * land, so a slow query for an older click can never replace the
+ * note the user opened last (AI-IMP-085). */
+let openGeneration = 0
+
 export function openNotePanel(noteId: string, anchor?: OpenNoteAnchor): void {
+  const generation = ++openGeneration
   // One buffer per note: an already-pinned note focuses its panel.
   const pinnedHolder = records.find((record) => record.pinned && panelNoteId(record) === noteId)
   if (pinnedHolder) {
@@ -168,7 +174,10 @@ export function openNotePanel(noteId: string, anchor?: OpenNoteAnchor): void {
     )
     return
   }
-  void resolveAnchor(noteId).then((resolved) => setTethered({ kind: 'note', noteId }, resolved))
+  void resolveAnchor(noteId).then((resolved) => {
+    if (generation !== openGeneration) return // a newer open won
+    setTethered({ kind: 'note', noteId }, resolved)
+  })
 }
 
 export function openPhantomPanel(title: string): void {
@@ -239,6 +248,11 @@ export function setPanelAnchor(key: number, anchor: PanelAnchor): void {
 
 export function closePanel(key: number): void {
   if (bigEditorKey === key) closeBigEditor()
+  // §7.1: close is a guaranteed save point — a burst still inside
+  // the debounce window commits before the panel goes (AI-IMP-085;
+  // the command lands async, the panel need not wait for it).
+  const flush = flushers.get(key)
+  if (flush) void flush().catch(() => undefined)
   flushers.delete(key)
   records = records.filter((record) => record.key !== key)
   notify()

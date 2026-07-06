@@ -162,6 +162,17 @@ describe('listNodeLibrary (§14.1)', () => {
     expect(ids).toContain(unplaced)
     expect(ids).not.toContain(placed)
   })
+
+  it('hides trashed note titles like every sibling projection (AI-IMP-085)', () => {
+    const node = createNode()
+    const noteId = insertNote('Ephemeral')
+    committed('AttachNoteToNode', { nodeId: node, noteId })
+    handle.db.run("UPDATE note SET lifecycle_state = 'trashed' WHERE id = ?", noteId)
+
+    const all = query<Array<Record<string, unknown>>>('listNodeLibrary')
+    const row = all.find((r) => r.id === node)
+    expect(row).toMatchObject({ noteTitle: null })
+  })
 })
 
 describe('getTagView (§4.8)', () => {

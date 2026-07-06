@@ -92,6 +92,33 @@ test('pin accumulation and the escalation ladder (§8.5)', async () => {
   await app.close()
 })
 
+test('closing a dirty panel inside the debounce window still commits (§7.1, AI-IMP-085)', async () => {
+  const { app, win } = await launchApp('ew-e2e-panelflush-')
+  const { noteId } = await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/)
+  await win.locator('.note-panel .cm-content').click()
+  await win.keyboard.press('End')
+  await win.keyboard.type(' and gull cries')
+  await expect(win.getByTestId('note-pane-dirty')).toBeVisible()
+  // Close IMMEDIATELY — well inside NOTE_AUTOSAVE_IDLE_MS. The close
+  // is a guaranteed save point: the burst must land anyway.
+  await win.getByTestId('panel-close').click()
+  await expect(win.locator('.note-panel')).toHaveCount(0)
+  await expect
+    .poll(
+      async () =>
+        (await runQuery<{ body: string } | null>(win, 'getNote', { noteId }))?.body ?? '',
+      { timeout: 10_000 },
+    )
+    .toContain('gull cries')
+
+  await app.close()
+})
+
 test('panel sizing, pinned resize, and the big editor (§8.5 rev 0.31, AI-IMP-083)', async () => {
   const { app, win } = await launchApp('ew-e2e-panelsize-')
   const { noteId } = await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })

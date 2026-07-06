@@ -236,6 +236,11 @@ export function attachBoardTooling(
    * current view; replacing an existing background fits the new
    * image into the prior extent so canvas coordinates hold (Q7). */
   async function setBackgroundFromFile(file: File): Promise<void> {
+    // Gesture-time board AND its background: both reads must precede
+    // the awaits, or navigating mid-import retargets the command and
+    // fits the new image to the wrong prior extent (AI-IMP-085).
+    const canvasId = handle.canvasId
+    const priorBackground = background
     const bytes = new Uint8Array(await file.arrayBuffer())
     let dims: { width: number; height: number } | null = null
     try {
@@ -268,7 +273,7 @@ export function attachBoardTooling(
     let settings = { ...IDENTITY_SETTINGS }
     let extent: { x: number; y: number; width: number; height: number } | null = null
     if (dims && dims.width > 0 && dims.height > 0) {
-      const prior = stageExtent(background)
+      const prior = stageExtent(priorBackground)
       if (prior) {
         const scale = prior.width / dims.width
         settings = { x: prior.x, y: prior.y, scale, opacity: 1 }
@@ -287,7 +292,7 @@ export function attachBoardTooling(
       }
     }
     const result = await gateway.execute('SetCanvasBackground', {
-      canvasId: handle.canvasId,
+      canvasId,
       assetId: imported.assetId,
       settings,
     })
@@ -295,7 +300,8 @@ export function attachBoardTooling(
       onError(describeFailure('SetCanvasBackground', result))
       return
     }
-    if (extent) handle.flyTo(extent)
+    // Fly only if the user is still standing on the board they set.
+    if (extent && handle.canvasId === canvasId) handle.flyTo(extent)
   }
 
   function enterBackgroundEdit(): void {
