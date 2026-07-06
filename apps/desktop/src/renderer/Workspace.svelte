@@ -113,25 +113,18 @@
       const h = hostHandle
       if (!h) return
       const wanted = new Set(placementIds)
-      const center = (): boolean => {
+      const center = (): void => {
         const items = h.controller.items().filter((item) => wanted.has(item.id))
-        if (items.length === 0) return false
+        if (items.length === 0) return
         h.controller.selection.marquee(placementIds)
         const bounds = unionBounds(items)
         if (bounds) h.flyTo(bounds)
-        return true
       }
-      if (center()) return
-      // Cross-canvas rows (AI-IMP-065) fire right after navigateTo,
-      // but the destination scene applies asynchronously — wait for
-      // it, bounded.
-      const off = h.onSceneApplied(() => {
-        if (center()) {
-          off()
-          clearTimeout(timer)
-        }
-      })
-      const timer = setTimeout(() => off(), 2000)
+      // Cross-canvas rows (AI-IMP-065) fire right after navigateTo, but
+      // the destination scene applies asynchronously — await the
+      // scene-ready primitive, then center on whatever is present
+      // (AI-IMP-113). waitForItems folds in the try-now fast path.
+      void h.waitForItems(placementIds).then(center)
     }),
   )
 

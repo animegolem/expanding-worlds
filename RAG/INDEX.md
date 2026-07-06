@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 8 | 8 |
+| In Progress | 1 | 1 |
+| Planned | 8 | 7 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 105 |
@@ -21,7 +21,7 @@
 **IMPs:**
 - [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
 - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
-- [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — planned
+- [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — in-progress
 
 ---
 
@@ -99,7 +99,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4002 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1450 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (938 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (999 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
 - apps/desktop/src/main/index.ts (793 LOC)
@@ -115,9 +115,9 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
-- apps/desktop/src/renderer/note/panels.ts (597 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
+- apps/desktop/src/renderer/note/panels.ts (573 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (560 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/pin.test.ts (558 LOC)
