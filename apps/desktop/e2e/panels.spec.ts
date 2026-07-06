@@ -40,11 +40,12 @@ test('pin accumulation and the escalation ladder (§8.5)', async () => {
   await expect(win.getByTestId('panel-tag-chips')).toContainText('#ink')
 
   // Tethered replacement: opening another note reuses THE panel; the
-  // untagged subject shows no chips at all.
+  // untagged subject carries the §4.8 add-field but no chips (108).
   await win.mouse.dblclick(box.x + 700, box.y + 300)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Keep/)
   await expect(win.locator('.note-panel')).toHaveCount(1)
-  await expect(win.getByTestId('panel-tag-chips')).toHaveCount(0)
+  await expect(win.getByTestId('tag-add-field')).toBeVisible()
+  await expect(win.locator('[data-testid^="panel-tag-chip-"]')).toHaveCount(0)
 
   // Pin: screen-fixed, and the node (on-screen) wears the halo.
   await win.getByTestId('panel-pin').click()

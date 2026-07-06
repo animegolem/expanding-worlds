@@ -38,6 +38,7 @@
   } from './panels'
   import { createNoteProjectPort } from './project-port'
   import { openTagPanel } from '../tags/tag-panel'
+  import TagAddField from '../tags/TagAddField.svelte'
   import { wikiLinkCompletion } from './suggestions'
   import { wikiLinkActivation, wikiLinkHighlighter } from './wiki-link-plugin'
   import { themeTokenValue } from '../theme'
@@ -157,6 +158,11 @@
   // §8.5: the panel surfaces its SUBJECT NODE's tags as chips; a
   // zero-node note shows none.
   let tagChips = $state<Array<{ id: string; name: string; color: string | null }>>([])
+  // §4.8 rev 0.45 add-field: the subject NODE (placement-anchored
+  // only) the completing field assigns to — a real note panel, never a
+  // phantom. Held in state because subjectNodeId() reads non-reactive
+  // controller items.
+  let tagNodeId = $state<string | null>(null)
 
   function subjectNodeId(): string | null {
     if (record.anchor.kind === 'placement') {
@@ -168,8 +174,13 @@
   }
 
   async function refreshTagChips(): Promise<void> {
+    const subject = subjectNodeId()
+    // The add-field assigns only to a placement-anchored subject node
+    // (never a phantom); the chip DISPLAY additionally covers the
+    // canvas-phantom fallback for parity with the prior behavior.
+    tagNodeId = subject
     const nodeId =
-      subjectNodeId() ?? (record.request.kind === 'canvas-phantom' ? record.request.nodeId : null)
+      subject ?? (record.request.kind === 'canvas-phantom' ? record.request.nodeId : null)
     if (!nodeId) {
       tagChips = []
       return
@@ -951,7 +962,9 @@
       ✕
     </button>
   </header>
-  {#if tagChips.length > 0 && !phantom}
+  {#if tagNodeId && !phantom && paneProject}
+    <!-- §4.8 rev 0.45: chips PLUS the completing add-field, shown for
+         any placement-anchored (non-phantom) note even at zero chips. -->
     <div class="tag-chips" data-testid="panel-tag-chips">
       {#each tagChips as tag (tag.id)}
         <!-- §4.8 door 2: a chip opens THE tag panel anchored to itself. -->
@@ -968,6 +981,11 @@
           #{tag.name}
         </button>
       {/each}
+      <TagAddField
+        nodeId={tagNodeId}
+        execute={(type, payload) => paneProject!.execute(type, payload)}
+        onAssigned={() => void refreshTagChips()}
+      />
     </div>
   {/if}
   {#if error}

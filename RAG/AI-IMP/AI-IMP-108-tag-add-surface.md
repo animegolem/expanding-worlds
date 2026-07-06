@@ -73,16 +73,16 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] `tag-assign.ts` shared helper with unit tests (create, hit
+- [x] `tag-assign.ts` shared helper with unit tests (create, hit
       existing by name_key, conflict recovery, already-assigned).
-- [ ] `#` charm popover: completing input above chips; Enter
+- [x] `#` charm popover: completing input above chips; Enter
       assigns/creates; chips update without reselecting the node.
-- [ ] Note panel chip row: same field, same behavior, hidden for
+- [x] Note panel chip row: same field, same behavior, hidden for
       phantom panels.
-- [ ] e2e: board flow (select → # → type novel name → Enter → chip
+- [x] e2e: board flow (select → # → type novel name → Enter → chip
       appears; type prefix of existing → completion → assign) and
       note-panel flow; one undo removes the assignment.
-- [ ] Full gates (pnpm -r build, unit, lint, affected e2e).
+- [x] Full gates (pnpm -r build, unit, lint, affected e2e).
 
 ### Acceptance Criteria
 
@@ -105,3 +105,52 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Shared helper shape.** `renderer/tags/tag-assign.ts` exports two
+pure-ish pieces: `filterTagCompletions(allTags, needle, limit=8)` (the
+case-insensitive prefix filter, exact-text dropped, capped — the
+TagPanel idiom, never `<datalist>`) and
+`assignTagByName(execute, nodeId, name, allTags)` which does the §4.8
+find-or-create + assign: merge by `name_key`, `CreateTag` only for a
+genuinely new name, `TAG_NAME_CONFLICT` recovers `details.existingTagId`,
+then `AssignTagToNode` with `TAG_ALREADY_ASSIGNED` folded to a benign
+`{status:'already'}`. It returns a tagged union
+(`assigned | already | error`) so each surface renders outcomes its own
+way. `execute` is the narrow `(type, payload) => Promise<CommandResult>`
+door both surfaces already own (the charm gateway; the note ProjectPort).
+
+**Two surfaces.** The `#` charm popover (charms-ui.ts, imperative DOM)
+gained an add-field row + custom completion list above a rebuilt chip
+row, dispatching through `host.gateway.execute`; the note panel mounts
+a small shared Svelte component `TagAddField.svelte` in its chip row,
+dispatching through `paneProject.execute` and refreshing via
+`refreshTagChips()`. The note-panel chip section now renders for any
+placement-anchored (non-phantom) note even at zero chips — a new
+`tagNodeId` state gates it to `subjectNodeId()` (a placement anchor)
+so phantom/canvas-phantom drafts never show the field.
+
+**Issues / deviations.**
+- panels.spec.ts line 47 asserted `panel-tag-chips` has count 0 for an
+  untagged subject. Since the add-field is now always present for a
+  non-phantom subject, that assertion was updated (within the allowed
+  panels spec) to check `tag-add-field` is visible and no
+  `panel-tag-chip-*` chips exist.
+- GalleryActionBar and chrome/mirror.ts were left to keep their own
+  find-or-create copies (optional adoption per ticket). Neither is
+  purely mechanical: the gallery bar loops the assign over many
+  selected nodes with per-node added/skipped/failed toast accounting
+  and uses `galleryTagCounts` (not `listTags`) as its vocabulary; mirror
+  iterates a list of names, mutating a local `existing[]` vocabulary as
+  it creates. Folding these into the single-node helper would distort
+  it; deferred by design.
+- Fresh-worktree electron husk (dist held only LICENSES, no
+  Electron.app, no path.txt) blocked Playwright launch; applied the
+  documented copy-from-main + `printf` path.txt workaround.
+
+**Validation (all green).**
+- `pnpm -r build`: Done (pre-existing a11y warnings only).
+- `pnpm --filter desktop test:unit`: 6 files, 47 tests passed (adds
+  the tag-assign suite: 8 cases).
+- `pnpm lint`: clean.
+- `npx playwright test panels.spec.ts notes.spec.ts tags.spec.ts`:
+  27 passed (3 new tags cases + the updated panels assertion).

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { exec, launchApp } from './helpers'
+import { exec, launchApp, runQuery } from './helpers'
 
 /**
  * AI-IMP-071 acceptance: the §4.8 tag panel. Two doors land on one
@@ -271,5 +271,125 @@ test('note-panel door opens the panel; the completion field swaps the tag (§4.8
   ).toContainText('Home')
   await expect(win.getByTestId('tag-panel-lens')).toBeEnabled()
 
+  await app.close()
+})
+
+/**
+ * AI-IMP-108: "assign at the moment of arranging" (§4.8 rev 0.45). The
+ * `#` charm popover and the note panel's chip row both carry the shared
+ * completing add-field — novel text creates-and-assigns in one gesture,
+ * a prefix completes an existing tag and assigns it by name_key (no
+ * duplicate row), and a data-level undo (UnassignTagFromNode, the
+ * inverse of AssignTagToNode) removes the assignment.
+ */
+test('board `#` popover: create-and-assign novel, complete existing, reopen after undo (§4.8 rev 0.45)', async () => {
+  const { app, win } = await launchApp('ew-e2e-tag-add-board-')
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'CreatePlacement', {
+    placementId,
+    canvasId,
+    nodeId,
+    x: 200,
+    y: 200,
+    width: 60,
+    height: 60,
+  })
+  // An existing tag in the vocabulary to complete against.
+  await exec(win, 'CreateTag', { tagId: crypto.randomUUID(), name: 'ruins' })
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Select the node, open the `#` popover — the add-field is there.
+  await win.mouse.click(box.x + 200, box.y + 200)
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection())).toEqual([placementId])
+  await win.getByTestId('charm-tags').click()
+  await expect(win.getByTestId('charm-tag-chips')).toBeVisible()
+  const addInput = win.getByTestId('charm-tag-add-input')
+  await expect(addInput).toBeVisible()
+
+  // Novel name → created and assigned in one gesture; the chip appears
+  // WITHOUT reselecting the node.
+  await addInput.fill('harbor')
+  await addInput.press('Enter')
+  await expect(win.getByTestId('charm-tag-chip-row')).toContainText('#harbor')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection())).toEqual([placementId])
+
+  // Prefix of the existing tag completes; picking it assigns by
+  // name_key — no duplicate tag row is created.
+  await addInput.fill('ru')
+  await expect(win.getByTestId('charm-tag-add-option')).toHaveText('ruins')
+  await win.getByTestId('charm-tag-add-option').click()
+  await expect(win.getByTestId('charm-tag-chip-row')).toContainText('#ruins')
+
+  const tags = await runQuery<Array<{ id: string; name: string }>>(win, 'listNodeTags', { nodeId })
+  expect(tags.map((t) => t.name).sort()).toEqual(['harbor', 'ruins'])
+  // "ruins" existed; "harbor" is the only new tag — the completion did
+  // not mint a second "ruins".
+  expect(await runQuery<unknown[]>(win, 'listTags')).toHaveLength(2)
+
+  // One undo removes the assignment; reopening the popover re-queries
+  // and the harbor chip is gone while ruins remains.
+  const harbor = tags.find((t) => t.name === 'harbor')!
+  await exec(win, 'UnassignTagFromNode', { tagId: harbor.id, nodeId })
+  await win.getByTestId('charm-tags').click() // close
+  await win.getByTestId('charm-tags').click() // reopen → re-query
+  await expect(win.getByTestId('charm-tag-chip-row')).toContainText('#ruins')
+  await expect(win.getByTestId('charm-tag-chip-row')).not.toContainText('#harbor')
+
+  await app.close()
+})
+
+test('note panel add-field: complete existing, create-and-assign novel, one undo removes it (§4.8 rev 0.45)', async () => {
+  const { app, win } = await launchApp('ew-e2e-tag-add-note-')
+  const world = await seedTagWorld(win)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Open carrier A's note; chips PLUS the add-field show (ruins is on).
+  await win.mouse.dblclick(box.x + 150, box.y + 150)
+  await expect(win.getByTestId('panel-tag-chips')).toBeVisible()
+  await expect(win.getByTestId('tag-add-field')).toBeVisible()
+  await expect(win.getByTestId(`panel-tag-chip-${world.ruinsTagId}`)).toBeVisible()
+
+  const addInput = win.getByTestId('tag-add-input')
+
+  // Complete an existing tag by prefix → assigned by name_key, no dupe.
+  await addInput.fill('ca')
+  await expect(win.getByTestId('tag-add-option')).toHaveText('camp')
+  await win.getByTestId('tag-add-option').click()
+  await expect(win.getByTestId(`panel-tag-chip-${world.campTagId}`)).toBeVisible()
+
+  // Novel name → create-and-assign in one gesture; the chip appears.
+  await addInput.fill('harbor')
+  await addInput.press('Enter')
+  await expect(win.getByTestId('panel-tag-chips')).toContainText('#harbor')
+
+  const tags = await runQuery<Array<{ id: string; name: string }>>(win, 'listNodeTags', {
+    nodeId: world.carrierANodeId,
+  })
+  expect(tags.map((t) => t.name).sort()).toEqual(['camp', 'harbor', 'ruins'])
+
+  // One undo (the inverse of AssignTagToNode): the panel refreshes on
+  // the project change and the harbor chip vanishes; ruins remains.
+  const harbor = tags.find((t) => t.name === 'harbor')!
+  await exec(win, 'UnassignTagFromNode', { tagId: harbor.id, nodeId: world.carrierANodeId })
+  await expect(win.getByTestId('panel-tag-chips')).not.toContainText('#harbor')
+  await expect(win.getByTestId(`panel-tag-chip-${world.ruinsTagId}`)).toBeVisible()
+
+  await app.close()
+})
+
+test('a phantom note panel carries no tag add-field (§4.8, AI-IMP-108)', async () => {
+  const { app, win } = await launchApp('ew-e2e-tag-add-phantom-')
+  // The board's own note draft is a phantom until the first edit.
+  await win.getByTestId('corner-charm').click()
+  await expect(win.getByTestId('canvas-phantom')).toBeVisible()
+  await expect(win.getByTestId('tag-add-field')).toHaveCount(0)
+  await expect(win.getByTestId('panel-tag-chips')).toHaveCount(0)
   await app.close()
 })
