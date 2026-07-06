@@ -22,6 +22,13 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Zoom feel dial-in** (AI-IMP-098, 2026-07-06): pinch/Cmd+wheel
+  now glides to its target (τ=70ms default). Side-by-side with
+  PureRef in a dev session: `window.__ewDebug.zoomTuning({tau: 60})`
+  etc. live-tunes {tau, wheelSpeed, pinchSpeed}; call with no args
+  to read current. Report the numbers that feel right and they
+  freeze as constants.
+
 - [ ] **Label clearance** (AI-IMP-087, 2026-07-06): select a labeled
   item and zoom in/out — the title should never touch the selection
   ring. Note: at high zoom the label sits a constant ~6.5px under

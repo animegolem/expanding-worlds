@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 6 | 5 |
+| Planned | 6 | 4 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 88 |
+| Completed | 11 | 89 |
 | **Total** | **18** | **93** |
 
 ## In Progress
@@ -42,7 +42,7 @@
 - [[AI-IMP-095-token-exists-guard|IMP-095]] Token exists guard — completed
 - [[AI-IMP-096-checkpoint-on-suspend|IMP-096]] Checkpoint on suspend — backlog
 - [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
-- [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — planned
+- [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — completed
 - [[AI-IMP-099-grid-lod-crossfade|IMP-099]] Grid lod crossfade — planned
 - [[AI-IMP-100-panel-aware-flyto|IMP-100]] Panel aware flyto — planned
 
@@ -90,8 +90,8 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3717 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1373 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (938 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (889 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
@@ -117,8 +117,8 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.ts (522 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (521 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
+- apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
-- apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (501 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
@@ -159,7 +159,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 88 IMPs completed</summary>
+<summary>11 EPICs, 89 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

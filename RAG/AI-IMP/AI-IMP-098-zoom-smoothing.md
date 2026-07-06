@@ -5,12 +5,12 @@ tags:
   - Implementation
   - canvas
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-098-zoom-smoothing
@@ -71,15 +71,15 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Zoom chase in the engine with frame-rate-independent τ;
+- [x] Zoom chase in the engine with frame-rate-independent τ;
       cursor-anchored target math; epsilon snap; units.
-- [ ] host.ts: wheel/pinch feed targets, pan untouched; chase
+- [x] host.ts: wheel/pinch feed targets, pan untouched; chase
       cancels/yields correctly vs camera flights and gestures.
-- [ ] __ewDebug zoom tuning hooks (dev/test only).
-- [ ] e2e: wheel burst converges to the analytic target; zoom
+- [x] __ewDebug zoom tuning hooks (dev/test only).
+- [x] e2e: wheel burst converges to the analytic target; zoom
       stays centered on the cursor point.
-- [ ] Full gates.
-- [ ] HUMAN-TESTING entry queued for the owner's PureRef
+- [x] Full gates.
+- [x] HUMAN-TESTING entry queued for the owner's PureRef
       side-by-side dial-in (lead adds on merge).
 
 ### Acceptance Criteria
@@ -91,6 +91,22 @@ would have produced, anchored at the cursor, with no per-event
 jumps — and at rest the zoom is exactly the target.
 
 ### Issues Encountered
+
+Agent-built, lead-transcribed. The chase eases in LOG-zoom space
+(CameraFlight's convention) so residual decay is exactly
+exp(−Δt/τ) under any frame slicing; anchoring re-solves the
+zoomAt equation at the eased zoom EVERY frame (unit pins all 40
+frames of a chase); rest state is ===-exact vs an instant-math
+twin; a one-frame headstart keeps the first event feeling
+instant. Cancel discipline mirrors CameraFlight both directions.
+One signed-off boundary deviation: 6 lines in canvas.spec.ts whose
+old assertion hard-coded the retired instant-zoom contract.
+Defaults τ=70ms shipped; the e2e deliberately asserts tuning
+SHAPE, not literals, so the owner's re-frozen numbers won't break
+the suite. Gates: 283 engine (8 new) / 37 desktop units, lint,
+13 targeted e2e on the agent branch incl. the 2 new; lead re-ran
+units post-merge (doc-only delta since the agent's base); CI runs
+the full suite on push.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
