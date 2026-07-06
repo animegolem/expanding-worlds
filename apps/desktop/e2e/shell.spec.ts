@@ -300,8 +300,9 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
     await expect(win.getByTestId('menu-redo')).toContainText('⇧⌘Z')
 
     // Every deferred row is aria-disabled and inert: clicking it must
-    // neither close the menu nor open anything.
-    for (const id of ['menu-undo', 'menu-redo', 'menu-trash', 'menu-end-session', 'menu-export']) {
+    // neither close the menu nor open anything. (Trash… went live with
+    // AI-IMP-102 and is asserted separately below.)
+    for (const id of ['menu-undo', 'menu-redo', 'menu-end-session', 'menu-export']) {
       await expect(win.getByTestId(id)).toHaveAttribute('aria-disabled', 'true')
       // force past actionability: even a real DOM click must do nothing.
       await win.getByTestId(id).click({ force: true })
@@ -326,6 +327,15 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
     await expect(win.getByTestId('takeover-settings')).toBeVisible()
     await win.keyboard.press('Escape')
     await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
+
+    // Trash… went live with AI-IMP-102: enabled, and opens its takeover.
+    await win.getByTestId('charm-menu').click()
+    await expect(win.getByTestId('menu-trash')).not.toHaveAttribute('aria-disabled', 'true')
+    await win.getByTestId('menu-trash').click()
+    await expect(win.getByTestId('rail-menu')).toHaveCount(0)
+    await expect(win.getByTestId('takeover-trash')).toBeVisible()
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('takeover-trash')).toHaveCount(0)
   } finally {
     await app.close()
   }

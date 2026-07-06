@@ -61,10 +61,12 @@
   <button
     type="button"
     role="menuitem"
-    class="deferred"
-    aria-disabled="true"
     data-testid="menu-trash"
-    use:tooltip={{ name: 'Trash — arrives with the trash browser (AI-IMP-102)' }}
+    use:tooltip={{ name: 'Trash — restore or permanently delete trashed records' }}
+    onclick={() => {
+      onclose()
+      openTakeover('trash')
+    }}
   >
     <span class="label">Trash…</span>
   </button>
