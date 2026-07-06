@@ -71,20 +71,20 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Batch driver over the existing per-file pipeline; threshold
+- [x] Batch driver over the existing per-file pipeline; threshold
       keeps small drops toast-quiet (e2e both sides of the
       threshold).
-- [ ] Dedupe outcome surfaced per file and counted live (e2e with
+- [x] Dedupe outcome surfaced per file and counted live (e2e with
       duplicate files in the batch).
-- [ ] Progress strip in the perch: live counts, thin bar, ✕;
+- [x] Progress strip in the perch: live counts, thin bar, ✕;
       fade-exempt while running; summary toast on completion;
       never a modal (e2e).
-- [ ] Cancel stops remaining files; completed imports remain
+- [x] Cancel stops remaining files; completed imports remain
       committed records; summary says how many were skipped
       (e2e).
-- [ ] A drop during a running batch queues into the same strip
+- [x] A drop during a running batch queues into the same strip
       (e2e).
-- [ ] `pnpm -r build`, full gates green.
+- [x] `pnpm -r build`, full gates green.
 
 ### Acceptance Criteria
 
@@ -109,3 +109,36 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- No persistence change was needed: `ImportAssetResponse` already
+  carries `deduplicated: boolean` end to end (packages/protocol →
+  utility → preload), so the dedupe count rides the existing result.
+- Fade exemption is structural, not clock-based: the strip mounts as
+  a SIBLING of ChromeLayer's fading root instead of holding the
+  engagement clock. `holdEngagement` is one shared boolean owned by
+  takeovers — a batch releasing it mid-takeover would un-pin the
+  takeover's hold. The store still calls `wake()` on batch arrival
+  and on the summary toast (the §11.4 / AI-IMP-066 precedent).
+- Deterministic e2e pacing: tiny in-memory PNGs import faster than a
+  test can click ✕, so `import-progress.ts` carries a test-only
+  `ew-test-import-allow` gate (how many files may still start; the
+  pump waits at zero), following the `ew-test-condition` /
+  `ew-test-set-engagement` pattern. Production never dispatches the
+  event; the allowance rests at Infinity. The listener attaches at
+  module load so a spec can close the gate before the first drop.
+- Interpretation: ANY drop while a batch runs — including one at or
+  below the 5-file threshold — queues into the running strip, since
+  the checklist's queue item doesn't gate on size and interleaving a
+  silent path with a counting strip would misreport totals. Small
+  drops while idle keep the exact pre-ticket quiet path.
+- Batch failures keep the existing per-file sticky `import-error`
+  toast (§4.7 notices) AND count into the strip + summary; the
+  summary lists counts, not filenames (Out of Scope: retry UI).
+- Cancel lets the in-flight file finish (it is a committed import
+  either way) and skips everything not yet started; the ✕ disables
+  and the strip reads "Cancelling" until the in-flight file lands.
+- Worktree setup friction: the ticket file itself was not on the
+  branch (uncommitted in the lead's tree) and was copied in verbatim;
+  Electron's dist was missing AND `path.txt` was missing next to it —
+  copying dist alone still fails `electron.launch` ("Electron failed
+  to install correctly") until `path.txt` is restored.
