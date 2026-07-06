@@ -97,30 +97,30 @@ importer dialogue (open question 27) stays deferred.
 
 ### Functional Requirements
 
-- [ ] FR-1: A real thumbnail generator behind the existing
+- [x] FR-1: A real thumbnail generator behind the existing
       derivative seam — main-process image codec, background worker
       draining `derivative_jobs`, §11.4 lazy rebuild of missing
       derivatives; imports never block on it.
-- [ ] FR-2: Gallery takeover ⊞ — rail charm, takeover mode-switcher
+- [x] FR-2: Gallery takeover ⊞ — rail charm, takeover mode-switcher
       participation, thumbnail grid over the project's nodes per
       §14.4.
-- [ ] FR-3: Facets — sort by date · name · size; kind facet
+- [x] FR-3: Facets — sort by date · name · size; kind facet
       image · note · board; flat tag filter with counts orderable
       by name or count; untagged · unplaced cleanup filters.
-- [ ] FR-4: Grouped time — date sort renders bucketed sections
+- [x] FR-4: Grouped time — date sort renders bucketed sections
       (relative → months → years); the current section header names
       where you are and opens the period list for random access.
-- [ ] FR-5: Bulk selection with a floating action bar: tag · place
+- [x] FR-5: Bulk selection with a floating action bar: tag · place
       · trash.
-- [ ] FR-6: Placement from the gallery via the §6.10 grammar —
+- [x] FR-6: Placement from the gallery via the §6.10 grammar —
       drag out and place-on-current-canvas, consistent with the
       outline's flows.
-- [ ] FR-7: Large drops run as an interruptible progress strip
+- [x] FR-7: Large drops run as an interruptible progress strip
       with a live hash-dedupe count, never a modal.
-- [ ] FR-8: Note-kind entries render as text posts — title
+- [x] FR-8: Note-kind entries render as text posts — title
       visible, tags on hover (§14.4 amendment, design turn in this
       epic).
-- [ ] FR-9: Gallery keyboard model — arrow navigation and range
+- [x] FR-9: Gallery keyboard model — arrow navigation and range
       selection over the grid (open question 26; design turn in
       this epic, then build).
 
@@ -158,3 +158,12 @@ AI-IMP-080 keyboard model (FR-9, rides 079's selection).
 AI-IMP-081 import progress strip (FR-7) is independent and can
 fan out alongside 076. The §14.4 text-post amendment (FR-8's
 design turn) is folded by the lead at the 078 merge.
+
+All six IMPs closed 2026-07-06 — one day, lead-built 076/077,
+agent-built 078/079/081/080 (078/079/080 SEQUENCED, not parallel
+as cut: all three live in GalleryView.svelte and parallel diffs on
+one component are a merge trap). Final gates: 82 desktop e2e, 404
+persistence units, 36 desktop units, lint, build. RFC moved
+0.25 → 0.30 across the epic (keyboard model, iPad satellite +
+lazy superposition, pitch bible, renderer-codec thumbnails, text
+posts). Epic stays in-progress pending the PR review round-trip.
