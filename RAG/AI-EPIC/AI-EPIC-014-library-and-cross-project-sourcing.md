@@ -82,14 +82,14 @@ DAM feature race with Eagle.
 
 - [ ] FR-1: Thumbnail derivative pipeline + main-process image codec per §4.7.
 - [ ] FR-2: Bulk import to unplaced nodes with batch progress per §14.4/§11.2.
-- [ ] FR-3: Gallery projection on the takeover framework — facets, cleanup filters, bulk action bar, progress strip per §14.4.
+- [ ] FR-3: Gallery projection on the takeover framework — facets (sort · kind · tag · cleanup), grouped time buckets with the header-anchored jump control, the world·everything scope toggle, bulk action bar, progress strip per §14.4 (rev 0.22).
 - [ ] FR-4: Read-only source-project opening per §11.1/§14.4.
 - [ ] FR-5: Ingest-by-copy with provenance and the tag border decision per §14.4.
 - [ ] FR-6: Placement picker as compressed gallery; sources open as pinned mini-gallery panels from the project charm per §14.4.
 - [ ] FR-7: Export size preflight, asked once per project, per §16.
 - [ ] FR-8: First-open seeded example (public-domain set, ordinary records) with the one-time clear affordance per §14.4.
 - [ ] FR-9: Inbox mirror — once-per-project opt-in, one-way, hash-recognized, non-blocking per §14.4.
-- [ ] FR-10: Flat tag facet with counts in the gallery filter per §4.8/§14.4.
+- [ ] FR-10: Flat tag facet with counts, orderable by name or count, showing the active scope's vocabulary per §4.8/§14.4 (rev 0.22).
 - [ ] FR-11 (stretch): Allusion importer as a versioned adapter, hierarchy flattened, leaf collisions renamed per §14.4.
 
 ### Non-Functional Requirements

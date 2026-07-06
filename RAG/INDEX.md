@@ -81,7 +81,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3237 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3273 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (908 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (753 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)

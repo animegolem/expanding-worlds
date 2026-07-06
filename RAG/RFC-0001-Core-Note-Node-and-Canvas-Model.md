@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.21         | 5 July 2026      |
+| Accepted for Phase 1 | 0.22         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2325,16 +2325,42 @@ without adding a library concept to the domain:
 - **The gallery** (⊞) is the file-browser projection, and a view
   any project can open — "library" is the project kind, "gallery"
   is the view. A thumbnail grid over the project's nodes with sort
-  facets (date, name, size), a flat tag filter with counts, and the
-  two cleanup filters the model already owns (untagged · unplaced).
-  Bulk selection summons a floating action bar (tag · place ·
-  trash). Large drops run as an interruptible progress strip with a
-  live hash-dedupe count, never a modal. The gallery has its own
-  rail charm and also participates in the takeover mode switcher —
-  graph ⊛ · outline ▤ · gallery ⊞ are projections of one database,
-  and the user hops freely among them inside the takeover. Query
-  machinery is shared with the outline (§14.1) and tag panel
-  (§4.8).
+  facets (date, name, size), a **kind facet** (image · note ·
+  board, rev 0.22), a flat tag filter with counts (orderable by
+  name or by count), and the two cleanup filters the model already
+  owns (untagged · unplaced). Bulk selection summons a floating
+  action bar (tag · place · trash). Large drops run as an
+  interruptible progress strip with a live hash-dedupe count,
+  never a modal. The gallery has its own rail charm and also
+  participates in the takeover mode switcher — graph ⊛ · outline ▤
+  · gallery ⊞ are projections of one database, and the user hops
+  freely among them inside the takeover. Query machinery is shared
+  with the outline (§14.1) and tag panel (§4.8).
+
+- **Grouped time, not infinite scroll (rev 0.22, from the first
+  tester's Tumblr-archive habit).** Date sort renders the grid in
+  BUCKETED sections with headers, because a date-sorted infinite
+  grid is still infinite scroll — the sort is invisible from the
+  middle of it. Buckets are relative near the top (today · this
+  week · this month · earlier this year) and degrade to calendar
+  months, then years, as material ages. The current section header
+  doubles as the jump control: it names where you are, and
+  clicking it opens the period list for random access into deep
+  time — one control, two jobs, anchored to itself like all
+  chrome. Grouping is view state over indexed timestamps; no
+  schema is involved.
+
+- **Scope is project choice (rev 0.22).** The gallery's primary
+  toggle — *this world · everything* — selects WHOSE gallery is
+  shown: the current project's, or the library project's. There is
+  no global tag store and no cross-project query: the inbox mirror
+  already makes the library the converging superset, so
+  "everything" simply IS the library's gallery, and the tag facet
+  always shows the active scope's vocabulary. The toggle is where
+  the world-tags-versus-library-tags distinction gets learned:
+  world tags are curation in context, library tags are facts about
+  the asset. When the mirror is off for the current world, the
+  gallery says so instead of pretending "everything" is complete.
 
 - **Projects source, never reference.** A second project MAY be
   opened read-only as an import source (§11.1 already contemplates
@@ -2903,7 +2929,9 @@ workspace tabs. Expected shape: a second window onto the same
 project, which requires the multi-window story the §11.1
 single-writer rule already anticipates.
 
-26. The gallery keyboard model — arrow navigation and range
+26. (Shaped, rev 0.22 — not closed.) The gallery's navigation model
+gained grouped time buckets with a header-anchored jump control
+(§14.4); the keyboard half — arrow navigation and range
 selection over the grid (§14.4) — awaits its design turn.
 
 27. The OS-drop importer dialogue as the third compression of the
@@ -3235,3 +3263,11 @@ Accepted for the Phase 1 prototype:
 
 - Option splits by moment (rev 0.21, §6.9): at drag start it
   duplicates; mid-drag it bypasses snapping.
+
+- The gallery groups time instead of scrolling it (rev 0.22,
+  §14.4): date sort renders bucketed sections (relative buckets
+  aging into calendar months) whose current header IS the jump
+  control; a kind facet (image · note · board) joins the facets;
+  the tag facet orders by name or count; and the scope toggle —
+  this world · everything — selects whose gallery is shown, the
+  library being "everything" by construction of the mirror.
