@@ -28,6 +28,7 @@
     pinPanel,
     registerPanelFlush,
     registerPanelRename,
+    setPanelAnchor,
     setPanelRequest,
     type PanelRecord,
   } from './panels'
@@ -195,12 +196,20 @@
     requestCreateAndPlace(view.title, body)
   }
 
-  /** §8.5 canvas phantom commit: CreateNote (title = first line) +
-   * AttachNoteToNode as the first durable record; Escape or close
-   * before this and nothing ever existed. */
+  /** First-committed-edit materialization for the draft-first
+   * phantoms. Canvas phantom (§8.5): CreateNote + AttachNoteToNode.
+   * Pin phantom (§6.2, AI-IMP-067): ONE CreatePin — note + dot node
+   * + placement as a single user-level transaction. Title = first
+   * line; Escape or close before this and nothing ever existed. */
   async function materializeCanvasNote(): Promise<void> {
     const project = paneProject
-    if (!project || record.request.kind !== 'canvas-phantom' || canvasMaterializing) return
+    const request = record.request
+    if (
+      !project ||
+      (request.kind !== 'canvas-phantom' && request.kind !== 'pin-phantom') ||
+      canvasMaterializing
+    )
+      return
     const text = canvasDraft.trim()
     if (text.length === 0) return
     canvasMaterializing = true
@@ -211,6 +220,38 @@
       const title = lines[0]!.trim()
       const body = lines.slice(1).join('\n').trim()
       const noteId = uuidv7()
+      if (request.kind === 'pin-phantom') {
+        const placementId = uuidv7()
+        const result = await project.execute('CreatePin', {
+          nodeId: uuidv7(),
+          canvasId: request.canvasId,
+          placementId,
+          x: request.x,
+          y: request.y,
+          appearance: { kind: 'dot', color: '#8ab4d8' },
+          note: { kind: 'create', noteId, title, ...(body.length > 0 ? { body } : {}) },
+        })
+        if (result.status === 'error') {
+          const found = conflictFrom(result, 'create', title)
+          if (found) conflict = found
+          else error = result.message
+          return
+        }
+        if (result.status !== 'committed') {
+          error = 'the project changed underneath (retry)'
+          return
+        }
+        canvasDraft = ''
+        // Provisional point → the real placement (anchor handoff).
+        setPanelAnchor(record.key, {
+          kind: 'placement',
+          canvasId: request.canvasId,
+          placementId,
+          label: title,
+        })
+        setPanelRequest(record.key, { kind: 'note', noteId })
+        return
+      }
       const created = await project.execute('CreateNote', {
         noteId,
         title,
@@ -227,7 +268,7 @@
         return
       }
       const attached = await project.execute('AttachNoteToNode', {
-        nodeId: record.request.nodeId,
+        nodeId: request.nodeId,
         noteId,
       })
       if (attached.status === 'error') {
@@ -443,6 +484,15 @@
       tail = null
       return
     }
+    if (record.anchor.kind === 'point' && record.anchor.canvasId === handle.canvasId) {
+      const camera = handle.controller.camera
+      const at = camera.worldToScreen({ x: record.anchor.x, y: record.anchor.y })
+      let x = Math.min(Math.max(8, at.x + 20), view.width - width - 8)
+      let y = Math.min(Math.max(8, at.y - 10), view.height - height - 8)
+      pos = { x, y }
+      tail = { x1: x, y1: y + 18, x2: at.x, y2: at.y }
+      return
+    }
     // Anchorless (zero placements / stale anchor): a calm default.
     pos = { x: view.width - width - 16, y: 56 }
     tail = null
@@ -599,10 +649,11 @@
     } else if (request.kind === 'phantom') {
       void openPhantom(request.title)
     } else {
-      // canvas-phantom: empty draft; nothing persists yet.
+      // canvas/pin phantom: empty draft; nothing persists yet.
       void paneController.close()
       note = null
       phantom = null
+      canvasDraft = ''
     }
   }
 
@@ -738,13 +789,24 @@
     hidden={note === null}
     bind:this={editorHost}
   ></div>
-  {#if record.request.kind === 'canvas-phantom' && !note && !phantom}
-    <div class="canvas-phantom" data-testid="canvas-phantom">
-      <p class="phantom-summary">This board has no note yet — nothing saves until you write.</p>
+  {#if (record.request.kind === 'canvas-phantom' || record.request.kind === 'pin-phantom') && !note && !phantom}
+    <div
+      class="canvas-phantom"
+      data-testid={record.request.kind === 'pin-phantom' ? 'pin-phantom' : 'canvas-phantom'}
+    >
+      <p class="phantom-summary">
+        {record.request.kind === 'pin-phantom'
+          ? 'A pin marks a place — nothing saves until you write.'
+          : 'This board has no note yet — nothing saves until you write.'}
+      </p>
+      <!-- svelte-ignore a11y_autofocus -->
       <textarea
         class="phantom-draft"
-        data-testid="canvas-phantom-draft"
+        data-testid={record.request.kind === 'pin-phantom'
+          ? 'pin-phantom-draft'
+          : 'canvas-phantom-draft'}
         placeholder="First line becomes the title…"
+        autofocus={record.request.kind === 'pin-phantom'}
         bind:value={canvasDraft}
         oninput={onCanvasDraftInput}
         onblur={() => void materializeCanvasNote()}

@@ -5,12 +5,12 @@ tags:
   - Implementation
   - canvas
   - tools
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-059, AI-IMP-064]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-067-pin-dock-tool
@@ -79,22 +79,22 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] ◉ in the dock with shortcut N and tooltip; tool modality
+- [x] ◉ in the dock with shortcut N and tooltip; tool modality
       matches existing tools (active until switched; Esc returns
       to select).
-- [ ] Click places provisional dot + focused tethered phantom
+- [x] Click places provisional dot + focused tethered phantom
       panel; no domain records exist at this point (verify via
       query).
-- [ ] First committed edit commits exactly one CreatePin (note
+- [x] First committed edit commits exactly one CreatePin (note
       create + dot node + placement); undo removes all three as
       one user-level transaction.
-- [ ] Escape before typing (or click-away with empty editor)
+- [x] Escape before typing (or click-away with empty editor)
       discards everything; no draft rows remain (DeleteDraft*
       symmetry respected if drafts are used).
-- [ ] CreatePinDialog deleted; interim title-strip button gone;
+- [x] CreatePinDialog deleted; interim title-strip button gone;
       no orphaned imports; e2e fixtures migrated; `pnpm -r build`
       green.
-- [ ] e2e: place-type-persist round trip (reload shows dot with
+- [x] e2e: place-type-persist round trip (reload shows dot with
       visible label = note title), place-Esc-nothing, repeated
       placements in one activation; full gates green
       hidden-window.
@@ -120,3 +120,21 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Deviations, mostly gifts from 064: (1) the pin phantom reuses the
+canvas-phantom machinery (title-from-first-line drafts) — its
+materialize is ONE CreatePin, and the provisional dot's lifecycle is
+derived from the panels store (dot exists exactly while an
+unpersisted pin phantom does), so Escape-cleans-everything needed no
+extra plumbing. (2) The ToolManager gained an onPlacePin hook
+mirroring onPlaceText — the engine change is three lines plus the
+ToolKind member. (3) The dialog's image-crop coverage migrated to a
+direct CreatePin exec: per §6.2, appearance richness flows through
+ordinary node operations now, so no UI drives that path — the test
+pins the command semantics (import + one CreatePin, crop intact).
+(4) A §7.7 duplicate title through the pin tool lands in the
+ordinary TitleConflictDialog (the dialog-specific pin-error surface
+died with the dialog). (5) e2e gotcha: DOM note panels sit above the
+canvas, so pin-tool clicks in specs must aim at panel-free
+coordinates. (6) Undo of a committed pin is the CreatePin inverse,
+already covered by the retained round-trip block; a single-undo UI
+assertion awaits the undo-surface work, noted for the feel pass.

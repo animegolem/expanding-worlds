@@ -1,15 +1,14 @@
 <!--
   Main workspace (RFC-0001 §8.2 rev 0.17): the window is the board —
-  the canvas fills the region with no tab bar (AI-IMP-059 retired it;
-  there are no workspace tabs in the shell model). The interim Create
-  Pin dialog and placement-source panel open from title-strip buttons
-  via window events until AI-IMP-067/065 retire them.
+  the canvas fills the region; chrome floats. The interim placement-
+  source panel opens from a title-strip button until the outline view
+  (EPIC-013) replaces it. The Create Pin dialog retired with the ◉
+  pin tool (§6.2, AI-IMP-067).
 -->
 <script lang="ts">
   import { uuidv7 } from '@ew/domain'
   import { onMount } from 'svelte'
   import CanvasHost from './CanvasHost.svelte'
-  import CreatePinDialog from './CreatePinDialog.svelte'
   import PlacementSourcePanel from './PlacementSourcePanel.svelte'
   import type { CanvasHostHandle } from './canvas/host'
   import { unionBounds } from '@ew/canvas-engine'
@@ -23,7 +22,6 @@
 
   let hostHandle = $state<CanvasHostHandle | null>(null)
   let hostElement = $state<HTMLElement | null>(null)
-  let dialogOpen = $state(false)
   let panelOpen = $state(false)
 
   function viewCenterWorld(): { x: number; y: number } {
@@ -114,20 +112,13 @@
     }),
   )
 
-  // Interim entry points, fired by the title strip (AI-IMP-059).
+  // Interim entry point, fired by the title strip (AI-IMP-059).
   onMount(() => {
-    const openPin = (): void => {
-      if (hostHandle) dialogOpen = true
-    }
     const toggleSources = (): void => {
       if (hostHandle) panelOpen = !panelOpen
     }
-    window.addEventListener('ew-open-create-pin', openPin)
     window.addEventListener('ew-toggle-sources', toggleSources)
-    return () => {
-      window.removeEventListener('ew-open-create-pin', openPin)
-      window.removeEventListener('ew-toggle-sources', toggleSources)
-    }
+    return () => window.removeEventListener('ew-toggle-sources', toggleSources)
   })
 
   // §7.2 Create and Place on Current Canvas: phantom materialization
@@ -179,13 +170,6 @@
       }}
     />
   </div>
-  {#if dialogOpen && hostHandle}
-    <CreatePinDialog
-      handle={hostHandle}
-      viewCenter={viewCenterWorld}
-      onclose={() => (dialogOpen = false)}
-    />
-  {/if}
 </main>
 
 <style>

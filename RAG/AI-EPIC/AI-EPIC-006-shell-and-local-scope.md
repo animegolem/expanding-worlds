@@ -7,8 +7,8 @@ tags:
   - navigation
   - notes
 date_created: 2026-07-03
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-05
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-059
   - AI-IMP-060
@@ -107,7 +107,7 @@ constants, tuned later.
 - [x] FR-10: Canvas-note corner charm with ghost/solid states per §8.5.
 - [x] FR-11: In-panel Uses list behind the places header; link-anchored location chooser; zero/one/many per §7.3–7.4.
 - [x] FR-12: Toast system plus the ⚠ ongoing-state perch; status strip retired in the perch ticket per §8.6.
-- [ ] FR-13: Pin dock tool (◉, N) placing a dot node with its phantom note focused; Escape-before-typing persists nothing; Create Pin dialog retired per §6.2 (rev 0.20).
+- [x] FR-13: Pin dock tool (◉, N) placing a dot node with its phantom note focused; Escape-before-typing persists nothing; Create Pin dialog retired per §6.2 (rev 0.20).
 
 ### Non-Functional Requirements
 

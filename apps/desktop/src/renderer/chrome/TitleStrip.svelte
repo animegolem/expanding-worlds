@@ -107,14 +107,6 @@
     >
       Sources
     </button>
-    <button
-      type="button"
-      data-testid="open-create-pin"
-      onclick={() => fire('ew-open-create-pin')}
-      use:tooltip={{ name: 'Create Pin… (interim — the ◉ pin tool replaces this)' }}
-    >
-      Create Pin…
-    </button>
   </div>
 {/if}
 

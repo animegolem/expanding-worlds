@@ -26,6 +26,9 @@ import type { ProjectPort } from './note-editor'
 export type PanelAnchor =
   | { kind: 'placement'; canvasId: string; placementId: string; label: string }
   | { kind: 'corner' }
+  /** A world point with no record yet — the pin tool's provisional
+   * dot (§6.2, AI-IMP-067). */
+  | { kind: 'point'; canvasId: string; x: number; y: number }
   | { kind: 'none' }
 
 export type PanelRequest =
@@ -34,6 +37,9 @@ export type PanelRequest =
   /** §8.5 canvas phantom: empty editor over a note-less node; the
    * first committed edit creates + attaches (title from first line). */
   | { kind: 'canvas-phantom'; nodeId: string }
+  /** §6.2 pin phantom: the pin tool clicked a spot; the first
+   * committed edit is ONE CreatePin (note + dot node + placement). */
+  | { kind: 'pin-phantom'; canvasId: string; x: number; y: number }
 
 export interface PanelRecord {
   key: number
@@ -140,6 +146,12 @@ export function openPhantomPanel(title: string): void {
   setTethered({ kind: 'phantom', title }, current?.anchor ?? { kind: 'none' })
 }
 
+/** The §6.2 pin tool: a focused phantom panel at the clicked spot;
+ * nothing persists until the first committed edit. */
+export function openPinPhantom(canvasId: string, x: number, y: number): void {
+  setTethered({ kind: 'pin-phantom', canvasId, x, y }, { kind: 'point', canvasId, x, y })
+}
+
 /** The canvas corner charm (§8.5): the active canvas's own note. */
 export function openCornerPanel(nodeId: string, noteId: string | null): void {
   setTethered(
@@ -171,6 +183,15 @@ export function setPanelRequest(key: number, request: PanelRequest): void {
   const record = records.find((candidate) => candidate.key === key)
   if (!record) return
   record.request = request
+  notify()
+}
+
+/** A pin phantom materialized: the panel re-tethers from its
+ * provisional point to the real placement. */
+export function setPanelAnchor(key: number, anchor: PanelAnchor): void {
+  const record = records.find((candidate) => candidate.key === key)
+  if (!record) return
+  record.anchor = anchor
   notify()
 }
 

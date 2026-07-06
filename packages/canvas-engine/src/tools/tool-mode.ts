@@ -25,6 +25,7 @@ export type ToolKind =
   | 'line'
   | 'arrow'
   | 'connector'
+  | 'pin'
 
 export interface ToolStyle {
   stroke: string
@@ -73,6 +74,10 @@ export class ToolManager {
   }
   /** The desktop text-entry overlay hooks in here (§12.2 DOM overlay). */
   onPlaceText: ((world: Point) => void) | null = null
+  /** The §6.2 pin tool hooks in here (AI-IMP-067): click places a
+   * dot node with its phantom note focused; the desktop side owns
+   * the provisional dot and the CreatePin transaction. */
+  onPlacePin: ((world: Point) => void) | null = null
 
   constructor(target: ToolTarget, host: ToolManagerHost) {
     this.#target = target
@@ -107,6 +112,10 @@ export class ToolManager {
     const world = this.#target.camera.screenToWorld(screen)
     if (this.#active === 'text') {
       this.onPlaceText?.(world)
+      return
+    }
+    if (this.#active === 'pin') {
+      this.onPlacePin?.(world)
       return
     }
     this.#session = beginDrawSession(this.#active, world, { ...this.style }, {

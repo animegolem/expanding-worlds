@@ -226,8 +226,9 @@ test('import surfaces: drop, attribution, rejection, URL failure, paste', async 
   await app.close()
 })
 
-test('Create Pin dialog commits one command; inverse cleans up', async () => {
+test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', async () => {
   const { app, win } = await launch('ew-e2e-createpin-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
 
   const revisionOf = () =>
     win.evaluate(async () => {
@@ -236,17 +237,24 @@ test('Create Pin dialog commits one command; inverse cleans up', async () => {
       return (project.result as { revision: number }).revision
     })
 
-  // -- dialog-driven dot pin with a new note title.
+  // -- pin tool (◉, N): click places a provisional dot + the focused
+  // phantom; the FIRST COMMITTED EDIT is exactly one CreatePin.
   const before = await revisionOf()
-  await revealTitleStrip(win)
-  await win.getByTestId('open-create-pin').click()
-  await win.getByTestId('pin-note-new').check()
-  await win.getByTestId('pin-note-title').fill('Harbor Watch')
-  await win.getByTestId('pin-create').click()
-  await expect(win.getByTestId('create-pin-dialog')).toHaveCount(0)
+  await win.keyboard.press('n')
+  await win.mouse.click(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('pin-provisional-dot')).toBeVisible()
+  await expect(win.getByTestId('pin-phantom')).toBeVisible()
+  // Nothing persists yet (§6.2): revision untouched while drafting.
+  expect(await revisionOf()).toBe(before)
+  await win.getByTestId('pin-phantom-draft').fill('Harbor Watch')
+  await win.getByTestId('pin-phantom-draft').blur()
   await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(1)
   // Exactly ONE user-level command committed (§6.2).
   expect(await revisionOf()).toBe(before + 1)
+  // The provisional dot yielded to the real placement, and the panel
+  // re-tethered into the ordinary note editor.
+  await expect(win.getByTestId('pin-provisional-dot')).toHaveCount(0)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor Watch/)
 
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
   const scene = await query<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
@@ -260,22 +268,55 @@ test('Create Pin dialog commits one command; inverse cleans up', async () => {
     appearanceKind: 'dot',
   })
 
-  // -- dialog-driven image pin with a non-destructive crop + note.
+  // -- Escape before typing: nothing ever existed, dot included.
+  // (Click left of the open panel — DOM panels sit above the canvas.)
+  const beforeEscape = await revisionOf()
+  await win.mouse.click(box.x + 200, box.y + 550)
+  await expect(win.getByTestId('pin-provisional-dot')).toBeVisible()
+  await win.getByTestId('pin-phantom-draft').press('Escape')
+  await expect(win.getByTestId('pin-phantom')).toHaveCount(0)
+  await expect(win.getByTestId('pin-provisional-dot')).toHaveCount(0)
+  expect(await revisionOf()).toBe(beforeEscape)
+  expect(await placements(win)).toBe(1)
+
+  // -- image pin with a non-destructive crop + note: the §6.2
+  // one-transaction backbone, driven directly now that appearance
+  // richness flows through ordinary node operations, not a dialog.
   const beforeImage = await revisionOf()
-  await revealTitleStrip(win)
-  await win.getByTestId('open-create-pin').click()
-  await win.getByTestId('pin-kind-image').check()
-  await win
-    .getByTestId('pin-image-file')
-    .setInputFiles({ name: 'map.png', mimeType: 'image/png', buffer: Buffer.from(PNG_1X1_BASE64, 'base64') })
-  await win.getByTestId('pin-crop-x').fill('0')
-  await win.getByTestId('pin-crop-y').fill('0')
-  await win.getByTestId('pin-crop-width').fill('1')
-  await win.getByTestId('pin-crop-height').fill('1')
-  await win.getByTestId('pin-note-new').check()
-  await win.getByTestId('pin-note-title').fill('Cropped Map')
-  await win.getByTestId('pin-create').click()
-  await expect(win.getByTestId('create-pin-dialog')).toHaveCount(0)
+  await win.evaluate(
+    async ({ base64, targetCanvasId }) => {
+      const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+      const imported = await window.ew.project.importAsset({
+        bytes,
+        originalFilename: 'map.png',
+      })
+      if (!imported.ok) throw new Error('import failed')
+      const project = await window.ew.project.query('getProject')
+      if (!project.ok) throw new Error(project.message)
+      const outcome = await window.ew.project.execute({
+        commandId: window.ew.util.newId(),
+        projectId: (project.result as { id: string }).id,
+        commandType: 'CreatePin',
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload: {
+          nodeId: crypto.randomUUID(),
+          canvasId: targetCanvasId,
+          placementId: crypto.randomUUID(),
+          x: 600,
+          y: 300,
+          appearance: {
+            kind: 'image',
+            assetId: imported.assetId,
+            crop: { x: 0, y: 0, width: 1, height: 1 },
+          },
+          note: { kind: 'create', noteId: crypto.randomUUID(), title: 'Cropped Map' },
+        },
+      })
+      if (outcome.status !== 'committed') throw new Error(JSON.stringify(outcome))
+    },
+    { base64: PNG_1X1_BASE64, targetCanvasId: canvasId },
+  )
   await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(2)
   // Import commits as infrastructure ahead of the ONE CreatePin:
   // exactly two commands (CommitAssetImport + CreatePin).
@@ -292,15 +333,17 @@ test('Create Pin dialog commits one command; inverse cleans up', async () => {
     height: 1,
   })
 
-  // -- duplicate title in the dialog: §7.7 error shown, nothing created.
-  await revealTitleStrip(win)
-  await win.getByTestId('open-create-pin').click()
-  await win.getByTestId('pin-note-new').check()
-  await win.getByTestId('pin-note-title').fill('Harbor Watch')
-  await win.getByTestId('pin-create').click()
-  await expect(win.getByTestId('pin-error')).toContainText('already exists')
+  // -- duplicate title through the pin tool: the §7.7 conflict dialog
+  // appears, nothing is created, and Choose Different keeps drafting.
+  await win.mouse.click(box.x + 500, box.y + 500)
+  await win.getByTestId('pin-phantom-draft').fill('Harbor Watch')
+  await win.getByTestId('pin-phantom-draft').blur()
+  await expect(win.getByTestId('title-conflict-dialog')).toBeVisible()
   expect(await placements(win)).toBe(2)
-  await win.getByTestId('pin-cancel').click()
+  await win.getByTestId('conflict-choose-different').click()
+  await win.getByTestId('pin-phantom-draft').press('Escape')
+  await expect(win.getByTestId('pin-provisional-dot')).toHaveCount(0)
+  await win.keyboard.press('v')
 
   // -- direct CreatePin + inverse round-trip (revision +1 each).
   const result = await win.evaluate(async (targetCanvasId) => {

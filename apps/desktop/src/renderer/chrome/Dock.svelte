@@ -52,6 +52,9 @@
     { kind: 'line', label: 'Line', glyph: '╱', shortcut: 'L' },
     { kind: 'arrow', label: 'Arrow', glyph: '↗', shortcut: 'A' },
     { kind: 'connector', label: 'Connector', glyph: '⌁', shortcut: 'C' },
+    // §6.2: pins mean places, everywhere — same glyph family as the
+    // bookmark control (AI-IMP-067).
+    { kind: 'pin', label: 'Pin', glyph: '◉', shortcut: 'N' },
   ]
   const TOOL_SHORTCUTS = new Map<string, ToolKind>([
     ['v', 'select'],
@@ -60,6 +63,7 @@
     ['l', 'line'],
     ['a', 'arrow'],
     ['c', 'connector'],
+    ['n', 'pin'],
   ])
 
   const alignOps: Array<{ op: AlignOp; label: string }> = [
@@ -163,7 +167,7 @@
   )
   const hasGroup = $derived(selected.some((d) => d.groupId !== null))
   const allLocked = $derived(selected.length > 0 && selected.every((d) => d.locked === 1))
-  const toolOptionsVisible = $derived(activeTool !== 'select')
+  const toolOptionsVisible = $derived(activeTool !== 'select' && activeTool !== 'pin')
 
   function setTool(kind: ToolKind): void {
     handle.tools.setTool(kind)

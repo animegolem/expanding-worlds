@@ -6,30 +6,14 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 2 |
-| Planned | 4 | 1 |
+| In Progress | 1 | 2 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 8 | 64 |
+| Completed | 9 | 65 |
 | **Total** | **14** | **67** |
 
 ## In Progress
-
-### [[AI-EPIC-006-shell-and-local-scope|EPIC-006: Shell and local scope]]
-> RFC §8.2's shell model — the window is the board, floating chrome,
-
-**IMPs:**
-- [[AI-IMP-059-shell-chrome-frame|IMP-059]] Shell chrome frame — completed
-- [[AI-IMP-060-navigation-history-and-path|IMP-060]] Navigation history and path — completed
-- [[AI-IMP-061-bookmarks|IMP-061]] Bookmarks — completed
-- [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — completed
-- [[AI-IMP-063-charms-and-click-grammar|IMP-063]] Charms and click grammar — completed
-- [[AI-IMP-064-note-panel-rehost|IMP-064]] Note panel rehost — completed
-- [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — completed
-- [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — in-progress
-- [[AI-IMP-067-pin-dock-tool|IMP-067]] Pin dock tool — planned
-
----
 
 ### [[AI-EPIC-010-hands-on-hardening|EPIC-010: Hands on hardening]]
 > The owner is now using the board daily and comparing it directly
@@ -74,6 +58,13 @@
 
 ---
 
+## Anomalies
+
+### Status Mismatches
+- [[AI-IMP-066-toasts-and-perch|IMP-066]] — open but parent epic AI-EPIC-006 is completed
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -82,12 +73,12 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3273 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1119 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1181 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (908 LOC)
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (721 LOC)
-- apps/desktop/src/renderer/chrome/Dock.svelte (713 LOC)
+- apps/desktop/src/renderer/chrome/Dock.svelte (717 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (662 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -99,22 +90,21 @@ Generated from tracked files; binary assets excluded.
 - RAG/scripts/generate-index.sh (575 LOC)
 - packages/persistence/src/queries-structure.test.ts (557 LOC)
 - apps/desktop/e2e/slice.spec.ts (542 LOC)
+- apps/desktop/e2e/import.spec.ts (535 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
-- apps/desktop/e2e/import.spec.ts (492 LOC)
 - apps/desktop/e2e/gestures.spec.ts (484 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (474 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
-- apps/desktop/src/renderer/CreatePinDialog.svelte (459 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (429 LOC)
 - apps/desktop/src/main/index.ts (424 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
+- apps/desktop/src/renderer/note/panels.ts (413 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
-- apps/desktop/src/renderer/note/panels.ts (392 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/queries-structure.ts (386 LOC)
@@ -125,8 +115,8 @@ Generated from tracked files; binary assets excluded.
 - packages/commands/src/payloads/structure.ts (350 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/hit-test.ts (340 LOC)
-- apps/desktop/src/renderer/chrome/TitleStrip.svelte (340 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (332 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
@@ -138,7 +128,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>8 EPICs, 64 IMPs completed</summary>
+<summary>9 EPICs, 65 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -174,6 +164,16 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-047-rename-and-title-collisions|IMP-047]] Rename and title collisions — completed
   - [[AI-IMP-048-link-activation-and-degraded-links|IMP-048]] Link activation and degraded links — completed
   - [[AI-IMP-049-note-node-surfaces-and-uses|IMP-049]] Note node surfaces and uses — completed
+- [[AI-EPIC-006-shell-and-local-scope|EPIC-006]] Shell and local scope — 2026-07-05
+  - [[AI-IMP-059-shell-chrome-frame|IMP-059]] Shell chrome frame — completed
+  - [[AI-IMP-060-navigation-history-and-path|IMP-060]] Navigation history and path — completed
+  - [[AI-IMP-061-bookmarks|IMP-061]] Bookmarks — completed
+  - [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — completed
+  - [[AI-IMP-063-charms-and-click-grammar|IMP-063]] Charms and click grammar — completed
+  - [[AI-IMP-064-note-panel-rehost|IMP-064]] Note panel rehost — completed
+  - [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — completed
+  - [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — in-progress
+  - [[AI-IMP-067-pin-dock-tool|IMP-067]] Pin dock tool — completed
 - [[AI-EPIC-009-canvas-feel-pass|EPIC-009]] Canvas feel pass — 2026-07-05
   - [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — completed
   - [[AI-IMP-025-texture-correctness-and-drag-fidelity|IMP-025]] Texture correctness and drag fidelity — completed
