@@ -102,7 +102,7 @@ constants, tuned later.
 - [ ] FR-5: Bookmark menu — jump/reorder/remove/add, row order = Mod+1–n with printed shortcuts, stale-target grey-out per §8.1.
 - [ ] FR-6: Page/frame hint charms with scrim chips, excluded from crop/flip previews and export, per §8.4.
 - [ ] FR-7: Click grammar and charm bar per §8.4 table.
-- [ ] FR-8: Cursor-zone selection replacing drawn handles; Option-drag duplicate; lock cursor per §6.9.
+- [x] FR-8: Cursor-zone selection replacing drawn handles; Option-drag duplicate; lock cursor per §6.9.
 - [ ] FR-9: Tethered note panels (one at a time) with pin, escalating indicator, cross-board origin label as navigation event per §8.5.
 - [ ] FR-10: Canvas-note corner charm with ghost/solid states per §8.5.
 - [ ] FR-11: In-panel Uses list behind the places header; link-anchored location chooser; zero/one/many per §7.3–7.4.

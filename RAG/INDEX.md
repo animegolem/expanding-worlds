@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 4 | 7 |
+| Planned | 4 | 6 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 8 | 59 |
+| Completed | 8 | 60 |
 | **Total** | **14** | **67** |
 
 ## In Progress
@@ -22,7 +22,7 @@
 - [[AI-IMP-059-shell-chrome-frame|IMP-059]] Shell chrome frame — completed
 - [[AI-IMP-060-navigation-history-and-path|IMP-060]] Navigation history and path — completed
 - [[AI-IMP-061-bookmarks|IMP-061]] Bookmarks — planned
-- [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — planned
+- [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — completed
 - [[AI-IMP-063-charms-and-click-grammar|IMP-063]] Charms and click grammar — planned
 - [[AI-IMP-064-note-panel-rehost|IMP-064]] Note panel rehost — planned
 - [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — planned
@@ -91,18 +91,20 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
-- apps/desktop/e2e/board-tooling.spec.ts (621 LOC)
+- apps/desktop/e2e/board-tooling.spec.ts (624 LOC)
 
 ### > 300 LOC
 
+- apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/e2e/decorations.spec.ts (569 LOC)
-- apps/desktop/e2e/slice.spec.ts (544 LOC)
+- apps/desktop/e2e/slice.spec.ts (542 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
+- packages/persistence/src/handlers/placements.ts (508 LOC)
+- apps/desktop/e2e/canvas.spec.ts (506 LOC)
+- packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - apps/desktop/e2e/import.spec.ts (485 LOC)
-- packages/persistence/src/handlers/placements.ts (476 LOC)
-- apps/desktop/e2e/canvas.spec.ts (469 LOC)
-- packages/persistence/src/handlers/placements.test.ts (463 LOC)
+- apps/desktop/e2e/gestures.spec.ts (484 LOC)
+- apps/desktop/src/renderer/canvas/gestures-ui.ts (474 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (459 LOC)
@@ -110,22 +112,21 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/main/index.ts (424 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
-- apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
-- apps/desktop/e2e/gestures.spec.ts (384 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
+- packages/commands/src/payloads/structure.ts (350 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
+- packages/canvas-engine/src/hit-test.ts (340 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (340 LOC)
-- packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (327 LOC)
+- packages/persistence/src/queries-structure.ts (325 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
-- packages/persistence/src/queries-structure.ts (323 LOC)
 - packages/persistence/src/handlers/pin.ts (320 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
@@ -134,7 +135,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>8 EPICs, 59 IMPs completed</summary>
+<summary>8 EPICs, 60 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
