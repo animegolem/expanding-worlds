@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 3 | 3 |
+| Planned | 3 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 81 |
+| Completed | 11 | 82 |
 | **Total** | **15** | **84** |
 
 ## In Progress
@@ -33,7 +33,7 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
-- [[AI-IMP-082-resize-snapping|IMP-082]] Resize snapping — planned
+- [[AI-IMP-082-resize-snapping|IMP-082]] Resize snapping — completed
 - [[AI-IMP-083-note-panel-sizing-and-big-editor|IMP-083]] Note panel sizing and big editor — planned
 - [[AI-IMP-084-card-appearance-and-place-on-board|IMP-084]] Card appearance and place on board — planned
 
@@ -63,7 +63,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3481 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3525 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
@@ -97,6 +97,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/board-tooling.ts (464 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
+- packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
@@ -118,6 +119,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
+- packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/handlers/pin.ts (320 LOC)
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
@@ -131,7 +133,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 81 IMPs completed</summary>
+<summary>11 EPICs, 82 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
