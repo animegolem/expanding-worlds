@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { exec, launchApp, runQuery, seedPlacedNote } from './helpers'
+import { exec, launchApp, revision, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * AI-IMP-064 acceptance (RFC §8.5): tethered panels track their node
@@ -317,6 +317,115 @@ test('corner charm: ghost, first committed edit materializes, Escape never persi
   await expect(win.getByTestId('note-pane')).toHaveCount(0)
   await win.getByTestId('corner-charm').click()
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor Board/)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-086 acceptance: two user acts that used to be two commands
+ * each are ONE durable command — one revision bump — and ONE inverse
+ * command reverts everything. The interactive Cmd+Z stack is
+ * EPIC-007's; per the gestures.spec precedent, "one undo" is proven
+ * at the data level by executing the compound's inverse.
+ */
+
+interface PlacedItem {
+  id: string
+  itemKind: string
+  nodeId: string
+  x: number
+  y: number
+  appearanceKind: string | null
+}
+
+async function placedItems(win: Awaited<ReturnType<typeof launchApp>>['win']): Promise<PlacedItem[]> {
+  const scene = await runQuery<{ items: PlacedItem[] }>(win, 'getCanvasScene', {
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+  })
+  return scene.items.filter((item) => item.itemKind === 'placement')
+}
+
+test('place-on-board is ONE command; one undo removes the card and restores the dot (AI-IMP-086)', async () => {
+  const { app, win } = await launchApp('ew-e2e-placecard-')
+  const { nodeId } = await seedPlacedNote(win, 'Quayside', 'stone and salt', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Quayside/)
+  await win.getByTestId('panel-pin').click()
+  await expect(win.locator('.note-panel.pinned')).toHaveCount(1)
+
+  // The act: appearance flip + placement land as ONE revision bump.
+  const before = await revision(win)
+  await win.getByTestId('panel-place-on-board').click()
+  await expect(win.locator('.note-panel')).toHaveCount(0)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(2)
+  expect(await revision(win)).toBe(before + 1)
+  const cards = (await placedItems(win)).filter((item) => item.appearanceKind === 'card')
+  expect(cards).toHaveLength(2)
+  const placed = cards.find((card) => !(card.x === 400 && card.y === 300))!
+
+  // ONE undo — the compound's single inverse — removes the placement
+  // AND restores the dot (color included) together.
+  await exec(win, 'UnplaceCard', {
+    placementId: placed.id,
+    nodeId,
+    appearanceChanged: true,
+    priorAppearance: { kind: 'dot', color: '#ff7700' },
+  })
+  expect(await revision(win)).toBe(before + 2)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(1)
+  const remaining = await placedItems(win)
+  expect(remaining).toHaveLength(1)
+  expect(remaining[0]).toMatchObject({ nodeId, appearanceKind: 'dot' })
+
+  await app.close()
+})
+
+test('corner-charm create-and-attach is ONE command; one undo detaches and removes (AI-IMP-086)', async () => {
+  const { app, win } = await launchApp('ew-e2e-compound-attach-')
+
+  // The act: the first committed edit materializes note + attachment
+  // as ONE revision bump, visible in the note panel.
+  await win.getByTestId('corner-charm').click()
+  await expect(win.getByTestId('canvas-phantom')).toBeVisible()
+  const before = await revision(win)
+  await win.getByTestId('canvas-phantom-draft').fill('Ledger\nkept in salt-stained ink')
+  await win.getByTestId('canvas-phantom-draft').blur()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Ledger/, { timeout: 10_000 })
+  await expect(win.getByTestId('note-editor')).toContainText('kept in salt-stained ink')
+  expect(await revision(win)).toBe(before + 1)
+
+  const attached = (
+    await runQuery<Array<{ id: string; noteId: string | null }>>(win, 'listNodeLibrary')
+  ).find((row) => row.noteId !== null)!
+  expect(attached).toBeTruthy()
+  await win.getByTestId('panel-close').click()
+  await expect(win.getByTestId('note-pane')).toHaveCount(0)
+
+  // ONE undo — the compound's single inverse — detaches the node AND
+  // removes (trashes) the note together.
+  await exec(win, 'DetachAndTrashNote', { nodeId: attached.id, noteId: attached.noteId })
+  expect(await revision(win)).toBe(before + 2)
+  const nodes = await runQuery<Array<{ id: string; noteId: string | null }>>(
+    win,
+    'listNodeLibrary',
+  )
+  expect(nodes.find((row) => row.id === attached.id)).toMatchObject({ noteId: null })
+  const titles = await runQuery<Array<{ id: string; lifecycleState: string }>>(
+    win,
+    'listNoteTitles',
+  )
+  expect(titles.find((row) => row.id === attached.noteId)).toMatchObject({
+    lifecycleState: 'trashed',
+  })
+  // The board's charm is a ghost again: no active note anywhere.
+  await expect(win.getByTestId('corner-charm')).toHaveAttribute('data-state', 'ghost')
 
   await app.close()
 })

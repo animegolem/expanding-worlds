@@ -117,11 +117,12 @@
   }
 
   /** §8.5 place-on-board (AI-IMP-084): one deliberate control, one
-   * way — like phantom → note. (a) Dots (and appearance-less nodes)
-   * flip to the §4.6 card appearance; icon/image nodes place as-is —
-   * their look already represents them. (b) An ordinary §6.10
-   * CreatePlacement lands at the panel's board-projected position.
-   * Then the panel closes: the world owns it now. */
+   * way — like phantom → note. ONE PlaceAsCard command (AI-IMP-086):
+   * dots (and appearance-less nodes) flip to the §4.6 card
+   * appearance while icon/image nodes place as-is — their look
+   * already represents them — and the placement lands at the panel's
+   * board-projected position, all in a single transaction with a
+   * single undo step. Then the panel closes: the world owns it now. */
   async function placeOnBoard(): Promise<void> {
     const project = paneProject
     const current = paneController?.note
@@ -130,25 +131,14 @@
     // The card prints the note as saved: flush the burst first (§10.2).
     await paneController?.flushPending()
     try {
-      if (node.appearanceKind === 'dot' || node.appearanceKind === null) {
-        const set = await project.execute('SetNodeAppearance', {
-          nodeId: node.id,
-          appearance: { kind: 'card' },
-        })
-        if (set.status !== 'committed') {
-          error =
-            set.status === 'error' ? set.message : 'the project changed underneath (retry)'
-          return
-        }
-      }
       const world = handle.controller.camera.screenToWorld({
         x: pos.x + size.width / 2,
         y: pos.y + size.height / 2,
       })
-      const placed = await project.execute('CreatePlacement', {
-        placementId: uuidv7(),
-        canvasId: handle.canvasId,
+      const placed = await project.execute('PlaceAsCard', {
         nodeId: node.id,
+        canvasId: handle.canvasId,
+        placementId: uuidv7(),
         x: world.x,
         y: world.y,
       })
@@ -287,7 +277,8 @@
   }
 
   /** First-committed-edit materialization for the draft-first
-   * phantoms. Canvas phantom (§8.5): CreateNote + AttachNoteToNode.
+   * phantoms. Canvas phantom (§8.5): ONE CreateNoteAndAttach
+   * (AI-IMP-086) — note + attachment as a single transaction.
    * Pin phantom (§6.2, AI-IMP-067): ONE CreatePin — note + dot node
    * + placement as a single user-level transaction. Title = first
    * line; Escape or close before this and nothing ever existed. */
@@ -342,7 +333,10 @@
         setPanelRequest(record.key, { kind: 'note', noteId })
         return
       }
-      const created = await project.execute('CreateNote', {
+      // AI-IMP-086: one act, ONE command — a failed attach can no
+      // longer strand a loose note reserving the title.
+      const created = await project.execute('CreateNoteAndAttach', {
+        nodeId: request.nodeId,
         noteId,
         title,
         ...(body.length > 0 ? { body } : {}),
@@ -355,14 +349,6 @@
       }
       if (created.status !== 'committed') {
         error = 'the project changed underneath (retry)'
-        return
-      }
-      const attached = await project.execute('AttachNoteToNode', {
-        nodeId: request.nodeId,
-        noteId,
-      })
-      if (attached.status === 'error') {
-        error = attached.message
         return
       }
       canvasDraft = ''

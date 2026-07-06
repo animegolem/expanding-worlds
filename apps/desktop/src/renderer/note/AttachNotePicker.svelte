@@ -44,10 +44,15 @@
   async function createAndAttach(): Promise<void> {
     const title = query.trim()
     if (title.length === 0) return
-    const noteId_ = uuidv7()
-    const created = await handle.gateway.execute('CreateNote', { noteId: noteId_, title })
+    // AI-IMP-086: one act, ONE command — a failed attach can no
+    // longer strand a loose note reserving the title.
+    const created = await handle.gateway.execute('CreateNoteAndAttach', {
+      nodeId,
+      noteId: uuidv7(),
+      title,
+    })
     if (created.status === 'committed') {
-      await attach(noteId_)
+      onclose()
       return
     }
     if (created.status === 'error' && created.code === 'NOTE_TITLE_CONFLICT') {

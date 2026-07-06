@@ -386,3 +386,173 @@ describe('CreatePin note body (§7.2, AI-IMP-058)', () => {
     expect(result).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
   })
 })
+
+/**
+ * AI-IMP-086: place-on-board is one user act — the §4.6 card flip
+ * (dot/unset nodes only, per AI-IMP-084) and the placement commit as
+ * ONE command, and one undo reverts both exactly.
+ */
+describe('PlaceAsCard / UnplaceCard (AI-IMP-086)', () => {
+  function insertNode(appearance: { kind: string | null; color?: string; icon?: string }): string {
+    const nodeId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO node (id, project_id, appearance_kind, appearance_color,
+         appearance_icon, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      nodeId,
+      handle.projectId,
+      appearance.kind,
+      appearance.color ?? null,
+      appearance.icon ?? null,
+      now,
+      now,
+    )
+    return nodeId
+  }
+
+  function nodeRow(id: string) {
+    return handle.db.get<Record<string, unknown>>('SELECT * FROM node WHERE id = ?', id)
+  }
+
+  function placePayload(nodeId: string) {
+    return {
+      nodeId,
+      canvasId: handle.rootCanvasId,
+      placementId: uuidv7(),
+      x: 320,
+      y: 240,
+    }
+  }
+
+  it('flips a dot to the card and places it in ONE command', () => {
+    const nodeId = insertNode({ kind: 'dot', color: '#ff7700' })
+    const payload = placePayload(nodeId)
+    const r0 = revision()
+    const result = committed('PlaceAsCard', payload)
+    expect(result.revision).toBe(r0 + 1)
+    expect(nodeRow(nodeId)).toMatchObject({ appearance_kind: 'card', appearance_color: null })
+    expect(
+      handle.db.get('SELECT canvas_id, node_id, x, y FROM placement WHERE id = ?', payload.placementId),
+    ).toMatchObject({ canvas_id: handle.rootCanvasId, node_id: nodeId, x: 320, y: 240 })
+    expect(result.inverse).toMatchObject({
+      commandType: 'UnplaceCard',
+      payload: {
+        placementId: payload.placementId,
+        nodeId,
+        appearanceChanged: true,
+        priorAppearance: { kind: 'dot', color: '#ff7700' },
+      },
+    })
+  })
+
+  it('flips an appearance-less node too, remembering NULL as the prior state', () => {
+    const nodeId = insertNode({ kind: null })
+    const payload = placePayload(nodeId)
+    const create = committed('PlaceAsCard', payload)
+    expect(nodeRow(nodeId)).toMatchObject({ appearance_kind: 'card' })
+    expect(create.inverse!.payload).toMatchObject({ appearanceChanged: true, priorAppearance: null })
+    committed(create.inverse!.commandType, create.inverse!.payload)
+    expect(nodeRow(nodeId)).toMatchObject({ appearance_kind: null, appearance_color: null })
+  })
+
+  it('keeps icon and image looks (§4.6/AI-IMP-084): placement only, undo removes only it', () => {
+    const nodeId = insertNode({ kind: 'icon', icon: 'anchor' })
+    const payload = placePayload(nodeId)
+    const before = { ...nodeRow(nodeId)! }
+    const create = committed('PlaceAsCard', payload)
+    expect(nodeRow(nodeId)).toEqual(before) // appearance untouched — not even updated_at
+    expect(create.inverse!.payload).toMatchObject({ appearanceChanged: false })
+
+    const undone = committed(create.inverse!.commandType, create.inverse!.payload)
+    expect(nodeRow(nodeId)).toEqual(before)
+    expect(
+      handle.db.get('SELECT id FROM placement WHERE id = ?', payload.placementId),
+    ).toBeUndefined()
+    expect(undone.inverse).toBeNull()
+  })
+
+  it('rejections commit NOTHING: bad canvas, missing node, trashed node', () => {
+    const nodeId = insertNode({ kind: 'dot', color: '#123456' })
+    const r0 = revision()
+    const placements = handle.db.get<{ n: number }>('SELECT count(*) AS n FROM placement')!.n
+
+    expect(
+      exec('PlaceAsCard', { ...placePayload(nodeId), canvasId: uuidv7() }),
+    ).toMatchObject({ status: 'error', code: 'CANVAS_NOT_FOUND' })
+    expect(exec('PlaceAsCard', placePayload(uuidv7()))).toMatchObject({
+      status: 'error',
+      code: 'NODE_NOT_FOUND',
+    })
+    handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
+    expect(exec('PlaceAsCard', placePayload(nodeId))).toMatchObject({
+      status: 'error',
+      code: 'NODE_NOT_FOUND',
+    })
+
+    // Zero records, zero revision bumps, appearance untouched.
+    expect(handle.db.get<{ n: number }>('SELECT count(*) AS n FROM placement')!.n).toBe(placements)
+    expect(revision()).toBe(r0)
+    expect(nodeRow(nodeId)).toMatchObject({ appearance_kind: 'dot', appearance_color: '#123456' })
+  })
+
+  it('inverse round-trips: one undo removes the placement AND restores the dot byte-for-byte', () => {
+    const nodeId = insertNode({ kind: 'dot', color: '#ff7700' })
+    const before = { ...nodeRow(nodeId)! }
+    const payload = placePayload(nodeId)
+    const r0 = revision()
+    const create = committed('PlaceAsCard', payload)
+
+    const undone = committed(create.inverse!.commandType, create.inverse!.payload)
+    expect(undone.revision).toBe(r0 + 2)
+    const after = { ...nodeRow(nodeId)! }
+    delete before['updated_at']
+    delete after['updated_at']
+    expect(after).toEqual(before)
+    expect(
+      handle.db.get('SELECT id FROM placement WHERE id = ?', payload.placementId),
+    ).toBeUndefined()
+    expect(undone.inverse).toBeNull()
+  })
+
+  it('undo refuses when the appearance moved on since the flip (UNDO_STALE)', () => {
+    const nodeId = insertNode({ kind: 'dot', color: '#ff7700' })
+    const create = committed('PlaceAsCard', placePayload(nodeId))
+    handle.db.run(
+      "UPDATE node SET appearance_kind = 'icon', appearance_icon = 'star', appearance_color = NULL WHERE id = ?",
+      nodeId,
+    )
+    expect(exec(create.inverse!.commandType, create.inverse!.payload)).toMatchObject({
+      status: 'error',
+      code: 'UNDO_STALE',
+    })
+  })
+
+  it('validates payload shape and placement/node pairing', () => {
+    expect(exec('PlaceAsCard', { nodeId: uuidv7(), canvasId: '', placementId: uuidv7(), x: 0, y: 0 }))
+      .toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    const nodeId = insertNode({ kind: 'dot', color: '#ff7700' })
+    expect(exec('PlaceAsCard', { ...placePayload(nodeId), y: 'nope' })).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+    })
+    const create = committed('PlaceAsCard', placePayload(nodeId))
+    const inverse = create.inverse!.payload as { placementId: string }
+    expect(
+      exec('UnplaceCard', {
+        placementId: inverse.placementId,
+        nodeId: uuidv7(),
+        appearanceChanged: false,
+        priorAppearance: null,
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(
+      exec('UnplaceCard', {
+        placementId: uuidv7(),
+        nodeId,
+        appearanceChanged: false,
+        priorAppearance: null,
+      }),
+    ).toMatchObject({ status: 'error', code: 'PLACEMENT_NOT_FOUND' })
+  })
+})
