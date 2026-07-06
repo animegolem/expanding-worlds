@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.23         | 5 July 2026      |
+| Accepted for Phase 1 | 0.24         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1984,15 +1984,37 @@ error.
 **The end-session surface (rev 0.23, deferred with scope).** An
 "End session" row on the ☰ menu is the deliberate put-it-away
 ritual: flush every open editor buffer (§10.2), regenerate the
-Obsidian vault mirror when enabled (§16), close the project, and
-release the single-writer lock — THEN the directory is safe for a
-cloud sync to take. This boundary exists because syncing a live
-SQLite database is dangerous (WAL files and file-coordination
-services do not mix mid-write): a project directory living in
-iCloud Drive or similar is survivable exactly when writes stop at a
-clean moment. Quit performs the same sequence (the §10.2 quit flush
-already does half of it); the button is the same ritual without
-leaving the app.
+Obsidian vault mirror when enabled (§16), record a session
+snapshot when enabled (below), close the project, and release the
+single-writer lock — THEN the directory is safe for a cloud sync
+to take. This boundary exists because syncing a live SQLite
+database is dangerous (WAL files and file-coordination services do
+not mix mid-write): a project directory living in iCloud Drive or
+similar is survivable exactly when writes stop at a clean moment.
+Quit performs the same sequence (the §10.2 quit flush already does
+half of it); the button is the same ritual without leaving the
+app.
+
+**Session snapshots (rev 0.24, deferred with scope).** The
+end-session boundary is a natural commit point, so git becomes a
+supported history backend. Project directories ship git-ready
+regardless of the setting: the lock and heartbeat files and
+SQLite's WAL/journal are gitignored, and end-session checkpoints
+and truncates the WAL so `project.db` is a single clean artifact.
+A per-project setting — session snapshots: off · git commit ·
+commit + push — adds the snapshot step to the ritual: first use
+initializes a repository, each end-session commits with a
+generated message, and the push variant targets whatever remote
+the user configured. The snapshot includes the regenerated vault
+mirror when that is enabled, so history carries human-readable
+note diffs (and the JSON Canvas boards) beside the binary
+database. History browsing and restore stay external in Phase 1 —
+the escape hatch is that the project is an ordinary git
+repository. iCloud remains a LOCATION choice, not a mechanism:
+"keep the folder in iCloud Drive" is already safe under the same
+end-session discipline. Assets are content-addressed and
+immutable, so git stores each image once and never rewrites it;
+git-lfs is a user choice outside app scope.
 
 The single-writer lock records holder pid and hostname with a
 heartbeat. A lock whose recorded holder is on the same host and whose
@@ -2030,8 +2052,9 @@ NOT settings. The Phase 1 inventory:
 - **Behavior:** charm corner (lower-right default · upper-right) ·
   chrome fade delay (slider · never) · snap to grid (when grid
   snapping ships, §6.9) · keep an Obsidian vault beside the
-  project (per-project, rev 0.23) · mirror drops to library (per-project,
-  set by the first-drop ask, §14.4).
+  project (per-project, rev 0.23) · session snapshots (off · git
+  commit · commit + push; per-project, rev 0.24, §11.4) · mirror
+  drops to library (per-project, set by the first-drop ask, §14.4).
 
 - **Window:** title strip (hover-reveal · always · never) · border ·
   rounded corners.
@@ -2556,7 +2579,10 @@ honest about what survives (everything made) versus what dies
   changes route through the §7.7 rename flow, links re-resolve
   through the existing sweep. Anything richer than body-and-title
   (vault-side file creation, canvas edits) is out of scope for the
-  mirror; the app remains authoritative.
+  mirror; the app remains authoritative. When §11.4 session
+  snapshots are on, the freshly regenerated vault is committed
+  with the project, so git history holds readable note diffs at
+  every session boundary (rev 0.24).
 
 - Every canvas ALSO exports as a **JSON Canvas** `.canvas` file
   (rev 0.21) — the open format Obsidian's Canvas reads natively — so
@@ -3299,6 +3325,14 @@ Accepted for the Phase 1 prototype:
   project directories safe. The vault mirror (§16) regenerates on
   session end and gains a body-and-title pull-back importer over
   our own export format on next open.
+
+- Session snapshots (rev 0.24, §11.4): the end-session boundary is
+  a commit point — project directories ship git-ready (lock and
+  WAL ignored, WAL checkpointed at close), a per-project setting
+  offers off · git commit · commit + push, and snapshots include
+  the vault mirror so history carries readable diffs. History
+  browsing stays external; iCloud remains a location choice, not a
+  mechanism.
 
 - The gallery groups time instead of scrolling it (rev 0.22,
   §14.4): date sort renders bucketed sections (relative buckets
