@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 8 | 8 |
+| In Progress | 1 | 1 |
+| Planned | 8 | 7 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 105 |
@@ -50,7 +50,7 @@
 - [[AI-IMP-106-small-state-batch|IMP-106]] Small state batch — completed
 - [[AI-IMP-107-design-session-one|IMP-107]] Design session one — planned
 - [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — planned
-- [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — planned
+- [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — in-progress
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — planned
 
@@ -103,6 +103,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
 - apps/desktop/src/main/index.ts (793 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
@@ -118,7 +119,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/panels.ts (597 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (560 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/pin.test.ts (558 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
@@ -174,6 +174,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
+- apps/desktop/e2e/charms.spec.ts (302 LOC)
 
 ---
 
