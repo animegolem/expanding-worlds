@@ -6,12 +6,21 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
+<<<<<<< HEAD
 | In Progress | 2 | 0 |
 | Planned | 2 | 2 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 91 |
 | **Total** | **15** | **94** |
+=======
+| In Progress | 1 | 0 |
+| Planned | 4 | 2 |
+| Deferred | 0 | 0 |
+| Cancelled | 0 | 0 |
+| Completed | 11 | 85 |
+| **Total** | **16** | **87** |
+>>>>>>> main
 
 ## In Progress
 
@@ -68,6 +77,19 @@
 
 ---
 
+<<<<<<< HEAD
+=======
+### [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015: Library and cross project sourcing]]
+> The first outside tester's reference library lives in Allusion,
+
+---
+
+### [[AI-EPIC-016-context-click-menus|EPIC-016: Context click menus]]
+> Right-click surfaces have accreted per-feature rather than by
+
+---
+
+>>>>>>> main
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -75,8 +97,12 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
+<<<<<<< HEAD
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3606 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
+=======
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3635 LOC)
+>>>>>>> main
 - apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
