@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.41         | 6 July 2026      |
+| Accepted for Phase 1 | 0.42         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -581,6 +581,18 @@ three are versioned adapters behind the connector store, and the
 ongoing-import mode obeys the same never-blocks rules as the §14.4
 mirror.
 
+**The inbox facet (rev 0.42 — owner user story: library
+management).** The mirror and the connectors fill the library;
+nothing yet surfaces what arrived UNCURATED. The gallery grows a
+third cleanup facet beside untagged and unplaced: **inbox** —
+untouched items, v1-defined as untagged ∧ unplaced ∧ note-less,
+newest first — so standing in the library (or its everything
+scope) and tapping Inbox is the triage pass over inflow. The
+mirror's summary chip and recognition offers get a natural landing
+("N mirrored → view inbox"); provenance enables a came-via-mirror
+refinement if plain untouched proves too broad. No schema: it is a
+filter over facts the records already carry, like its siblings.
+
 **External libraries and the page picker (rev 0.41 — musings from
 the artist session, low priority, plausibility-confirmed).** Two
 more connector-store citizens. (a) An EXTERNAL LIBRARY: a
@@ -942,6 +954,26 @@ decoration (§4.5 world-space text) at the drop point using the text
 tool's current settings. Special cases (a code block, a very long
 passage that wants a note instead) stay open until the feature
 activates.
+
+**The link router (rev 0.42 — owner decision, unifying the text
+classifier with the connector store).** The URL branch of that
+classifier is the ONE dispatch point for every link that enters
+the app, in priority order:
+
+1. URL matches an ATTACHED connector's registered pattern → that
+   connector imports it (a booru post arrives tagged per rev 0.21;
+   a Pinterest pin arrives with its dates and source identity) —
+   the connector manifest declares its URL patterns, and
+   attachment is what puts them in the router.
+2. Direct image URL → the existing §6.1 fetch-and-import.
+3. Any other URL → the page picker (rev 0.41) offered through the
+   §4.7 importer dialogue — adapter actions in one dialogue
+   pattern instead of a bare rejection.
+
+The router is the §4.7 expansion point formalized for links:
+connectors never hook drops directly, they register URL patterns,
+and the router stays the only door — so the
+never-fetch-unattached rule is enforced in exactly one place.
 
 **Text styling memory (rev 0.36 — musing).** The text tool keeps
 the LAST-USED settings as its defaults (the art-tool reflex), and a
