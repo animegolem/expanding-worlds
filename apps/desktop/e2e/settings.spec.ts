@@ -53,13 +53,19 @@ test('settings commit on click, apply live, and persist per tier across relaunch
     )
     .toBe(true)
 
-  // Window opacity applies to the real BrowserWindow.
+  // Window opacity applies to the real BrowserWindow. Electron
+  // implements setOpacity on Windows/macOS ONLY — on Linux it is a
+  // documented no-op and getOpacity() stays 1 (broke CI's Ubuntu
+  // runner), so the live half gates on the runner's platform; the
+  // persisted half below asserts on every platform.
   await win.getByTestId('settings-opacity').fill('0.8')
-  await expect
-    .poll(() =>
-      app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getOpacity()),
-    )
-    .toBeCloseTo(0.8, 2)
+  if (process.platform !== 'linux') {
+    await expect
+      .poll(() =>
+        app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getOpacity()),
+      )
+      .toBeCloseTo(0.8, 2)
+  }
 
   // App-tier changes never enter command history: same revision.
   expect(await revision(win)).toBe(revisionBefore)
@@ -90,6 +96,7 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   expect(persisted['titleStrip']).toBe('always')
   expect(persisted['fadeDelayMs']).toBe('never')
   expect(persisted['flatCanvasColor']).toBe('--ew-canvas-flat-3')
+  expect(persisted['windowOpacity']).toBe(0.8)
 
   // Relaunch on the same project + config: both tiers survive, and
   // the theme applies before the user touches anything.
