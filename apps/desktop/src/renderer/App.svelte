@@ -1,11 +1,16 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import Workspace from './Workspace.svelte'
   import { attachServiceStatus } from './chrome/status'
+  import { mountUndo } from './undo/undo-keys'
 
   // Service lifecycle → §8.6 toasts + perch (AI-IMP-066). Attached
   // here — before the canvas mounts — so an outage during startup
   // still raises its condition (§11.4: never a silent hang).
   attachServiceStatus()
+
+  // §10.2 structural undo/redo stack + Mod+Z driver (AI-IMP-114).
+  onMount(mountUndo)
 </script>
 
 <!--
