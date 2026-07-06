@@ -10,6 +10,7 @@
 <script lang="ts">
   import { itemWorldAABB } from '@ew/canvas-engine'
   import type { CanvasHostHandle } from '../canvas/host'
+  import { importFilesAt } from '../canvas/import-surfaces'
   import LocationChooser from './LocationChooser.svelte'
   import NotePanel from './NotePanel.svelte'
   import {
@@ -36,6 +37,57 @@
   let bigEditorKey = $state<number | null>(null)
   $effect(() => onBigEditorChanged((next) => (bigEditorKey = next)))
   let bigEditorHost = $state<HTMLElement | null>(null)
+
+  // §6.1 note-pane image drop (AI-IMP-097): the big editor is a note
+  // surface too. An image dropped on it imports onto the active board
+  // beside the note's placement (same rule as the panel), while text
+  // drops stay with CodeMirror. World point per the owning record's
+  // anchor: a live placement → beside its node; a provisional pin
+  // point → the point; otherwise the view center.
+  function bigEditorDropWorld(): { x: number; y: number } {
+    const camera = handle.controller.camera
+    const record = records.find((candidate) => candidate.key === bigEditorKey)
+    const anchor = record?.anchor
+    if (anchor?.kind === 'placement' && anchor.canvasId === handle.canvasId) {
+      const item = handle.controller.items().find((candidate) => candidate.id === anchor.placementId)
+      const aabb = item ? itemWorldAABB(item) : null
+      if (aabb) {
+        const gap = 32 / camera.zoom
+        return { x: aabb.x + aabb.width + gap, y: aabb.y }
+      }
+    }
+    if (anchor?.kind === 'point' && anchor.canvasId === handle.canvasId) {
+      return { x: anchor.x, y: anchor.y }
+    }
+    const bounds = hostElement.getBoundingClientRect()
+    return camera.screenToWorld({ x: bounds.width / 2, y: bounds.height / 2 })
+  }
+
+  function onBigEditorDragOver(event: DragEvent): void {
+    if (!event.dataTransfer?.types.includes('Files')) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+  }
+
+  function onBigEditorDrop(event: DragEvent): void {
+    const dt = event.dataTransfer
+    if (!dt || dt.files.length === 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    const images = [...dt.files].filter((file) => file.type.startsWith('image/'))
+    if (images.length === 0) return
+    const canvasId = handle.canvasId // gesture-time board (AI-IMP-085)
+    void importFilesAt(handle, images, bigEditorDropWorld(), canvasId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+    window.dispatchEvent(
+      new CustomEvent('ew-board-notice', {
+        detail: { message: 'Images live on the board — placed beside the note.' },
+      }),
+    )
+  }
 
   // Escape maps to Done (§8.5): back to the prior panel state.
   function onWindowKeydown(event: KeyboardEvent): void {
@@ -185,6 +237,8 @@
       aria-modal="true"
       role="dialog"
       use:overlayPortal
+      ondragovercapture={onBigEditorDragOver}
+      ondropcapture={onBigEditorDrop}
     >
       <header class="big-editor-header">
         <button
