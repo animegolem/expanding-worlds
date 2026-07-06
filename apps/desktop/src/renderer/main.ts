@@ -1,6 +1,9 @@
 import { mount } from 'svelte'
 import App from './App.svelte'
 import './theme.css'
+// §8.2 keymap registry (AI-IMP-117): declare every binding once at
+// boot, before any tooltip or the settings Keyboard section reads it.
+import './keys/bindings'
 import { initThumbnailPipeline } from './assets/thumbnails'
 import { initSettings } from './settings/settings'
 import { applyTheme, type ThemeName } from './theme'

@@ -15,6 +15,11 @@
     type TrashRetention,
   } from '@ew/commands'
   import { toast } from '../chrome/status'
+  // §8.2 keymap registry (AI-IMP-117): the Keyboard section reads the
+  // declared bindings. The side-effect import guarantees they are
+  // registered even if this view somehow renders before main's import.
+  import '../keys/bindings'
+  import { bindingsInScope, formatCombo, type Scope } from '../keys/registry'
   import {
     APP_SETTING_DEFAULTS,
     appSettings,
@@ -87,6 +92,19 @@
     '60d': '60 days',
     '90d': '90 days',
   }
+
+  // §8.2: every registered binding, grouped by scope, view-only.
+  // Rebinding is deferred (§8.2) — the head note states the plan
+  // rather than the page reading finished-and-limited.
+  const KEYBOARD_SCOPES: Array<{ scope: Scope; label: string }> = [
+    { scope: 'global', label: 'Everywhere' },
+    { scope: 'board', label: 'On a board' },
+    { scope: 'gallery', label: 'In the gallery' },
+  ]
+  const keyboardGroups = KEYBOARD_SCOPES.map(({ scope, label }) => ({
+    label,
+    bindings: bindingsInScope(scope),
+  })).filter((group) => group.bindings.length > 0)
 </script>
 
 {#snippet segmented(
@@ -327,6 +345,30 @@
       )}
     {/if}
   </section>
+
+  <section data-testid="settings-section-keyboard">
+    <h2>Keyboard</h2>
+    <p class="section-note" data-testid="settings-keyboard-note">
+      Rebinding is coming soon — for now this is a read-only map of every shortcut.
+    </p>
+    {#each keyboardGroups as group (group.label)}
+      <h3 class="group-head">{group.label}</h3>
+      {#each group.bindings as binding (binding.id)}
+        <div class="row keybinding" data-testid={`settings-key-${binding.id}`}>
+          <span class="row-label">
+            {binding.name}
+            {#if binding.when}<span class="when">· {binding.when}</span>{/if}
+          </span>
+          <kbd class="combo" data-testid={`settings-key-combo-${binding.id}`}>
+            {formatCombo(binding.combo)}
+          </kbd>
+        </div>
+      {/each}
+    {/each}
+    <p class="section-note editor-note" data-testid="settings-keyboard-editor-note">
+      The note editor has its own shortcuts (Markdown, undo, selection) that live inside the editor.
+    </p>
+  </section>
 </div>
 
 <style>
@@ -368,6 +410,46 @@
   .row.deferred {
     opacity: 0.55;
     cursor: help;
+  }
+
+  .section-note {
+    margin: 0 0 0.6rem;
+    font-size: 0.75rem;
+    color: var(--ew-text-muted);
+  }
+
+  .editor-note {
+    margin-top: 0.8rem;
+    margin-bottom: 0;
+    opacity: 0.75;
+  }
+
+  .group-head {
+    margin: 0.9rem 0 0.1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ew-text-subtle);
+  }
+
+  .row.keybinding {
+    padding: 0.35rem 0;
+  }
+
+  .when {
+    font-size: 0.7rem;
+    color: var(--ew-text-muted);
+  }
+
+  .combo {
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    color: var(--ew-text);
+    background: var(--ew-surface-raised);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 5px;
+    padding: 0.1rem 0.4rem;
+    white-space: nowrap;
   }
 
   .segmented {

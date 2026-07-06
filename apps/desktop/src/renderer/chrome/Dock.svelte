@@ -24,6 +24,8 @@
   import type { CanvasHostHandle } from '../canvas/host'
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { BoardTooling } from '../canvas/board-tooling'
+  import { KEY } from '../keys/bindings'
+  import { formatBinding, getBinding } from '../keys/registry'
   import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
 
@@ -45,28 +47,27 @@
     { kind: 'triangle', label: 'Triangle', glyph: '△' },
     { kind: 'shape-arrow', label: 'Arrow shape', glyph: '➤' },
   ]
-  const PLAIN_TOOLS: Array<{ kind: ToolKind; label: string; glyph: string; shortcut: string }> = [
-    { kind: 'select', label: 'Select', glyph: '⬚', shortcut: 'V' },
-    { kind: 'text', label: 'Text', glyph: 'T', shortcut: 'T' },
+  // Tool keys (AI-IMP-117): the binding id carries the shortcut. Both
+  // the dispatch map and the tooltip chip read from the registry, so
+  // the letter lives in exactly one place.
+  const PLAIN_TOOLS: Array<{ kind: ToolKind; label: string; glyph: string; key: string }> = [
+    { kind: 'select', label: 'Select', glyph: '⬚', key: KEY.toolSelect },
+    { kind: 'text', label: 'Text', glyph: 'T', key: KEY.toolText },
   ]
-  const DRAW_TOOLS: Array<{ kind: ToolKind; label: string; glyph: string; shortcut: string }> = [
-    { kind: 'path', label: 'Draw', glyph: '✎', shortcut: 'D' },
-    { kind: 'line', label: 'Line', glyph: '╱', shortcut: 'L' },
-    { kind: 'arrow', label: 'Arrow', glyph: '↗', shortcut: 'A' },
-    { kind: 'connector', label: 'Connector', glyph: '⌁', shortcut: 'C' },
+  const DRAW_TOOLS: Array<{ kind: ToolKind; label: string; glyph: string; key: string }> = [
+    { kind: 'path', label: 'Draw', glyph: '✎', key: KEY.toolDraw },
+    { kind: 'line', label: 'Line', glyph: '╱', key: KEY.toolLine },
+    { kind: 'arrow', label: 'Arrow', glyph: '↗', key: KEY.toolArrow },
+    { kind: 'connector', label: 'Connector', glyph: '⌁', key: KEY.toolConnector },
     // §6.2: pins mean places, everywhere — same glyph family as the
     // bookmark control (AI-IMP-067).
-    { kind: 'pin', label: 'Pin', glyph: '◉', shortcut: 'N' },
+    { kind: 'pin', label: 'Pin', glyph: '◉', key: KEY.toolPin },
   ]
-  const TOOL_SHORTCUTS = new Map<string, ToolKind>([
-    ['v', 'select'],
-    ['t', 'text'],
-    ['d', 'path'],
-    ['l', 'line'],
-    ['a', 'arrow'],
-    ['c', 'connector'],
-    ['n', 'pin'],
-  ])
+  // The plain-key → tool dispatch map, derived from each binding's
+  // combo ('s' for shapes stays special, handled ahead of the map).
+  const TOOL_SHORTCUTS = new Map<string, ToolKind>(
+    [...PLAIN_TOOLS, ...DRAW_TOOLS].map((tool) => [getBinding(tool.key)!.combo.key!, tool.kind]),
+  )
 
   const alignOps: Array<{ op: AlignOp; label: string }> = [
     { op: 'left', label: 'Left' },
@@ -550,7 +551,7 @@
         class:active={activeTool === tool.kind}
         data-testid={`tool-${tool.kind}`}
         onclick={() => setTool(tool.kind)}
-        use:tooltip={{ name: tool.label, shortcut: tool.shortcut }}
+        use:tooltip={{ name: tool.label, shortcut: formatBinding(tool.key) }}
       >
         {tool.glyph}
       </button>
@@ -561,7 +562,7 @@
       class:active={shapeActive}
       data-testid="dock-shape"
       onclick={() => (shapeFlyoutOpen = !shapeFlyoutOpen)}
-      use:tooltip={{ name: 'Shapes', shortcut: 'S' }}
+      use:tooltip={{ name: 'Shapes', shortcut: formatBinding(KEY.toolShapes) }}
     >
       {shapeGlyph}
     </button>
@@ -572,7 +573,7 @@
         class:active={activeTool === tool.kind}
         data-testid={`tool-${tool.kind}`}
         onclick={() => setTool(tool.kind)}
-        use:tooltip={{ name: tool.label, shortcut: tool.shortcut }}
+        use:tooltip={{ name: tool.label, shortcut: formatBinding(tool.key) }}
       >
         {tool.glyph}
       </button>

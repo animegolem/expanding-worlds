@@ -13,8 +13,10 @@
 -->
 <script lang="ts">
   import type { CanvasHostHandle } from '../canvas/host'
+  import { KEY } from '../keys/bindings'
+  import { formatBinding, matches } from '../keys/registry'
   import BookmarkMenu from './BookmarkMenu.svelte'
-  import { jumpToBookmarkIndex } from './bookmarks'
+  import { bookmarkCurrentBoard, jumpToBookmarkIndex } from './bookmarks'
   import {
     back,
     canGoBack,
@@ -45,13 +47,12 @@
   )
 
   // Mod+1–9 jump to the nth bookmark BY CURRENT ROW ORDER at press
-  // time (§8.1: row order IS the binding). Global, so it works with
-  // the menu closed; editable targets keep their digits.
+  // time (§8.1: row order IS the binding), and Mod+D bookmarks the
+  // current board (§8.1, rev 0.48 — the ＋ row's twin). Global, so
+  // both work with the menu closed; editable targets keep their keys.
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
       if (takeoverActive()) return
-      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
-      if (event.key < '1' || event.key > '9') return
       const target = event.target as HTMLElement | null
       if (
         target &&
@@ -61,6 +62,13 @@
           target.isContentEditable)
       )
         return
+      if (matches(event, KEY.bookmarkCurrent)) {
+        event.preventDefault()
+        void bookmarkCurrentBoard(handle)
+        return
+      }
+      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
+      if (event.key < '1' || event.key > '9') return
       event.preventDefault()
       void jumpToBookmarkIndex(handle, Number(event.key) - 1)
     }
@@ -86,7 +94,7 @@
         data-testid="nav-back"
         disabled={!backOk}
         onclick={() => void back()}
-        use:tooltip={{ name: 'Back', shortcut: '⌘[' }}
+        use:tooltip={{ name: 'Back', shortcut: formatBinding(KEY.navBack) }}
       >
         ‹
       </button>
@@ -95,7 +103,7 @@
         data-testid="nav-forward"
         disabled={!forwardOk}
         onclick={() => void forward()}
-        use:tooltip={{ name: 'Forward', shortcut: '⌘]' }}
+        use:tooltip={{ name: 'Forward', shortcut: formatBinding(KEY.navForward) }}
       >
         ›
       </button>
@@ -122,7 +130,7 @@
       aria-label="Bookmarks"
       data-testid="bookmark-pin"
       onclick={() => (menuOpen = !menuOpen)}
-      use:tooltip={{ name: 'Bookmarks', shortcut: '⌘1–9' }}
+      use:tooltip={{ name: 'Bookmarks', shortcut: formatBinding(KEY.bookmarkJump) }}
     >
       <span class="pin-shape" aria-hidden="true"></span>
     </button>

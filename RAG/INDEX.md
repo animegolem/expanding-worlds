@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 8 | 6 |
+| In Progress | 1 | 1 |
+| Planned | 8 | 5 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 108 |
@@ -53,7 +53,7 @@
 - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — planned
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — planned
-- [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — planned
+- [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — in-progress
 
 ---
 
@@ -107,7 +107,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
-- apps/desktop/src/renderer/chrome/Dock.svelte (720 LOC)
+- apps/desktop/src/renderer/chrome/Dock.svelte (721 LOC)
 - packages/persistence/src/queries-structure.ts (709 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -131,12 +131,13 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/nodes.ts (522 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (519 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (501 LOC)
+- apps/desktop/src/renderer/canvas/gestures-ui.ts (490 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
-- apps/desktop/src/renderer/canvas/gestures-ui.ts (480 LOC)
 - packages/persistence/src/handlers/pin.ts (479 LOC)
 - packages/commands/src/payloads/structure.ts (471 LOC)
 - apps/desktop/src/utility/index.ts (471 LOC)
@@ -145,7 +146,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (455 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (426 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
@@ -158,7 +158,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
-- apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
+- apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (359 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)

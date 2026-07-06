@@ -15,6 +15,8 @@
  * checked at traversal time via getCanvasScene.
  */
 import type { CanvasHostHandle } from '../canvas/host'
+import { KEY } from '../keys/bindings'
+import { matches } from '../keys/registry'
 import { openSearchPanel } from './search'
 import { takeoverActive } from './takeover'
 
@@ -156,11 +158,10 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
 
   const onKeydown = (event: KeyboardEvent): void => {
     if (takeoverActive()) return
-    if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
-    if (event.key === '[') {
+    if (matches(event, KEY.navBack)) {
       event.preventDefault()
       void back()
-    } else if (event.key === ']') {
+    } else if (matches(event, KEY.navForward)) {
       event.preventDefault()
       void forward()
     }
@@ -171,8 +172,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
   // listeners; capture on window runs before any of them).
   const onQuickOpenKey = (event: KeyboardEvent): void => {
     if (takeoverActive()) return
-    if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
-    if (event.key.toLowerCase() !== 'p') return
+    if (!matches(event, KEY.quickOpen)) return
     event.preventDefault()
     event.stopPropagation()
     openSearchPanel('quick', null)

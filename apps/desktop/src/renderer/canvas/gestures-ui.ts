@@ -19,6 +19,8 @@ import {
 import { uuidv7 } from '@ew/domain'
 import { Graphics, type Text } from 'pixi.js'
 import { takeoverActive } from '../chrome/takeover'
+import { KEY } from '../keys/bindings'
+import { matches } from '../keys/registry'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -422,21 +424,29 @@ export function attachGesturesUI(
     ) {
       return
     }
-    const meta = event.metaKey || event.ctrlKey
-    if (meta && event.code === 'BracketRight') {
+    // §6.8/§6.9 board keys, consulting the registry (AI-IMP-117). The
+    // Shift-split reorder combos are checked front/back FIRST so
+    // Shift+Mod+] means "to front", exactly as the old shift ternary.
+    if (matches(event, KEY.boardSendFront)) {
       event.preventDefault()
-      void reorderSelection(event.shiftKey ? 'front' : 'forward')
-    } else if (meta && event.code === 'BracketLeft') {
+      void reorderSelection('front')
+    } else if (matches(event, KEY.boardSendForward)) {
       event.preventDefault()
-      void reorderSelection(event.shiftKey ? 'back' : 'backward')
-    } else if (!meta && event.shiftKey && event.code === 'KeyH') {
+      void reorderSelection('forward')
+    } else if (matches(event, KEY.boardSendBack)) {
+      event.preventDefault()
+      void reorderSelection('back')
+    } else if (matches(event, KEY.boardSendBackward)) {
+      event.preventDefault()
+      void reorderSelection('backward')
+    } else if (matches(event, KEY.boardFlipH)) {
       void flipSelection('x')
-    } else if (!meta && event.shiftKey && event.code === 'KeyV') {
+    } else if (matches(event, KEY.boardFlipV)) {
       void flipSelection('y')
-    } else if (!meta && (event.code === 'Delete' || event.code === 'Backspace')) {
+    } else if (matches(event, KEY.boardDelete)) {
       event.preventDefault()
       void deleteSelection()
-    } else if (meta && event.code === 'KeyA') {
+    } else if (matches(event, KEY.boardSelectAll)) {
       event.preventDefault()
       selectAll()
     }
