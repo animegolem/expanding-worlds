@@ -38,6 +38,7 @@ import {
 } from '@ew/canvas-engine'
 import { Application, Graphics, Texture } from 'pixi.js'
 import { takeoverActive } from '../chrome/takeover'
+import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { themeTokenValue } from '../theme'
 import { attachGesturesUI } from './gestures-ui'
 import type { Rect } from '@ew/canvas-engine'
@@ -117,6 +118,7 @@ declare global {
         gridVisible: boolean
         extent: { x: number; y: number; width: number; height: number } | null
         flightActive: boolean
+        fallbackColor: string
       }
       /** Test seam: place the camera deterministically (cancels any
        * flight through the external-change hook). */
@@ -426,7 +428,23 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // covers the visible world. Redrawn with every cull pass (camera
   // changes and scene refreshes).
   const VOID_COLOR = 0x101215
-  const DEFAULT_STAGE_COLOR = themeTokenValue('--ew-surface-solid')
+  // §11.5 flat canvas color: boards with no background of their own
+  // paint the chosen swatch (an --ew-canvas-flat-N token) instead of
+  // the theme surface. Cached because this runs per cull pass; the
+  // settings subscription below refreshes it on setting AND theme
+  // changes (the store re-notifies after tokens flip).
+  function computeStageFallback(): string {
+    const token = appSettings().flatCanvasColor
+    if (token !== 'off') {
+      try {
+        return themeTokenValue(token)
+      } catch {
+        // Unknown swatch token (stale config): theme surface wins.
+      }
+    }
+    return themeTokenValue('--ew-surface-solid')
+  }
+  let stageFallbackColor = computeStageFallback()
   const stageGfx = new Graphics()
   stageGfx.label = 'stage'
   planes.world.addChildAt(stageGfx, 0)
@@ -438,12 +456,18 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       stageGfx.clear()
       stageGfx
         .rect(extent.x, extent.y, extent.width, extent.height)
-        .fill({ color: sceneBackground?.color ?? DEFAULT_STAGE_COLOR })
+        .fill({ color: sceneBackground?.color ?? stageFallbackColor })
     } else {
-      app.renderer.background.color = sceneBackground?.color ?? DEFAULT_STAGE_COLOR
+      app.renderer.background.color = sceneBackground?.color ?? stageFallbackColor
       drawGrid(stageGfx, controller.camera.state(), viewport())
     }
   }
+  const unsubscribeSettings = onAppSettingsChanged(() => {
+    const next = computeStageFallback()
+    if (next === stageFallbackColor) return
+    stageFallbackColor = next
+    drawStageOrGrid()
+  })
 
   // Eased camera flights (fit/frame actions). The flight's own steps
   // survive the cancel hook; any other camera write — a pan, a pinch,
@@ -751,6 +775,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       gridVisible: stageExtent(sceneBackground) === null,
       extent: stageExtent(sceneBackground),
       flightActive: flight.active,
+      // §11.5 flat canvas color (074): what a background-less board
+      // actually paints right now.
+      fallbackColor: stageFallbackColor,
     }),
     setCamera: (state: { x: number; y: number; zoom: number }) => {
       controller.camera.set(state)
@@ -795,6 +822,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       textureBudget.releaseAll()
       detachGestures()
       unsubscribe()
+      unsubscribeSettings()
       // Flush a pending camera persist so the last rest isn't lost.
       if (cameraTimer) {
         clearTimeout(cameraTimer)

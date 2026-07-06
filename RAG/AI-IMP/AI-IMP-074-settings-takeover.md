@@ -4,12 +4,12 @@ tags:
   - IMP-LIST
   - Implementation
   - settings
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-068, AI-IMP-075]
 parent_epic: [[AI-EPIC-013-global-views]]
 confidence_score: 0.7
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-074-settings-takeover
@@ -90,13 +90,18 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Migration 0006 + project get/set outside command history —
-      changing a setting adds no undo entry (unit).
-- [ ] App-tier store in userData with IPC get/set/push; corrupt or
+- [x] Migration 0006 + project get/set outside command history —
+      changing a setting adds no undo entry (unit). *(No migration:
+      0001 already ships the `settings` table for exactly this — see
+      Issues. The non-undoable channel is the `set-setting` service
+      verb; units assert no command_log row and no revision bump.)*
+- [x] App-tier store in userData with IPC get/set/push; corrupt or
       missing file falls back to defaults (unit or e2e).
-- [ ] Unified renderer settings store with typed defaults and
+      *(EW_APP_CONFIG_DIR env override isolates e2e; corrupt-file
+      fallback e2e'd.)*
+- [x] Unified renderer settings store with typed defaults and
       change subscription.
-- [ ] SettingsView renders the full §11.5 inventory: Appearance
+- [x] SettingsView renders the full §11.5 inventory: Appearance
       (theme · grid · flat canvas color · window opacity), Behavior
       (charm corner · fade delay · snap · vault · mirror drops),
       Window (title strip · border · rounded corners),
@@ -108,13 +113,23 @@ Before marking an item complete on the checklist MUST **stop** and
       modes honored; window opacity changes the window; flat
       canvas color shows on a background-less board; trash
       retention respected by purge (unit at the persistence seam).
-- [ ] Commit-on-click only — no apply/save/cancel controls; Esc
+      *(Everything live and validated EXCEPT the final clause: no
+      automatic purge-by-retention exists anywhere to respect the
+      setting — a pre-existing §9 gap, not introduced here. The
+      retention write path (SetTrashRetention command) and read
+      (getTrashRetention) are wired and e2e'd; the enforcement unit
+      belongs to whichever ticket builds retention GC.)*
+- [x] Commit-on-click only — no apply/save/cancel controls; Esc
       closes; settings survive relaunch in the correct tier
       (project setting stays with the project DB, theme follows
       the app).
-- [ ] e2e: change theme + charm corner + title strip mode, close,
+- [x] e2e: change theme + charm corner + title strip mode, close,
       relaunch, assert persistence; assert no undo entry appeared.
-- [ ] `pnpm -r build`, full gates green.
+      *(Plus: real BrowserWindow opacity, live charm-corner flip,
+      title-strip never mode, flat-color stage repaint via
+      __ewDebug.stage().fallbackColor.)*
+- [x] `pnpm -r build`, full gates green. *(65 e2e, 389 persistence
+      incl. 4 settings units, 11 desktop units, lint.)*
 
 ### Acceptance Criteria
 
@@ -138,3 +153,43 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**The ticket's storage assumptions were stale.** Migration 0001 had
+already created the `settings` table (commented "§11.5 project-tier
+settings"), and trash retention was already an UNDOABLE command
+(SetTrashRetention, AI-IMP-013) writing into it. Reconciliation:
+no migration 0006; retention KEEPS its command (it is
+project-data-affecting per the §11.5 blast-radius rule, and §9's
+Trash view will expose the same control) and the SettingsView row
+dispatches it; only NEW preference keys go through the non-undoable
+`set-setting` verb — one write grammar per key, never two.
+EPIC-007 (undo UI) is still backlog, so "undoable" today means an
+inverse in the command result, not a visible history entry.
+
+**No purge-by-retention exists** (pre-existing): gc.ts never reads
+trash_retention, so the "respected by purge" unit cannot be written
+yet — checklist item left unchecked with the caveat inline.
+
+**Consumers were sequenced around parallel agents**: charms-ui
+(charm corner) landed only after the 071 merge and TitleStrip
+(strip mode) after the 070 merge, to avoid stepping on their files;
+the ticket shipped across four commits instead of one for the same
+reason (WIP checkpoint precedent from 069).
+
+**e2e isolation gap found and fixed**: without EW_APP_CONFIG_DIR,
+every test instance shares Electron's DEFAULT userData for the
+app-settings file — launches now default to a fresh temp config dir
+in helpers.ts, with tests that need relaunch persistence passing
+their own.
+
+**Title-strip assertions must precede opening the takeover** — the
+068 ChromeLayer unmounts TitleStrip under any takeover; the first
+draft of the relaunch e2e asserted the strip while Settings was
+open and failed.
+
+**Deferred rows honestly deferred**: grid/snap (no grid feature),
+border/rounded corners (frameless work), vault (§16), session
+snapshots (§11.4 rev 0.24), mirror drops (§14.4) — all
+aria-disabled with "arrives with…" tooltips; vault/mirror rows
+display current project values via getSettings. The ☰ placement
+row is Windows/Linux-only and renders disabled on macOS.

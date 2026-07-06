@@ -102,6 +102,16 @@
   --ew-zero-node-note-dot: #8a94a0;
   --ew-tag-default: #a8c7e8;
   --ew-color-input-empty: #000000;
+
+  /* §11.5 flat canvas color swatches (AI-IMP-074): board paint for
+     canvases with no background of their own. Deliberately identical
+     on every theme — this is the user's board color, not chrome. */
+  --ew-canvas-flat-1: #1b2733;
+  --ew-canvas-flat-2: #22301f;
+  --ew-canvas-flat-3: #33241f;
+  --ew-canvas-flat-4: #2c2233;
+  --ew-canvas-flat-5: #3a362f;
+  --ew-canvas-flat-6: #e8e0cd;
 }
 
 :root[data-theme='light'] {

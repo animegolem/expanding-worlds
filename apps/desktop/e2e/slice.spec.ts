@@ -3,7 +3,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test, type Page } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
-import { revealTitleStrip } from './helpers'
 
 declare global {
   interface Window {
@@ -372,7 +371,8 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   expect(await contentCommandsSince(win, rev)).toHaveLength(0)
 
   // ---- Item 9: the same node placed twice, plus a zero-node note
-  // placed from the sources panel (labeled dot appears).
+  // placed from the outline's loose bin (labeled dot appears;
+  // AI-IMP-070 — the outline is the §6.10 placement source).
   await exec(ctx, 'CreatePlacement', {
     placementId: crypto.randomUUID(),
     canvasId: ctx.rootCanvasId,
@@ -384,18 +384,16 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   expect(nodeUses.length).toBe(2)
   const looseNote = crypto.randomUUID()
   await exec(ctx, 'CreateNote', { noteId: looseNote, title: 'Unplaced Legend' })
-  await revealTitleStrip(win)
-  await win.getByTestId('toggle-sources').click()
-  await win.getByTestId('sources-tab-notes').click()
+  await win.getByTestId('charm-outline').click()
   await win
-    .locator(`[data-note-id="${looseNote}"]`)
-    .getByTestId('sources-place-note')
+    .locator(`[data-testid="loose-note-row"][data-note-id="${looseNote}"]`)
+    .getByTestId('outline-place-note')
     .click()
+  // Placement closes the takeover so the user sees the dot land.
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
   await expect
     .poll(() => win.evaluate(() => window.__ewGestureDebug!.labelTexts()))
     .toContain('Unplaced Legend')
-  await revealTitleStrip(win)
-  await win.getByTestId('toggle-sources').click()
 
   // ---- Item 10: open a node's canvas (persisted immediately), add
   // nested content, return to the root canvas.

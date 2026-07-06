@@ -25,6 +25,7 @@ import { registerNoteQueries } from './queries-notes'
 import { registerSearchQueries } from './queries-search'
 import { registerStructureQueries } from './queries-structure'
 import { runRecovery, type RecoveryReport } from './recovery'
+import { registerSettingsQueries, setProjectSetting } from './settings'
 
 export interface ProjectInfo {
   projectId: string
@@ -42,6 +43,10 @@ export interface ProjectService {
   info(): ProjectInfo
   execute(envelope: CommandEnvelope): CommandResult
   query(name: string, args?: unknown): QueryResult
+  /** §11.5 non-undoable project-setting write: never enters command
+   * history, never bumps project_revision. Change fan-out happens at
+   * the process seam (main broadcasts), not through subscribe(). */
+  setSetting(key: string, value: unknown): void
   subscribe(fn: (event: ProjectChangedEvent) => void): () => void
   /** Staged asset import per §11.2; throws DomainError on rejection. */
   importAsset(input: ImportInput): Promise<ImportResult>
@@ -88,6 +93,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerStructureQueries(queries)
   registerSearchQueries(queries)
   registerLifecycleQueries(queries)
+  registerSettingsQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {
@@ -112,6 +118,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
     },
     execute: (envelope) => dispatcher.execute(envelope),
     query: (name, args) => queries.run(queryCtx, name, args),
+    setSetting: (key, value) => setProjectSetting(handle.db, handle.projectId, key, value),
     subscribe: (fn) => dispatcher.subscribe(fn),
     recovery: () => recoveryReport,
     importAsset: (input) =>

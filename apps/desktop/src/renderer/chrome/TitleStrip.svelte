@@ -1,8 +1,8 @@
 <!--
   Hover-revealed title strip (RFC §8.2): file/view functions at the
   top edge, hidden otherwise. Carries the Board menu (the §6.7
-  background operation set, ported from BoardToolbar) and the interim
-  Create Pin… / Sources buttons until AI-IMP-067/065 retire them.
+  background operation set, ported from BoardToolbar); the interim
+  Create Pin… and Sources buttons retired with AI-IMP-067/070.
   Background EDIT mode renders as a persistent floating bar instead —
   Done/Cancel must not live behind a hover.
 -->
@@ -11,6 +11,7 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { SceneBackground, SceneDecoration } from '@ew/canvas-engine'
+  import { appSettings, onAppSettingsChanged } from '../settings/settings'
   import { themeTokenValue } from '../theme'
   import { tooltip } from './tooltip'
   import { TITLE_STRIP_REVEAL_PX } from './feel'
@@ -23,6 +24,17 @@
 
   let revealed = $state(false)
   let boardMenuOpen = $state(false)
+  // §11.5 title-strip mode: hover-reveal (default) · always · never.
+  let stripMode = $state(appSettings().titleStrip)
+  $effect(() => onAppSettingsChanged((settings) => (stripMode = settings.titleStrip)))
+  const stripVisible = $derived(
+    stripMode === 'always' || (stripMode === 'hover' && (revealed || boardMenuOpen)),
+  )
+  // Switching to never while the Board menu is up would strand an
+  // unreachable menu — fold it with the strip.
+  $effect(() => {
+    if (stripMode === 'never') boardMenuOpen = false
+  })
   let hasImageSelected = $state(tooling.selectedImagePlacement() !== null)
   let background = $state<SceneBackground | null>(tooling.background())
   let editing = $state(tooling.backgroundEditActive())
@@ -58,10 +70,6 @@
     if (file) void tooling.setBackgroundFromFile(file)
   }
 
-  function fire(name: string): void {
-    window.dispatchEvent(new CustomEvent(name))
-  }
-
   // Leaving the strip lowers it; the Board menu holds it up while
   // open and closes only on Escape or its own button — deliberately
   // NOT on click-away, so background work (pick image, click canvas,
@@ -80,15 +88,17 @@
   })
 </script>
 
-<div
-  class="reveal-zone"
-  style={`height: ${TITLE_STRIP_REVEAL_PX}px`}
-  data-testid="title-strip-reveal"
-  role="presentation"
-  onpointerenter={() => (revealed = true)}
-></div>
+{#if stripMode === 'hover'}
+  <div
+    class="reveal-zone"
+    style={`height: ${TITLE_STRIP_REVEAL_PX}px`}
+    data-testid="title-strip-reveal"
+    role="presentation"
+    onpointerenter={() => (revealed = true)}
+  ></div>
+{/if}
 
-{#if revealed || boardMenuOpen}
+{#if stripVisible}
   <div class="title-strip" data-testid="title-strip" role="toolbar" tabindex="-1" onpointerleave={hide}>
     <button
       type="button"
@@ -98,15 +108,6 @@
       use:tooltip={{ name: 'Board — background and hidden items' }}
     >
       Board
-    </button>
-    <span class="spacer"></span>
-    <button
-      type="button"
-      data-testid="toggle-sources"
-      onclick={() => fire('ew-toggle-sources')}
-      use:tooltip={{ name: 'Placement sources (interim — the outline view replaces this)' }}
-    >
-      Sources
     </button>
   </div>
 {/if}
@@ -240,10 +241,6 @@
     font-size: 0.75rem;
     color: var(--ew-text);
     pointer-events: auto;
-  }
-
-  .spacer {
-    flex: 1;
   }
 
   .board-menu {

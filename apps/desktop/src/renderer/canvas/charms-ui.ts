@@ -20,6 +20,8 @@ import { onEngagementChanged } from '../chrome/engagement'
 import { tooltip } from '../chrome/tooltip'
 import { requestAttachNote, requestOpenNote } from '../note/open-note'
 import { openCornerPanel } from '../note/panels'
+import { appSettings, onAppSettingsChanged } from '../settings/settings'
+import { openTagPanel } from '../tags/tag-panel'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 
 export interface CharmsUiHandle {
@@ -181,8 +183,17 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
         chip.style.cssText =
           'padding:1px 7px;border-radius:9px;border:1px solid var(--ew-border-strong);cursor:pointer;' +
           `background:var(--ew-surface-raised);color:${tag.color ?? 'var(--ew-tag-default)'};font-size:11px;`
-        const tip = tooltip(chip, { name: 'The tag panel arrives with global views (EPIC-013)' })
+        const tip = tooltip(chip, { name: 'Open the tag panel' })
         disposers.push(tip.destroy)
+        // §4.8 door 1: the chip opens THE tag panel anchored to
+        // itself; the chip popover has served its purpose and folds.
+        chip.addEventListener('click', (event) => {
+          event.stopPropagation()
+          const rect = chip.getBoundingClientRect()
+          openTagPanel(tag.id, { x: rect.left, y: rect.bottom })
+          chipsFor = null
+          chips.style.display = 'none'
+        })
         chips.appendChild(chip)
       }
       chips.style.display = 'flex'
@@ -353,15 +364,17 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       if (Math.min(screenW, screenH) < CHARM_MIN_SCREEN_PX) continue
       seen.add(item.id)
       const entry = entryFor(item)
+      // Inset inside the chosen right corner: lower-right by default,
+      // upper-right via the §11.5 charm-corner setting (AI-IMP-074).
+      const upper = appSettings().charmCorner === 'upper-right'
       const corner = camera.worldToScreen({
         x: aabb.x + aabb.width,
-        y: aabb.y + aabb.height,
+        y: upper ? aabb.y : aabb.y + aabb.height,
       })
-      // Inset inside the lower-right image corner (§8.4).
       const width = entry.group.offsetWidth || 20
       const height = entry.group.offsetHeight || 20
       entry.group.style.left = `${corner.x - width - 4}px`
-      entry.group.style.top = `${corner.y - height - 4}px`
+      entry.group.style.top = upper ? `${corner.y + 4}px` : `${corner.y - height - 4}px`
     }
     for (const id of [...entries.keys()]) {
       if (!seen.has(id)) removeEntry(id)
@@ -409,6 +422,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     }),
   )
   disposers.push(host.controller.selection.onChanged(() => schedule()))
+  // §11.5 charm corner applies to charms already on screen (074).
+  disposers.push(onAppSettingsChanged(() => schedule()))
   // One shared fade clock: the layer fades with the chrome; per-group
   // rest opacity + hover live in the injected stylesheet.
   disposers.push(

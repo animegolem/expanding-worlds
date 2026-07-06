@@ -5,12 +5,12 @@ tags:
   - Implementation
   - outline
   - placement
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-069]
 parent_epic: [[AI-EPIC-013-global-views]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-070-outline-placement-flows
@@ -80,22 +80,39 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Place on Current Canvas on node and note rows; takeover
+- [x] Place on Current Canvas on node and note rows; takeover
       closes; placement lands at view center; failures toast.
-- [ ] Drag from an outline row onto the board places at the drop
+      (Node rows: outline.spec asserts takeover closed, exactly one
+      CreatePlacement, x/y at view center. Note rows: slice.spec
+      item 9 places via the loose bin and sees the labeled dot.
+      Failures ride the existing Workspace boardNotice → status.ts
+      toast seam — wiring verified by reading, not e2e-injected.)
+- [x] Drag from an outline row onto the board places at the drop
       world point (CreatePlacement for nodes, CreatePin for notes);
-      one command per drop, undo removes it cleanly.
-- [ ] Dragging past the sheet edge closes the takeover so the board
-      receives the drop.
-- [ ] Canvas rows dive via navigateTo (history entry asserted);
-      note rows open the note panel.
-- [ ] PlacementSourcePanel, Sources button, ew-toggle-sources
-      deleted; no orphaned imports or testids; `pnpm -r build`
-      green.
-- [ ] e2e: unplaced node recovered from the loose bin onto the
-      active canvas (slice item 21); note placed by drag at a
-      specific point; sources coverage migrated.
-- [ ] Full desktop e2e suite green.
+      one command per drop, undo removes it cleanly. (Note drag:
+      outline.spec asserts the pin at the drop's world point, a
+      command log of exactly ['CreatePin'], and DeleteDraftPin
+      removing pin + placement with the attached note loose again.
+      Node payload → one CreatePlacement at the drop point:
+      import.spec drop-surface test.)
+- [x] Dragging past the sheet edge closes the takeover so the board
+      receives the drop. (Implemented as "past the originating
+      row's bounds" — the outline sheet is full-bleed, so a literal
+      sheet edge is unreachable mid-drag; see Issues. Asserted in
+      outline.spec before the drop is dispatched.)
+- [x] Canvas rows dive via navigateTo (history entry asserted via
+      __ewNav.entries()/cursor()); note rows open the note panel
+      (note-pane visible with the row's title).
+- [x] PlacementSourcePanel, Sources button, ew-toggle-sources
+      deleted; no orphaned imports or testids (repo-wide grep
+      clean); `pnpm -r build` green.
+- [x] e2e: unplaced node recovered from the loose bin onto the
+      active canvas (slice item 21's stashed material); note placed
+      by drag at a specific point; sources coverage migrated
+      (import.spec test re-seeded via direct CreatePin and renamed;
+      slice item 9 now flows through the outline).
+- [x] Full desktop e2e suite green: 57 passed on the 70b8839 base
+      (baseline 56 + this ticket's placement-flows test).
 
 ### Acceptance Criteria
 
@@ -118,3 +135,48 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **"Sheet edge" is unreachable on the outline sheet.** The design
+  says the takeover closes when the pointer drags "past the sheet
+  edge", but the outline sheet is full-bleed (only settings is
+  inset), so a drag can never cross its edge while staying in the
+  window. Implemented the operative equivalent: a window-level
+  dragover watcher armed at dragstart closes the takeover the moment
+  the pointer leaves the originating row's bounds. Any real drag
+  toward the board triggers it immediately; jiggles inside the row
+  do not. Flagging for lead review as an interpretation, not a
+  literal reading.
+- **The import-surfaces drop branch already existed.** The ticket
+  says import-surfaces.ts "gains a branch" for the internal mime;
+  the NODE_DRAG_MIME/NOTE_DRAG_MIME branches (CreatePlacement /
+  CreatePin at the drop's world point) were already built for the
+  panel era. Only comments changed there. Deviation from the ticket
+  text: the payload stays on the existing two-mime scheme
+  (application/x-ew-node + application/x-ew-note) rather than one
+  mime carrying either id — same wire behavior, no dead code.
+- **Right-aligned row actions are unclickable under the charm
+  rail.** First cut pushed Place to the row's right edge
+  (margin-left auto); the chrome layer (z 10) floats above the
+  takeover (z 9) and the charm rail swallowed the clicks —
+  Playwright caught it as "charm-outline intercepts pointer
+  events". The action now sits inline after the row content, with a
+  comment in the stylesheet.
+- **Pre-existing inconsistency, left alone (review flag):** the two
+  §6.10 zero-node-note paths use different dot tokens — Workspace's
+  onPlaceNote (Place button) uses --ew-node-dot-default while
+  import-surfaces' placeZeroNodeNote (drag) uses
+  --ew-zero-node-note-dot. Both predate this ticket; unifying them
+  is a one-line decision the lead may want.
+- **Failure toasts are wired but not e2e-exercised.** Place failures
+  route through the existing onPlaceNode/onPlaceNote handlers →
+  boardNotice → status.ts toasts; forcing a CreatePlacement failure
+  from the UI would need fault injection the suite doesn't have.
+- **Worktree electron repair gotcha:** copying dist/ from the main
+  repo with `cp -R src/dist dest/dist` nests dist/dist when the
+  destination partially exists — every e2e launch then fails ENOENT.
+  Flatten (ditto + mv) and check for
+  dist/Electron.app/Contents/MacOS/Electron before running.
+- import.spec's combined "placement sources + node context menu"
+  test was renamed to "node drag payload on the drop surface (§6.3)
+  and node context menu (§6.6)"; its §6.6 half is unchanged, seeded
+  by a direct CreatePin at the view center instead of the panel.

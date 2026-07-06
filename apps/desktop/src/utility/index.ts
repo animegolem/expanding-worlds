@@ -86,6 +86,23 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
         : { type: 'run-query', ok: false, code: result.code, message: result.message }
     }
 
+    case 'set-setting': {
+      if (!service) {
+        return { type: 'set-setting', ok: false, code: 'NO_PROJECT', message: 'no project is open' }
+      }
+      try {
+        service.setSetting(request.key, request.value)
+        return { type: 'set-setting', ok: true }
+      } catch (err) {
+        return {
+          type: 'set-setting',
+          ok: false,
+          code: 'SET_SETTING_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'import-asset': {
       if (!service) {
         return { type: 'import-asset', ok: false, code: 'NO_PROJECT', message: 'no project is open' }

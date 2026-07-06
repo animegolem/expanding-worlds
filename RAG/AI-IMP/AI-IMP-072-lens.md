@@ -100,18 +100,21 @@ Before marking an item complete on the checklist MUST **stop** and
       host-level probe lives — not `__ewGestureDebug`, which is
       gestures-ui's zone/label surface. `lens`, `setLens`,
       `clearLens`, `lensAlpha`, `lensRings`.)
-- [ ] TagPanel toggle: on = setLens(matching placements on current
+- [x] TagPanel toggle: on = setLens(matching placements on current
       canvas), off = clearLens; toggle state tracks onLensChanged
       so Escape unsets the toggle.
-      (UNCHECKED by lead decision: AI-IMP-071 builds the tag panel
-      in parallel and wires this via the handle's
-      setLens/clearLens/onLensChanged seam.)
-- [ ] e2e: mixed board, toggle on → debug hook reports the right
+      (Delivered in AI-IMP-071: `tags/TagPanel.svelte` header toggle
+      through the handle's setLens/clearLens/onLensChanged seam;
+      member set = the tag's carrier placements on the active canvas
+      from the extended getTagView; disabled when that set is empty.)
+- [x] e2e: mixed board, toggle on → debug hook reports the right
       set; pan; Escape drops it and the toggle resets.
-      (Toggle half UNCHECKED — belongs to 071. The engine-observable
-      half ships here as `apps/desktop/e2e/lens.spec.ts`: mixed
-      board, set via debug hook, dim/ring assertions, pan survival,
-      reapply intersection, Escape ordering.)
+      (Engine-observable half shipped here as
+      `apps/desktop/e2e/lens.spec.ts`; the toggle half delivered in
+      AI-IMP-071's `apps/desktop/e2e/tags.spec.ts`: toggle on →
+      __ewDebug.lens() reports exactly the active-canvas carriers,
+      outsider dims to LENS_DIM_ALPHA, Escape drops the lens while
+      the panel stays and aria-pressed resets, selection intact.)
 - [x] `pnpm -r build`, engine units, full gates green.
 
 ### Acceptance Criteria

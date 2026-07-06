@@ -15,6 +15,9 @@ type Listener = (engaged: boolean) => void
 let engaged = true
 let held = false
 let idleTimer: ReturnType<typeof setTimeout> | null = null
+// §11.5 chrome fade delay: the settings store overrides the default;
+// null means "never" — chrome only fades on leave/blur, not on idle.
+let fadeDelayMs: number | null = CHROME_FADE_DELAY_MS
 const listeners = new Set<Listener>()
 let attached = false
 
@@ -27,7 +30,8 @@ function set(next: boolean): void {
 function poke(): void {
   set(true)
   if (idleTimer) clearTimeout(idleTimer)
-  idleTimer = held ? null : setTimeout(() => set(false), CHROME_FADE_DELAY_MS)
+  idleTimer =
+    held || fadeDelayMs === null ? null : setTimeout(() => set(false), fadeDelayMs)
 }
 
 function leave(): void {
@@ -74,6 +78,20 @@ export function holdEngagement(hold: boolean): void {
   attach()
   held = hold
   poke()
+}
+
+/** §11.5 fade-delay setting: retime the idle clock without forcing
+ * an engagement change — the current state stands, only the pending
+ * fade (if any) reschedules under the new delay. */
+export function setFadeDelay(delay: number | 'never'): void {
+  fadeDelayMs = delay === 'never' ? null : delay
+  if (idleTimer) {
+    clearTimeout(idleTimer)
+    idleTimer = null
+  }
+  if (engaged && !held && fadeDelayMs !== null) {
+    idleTimer = setTimeout(() => set(false), fadeDelayMs)
+  }
 }
 
 /** Subscribe to engagement changes; fires immediately with the

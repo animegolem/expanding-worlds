@@ -33,6 +33,7 @@
     type PanelRecord,
   } from './panels'
   import { createNoteProjectPort } from './project-port'
+  import { openTagPanel } from '../tags/tag-panel'
   import { wikiLinkCompletion } from './suggestions'
   import { wikiLinkActivation, wikiLinkHighlighter } from './wiki-link-plugin'
   import { themeTokenValue } from '../theme'
@@ -750,7 +751,19 @@
   {#if tagChips.length > 0 && !phantom}
     <div class="tag-chips" data-testid="panel-tag-chips">
       {#each tagChips as tag (tag.id)}
-        <span class="tag-chip" style={tag.color ? `color:${tag.color}` : ''}>#{tag.name}</span>
+        <!-- §4.8 door 2: a chip opens THE tag panel anchored to itself. -->
+        <button
+          type="button"
+          class="tag-chip"
+          data-testid={`panel-tag-chip-${tag.id}`}
+          style={tag.color ? `color:${tag.color}` : ''}
+          onclick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect()
+            openTagPanel(tag.id, { x: rect.left, y: rect.bottom })
+          }}
+        >
+          #{tag.name}
+        </button>
       {/each}
     </div>
   {/if}
@@ -1029,6 +1042,8 @@
     background: var(--ew-paper-chip-surface);
     color: var(--ew-paper-chip-text);
     font-size: 0.7rem;
+    font-family: inherit;
+    cursor: pointer;
   }
 
   .editor {

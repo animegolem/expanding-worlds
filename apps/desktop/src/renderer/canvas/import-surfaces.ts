@@ -6,12 +6,12 @@ import { themeTokenValue } from '../theme'
 /**
  * Import surfaces (RFC-0001 §6.1, AI-IMP-020): OS file drop, clipboard
  * paste, browser drag (bytes + attribution), and URL-only drop, plus
- * drops from the placement-source panel (§6.3/§6.10). Every import
+ * drops from the outline's rows (§6.3/§6.10, AI-IMP-070). Every import
  * lands one asset via the staged pipeline and one CreatePin; every
  * rejection surfaces a clear error and issues zero commands.
  */
 
-/** Drag payload mimes set by PlacementSourcePanel rows. */
+/** Drag payload mimes set by outline-row dragstart (OutlineView). */
 export const NODE_DRAG_MIME = 'application/x-ew-node'
 export const NOTE_DRAG_MIME = 'application/x-ew-note'
 
@@ -132,7 +132,7 @@ export function attachImportSurfaces(
     await createImagePin(imported.assetId, world)
   }
 
-  /** §6.3: a node dragged from the placement sources creates one placement. */
+  /** §6.3: a node dragged from an outline row creates one placement. */
   async function placeNode(nodeId: string, world: Point): Promise<void> {
     const result = await host.gateway.execute('CreatePlacement', {
       placementId: uuidv7(),

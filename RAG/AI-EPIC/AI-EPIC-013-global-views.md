@@ -7,8 +7,8 @@ tags:
   - settings
   - theming
 date_created: 2026-07-05
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-06
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-068
   - AI-IMP-069
@@ -81,16 +81,16 @@ ships beside the outline. No theme engine is built.
 
 ### Functional Requirements
 
-- [ ] FR-1: Takeover framework — rail-charm entry, Esc/charm return, camera untouched per §8.2.
-- [ ] FR-2: Outline view with alias-row cycle handling, loose bin, filter chips per §14.1.
-- [ ] FR-3: Outline realizes library placement flows: drag-to-canvas and Place on Current Canvas per §6.10.
-- [ ] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8 (tags are flat, rev 0.20).
-- [ ] FR-5: Lens view state sharing the §7.5 highlight implementation per §4.8.
-- [ ] FR-6: Three tag doors landing on one panel per §4.8.
-- [ ] FR-7: ⌕ search with kind-grouped results and navigation per §8.3.
-- [ ] FR-8: Quick-open over notes and canvas-owning nodes, excluding phantoms, per §8.3.
-- [ ] FR-9: Settings takeover with live apply and the §11.5 inventory.
-- [ ] FR-10: Theme tokens as CSS custom properties; dark/light; glass Mac-only fallback per §11.5.
+- [x] FR-1: Takeover framework — rail-charm entry, Esc/charm return, camera untouched per §8.2.
+- [x] FR-2: Outline view with alias-row cycle handling, loose bin, filter chips per §14.1.
+- [x] FR-3: Outline realizes library placement flows: drag-to-canvas and Place on Current Canvas per §6.10.
+- [x] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8 (tags are flat, rev 0.20).
+- [x] FR-5: Lens view state sharing the §7.5 highlight implementation per §4.8.
+- [x] FR-6: Three tag doors landing on one panel per §4.8.
+- [x] FR-7: ⌕ search with kind-grouped results and navigation per §8.3.
+- [x] FR-8: Quick-open over notes and canvas-owning nodes, excluding phantoms, per §8.3.
+- [x] FR-9: Settings takeover with live apply and the §11.5 inventory.
+- [x] FR-10: Theme tokens as CSS custom properties; dark/light; glass Mac-only fallback per §11.5.
 
 ### Non-Functional Requirements
 
@@ -109,3 +109,9 @@ flows (FR-3) · AI-IMP-071 tag panel (FR-4, FR-6) · AI-IMP-072 lens
 AI-IMP-074 settings takeover (FR-9, depends on 075) · AI-IMP-075
 theme tokens (FR-10). 072 and 075 are framework-independent and
 fan out first; 070/071/073 parallelize after 069.
+
+Closed 2026-07-06: all eight IMPs completed across two waves; the
+epic shipped as PR #1 (epic-013-wave-two), Codex's PR review found
+five P2s (search asset/canvas-text edge cases, panels surviving a
+takeover, a stale tag lens, an unwired settings row), all accepted
+and fixed on the branch before the merge.

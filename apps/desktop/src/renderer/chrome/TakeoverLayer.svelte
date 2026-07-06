@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import OutlineView from '../views/OutlineView.svelte'
+  import SettingsView from '../views/SettingsView.svelte'
   import { holdEngagement } from './engagement'
   import { closeTakeover, onTakeoverChanged, type TakeoverKind } from './takeover'
 
@@ -63,8 +64,9 @@
       <div class="sheet-body" data-testid="takeover-body">
         {#if kind === 'outline'}
           <OutlineView />
+        {:else if kind === 'settings'}
+          <SettingsView />
         {/if}
-        <!-- AI-IMP-074 mounts settings here. -->
       </div>
     </div>
   </div>

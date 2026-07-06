@@ -7,6 +7,7 @@ import type {
   PingResponse,
   RunQueryResponse,
   ServiceStatusEvent,
+  SetSettingResponse,
 } from '@ew/protocol'
 
 export type FetchUrlForImportResult =
@@ -34,6 +35,34 @@ const api = {
   window: {
     setVibrancy: (enabled: boolean): Promise<boolean> =>
       ipcRenderer.invoke('window:set-vibrancy', enabled) as Promise<boolean>,
+    setOpacity: (value: number): Promise<boolean> =>
+      ipcRenderer.invoke('window:set-opacity', value) as Promise<boolean>,
+  },
+  /** §11.5 settings, both tiers (AI-IMP-074). App-tier lives with
+   * main (app-settings.json); project-tier writes go through the
+   * non-undoable set-setting verb, reads through project.query
+   * ('getSettings'). */
+  settings: {
+    appAll: (): Promise<Record<string, unknown>> =>
+      ipcRenderer.invoke('app-settings:get') as Promise<Record<string, unknown>>,
+    setApp: (key: string, value: unknown): Promise<boolean> =>
+      ipcRenderer.invoke('app-settings:set', key, value) as Promise<boolean>,
+    onAppChanged: (callback: (change: { key: string; value: unknown }) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, change: { key: string; value: unknown }): void =>
+        callback(change)
+      ipcRenderer.on('app-settings:changed', listener)
+      return () => ipcRenderer.removeListener('app-settings:changed', listener)
+    },
+    setProject: (key: string, value: unknown): Promise<SetSettingResponse> =>
+      ipcRenderer.invoke('project:set-setting', key, value) as Promise<SetSettingResponse>,
+    onProjectChanged: (
+      callback: (change: { key: string; value: unknown }) => void,
+    ): (() => void) => {
+      const listener = (_event: IpcRendererEvent, change: { key: string; value: unknown }): void =>
+        callback(change)
+      ipcRenderer.on('project:setting-changed', listener)
+      return () => ipcRenderer.removeListener('project:setting-changed', listener)
+    },
   },
   app: {
     /**

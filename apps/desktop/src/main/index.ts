@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, net, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
@@ -130,6 +131,48 @@ function callUtility(payload: ProjectRequest): Promise<ProjectResponse> {
 
 function projectDir(): string {
   return process.env['EW_PROJECT_DIR'] ?? join(app.getPath('userData'), 'projects', 'default')
+}
+
+// ---- §11.5 app-tier settings (AI-IMP-074) ----
+// Preferences that follow the application rather than any project:
+// one flat JSON file in the configuration directory, loaded once,
+// rewritten whole on every set (a handful of keys). Defaults live in
+// the renderer store; a missing or corrupt file is simply empty. The
+// env override keeps e2e app instances out of the real user config.
+
+function appConfigDir(): string {
+  return process.env['EW_APP_CONFIG_DIR'] ?? app.getPath('userData')
+}
+
+const APP_SETTINGS_FILENAME = 'app-settings.json'
+let appSettings: Record<string, unknown> | null = null
+
+function loadAppSettings(): Record<string, unknown> {
+  if (appSettings) return appSettings
+  try {
+    const parsed: unknown = JSON.parse(
+      readFileSync(join(appConfigDir(), APP_SETTINGS_FILENAME), 'utf8'),
+    )
+    appSettings =
+      parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : {}
+  } catch {
+    appSettings = {}
+  }
+  return appSettings
+}
+
+function setAppSetting(key: string, value: unknown): void {
+  const settings = loadAppSettings()
+  settings[key] = value
+  mkdirSync(appConfigDir(), { recursive: true })
+  writeFileSync(join(appConfigDir(), APP_SETTINGS_FILENAME), JSON.stringify(settings, null, 2))
+  // Cross-window sync: every window (including the writer, which
+  // already applied optimistically and dedupes) hears the change.
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('app-settings:changed', { key, value })
+  }
 }
 
 /**
@@ -415,6 +458,28 @@ void app.whenReady().then(() => {
       }),
   )
   ipcMain.handle('project:fetch-url', (_event, url: string) => fetchUrlForImport(String(url)))
+  ipcMain.handle('project:set-setting', async (_event, key: string, value: unknown) => {
+    const response = await callUtility({ type: 'set-setting', key: String(key), value })
+    if ('ok' in response && response.ok) {
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('project:setting-changed', { key, value })
+      }
+    }
+    return response
+  })
+  ipcMain.handle('app-settings:get', () => loadAppSettings())
+  ipcMain.handle('app-settings:set', (_event, key: string, value: unknown) => {
+    setAppSetting(String(key), value)
+    return true
+  })
+  ipcMain.handle('window:set-opacity', (event, value: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return false
+    const opacity = Number(value)
+    // §11.5 window opacity: the floor keeps the app from vanishing.
+    win.setOpacity(Number.isFinite(opacity) ? Math.min(1, Math.max(0.3, opacity)) : 1)
+    return true
+  })
   // Recovery e2e only (AI-IMP-053): the handler exists solely when
   // the spec opts in, so a production build can never invoke it.
   if (process.env['EW_TEST_HOOKS'] === '1') {

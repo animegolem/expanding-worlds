@@ -208,6 +208,20 @@ describe('DeletePlacement (§9.2, invariant 11)', () => {
     })
   })
 
+  it('undo restores a locked placement locked (0004 column in the inverse)', () => {
+    const nodeId = createNode()
+    // A second placement keeps the node non-bare — this pins the
+    // placement row itself, not the bare-trash path.
+    place(handle.rootCanvasId, nodeId)
+    const placementId = place(handle.rootCanvasId, nodeId)
+    committed('SetPlacementLock', { placementId, locked: true })
+
+    const del = committed('DeletePlacement', { placementId })
+    expect(del.inverse).toMatchObject({ payload: { locked: true } })
+    undo(del.inverse)
+    expect(row('placement', placementId)).toMatchObject({ locked: 1 })
+  })
+
   it('does not bare-trash a node with tags or an owned canvas, and never the root node', () => {
     const tagged = createNode()
     const tagId = uuidv7()

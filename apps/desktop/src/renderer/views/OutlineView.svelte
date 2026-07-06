@@ -7,12 +7,21 @@
   again. Unplaced material gathers in the root-level loose bin —
   keeping stashed nodes is a legitimate workflow, not an error.
   Filter chips: hide content-less · disconnected (orphan ∪ loose,
-  §14.1 vocabulary) · one tag. Placement flows (drag, Place on
-  Current Canvas) arrive with AI-IMP-070.
+  §14.1 vocabulary) · one tag. Placement flows (AI-IMP-070): rows are
+  §6.10 placement sources — Place on Current Canvas fires the same
+  requests the Uses sidebar does (Workspace commits and toasts
+  failures), drag sets the import-surface mimes so the board's drop
+  handler places at the drop point, canvas rows dive via navigateTo,
+  note rows open via requestOpenNote. Every action closes the
+  takeover so the user sees the result land.
 -->
 <script lang="ts">
   import { shortCode } from '@ew/domain'
   import NodeRow from '../rows/NodeRow.svelte'
+  import { NODE_DRAG_MIME, NOTE_DRAG_MIME } from '../canvas/import-surfaces'
+  import { closeTakeover } from '../chrome/takeover'
+  import { navigateTo } from '../chrome/navigation'
+  import { requestOpenNote, requestPlaceNode, requestPlaceNote } from '../note/open-note'
 
   interface OutlineChildRow {
     placementId: string
@@ -162,6 +171,75 @@
     void target.offsetWidth
     target.classList.add('flash')
   }
+
+  /** §6.10: one placement at view center. Workspace owns the commit
+   * and toasts failures; closing first lets the user watch it land. */
+  function placeNodeOnBoard(nodeId: string): void {
+    closeTakeover()
+    requestPlaceNode(nodeId)
+  }
+
+  /** §6.10 zero-node note: dot + attach + placement as one CreatePin. */
+  function placeNoteOnBoard(noteId: string): void {
+    closeTakeover()
+    requestPlaceNote(noteId)
+  }
+
+  /** Canvas rows dive — through navigateTo, so every jump enters
+   * history (§8.1) — and the takeover yields to the destination. */
+  function dive(canvasId: string, label: string): void {
+    closeTakeover()
+    void navigateTo(canvasId, label)
+  }
+
+  /** Note rows open the note panel; panels live under the takeover
+   * (z-order), so the takeover closes to reveal them. */
+  function openNote(noteId: string): void {
+    closeTakeover()
+    requestOpenNote(noteId)
+  }
+
+  /**
+   * Row dragstart: set the import-surface payload (the board's drop
+   * handler executes CreatePlacement/CreatePin at the drop's world
+   * point, import-surfaces.ts) and watch the drag — the outline
+   * sheet is full-bleed, so the operative "sheet edge" (§6.10 drag
+   * out of the takeover) is the originating row's own bounds: the
+   * moment the pointer drags past them, the takeover closes so the
+   * board is visible to receive the drop.
+   */
+  function beginRowDrag(event: DragEvent, mime: string, id: string): void {
+    const dt = event.dataTransfer
+    if (!dt) return
+    dt.setData(mime, id)
+    dt.effectAllowed = 'copy'
+    const row = event.currentTarget as HTMLElement
+    const edge = row.getBoundingClientRect()
+    const stop = (): void => {
+      window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('dragend', stop)
+      window.removeEventListener('drop', stop)
+    }
+    const onDragOver = (over: DragEvent): void => {
+      const inside =
+        over.clientX >= edge.left &&
+        over.clientX <= edge.right &&
+        over.clientY >= edge.top &&
+        over.clientY <= edge.bottom
+      if (inside) return
+      stop()
+      closeTakeover()
+    }
+    window.addEventListener('dragover', onDragOver)
+    window.addEventListener('dragend', stop)
+    window.addEventListener('drop', stop)
+  }
+
+  /** Row body activation: canvas rows dive, note rows open. */
+  function activateChild(child: OutlineChildRow): void {
+    if (child.childCanvasId !== null) dive(child.childCanvasId, childTitle(child))
+    else if (child.noteId !== null) openNote(child.noteId)
+  }
 </script>
 
 {#snippet childRow(child: OutlineChildRow, path: string[], key: string)}
@@ -180,7 +258,14 @@
         <span class="title">{childTitle(child)}</span>
       </button>
     {:else}
-      <div class="row" class:has-children={nested !== undefined} data-testid="outline-child-row">
+      <div
+        class="row"
+        class:has-children={nested !== undefined}
+        data-testid="outline-child-row"
+        data-node-id={child.nodeId}
+        draggable="true"
+        ondragstart={(event) => beginRowDrag(event, NODE_DRAG_MIME, child.nodeId)}
+      >
         {#if nested}
           <button
             type="button"
@@ -194,20 +279,37 @@
         {:else}
           <span class="caret-space"></span>
         {/if}
-        <NodeRow
-          appearance={child}
-          label={childTitle(child)}
-          count={child.placementCount > 1 ? child.placementCount : null}
-          tags={child.tags}
-          hasNote={child.noteId !== null}
-          hasCanvas={child.childCanvasId !== null}
+        <button
+          type="button"
+          class="row-main"
+          data-testid="outline-row-activate"
+          disabled={child.childCanvasId === null && child.noteId === null}
+          onclick={() => activateChild(child)}
         >
-          {#snippet extra()}
-            {#if disconnectedOnly && child.noteId === null}
-              <span class="badge" data-testid="badge-orphan">orphan</span>
-            {/if}
-          {/snippet}
-        </NodeRow>
+          <NodeRow
+            appearance={child}
+            label={childTitle(child)}
+            count={child.placementCount > 1 ? child.placementCount : null}
+            tags={child.tags}
+            hasNote={child.noteId !== null}
+            hasCanvas={child.childCanvasId !== null}
+          >
+            {#snippet extra()}
+              {#if disconnectedOnly && child.noteId === null}
+                <span class="badge" data-testid="badge-orphan">orphan</span>
+              {/if}
+            {/snippet}
+          </NodeRow>
+        </button>
+        <button
+          type="button"
+          class="row-action"
+          data-testid="outline-place-node"
+          title="Place on Current Canvas"
+          onclick={() => placeNodeOnBoard(child.nodeId)}
+        >
+          Place
+        </button>
       </div>
       {#if nested && isExpanded(key)}
         {@render canvasBranch(nested, [...path, nested.canvasId], key)}
@@ -294,8 +396,15 @@
         >
           {isExpanded(canvas.canvasId) ? '▾' : '▸'}
         </button>
-        <span class="glyph">⊡</span>
-        <span class="title canvas-title">{canvas.label}{canvas.isRoot ? ' (home)' : ''}</span>
+        <button
+          type="button"
+          class="row-main"
+          data-testid="outline-canvas-activate"
+          onclick={() => dive(canvas.canvasId, canvas.label)}
+        >
+          <span class="glyph">⊡</span>
+          <span class="title canvas-title">{canvas.label}{canvas.isRoot ? ' (home)' : ''}</span>
+        </button>
       </div>
       {#if isExpanded(canvas.canvasId)}
         {@render canvasBranch(canvas, [canvas.canvasId], canvas.canvasId)}
@@ -312,32 +421,77 @@
       <ul>
         {#each binNodes() as node (node.id)}
           <li>
-            <div class="row" data-testid="loose-node-row" data-node-id={node.id}>
+            <div
+              class="row"
+              data-testid="loose-node-row"
+              data-node-id={node.id}
+              draggable="true"
+              ondragstart={(event) => beginRowDrag(event, NODE_DRAG_MIME, node.id)}
+            >
               <span class="caret-space"></span>
-              <NodeRow
-                appearance={node}
-                label={node.noteTitle ?? shortCode(node.id)}
-                tags={node.tags}
-                hasNote={node.noteId !== null}
+              <button
+                type="button"
+                class="row-main"
+                data-testid="outline-row-activate"
+                disabled={node.noteId === null}
+                onclick={() => node.noteId !== null && openNote(node.noteId)}
               >
-                {#snippet extra()}
-                  <span class="badge" data-testid="badge-loose">loose</span>
-                  {#if node.noteId === null}
-                    <span class="badge" data-testid="badge-orphan">orphan</span>
-                  {/if}
-                {/snippet}
-              </NodeRow>
+                <NodeRow
+                  appearance={node}
+                  label={node.noteTitle ?? shortCode(node.id)}
+                  tags={node.tags}
+                  hasNote={node.noteId !== null}
+                >
+                  {#snippet extra()}
+                    <span class="badge" data-testid="badge-loose">loose</span>
+                    {#if node.noteId === null}
+                      <span class="badge" data-testid="badge-orphan">orphan</span>
+                    {/if}
+                  {/snippet}
+                </NodeRow>
+              </button>
+              <button
+                type="button"
+                class="row-action"
+                data-testid="outline-place-node"
+                title="Place on Current Canvas"
+                onclick={() => placeNodeOnBoard(node.id)}
+              >
+                Place
+              </button>
             </div>
           </li>
         {/each}
         {#if !tagFilter}
           {#each looseNotes as note (note.id)}
             <li>
-              <div class="row" data-testid="loose-note-row" data-note-id={note.id}>
+              <div
+                class="row"
+                data-testid="loose-note-row"
+                data-note-id={note.id}
+                draggable="true"
+                ondragstart={(event) => beginRowDrag(event, NOTE_DRAG_MIME, note.id)}
+              >
                 <span class="caret-space"></span>
-                <span class="glyph" title="note">¶</span>
-                <span class="title">{note.title}</span>
-                <span class="badge" data-testid="badge-loose">loose</span>
+                <button
+                  type="button"
+                  class="row-main"
+                  data-testid="outline-row-activate"
+                  onclick={() => openNote(note.id)}
+                >
+                  <span class="glyph" title="note">¶</span>
+                  <span class="title">{note.title}</span>
+                  <span class="badge" data-testid="badge-loose">loose</span>
+                </button>
+                <button
+                  type="button"
+                  class="row-action"
+                  data-testid="outline-place-note"
+                  title="Place on Current Canvas"
+                  onclick={() => placeNoteOnBoard(note.id)}
+                >
+                  Place
+                </button>
               </div>
             </li>
           {/each}
@@ -442,6 +596,48 @@
 
   .row:hover {
     background: var(--ew-surface-raised);
+  }
+
+  /* Row body: the activation target (dive / open note). Inherits the
+     row grammar; disabled rows (bare nodes) read as plain rows. */
+  .row-main {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .row-main:disabled {
+    cursor: default;
+  }
+
+  /* Hover-revealed per-row action (opacity, not display — Playwright
+     and focus users still reach it). Inline after the row content,
+     NOT right-aligned: the chrome layer's charm rail floats over the
+     sheet's right edge and would swallow the clicks. */
+  .row-action {
+    flex: none;
+    margin-left: 0.3rem;
+    padding: 0 0.4rem;
+    opacity: 0;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text-muted);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 4px;
+    font-size: 0.68rem;
+    cursor: pointer;
+  }
+
+  .row:hover .row-action,
+  .row:focus-within .row-action {
+    opacity: 1;
   }
 
   .outline :global(.flash) {

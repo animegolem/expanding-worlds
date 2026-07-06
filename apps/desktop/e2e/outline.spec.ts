@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
-import { exec, launchApp } from './helpers'
+import { exec, launchApp, revealTitleStrip, revision, runQuery } from './helpers'
 import type { Page } from '@playwright/test'
 
 declare global {
@@ -134,6 +134,185 @@ test('outline: tree with alias rows, loose bin, and filter chips (§14.1)', asyn
   await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(1)
   await expect(rootSection.getByTestId('outline-child-row')).not.toContainText('Ruins Board')
   await expect(bin.getByTestId('loose-node-row')).toHaveCount(0)
+
+  await app.close()
+})
+
+/** Placements of one canvas, via the scene read model. */
+async function canvasPlacements(
+  win: Page,
+  canvasId: string,
+): Promise<Array<Record<string, unknown>>> {
+  const scene = await runQuery<{ items: Array<Record<string, unknown>> } | null>(
+    win,
+    'getCanvasScene',
+    { canvasId },
+  )
+  return (scene?.items ?? []).filter((item) => item['itemKind'] === 'placement')
+}
+
+/** Content commands since a revision — camera persistence commits at
+ * machine-dependent times and is not content (see slice.spec). */
+async function contentCommandsSince(win: Page, sinceRevision: number): Promise<string[]> {
+  const log = await runQuery<Array<{ commandType: string }>>(win, 'listCommandLog', {
+    sinceRevision,
+  })
+  return log.map((row) => row.commandType).filter((type) => type !== 'SetCanvasCamera')
+}
+
+/**
+ * AI-IMP-070 acceptance: outline rows are the §6.10 placement
+ * sources. Place on Current Canvas from the loose bin (slice item
+ * 21's recovered material), drag a note row onto the board at a
+ * specific point (one CreatePin, cleanly undoable), dive on canvas
+ * rows through navigateTo, open notes from note rows — and the
+ * interim Sources panel is gone from the title strip.
+ */
+test('outline placement flows: place, drag to board, dive, open note (§6.10)', async () => {
+  const { app, win } = await launchApp('ew-e2e-outline-place-')
+  const rootCanvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // Board A on the root (the dive target), one unplaced node in the
+  // loose bin, one zero-node note.
+  const nodeA = crypto.randomUUID()
+  const noteA = crypto.randomUUID()
+  const boardACanvasId = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: noteA, title: 'Ruins Board', body: '' })
+  await exec(win, 'CreateNode', { nodeId: nodeA })
+  await exec(win, 'AttachNoteToNode', { nodeId: nodeA, noteId: noteA })
+  const looseNodeId = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: looseNodeId })
+  const looseNoteId = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: looseNoteId, title: 'Adrift Thought', body: '' })
+  await exec(win, 'CreateCanvas', { canvasId: boardACanvasId, nodeId: nodeA })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: rootCanvasId,
+    nodeId: nodeA,
+  })
+
+  // ---- Place on Current Canvas from the loose bin: the takeover
+  // closes and exactly ONE CreatePlacement lands at the view center.
+  await win.getByTestId('charm-outline').click()
+  await expect(win.getByTestId('takeover-outline')).toBeVisible()
+  const revBeforePlace = await revision(win)
+  const expectedCenter = await win.evaluate(() => {
+    const cam = window.__ewDebug!.camera()
+    const rect = document.querySelector('[data-testid="canvas-host"]')!.getBoundingClientRect()
+    return { x: rect.width / 2 / cam.zoom + cam.x, y: rect.height / 2 / cam.zoom + cam.y }
+  })
+  await win
+    .locator(`[data-testid="loose-node-row"][data-node-id="${looseNodeId}"]`)
+    .getByTestId('outline-place-node')
+    .click()
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+  await expect
+    .poll(async () =>
+      (await canvasPlacements(win, rootCanvasId)).filter((p) => p['nodeId'] === looseNodeId),
+    )
+    .toHaveLength(1)
+  expect(await contentCommandsSince(win, revBeforePlace)).toEqual(['CreatePlacement'])
+  const recovered = (await canvasPlacements(win, rootCanvasId)).find(
+    (p) => p['nodeId'] === looseNodeId,
+  )!
+  expect(recovered['x'] as number).toBeCloseTo(expectedCenter.x, 0)
+  expect(recovered['y'] as number).toBeCloseTo(expectedCenter.y, 0)
+
+  // ---- Canvas rows dive via navigateTo: a history entry, not a
+  // camera trick.
+  await win.getByTestId('charm-outline').click()
+  await win
+    .locator(`[data-testid="outline-child-row"][data-node-id="${nodeA}"]`)
+    .getByTestId('outline-row-activate')
+    .click()
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.canvasId()))
+    .toBe(boardACanvasId)
+  const nav = await win.evaluate(() => ({
+    entries: window.__ewNav!.entries(),
+    cursor: window.__ewNav!.cursor(),
+  }))
+  expect(nav.cursor).toBe(1)
+  expect(nav.entries[1]!.canvasId).toBe(boardACanvasId)
+
+  // ---- Drag the loose note row onto the board: dragging past the
+  // row closes the takeover, and the drop lands ONE CreatePin at the
+  // drop's world point.
+  await win.getByTestId('charm-outline').click()
+  const revBeforeDrop = await revision(win)
+  const dropPoint = await win.evaluate((noteId) => {
+    const dt = new DataTransfer()
+    const row = document.querySelector(
+      `[data-testid="loose-note-row"][data-note-id="${noteId}"]`,
+    )!
+    const rowRect = row.getBoundingClientRect()
+    row.dispatchEvent(
+      new DragEvent('dragstart', {
+        dataTransfer: dt,
+        clientX: rowRect.left + 5,
+        clientY: rowRect.top + 5,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    // Past the row's edge: the board must become visible for the drop.
+    document.body.dispatchEvent(
+      new DragEvent('dragover', {
+        dataTransfer: dt,
+        clientX: rowRect.left + 5,
+        clientY: rowRect.bottom + 80,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    const host = document.querySelector('[data-testid="canvas-host"]')!
+    const rect = host.getBoundingClientRect()
+    const cam = window.__ewDebug!.camera()
+    host.dispatchEvent(
+      new DragEvent('drop', {
+        dataTransfer: dt,
+        clientX: rect.left + 240,
+        clientY: rect.top + 200,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    return { x: 240 / cam.zoom + cam.x, y: 200 / cam.zoom + cam.y }
+  }, looseNoteId)
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+  await expect.poll(async () => (await canvasPlacements(win, boardACanvasId)).length).toBe(1)
+  const pin = (await canvasPlacements(win, boardACanvasId))[0]!
+  expect(pin).toMatchObject({
+    appearanceKind: 'dot',
+    appearanceColor: '#8a94a0',
+    noteTitle: 'Adrift Thought',
+    labelVisible: 1,
+  })
+  expect(pin['x'] as number).toBeCloseTo(dropPoint.x, 0)
+  expect(pin['y'] as number).toBeCloseTo(dropPoint.y, 0)
+  expect(await contentCommandsSince(win, revBeforeDrop)).toEqual(['CreatePin'])
+
+  // One command per drop → its single inverse removes pin AND
+  // placement together; the ATTACHED note survives, loose again.
+  await exec(win, 'DeleteDraftPin', { nodeId: pin['nodeId'], placementId: pin['id'] })
+  await expect.poll(async () => (await canvasPlacements(win, boardACanvasId)).length).toBe(0)
+  const looseAgain = await runQuery<Array<{ id: string }>>(win, 'listLooseNotes')
+  expect(looseAgain.some((note) => note.id === looseNoteId)).toBe(true)
+
+  // ---- Note rows open the note panel.
+  await win.getByTestId('charm-outline').click()
+  await win
+    .locator(`[data-testid="loose-note-row"][data-note-id="${looseNoteId}"]`)
+    .getByTestId('outline-row-activate')
+    .click()
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+  await expect(win.getByTestId('note-pane')).toBeVisible()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Adrift Thought/)
+
+  // ---- The title strip no longer offers Sources (panel retired).
+  await revealTitleStrip(win)
+  await expect(win.getByTestId('toggle-sources')).toHaveCount(0)
 
   await app.close()
 })

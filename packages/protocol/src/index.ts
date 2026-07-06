@@ -83,6 +83,20 @@ export type ImportAssetResponse =
   | { type: 'import-asset'; ok: true; assetId: string; deduplicated: boolean }
   | { type: 'import-asset'; ok: false; code: string; message: string }
 
+/** §11.5 project-tier setting write (AI-IMP-074): deliberately a
+ * separate verb from execute-command — settings are preferences, not
+ * content edits, and never enter command history. Reads go through
+ * the ordinary run-query verb (getSettings). */
+export interface SetSettingRequest {
+  type: 'set-setting'
+  key: string
+  value: unknown
+}
+
+export type SetSettingResponse =
+  | { type: 'set-setting'; ok: true }
+  | { type: 'set-setting'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -90,6 +104,7 @@ export type ProjectRequest =
   | ExecuteCommandRequest
   | RunQueryRequest
   | ImportAssetRequest
+  | SetSettingRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -98,6 +113,7 @@ export type ProjectResponse =
   | ExecuteCommandResponse
   | RunQueryResponse
   | ImportAssetResponse
+  | SetSettingResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. */

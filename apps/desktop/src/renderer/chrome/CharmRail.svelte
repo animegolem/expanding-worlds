@@ -12,13 +12,21 @@
   import ConditionPanel from './ConditionPanel.svelte'
   import MenuPopover from './MenuPopover.svelte'
   import { PERCH_PULSE_MS } from './feel'
+  import { onSearchPanelChanged, toggleSearchPanel } from './search'
   import { onConditionsChanged, type Condition } from './status'
-  import { activeTakeover, onTakeoverChanged, toggleTakeover, type TakeoverKind } from './takeover'
+  import {
+    activeTakeover,
+    closeTakeover,
+    onTakeoverChanged,
+    toggleTakeover,
+    type TakeoverKind,
+  } from './takeover'
   import { tooltip } from './tooltip'
 
   let conditions = $state<readonly Condition[]>([])
   let panelOpen = $state(false)
   let menuOpen = $state(false)
+  let searchOpen = $state(false)
   let takeover = $state<TakeoverKind | null>(activeTakeover())
   $effect(() =>
     onConditionsChanged((next) => {
@@ -27,10 +35,12 @@
     }),
   )
   $effect(() => onTakeoverChanged((kind) => (takeover = kind)))
+  $effect(() => onSearchPanelChanged((state) => (searchOpen = state !== null)))
 
   type Charm = { id: string; glyph: string; name: string } & (
     | { state: 'deferred'; deferred: string }
     | { state: 'takeover'; kind: TakeoverKind }
+    | { state: 'search' }
     | { state: 'menu' }
   )
 
@@ -42,13 +52,7 @@
       state: 'deferred',
       deferred: 'arrives with the library (EPIC-014)',
     },
-    {
-      id: 'search',
-      glyph: '⌕',
-      name: 'Search',
-      state: 'deferred',
-      deferred: 'arrives with search (AI-IMP-073)',
-    },
+    { id: 'search', glyph: '⌕', name: 'Search', state: 'search' },
     { id: 'graph', glyph: '⊛', name: 'Graph', state: 'deferred', deferred: 'arrives with the graph epic' },
     {
       id: 'gallery',
@@ -72,6 +76,27 @@
         aria-pressed={takeover === charm.kind}
         data-testid={`charm-${charm.id}`}
         onclick={() => toggleTakeover(charm.kind)}
+        use:tooltip={{ name: charm.name }}
+      >
+        {charm.glyph}
+      </button>
+    {:else if charm.state === 'search'}
+      <!-- §8.3: panel physics anchored to this charm (the panel
+           itself mounts with the tag panel in CanvasHost). -->
+      <button
+        type="button"
+        class="charm"
+        class:active={searchOpen}
+        aria-pressed={searchOpen}
+        data-testid={`charm-${charm.id}`}
+        onclick={(event) => {
+          // Mode switch, not a dead click: a charm press while a
+          // takeover covers the board returns to the board first —
+          // the panel must never open beneath the cover (§8.2).
+          if (takeover !== null) closeTakeover()
+          const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+          toggleSearchPanel({ x: rect.left, y: rect.top })
+        }}
         use:tooltip={{ name: charm.name }}
       >
         {charm.glyph}

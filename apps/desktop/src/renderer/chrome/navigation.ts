@@ -15,6 +15,7 @@
  * checked at traversal time via getCanvasScene.
  */
 import type { CanvasHostHandle } from '../canvas/host'
+import { openSearchPanel } from './search'
 import { takeoverActive } from './takeover'
 
 export interface NavViewport {
@@ -164,6 +165,19 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
       void forward()
     }
   }
+  // §8.3 Mod+P quick-open: CAPTURE phase, so it works from board
+  // focus AND from inside an open note editor (CodeMirror's own
+  // keydown handlers run on the editor DOM before window-bubble
+  // listeners; capture on window runs before any of them).
+  const onQuickOpenKey = (event: KeyboardEvent): void => {
+    if (takeoverActive()) return
+    if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
+    if (event.key.toLowerCase() !== 'p') return
+    event.preventDefault()
+    event.stopPropagation()
+    openSearchPanel('quick', null)
+  }
+  window.addEventListener('keydown', onQuickOpenKey, true)
   // Mouse buttons 4/5 arrive as pointer buttons 3/4.
   const onPointerUp = (event: PointerEvent): void => {
     if (takeoverActive()) return
@@ -194,6 +208,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
   notify()
   return () => {
     window.removeEventListener('keydown', onKeydown)
+    window.removeEventListener('keydown', onQuickOpenKey, true)
     window.removeEventListener('pointerup', onPointerUp)
     offGesture()
     delete window.__ewNav
