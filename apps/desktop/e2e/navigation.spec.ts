@@ -180,6 +180,41 @@ test('bookmarks: add, jump with viewport, reorder rebinds Mod+n, order survives 
   await app.close()
 })
 
+test('Mod+D bookmarks the current board — the menu ＋ row’s twin (§8.1, AI-IMP-117)', async () => {
+  const { app, win } = await launchApp('ew-e2e-bookmark-modd-')
+
+  // Give the board a distinctive viewport, then bookmark with the
+  // keyboard alone — no menu opened. Mod+D dispatches the SAME
+  // CreateBookmark path as the ＋ row (bookmarks.bookmarkCurrentBoard).
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 321, y: 654, zoom: 1.5 }))
+  await win.keyboard.press('ControlOrMeta+d')
+
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-jump-0')).toHaveText('Home')
+  await expect(win.getByTestId('bookmark-shortcut-0')).toHaveText('⌘1')
+  // The captured viewport rides along, proving it went through the
+  // shared path (label = leaf crumb, viewport = live camera).
+  await win.keyboard.press('Escape')
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await win.keyboard.press('ControlOrMeta+Digit1')
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
+    .toEqual({ x: 321, y: 654, zoom: 1.5 })
+
+  await app.close()
+})
+
+test('migrated shortcuts still fire: Mod+P opens quick-open post-registry (§8.3, AI-IMP-117)', async () => {
+  const { app, win } = await launchApp('ew-e2e-modp-migrated-')
+  // The quick-open binding now resolves through matches(event,'quick-open');
+  // it must still summon the search panel in quick mode.
+  await win.keyboard.press('ControlOrMeta+p')
+  const panel = win.getByTestId('search-panel')
+  await expect(panel).toBeVisible()
+  await expect(panel).toHaveAttribute('data-mode', 'quick')
+  await app.close()
+})
+
 test('bookmarks degrade explicitly: In Trash greys with Restore, purged offers removal (§8.1)', async () => {
   const { app, win } = await launchApp('ew-e2e-bookmarks-stale-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())

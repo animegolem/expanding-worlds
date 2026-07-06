@@ -11,10 +11,10 @@
   vanishes.
 -->
 <script lang="ts">
-  import { uuidv7 } from '@ew/domain'
   import type { CanvasHostHandle } from '../canvas/host'
-  import { jumpToBookmark, listBookmarks, type BookmarkRow } from './bookmarks'
-  import { pathEntries } from './navigation'
+  import { KEY } from '../keys/bindings'
+  import { formatBinding } from '../keys/registry'
+  import { bookmarkCurrentBoard, jumpToBookmark, listBookmarks, type BookmarkRow } from './bookmarks'
   import { tooltip } from './tooltip'
 
   const { handle, onClose }: { handle: CanvasHostHandle; onClose: () => void } = $props()
@@ -77,13 +77,8 @@
   }
 
   async function addCurrent(): Promise<void> {
-    const label = pathEntries().at(-1)?.label ?? 'Board'
-    await handle.gateway.execute('CreateBookmark', {
-      bookmarkId: uuidv7(),
-      canvasId: handle.canvasId,
-      label,
-      viewport: handle.controller.camera.state(),
-    })
+    // §8.1: the ＋ row and the Mod+D shortcut share one command path.
+    await bookmarkCurrentBoard(handle)
     await refresh()
   }
 
@@ -226,7 +221,10 @@
     class="add"
     data-testid="bookmark-add"
     onclick={() => void addCurrent()}
-    use:tooltip={{ name: 'Bookmark this board with its current view' }}
+    use:tooltip={{
+      name: 'Bookmark this board with its current view',
+      shortcut: formatBinding(KEY.bookmarkCurrent),
+    }}
   >
     ＋ bookmark this board
   </button>

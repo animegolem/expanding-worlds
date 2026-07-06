@@ -130,6 +130,37 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   await second.app.close()
 })
 
+test('Keyboard section lists registered bindings by scope, read-only (§8.2, AI-IMP-117)', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-appcfg-keys-'))
+  const { app, win } = await launchApp('ew-e2e-settings-keys-', { EW_APP_CONFIG_DIR: configDir })
+
+  await openSettings(win)
+  await expect(win.getByTestId('settings-section-keyboard')).toBeVisible()
+
+  // The head states the plan rather than reading finished-and-limited.
+  await expect(win.getByTestId('settings-keyboard-note')).toContainText('Rebinding is coming soon')
+
+  // A binding from each scope renders with its platform-glyph combo
+  // (e2e runs on macOS → ⌘ glyphs). These come from formatCombo.
+  await expect(win.getByTestId('settings-key-combo-quick-open')).toHaveText('⌘P')
+  await expect(win.getByTestId('settings-key-combo-nav-back')).toHaveText('⌘[')
+  await expect(win.getByTestId('settings-key-combo-bookmark-jump')).toHaveText('⌘1–9')
+  // The new Mod+D binding is listed too (§8.1 rev 0.48).
+  await expect(win.getByTestId('settings-key-combo-bookmark-current')).toHaveText('⌘D')
+  await expect(win.getByTestId('settings-key-combo-board-send-front')).toHaveText('⇧⌘]')
+  await expect(win.getByTestId('settings-key-combo-tool-select')).toHaveText('V')
+  await expect(win.getByTestId('settings-key-combo-gallery-bucket-jump')).toHaveText('⌘↑ ↓')
+
+  // Read-only: the section holds no interactive controls (no buttons,
+  // inputs, or selects — unlike every other settings section).
+  const controls = win
+    .getByTestId('settings-section-keyboard')
+    .locator('button, input, select')
+  await expect(controls).toHaveCount(0)
+
+  await app.close()
+})
+
 test('charm corner flips existing hint charms live (§11.5)', async () => {
   const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-appcfg-corner-'))
   const { app, win } = await launchApp('ew-e2e-settings-corner-', {
