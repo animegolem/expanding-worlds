@@ -17,6 +17,12 @@ import { registerNoteHandlers } from './handlers/notes'
 import { registerPinHandlers } from './handlers/pin'
 import { registerPlacementHandlers } from './handlers/placements'
 import { registerTagHandlers } from './handlers/tags'
+import {
+  claimNextThumbnailJob,
+  completeThumbnailJob,
+  enqueueMissingThumbnails,
+  type ThumbnailJob,
+} from './import/derivatives'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
@@ -50,6 +56,15 @@ export interface ProjectService {
   subscribe(fn: (event: ProjectChangedEvent) => void): () => void
   /** Staged asset import per §11.2; throws DomainError on rejection. */
   importAsset(input: ImportInput): Promise<ImportResult>
+  /** §11.2 derivative queue, renderer-driven (AI-IMP-076): the
+   * oldest queued thumbnail job, or null when drained. */
+  claimThumbnailJob(): ThumbnailJob | null
+  /** Lands generated thumbnail bytes (null = generation failed). */
+  completeThumbnailJob(input: {
+    jobId: string
+    contentHash: string
+    bytes: Uint8Array | null
+  }): void
   /** §11.4 startup recovery outcome for this open. */
   recovery(): RecoveryReport
   close(): void
@@ -103,6 +118,12 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
     rootCanvasId: handle.rootCanvasId,
   }
 
+  // §11.4 lazy rebuild: missing thumbnail derivatives re-enqueue on
+  // every open (deleted derivatives dir, pre-076 project). The
+  // renderer drains the queue in the background once a window is up.
+  const derivCtx = { db: handle.db, now: () => new Date().toISOString() }
+  enqueueMissingThumbnails(derivCtx, handle.dir)
+
   return {
     info(): ProjectInfo {
       const revision = handle.db.get<{ project_revision: number }>(
@@ -132,6 +153,8 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
         },
         input,
       ),
+    claimThumbnailJob: () => claimNextThumbnailJob(derivCtx, handle.dir),
+    completeThumbnailJob: (input) => completeThumbnailJob(derivCtx, handle.dir, input),
     close: () => handle.close(),
   }
 }

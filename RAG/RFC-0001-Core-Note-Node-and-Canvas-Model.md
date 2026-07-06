@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.26         | 6 July 2026      |
+| Accepted for Phase 1 | 0.27         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -560,10 +560,17 @@ warn the original is lost. Batch imports offer apply-to-queue and
 remember-choice options. Adapters are versioned, declare the source
 patterns they claim, may be built in (image codec) or externally
 configured (yt-dlp-style endpoints), and stay outside the core domain
-model; the auto-optimize threshold is an application preference. The
-conversion adapters need a main-process image codec — the same
-dependency as the deferred thumbnail and tile derivatives, so one
-codec ticket unlocks all three.
+model; the auto-optimize threshold is an application preference.
+Thumbnail derivatives ride the RENDERER's Chromium codecs (rev
+0.27, AI-IMP-076): the renderer claims queued jobs, decodes/
+resizes/encodes WebP-with-alpha, and submits bytes back to the
+project service, which owns the queue and the files — zero native
+dependencies, and the thumbnail format envelope can never drift
+from what the board displays. Generation therefore needs a live
+window; jobs queue and self-heal across opens. Conversion adapters
+(PSD and kin) still need their own decode dependency when they
+arrive — neither Chromium nor a stock native codec reads them, so
+that ticket stands alone.
 
 ## 4.8 Tags
 
@@ -2493,9 +2500,9 @@ without adding a library concept to the domain:
   just a note; gone forever after clearing. The tutorial is made of
   the app's own furniture, which is itself the lesson.
 
-The gallery depends on the thumbnail derivative pipeline and its
-main-process image codec (§4.7's shared-codec note). Watched
-directories stay deferred separately. One library surface still
+The gallery depends on the thumbnail derivative pipeline —
+renderer-generated over Chromium codecs, service-owned files (rev
+0.27, §4.7). Watched directories stay deferred separately. One library surface still
 awaits its design turn and is an open question: the OS-drop
 importer dialogue as the third compression.
 
@@ -3392,3 +3399,9 @@ Accepted for the Phase 1 prototype:
   preview; Mod+A selects the current filter scope; Enter is the
   kind-appropriate primary action; Escape peels selection before
   the takeover; Mod+Up/Down jump buckets under date sort.
+
+- Thumbnails ride the renderer's Chromium codecs (rev 0.27, §4.7):
+  renderer claims → decodes/resizes → WebP-with-alpha → service
+  owns queue and files; zero native dependencies, format envelope
+  identical to the board's by construction, generation needs a
+  live window, unclaimed jobs self-heal across opens.

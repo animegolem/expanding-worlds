@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
-import { blobRelativePath } from '@ew/persistence'
+import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
 import { assertPublicHost } from './net-guard'
 import type {
   ProjectRequest,
@@ -105,6 +105,15 @@ function startUtility(): void {
       }
       return
     }
+    if (message.kind === 'thumbnail-ready') {
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('asset:thumbnail-ready', {
+          assetId: message.assetId,
+          contentHash: message.contentHash,
+        })
+      }
+      return
+    }
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send('project:event', message.event)
     }
@@ -182,6 +191,7 @@ function setAppSetting(key: string, value: unknown): void {
  */
 let projectReady = false
 const ASSET_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/?$/
+const THUMB_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/thumb\/?$/
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -193,6 +203,27 @@ protocol.registerSchemesAsPrivileged([
 function registerAssetProtocol(): void {
   protocol.handle('ew-asset', async (request) => {
     if (!projectReady) return new Response('no project open', { status: 503 })
+    // <hash>/thumb serves the WebP derivative (AI-IMP-076); 404 when
+    // not (yet) generated — the renderer falls back to the original.
+    // Derivatives regenerate, so no immutable cache header here.
+    const thumb = THUMB_URL_RE.exec(request.url)
+    if (thumb) {
+      try {
+        const file = await net.fetch(
+          pathToFileURL(join(projectDir(), thumbnailRelativePath(thumb[1]!))).toString(),
+        )
+        if (!file.ok) return new Response('no thumbnail', { status: 404 })
+        return new Response(file.body, {
+          headers: {
+            'content-type': 'image/webp',
+            'cache-control': 'public, max-age=3600',
+            'access-control-allow-origin': '*',
+          },
+        })
+      } catch {
+        return new Response('no thumbnail', { status: 404 })
+      }
+    }
     const match = ASSET_URL_RE.exec(request.url)
     // The regex is the traversal guard: only a bare hex hash resolves.
     if (!match) return new Response('bad asset url', { status: 400 })
@@ -458,6 +489,18 @@ void app.whenReady().then(() => {
       }),
   )
   ipcMain.handle('project:fetch-url', (_event, url: string) => fetchUrlForImport(String(url)))
+  ipcMain.handle('project:claim-thumbnail-job', () => callUtility({ type: 'claim-thumbnail-job' }))
+  ipcMain.handle(
+    'project:submit-thumbnail',
+    (_event, input: { jobId: string; assetId: string; contentHash: string; bytes: Uint8Array | null }) =>
+      callUtility({
+        type: 'submit-thumbnail',
+        jobId: input.jobId,
+        assetId: input.assetId,
+        contentHash: input.contentHash,
+        bytes: input.bytes,
+      }),
+  )
   ipcMain.handle('project:set-setting', async (_event, key: string, value: unknown) => {
     const response = await callUtility({ type: 'set-setting', key: String(key), value })
     if ('ok' in response && response.ok) {

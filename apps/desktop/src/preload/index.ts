@@ -2,12 +2,16 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { uuidv7 } from '@ew/domain'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
 import type {
+  ClaimThumbnailJobResponse,
   ExecuteCommandResponse,
   ImportAssetResponse,
   PingResponse,
   RunQueryResponse,
   ServiceStatusEvent,
   SetSettingResponse,
+  SubmitThumbnailResponse,
+  ThumbnailJobInfo,
+  ThumbnailReadyEvent,
 } from '@ew/protocol'
 
 export type FetchUrlForImportResult =
@@ -122,6 +126,30 @@ const api = {
         callback(status)
       ipcRenderer.on('project:service', listener)
       return () => ipcRenderer.removeListener('project:service', listener)
+    },
+  },
+  /** §11.2 renderer-driven thumbnail pipeline (AI-IMP-076): the
+   * renderer claims queued jobs, generates WebP thumbnails with
+   * Chromium codecs, and submits bytes back to the utility. */
+  derivatives: {
+    claimThumbnailJob: async (): Promise<ThumbnailJobInfo | null> => {
+      const response = (await ipcRenderer.invoke(
+        'project:claim-thumbnail-job',
+      )) as ClaimThumbnailJobResponse
+      return response.ok ? response.job : null
+    },
+    submitThumbnail: (input: {
+      jobId: string
+      assetId: string
+      contentHash: string
+      bytes: Uint8Array | null
+    }): Promise<SubmitThumbnailResponse> =>
+      ipcRenderer.invoke('project:submit-thumbnail', input) as Promise<SubmitThumbnailResponse>,
+    onThumbnailReady: (callback: (event: ThumbnailReadyEvent) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, ready: ThumbnailReadyEvent): void =>
+        callback(ready)
+      ipcRenderer.on('asset:thumbnail-ready', listener)
+      return () => ipcRenderer.removeListener('asset:thumbnail-ready', listener)
     },
   },
 }

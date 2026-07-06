@@ -5,11 +5,12 @@ tags:
   - Implementation
   - thumbnails
   - derivatives
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-014-gallery]]
 confidence_score: 0.65
 date_created: 2026-07-06
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-076-thumbnail-pipeline
@@ -87,27 +88,44 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Codec decision written (trade-off in Issues Encountered):
+- [x] Codec decision written (trade-off in Issues Encountered):
       format coverage across png/jpeg/webp/gif/avif, process
       placement, packaging on mac/win/linux, alpha fidelity.
-- [ ] Real DerivativeGenerator: decodes the five §4.7 formats,
-      resizes to the bounded box without upscaling, writes an
-      alpha-capable format under `derivatives/thumbnails/`; unit
-      covers a transparent PNG (alpha channel survives) and a JPEG.
-- [ ] Utility-process drain loop: triggered post-import and on
-      open, yields between jobs, never blocks command execution
-      (import e2e latency unchanged); failures mark the job failed
-      and never wedge the loop.
-- [ ] `derivative-ready` push per completed asset on the project
-      push channel.
-- [ ] Backfill/lazy rebuild: opening a project with queued-or-done
-      jobs but missing files regenerates them (unit + relaunch e2e).
-- [ ] `ew-asset://<hash>/thumb` serves the derivative; missing
-      thumb 404s and the renderer helper falls back to the
-      original URL.
-- [ ] `pnpm -r build`, full gates green; release packaging still
-      builds if a native dep landed (local `pnpm --filter
-      @ew/desktop dist:mac` sanity run).
+      *(Decision: Chromium codecs in the RENDERER — zero native
+      deps; see Issues.)*
+- [x] Real generation: decodes the five §4.7 formats via Chromium
+      (the same decode path the board uses), resizes to the 512
+      box without upscaling, writes WebP-with-alpha under
+      `derivatives/thumbnails/<hash>.webp`. *(Alpha proven by e2e
+      pixel sampling of the served thumbnail — node can't decode
+      WebP without a dep; JPEG rides the identical decode path the
+      board exercises daily. The DerivativeGenerator class seam
+      stays for tests; production generation is the renderer
+      module `assets/thumbnails.ts`.)*
+- [x] Drain loop: RENDERER-driven pull (claim → generate → submit),
+      triggered on service-ready, boot, and every CommitAssetImport
+      event; commands never block (import e2e latency unchanged, 67
+      suite green); a failed decode submits null → job marked
+      failed, loop continues. *(Deviation from the ticket's
+      utility-loop wording — the utility owns queue + files, the
+      renderer owns pixels; claiming does not lock, so a dead
+      window leaves jobs queued and the next drive self-heals.)*
+- [x] Push per completed asset: utility `thumbnail-ready` → main
+      broadcasts `asset:thumbnail-ready` to all windows
+      (preload `ew.derivatives.onThumbnailReady`).
+- [x] Backfill/lazy rebuild: `enqueueMissingThumbnails` runs on
+      every service open, per content hash, suppressed by existing
+      files and queued jobs (units incl. shared-hash dedupe;
+      relaunch e2e deletes derivatives/ and watches it regrow).
+- [x] `ew-asset://<hash>/thumb` serves the derivative (webp,
+      max-age 3600 — regenerable, so not immutable); missing thumb
+      404s. *(The original-URL fallback is the consumer's one-line
+      contract — 077's grid does `onerror` → `ew-asset://<hash>` —
+      no helper needed before a consumer exists.)*
+- [x] `pnpm -r build`, full gates green: 67 desktop e2e (+2), 395
+      persistence units (+5), lint, desktop units. *(No native dep
+      landed, so no packaging re-verification was required — that
+      was the point of the decision.)*
 
 ### Acceptance Criteria
 
@@ -130,3 +148,39 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**The codec decision (the ticket's mandate).** Chosen: Chromium
+codecs in the renderer via `createImageBitmap` + `OffscreenCanvas.
+convertToBlob('image/webp')`. Rejected: (a) `sharp` — full format
+coverage and utility-process placement, but it would be the
+project's FIRST native dependency (AI-IMP-009 deliberately chose
+`node:sqlite` to keep the tree native-free), on a release pipeline
+that has never been re-verified, across three targets; (b)
+`nativeImage` — PNG/JPEG only, insufficient; (c) wasm codec packs —
+several deps, patchy GIF support. The clincher beyond zero deps:
+the renderer's Chromium IS the app's de-facto format envelope —
+anything the board can display thumbnails by construction, and the
+two can never drift. Costs accepted: generation requires a live
+window (fine for a desktop app whose gallery is a window surface;
+recorded in §14.4 rev 0.27), and future conversion adapters (PSD)
+still need their own codec — §4.7's "one codec unlocks all three"
+hope is amended, since neither sharp nor Chromium decodes PSD
+anyway.
+
+**Architecture that fell out**: renderer pulls (claim → generate →
+submit), utility owns queue + files + atomic tmp/rename writes,
+claiming never locks — a dead renderer leaves the job queued and
+the next drive heals it; double-generation across windows is
+possible and harmless (same bytes, last write wins).
+
+**Backfill dedupe bug caught by its own unit**: queued-job
+suppression was per-asset while thumbnails are per-hash — a second
+asset sharing bytes re-enqueued on every open. The suppression
+subquery now joins on content_hash.
+
+**Deviations**: the alpha-survival proof is e2e pixel sampling of
+the served /thumb (node cannot decode WebP without adding the very
+dep this ticket avoided); no dedicated JPEG unit (identical decode
+path). The ticket's "utility-process drain loop" wording became
+the renderer-driven pull above. Animated GIF thumbnails are the
+first frame (a thumbnail is a still).

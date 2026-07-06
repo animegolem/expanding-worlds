@@ -95,11 +95,16 @@ export {
   importTempDir,
   importTempRelativeDir,
   moveIntoStore,
+  thumbnailPath,
+  thumbnailRelativePath,
 } from './import/store'
 export { SNIFF_HEADER_BYTES, sniff, type SniffResult, type SniffedFormat } from './import/sniff'
 export {
   NoopThumbnailGenerator,
   claimNextJob,
+  claimNextThumbnailJob,
+  completeThumbnailJob,
+  enqueueMissingThumbnails,
   enqueueThumbnail,
   markJobDone,
   markJobFailed,
@@ -107,4 +112,5 @@ export {
   type DerivativeCtx,
   type DerivativeGenerator,
   type DerivativeJob,
+  type ThumbnailJob,
 } from './import/derivatives'

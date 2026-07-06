@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 2 |
-| Planned | 3 | 6 |
+| Planned | 3 | 5 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 10 | 73 |
+| Completed | 10 | 74 |
 | **Total** | **15** | **81** |
 
 ## In Progress
@@ -40,7 +40,7 @@
 > Reference material is only visible where it is placed. A project
 
 **IMPs:**
-- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — planned
+- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
 - [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — planned
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
@@ -65,7 +65,7 @@
 > The first outside tester's reference library lives in Allusion,
 
 **IMPs:**
-- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — planned
+- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
 - [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — planned
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
@@ -88,7 +88,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3375 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3407 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (840 LOC)
@@ -107,12 +107,12 @@ Generated from tracked files; binary assets excluded.
 
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
+- apps/desktop/src/main/index.ts (555 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (521 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
-- apps/desktop/src/main/index.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
@@ -152,7 +152,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>10 EPICs, 73 IMPs completed</summary>
+<summary>10 EPICs, 74 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

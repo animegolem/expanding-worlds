@@ -131,8 +131,10 @@ importer dialogue (open question 27) stays deferred.
   derivatives and never authoritative (§11.2, §14.4 guardrail).
 - The grid must virtualize: memory and paint cost scale with the
   viewport, not the collection.
-- Thumbnail generation is main-process work (§13.2 process layout);
-  the renderer never decodes originals for grid cells.
+- Grid cells never decode originals — they load thumbnails, with a
+  one-line onerror fallback to the original URL. (Generation itself
+  is renderer work over Chromium codecs per the 076 decision, rev
+  0.27 §4.7 — one decode per asset, off the grid's hot path.)
 - Gallery queries stay read-model projections beside the outline's
   (§14.1 precedent); takeovers scope to one project ID (§8.2).
 - The codec choice is a versioned, replaceable dependency — decide

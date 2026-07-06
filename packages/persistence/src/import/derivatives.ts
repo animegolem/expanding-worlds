@@ -1,14 +1,23 @@
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { uuidv7 } from '@ew/domain'
 import type { Db } from '../db'
+import { thumbnailPath } from './store'
 
 /**
  * Derivative job queue (RFC-0001 §11.2): thumbnails are regenerable
- * derivatives tracked in derivative_jobs. Phase 1 lands the queue and
- * a pluggable generator seam; actual pixel resizing needs an image
- * codec (native dep or heavy pure-JS decode) and is explicitly
- * deferred — NoopThumbnailGenerator marks jobs done without producing
- * files, and §11.4 recovery rebuilds missing derivatives lazily once
- * a real generator exists.
+ * derivatives tracked in derivative_jobs. The queue and the
+ * pluggable generator seam landed with the pipeline; AI-IMP-076
+ * added the real generation path — RENDERER-driven (Chromium
+ * decodes every §4.7 format the board can display; zero native
+ * deps, preserving the AI-IMP-009 stance): the renderer claims the
+ * oldest queued job, decodes/resizes/encodes WebP with alpha, and
+ * submits bytes back; this module owns claim/complete/backfill on
+ * the DB-and-files side. Claiming does not lock — a job leaves
+ * 'queued' only via done/failed, so a generator that dies mid-work
+ * leaves the job claimable and the pipeline self-heals.
+ * NoopThumbnailGenerator remains for tests that exercise the queue
+ * without producing files.
  */
 
 /** Minimal context for queue accessors: the pipeline calls them from
@@ -66,6 +75,93 @@ export function markJobFailed(ctx: DerivativeCtx, jobId: string): void {
     ctx.now(),
     jobId,
   )
+}
+
+/** What a generator needs: the job plus its asset's identity. */
+export interface ThumbnailJob {
+  jobId: string
+  assetId: string
+  contentHash: string
+  mimeType: string
+}
+
+/**
+ * Oldest queued thumbnail job joined with its asset, skipping (and
+ * completing) jobs whose derivative file already exists — assets
+ * sharing bytes share one thumbnail, so only the first job per hash
+ * costs a decode. Returns null when the queue is drained.
+ */
+export function claimNextThumbnailJob(ctx: DerivativeCtx, dir: string): ThumbnailJob | null {
+  for (;;) {
+    const job =
+      ctx.db.get<ThumbnailJob>(
+        `SELECT j.id AS jobId, j.asset_id AS assetId,
+                a.content_hash AS contentHash, a.mime_type AS mimeType
+         FROM derivative_jobs j
+         JOIN asset a ON a.id = j.asset_id
+         WHERE j.state = 'queued' AND j.kind = 'thumbnail'
+         ORDER BY j.created_at, j.id LIMIT 1`,
+      ) ?? null
+    if (!job) return null
+    if (!existsSync(thumbnailPath(dir, job.contentHash))) return job
+    markJobDone(ctx, job.jobId)
+  }
+}
+
+/**
+ * Lands submitted thumbnail bytes atomically (temp + rename beside
+ * the destination) and marks the job done; null bytes mark it
+ * failed (undecodable source — the grid falls back to the
+ * original). The thumbnails directory is recreated on demand: a
+ * user deleting derivatives/ must never wedge the pipeline.
+ */
+export function completeThumbnailJob(
+  ctx: DerivativeCtx,
+  dir: string,
+  input: { jobId: string; contentHash: string; bytes: Uint8Array | null },
+): void {
+  if (input.bytes === null || input.bytes.length === 0) {
+    markJobFailed(ctx, input.jobId)
+    return
+  }
+  const dest = thumbnailPath(dir, input.contentHash)
+  mkdirSync(dirname(dest), { recursive: true })
+  const tmp = `${dest}.tmp-${input.jobId}`
+  writeFileSync(tmp, input.bytes)
+  renameSync(tmp, dest)
+  markJobDone(ctx, input.jobId)
+}
+
+/**
+ * §11.4 lazy rebuild (AI-IMP-076): enqueue a thumbnail job for every
+ * active image asset whose derivative file is missing and which has
+ * no queued job — so a deleted derivatives directory (or a project
+ * predating the generator) regenerates on next open. One job per
+ * content hash; returns how many were enqueued.
+ */
+export function enqueueMissingThumbnails(ctx: DerivativeCtx, dir: string): number {
+  const assets = ctx.db.all<{ id: string; contentHash: string }>(
+    `SELECT a.id, a.content_hash AS contentHash
+     FROM asset a
+     WHERE a.kind = 'image' AND a.lifecycle_state = 'active'
+       AND NOT EXISTS (
+         SELECT 1 FROM derivative_jobs j
+         JOIN asset shared ON shared.id = j.asset_id
+         WHERE shared.content_hash = a.content_hash
+           AND j.kind = 'thumbnail' AND j.state = 'queued'
+       )
+     ORDER BY a.created_at, a.id`,
+  )
+  const seen = new Set<string>()
+  let enqueued = 0
+  for (const asset of assets) {
+    if (seen.has(asset.contentHash)) continue
+    seen.add(asset.contentHash)
+    if (existsSync(thumbnailPath(dir, asset.contentHash))) continue
+    enqueueThumbnail(ctx, asset.id)
+    enqueued += 1
+  }
+  return enqueued
 }
 
 /** Seam for the deferred real generator (image decode + resize into
