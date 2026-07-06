@@ -10,7 +10,7 @@ depends_on: [AI-IMP-059]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.8
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-066-toasts-and-perch

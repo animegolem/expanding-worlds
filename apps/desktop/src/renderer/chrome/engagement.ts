@@ -37,6 +37,9 @@ function leave(): void {
 
 function attach(): void {
   if (attached) return
+  // Unit tests exercise consumers (status.ts) under node — engagement
+  // is a browser concern and stays inert without a window.
+  if (typeof window === 'undefined') return
   attached = true
   window.addEventListener('pointermove', poke, { passive: true, capture: true })
   window.addEventListener('pointerdown', poke, { passive: true, capture: true })

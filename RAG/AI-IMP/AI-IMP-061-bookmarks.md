@@ -5,12 +5,12 @@ tags:
   - Implementation
   - navigation
   - persistence
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-060]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-061-bookmarks
