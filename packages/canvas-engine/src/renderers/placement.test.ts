@@ -1,14 +1,20 @@
 import { Graphics, Sprite, type Container, type Text } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 import { fakeResources, makePlacement } from '../test-helpers'
+import { itemWorldAABB } from '../hit-test'
 import {
   CARD_DEFAULT_HEIGHT,
   CARD_DEFAULT_WIDTH,
   DEFAULT_DOT_RADIUS,
+  LABEL_CLEARANCE_PX,
   LABEL_HEIGHT_RATIO,
+  LABEL_OUTLINE_GAP_PX,
+  SELECTION_OUTLINE_PAD_PX,
+  SELECTION_OUTLINE_STROKE_PX,
   cssColorToNumber,
   placementRenderer,
   setPlacementTextureResident,
+  syncPlacementLabelOffset,
 } from './placement'
 import { Texture } from 'pixi.js'
 import type { RendererResources } from './registry'
@@ -306,6 +312,77 @@ describe('placement labels (§4.5)', () => {
     })
     const object = placementRenderer.create(item, fakeResources())
     expect(labelOf(object)!.style.fontSize).toBeCloseTo(40 * LABEL_HEIGHT_RATIO)
+  })
+})
+
+describe('label / selection-outline clearance (AI-IMP-087)', () => {
+  function resourcesAtZoom(zoom: number): RendererResources {
+    return { ...fakeResources(), getZoom: () => zoom }
+  }
+
+  it('offsets the label by a screen-space clearance that scales with 1/zoom', () => {
+    const item = makePlacement({ noteTitle: 'Harbor', width: 100, height: 50 })
+    for (const zoom of [0.5, 1, 2, 4]) {
+      const object = placementRenderer.create(item, resourcesAtZoom(zoom))
+      // Local units: body half-height + clearance / (zoom × scale).
+      expect(labelOf(object)!.position.y).toBeCloseTo(25 + LABEL_CLEARANCE_PX / zoom)
+    }
+  })
+
+  it('divides out the container scale so the clearance stays screen-constant', () => {
+    const item = makePlacement({ noteTitle: 'Harbor', width: 100, height: 50, scale: 2 })
+    const object = placementRenderer.create(item, resourcesAtZoom(1))
+    // Local offset × scale 2 must land at h/2×2 + CLEARANCE in world.
+    expect(labelOf(object)!.position.y).toBeCloseTo(25 + LABEL_CLEARANCE_PX / 2)
+  })
+
+  it('never lets the label rect intersect the outline rect at zooms 0.5/1/2/4', () => {
+    const item = makePlacement({
+      noteTitle: 'The Gang',
+      width: 200,
+      height: 120,
+      x: 300,
+      y: 300,
+    })
+    const aabb = itemWorldAABB(item)!
+    for (const zoom of [0.5, 1, 2, 4]) {
+      const object = placementRenderer.create(item, resourcesAtZoom(zoom))
+      const label = labelOf(object)!
+      // World y of the label's top edge (anchor is top-center and the
+      // container is unrotated at scale 1: world = center + local).
+      const labelTopWorld = item.y + label.position.y
+      // The outline's outer reach beyond the body edge in world units:
+      // the screen-constant pad + stroke divided by zoom (§6.9).
+      const outlineOuterWorld =
+        aabb.y +
+        aabb.height +
+        (SELECTION_OUTLINE_PAD_PX + SELECTION_OUTLINE_STROKE_PX) / zoom
+      expect(labelTopWorld).toBeGreaterThan(outlineOuterWorld)
+      // And the gap between them is exactly the breathing gap on screen.
+      expect((labelTopWorld - outlineOuterWorld) * zoom).toBeCloseTo(LABEL_OUTLINE_GAP_PX)
+    }
+  })
+
+  it('syncPlacementLabelOffset repositions an existing label for a new zoom', () => {
+    const item = makePlacement({ noteTitle: 'Harbor', width: 100, height: 50 })
+    const object = placementRenderer.create(item, resourcesAtZoom(1))
+    syncPlacementLabelOffset(object, item, 4)
+    expect(labelOf(object)!.position.y).toBeCloseTo(25 + LABEL_CLEARANCE_PX / 4)
+    // No label (hidden): a no-op, never a crash.
+    const hidden = placementRenderer.create(
+      makePlacement({ noteTitle: 'Harbor', labelVisible: 0 }),
+      resourcesAtZoom(1),
+    )
+    expect(() => syncPlacementLabelOffset(hidden, item, 2)).not.toThrow()
+  })
+
+  it('keeps the clearance below the body under flipY (offset negated, not lost)', () => {
+    const item = makePlacement({ noteTitle: 'Harbor', width: 100, height: 50, flipY: 1 })
+    const object = placementRenderer.create(item, resourcesAtZoom(2))
+    // Container scale.y is −1, so the negated local offset maps back
+    // below the body in world space with the same clearance.
+    expect(labelOf(object)!.position.y).toBeCloseTo(-(25 + LABEL_CLEARANCE_PX / 2))
+    expect(labelOf(object)!.scale.y).toBe(-1)
   })
 })
 

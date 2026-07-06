@@ -21,6 +21,27 @@ export const LABEL_HEIGHT_RATIO = 0.14
 const LABEL_COLOR = 0xc8cfd8
 
 /**
+ * §6.9 selection outline geometry in SCREEN pixels (AI-IMP-087).
+ * Defined here — next to the label clearance that must out-reach
+ * them — and imported by the host's drawSelection, so the outline
+ * and the label clearance cannot drift apart. The multi-select AABB
+ * box pads the rect by PAD before stroking; the single-item oriented
+ * box hugs the corners (stroke only), so PAD + STROKE is the
+ * worst-case outer reach of the outline beyond the body edge.
+ */
+export const SELECTION_OUTLINE_PAD_PX = 2
+export const SELECTION_OUTLINE_STROKE_PX = 1.5
+/** Breathing room between the outline's outer edge and the label. */
+export const LABEL_OUTLINE_GAP_PX = 3
+/**
+ * Screen-space distance from the body edge to the label's near edge:
+ * outline pad + stroke + gap. Reserved whether or not the item is
+ * selected, so selecting never jumps the label.
+ */
+export const LABEL_CLEARANCE_PX =
+  SELECTION_OUTLINE_PAD_PX + SELECTION_OUTLINE_STROKE_PX + LABEL_OUTLINE_GAP_PX
+
+/**
  * §4.6 card appearance (rev 0.31, AI-IMP-084): the fixed chrome's
  * design size in world units. The chrome is laid out ONCE at this
  * size and the group scales onto the placement rect, so resize
@@ -327,7 +348,7 @@ function labelBasis(item: ScenePlacement): { height: number } {
  * the container as scale sign, so the label counter-flips to stay
  * readable and stays below the body in world space.
  */
-function syncLabel(container: Container, item: ScenePlacement): void {
+function syncLabel(container: Container, item: ScenePlacement, zoom: number): void {
   const existing = container.children.find((child) => child.label === 'label') as
     | Text
     | undefined
@@ -349,9 +370,34 @@ function syncLabel(container: Container, item: ScenePlacement): void {
     label.text = title
     label.style.fontSize = fontSize
   }
-  const flipY = item.flipY === 1
-  label.position.set(0, (labelBasis(item).height / 2 + fontSize * 0.35) * (flipY ? -1 : 1))
-  label.scale.set(item.flipX ? -1 : 1, flipY ? -1 : 1)
+  label.scale.set(item.flipX ? -1 : 1, item.flipY === 1 ? -1 : 1)
+  syncPlacementLabelOffset(container, item, zoom)
+}
+
+/**
+ * AI-IMP-087: hangs the label a constant SCREEN distance under the
+ * body edge — LABEL_CLEARANCE_PX / zoom in world units — so the §6.9
+ * screen-scale selection outline never runs through the §4.5
+ * world-scale label as zoom-out compresses world gaps. Divides out
+ * the container scale too (the label is a child, so item.scale
+ * applies on top of local units). The host re-applies this each cull
+ * pass: camera motion never re-runs renderer updates.
+ */
+export function syncPlacementLabelOffset(
+  object: Container,
+  item: ScenePlacement,
+  zoom: number,
+): void {
+  const label = object.children.find((child) => child.label === 'label')
+  if (!label) return
+  const scale = Math.abs(item.scale) || 1
+  const safeZoom = zoom > 0 ? zoom : 1
+  const clearanceLocal = LABEL_CLEARANCE_PX / (safeZoom * scale)
+  const offset = labelBasis(item).height / 2 + clearanceLocal
+  // flipY negates the container's y-scale; negating the local offset
+  // keeps the label below the body in world space (its own scale
+  // sign, set in syncLabel, un-mirrors the glyphs).
+  label.position.set(0, offset * (item.flipY === 1 ? -1 : 1))
 }
 
 /** In-place resize for image bodies: adjust the sprite (or its
@@ -376,7 +422,7 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
     container.label = `placement:${item.id}`
     buildBody(container, item, resources)
     applyTransform(container, item)
-    syncLabel(container, item)
+    syncLabel(container, item, resources.getZoom?.() ?? 1)
     return container
   },
   update(object, item, previous, resources) {
@@ -404,6 +450,6 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
       }
     }
     applyTransform(object, item)
-    syncLabel(object, item)
+    syncLabel(object, item, resources.getZoom?.() ?? 1)
   },
 }

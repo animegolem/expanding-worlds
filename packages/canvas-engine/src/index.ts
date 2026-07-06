@@ -24,7 +24,16 @@ export {
   type ItemRenderer,
   type RendererResources,
 } from './renderers/registry'
-export { DEFAULT_DOT_RADIUS, cssColorToNumber, placementRenderer } from './renderers/placement'
+export {
+  DEFAULT_DOT_RADIUS,
+  LABEL_CLEARANCE_PX,
+  LABEL_OUTLINE_GAP_PX,
+  SELECTION_OUTLINE_PAD_PX,
+  SELECTION_OUTLINE_STROKE_PX,
+  cssColorToNumber,
+  placementRenderer,
+  syncPlacementLabelOffset,
+} from './renderers/placement'
 export { BackgroundSync } from './renderers/background'
 export { Camera, MAX_ZOOM, MIN_ZOOM, type Point, type Rect } from './camera'
 export { CameraFlight, FLIGHT_DURATION_MS } from './camera-flight'

@@ -64,13 +64,13 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Label offset computed in screen space from outline stroke +
+- [x] Label offset computed in screen space from outline stroke +
       halo + gap constants.
-- [ ] Unit: offset scales with 1/zoom; label rect never intersects
+- [x] Unit: offset scales with 1/zoom; label rect never intersects
       outline rect at representative zooms.
-- [ ] e2e: selected labeled item at three zooms — label visible and
+- [x] e2e: selected labeled item at three zooms — label visible and
       clear of the outline.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -87,3 +87,32 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Spec correction: the summary calls the label "screen-scale text";
+  RFC §4.5 (rev 0.8) says the opposite — labels are WORLD-scale and
+  zoom with the canvas. The collision mechanism is the same shape
+  (world-scaled label gap vs screen-scale outline reach) and the fix
+  is as designed: the label's world offset below the body edge is now
+  LABEL_CLEARANCE_PX / zoom, so the on-screen distance is constant.
+- There is no outline "halo" constant: the selection outline in host
+  drawSelection was two literals — 2 px pad + 1.5 px stroke (the
+  single-item oriented poly has no pad). Both now live in
+  canvas-engine (SELECTION_OUTLINE_PAD_PX / _STROKE_PX) next to the
+  clearance math (LABEL_OUTLINE_GAP_PX = 3, LABEL_CLEARANCE_PX = 6.5)
+  and host imports them, so outline and clearance cannot drift apart.
+- Camera motion never re-runs renderer updates, so host re-applies
+  the offset per cull pass (applyLabelClearance, alongside the
+  AI-IMP-040 stroke clamp) using ephemeral gesture values when
+  present; renderers read live zoom via a new optional
+  RendererResources.getZoom (absent = 1 in tests/minimal hosts).
+- Card verified: the card title lives INSIDE the chrome
+  (buildCardBody) and syncLabel already skips appearanceKind 'card'
+  (an under-label would print the title twice) — cards untouched.
+- e2e cannot value-import @ew/canvas-engine (extensionless ESM dist
+  fails node resolution), so the running app exposes the shipped
+  constants via __ewDebug.outlineChrome plus labelBounds; the new
+  label-clearance.spec.ts asserts label top clears the outline band
+  by the breathing gap at zooms 0.5/1/2. Verified discriminating: the
+  old formula fails it at zoom 0.5.
+- RAG/INDEX.md not regenerated (out of this ticket agent's file
+  fence); lead should run generate-index.sh on merge.

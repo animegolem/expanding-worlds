@@ -16,10 +16,14 @@ import {
   LENS_RING_WIDTH_PX,
   renderStrokeWidth,
   itemWorldAABB,
+  LABEL_OUTLINE_GAP_PX,
   orientedCorners,
+  SELECTION_OUTLINE_PAD_PX,
+  SELECTION_OUTLINE_STROKE_PX,
   stageExtent,
   SceneSync,
   setPlacementTextureResident,
+  syncPlacementLabelOffset,
   TextureBudget,
   ToolManager,
   ToolOverlay,
@@ -126,6 +130,13 @@ declare global {
       /** AI-IMP-040: last clamp-applied render width, null if never
        * clamped away from the stored width. */
       renderedStroke: (id: string) => number | null
+      /** AI-IMP-087: the placement label's on-screen bounds (CSS px,
+       * stage frame) — null when the placement has no label. */
+      labelBounds: (id: string) => { x: number; y: number; width: number; height: number } | null
+      /** AI-IMP-087: outline/label clearance constants as shipped, so
+       * e2e asserts against the real numbers (workspace dist is not
+       * node-importable from a spec). */
+      outlineChrome: () => { pad: number; stroke: number; gap: number }
       /** §4.8 lens introspection + drive (AI-IMP-072). */
       lens: () => string[] | null
       setLens: (ids: string[]) => void
@@ -219,6 +230,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       release: (hash) => textureBudget.release(hash),
     },
     resolveObject: (id) => sync.get(id),
+    // Renderers position screen-constant chrome (the label's outline
+    // clearance) from the live zoom; safe because renderer calls only
+    // happen after mount completes (controller exists by then).
+    getZoom: () => controller.camera.zoom,
   }
   const sync: SceneSync = new SceneSync(planes.content, registry, resources)
   const maxTextureSize =
@@ -271,7 +286,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
           const pts = corners.map((c) => controller.camera.worldToScreen(c))
           selectionGfx
             .poly(pts.flatMap((p) => [p.x, p.y]))
-            .stroke({ width: 1.5, color: SELECTION_COLOR })
+            .stroke({ width: SELECTION_OUTLINE_STROKE_PX, color: SELECTION_COLOR })
           continue
         }
       }
@@ -282,9 +297,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         x: aabb.x + aabb.width,
         y: aabb.y + aabb.height,
       })
+      // Pad + stroke are engine constants (AI-IMP-087): the label's
+      // screen-space clearance is derived from the same numbers, so
+      // outline and label cannot drift into each other.
+      const pad = SELECTION_OUTLINE_PAD_PX
       selectionGfx
-        .rect(tl.x - 2, tl.y - 2, br.x - tl.x + 4, br.y - tl.y + 4)
-        .stroke({ width: 1.5, color: SELECTION_COLOR })
+        .rect(tl.x - pad, tl.y - pad, br.x - tl.x + pad * 2, br.y - tl.y + pad * 2)
+        .stroke({ width: SELECTION_OUTLINE_STROKE_PX, color: SELECTION_COLOR })
     }
   }
 
@@ -503,6 +522,24 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
   }
 
+  // AI-IMP-087: the label hangs a constant SCREEN distance below the
+  // body (its world offset is clearance / zoom), but renderer updates
+  // only run on scene changes — camera motion must re-derive the
+  // offset here, one cheap position.set per labeled placement.
+  function applyLabelClearance(): void {
+    const zoom = controller.camera.zoom
+    for (const canonical of controller.items()) {
+      if (canonical.itemKind !== 'placement') continue
+      const object = sync.get(canonical.id)
+      if (!object) continue
+      // Mid-gesture the display object tracks ephemeral values, like
+      // drawSelection: offset from what is actually on screen.
+      const item = ephemeral.get(canonical.id) ?? canonical
+      if (item.itemKind !== 'placement') continue
+      syncPlacementLabelOffset(object, item, zoom)
+    }
+  }
+
   let cullQueued = false
   function scheduleCull(): void {
     if (cullQueued) return
@@ -521,6 +558,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       })
       drawStageOrGrid()
       applyStrokeClamp()
+      applyLabelClearance()
     })
   }
 
@@ -786,6 +824,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const object = sync.get(id) as { __renderStroke?: number } | undefined
       return object?.__renderStroke ?? null
     },
+    labelBounds: (id: string) => {
+      const label = sync.get(id)?.children.find((child) => child.label === 'label')
+      if (!label) return null
+      const bounds = label.getBounds()
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+    },
+    outlineChrome: () => ({
+      pad: SELECTION_OUTLINE_PAD_PX,
+      stroke: SELECTION_OUTLINE_STROKE_PX,
+      gap: LABEL_OUTLINE_GAP_PX,
+    }),
     lens: () => controller.lens.ids(),
     setLens: (ids: string[]) => controller.lens.set(ids),
     clearLens: () => controller.lens.clear(),

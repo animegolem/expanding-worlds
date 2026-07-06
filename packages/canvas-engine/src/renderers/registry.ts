@@ -34,6 +34,12 @@ export interface RendererResources {
    * largest dimension exceeds its texture cap.
    */
   loadTileSource?: (url: string) => Promise<import('../background-tiles').TileTextureSource>
+  /**
+   * Current camera zoom, for screen-constant geometry computed inside
+   * renderers (the §4.5 label's outline clearance, AI-IMP-087).
+   * Optional: absent (tests, minimal hosts) means zoom 1.
+   */
+  getZoom?: () => number
 }
 
 export interface ItemRenderer<T extends SceneItem = SceneItem> {
