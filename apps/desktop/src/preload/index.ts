@@ -6,6 +6,7 @@ import type {
   CloseSecondaryResponse,
   ExecuteCommandResponse,
   ImportAssetResponse,
+  IngestFromSecondaryResponse,
   OpenSecondaryResponse,
   PingResponse,
   RunQueryResponse,
@@ -148,6 +149,14 @@ const api = {
       input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string },
     ): Promise<SecondaryImportResponse> =>
       ipcRenderer.invoke('secondary:import-asset', target, input) as Promise<SecondaryImportResponse>,
+    /** §14.4 ingest-by-copy (AI-IMP-090): pull one asset by content
+     * hash from the secondary into the PRIMARY, applying the tag
+     * border ('none' | 'all' | picked tag names). */
+    ingest: (
+      target: SecondaryTarget,
+      input: { contentHash: string; border: 'none' | 'all' | string[] },
+    ): Promise<IngestFromSecondaryResponse> =>
+      ipcRenderer.invoke('secondary:ingest', target, input) as Promise<IngestFromSecondaryResponse>,
   },
   /** §11.2 renderer-driven thumbnail pipeline (AI-IMP-076): the
    * renderer claims queued jobs, generates WebP thumbnails with
