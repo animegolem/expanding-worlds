@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.22         | 5 July 2026      |
+| Accepted for Phase 1 | 0.23         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1981,6 +1981,19 @@ exposing the project for editing. Missing regenerable derivatives are
 rebuilt lazily; missing canonical originals produce a visible integrity
 error.
 
+**The end-session surface (rev 0.23, deferred with scope).** An
+"End session" row on the ☰ menu is the deliberate put-it-away
+ritual: flush every open editor buffer (§10.2), regenerate the
+Obsidian vault mirror when enabled (§16), close the project, and
+release the single-writer lock — THEN the directory is safe for a
+cloud sync to take. This boundary exists because syncing a live
+SQLite database is dangerous (WAL files and file-coordination
+services do not mix mid-write): a project directory living in
+iCloud Drive or similar is survivable exactly when writes stop at a
+clean moment. Quit performs the same sequence (the §10.2 quit flush
+already does half of it); the button is the same ritual without
+leaving the app.
+
 The single-writer lock records holder pid and hostname with a
 heartbeat. A lock whose recorded holder is on the same host and whose
 pid provably no longer exists is reclaimable immediately, without
@@ -2016,7 +2029,8 @@ NOT settings. The Phase 1 inventory:
 
 - **Behavior:** charm corner (lower-right default · upper-right) ·
   chrome fade delay (slider · never) · snap to grid (when grid
-  snapping ships, §6.9) · mirror drops to library (per-project,
+  snapping ships, §6.9) · keep an Obsidian vault beside the
+  project (per-project, rev 0.23) · mirror drops to library (per-project,
   set by the first-drop ask, §14.4).
 
 - **Window:** title strip (hover-reveal · always · never) · border ·
@@ -2528,6 +2542,21 @@ honest about what survives (everything made) versus what dies
 - Every canvas exports as a full-resolution rendered image: the
   human-readable format of a board is a picture of it. Every
   arrangement ever made stays viewable forever, in anything.
+
+- **The standing vault mirror (rev 0.23, deferred with scope).**
+  With the settings line "keep an Obsidian vault beside the
+  project" on, ending a session regenerates the escape-hatch
+  export in place — the vault stops being a one-time exit and
+  becomes a continuously fresh mirror for people who like editing
+  prose in a richer text editor. The mirror is one-way on write;
+  the return path is a versioned importer over our OWN export
+  format (§4.7 adapter rules): on the next open, changed `.md`
+  files are detected against the export manifest (hash), and the
+  app offers to pull changed note BODIES back in per note — title
+  changes route through the §7.7 rename flow, links re-resolve
+  through the existing sweep. Anything richer than body-and-title
+  (vault-side file creation, canvas edits) is out of scope for the
+  mirror; the app remains authoritative.
 
 - Every canvas ALSO exports as a **JSON Canvas** `.canvas` file
   (rev 0.21) — the open format Obsidian's Canvas reads natively — so
@@ -3263,6 +3292,13 @@ Accepted for the Phase 1 prototype:
 
 - Option splits by moment (rev 0.21, §6.9): at drag start it
   duplicates; mid-drag it bypasses snapping.
+
+- The end-session surface (rev 0.23, deferred with scope, §11.4):
+  ☰ → End session = flush, optional vault regeneration, close,
+  release the lock — the clean boundary that makes cloud-synced
+  project directories safe. The vault mirror (§16) regenerates on
+  session end and gains a body-and-title pull-back importer over
+  our own export format on next open.
 
 - The gallery groups time instead of scrolling it (rev 0.22,
   §14.4): date sort renders bucketed sections (relative buckets
