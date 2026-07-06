@@ -14,6 +14,7 @@
   import Dock from './Dock.svelte'
   import PathBar from './PathBar.svelte'
   import TitleStrip from './TitleStrip.svelte'
+  import Toasts from './Toasts.svelte'
   import { onEngagementChanged } from './engagement'
   import { attachNavigation } from './navigation'
   import { CHROME_FADE_MS, CHROME_REST_OPACITY } from './feel'
@@ -46,6 +47,7 @@
   <PathBar />
   <CharmRail />
   <Dock {handle} {ui} {tooling} {hostElement} />
+  <Toasts {handle} />
 </div>
 
 <style>
