@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 1 | 0 |
 | Planned | 8 | 2 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 111 |
+| Completed | 13 | 112 |
 | **Total** | **22** | **115** |
 
 ## In Progress
@@ -53,7 +53,7 @@
 - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — completed
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — planned
-- [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — in-progress
+- [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — completed
 
 ---
 
@@ -182,7 +182,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 111 IMPs completed</summary>
+<summary>13 EPICs, 112 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
