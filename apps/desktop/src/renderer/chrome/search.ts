@@ -6,8 +6,12 @@
  * 'search' (the ⌕ charm — grouped full-text results with the leading
  * `#` tag mode) and 'quick' (Mod+P — title_key quick-open, no groups,
  * no `#`). Opening while open REPLACES mode and anchor; Escape and
- * the charm close it.
+ * the charm close it. A takeover opening closes it too (§8.2: the
+ * takeover owns the window; the panel is board chrome sharing its
+ * z-plane, so a survivor would float above the takeover).
  */
+
+import { onTakeoverChanged } from './takeover'
 
 export type SearchPanelMode = 'search' | 'quick'
 
@@ -62,3 +66,10 @@ export function onSearchPanelChanged(listener: Listener): () => void {
   listener(current)
   return () => listeners.delete(listener)
 }
+
+// The takeover store stays dependency-free; the panel retires itself.
+// (Fires immediately with the current takeover on module load — a
+// no-op close while nothing is open.)
+onTakeoverChanged((kind) => {
+  if (kind !== null) closeSearchPanel()
+})

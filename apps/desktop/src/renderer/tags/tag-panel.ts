@@ -6,8 +6,12 @@
  * the location chooser uses: client coords of the summoning control,
  * clamped into the host by the component. Opening while open REPLACES
  * tag and anchor; Escape closes (the component owns the layered
- * Escape: an active lens peels first).
+ * Escape: an active lens peels first). A takeover opening closes it
+ * too (§8.2: the takeover owns the window; the panel shares its
+ * z-plane and would otherwise float above it).
  */
+
+import { onTakeoverChanged } from '../chrome/takeover'
 
 export interface TagPanelAnchor {
   x: number
@@ -50,3 +54,10 @@ export function onTagPanelChanged(listener: Listener): () => void {
   listener(current)
   return () => listeners.delete(listener)
 }
+
+// The takeover store stays dependency-free; the panel retires itself.
+// (Fires immediately with the current takeover on module load — a
+// no-op close while nothing is open.)
+onTakeoverChanged((kind) => {
+  if (kind !== null) closeTagPanel()
+})

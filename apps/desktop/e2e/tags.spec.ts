@@ -23,6 +23,7 @@ interface TagWorld {
   carrierANodeId: string
   carrierBNodeId: string
   unplacedNodeId: string
+  untaggedNodeId: string
 }
 
 /** Root board: carrier A ("Watcher", noted) + an untagged node.
@@ -107,6 +108,7 @@ async function seedTagWorld(win: Page): Promise<TagWorld & { campTagId: string }
     carrierANodeId,
     carrierBNodeId,
     unplacedNodeId,
+    untaggedNodeId,
     campTagId,
   }
 }
@@ -150,6 +152,15 @@ test('charm-bar door: carriers with locations, lens toggle, layered Escape, cros
     await win.evaluate((id) => window.__ewDebug!.lensAlpha(id), world.otherPlacement),
   ).toBe(DIM)
   await expect(win.getByTestId('tag-panel-lens')).toHaveAttribute('aria-pressed', 'true')
+
+  // A live lens follows the carrier set: assigning the tag to the
+  // dimmed neighbor retargets the lens on the project-change refresh
+  // — it must not keep dimming yesterday's placements.
+  await exec(win, 'AssignTagToNode', { tagId: world.ruinsTagId, nodeId: world.untaggedNodeId })
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.lens()?.slice().sort() ?? null))
+    .toEqual([world.placementA, world.otherPlacement].sort())
+  await expect(panel.getByTestId('tag-panel-row')).toHaveCount(4)
 
   // Layered Escape, one layer per press: the lens peels first (the
   // toggle follows via onLensChanged; the panel stays), the panel

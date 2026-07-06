@@ -100,7 +100,15 @@
       if (lensOn) applyLens()
     })
   })
-  $effect(() => window.ew.project.onChanged(() => void refresh()))
+  // Project changes replace the view; a lens left on must retarget to
+  // the NEW carrier set or it keeps dimming yesterday's placements.
+  $effect(() =>
+    window.ew.project.onChanged(() =>
+      void refresh().then(() => {
+        if (lensOn) applyLens()
+      }),
+    ),
+  )
   $effect(() => handle.onSceneApplied(() => (activeCanvasId = handle.canvasId)))
 
   function completions(): Array<{ id: string; name: string }> {

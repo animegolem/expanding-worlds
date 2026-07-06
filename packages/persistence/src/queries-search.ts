@@ -25,8 +25,11 @@ export interface AssetSearchResult {
   filename: string
   /** Active nodes whose image appearance uses this asset (§8.3). */
   usingNodeIds: string[]
-  /** Active canvases using this asset as background. */
-  usingCanvasIds: string[]
+  /** Active canvases using this asset as background, labeled with
+   * the location grammar ('Home' for root, else the owning node's
+   * note title ?? short code) so the panel can render them as
+   * navigable rows. */
+  usingCanvases: Array<{ canvasId: string; canvasLabel: string }>
 }
 
 export interface CanvasTextSearchResult {
@@ -113,14 +116,25 @@ export function registerSearchQueries(registry: QueryRegistry): void {
             row.assetId,
           )
           .map((n) => n.id),
-        usingCanvasIds: ctx.db
-          .all<{ id: string }>(
-            `SELECT id FROM canvas
-             WHERE background_asset_id = ? AND lifecycle_state = 'active'
-             ORDER BY id`,
+        usingCanvases: ctx.db
+          .all<{ id: string; canvasNodeId: string; canvasNoteTitle: string | null; isRoot: number }>(
+            `SELECT c.id, c.node_id AS canvasNodeId,
+                    cnote.title AS canvasNoteTitle,
+                    CASE WHEN c.node_id = pr.root_node_id THEN 1 ELSE 0 END
+                      AS isRoot
+             FROM canvas c
+             JOIN project pr ON pr.id = c.project_id
+             LEFT JOIN node cn ON cn.id = c.node_id
+             LEFT JOIN note cnote ON cnote.id = cn.note_id
+               AND cnote.lifecycle_state = 'active'
+             WHERE c.background_asset_id = ? AND c.lifecycle_state = 'active'
+             ORDER BY c.id`,
             row.assetId,
           )
-          .map((c) => c.id),
+          .map((c) => ({
+            canvasId: c.id,
+            canvasLabel: c.isRoot === 1 ? 'Home' : (c.canvasNoteTitle ?? shortCode(c.canvasNodeId)),
+          })),
       }))
 
     const canvasText = ctx.db.all<CanvasTextSearchResult>(
@@ -128,6 +142,7 @@ export function registerSearchQueries(registry: QueryRegistry): void {
               snippet(canvas_text_fts, ${SNIPPET_ARGS}) AS snippet
        FROM canvas_text_fts
        JOIN decoration d ON d.rowid = canvas_text_fts.rowid
+       JOIN canvas c ON c.id = d.canvas_id AND c.lifecycle_state = 'active'
        WHERE canvas_text_fts MATCH ?
          AND d.project_id = ? AND d.lifecycle_state = 'active'
        ORDER BY rank`,

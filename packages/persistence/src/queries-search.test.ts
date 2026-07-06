@@ -163,7 +163,7 @@ describe('searchProject', () => {
         assetId,
         filename: 'cliffs_ref.png',
         usingNodeIds: [nodeA, nodeB].sort(),
-        usingCanvasIds: [],
+        usingCanvases: [],
       },
     ])
     expect(byAsset.notes).toEqual([])
@@ -199,16 +199,54 @@ describe('searchProject', () => {
     expect(entries).toEqual([{ kind: 'note', id: noteId, label: 'Harbor Wall' }])
   })
 
-  it('reports canvas background usage of a matched asset', () => {
+  it('reports canvas background usage of a matched asset as labeled, active canvases', () => {
     const assetId = commitAsset('vista.png')
     committed('SetCanvasBackground', {
       canvasId: handle.rootCanvasId,
       assetId,
       settings: null,
     })
+    // A second background canvas whose owning node has no note: the
+    // location grammar labels it by short code ('Home' is the root's).
+    const nodeId = createNode()
+    const canvasId = createCanvas(nodeId)
+    committed('SetCanvasBackground', { canvasId, assetId, settings: null })
     expect(search('vista').assets).toEqual([
-      { assetId, filename: 'vista.png', usingNodeIds: [], usingCanvasIds: [handle.rootCanvasId] },
+      {
+        assetId,
+        filename: 'vista.png',
+        usingNodeIds: [],
+        usingCanvases: [
+          { canvasId: handle.rootCanvasId, canvasLabel: 'Home' },
+          { canvasId, canvasLabel: shortCode(nodeId) },
+        ].sort((a, b) => (a.canvasId < b.canvasId ? -1 : 1)),
+      },
     ])
+    // Trashing a background canvas removes it from the hit (§9.5: the
+    // canvas row alone flips; the query must not surface it).
+    trash('canvas', canvasId)
+    expect(search('vista').assets[0]?.usingCanvases).toEqual([
+      { canvasId: handle.rootCanvasId, canvasLabel: 'Home' },
+    ])
+  })
+
+  it('excludes canvas-text hits on trashed canvases (§9.5 preserved aggregate)', () => {
+    const nodeId = createNode()
+    const canvasId = createCanvas(nodeId)
+    const decorationId = uuidv7()
+    committed('CreateDecoration', {
+      decorationId,
+      canvasId,
+      kind: 'text',
+      data: { text: 'driftwood sigil' },
+    })
+    expect(search('driftwood').canvasText).toHaveLength(1)
+    // §9.5 trash flips the canvas row alone — the decoration stays
+    // active, but the hit would navigate to a null scene.
+    trash('canvas', canvasId)
+    expect(search('driftwood').canvasText).toEqual([])
+    handle.db.run(`UPDATE canvas SET lifecycle_state = 'active' WHERE id = ?`, canvasId)
+    expect(search('driftwood').canvasText).toHaveLength(1)
   })
 
   it('excludes trashed records across all four corpora and needs no rebuild on restore', () => {

@@ -55,6 +55,15 @@
         canvasId: string
         canvasLabel: string
       }
+    | {
+        group: 'Assets'
+        kind: 'asset-bg'
+        id: string
+        label: string
+        detail: string
+        canvasId: string
+        canvasLabel: string
+      }
     | { group: 'Canvas text'; kind: 'canvas-text'; id: string; label: string; detail: string; canvasId: string }
     | { group: 'Tags'; kind: 'tag-completion'; id: string; label: string; detail: '' }
     | { group: 'Quick open'; kind: 'quick'; id: string; label: string; detail: string; entry: QuickOpenEntry }
@@ -178,13 +187,31 @@
     for (const tag of results.tags)
       flat.push({ group: 'Tags', kind: 'tag', id: tag.tagId, label: tag.name, detail: '' })
     for (const asset of results.assets) {
+      const parts = [`${asset.usingNodeIds.length} node${asset.usingNodeIds.length === 1 ? '' : 's'}`]
+      if (asset.usingCanvases.length > 0)
+        parts.push(
+          `${asset.usingCanvases.length} background${asset.usingCanvases.length === 1 ? '' : 's'}`,
+        )
       flat.push({
         group: 'Assets',
         kind: 'asset',
         id: asset.assetId,
         label: asset.filename,
-        detail: `${asset.usingNodeIds.length} node${asset.usingNodeIds.length === 1 ? '' : 's'}`,
+        detail: parts.join(' · '),
       })
+      // Background usage renders directly from the result — canvases
+      // are navigable without the per-node location fetch.
+      if (expanded[asset.assetId])
+        for (const bg of asset.usingCanvases)
+          flat.push({
+            group: 'Assets',
+            kind: 'asset-bg',
+            id: `bg-${bg.canvasId}`,
+            label: bg.canvasLabel,
+            detail: 'background',
+            canvasId: bg.canvasId,
+            canvasLabel: bg.canvasLabel,
+          })
       for (const node of expanded[asset.assetId] ?? []) {
         for (const placement of node.placements) {
           flat.push({
@@ -258,6 +285,11 @@
         if (row.placementId === '') break // loose node: nowhere to fly
         if (row.canvasId !== handle.canvasId) await navigateTo(row.canvasId, row.canvasLabel)
         requestCenterPlacements([row.placementId])
+        closeSearchPanel()
+        break
+      case 'asset-bg':
+        // A background is the canvas itself: open it, nothing to center.
+        if (row.canvasId !== handle.canvasId) await navigateTo(row.canvasId, row.canvasLabel)
         closeSearchPanel()
         break
       case 'canvas-text':
@@ -339,7 +371,7 @@
             type="button"
             class="row"
             class:cursor={index === cursor}
-            class:nested={row.kind === 'asset-loc'}
+            class:nested={row.kind === 'asset-loc' || row.kind === 'asset-bg'}
             role="option"
             aria-selected={index === cursor}
             data-testid="search-hit"
@@ -351,6 +383,8 @@
               <span class="twist">{expanded[row.id] ? '▾' : '▸'}</span>
             {:else if row.kind === 'asset-loc'}
               <span class="twist">⌖</span>
+            {:else if row.kind === 'asset-bg'}
+              <span class="twist">▣</span>
             {/if}
             <span class="label">{row.label}</span>
             {#if row.detail}

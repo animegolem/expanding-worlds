@@ -315,18 +315,16 @@
         'settings-row-menu-placement',
       )}
     {:else}
-      <div class="row" data-testid="settings-row-menu-placement">
-        <span class="row-label">☰ menu placement</span>
-        {@render segmented(
-          'settings-menu-placement',
-          [
-            { value: 'rail', label: 'Charm rail' },
-            { value: 'system', label: 'System bar' },
-          ],
-          settings.menuPlacement,
-          (value) => setAppSetting('menuPlacement', value as AppSettings['menuPlacement']),
-        )}
-      </div>
+      <!-- Nothing reads menuPlacement yet (no system-menu wiring in
+           CharmRail or main); a live control here would persist a
+           choice that visibly does nothing. Deferred like every
+           other unbuilt row until the wiring exists. -->
+      {@render deferredRow(
+        '☰ menu placement',
+        'charm rail',
+        'arrives with the system-menu wiring',
+        'settings-row-menu-placement',
+      )}
     {/if}
   </section>
 </div>
