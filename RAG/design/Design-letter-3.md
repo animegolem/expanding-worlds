@@ -108,6 +108,16 @@ mechanics, roughly ordered by how much build work they unblock.
 14. **Frames** (EPIC-017, rev 0.38): hover-dim membership,
     sort-on-drop defaults — interaction design turn before the
     epic activates.
+15. **The lit stage and the void** (rev 0.50, §6.7,
+    PureRef-inspired): on boards without a background image, the
+    area your content occupies (bounding box + padding) renders in
+    the board's background color; beyond it lies a darker void
+    with a dimmed grid. It grows as you push items outward and
+    never retreats mid-session. Mechanics are ratified; the LOOK
+    is yours: how much darker the void steps (a derived theme
+    token, not a second color), padding generosity, whether the
+    edge is hard, soft, or vignetted, corner treatment, and how
+    the first placement's "bloom" on an empty board should feel.
 
 ## Constraints the design must honor (load-bearing, not taste)
 

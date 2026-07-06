@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.49         | 6 July 2026      |
+| Accepted for Phase 1 | 0.50         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1221,6 +1221,31 @@ Because normalization governs proportions, not fidelity, setting a
 background whose native width falls below a smallness threshold SHOULD
 raise a non-blocking notice that the image may look soft as a
 background; the set still proceeds (rev 0.12).
+
+**Content defines the stage when no background image does (rev 0.50,
+PureRef-inspired).** On a board with no background image, the stage
+extent derives from content: the lit region is the bounding box of
+all placements and decorations plus a padding margin, rendered in
+the canvas background color, and beyond it the same distinct void
+applies — the grid runs through both, dimmed in the void. The extent
+is a ratchet within a session: it grows live (pushing an item past
+an edge drags that edge outward, eased rather than snapped) and
+never retreats during ordinary work, so rearranging inward cannot
+visibly shrink the world. On board open the extent recomputes snug
+around content, which keeps the rule fully derivable from live
+state: no persisted extent, no migration, and deletions self-heal at
+the next open. An empty board is all void until the first placement
+blooms a lit area around it — placing something is what makes the
+world. Presentation only, as with the image stage: placements remain
+legal anywhere in the void and the camera is never clamped; zoom to
+fit with no selection frames this extent exactly as it frames an
+image stage. Open design space: a shrink-on-demand affordance
+(naturally riding zoom-to-fit) and a persist-the-ratchet toggle if
+the across-sessions feel is wanted. Visual constants — void
+luminance step, padding size, corner treatment — are design-pass
+scope (Design-letter-3 item 15); the void tone derives from the
+chosen background color via a theme token, never a second raw
+color.
 
 ## 6.8 Draw, connect, order, and group
 
@@ -4040,3 +4065,13 @@ Accepted for the Phase 1 prototype:
   passive teaching moment; single placements run without the ask.
   (0.49 also carries the design-assets pointer move to
   RAG/design/.)
+
+- Content defines the stage (rev 0.50, §6.7, PureRef-inspired):
+  boards without a background image derive their stage extent from
+  the content bounding box plus padding — lit in the canvas color,
+  the ratified void beyond, grid dimmed past the edge. Ratchet
+  semantics: the extent grows live while working and never retreats
+  mid-session; it recomputes snug around content on board open, so
+  nothing is persisted and nothing migrates. An empty board is all
+  void until the first placement lights it. Visual treatment is
+  design-pass scope (Design-letter-3 item 15).
