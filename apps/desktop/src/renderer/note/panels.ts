@@ -9,7 +9,7 @@
  * A note already showing in a pinned panel never opens twice — the
  * request focuses that panel instead (one buffer per note).
  */
-import { itemWorldAABB } from '@ew/canvas-engine'
+import { itemWorldAABB, type ScreenInset } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from '../canvas/host'
 import { navigateTo } from '../chrome/navigation'
 import { toast } from '../chrome/status'
@@ -95,6 +95,34 @@ function notify(): void {
 
 function tethered(): PanelRecord | null {
   return records.find((record) => !record.pinned) ?? null
+}
+
+/** §8.5 tether feel constants (mirror of NotePanel.layout): a tethered
+ * panel's left edge sits GAP px right of its node's right edge, and we
+ * keep the same clearance from the window edge on the far side. */
+const PANEL_TETHER_GAP = 24
+const PANEL_EDGE_MARGIN = 24
+
+/** §6.9/§8.5 (AI-IMP-100): the screen band the tethered panel will
+ * occupy after a flight, expressed as a fit inset so the flight frames
+ * its target BESIDE the panel. NotePanel.layout always spawns the panel
+ * to the RIGHT of its node, so the reservation lands on the right edge;
+ * with no tethered panel there is nothing to reserve. Effective size is
+ * the record's own size when pinned-into-a-window, else the tethered
+ * default. Kept as ONE helper shared by every activation fly. */
+function tetheredPanelInset(): ScreenInset {
+  const panel = tethered()
+  if (!panel) return { top: 0, right: 0, bottom: 0, left: 0 }
+  const size = panel.size ?? DEFAULT_PANEL_SIZE
+  return { top: 0, right: PANEL_TETHER_GAP + size.width + PANEL_EDGE_MARGIN, bottom: 0, left: 0 }
+}
+
+/** Arm the camera so the NEXT fit (the flight about to be requested)
+ * reserves the tethered panel's band. One-shot: consumed by that fit,
+ * inert otherwise. Every panel-opening activation path calls this
+ * immediately before it triggers its flight. */
+export function reserveTetheredPanelSpace(): void {
+  host?.controller.camera.setNextFitInset(tetheredPanelInset())
 }
 
 function panelNoteId(record: PanelRecord): string | null {
@@ -412,7 +440,13 @@ export async function jumpToPlacement(
   if (item) {
     host.controller.selection.click(placementId)
     const aabb = itemWorldAABB(item)
-    if (aabb) host.flyTo(aabb)
+    if (aabb) {
+      // The note re-tethers to this placement below, so its panel will
+      // spawn beside the flown-to node — reserve that band before the
+      // fit (AI-IMP-100) so the target lands next to it, not under it.
+      reserveTetheredPanelSpace()
+      host.flyTo(aabb)
+    }
   }
   // Anchor handoff: the panel rode the clicked link until now; the
   // flight has a destination, so the note re-tethers to it.

@@ -18,6 +18,7 @@
   import type { CanvasHostHandle } from '../canvas/host'
   import { navigateTo } from '../chrome/navigation'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
+  import { reserveTetheredPanelSpace } from '../note/panels'
   import { closeTagPanel, openTagPanel, type TagPanelState } from './tag-panel'
 
   interface TagViewPlacement {
@@ -193,6 +194,10 @@
   async function flyTo(placement: TagViewPlacement): Promise<void> {
     if (placement.canvasId !== handle.canvasId)
       await navigateTo(placement.canvasId, placement.canvasLabel)
+    // If a tethered note panel is open, the fly keeps it — reserve its
+    // band so the framed placement lands beside it (AI-IMP-100). No-op
+    // when nothing is tethered.
+    reserveTetheredPanelSpace()
     requestCenterPlacements([placement.placementId])
   }
 </script>

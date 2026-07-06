@@ -35,7 +35,15 @@ export {
   syncPlacementLabelOffset,
 } from './renderers/placement'
 export { BackgroundSync } from './renderers/background'
-export { Camera, MAX_ZOOM, MIN_ZOOM, type Point, type Rect } from './camera'
+export {
+  Camera,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  ZERO_INSET,
+  type Point,
+  type Rect,
+  type ScreenInset,
+} from './camera'
 export { CameraFlight, FLIGHT_DURATION_MS } from './camera-flight'
 export {
   CameraZoomChase,

@@ -52,6 +52,52 @@ describe('Camera', () => {
     expect(center.y).toBeCloseTo(50)
   })
 
+  it('reserves a screen inset and centers the target in the remaining region', () => {
+    const camera = new Camera()
+    const viewport = { width: 800, height: 600 }
+    // Reserve 200px on the right (a panel band). availWidth = 600.
+    const target = camera.fitTarget(
+      { x: 0, y: 0, width: 252, height: 100 },
+      viewport,
+      48,
+      { top: 0, right: 200, bottom: 0, left: 0 },
+    )!
+    camera.set(target)
+    // Width-limited against the 600px region: zoom = (600-96)/252 = 2.
+    expect(camera.zoom).toBe(2)
+    // The bounds center lands at the CENTER of the panel-free region
+    // (screen x = availWidth/2 = 300), not the raw viewport center.
+    const regionCenter = camera.screenToWorld({ x: 300, y: 300 })
+    expect(regionCenter.x).toBeCloseTo(126)
+    expect(regionCenter.y).toBeCloseTo(50)
+    // Consequently the target sits LEFT of the true viewport center,
+    // leaving the reserved band on the right free for the panel.
+    expect(camera.worldToScreen({ x: 126, y: 50 }).x).toBeLessThan(400)
+  })
+
+  it('a zero inset is byte-identical to no inset', () => {
+    const camera = new Camera()
+    const viewport = { width: 800, height: 600 }
+    const bounds = { x: 10, y: 20, width: 352, height: 100 }
+    const plain = camera.fitTarget(bounds, viewport, 48)
+    const zeroed = camera.fitTarget(bounds, viewport, 48, { top: 0, right: 0, bottom: 0, left: 0 })
+    expect(zeroed).toEqual(plain)
+  })
+
+  it('applies a one-shot pending inset to exactly the next fit', () => {
+    const camera = new Camera()
+    const viewport = { width: 800, height: 600 }
+    const bounds = { x: 0, y: 0, width: 252, height: 100 }
+    const inset = { top: 0, right: 200, bottom: 0, left: 0 }
+    camera.setNextFitInset(inset)
+    const armed = camera.fitTarget(bounds, viewport, 48)
+    const after = camera.fitTarget(bounds, viewport, 48)
+    // The armed fit reserved the band; the next fit is back to plain.
+    expect(armed).toEqual(camera.fitTarget(bounds, viewport, 48, inset))
+    expect(armed).not.toEqual(after)
+    expect(after).toEqual(camera.fitTarget(bounds, viewport, 48))
+  })
+
   it('notifies listeners and applies to a world-plane transform', () => {
     const camera = new Camera()
     const seen: number[] = []
