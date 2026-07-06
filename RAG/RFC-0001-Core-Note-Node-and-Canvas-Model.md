@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.34         | 6 July 2026      |
+| Accepted for Phase 1 | 0.35         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -888,7 +888,23 @@ originating in a browser: a drop carrying image bytes imports them
 directly and records the source page URL as asset attribution when
 available. A URL-only drop SHOULD fetch the image over the network as
 a user-initiated act; a failed or unsupported fetch produces a clear
-error and creates no records.
+error and creates no records. A URL drop's source also lands as a
+DEFAULT TAG on the created node (rev 0.35, agreed with the first
+tester) so sourced material is facetable at once — with one open
+wrinkle: unique URLs mean one tag per item, so whether the surface
+is a tag or a first-class source field deserves a beat when this
+activates.
+
+**Replace file (rev 0.35, from the first tester's quality-upgrade
+habit).** A node's image is replaceable in place — right-click →
+replace file (picker or drop) imports the new bytes as an ordinary
+asset, repoints the node's appearance, and updates source
+attribution; every placement, tag, and note stays. The old asset
+becomes unreferenced and GC-eligible (§9.8). Consequence for
+connectors: after a replacement the original bytes' hash may be
+purged, so connector re-scans MUST dedupe by SOURCE IDENTITY (pin
+or post id, recorded as provenance) and not by content hash alone —
+otherwise every upgraded image returns as a dupe.
 
 Sources that are not directly importable route through the deferred
 importer dialogue (§4.7): applicable adapter actions are offered in
@@ -2657,6 +2673,16 @@ warn threshold the first export adds one acknowledge line —
 confirmed once per project, never repeated, never a gate. The
 threshold is an application preference. There is no hard size
 limiter.
+
+**Media filename policy (rev 0.35 — musing).** When media leaves
+the app as files (a future export-selection-to-folder action, the
+gallery's sibling of §14.4 bulk import), the canonical filename is
+the asset's UUIDv7 — time-ordered by construction, collision-free,
+and matching the domain's identity scheme (with the standing caveat
+that v7 ordering is convenience, not authoritative chronology) —
+with an option to render human-readable names from tags instead.
+Internal storage stays content-hash addressed; this is naming at
+the export boundary only.
 
 The export surface is a sheet anchored to the ☰ charm rather than a
 takeover — leaving is not browsing — with three sections mirroring
