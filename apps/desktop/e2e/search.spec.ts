@@ -255,6 +255,11 @@ test('Mod+P quick-open: keyboard round trip to a note and to a canvas; takeover 
   await win.getByTestId('charm-outline').click()
   await win.keyboard.press('ControlOrMeta+p')
   await expect(win.getByTestId('search-panel')).not.toBeVisible()
+  // The ⌕ CHARM is a mode switch instead: it returns to the board
+  // and opens the panel — never a panel beneath the cover (§8.2).
+  await win.getByTestId('charm-search').click()
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+  await expect(win.getByTestId('search-panel')).toBeVisible()
   await win.keyboard.press('Escape')
 
   // Round trip 1: board focus → Mod+P → title → Enter → note panel.

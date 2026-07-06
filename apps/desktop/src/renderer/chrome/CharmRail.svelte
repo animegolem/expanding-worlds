@@ -14,7 +14,13 @@
   import { PERCH_PULSE_MS } from './feel'
   import { onSearchPanelChanged, toggleSearchPanel } from './search'
   import { onConditionsChanged, type Condition } from './status'
-  import { activeTakeover, onTakeoverChanged, toggleTakeover, type TakeoverKind } from './takeover'
+  import {
+    activeTakeover,
+    closeTakeover,
+    onTakeoverChanged,
+    toggleTakeover,
+    type TakeoverKind,
+  } from './takeover'
   import { tooltip } from './tooltip'
 
   let conditions = $state<readonly Condition[]>([])
@@ -84,6 +90,10 @@
         aria-pressed={searchOpen}
         data-testid={`charm-${charm.id}`}
         onclick={(event) => {
+          // Mode switch, not a dead click: a charm press while a
+          // takeover covers the board returns to the board first —
+          // the panel must never open beneath the cover (§8.2).
+          if (takeover !== null) closeTakeover()
           const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
           toggleSearchPanel({ x: rect.left, y: rect.top })
         }}
