@@ -33,14 +33,22 @@
   let {
     selectedIds,
     tagOpen = $bindable(false),
+    readOnly = false,
     onClear,
     onPlace,
   }: {
     selectedIds: string[]
     tagOpen?: boolean
+    /** 089 everything scope (§14.4): the selection still counts and
+     * clears, but every mutating action greys out — tag and trash
+     * would write into a read-only source, place would hand the
+     * board a foreign node id. */
+    readOnly?: boolean
     onClear: () => void
     onPlace: () => void
   } = $props()
+
+  const READ_ONLY_HINT = 'browse-only in everything scope — switch to this world to act'
 
   let tagName = $state('')
   let tagFocus = $state(false)
@@ -113,7 +121,7 @@
 
   async function assignTag(name: string): Promise<void> {
     const trimmed = name.trim()
-    if (trimmed.length === 0 || busy || selectedIds.length === 0) return
+    if (readOnly || trimmed.length === 0 || busy || selectedIds.length === 0) return
     busy = true
     try {
       const tag = await resolveTagId(trimmed)
@@ -150,6 +158,8 @@
   /** Exported (AI-IMP-080): Delete in the grid runs THIS path — the
    * keyboard must trash through the exact same commands and toast. */
   export async function trashSelection(): Promise<void> {
+    // The Delete key routes here scope-blind — the guard is the bar's.
+    if (readOnly) return
     if (busy || selectedIds.length === 0) return
     busy = true
     try {
@@ -218,7 +228,8 @@
     class:on={tagOpen}
     aria-pressed={tagOpen}
     data-testid="gallery-action-tag"
-    disabled={busy}
+    disabled={busy || readOnly}
+    title={readOnly ? READ_ONLY_HINT : undefined}
     onclick={() => (tagOpen = !tagOpen)}
   >
     tag
@@ -227,7 +238,8 @@
     type="button"
     class="action"
     data-testid="gallery-action-place"
-    disabled={busy}
+    disabled={busy || readOnly}
+    title={readOnly ? READ_ONLY_HINT : undefined}
     onclick={onPlace}
   >
     place
@@ -236,7 +248,8 @@
     type="button"
     class="action"
     data-testid="gallery-action-trash"
-    disabled={busy}
+    disabled={busy || readOnly}
+    title={readOnly ? READ_ONLY_HINT : undefined}
     onclick={() => void trashSelection()}
   >
     trash

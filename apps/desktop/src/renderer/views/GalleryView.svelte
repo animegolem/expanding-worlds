@@ -27,6 +27,19 @@
   bounds). Escape peels selection before the takeover's own Escape
   (capture phase).
 
+  089 adds the primary scope toggle (rev 0.22): *this world ·
+  everything* selects WHOSE gallery is shown — the current
+  project's, or the designated library project's. "Everything" IS
+  the library's gallery browsed read-only over the secondary seam
+  (088): the query names are the primary's, only the transport
+  swaps, and thumbnails carry ?scope=source so ew-asset serves the
+  source's store. Selection and the keyboard stay scope-agnostic
+  (pure index arithmetic); place / dive / tag / trash disable
+  outside this-world — you cannot mutate, or reference, a read-only
+  source (§14.4: projects source, never reference). No designated
+  library → the everything side shows the designation prompt; a
+  world whose mirror is off gets one honest notice line.
+
   080 adds the keyboard model (rev 0.25): a cursor — focus ring
   distinct from the selection highlight, roving tabindex — whose
   math lives in gallery-keys.ts as pure index arithmetic (the
@@ -118,6 +131,28 @@
   let cursor = $state<string | null>(null)
   let preferredCol = $state(0)
 
+  // ------------------------------------------------- 089 scope state
+  // The primary toggle (§14.4): this-world is the default and the
+  // component owns all gallery view state, so scope resets whenever
+  // the takeover reopens or the project changes — no persistence.
+  type GalleryScope = 'this-world' | 'everything'
+  let scope = $state<GalleryScope>('this-world')
+  // Everything scope is live only once the library is OPEN in the
+  // source slot; until then the grid is gated (prompt or wait).
+  let sourceOpen = $state(false)
+  let needsLibrary = $state(false)
+  let libraryError = $state<string | null>(null)
+  let mirrorOff = $state(false)
+  let libraryDirInput = $state('')
+  // Async fences, both non-reactive: scopeEpoch invalidates in-flight
+  // open handshakes when the user flips again mid-open; holdsSource
+  // records that THIS view opened the slot, so leave/unmount close
+  // exactly what it opened and never stomp another surface's slot.
+  let scopeEpoch = 0
+  let holdsSource = false
+
+  const scopeReady = $derived(scope === 'this-world' || sourceOpen)
+
   // ---------------------------------------------------- 078 facets
   // Facet state is view state (§14.4): it composes into the index
   // query's arguments and never writes.
@@ -135,18 +170,30 @@
     unplaced,
   })
 
+  /** 089: the seam mirrors the primary's query surface, so scope
+   * swaps the TRANSPORT and nothing else — same names, same args. */
   async function runQuery<T>(name: string, args?: unknown): Promise<T> {
-    const response = await window.ew.project.query(name, args)
+    const response =
+      scope === 'everything'
+        ? await window.ew.secondary.query('source', name, args)
+        : await window.ew.project.query(name, args)
     if (!response.ok) throw new Error(response.message)
     return response.result as T
   }
 
   async function refresh(args: typeof facetArgs): Promise<void> {
+    const generation = itemsGeneration
+    let next: IndexEntry[]
     try {
-      index = await runQuery<IndexEntry[]>('getGalleryIndex', args)
+      next = await runQuery<IndexEntry[]>('getGalleryIndex', args)
     } catch {
-      index = []
+      next = []
     }
+    // A scope flip (or project push) bumped the generation while this
+    // query flew: the rows belong to the other transport — drop them
+    // whole, the hydration cache's staleness rule (089 extends it).
+    if (generation !== itemsGeneration) return
+    index = next
     loaded = true
     // A project push (trash, external edits) can retire selected
     // nodes: prune the selection to ids still in the grid. Runs after
@@ -161,8 +208,11 @@
 
   // A facet change re-queries AND rehomes the viewport: the old
   // scroll offset points into a grid that no longer exists — and so
-  // does the selection that referenced it (079).
+  // does the selection that referenced it (079). 089 gates it on
+  // scope readiness: in everything scope nothing queries until the
+  // library is open in the source slot.
   $effect(() => {
+    if (!scopeReady) return
     void refresh(facetArgs)
     untrack(() => {
       scroller?.scrollTo({ top: 0 })
@@ -182,9 +232,99 @@
     window.ew.project.onChanged(() => {
       itemsGeneration += 1
       items = {}
-      void refresh(facetArgs)
+      if (scope === 'this-world' || sourceOpen) void refresh(facetArgs)
     }),
   )
+
+  // ------------------------------------------- 089 scope lifecycle
+  /** Flip the toggle. Rows, hydrated items, and tag filters all
+   * belong to a PROJECT — everything empties before the other
+   * transport answers (tag ids don't translate across projects, so
+   * filters clear rather than pretend). */
+  function setScope(next: GalleryScope): void {
+    if (next === scope) return
+    scope = next
+    scopeEpoch += 1
+    itemsGeneration += 1
+    items = {}
+    index = []
+    loaded = false
+    tagFilters = []
+    selected = new Set()
+    anchor = null
+    cursor = null
+    tagOpen = false
+    if (next === 'this-world') leaveEverything()
+    else void enterEverything(scopeEpoch)
+  }
+
+  function leaveEverything(): void {
+    needsLibrary = false
+    libraryError = null
+    sourceOpen = false
+    if (holdsSource) {
+      holdsSource = false
+      void window.ew.secondary.close('source')
+    }
+  }
+
+  async function enterEverything(epoch: number): Promise<void> {
+    // The honesty line (§14.4): when this world does not mirror,
+    // "everything" is not the converging superset of it. Silent
+    // until CONFIRMED off — a stale value must not flash the notice.
+    mirrorOff = false
+    void window.ew.project.query('getSettings').then((response) => {
+      if (epoch !== scopeEpoch) return
+      mirrorOff = !(
+        response.ok &&
+        (response.result as Record<string, unknown>)['mirror_drops'] === true
+      )
+    })
+    const settings = await window.ew.settings.appAll()
+    if (epoch !== scopeEpoch) return
+    const dir = settings['libraryProjectDir']
+    if (typeof dir !== 'string' || dir.length === 0) {
+      needsLibrary = true
+      return
+    }
+    await openLibrary(dir, epoch, false)
+  }
+
+  /** Open the library into the source slot. `store` designates: the
+   * app setting is written only AFTER a successful open validated
+   * the directory as a real project. */
+  async function openLibrary(dir: string, epoch: number, store: boolean): Promise<void> {
+    const opened = await window.ew.secondary.open('source', dir)
+    if (epoch !== scopeEpoch) {
+      // The user flipped away mid-open: release the slot unshown.
+      if (opened.ok) void window.ew.secondary.close('source')
+      return
+    }
+    if (!opened.ok) {
+      needsLibrary = true
+      libraryError = opened.message
+      return
+    }
+    if (store) await window.ew.settings.setApp('libraryProjectDir', dir)
+    holdsSource = true
+    needsLibrary = false
+    libraryError = null
+    sourceOpen = true
+  }
+
+  function designateLibrary(): void {
+    const dir = libraryDirInput.trim()
+    if (dir.length === 0) return
+    void openLibrary(dir, scopeEpoch, true)
+  }
+
+  // Unmount (the takeover closing) releases the source slot; scope
+  // itself needs no reset — this component IS the gallery's state.
+  $effect(() => {
+    return () => {
+      if (holdsSource) void window.ew.secondary.close('source')
+    }
+  })
   // 076's push: a landed derivative repaints its cells by cache-bust.
   $effect(() =>
     window.ew.derivatives.onThumbnailReady(({ contentHash }) => {
@@ -276,9 +416,16 @@
       })
   })
 
+  /** 089: everything-scope URLs carry ?scope=source — main re-roots
+   * them at the source slot's store (the primary's pipeline never
+   * generated these derivatives). */
   function thumbUrl(item: Item): string {
     const nonce = thumbNonce[item.contentHash ?? ''] ?? 0
-    return `ew-asset://${item.contentHash}/thumb${nonce > 0 ? `?v=${nonce}` : ''}`
+    const params = [
+      ...(scope === 'everything' ? ['scope=source'] : []),
+      ...(nonce > 0 ? [`v=${nonce}`] : []),
+    ]
+    return `ew-asset://${item.contentHash}/thumb${params.length > 0 ? `?${params.join('&')}` : ''}`
   }
 
   /** 076's contract: a missing thumbnail 404s → fall back to the
@@ -287,7 +434,7 @@
     const img = event.currentTarget as HTMLImageElement
     if (img.dataset['fallback'] === '1') return
     img.dataset['fallback'] = '1'
-    img.src = `ew-asset://${item.contentHash}`
+    img.src = `ew-asset://${item.contentHash}${scope === 'everything' ? '?scope=source' : ''}`
   }
 
   function jumpTo(bucket: GalleryBucket): void {
@@ -391,6 +538,10 @@
    * (CreateNote + AttachNoteToNode); openCornerPanel(nodeId, null)
    * is that exact seam. */
   function activate(nodeId: string): void {
+    // 089 browse-only: everything scope's rows live in ANOTHER
+    // project — no primary surface (panel, dive, phantom note) can
+    // hold them (§14.4: projects source, never reference).
+    if (scope !== 'this-world') return
     const item = items[nodeId]
     if (!item) return
     closeTakeover()
@@ -556,6 +707,7 @@
    * one placement per id in selection order. The workspace owns the
    * commits, the cascade offsets, and failure toasts. */
   function placeSelection(): void {
+    if (scope !== 'this-world') return // 089: browse-only scope
     const ids = [...selected]
     if (ids.length === 0) return
     closeTakeover()
@@ -570,6 +722,12 @@
    * drop.
    */
   function beginCellDrag(event: DragEvent, nodeId: string): void {
+    // 089: a drag-out PLACES — foreign node ids must not reach the
+    // board's import surface (cells also render non-draggable).
+    if (scope !== 'this-world') {
+      event.preventDefault()
+      return
+    }
     const dt = event.dataTransfer
     if (!dt) return
     dt.setData(NODE_DRAG_MIME, nodeId)
@@ -598,12 +756,43 @@
 </script>
 
 <div class="gallery" data-testid="gallery-view">
+  <!-- 089: the primary toggle — WHOSE gallery (§14.4). -->
+  <div class="scope-bar">
+    <span class="segmented" role="group" aria-label="Scope">
+      <button
+        type="button"
+        data-testid="gallery-scope-this-world"
+        aria-pressed={scope === 'this-world'}
+        class:on={scope === 'this-world'}
+        onclick={() => setScope('this-world')}
+      >
+        this world
+      </button>
+      <button
+        type="button"
+        data-testid="gallery-scope-everything"
+        aria-pressed={scope === 'everything'}
+        class:on={scope === 'everything'}
+        onclick={() => setScope('everything')}
+      >
+        everything
+      </button>
+    </span>
+  </div>
+  {#if scope === 'everything' && mirrorOff}
+    <p class="mirror-notice" data-testid="gallery-mirror-notice">
+      everything may be incomplete — this world doesn't mirror
+    </p>
+  {/if}
+
   <GalleryFacets
     {sort}
     {kinds}
     tags={tagFilters}
     {untagged}
     {unplaced}
+    queryScope={scope}
+    {scopeReady}
     onSort={(next) => (sort = next)}
     onToggleKind={(kind) =>
       (kinds = kinds.includes(kind) ? kinds.filter((k) => k !== kind) : [...kinds, kind])}
@@ -648,10 +837,44 @@
     bind:clientHeight={viewportHeight}
     onscroll={onScroll}
   >
-    {#if loaded && index.length === 0}
+    {#if scope === 'everything' && needsLibrary}
+      <!-- 089 designation (v1): a plain path field — the open call
+           validates the directory before the setting stores. -->
+      <div class="designate" data-testid="gallery-designate">
+        <p>
+          No library is designated. “Everything” is your library project's
+          gallery — point it at an existing project directory.
+        </p>
+        <div class="designate-row">
+          <input
+            type="text"
+            data-testid="gallery-designate-input"
+            placeholder="/path/to/library-project"
+            bind:value={libraryDirInput}
+            onkeydown={(event) => {
+              if (event.key === 'Enter') designateLibrary()
+            }}
+          />
+          <button
+            type="button"
+            data-testid="gallery-designate-confirm"
+            onclick={designateLibrary}
+          >
+            use as library
+          </button>
+        </div>
+        {#if libraryError}
+          <p class="designate-error" data-testid="gallery-designate-error">{libraryError}</p>
+        {/if}
+      </div>
+    {:else if scope === 'everything' && !sourceOpen}
+      <p class="empty" data-testid="gallery-scope-waiting">Opening the library…</p>
+    {:else if loaded && index.length === 0}
       <p class="empty" data-testid="gallery-empty">
         {#if kinds.length > 0 || tagFilters.length > 0 || untagged || unplaced}
           Nothing matches the current filters.
+        {:else if scope === 'everything'}
+          The library is empty — material accrues as drops mirror into it.
         {:else}
           Nothing here yet — anything imported or created lands in the gallery.
         {/if}
@@ -695,7 +918,7 @@
                   data-kind={entry.kind}
                   data-selected={selected.has(entry.nodeId) ? 'true' : 'false'}
                   data-cursor={cursor === entry.nodeId ? 'true' : 'false'}
-                  draggable="true"
+                  draggable={scope === 'this-world'}
                   onclick={(event) => onCellClick(event, entry.nodeId)}
                   ondragstart={(event) => beginCellDrag(event, entry.nodeId)}
                 >
@@ -739,6 +962,7 @@
       bind:this={actionBar}
       selectedIds={[...selected]}
       bind:tagOpen
+      readOnly={scope !== 'this-world'}
       onClear={clearSelection}
       onPlace={placeSelection}
     />
@@ -751,6 +975,95 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+  }
+
+  /* 089 scope bar: the same segmented vocabulary the facet strip
+     speaks — this is the PRIMARY toggle, so it sits above it. */
+  .scope-bar {
+    flex: none;
+    padding: 0.45rem 1rem 0.1rem;
+    font-size: 0.78rem;
+  }
+
+  .segmented {
+    display: inline-flex;
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .segmented button {
+    padding: 0.2rem 0.65rem;
+    font: inherit;
+    background: transparent;
+    color: var(--ew-text-muted);
+    border: none;
+    cursor: pointer;
+  }
+
+  .segmented button + button {
+    border-left: 1px solid var(--ew-border);
+  }
+
+  .segmented button.on {
+    background: var(--ew-accent);
+    color: var(--ew-on-accent);
+  }
+
+  /* The honesty line (§14.4): quiet, one line, under the header. */
+  .mirror-notice {
+    flex: none;
+    margin: 0;
+    padding: 0.1rem 1rem 0.3rem;
+    font-size: 0.72rem;
+    color: var(--ew-text-muted);
+  }
+
+  .designate {
+    max-width: 34rem;
+    padding: 2rem 1rem;
+    font-size: 0.85rem;
+    color: var(--ew-text);
+  }
+
+  .designate p {
+    margin: 0 0 0.8rem;
+    color: var(--ew-text-muted);
+  }
+
+  .designate-row {
+    display: flex;
+    gap: 0.45rem;
+  }
+
+  .designate-row input {
+    flex: 1;
+    box-sizing: border-box;
+    padding: 0.3rem 0.6rem;
+    background: var(--ew-surface-input);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 6px;
+    font: inherit;
+  }
+
+  .designate-row button {
+    padding: 0.3rem 0.75rem;
+    background: var(--ew-surface-raised);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 6px;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .designate-row button:hover {
+    background: var(--ew-surface-subtle);
+  }
+
+  .designate .designate-error {
+    margin: 0.6rem 0 0;
+    color: var(--ew-danger);
   }
 
   .current-header {

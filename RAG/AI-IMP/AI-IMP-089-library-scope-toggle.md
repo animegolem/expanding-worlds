@@ -66,16 +66,16 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Scope toggle in the gallery header; this-world default;
+- [x] Scope toggle in the gallery header; this-world default;
       state survives facet changes, resets on project switch.
-- [ ] Everything scope queries the library over the secondary seam;
+- [x] Everything scope queries the library over the secondary seam;
       thumbnails render; tag facet shows library vocabulary.
-- [ ] No-library state: designation prompt (create new or pick
+- [x] No-library state: designation prompt (create new or pick
       existing directory); honest mirror-off notice line.
-- [ ] Place/board actions disabled outside this-world scope.
-- [ ] e2e: seed a library fixture, toggle scopes, assert entries
+- [x] Place/board actions disabled outside this-world scope.
+- [x] e2e: seed a library fixture, toggle scopes, assert entries
       and tag vocabularies swap; primary project untouched.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -87,6 +87,44 @@ content, place actions grey outside this-world, and with the
 world's mirror off a notice says everything may be incomplete.
 
 ### Issues Encountered
+
+Landed as specified; decisions and deviations worth knowing:
+
+- Thumbnails took the "source discriminator" option: asset/thumb
+  URLs carry `?scope=source`, main records target→dir on a
+  successful `secondary:open` (cleared on close, close-project, and
+  utility death — the slots die with the process) and re-roots the
+  ew-asset read there. ASSET_URL_RE gained the same trailing-query
+  tolerance THUMB_URL_RE already had. A closed slot answers 404,
+  which the renderer's existing fallback chain absorbs. Immutable
+  cache headers stay correct cross-scope (content-addressed bytes).
+- "Resets on project switch" is satisfied structurally: GalleryView
+  unmounts with the takeover and owns all scope state; nothing
+  persists. Index staleness across the transport swap extends the
+  existing itemsGeneration counter (refresh now drops rows whose
+  generation moved); a separate non-reactive scopeEpoch fences the
+  ASYNC open handshake only (flip-away mid-open releases the slot
+  unshown) — the generation can't serve there because project
+  pushes also bump it.
+- Beyond place/trash, TAG is also disabled in everything scope: the
+  bar executes against the PRIMARY transport, so tagging library
+  node ids would write garbage into the world. Enter's activate()
+  and cell drag-out are fenced too (foreign ids must not reach
+  panels/dive/board import). Delete's keyboard path is guarded
+  inside trashSelection so both routes share one guard.
+- Designation stores `libraryProjectDir` only AFTER a successful
+  read-only open validates the directory; "create new" from the
+  prompt was NOT built (v1 per ticket brief: pick existing, plain
+  text input — no <datalist>, it segfaults hidden e2e windows).
+- mirrorOff resets to false on each everything entry so a stale
+  true can't flash the notice before getSettings answers.
+- Not run from the worktree: generate-index.sh and the AI-LOG entry
+  (both outside this agent's file fence; lead's merge pass owns
+  them).
+- Gates: 36/36 desktop units, pnpm -r build, lint clean; e2e 7/7
+  (gallery-scope 2 new, gallery 2, gallery-facets 1, secondary 2)
+  plus insurance runs of gallery-keyboard/-selection (10/10 with
+  the overlap).
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
