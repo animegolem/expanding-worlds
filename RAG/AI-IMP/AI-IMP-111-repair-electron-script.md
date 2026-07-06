@@ -5,7 +5,7 @@ tags:
   - Implementation
   - tooling
   - e2e
-kanban_status: planned
+kanban_status: in-progress
 depends_on:
 parent_epic: [[AI-EPIC-022-fleet-friction]]
 confidence_score: 0.85
@@ -69,14 +69,14 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Script exists, shellcheck-clean, idempotent (second run is a
+- [x] Script exists, shellcheck-clean, idempotent (second run is a
       no-op), and repairs a deliberately-husked dist (test by
       moving dist aside in YOUR worktree and repairing it back).
-- [ ] Guard wired so a fresh-worktree `playwright test` self-heals
+- [x] Guard wired so a fresh-worktree `playwright test` self-heals
       without manual steps; normal repaired runs pay <1s.
-- [ ] CLAUDE.md updated; the five landmines documented as comments
+- [x] CLAUDE.md updated; the five landmines documented as comments
       IN the script (they are the institutional memory).
-- [ ] Full gates (build, unit, lint, one e2e spec to prove the
+- [x] Full gates (build, unit, lint, one e2e spec to prove the
       guard path).
 
 ### Acceptance Criteria
@@ -94,3 +94,35 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Confirmed the husk live: this fresh worktree after `pnpm install`
+  had `dist/` containing ONLY `LICENSES.chromium.html`, no `path.txt`,
+  no binary. install.js had run during postinstall and exited 0
+  without extracting — exactly landmine 1.
+- For electron 39.8.10 the cached zip already contains
+  `LICENSES.chromium.html` at top level, which is why the husk looks
+  like "extraction started" — it did not; ditto extraction of the
+  same zip yields the full `Electron.app` + `version` + `LICENSE`.
+  This version's zip does NOT ship `electron.d.ts` inside dist (it
+  lives at package root already), so the d.ts-hoist step is a
+  defensive no-op here but kept for older versions.
+- Deviation from the ticket's "fail with a clear message elsewhere":
+  the SCRIPT still hard-fails on non-macOS (honoring the ticket), but
+  the playwright globalSetup GUARD checks `process.platform` and
+  simply returns on non-darwin. Reason: globalSetup shelling out to a
+  failing script would abort e2e on CI-linux (the config has CI
+  branches, so e2e runs there). Gating the guard on darwin keeps CI
+  green while preserving the script's clear-failure contract for
+  direct non-mac invocation.
+- Chose `ditto` over `unzip` as primary extractor (unzip is the
+  fallback): ditto is macOS-native, preserves the exec bit and
+  app-bundle symlinks, and extracts the 112MB zip in ~0.6s.
+- Guard wired as `globalSetup: './playwright.global-setup.ts'` in
+  playwright.config.ts — deliberately does NOT change how
+  `npx playwright test <spec>` is invoked. Existing specs unaffected
+  (recovery.spec.ts 3/3 passed through the guard).
+- Validation numbers: repair from husk 0.79s; idempotent no-op runs
+  0.16s / 0.17s / 0.16s (one OK line each); `pnpm -r build` OK;
+  `pnpm lint` exit 0 (eslint covers the two new .ts files);
+  re-husked dist + `npx playwright test recovery.spec.ts` → guard
+  auto-repaired, 3 passed in 7.9s.

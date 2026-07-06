@@ -12,6 +12,9 @@ if (process.env['EW_TEST_HIDDEN_WINDOWS'] === undefined) {
 
 export default defineConfig({
   testDir: './e2e',
+  // Self-heal the macOS+pnpm "husk electron" before any spec launches, so a
+  // fresh worktree needs no manual repair step (scripts/repair-electron.sh).
+  globalSetup: './playwright.global-setup.ts',
   timeout: process.env['CI'] ? 120_000 : 60_000,
   workers: 1,
   // §12.1 perf numbers off software GL are noise, and the suite

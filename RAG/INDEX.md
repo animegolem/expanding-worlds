@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 8 | 8 |
+| In Progress | 1 | 1 |
+| Planned | 8 | 7 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 102 |
@@ -19,7 +19,7 @@
 > (1) Electron's postinstall silently ships a husk `dist/` in every
 
 **IMPs:**
-- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — planned
+- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — in-progress
 - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — planned
 - [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — planned
 
