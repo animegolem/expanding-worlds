@@ -5,12 +5,12 @@ tags:
   - Implementation
   - outline
   - library
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-068]
 parent_epic: [[AI-EPIC-013-global-views]]
 confidence_score: 0.7
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-069-outline-view
@@ -87,26 +87,26 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] getOutlineTree query + units: roots, children with
+- [x] getOutlineTree query + units: roots, children with
       appearance/noteTitle/tags/childCanvasId, cyclic fixture
       returns each canvas once as data (cycles resolved in view).
-- [ ] listLooseNotes query + units: unattached active notes only;
+- [x] listLooseNotes query + units: unattached active notes only;
       trashed excluded.
-- [ ] NodeRow.svelte extracted; UsesList renders through it with
+- [x] NodeRow.svelte extracted; UsesList renders through it with
       zero e2e diffs (notes.spec, panels.spec stay green).
-- [ ] OutlineView: expandable canvas ▸ children tree, page/frame
+- [x] OutlineView: expandable canvas ▸ children tree, page/frame
       glyphs, bare-image row kind, inline tag chips, placement
       count including zero.
-- [ ] Alias rows: a canvas already on its branch's ancestry renders
+- [x] Alias rows: a canvas already on its branch's ancestry renders
       as alias; click expands/scrolls to the real entry.
-- [ ] Loose bin at root: unplaced nodes (listNodeLibrary unplaced)
+- [x] Loose bin at root: unplaced nodes (listNodeLibrary unplaced)
       + loose notes; orphan and loose badges per §14.1.
-- [ ] Filter chips: hide content-less · disconnected · one tag
+- [x] Filter chips: hide content-less · disconnected · one tag
       (with tag-name completion); combinable with the bin and tree.
-- [ ] e2e: nested + cyclic project shows alias row; unplaced node
+- [x] e2e: nested + cyclic project shows alias row; unplaced node
       appears in the loose bin and survives the disconnected
       filter; content-less filter hides a bare image.
-- [ ] `pnpm -r build`, full gates green.
+- [x] `pnpm -r build`, full gates green.
 
 ### Acceptance Criteria
 
@@ -129,3 +129,26 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Typing into the tag filter deterministically SEGFAULTED Electron's
+main process — root cause was the `<datalist>` completion: its
+native autocomplete popup cannot open against a hidden window
+(EW_TEST_HIDDEN_WINDOWS e2e mode). Replaced with a custom
+completion list and left a loud comment; this is a repo-wide rule
+now — no `<datalist>` anywhere. (The crash burst also explained
+the owner's "reopen Electron?" dialog spam, and matching crash
+reports exist from yesterday's suite runs.)
+
+The loose bin initially listed the project ROOT node: it is
+unplaced by construction and an existing unit pins it INSIDE
+listNodeLibrary ("every active node"), so the exclusion lives in
+the view — the root board heads the outline and is not stashed
+material. Canvas-owning unplaced nodes are likewise excluded from
+the bin because they already surface as root-level canvas entries.
+
+Ordering: the NodeRow extraction was deliberately held until the
+AI-IMP-075 token sweep merged (UsesList would have conflicted),
+then done against the token palette; a protective WIP commit
+(f75b41c) landed mid-ticket when an orphaned agent directory
+briefly put the main tree at risk — final state squashes nothing
+and the full 56-test suite is green.

@@ -29,6 +29,7 @@
 
 <script lang="ts">
   import { navigateTo } from '../chrome/navigation'
+  import NodeRow from '../rows/NodeRow.svelte'
   import {
     requestCenterPlacements,
     requestPlaceNode,
@@ -46,10 +47,6 @@
     activeCanvasId: string | null
     herePlacementId: string | null
   } = $props()
-
-  function dotStyle(node: UsesNode): string {
-    return `background:${node.appearanceColor ?? 'var(--ew-node-dot-default)'}`
-  }
 
   function isHere(node: UsesNode): boolean {
     return herePlacementId !== null &&
@@ -86,14 +83,13 @@
                   : 'Fly to this board'}
                 onclick={() => selectGroup(canvas.canvasId, canvas.canvasTitle, node)}
               >
-                <span class="dot" style={dotStyle(node)}></span>
-                <span class="count">×{node.placements.length}</span>
-                {#if isHere(node)}
-                  <span class="here" data-testid="uses-here">here</span>
-                {/if}
-                {#if node.tags.length > 0}
-                  <span class="tags">{node.tags.join(', ')}</span>
-                {/if}
+                <NodeRow appearance={node} count={node.placements.length} tags={node.tags}>
+                  {#snippet extra()}
+                    {#if isHere(node)}
+                      <span class="here" data-testid="uses-here">here</span>
+                    {/if}
+                  {/snippet}
+                </NodeRow>
               </button>
             </li>
           {/each}
@@ -112,8 +108,7 @@
                 data-testid="uses-place-node"
                 onclick={() => requestPlaceNode(node.nodeId)}
               >
-                <span class="dot" style={dotStyle(node)}></span>
-                Place on Current Canvas
+                <NodeRow appearance={node} label="Place on Current Canvas" />
               </button>
             </li>
           {/each}
@@ -173,29 +168,11 @@
     background: var(--ew-paper-hover);
   }
 
-  .dot {
-    flex: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
-
-  .count {
-    color: var(--ew-paper-text-subtle);
-  }
-
   .here {
     padding: 0 0.35rem;
     border-radius: 7px;
     background: var(--ew-paper-info-surface);
     color: var(--ew-paper-info-text);
     font-size: 0.68rem;
-  }
-
-  .tags {
-    overflow: hidden;
-    color: var(--ew-paper-text-muted);
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 </style>

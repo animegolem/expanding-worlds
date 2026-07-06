@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
   import { shortCode } from '@ew/domain'
+  import NodeRow from '../rows/NodeRow.svelte'
 
   interface OutlineChildRow {
     placementId: string
@@ -175,7 +176,7 @@
         onclick={() => flyToEntry(child.childCanvasId!)}
         title="Already open above — jump to it"
       >
-        <span class="glyphs">⤴</span>
+        <span class="glyph">⤴</span>
         <span class="title">{childTitle(child)}</span>
       </button>
     {:else}
@@ -193,31 +194,20 @@
         {:else}
           <span class="caret-space"></span>
         {/if}
-        {#if child.appearanceKind === 'dot'}
-          <span class="swatch" style={`background:${child.appearanceColor ?? 'var(--ew-node-dot-default)'}`}></span>
-        {:else if child.appearanceKind === 'icon'}
-          <span class="swatch icon">{child.appearanceIcon ?? '◇'}</span>
-        {:else}
-          <span class="swatch image"></span>
-        {/if}
-        <span class="glyphs">
-          {#if child.noteId !== null}<span class="glyph" title="has a note">¶</span>{/if}
-          {#if child.childCanvasId !== null}<span class="glyph" title="has a canvas">⊡</span>{/if}
-        </span>
-        <span class="title">{childTitle(child)}</span>
-        {#if child.placementCount > 1}
-          <span class="count" data-testid="outline-count">×{child.placementCount}</span>
-        {/if}
-        {#if disconnectedOnly && child.noteId === null}
-          <span class="badge" data-testid="badge-orphan">orphan</span>
-        {/if}
-        {#if child.tags.length > 0}
-          <span class="tags">
-            {#each child.tags as tag (tag)}
-              <span class="tag-chip">{tag}</span>
-            {/each}
-          </span>
-        {/if}
+        <NodeRow
+          appearance={child}
+          label={childTitle(child)}
+          count={child.placementCount > 1 ? child.placementCount : null}
+          tags={child.tags}
+          hasNote={child.noteId !== null}
+          hasCanvas={child.childCanvasId !== null}
+        >
+          {#snippet extra()}
+            {#if disconnectedOnly && child.noteId === null}
+              <span class="badge" data-testid="badge-orphan">orphan</span>
+            {/if}
+          {/snippet}
+        </NodeRow>
       </div>
       {#if nested && isExpanded(key)}
         {@render canvasBranch(nested, [...path, nested.canvasId], key)}
@@ -324,26 +314,19 @@
           <li>
             <div class="row" data-testid="loose-node-row" data-node-id={node.id}>
               <span class="caret-space"></span>
-              {#if node.appearanceKind === 'dot'}
-                <span class="swatch" style={`background:${node.appearanceColor ?? 'var(--ew-node-dot-default)'}`}></span>
-              {:else if node.appearanceKind === 'icon'}
-                <span class="swatch icon">{node.appearanceIcon ?? '◇'}</span>
-              {:else}
-                <span class="swatch image"></span>
-              {/if}
-              {#if node.noteId !== null}<span class="glyph" title="has a note">¶</span>{/if}
-              <span class="title">{node.noteTitle ?? shortCode(node.id)}</span>
-              <span class="badge" data-testid="badge-loose">loose</span>
-              {#if node.noteId === null}
-                <span class="badge" data-testid="badge-orphan">orphan</span>
-              {/if}
-              {#if node.tags.length > 0}
-                <span class="tags">
-                  {#each node.tags as tag (tag)}
-                    <span class="tag-chip">{tag}</span>
-                  {/each}
-                </span>
-              {/if}
+              <NodeRow
+                appearance={node}
+                label={node.noteTitle ?? shortCode(node.id)}
+                tags={node.tags}
+                hasNote={node.noteId !== null}
+              >
+                {#snippet extra()}
+                  <span class="badge" data-testid="badge-loose">loose</span>
+                  {#if node.noteId === null}
+                    <span class="badge" data-testid="badge-orphan">orphan</span>
+                  {/if}
+                {/snippet}
+              </NodeRow>
             </div>
           </li>
         {/each}
@@ -505,31 +488,6 @@
     width: 1.1rem;
   }
 
-  .swatch {
-    flex: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
-
-  .swatch.icon {
-    width: auto;
-    height: auto;
-    border-radius: 0;
-    font-size: 0.72rem;
-  }
-
-  .swatch.image {
-    border-radius: 2px;
-    background: var(--ew-border-strong);
-  }
-
-  .glyphs {
-    flex: none;
-    display: inline-flex;
-    gap: 0.1rem;
-  }
-
   .glyph {
     color: var(--ew-text-muted);
     font-size: 0.72rem;
@@ -545,11 +503,6 @@
     font-weight: 600;
   }
 
-  .count {
-    color: var(--ew-text-muted);
-    font-size: 0.72rem;
-  }
-
   .badge {
     flex: none;
     padding: 0 0.35rem;
@@ -558,21 +511,6 @@
     border: 1px solid var(--ew-border-strong);
     color: var(--ew-warn);
     font-size: 0.62rem;
-  }
-
-  .tags {
-    display: inline-flex;
-    gap: 0.2rem;
-    overflow: hidden;
-  }
-
-  .tag-chip {
-    padding: 0 0.35rem;
-    border-radius: 7px;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text-muted);
-    font-size: 0.62rem;
-    white-space: nowrap;
   }
 
   .loose-bin {

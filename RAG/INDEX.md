@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 2 |
-| Planned | 3 | 5 |
+| Planned | 3 | 4 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 9 | 68 |
+| Completed | 9 | 69 |
 | **Total** | **14** | **75** |
 
 ## In Progress
@@ -41,7 +41,7 @@
 
 **IMPs:**
 - [[AI-IMP-068-takeover-framework|IMP-068]] Takeover framework — completed
-- [[AI-IMP-069-outline-view|IMP-069]] Outline view — planned
+- [[AI-IMP-069-outline-view|IMP-069]] Outline view — completed
 - [[AI-IMP-070-outline-placement-flows|IMP-070]] Outline placement flows — planned
 - [[AI-IMP-071-tag-panel|IMP-071]] Tag panel — planned
 - [[AI-IMP-072-lens|IMP-072]] Lens — completed
@@ -97,12 +97,12 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
-- apps/desktop/src/renderer/views/OutlineView.svelte (595 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/e2e/slice.spec.ts (542 LOC)
 - packages/persistence/src/queries-structure.ts (541 LOC)
 - apps/desktop/e2e/import.spec.ts (535 LOC)
+- apps/desktop/src/renderer/views/OutlineView.svelte (533 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
@@ -141,7 +141,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>9 EPICs, 68 IMPs completed</summary>
+<summary>9 EPICs, 69 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
