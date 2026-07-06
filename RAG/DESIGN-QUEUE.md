@@ -14,12 +14,12 @@ flush list — resolved items move into the RFC and leave.
   inventory and ordering; PureRef reference captured in the stub —
   adopt selectively. (The §8.8 ladder IMP can proceed without
   this; the menus themselves cannot.)
-- **Library door placement** (project switching): library is
-  functionally a project but the owner leans AGAINST listing it in
-  the world-switch menu (initial-read clarity). Lead's proposed
-  middle path: ONE ⧉ menu, TWO sections — "Your library" pinned
-  and visually distinct, worlds listed below; library opens
-  gallery-first. Decide before switching ships.
+- **Library door placement** — RATIFIED 2026-07-06 (owner): ONE
+  ⧉ menu, TWO sections — "Your library" pinned and visually
+  distinct above a divider, worlds below; library opens
+  gallery-first. Still gets bashed at the design pass (watch for
+  too-subtle section styling), but this is the working shape for
+  the switching ticket.
 
 ## Blocking epic activation
 
