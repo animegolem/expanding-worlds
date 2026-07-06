@@ -7,6 +7,19 @@ intermittently: delete lines that pass, and anything that fails
 becomes a finding for the next batch. This file is a queue, not a
 record — history lives in the tickets.
 
+## Owner actions (setup only you can do)
+
+- [ ] **CI → Codex auto-diagnose secret** (2026-07-06): the
+  workflow needs an OpenAI **API key** in the repo (your ChatGPT
+  subscription does not cover Actions usage — this bills the API):
+  1. platform.openai.com → API keys → create one scoped for this.
+  2. `gh secret set OPENAI_API_KEY` in the repo (paste when
+     prompted), or GitHub → Settings → Secrets and variables →
+     Actions → new repository secret `OPENAI_API_KEY`.
+  3. Tell Claude it's set — the workflow file gets written then
+     (`workflow_run` on CI failure → codex-action diagnoses →
+     response lands back on the failing commit; no PR needed).
+
 ## Awaiting validation
 
 - [ ] **Rotate cursor glyph** (AI-IMP-031, 2026-07-06): hover just
