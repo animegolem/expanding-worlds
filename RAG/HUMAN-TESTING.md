@@ -22,6 +22,14 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Grid crossfade** (AI-IMP-099, 2026-07-06): zoom continuously
+  with the grid on, side-by-side with PureRef — subdivisions should
+  fade in faint and stay subordinate, no popping. One deliberate
+  choice to judge: the PRIMARY grid softens slightly right around
+  promotion moments ("breathes"); if that reads wrong, the
+  alternative (subdivision briefly brightens past its cap instead)
+  is a 3-line swap — say which you prefer.
+
 - [ ] **Zoom feel dial-in** (AI-IMP-098, 2026-07-06): pinch/Cmd+wheel
   now glides to its target (τ=70ms default). Side-by-side with
   PureRef in a dev session: `window.__ewDebug.zoomTuning({tau: 60})`

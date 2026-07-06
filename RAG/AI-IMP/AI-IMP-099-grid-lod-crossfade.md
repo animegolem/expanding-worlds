@@ -5,12 +5,12 @@ tags:
   - Implementation
   - canvas
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.8
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-099-grid-lod-crossfade
@@ -66,13 +66,13 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Two-tier render with zoom-driven minor opacity ramp; minor
+- [x] Two-tier render with zoom-driven minor opacity ramp; minor
       capped well below major at all zooms.
-- [ ] Continuity at promotion proven by unit (opacity function is
+- [x] Continuity at promotion proven by unit (opacity function is
       continuous across the threshold).
-- [ ] Lines mode done; dots mode handled or honestly noted.
-- [ ] Full gates.
-- [ ] HUMAN-TESTING entry for the side-by-side (lead adds on
+- [x] Lines mode done; dots mode handled or honestly noted.
+- [x] Full gates.
+- [x] HUMAN-TESTING entry for the side-by-side (lead adds on
       merge).
 
 ### Acceptance Criteria
@@ -84,6 +84,25 @@ grid, never rival it, and the moment a tier is promoted is
 imperceptible — no popping, matching the PureRef reference.
 
 ### Issues Encountered
+
+Agent-built, lead-transcribed. The ticket was over-constrained:
+"minor always well below major" + "no pop" + constant-full major
+cannot coexist — at promotion, old-major lines become plain new-
+major members, so continuity forces majorAlpha(top) = handoff =
+minor's cap. Shipped the unique continuous family: major rises
+handoff→full over [48,72]px, plateaus, eases back to handoff over
+[160,192]px. N=4 (binary-round vs base-64 spacing), MINOR_MAX=0.4.
+Bundled fix: coincident minor lines double-stroked over major —
+the visible pop. Units prove boundary equality within 5e-7 per
+line class and a 1400-step sweep with no ≥0.01 alpha step. Dots
+mode does NOT exist (ticket text corrected here — the settings row
+is a placeholder); gridLevels is presentation-agnostic for
+whenever it does. OWNER CHOICE flagged in HUMAN-TESTING: the major
+"breathes" near promotion; the alternative (minor sprints past its
+cap instead) is a 3-line swap if the breathe reads wrong. Gates:
+289 engine / 37 desktop units, lint, canvas+settings e2e 8/8 on
+the agent branch; lead re-ran units post-merge; CI covers the full
+suite on push.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

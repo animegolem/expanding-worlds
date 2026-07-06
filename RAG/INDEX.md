@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 6 | 4 |
+| Planned | 6 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 89 |
+| Completed | 11 | 90 |
 | **Total** | **18** | **93** |
 
 ## In Progress
@@ -43,7 +43,7 @@
 - [[AI-IMP-096-checkpoint-on-suspend|IMP-096]] Checkpoint on suspend — backlog
 - [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
 - [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — completed
-- [[AI-IMP-099-grid-lod-crossfade|IMP-099]] Grid lod crossfade — planned
+- [[AI-IMP-099-grid-lod-crossfade|IMP-099]] Grid lod crossfade — completed
 - [[AI-IMP-100-panel-aware-flyto|IMP-100]] Panel aware flyto — planned
 
 ---
@@ -159,7 +159,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 89 IMPs completed</summary>
+<summary>11 EPICs, 90 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
