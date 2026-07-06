@@ -5,7 +5,7 @@ tags:
   - Implementation
   - gallery
   - keyboard
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-079]
 parent_epic: [[AI-EPIC-014-gallery]]
 confidence_score: 0.7
