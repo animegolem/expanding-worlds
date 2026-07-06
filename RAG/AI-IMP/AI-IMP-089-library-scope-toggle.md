@@ -5,12 +5,12 @@ tags:
   - Implementation
   - gallery
   - library
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-088]
 parent_epic: [[AI-EPIC-015-library-and-cross-project-sourcing]]
 confidence_score: 0.8
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-089-library-scope-toggle
