@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 3 | 2 |
+| Planned | 3 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 82 |
+| Completed | 11 | 83 |
 | **Total** | **15** | **84** |
 
 ## In Progress
@@ -34,7 +34,7 @@
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
 - [[AI-IMP-082-resize-snapping|IMP-082]] Resize snapping — completed
-- [[AI-IMP-083-note-panel-sizing-and-big-editor|IMP-083]] Note panel sizing and big editor — planned
+- [[AI-IMP-083-note-panel-sizing-and-big-editor|IMP-083]] Note panel sizing and big editor — completed
 - [[AI-IMP-084-card-appearance-and-place-on-board|IMP-084]] Card appearance and place on board — planned
 
 ---
@@ -64,7 +64,7 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3525 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1296 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (840 LOC)
@@ -92,6 +92,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
+- apps/desktop/src/renderer/note/panels.ts (492 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (480 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (464 LOC)
@@ -101,7 +102,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
-- apps/desktop/src/renderer/note/panels.ts (413 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
@@ -133,7 +133,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 82 IMPs completed</summary>
+<summary>11 EPICs, 83 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
