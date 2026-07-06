@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.35         | 6 July 2026      |
+| Accepted for Phase 1 | 0.36         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -909,6 +909,28 @@ otherwise every upgraded image returns as a dupe.
 Sources that are not directly importable route through the deferred
 importer dialogue (§4.7): applicable adapter actions are offered in
 one dialogue pattern instead of a bare rejection.
+
+**Text drops (rev 0.36 — shaped, currently a gap).** Plain-text
+drops and text paste currently do NOTHING: the drop handler's
+branches are node drag → note drag → files → URL, and bare text
+falls through. The shaped behavior: classify once — a lone URL
+takes the §6.1 URL-import path; anything else writes a canvas TEXT
+decoration (§4.5 world-space text) at the drop point using the text
+tool's current settings. Special cases (a code block, a very long
+passage that wants a note instead) stay open until the feature
+activates.
+
+**Text styling memory (rev 0.36 — musing).** The text tool keeps
+the LAST-USED settings as its defaults (the art-tool reflex), and a
+quick style-profile dropdown holds a handful of named presets so a
+workspace's heading/callout/caption looks are one click. Presets
+are presentation preferences (app tier unless a project override
+earns its keep). Relatedly, the SHAPE tool grows text-in-shape:
+type into a shape and the text scales to fit it — shape and label
+move as one. Before any of these defaults harden, do the
+comparison homework: audit how Miro, Photoshop, and PureRef handle
+shape defaults, text-in-shape, and styling memory, and record what
+we adopt or refuse.
 
 ## 6.2 Create Pin
 
