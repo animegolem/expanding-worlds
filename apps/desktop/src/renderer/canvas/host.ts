@@ -56,6 +56,12 @@ import type { Rect } from '@ew/canvas-engine'
  * goes through window.ew (§11.1); textures arrive over ew-asset://.
  */
 
+/** AI-IMP-113: default bound for waitForItems, matching the strictest
+ * hand-rolled site it replaces (Workspace center / jumpToPlacement both
+ * used 2000 ms). A destination scene that has not applied by then is
+ * treated as absent and the caller degrades gracefully. */
+const WAIT_FOR_ITEMS_DEFAULT_TIMEOUT_MS = 2000
+
 export interface CanvasHostHandle {
   /** Seams for feature modules (gestures UI, import surfaces, tools). */
   controller: CanvasController
@@ -89,6 +95,19 @@ export interface CanvasHostHandle {
    * signal for UI that reads scene/controller snapshots — replaces
    * the 120 ms trailing-refresh heuristic. Returns an unsubscribe. */
   onSceneApplied(listener: () => void): () => void
+  /** Resolves after the NEXT applied scene — a one-shot wrap of
+   * onSceneApplied that always detaches its listener. The primitive
+   * for "issue a navigate/commit, then read the fresh scene"; do not
+   * read items()/camera synchronously after navigateTo (AI-IMP-113). */
+  whenSceneApplied(): Promise<void>
+  /** Resolves true once every id in `ids` is present in the applied
+   * scene — checked now, then on each scene-apply — or false when
+   * `timeoutMs` (default 2000) elapses first. Try-now / subscribe /
+   * bounded-timeout in one place; the listener always detaches, the
+   * timeout path included. The canonical wait before centering or
+   * selecting after a cross-canvas navigateTo (AI-IMP-113). Callers
+   * degrade gracefully on false (fly to whatever is present). */
+  waitForItems(ids: readonly string[], opts?: { timeoutMs?: number }): Promise<boolean>
   /** §12.2 single live canvas: swap the mounted canvas, releasing
    * the previous scene's textures. */
   openCanvas(canvasId: string): Promise<void>
@@ -605,6 +624,49 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   function notifySceneApplied(): void {
     for (const listener of sceneAppliedListeners) listener()
   }
+  function subscribeSceneApplied(listener: () => void): () => void {
+    sceneAppliedListeners.add(listener)
+    return () => sceneAppliedListeners.delete(listener)
+  }
+  // AI-IMP-113: the scene-ready primitive. Every navigate-then-read
+  // site used to hand-roll try-now / one-shot onSceneApplied / timeout
+  // and each new copy regressed as a "flake" (IMP-018/023/048/065/073).
+  function whenSceneApplied(): Promise<void> {
+    return new Promise((resolve) => {
+      const off = subscribeSceneApplied(() => {
+        off()
+        resolve()
+      })
+    })
+  }
+  function waitForItems(
+    ids: readonly string[],
+    opts?: { timeoutMs?: number },
+  ): Promise<boolean> {
+    const wanted = new Set(ids)
+    const present = (): boolean => {
+      if (wanted.size === 0) return true
+      let hits = 0
+      for (const item of controller.items()) if (wanted.has(item.id)) hits++
+      return hits >= wanted.size
+    }
+    return new Promise((resolve) => {
+      if (present()) {
+        resolve(true)
+        return
+      }
+      const off = subscribeSceneApplied(() => {
+        if (!present()) return
+        off()
+        clearTimeout(timer)
+        resolve(true)
+      })
+      const timer = setTimeout(() => {
+        off()
+        resolve(false)
+      }, opts?.timeoutMs ?? WAIT_FOR_ITEMS_DEFAULT_TIMEOUT_MS)
+    })
+  }
 
   let refreshing = false
   let refreshQueued = false
@@ -911,10 +973,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     clearLens: () => controller.lens.clear(),
     lens: () => controller.lens.ids(),
     onLensChanged: (listener) => controller.lens.onChanged(listener),
-    onSceneApplied(listener: () => void): () => void {
-      sceneAppliedListeners.add(listener)
-      return () => sceneAppliedListeners.delete(listener)
-    },
+    onSceneApplied: subscribeSceneApplied,
+    whenSceneApplied,
+    waitForItems,
     openCanvas,
     destroy() {
       textureBudget.releaseAll()

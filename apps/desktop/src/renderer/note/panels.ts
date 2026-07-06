@@ -435,8 +435,11 @@ export async function jumpToPlacement(
   notifyChooser()
   if (canvasId !== host.canvasId) await navigateTo(canvasId, title)
   // The destination scene applies asynchronously after openCanvas;
-  // wait for the placement to exist before selecting it.
-  const item = await waitForItem(placementId)
+  // wait (bounded) for the placement to exist before selecting it
+  // (AI-IMP-113 scene-ready primitive). On timeout we still re-query
+  // and fly if it materialized.
+  await host.waitForItems([placementId])
+  const item = host?.controller.items().find((candidate) => candidate.id === placementId)
   if (item) {
     host.controller.selection.click(placementId)
     const aabb = itemWorldAABB(item)
@@ -451,33 +454,6 @@ export async function jumpToPlacement(
   // Anchor handoff: the panel rode the clicked link until now; the
   // flight has a destination, so the note re-tethers to it.
   openNotePanel(noteId, { canvasId, placementId, label: title })
-}
-
-function waitForItem(
-  placementId: string,
-  timeoutMs = 2000,
-): Promise<ReturnType<CanvasHostHandle['controller']['items']>[number] | null> {
-  return new Promise((resolve) => {
-    const find = (): ReturnType<CanvasHostHandle['controller']['items']>[number] | undefined =>
-      host?.controller.items().find((candidate) => candidate.id === placementId)
-    const immediate = find()
-    if (immediate || !host) {
-      resolve(immediate ?? null)
-      return
-    }
-    const off = host.onSceneApplied(() => {
-      const found = find()
-      if (found) {
-        off()
-        clearTimeout(timer)
-        resolve(found)
-      }
-    })
-    const timer = setTimeout(() => {
-      off()
-      resolve(find() ?? null)
-    }, timeoutMs)
-  })
 }
 
 async function revealNote(detail: {
