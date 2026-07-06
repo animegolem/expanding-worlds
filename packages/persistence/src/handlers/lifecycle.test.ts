@@ -588,12 +588,15 @@ describe('PurgeRecord (§9.7, §7.1)', () => {
       data: { start: { x: 0, y: 0 } },
       anchorEndPlacementId: outerPlacement,
     })
+    const bookmarkId = uuidv7()
     handle.db.run(
-      `INSERT INTO bookmark (id, project_id, canvas_id, name, created_at)
-       VALUES (?, ?, ?, 'bm', ?)`,
-      uuidv7(),
+      `INSERT INTO bookmark
+         (id, project_id, canvas_id, label, sort_key, created_at, updated_at)
+       VALUES (?, ?, ?, 'bm', 1024, ?, ?)`,
+      bookmarkId,
       handle.projectId,
       canvasId,
+      new Date().toISOString(),
       new Date().toISOString(),
     )
 
@@ -605,7 +608,13 @@ describe('PurgeRecord (§9.7, §7.1)', () => {
     expect(row('canvas', canvasId)).toBeUndefined()
     expect(row('placement', innerPlacement)).toBeUndefined()
     expect(handle.db.all('SELECT * FROM tag_assignment WHERE node_id = ?', nodeId)).toEqual([])
-    expect(handle.db.all('SELECT * FROM bookmark WHERE canvas_id = ?', canvasId)).toEqual([])
+    // §8.1 (AI-IMP-061): bookmarks are never deleted automatically —
+    // the row survives its target's purge as a broken bookmark, and
+    // the purge names it in `affected` so menus re-query.
+    expect(handle.db.all('SELECT id FROM bookmark WHERE canvas_id = ?', canvasId)).toEqual([
+      { id: bookmarkId },
+    ])
+    expect(purge.affected).toContainEqual({ kind: 'bookmark', id: bookmarkId })
     // Connector endpoint freed at the placement's last position.
     const decoration = row('decoration', decorationId)!
     expect(decoration.anchor_end_placement_id).toBeNull()

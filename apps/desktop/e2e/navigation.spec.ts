@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { exec, launchApp } from './helpers'
+import { exec, launchApp, launchAppInDir } from './helpers'
 
 /**
  * AI-IMP-060 acceptance (RFC §8.1): the session history is the path —
@@ -97,6 +97,136 @@ test('stale targets skip and collapse; history survives trash (§8.1)', async ()
   ])
   await win.keyboard.press('ControlOrMeta+BracketRight')
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasC)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-061 (RFC §8.1): the map-pin menu does everything — add,
+ * jump, drag-reorder, remove — row order IS the Mod+1–n binding and
+ * each row prints its current shortcut. Bookmark jumps are navigation
+ * events (Back returns), capture viewports, and the order is durable.
+ */
+
+async function openBookmarkMenu(win: import('@playwright/test').Page): Promise<void> {
+  if (await win.getByTestId('bookmark-menu').isVisible().catch(() => false)) return
+  await win.getByTestId('bookmark-pin').click()
+  await expect(win.getByTestId('bookmark-menu')).toBeVisible()
+}
+
+test('bookmarks: add, jump with viewport, reorder rebinds Mod+n, order survives restart (§8.1)', async () => {
+  const launched = await launchApp('ew-e2e-bookmarks-')
+  const { projectDir } = launched
+  let { app, win } = launched
+  const root = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const canvasB = await seedCanvas(win)
+
+  // Bookmark the root under a distinctive viewport.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 500, y: 250, zoom: 2 }))
+  await openBookmarkMenu(win)
+  await win.getByTestId('bookmark-add').click()
+  await expect(win.getByTestId('bookmark-jump-0')).toHaveText('Home')
+  await expect(win.getByTestId('bookmark-shortcut-0')).toHaveText('⌘1')
+
+  // Fly to B and bookmark it too: rows print ⌘1 Home, ⌘2 Harbor.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Harbor'), { id: canvasB })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await openBookmarkMenu(win)
+  await win.getByTestId('bookmark-add').click()
+  await expect(win.getByTestId('bookmark-jump-1')).toHaveText('Harbor')
+  await expect(win.getByTestId('bookmark-shortcut-1')).toHaveText('⌘2')
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('bookmark-menu')).not.toBeVisible()
+
+  // Mod+1 jumps home, restores the bookmarked viewport, and is a
+  // §8.1 history entry: Back returns to Harbor.
+  await win.keyboard.press('ControlOrMeta+Digit1')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual({ x: 500, y: 250, zoom: 2 })
+  await win.keyboard.press('ControlOrMeta+BracketLeft')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+
+  // Drag Harbor's row above Home's: row order is the binding, so the
+  // printed shortcuts swap with it (self-teaching, live).
+  await openBookmarkMenu(win)
+  const from = (await win.getByTestId('bookmark-drag-1').boundingBox())!
+  const to = (await win.getByTestId('bookmark-drag-0').boundingBox())!
+  await win.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await win.mouse.down()
+  await win.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 5 })
+  await win.mouse.up()
+  await expect(win.getByTestId('bookmark-jump-0')).toHaveText('Harbor')
+  await expect(win.getByTestId('bookmark-shortcut-0')).toHaveText('⌘1')
+  await expect(win.getByTestId('bookmark-jump-1')).toHaveText('Home')
+  await expect(win.getByTestId('bookmark-shortcut-1')).toHaveText('⌘2')
+  await win.keyboard.press('Escape')
+
+  // Mod+1 now jumps to Harbor; Mod+2 to Home (press-time row order).
+  await win.keyboard.press('ControlOrMeta+Digit2')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+  await win.keyboard.press('ControlOrMeta+Digit1')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+
+  // Durable: the reordered menu (and its bindings) survive restart.
+  await app.close()
+  ;({ app, win } = await launchAppInDir(projectDir))
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-jump-0')).toHaveText('Harbor')
+  await expect(win.getByTestId('bookmark-jump-1')).toHaveText('Home')
+  await win.keyboard.press('Escape')
+  await win.keyboard.press('ControlOrMeta+Digit1')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+
+  await app.close()
+})
+
+test('bookmarks degrade explicitly: In Trash greys with Restore, purged offers removal (§8.1)', async () => {
+  const { app, win } = await launchApp('ew-e2e-bookmarks-stale-')
+  const root = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const canvasB = await seedCanvas(win)
+  const canvasC = await seedCanvas(win)
+
+  // Bookmark B ('Keep') and C ('Ruin') from their own boards.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Keep'), { id: canvasB })
+  await openBookmarkMenu(win)
+  await win.getByTestId('bookmark-add').click()
+  await win.keyboard.press('Escape')
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Ruin'), { id: canvasC })
+  await openBookmarkMenu(win)
+  await win.getByTestId('bookmark-add').click()
+  await win.keyboard.press('Escape')
+  await win.getByTestId('nav-home').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  await exec(win, 'TrashCanvas', { canvasId: canvasB })
+  await exec(win, 'TrashCanvas', { canvasId: canvasC })
+  await exec(win, 'PurgeRecord', { kind: 'canvas', id: canvasC })
+
+  // Neither row silently vanishes: trashed greys with an In Trash
+  // label and a dead jump; purged is broken and offers removal.
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-row-0')).toHaveAttribute('data-target-state', 'trashed')
+  await expect(win.getByTestId('bookmark-state-0')).toHaveText('In Trash')
+  await expect(win.getByTestId('bookmark-jump-0')).toBeDisabled()
+  await expect(win.getByTestId('bookmark-row-1')).toHaveAttribute('data-target-state', 'purged')
+  await expect(win.getByTestId('bookmark-state-1')).toHaveText('Broken')
+
+  // The trashed row's shortcut never jumps.
+  await win.keyboard.press('ControlOrMeta+Digit1')
+  await win.waitForTimeout(150)
+  expect(await win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  // Restore restores the canvas AND jumps; the bookmark revalidated
+  // with no user action (stable ids).
+  await win.getByTestId('bookmark-restore-0').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-row-0')).toHaveAttribute('data-target-state', 'active')
+
+  // Removing the broken bookmark is the offered exit.
+  await win.getByTestId('bookmark-remove-1').click()
+  await expect(win.getByTestId('bookmark-row-1')).not.toBeVisible()
+  await expect(win.getByTestId('bookmark-jump-0')).toHaveText('Keep')
 
   await app.close()
 })

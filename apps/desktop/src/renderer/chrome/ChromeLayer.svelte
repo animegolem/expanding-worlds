@@ -43,7 +43,7 @@
   data-engaged={engaged}
 >
   <TitleStrip {handle} {tooling} {ui} />
-  <PathBar />
+  <PathBar {handle} />
   <CharmRail />
   <Dock {handle} {ui} {tooling} {hostElement} />
 </div>

@@ -230,9 +230,13 @@ function restorePlacementRow(
  * §9.7 purge of a canvas-local aggregate: releases connector anchors
  * held by the canvas's placements (anchored decorations may live on
  * any canvas), then hard-deletes decorations, groups, placements,
- * bookmarks, and the canvas row in FK-safe order. Also used for a
- * purged node's owned canvas (§9.6). Appends every removed record to
- * `affected`.
+ * and the canvas row in FK-safe order. Also used for a purged node's
+ * owned canvas (§9.6). Appends every removed record to `affected`.
+ *
+ * Bookmarks targeting the canvas deliberately SURVIVE (§8.1,
+ * AI-IMP-061): they are never deleted automatically — the menu
+ * presents them as broken and offers removal. The bookmark table has
+ * no FK on canvas_id for exactly this reason.
  */
 function purgeCanvasAggregate(ctx: CommandContext, canvasId: string, affected: AffectedRecord[]): void {
   const placements = ctx.db.all<{ id: string }>(
@@ -251,14 +255,15 @@ function purgeCanvasAggregate(ctx: CommandContext, canvasId: string, affected: A
   ctx.db.run('DELETE FROM decoration WHERE canvas_id = ?', canvasId)
   ctx.db.run('DELETE FROM decoration_group WHERE canvas_id = ?', canvasId)
   ctx.db.run('DELETE FROM placement WHERE canvas_id = ?', canvasId)
+  ctx.db.run('DELETE FROM canvas WHERE id = ?', canvasId)
+  for (const d of decorations) affected.push({ kind: 'decoration', id: d.id })
+  for (const p of placements) affected.push({ kind: 'placement', id: p.id })
+  // Surviving bookmarks changed state (active/trashed → broken): name
+  // them so subscribers (the bookmark menu) re-query.
   const bookmarks = ctx.db.all<{ id: string }>(
     'SELECT id FROM bookmark WHERE canvas_id = ?',
     canvasId,
   )
-  ctx.db.run('DELETE FROM bookmark WHERE canvas_id = ?', canvasId)
-  ctx.db.run('DELETE FROM canvas WHERE id = ?', canvasId)
-  for (const d of decorations) affected.push({ kind: 'decoration', id: d.id })
-  for (const p of placements) affected.push({ kind: 'placement', id: p.id })
   for (const b of bookmarks) affected.push({ kind: 'bookmark', id: b.id })
   affected.push({ kind: 'canvas', id: canvasId })
 }
