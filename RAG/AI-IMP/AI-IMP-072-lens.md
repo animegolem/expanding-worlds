@@ -80,22 +80,39 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Engine lens state: setLens/clearLens/onLensChanged; draw pass
+- [x] Engine lens state: setLens/clearLens/onLensChanged; draw pass
       dims non-members uniformly (images, pins, decorations) and
       rings members; dim factor is a named constant.
-- [ ] Scene reapply intersects the lens set with surviving ids;
+      (`Lens` + `lensAlpha` + `LENS_DIM_ALPHA` in
+      `packages/canvas-engine/src/lens.ts`; dim = root-container
+      alpha multiply applied in host draw pass; accent ring in the
+      host adornment pass beside the selection box.)
+- [x] Scene reapply intersects the lens set with surviving ids;
       empty intersection clears; units cover placement deletion and
       unrelated edits under an active lens.
-- [ ] Pan and zoom leave the lens untouched (unit or e2e).
-- [ ] Escape clears the lens without clearing selection when both
+- [x] Pan and zoom leave the lens untouched (unit AND e2e).
+- [x] Escape clears the lens without clearing selection when both
       are active — lens first, selection on the next press.
-- [ ] Host handle + __ewGestureDebug expose lens state for tests.
+      (`CanvasController.escape()`; in-flight gesture/marquee cancel
+      still takes priority over both.)
+- [x] Host handle + debug hook expose lens state for tests.
+      (Deviation: exposed on `window.__ewDebug` — where every other
+      host-level probe lives — not `__ewGestureDebug`, which is
+      gestures-ui's zone/label surface. `lens`, `setLens`,
+      `clearLens`, `lensAlpha`, `lensRings`.)
 - [ ] TagPanel toggle: on = setLens(matching placements on current
       canvas), off = clearLens; toggle state tracks onLensChanged
       so Escape unsets the toggle.
+      (UNCHECKED by lead decision: AI-IMP-071 builds the tag panel
+      in parallel and wires this via the handle's
+      setLens/clearLens/onLensChanged seam.)
 - [ ] e2e: mixed board, toggle on → debug hook reports the right
       set; pan; Escape drops it and the toggle resets.
-- [ ] `pnpm -r build`, engine units, full gates green.
+      (Toggle half UNCHECKED — belongs to 071. The engine-observable
+      half ships here as `apps/desktop/e2e/lens.spec.ts`: mixed
+      board, set via debug hook, dim/ring assertions, pan survival,
+      reapply intersection, Escape ordering.)
+- [x] `pnpm -r build`, engine units, full gates green.
 
 ### Acceptance Criteria
 
@@ -118,3 +135,56 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Scope adjustment (lead decision):** AI-IMP-071 (tag panel) is
+  being built in parallel, so this ticket ships the engine state,
+  host API, and debug hook only. No `renderer/tags/` files were
+  created or touched; the two TagPanel checklist items stay
+  unchecked for 071 to wire through
+  `CanvasHostHandle.setLens/clearLens/onLensChanged`. E2E coverage
+  went to a new `apps/desktop/e2e/lens.spec.ts` (not tags.spec.ts)
+  and drives the lens through `window.__ewDebug`.
+- **Escape now clears selection when nothing else is left to peel.**
+  The ticket's ordering ("lens first, selection on the next press")
+  implies Escape clears selection — behavior that did not exist
+  before (controller.escape only cancelled gestures/marquees).
+  Implemented as one-layer-per-press in `CanvasController.escape()`:
+  in-flight gesture/marquee → lens → selection; non-idle states
+  return early so Escape mid-pan or mid-gesture never touches view
+  state. Every existing unit and e2e still passes, but this is a
+  real behavior change worth a reviewer's eye: any window-level
+  Escape (e.g. closing a DOM menu) that reaches the host keydown
+  handler now also clears board selection.
+- **Dim mechanism:** root-container alpha multiply
+  (`object.alpha = lensAlpha(...)`). It is the one mechanism uniform
+  across images, pins, and every decoration kind, and no item
+  renderer writes root alpha, so it survives renderer updates; the
+  host re-stamps it after every scene apply (created objects default
+  to alpha 1). A scrim pass was rejected — it would dim the rings
+  and cost a full-screen quad.
+- **Renderer-architecture friction (candid):** the "draw pass" for
+  adornments lives in host.ts, not the engine — selection outlines,
+  marquee, and now lens rings are host Graphics fed by engine state.
+  The engine can unit-test the state machine and the `lensAlpha`
+  mapping but not the actual pixels; the e2e asserts object-level
+  alpha and the host's ringed-id list instead. Fine at this scale,
+  but a third adornment consumer would justify extracting an engine
+  adornment pass.
+- **Worktree friction:** the agent worktree branch started two
+  commits behind main (ticket cut + AI-IMP-068 did not exist here);
+  fast-forwarded before starting. `pnpm install` state was broken
+  and Electron's binary was missing `dist/Electron.app`/`path.txt`;
+  `install.js` exited 0 without repairing it, so the dist was copied
+  from the main repo's pnpm store (same electron@39.8.10).
+- **Validation results:** `pnpm -r build` green (desktop tsc
+  included); `pnpm lint` green; canvas-engine vitest 253 passed
+  (24 files, includes the new `lens.test.ts`); desktop vitest 8
+  passed; full Playwright suite exit 0 — 52 passed, 2 flaky
+  (`notes.spec.ts` rename-flush and attach-share: both failed once
+  at `electron.launch`/`firstWindow` timeout in this worktree and
+  passed on retry — launch infrastructure, not behavior; the two
+  new `lens.spec.ts` tests passed first try).
+- `RAG/scripts/generate-index.sh` was NOT run: frontmatter is
+  unchanged (kanban transition is the lead's merge-time call) and
+  regenerating INDEX.md from a worktree would collide with parallel
+  agents.

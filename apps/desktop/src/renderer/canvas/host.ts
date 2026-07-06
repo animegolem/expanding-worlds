@@ -10,6 +10,10 @@ import {
   drawGrid,
   drawSnapGuides,
   hitTest,
+  lensAlpha,
+  LENS_RING_COLOR,
+  LENS_RING_OFFSET_PX,
+  LENS_RING_WIDTH_PX,
   renderStrokeWidth,
   itemWorldAABB,
   orientedCorners,
@@ -63,6 +67,17 @@ export interface CanvasHostHandle {
   /** Eased camera flight framing `bounds` (§6.9 rev 0.11); any user
    * camera input aborts it. */
   flyTo(bounds: Rect): void
+  /** §4.8/§7.5 lens: dim everything but `ids` to a fraction of full
+   * strength and ring the members. A view state, not a selection —
+   * survives pan/zoom/edit, drops on Escape or clearLens(). */
+  setLens(ids: readonly string[]): void
+  clearLens(): void
+  /** Current lens member ids, or null when no lens is applied. */
+  lens(): string[] | null
+  /** Fires on every lens change (set, clear, Escape, scene-apply
+   * shrink) — consumers like the tag-panel toggle track it so an
+   * engine-side drop unsets their UI. Returns an unsubscribe. */
+  onLensChanged(listener: (ids: readonly string[] | null) => void): () => void
   /** Fires after every applied scene (AI-IMP-054): the deterministic
    * signal for UI that reads scene/controller snapshots — replaces
    * the 120 ms trailing-refresh heuristic. Returns an unsubscribe. */
@@ -108,6 +123,15 @@ declare global {
       /** AI-IMP-040: last clamp-applied render width, null if never
        * clamped away from the stored width. */
       renderedStroke: (id: string) => number | null
+      /** §4.8 lens introspection + drive (AI-IMP-072). */
+      lens: () => string[] | null
+      setLens: (ids: string[]) => void
+      clearLens: () => void
+      /** Display-object alpha as rendered — proves the dim at the
+       * object level (1 member/no-lens, LENS_DIM_ALPHA outsider). */
+      lensAlpha: (id: string) => number | null
+      /** Ids ringed by the last lens adornment pass. */
+      lensRings: () => string[]
     }
   }
 }
@@ -201,10 +225,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
 
   const selectionGfx = new Graphics()
   const marqueeGfx = new Graphics()
+  // Lens rings sit under the selection chrome: both can show on the
+  // same item and the selection box must stay legible on top.
+  const lensGfx = new Graphics()
   // Guides live in the world plane: drawSnapGuides authors world-unit
   // geometry with screen-constant dash/width divided by zoom (§6.9).
   const guidesGfx = new Graphics()
-  planes.overlay.addChild(selectionGfx, marqueeGfx)
+  planes.overlay.addChild(lensGfx, selectionGfx, marqueeGfx)
   planes.world.addChild(guidesGfx)
 
   const project = await runQuery<{ id: string; rootNodeId: string; revision: number }>(
@@ -258,6 +285,48 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
   }
 
+  // §4.8/§7.5 lens: the dim is a root-container alpha multiply — the
+  // one mechanism that treats images, pins, and every decoration kind
+  // uniformly (renderers never touch root alpha, so it survives their
+  // updates; new objects from a scene apply get it re-stamped below).
+  // Members get an accent ring in the adornment pass, screen-space
+  // like the selection box but visually distinct (color + rounding).
+  let lensRingIds: string[] = []
+  function applyLensDim(): void {
+    for (const item of controller.items()) {
+      const object = sync.get(item.id)
+      if (object) object.alpha = lensAlpha(controller.lens, item.id)
+    }
+  }
+  function drawLensRings(): void {
+    lensGfx.clear()
+    lensRingIds = []
+    const members = controller.lens.ids()
+    if (!members) return
+    for (const id of members) {
+      // Ephemeral gesture values, like drawSelection: the ring must
+      // track the dragged object, not the last committed scene.
+      const item = ephemeral.get(id) ?? sync.item(id)
+      if (!item) continue
+      const aabb = itemWorldAABB(item)
+      if (!aabb) continue
+      const tl = controller.camera.worldToScreen({ x: aabb.x, y: aabb.y })
+      const br = controller.camera.worldToScreen({
+        x: aabb.x + aabb.width,
+        y: aabb.y + aabb.height,
+      })
+      const pad = LENS_RING_OFFSET_PX
+      lensGfx
+        .roundRect(tl.x - pad, tl.y - pad, br.x - tl.x + pad * 2, br.y - tl.y + pad * 2, pad)
+        .stroke({ width: LENS_RING_WIDTH_PX, color: LENS_RING_COLOR })
+      lensRingIds.push(id)
+    }
+  }
+  function drawLens(): void {
+    applyLensDim()
+    drawLensRings()
+  }
+
   let lastGuides: SnapGuide[] = []
   let cameraTimer: ReturnType<typeof setTimeout> | null = null
   function persistCameraNow(): void {
@@ -291,12 +360,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         registry.resolve(item).update(object, effective, item, resources)
       }
       drawSelection()
+      drawLensRings()
     },
     restoreItem(item: SceneItem) {
       ephemeral.delete(item.id)
       const object = sync.get(item.id)
       if (object) registry.resolve(item).update(object, item, item, resources)
       drawSelection()
+      drawLensRings()
     },
     commitTransform(payload) {
       void gateway.execute('TransformContent', payload)
@@ -317,6 +388,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     cameraChanged() {
       controller.camera.applyTo(planes.world)
       drawSelection()
+      // The dim rides the world plane; only the screen-space rings move.
+      drawLensRings()
       // Dash/width are zoom-derived; redraw live guides at the new zoom.
       if (lastGuides.length > 0) drawSnapGuides(guidesGfx, lastGuides, controller.camera)
       persistCameraSoon()
@@ -326,6 +399,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
 
   const controller = new CanvasController(controllerHost, canvasId)
   controller.selection.onChanged(() => drawSelection())
+  controller.lens.onChanged(() => drawLens())
 
   // §12.2: culling + lazy texture residency, coalesced to one pass
   // per rendered frame (camera events arrive per pointer move).
@@ -472,6 +546,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       // gesture; ephemeral overlays would only go stale from here.
       ephemeral.clear()
       drawSelection()
+      // Re-stamp the dim (created objects default to alpha 1) and the
+      // rings; setItems already intersected the lens with survivors.
+      drawLens()
       scheduleCull()
       notifySceneApplied()
     } finally {
@@ -681,6 +758,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const object = sync.get(id) as { __renderStroke?: number } | undefined
       return object?.__renderStroke ?? null
     },
+    lens: () => controller.lens.ids(),
+    setLens: (ids: string[]) => controller.lens.set(ids),
+    clearLens: () => controller.lens.clear(),
+    lensAlpha: (id: string) => sync.get(id)?.alpha ?? null,
+    lensRings: () => [...lensRingIds],
   }
 
   let detachGestures: () => void = () => {}
@@ -699,6 +781,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const target = controller.camera.fitTarget(bounds, viewport())
       if (target) flight.flyTo(target)
     },
+    setLens: (ids: readonly string[]) => controller.lens.set(ids),
+    clearLens: () => controller.lens.clear(),
+    lens: () => controller.lens.ids(),
+    onLensChanged: (listener) => controller.lens.onChanged(listener),
     onSceneApplied(listener: () => void): () => void {
       sceneAppliedListeners.add(listener)
       return () => sceneAppliedListeners.delete(listener)

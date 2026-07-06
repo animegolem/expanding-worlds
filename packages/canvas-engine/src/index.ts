@@ -56,6 +56,14 @@ export {
 } from './hit-test'
 export { Selection } from './selection'
 export {
+  Lens,
+  lensAlpha,
+  LENS_DIM_ALPHA,
+  LENS_RING_COLOR,
+  LENS_RING_OFFSET_PX,
+  LENS_RING_WIDTH_PX,
+} from './lens'
+export {
   GestureSession,
   placementTransformOf,
   type GestureUpdate,

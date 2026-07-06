@@ -1,6 +1,7 @@
 import { Camera, type Point, type Rect } from './camera'
 import { GestureSession, type GestureUpdate } from './gesture'
 import { hitTest, marqueeHits } from './hit-test'
+import { Lens } from './lens'
 import { Selection } from './selection'
 import { noopSnapProvider, type SnapGuide, type SnapProvider } from './snap'
 import type { TransformContentPayload } from '@ew/commands'
@@ -63,6 +64,8 @@ const DRAG_THRESHOLD_PX = 4
 export class CanvasController {
   readonly camera = new Camera()
   readonly selection = new Selection()
+  /** §4.8/§7.5 dim-to-hits view state; never part of gestures. */
+  readonly lens = new Lens()
   #host: ControllerHost
   #snap: SnapProvider = noopSnapProvider
   #moveDriver: GestureDriver | null = null
@@ -83,6 +86,9 @@ export class CanvasController {
     const live = new Set(items.map((i) => i.id))
     const kept = this.selection.ids().filter((id) => live.has(id))
     if (kept.length !== this.selection.size) this.selection.set(kept)
+    // The lens survives reapplication by intersecting with survivors
+    // (§4.8: pan/zoom/edit keep it); an empty intersection clears it.
+    this.lens.intersect(live)
   }
 
   items(): readonly SceneItem[] {
@@ -100,6 +106,7 @@ export class CanvasController {
     this.#state = { kind: 'idle' }
     this.#items = []
     this.selection.clear()
+    this.lens.clear()
   }
 
   setSnapProvider(provider: SnapProvider): void {
@@ -236,11 +243,23 @@ export class CanvasController {
     this.camera.zoomAt(screen, Math.exp(-deltaY * 0.0015))
   }
 
+  /** Escape peels one layer per press: an in-flight gesture/marquee
+   * cancels first; then the lens drops (WITHOUT touching selection —
+   * §4.8: the lens is a view state, exiting it must not disturb what
+   * the user has selected); only then does selection clear. */
   escape(): void {
     const state = this.#state
     this.#state = { kind: 'idle' }
-    if (state.kind === 'gesture') this.#finishGesture(state.session, { commit: false })
-    if (state.kind === 'marquee') this.#host.renderMarquee(null)
+    if (state.kind !== 'idle') {
+      if (state.kind === 'gesture') this.#finishGesture(state.session, { commit: false })
+      if (state.kind === 'marquee') this.#host.renderMarquee(null)
+      return
+    }
+    if (this.lens.active) {
+      this.lens.clear()
+      return
+    }
+    this.selection.clear()
   }
 
   #finishGesture(session: GestureSession, opts: { commit: boolean }): void {
