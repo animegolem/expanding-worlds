@@ -13,7 +13,9 @@
   import CharmRail from './CharmRail.svelte'
   import Dock from './Dock.svelte'
   import ImportProgressStrip from './ImportProgressStrip.svelte'
+  import MirrorAsk from './MirrorAsk.svelte'
   import PathBar from './PathBar.svelte'
+  import RecognitionChip from './RecognitionChip.svelte'
   import SourcePanel from './SourcePanel.svelte'
   import TitleStrip from './TitleStrip.svelte'
   import Toasts from './Toasts.svelte'
@@ -63,6 +65,12 @@
   {/if}
   <CharmRail />
   <Toasts {handle} />
+  <!-- §14.4 inbox mirror (AI-IMP-092): both surfaces ride the drop
+       and obey the engagement fade — INSIDE the fading root, unlike
+       the strip below: dissolving at the next idle is their designed
+       dismissal, so they must share the layer's clock. -->
+  <MirrorAsk />
+  <RecognitionChip {handle} />
 </div>
 
 <!-- §14.4 batch import strip (AI-IMP-081): a SIBLING of the fading

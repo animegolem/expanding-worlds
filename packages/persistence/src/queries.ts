@@ -73,6 +73,36 @@ export function registerCoreQueries(registry: QueryRegistry): void {
     ),
   )
 
+  // §14.4 recognition without reference (AI-IMP-092): "does this
+  // project already hold these bytes?" — asked against the LIBRARY
+  // slot before every inbox-mirror copy. tagNames feed the
+  // recognition chip's tag offer: every active tag on any active
+  // node whose image appearance points at an active asset carrying
+  // the hash (the same union ingest's tag border reads).
+  registry.register('hasContentHash', (ctx, args) => {
+    const { contentHash } = args as { contentHash: string }
+    const asset = ctx.db.get(
+      `SELECT id FROM asset
+       WHERE project_id = ? AND content_hash = ? AND lifecycle_state = 'active'
+       LIMIT 1`,
+      ctx.projectId,
+      contentHash,
+    )
+    if (!asset) return { present: false, tagNames: [] }
+    const rows = ctx.db.all<{ name: string }>(
+      `SELECT DISTINCT t.name
+       FROM asset a
+       JOIN node n ON n.appearance_asset_id = a.id AND n.lifecycle_state = 'active'
+       JOIN tag_assignment ta ON ta.node_id = n.id
+       JOIN tag t ON t.id = ta.tag_id AND t.lifecycle_state = 'active'
+       WHERE a.project_id = ? AND a.content_hash = ? AND a.lifecycle_state = 'active'
+       ORDER BY t.name_key`,
+      ctx.projectId,
+      contentHash,
+    )
+    return { present: true, tagNames: rows.map((row) => row.name) }
+  })
+
   // §10.2 command-log read model (AI-IMP-050): diagnostics and
   // deterministic test assertions ("exactly one UpdateNote", "nothing
   // but camera persists") that exact revision arithmetic can't give —
