@@ -41,6 +41,7 @@ export interface RestorePlacementPayload {
   flipY: boolean
   renderOrder: number
   labelVisible: boolean
+  locked: boolean
   /** Set when DeletePlacement trashed the bare node (§9.2). */
   restoreNodeId?: string | null
 }
