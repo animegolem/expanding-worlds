@@ -9,6 +9,12 @@ record — history lives in the tickets.
 
 ## Owner actions (setup only you can do)
 
+- [ ] **LOW PRIORITY — Codex GitHub auto-review stopped firing**
+  (2026-07-06): PR #4 got no auto-review and `!codex review` didn't
+  respond either (PR #1/#3 worked). Local Codex via the plugin
+  covers epic reviews meanwhile — look at the integration whenever,
+  no hurry.
+
 - [ ] **CI → Codex auto-diagnose secret** (2026-07-06): the
   workflow needs an OpenAI **API key** in the repo (your ChatGPT
   subscription does not cover Actions usage — this bills the API):
