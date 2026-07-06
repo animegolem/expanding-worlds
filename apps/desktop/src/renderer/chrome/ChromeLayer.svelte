@@ -17,6 +17,7 @@
   import Toasts from './Toasts.svelte'
   import { onEngagementChanged } from './engagement'
   import { attachNavigation } from './navigation'
+  import { onTakeoverChanged } from './takeover'
   import { CHROME_FADE_MS, CHROME_REST_OPACITY } from './feel'
 
   const {
@@ -32,7 +33,9 @@
   } = $props()
 
   let engaged = $state(true)
+  let takeoverOpen = $state(false)
   $effect(() => onEngagementChanged((next) => (engaged = next)))
+  $effect(() => onTakeoverChanged((kind) => (takeoverOpen = kind !== null)))
   $effect(() => attachNavigation(handle))
 </script>
 
@@ -43,10 +46,16 @@
   data-testid="chrome-layer"
   data-engaged={engaged}
 >
-  <TitleStrip {handle} {tooling} {ui} />
-  <PathBar {handle} />
+  <!-- Board-scoped chrome retires under a takeover (its surfaces sit
+       below the takeover cover and its shortcuts are dead); the mode
+       rail and toasts stay — the rail is the way back (§8.2), and
+       errors surface everywhere. -->
+  {#if !takeoverOpen}
+    <TitleStrip {handle} {tooling} {ui} />
+    <PathBar {handle} />
+    <Dock {handle} {ui} {tooling} {hostElement} />
+  {/if}
   <CharmRail />
-  <Dock {handle} {ui} {tooling} {hostElement} />
   <Toasts {handle} />
 </div>
 

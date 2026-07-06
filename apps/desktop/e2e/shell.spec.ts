@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
-import { revealTitleStrip } from './helpers'
+import { launchApp, revealTitleStrip, seedPlacedNote } from './helpers'
 
 declare global {
   interface Window {
@@ -123,12 +123,15 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   const win = await app.firstWindow()
   await expect(win.getByTestId('canvas-host')).toBeVisible()
 
-  // Rail and dock are present; the global-view charms exist but are
-  // disabled until their epics ship.
+  // Rail and dock are present; charms whose views haven't shipped
+  // stay disabled (outline and ☰ went live with AI-IMP-068).
   await expect(win.getByTestId('charm-rail')).toBeVisible()
   await expect(win.getByTestId('dock')).toBeVisible()
-  for (const id of ['project', 'search', 'graph', 'gallery', 'outline', 'menu']) {
+  for (const id of ['project', 'search', 'graph', 'gallery']) {
     await expect(win.getByTestId(`charm-${id}`)).toHaveAttribute('aria-disabled', 'true')
+  }
+  for (const id of ['outline', 'menu']) {
+    await expect(win.getByTestId(`charm-${id}`)).not.toHaveAttribute('aria-disabled', 'true')
   }
   // Tool modes and the zoom cluster live in the dock.
   await expect(win.getByTestId('tool-select')).toBeVisible()
@@ -189,6 +192,81 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   await expect(win.getByTestId('tooltip-chip')).toBeVisible()
   await expect(win.getByTestId('tooltip-chip')).toContainText('Select')
   await expect(win.getByTestId('tooltip-chip')).toContainText('V')
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-068 acceptance: the takeover framework (RFC §8.2) — rail
+ * charm entry, Esc/charm return, camera untouched, board input dead
+ * underneath, chrome fade suspended while a takeover is open.
+ */
+test('takeover framework: charm entry, Esc return, camera and board untouched', async () => {
+  const { app, win } = await launchApp('ew-e2e-takeover-')
+
+  // A placed pin and a deliberate camera so the round trip has
+  // something to disturb.
+  await seedPlacedNote(win, 'Takeover Guard', 'body', { x: 100, y: 100 })
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 123, y: 45, zoom: 1.5 }))
+  await win.getByTestId('canvas-host').click({ position: { x: 400, y: 400 } })
+  await win.keyboard.press('ControlOrMeta+a')
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection().length))
+    .toBe(1)
+
+  // Enter by charm; the charm reads active.
+  await win.getByTestId('charm-outline').click()
+  await expect(win.getByTestId('takeover-outline')).toBeVisible()
+  await expect(win.getByTestId('charm-outline')).toHaveAttribute('aria-pressed', 'true')
+
+  // Chrome never fades under a takeover: the engagement clock holds.
+  await win.evaluate(() =>
+    window.dispatchEvent(
+      new CustomEvent('ew-test-set-engagement', { detail: { engaged: false } }),
+    ),
+  )
+  await expect(win.getByTestId('chrome-layer')).toHaveAttribute('data-engaged', 'true')
+
+  // Board input is dead underneath: tool keys, delete, select-all.
+  await win.keyboard.press('t')
+  expect(await win.evaluate(() => window.__ewDebug!.activeTool())).toBe('select')
+  await win.keyboard.press('Delete')
+  await win.keyboard.press('ControlOrMeta+a')
+  expect(await win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+  expect(await win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(1)
+
+  // Esc returns; the camera is exactly where it was.
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+  await expect(win.getByTestId('charm-outline')).toHaveAttribute('aria-pressed', 'false')
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual({
+    x: 123,
+    y: 45,
+    zoom: 1.5,
+  })
+
+  // The originating charm toggles: reopen, close by charm.
+  await win.getByTestId('charm-outline').click()
+  await expect(win.getByTestId('takeover-outline')).toBeVisible()
+  await win.getByTestId('charm-outline').click()
+  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+
+  // ☰ menu: Settings entry opens its takeover; opening a second kind
+  // replaces the first implicitly through close-then-open.
+  await win.getByTestId('charm-menu').click()
+  await expect(win.getByTestId('rail-menu')).toBeVisible()
+  await win.getByTestId('menu-settings').click()
+  await expect(win.getByTestId('rail-menu')).toHaveCount(0)
+  await expect(win.getByTestId('takeover-settings')).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
+
+  // Board input lives again after return.
+  await win.getByTestId('canvas-host').click({ position: { x: 400, y: 400 } })
+  await win.keyboard.press('t')
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.activeTool()))
+    .toBe('text')
 
   await app.close()
 })

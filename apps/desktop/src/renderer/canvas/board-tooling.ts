@@ -15,6 +15,7 @@ import {
 } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
 import type { Sprite } from 'pixi.js'
+import { takeoverActive } from '../chrome/takeover'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -400,6 +401,9 @@ export function attachBoardTooling(
     scaleBackgroundBy(Math.exp(-event.deltaY * 0.0015))
   }
   const onKeyDownCapture = (event: KeyboardEvent): void => {
+    // §8.2 (AI-IMP-068): a takeover owns Escape; the hidden bg-edit
+    // mode must not intercept it at capture underneath.
+    if (takeoverActive()) return
     if (!mode || event.code !== 'Escape') return
     event.preventDefault()
     event.stopImmediatePropagation()

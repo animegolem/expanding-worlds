@@ -18,6 +18,7 @@ import {
 } from '@ew/canvas-engine'
 import { uuidv7 } from '@ew/domain'
 import { Graphics, type Text } from 'pixi.js'
+import { takeoverActive } from '../chrome/takeover'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -403,6 +404,9 @@ export function attachGesturesUI(
   }
 
   const onKeyDown = (event: KeyboardEvent): void => {
+    // §8.2 takeover scoping (AI-IMP-068): board gestures are dead
+    // while a project-global view owns the window.
+    if (takeoverActive()) return
     if (event.code === 'Space') spaceHeld = true
     if (event.code === 'Escape' && dupDrag) {
       // Esc mid-⌥-drag cancels with nothing committed.

@@ -23,6 +23,7 @@
   import type { CanvasHostHandle } from '../canvas/host'
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { BoardTooling } from '../canvas/board-tooling'
+  import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
 
   const {
@@ -125,6 +126,7 @@
       () => (zoomPct = Math.round(handle.controller.camera.zoom * 100)),
     )
     const onKeydown = (event: KeyboardEvent): void => {
+      if (takeoverActive()) return
       if (event.metaKey || event.ctrlKey || event.altKey) return
       const target = event.target as HTMLElement | null
       if (

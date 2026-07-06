@@ -26,6 +26,7 @@
     pathEntries,
     type NavEntry,
   } from './navigation'
+  import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
 
   const { handle }: { handle: CanvasHostHandle } = $props()
@@ -48,6 +49,7 @@
   // the menu closed; editable targets keep their digits.
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
+      if (takeoverActive()) return
       if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
       if (event.key < '1' || event.key > '9') return
       const target = event.target as HTMLElement | null

@@ -15,6 +15,7 @@
  * checked at traversal time via getCanvasScene.
  */
 import type { CanvasHostHandle } from '../canvas/host'
+import { takeoverActive } from './takeover'
 
 export interface NavViewport {
   x: number
@@ -153,6 +154,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
   cursor = 0
 
   const onKeydown = (event: KeyboardEvent): void => {
+    if (takeoverActive()) return
     if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
     if (event.key === '[') {
       event.preventDefault()
@@ -164,6 +166,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
   }
   // Mouse buttons 4/5 arrive as pointer buttons 3/4.
   const onPointerUp = (event: PointerEvent): void => {
+    if (takeoverActive()) return
     if (event.button === 3) void back()
     else if (event.button === 4) void forward()
   }
@@ -171,6 +174,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
   window.addEventListener('pointerup', onPointerUp)
   // macOS trackpad swipe / Windows mouse X-buttons, forwarded by main.
   const offGesture = window.ew.nav.onGesture((direction) => {
+    if (takeoverActive()) return
     if (direction === 'back') void back()
     else void forward()
   })

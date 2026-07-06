@@ -1,51 +1,111 @@
 <!--
   Mode charm rail (RFC §8.2): vertical, upper-right — project ⧉ ·
-  search ⌕ · graph ⊛ · gallery ⊞ · outline ▤ · menu ☰. The global
-  takeover views are EPIC-013/014 scope; until they ship, their charms
-  render disabled with a tooltip naming what is coming — the rail's
-  geometry and cadence are this ticket's deliverable. The §8.6
-  ongoing-condition ⚠ perch (AI-IMP-066) appends below the charm
-  list only while a condition holds: no condition, no slot, no
-  reserved space.
+  search ⌕ · graph ⊛ · gallery ⊞ · outline ▤ · menu ☰. Outline and
+  the ☰ menu are live takeover entries (AI-IMP-068); charms whose
+  views haven't shipped render disabled with a tooltip naming what
+  is coming (⌕ activates with AI-IMP-073, ⧉/⊞ with EPIC-014, ⊛ with
+  the graph epic). The §8.6 ongoing-condition ⚠ perch (AI-IMP-066)
+  appends below the charm list only while a condition holds: no
+  condition, no slot, no reserved space.
 -->
 <script lang="ts">
   import ConditionPanel from './ConditionPanel.svelte'
+  import MenuPopover from './MenuPopover.svelte'
   import { PERCH_PULSE_MS } from './feel'
   import { onConditionsChanged, type Condition } from './status'
+  import { activeTakeover, onTakeoverChanged, toggleTakeover, type TakeoverKind } from './takeover'
   import { tooltip } from './tooltip'
 
   let conditions = $state<readonly Condition[]>([])
   let panelOpen = $state(false)
+  let menuOpen = $state(false)
+  let takeover = $state<TakeoverKind | null>(activeTakeover())
   $effect(() =>
     onConditionsChanged((next) => {
       conditions = next
       if (next.length === 0) panelOpen = false
     }),
   )
+  $effect(() => onTakeoverChanged((kind) => (takeover = kind)))
 
-  const charms: Array<{ id: string; glyph: string; name: string; deferred: string }> = [
-    { id: 'project', glyph: '⧉', name: 'Project', deferred: 'arrives with the library (EPIC-014)' },
-    { id: 'search', glyph: '⌕', name: 'Search', deferred: 'arrives with global views (EPIC-013)' },
-    { id: 'graph', glyph: '⊛', name: 'Graph', deferred: 'arrives with the graph epic' },
-    { id: 'gallery', glyph: '⊞', name: 'Gallery', deferred: 'arrives with the library (EPIC-014)' },
-    { id: 'outline', glyph: '▤', name: 'Outline', deferred: 'arrives with global views (EPIC-013)' },
-    { id: 'menu', glyph: '☰', name: 'Menu', deferred: 'arrives with export and settings' },
+  type Charm = { id: string; glyph: string; name: string } & (
+    | { state: 'deferred'; deferred: string }
+    | { state: 'takeover'; kind: TakeoverKind }
+    | { state: 'menu' }
+  )
+
+  const charms: Charm[] = [
+    {
+      id: 'project',
+      glyph: '⧉',
+      name: 'Project',
+      state: 'deferred',
+      deferred: 'arrives with the library (EPIC-014)',
+    },
+    {
+      id: 'search',
+      glyph: '⌕',
+      name: 'Search',
+      state: 'deferred',
+      deferred: 'arrives with search (AI-IMP-073)',
+    },
+    { id: 'graph', glyph: '⊛', name: 'Graph', state: 'deferred', deferred: 'arrives with the graph epic' },
+    {
+      id: 'gallery',
+      glyph: '⊞',
+      name: 'Gallery',
+      state: 'deferred',
+      deferred: 'arrives with the library (EPIC-014)',
+    },
+    { id: 'outline', glyph: '▤', name: 'Outline', state: 'takeover', kind: 'outline' },
+    { id: 'menu', glyph: '☰', name: 'Menu', state: 'menu' },
   ]
 </script>
 
 <nav class="charm-rail" data-testid="charm-rail">
   {#each charms as charm (charm.id)}
-    <!-- aria-disabled, not disabled: a disabled button swallows the
-         pointer events the deferred tooltip needs. -->
-    <button
-      type="button"
-      class="charm deferred"
-      aria-disabled="true"
-      data-testid={`charm-${charm.id}`}
-      use:tooltip={{ name: `${charm.name} — ${charm.deferred}` }}
-    >
-      {charm.glyph}
-    </button>
+    {#if charm.state === 'takeover'}
+      <button
+        type="button"
+        class="charm"
+        class:active={takeover === charm.kind}
+        aria-pressed={takeover === charm.kind}
+        data-testid={`charm-${charm.id}`}
+        onclick={() => toggleTakeover(charm.kind)}
+        use:tooltip={{ name: charm.name }}
+      >
+        {charm.glyph}
+      </button>
+    {:else if charm.state === 'menu'}
+      <div class="menu-slot">
+        <button
+          type="button"
+          class="charm"
+          class:active={menuOpen}
+          aria-expanded={menuOpen}
+          data-testid={`charm-${charm.id}`}
+          onclick={() => (menuOpen = !menuOpen)}
+          use:tooltip={{ name: charm.name }}
+        >
+          {charm.glyph}
+        </button>
+        {#if menuOpen}
+          <MenuPopover onclose={() => (menuOpen = false)} />
+        {/if}
+      </div>
+    {:else}
+      <!-- aria-disabled, not disabled: a disabled button swallows the
+           pointer events the deferred tooltip needs. -->
+      <button
+        type="button"
+        class="charm deferred"
+        aria-disabled="true"
+        data-testid={`charm-${charm.id}`}
+        use:tooltip={{ name: `${charm.name} — ${charm.deferred}` }}
+      >
+        {charm.glyph}
+      </button>
+    {/if}
   {/each}
   {#if conditions.length > 0}
     <!-- The perch mounts on arrival, so its CSS animation IS the
@@ -101,6 +161,13 @@
     cursor: default;
   }
 
+  .charm.active {
+    background: #4a9df0;
+    border-color: #4a9df0;
+    color: #10131a;
+  }
+
+  .menu-slot,
   .perch-slot {
     position: relative;
   }

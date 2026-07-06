@@ -5,12 +5,12 @@ tags:
   - Implementation
   - shell
   - takeover
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-013-global-views]]
-confidence_score: 0.8
+confidence_score: 0.9
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-068-takeover-framework
@@ -87,23 +87,27 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] takeover.ts store: one active takeover, open/close/subscribe;
+- [x] takeover.ts store: one active takeover, open/close/subscribe;
       opening a second kind replaces the first.
-- [ ] TakeoverLayer above ChromeLayer; Escape closes; scrim/sheet
-      chrome with a testid per kind (`takeover-outline`,
+- [x] TakeoverLayer above the board surfaces; Escape closes;
+      scrim/sheet chrome with a testid per kind (`takeover-outline`,
       `takeover-settings`).
-- [ ] CharmRail: ▤ live with aria-pressed while open, click toggles;
+- [x] CharmRail: ▤ live with aria-pressed while open, click toggles;
       ☰ live opening MenuPopover with a Settings entry that opens
-      the settings takeover scaffold.
-- [ ] Board shortcut seams guarded: tool keys, Delete/select-all,
-      Mod+[/] and Mod+1–9 do nothing while a takeover is open.
-- [ ] Engagement suspended while a takeover is open; chrome never
-      fades under it; resumes on close.
-- [ ] e2e: open ▤ by charm, close by Esc; reopen, close by charm;
-      camera (x, y, zoom) identical before/after; pressing V/Delete
-      inside the takeover leaves tool mode and board content
-      unchanged.
-- [ ] `pnpm -r build`, lint, and the full desktop e2e suite green.
+      the settings takeover scaffold (End session and Export render
+      deferred).
+- [x] Board shortcut seams guarded: tool keys, Delete/select-all,
+      Mod+[/] and Mod+1–9 do nothing while a takeover is open
+      (guards in Dock, gestures-ui, host, navigation, PathBar,
+      board-tooling's Escape capture).
+- [x] Engagement suspended while a takeover is open; chrome never
+      fades under it; resumes on close (holdEngagement seam).
+- [x] e2e: open ▤ by charm, close by Esc; reopen, close by charm;
+      camera (x, y, zoom) identical before/after; pressing t/Delete/
+      Mod+A inside the takeover leaves tool mode, selection, and
+      board content unchanged; ☰ → Settings round trip.
+- [x] `pnpm -r build`, lint, desktop unit, all package units, and
+      the full 52-test desktop e2e suite green.
 
 ### Acceptance Criteria
 
@@ -126,3 +130,21 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+The ticket said "TakeoverLayer above ChromeLayer" — wrong on
+inspection: a full cover above z-10 buries the charm rail, and the
+originating charm is one of the two mandated ways back (§8.2). The
+takeover sits at z-index 9 instead — above charms (6), pin dot (7),
+and note panels (8), below chrome (10) — and ChromeLayer unmounts
+its board-scoped children (TitleStrip, PathBar, Dock) while a
+takeover is open, keeping the rail and toasts. Consequence found
+during that pass: board-tooling's background-edit mode holds a
+window-level Escape capture that would eat the takeover's Escape
+from underneath; it now yields while a takeover is open (the
+bg-edit bar unmounts with the title strip and reappears intact on
+return — the mode itself is left standing, a corner the settings
+ticket may want to auto-cancel instead). Mod+[/] and Mod+1–9 guards
+are code-level and covered by the passing suite, not by dedicated
+takeover-mode e2e assertions; the tool-key/Delete/select-all
+scoping is asserted directly. No undo keybinding exists anywhere in
+the renderer yet, so there was nothing to guard for Mod+Z.

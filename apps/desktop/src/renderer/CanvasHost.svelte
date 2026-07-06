@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import ChromeLayer from './chrome/ChromeLayer.svelte'
+  import TakeoverLayer from './chrome/TakeoverLayer.svelte'
   import { toast } from './chrome/status'
   import { attachBoardTooling, type BoardTooling } from './canvas/board-tooling'
   import { attachCharmsUi, type CharmsUiHandle } from './canvas/charms-ui'
@@ -93,6 +94,7 @@
   {#if handle && ui && tooling}
     <ChromeLayer {handle} {ui} {tooling} hostElement={element} />
     <NotePanels {handle} hostElement={element} />
+    <TakeoverLayer />
   {/if}
   {#if error}
     <p class="canvas-error" role="alert">Canvas failed to start: {error}</p>

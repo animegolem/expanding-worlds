@@ -13,6 +13,7 @@ import { CHROME_FADE_DELAY_MS } from './feel'
 type Listener = (engaged: boolean) => void
 
 let engaged = true
+let held = false
 let idleTimer: ReturnType<typeof setTimeout> | null = null
 const listeners = new Set<Listener>()
 let attached = false
@@ -26,10 +27,11 @@ function set(next: boolean): void {
 function poke(): void {
   set(true)
   if (idleTimer) clearTimeout(idleTimer)
-  idleTimer = setTimeout(() => set(false), CHROME_FADE_DELAY_MS)
+  idleTimer = held ? null : setTimeout(() => set(false), CHROME_FADE_DELAY_MS)
 }
 
 function leave(): void {
+  if (held) return
   if (idleTimer) clearTimeout(idleTimer)
   idleTimer = null
   set(false)
@@ -62,6 +64,15 @@ function attach(): void {
  * not fade in silence). Same effect as the user moving the mouse. */
 export function wake(): void {
   attach()
+  poke()
+}
+
+/** §8.2 takeovers suspend the fade clock: a takeover is an active
+ * mode and the chrome under it never fades. Hold pins engagement
+ * on; releasing resumes the normal cadence from now. */
+export function holdEngagement(hold: boolean): void {
+  attach()
+  held = hold
   poke()
 }
 

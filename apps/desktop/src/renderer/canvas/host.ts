@@ -33,6 +33,7 @@ import {
   type SnapGuide,
 } from '@ew/canvas-engine'
 import { Application, Graphics, Texture } from 'pixi.js'
+import { takeoverActive } from '../chrome/takeover'
 import { attachGesturesUI } from './gestures-ui'
 import type { Rect } from '@ew/canvas-engine'
 
@@ -559,6 +560,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
   }
   const onKeyDown = (event: KeyboardEvent): void => {
+    // §8.2 takeover scoping (AI-IMP-068): no space-pan or tool
+    // escape while a project-global view owns the window.
+    if (takeoverActive()) return
     if (event.code === 'Space') {
       spaceHeld = true
       updateCursor()
