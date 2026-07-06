@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 1 | 0 |
 | Planned | 8 | 4 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 109 |
+| Completed | 13 | 110 |
 | **Total** | **22** | **115** |
 
 ## In Progress
@@ -86,7 +86,6 @@
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-015 is completed
-- [[AI-IMP-115-everything-scope-pull|IMP-115]] — open but parent epic AI-EPIC-015 is completed
 
 ---
 
@@ -183,7 +182,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 109 IMPs completed</summary>
+<summary>13 EPICs, 110 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -298,6 +297,6 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
   - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
   - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
-  - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — in-progress
+  - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — completed
 
 </details>
