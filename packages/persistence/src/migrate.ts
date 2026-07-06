@@ -20,15 +20,35 @@ export function migrate(db: Db): number[] {
   const ran: number[] = []
   for (const migration of MIGRATIONS) {
     if (applied.has(migration.id)) continue
-    db.transaction(() => {
-      db.exec(migration.sql)
-      db.run(
-        'INSERT INTO migrations (id, name, applied_at) VALUES (?, ?, ?)',
-        migration.id,
-        migration.name,
-        new Date().toISOString(),
-      )
-    })
+    // Table REBUILDS need the documented SQLite dance: foreign_keys
+    // OFF at the CONNECTION level (a pragma inside the transaction is
+    // a no-op, and defer_foreign_keys cannot work — deferred FKs are
+    // a violation COUNTER, so the implicit DELETE of a populated
+    // parent under DROP TABLE can never be balanced by rows copied
+    // into a differently-named table; found live at 0006). The
+    // integrity debt is repaid with foreign_key_check afterward.
+    if (migration.disableForeignKeys) db.exec('PRAGMA foreign_keys = OFF')
+    try {
+      db.transaction(() => {
+        db.exec(migration.sql)
+        db.run(
+          'INSERT INTO migrations (id, name, applied_at) VALUES (?, ?, ?)',
+          migration.id,
+          migration.name,
+          new Date().toISOString(),
+        )
+      })
+      if (migration.disableForeignKeys) {
+        const violations = db.all('PRAGMA foreign_key_check')
+        if (violations.length > 0) {
+          throw new Error(
+            `migration ${migration.id} broke foreign keys: ${JSON.stringify(violations[0])}`,
+          )
+        }
+      }
+    } finally {
+      if (migration.disableForeignKeys) db.exec('PRAGMA foreign_keys = ON')
+    }
     ran.push(migration.id)
   }
 

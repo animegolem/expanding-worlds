@@ -9,6 +9,11 @@ export interface Migration {
   id: number
   name: string
   sql: string
+  /** Table-rebuild migrations: the runner turns connection-level
+   * foreign_keys OFF around the transaction and runs
+   * foreign_key_check after (the documented rebuild procedure —
+   * defer_foreign_keys can NOT do this job; see migrate.ts). */
+  disableForeignKeys?: boolean
 }
 
 /** Ordered, append-only. Never edit an applied migration. */
