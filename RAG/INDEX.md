@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 6 | 4 |
+| Planned | 6 | 5 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 88 |
-| **Total** | **18** | **92** |
+| **Total** | **18** | **93** |
 
 ## In Progress
 
@@ -44,6 +44,7 @@
 - [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
 - [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — planned
 - [[AI-IMP-099-grid-lod-crossfade|IMP-099]] Grid lod crossfade — planned
+- [[AI-IMP-100-panel-aware-flyto|IMP-100]] Panel aware flyto — planned
 
 ---
 
