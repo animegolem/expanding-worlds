@@ -10,13 +10,22 @@
 <script lang="ts">
   import { itemWorldAABB } from '@ew/canvas-engine'
   import type { CanvasHostHandle } from '../canvas/host'
+  import LocationChooser from './LocationChooser.svelte'
   import NotePanel from './NotePanel.svelte'
-  import { onPanelsChanged, type PanelRecord } from './panels'
+  import {
+    onChooserChanged,
+    onPanelsChanged,
+    type ChooserState,
+    type PanelRecord,
+  } from './panels'
 
   const { handle, hostElement }: { handle: CanvasHostHandle; hostElement: HTMLElement } = $props()
 
   let records = $state<readonly PanelRecord[]>([])
   $effect(() => onPanelsChanged((next) => (records = next)))
+
+  let chooser = $state<ChooserState | null>(null)
+  $effect(() => onChooserChanged((next) => (chooser = next)))
 
   interface Indicator {
     key: number
@@ -134,6 +143,9 @@
   {#each records as record (record.key)}
     <NotePanel {handle} {record} />
   {/each}
+  {#if chooser}
+    <LocationChooser state={chooser} {hostElement} />
+  {/if}
 </div>
 
 <style>

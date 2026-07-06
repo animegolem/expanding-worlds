@@ -1,20 +1,13 @@
 <!--
-  Uses sidebar (RFC-0001 §7.4, AI-IMP-049): locations of the open
-  note grouped canvas → node with placement counts, appearance hint,
-  and tags; an Unplaced group whose rows place at view center; and,
-  for a zero-node note, Place on Current Canvas (§6.10). Selecting a
-  node group on the active canvas centers its placements. Cross-canvas
-  selection and the grouped chooser are EPIC-006.
+  In-panel Uses list (RFC §7.4, AI-IMP-065): the open note's
+  locations grouped by canvas, unfolded from the panel header's
+  "⌖ n places". The Unplaced group comes last; "here" marks the
+  placement being read; cross-canvas rows are navigation events
+  (§8.1) that fly after arrival. Rows keep the AI-IMP-049 placement
+  actions (§6.10) unchanged.
 -->
-<script lang="ts">
-  import type { ProjectPort } from './note-editor'
-  import {
-    requestCenterPlacements,
-    requestPlaceNode,
-    requestPlaceNote,
-  } from './open-note'
-
-  interface UsesNode {
+<script lang="ts" module>
+  export interface UsesNode {
     nodeId: string
     appearanceKind: string | null
     appearanceColor: string | null
@@ -22,44 +15,60 @@
     placements: Array<{ placementId: string }>
   }
 
-  interface Uses {
-    canvases: Array<{ canvasId: string; canvasTitle: string | null; isRoot: boolean; nodes: UsesNode[] }>
+  export interface UsesData {
+    canvases: Array<{
+      canvasId: string
+      canvasTitle: string | null
+      isRoot: boolean
+      nodes: UsesNode[]
+    }>
     unplaced: UsesNode[]
     totalPlacements: number
   }
+</script>
+
+<script lang="ts">
+  import { navigateTo } from '../chrome/navigation'
+  import {
+    requestCenterPlacements,
+    requestPlaceNode,
+    requestPlaceNote,
+  } from './open-note'
 
   let {
-    port,
+    uses,
     noteId,
     activeCanvasId,
-    refresh,
+    herePlacementId,
   }: {
-    port: ProjectPort
+    uses: UsesData
     noteId: string
-    /** Canvas the workspace currently shows; null when unknown. */
     activeCanvasId: string | null
-    /** Bump to re-query (project-changed). */
-    refresh: number
+    herePlacementId: string | null
   } = $props()
-
-  let uses = $state<Uses | null>(null)
-
-  $effect(() => {
-    void refresh
-    const target = noteId
-    void port.query<Uses>('getNoteUses', { noteId: target }).then((result) => {
-      if (target === noteId) uses = result
-    })
-  })
 
   function dotStyle(node: UsesNode): string {
     return `background:${node.appearanceColor ?? '#8ab4d8'}`
   }
+
+  function isHere(node: UsesNode): boolean {
+    return herePlacementId !== null &&
+      node.placements.some((placement) => placement.placementId === herePlacementId)
+  }
+
+  function selectGroup(canvasId: string, canvasTitle: string | null, node: UsesNode): void {
+    const ids = node.placements.map((placement) => placement.placementId)
+    if (canvasId === activeCanvasId) {
+      requestCenterPlacements(ids)
+      return
+    }
+    // Cross-canvas rows fly as §8.1 history events, then center.
+    void navigateTo(canvasId, canvasTitle ?? 'Board').then(() => requestCenterPlacements(ids))
+  }
 </script>
 
 <section class="uses" data-testid="uses-sidebar">
-  <h3>Uses</h3>
-  {#if uses}
+  {#if uses.canvases.length > 0 || uses.unplaced.length > 0}
     {#each uses.canvases as canvas (canvas.canvasId)}
       <div class="group">
         <p class="group-title">
@@ -72,15 +81,16 @@
                 type="button"
                 class="row"
                 data-testid="uses-node"
-                disabled={canvas.canvasId !== activeCanvasId}
                 title={canvas.canvasId === activeCanvasId
                   ? 'Center these placements'
-                  : 'On another canvas (navigation arrives with EPIC-006)'}
-                onclick={() =>
-                  requestCenterPlacements(node.placements.map((p) => p.placementId))}
+                  : 'Fly to this board'}
+                onclick={() => selectGroup(canvas.canvasId, canvas.canvasTitle, node)}
               >
                 <span class="dot" style={dotStyle(node)}></span>
                 <span class="count">×{node.placements.length}</span>
+                {#if isHere(node)}
+                  <span class="here" data-testid="uses-here">here</span>
+                {/if}
                 {#if node.tags.length > 0}
                   <span class="tags">{node.tags.join(', ')}</span>
                 {/if}
@@ -110,37 +120,27 @@
         </ul>
       </div>
     {/if}
-    {#if uses.canvases.length === 0 && uses.unplaced.length === 0}
-      <!-- Zero nodes: the note is reachable but bodiless (§6.10). -->
-      <button
-        type="button"
-        class="row"
-        data-testid="uses-place-note"
-        onclick={() => requestPlaceNote(noteId)}
-      >
-        Place on Current Canvas
-      </button>
-    {/if}
+  {:else}
+    <!-- Zero nodes: the note is reachable but bodiless (§6.10). -->
+    <button
+      type="button"
+      class="row"
+      data-testid="uses-place-note"
+      onclick={() => requestPlaceNote(noteId)}
+    >
+      Place on Current Canvas
+    </button>
   {/if}
 </section>
 
 <style>
   .uses {
     flex: none;
-    max-height: 40%;
+    max-height: 11rem;
     overflow: auto;
-    padding: 0.4rem 0.75rem 0.6rem;
+    padding: 0.3rem 0.6rem 0.5rem;
     border-top: 1px solid #ddd;
     font-size: 0.8rem;
-  }
-
-  h3 {
-    margin: 0 0 0.3rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .group-title {
@@ -169,12 +169,7 @@
     cursor: pointer;
   }
 
-  .row:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-
-  .row:not(:disabled):hover {
+  .row:hover {
     background: #eee;
   }
 
@@ -187,6 +182,14 @@
 
   .count {
     color: #666;
+  }
+
+  .here {
+    padding: 0 0.35rem;
+    border-radius: 7px;
+    background: #dce9f7;
+    color: #33628f;
+    font-size: 0.68rem;
   }
 
   .tags {

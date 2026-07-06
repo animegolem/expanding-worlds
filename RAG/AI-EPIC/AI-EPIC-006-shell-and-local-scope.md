@@ -105,7 +105,7 @@ constants, tuned later.
 - [x] FR-8: Cursor-zone selection replacing drawn handles; Option-drag duplicate; lock cursor per §6.9.
 - [x] FR-9: Tethered note panels (one at a time) with pin, escalating indicator, cross-board origin label as navigation event per §8.5.
 - [x] FR-10: Canvas-note corner charm with ghost/solid states per §8.5.
-- [ ] FR-11: In-panel Uses list behind the places header; link-anchored location chooser; zero/one/many per §7.3–7.4.
+- [x] FR-11: In-panel Uses list behind the places header; link-anchored location chooser; zero/one/many per §7.3–7.4.
 - [x] FR-12: Toast system plus the ⚠ ongoing-state perch; status strip retired in the perch ticket per §8.6.
 - [ ] FR-13: Pin dock tool (◉, N) placing a dot node with its phantom note focused; Escape-before-typing persists nothing; Create Pin dialog retired per §6.2 (rev 0.20).
 

@@ -26,10 +26,15 @@ const FOLLOW_KEY = navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'C
 export interface LinkActivation {
   state: string
   title: string
+  /** Client coords of the clicked token's bottom-left, for §7.3's
+   * link-anchored location chooser (AI-IMP-065). */
+  tokenRect?: { x: number; y: number }
 }
 
 /** Mod+Click activates a token (plain click keeps caret placement
- * for editing, the Obsidian-established convention). */
+ * for editing, the Obsidian-established convention). The token's
+ * position rides along so §7.3's location chooser can anchor to the
+ * clicked link (AI-IMP-065). */
 export function wikiLinkActivation(onActivate: (link: LinkActivation) => void): Extension {
   return EditorView.domEventHandlers({
     click: (event) => {
@@ -40,7 +45,8 @@ export function wikiLinkActivation(onActivate: (link: LinkActivation) => void): 
       const state = target.dataset['linkState']
       if (!title || !state) return false
       event.preventDefault()
-      onActivate({ state, title })
+      const rect = target.getBoundingClientRect()
+      onActivate({ state, title, tokenRect: { x: rect.left, y: rect.bottom } })
       return true
     },
   })

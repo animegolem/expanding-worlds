@@ -35,7 +35,7 @@
   import { wikiLinkCompletion } from './suggestions'
   import { wikiLinkActivation, wikiLinkHighlighter } from './wiki-link-plugin'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
-  import UsesSidebar from './UsesSidebar.svelte'
+  import UsesList, { type UsesData } from './UsesList.svelte'
 
   interface PhantomView {
     titleKey: string
@@ -55,10 +55,22 @@
   let dirty = $state(false)
   let error = $state<string | null>(null)
 
-  // §7.4 Uses sidebar (AI-IMP-049; moves in-panel behind ⌖ in 065).
+  // §7.4 in-panel Uses list behind the "⌖ n places" header (065).
   let usesOpen = $state(false)
   let usesRefresh = $state(0)
   let activeCanvasId = $state<string | null>(handle.canvasId)
+  let uses = $state<UsesData | null>(null)
+
+  async function refreshUses(): Promise<void> {
+    const current = paneController?.note?.id ?? null
+    if (!current) {
+      uses = null
+      return
+    }
+    const response = await window.ew.project.query('getNoteUses', { noteId: current })
+    if ((paneController?.note?.id ?? null) === current)
+      uses = response.ok ? (response.result as UsesData) : null
+  }
 
   // §8.5: the panel surfaces its SUBJECT NODE's tags as chips; a
   // zero-node note shows none.
@@ -327,11 +339,15 @@
     return rows.find((row) => row.titleKey === key) ?? null
   }
 
-  async function activateBound(title: string): Promise<void> {
+  async function activateBound(
+    title: string,
+    tokenRect?: { x: number; y: number },
+  ): Promise<void> {
     const match = await findByTitle(title)
     if (!match) return
     requestOpenNote(match.id)
-    if (match.lifecycleState === 'active') requestRevealNote(match.id, match.title)
+    if (match.lifecycleState === 'active')
+      requestRevealNote(match.id, match.title, tokenRect)
   }
 
   async function activateBroken(title: string): Promise<void> {
@@ -511,6 +527,7 @@
           titleDraft = current?.title ?? ''
           error = null
           void resolution.refresh(current?.id ?? null)
+          void refreshUses()
           schedule()
         },
         onDirtyChanged: (value) => (dirty = value),
@@ -521,7 +538,7 @@
           wikiLinkActivation((link) => {
             if (link.state === 'unresolved') requestOpenPhantom(link.title)
             else if (link.state === 'bound' || link.state === 'bound-trashed')
-              void activateBound(link.title)
+              void activateBound(link.title, link.tokenRect)
             else if (link.state === 'broken') void activateBroken(link.title)
           }),
         ],
@@ -534,6 +551,7 @@
         void resolution.refresh(controller?.note?.id ?? null)
         void controller?.syncExternal()
         void refreshTagChips()
+        void refreshUses()
         usesRefresh += 1
         const view = phantom
         if (view && paneProject) {
@@ -628,14 +646,16 @@
       />
       {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
       <span hidden data-testid="note-pane-title">{note.title}</span>
+      <!-- §7.4: the header always shows "⌖ n places"; clicking it
+           unfolds the uses list in-panel. -->
       <button
         type="button"
-        class="chrome-btn"
+        class="chrome-btn places"
         data-testid="uses-toggle"
         onclick={() => (usesOpen = !usesOpen)}
-        use:tooltip={{ name: 'Uses — where this note lives' }}
+        use:tooltip={{ name: 'Places — where this note lives' }}
       >
-        ⌖
+        ⌖ {uses?.totalPlacements ?? 0}
       </button>
     {:else}
       <h2 data-testid="note-pane-title">
@@ -775,8 +795,13 @@
       </button>
     </section>
   {/if}
-  {#if usesOpen && note && !phantom && paneProject}
-    <UsesSidebar port={paneProject} noteId={note.id} {activeCanvasId} refresh={usesRefresh} />
+  {#if usesOpen && note && !phantom && uses}
+    <UsesList
+      {uses}
+      noteId={note.id}
+      {activeCanvasId}
+      herePlacementId={record.anchor.kind === 'placement' ? record.anchor.placementId : null}
+    />
   {/if}
   {#if conflict}
     <TitleConflictDialog
@@ -867,6 +892,11 @@
     font: inherit;
     color: #888;
     cursor: pointer;
+  }
+
+  .chrome-btn.places {
+    font-size: 0.72rem;
+    white-space: nowrap;
   }
 
   .origin {

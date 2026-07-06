@@ -12,13 +12,12 @@
   import CreatePinDialog from './CreatePinDialog.svelte'
   import PlacementSourcePanel from './PlacementSourcePanel.svelte'
   import type { CanvasHostHandle } from './canvas/host'
-  import { itemWorldAABB, unionBounds } from '@ew/canvas-engine'
+  import { unionBounds } from '@ew/canvas-engine'
   import {
     onCenterPlacements,
     onCreateAndPlace,
     onPlaceNode,
     onPlaceNote,
-    onRevealNote,
     requestOpenNote,
   } from './note/open-note'
 
@@ -41,43 +40,6 @@
       new CustomEvent('ew-board-notice', { detail: { message }, bubbles: true }),
     )
   }
-
-  // §7.3 spatial resolution on bound-link activation. Zero: canvas
-  // unchanged + notice. One, on the active canvas: eased flight to
-  // the placement, selected. Anything else (many, or on another
-  // canvas — navigation is EPIC-006): viewport kept, non-blocking
-  // location-count notice; the grouped chooser is EPIC-006 scope.
-  onMount(() =>
-    onRevealNote(({ noteId, title }) => {
-      const h = hostHandle
-      if (!h) return
-      void (async () => {
-        const response = await window.ew.project.query('getNoteUses', { noteId })
-        if (!response.ok) return
-        const uses = response.result as {
-          totalPlacements: number
-          canvases: Array<{ canvasId: string; nodes: Array<{ placements: Array<{ placementId: string }> }> }>
-        }
-        if (uses.totalPlacements === 0) {
-          boardNotice(`“${title}” has no placed locations`)
-          return
-        }
-        const active = uses.canvases.find((canvas) => canvas.canvasId === h.canvasId)
-        const activePlacements = active?.nodes.flatMap((node) => node.placements) ?? []
-        if (uses.totalPlacements === 1 && activePlacements.length === 1) {
-          const placementId = activePlacements[0]!.placementId
-          const item = h.controller.items().find((candidate) => candidate.id === placementId)
-          if (!item) return
-          h.controller.selection.click(placementId)
-          h.flyTo(itemWorldAABB(item))
-          return
-        }
-        boardNotice(
-          `“${title}” has ${uses.totalPlacements} locations — the location chooser arrives with navigation`,
-        )
-      })()
-    }),
-  )
 
   // §6.10/§7.4 placement flows from the Uses sidebar (AI-IMP-049).
   onMount(() =>
@@ -130,11 +92,25 @@
       const h = hostHandle
       if (!h) return
       const wanted = new Set(placementIds)
-      const items = h.controller.items().filter((item) => wanted.has(item.id))
-      if (items.length === 0) return
-      h.controller.selection.marquee(placementIds)
-      const bounds = unionBounds(items)
-      if (bounds) h.flyTo(bounds)
+      const center = (): boolean => {
+        const items = h.controller.items().filter((item) => wanted.has(item.id))
+        if (items.length === 0) return false
+        h.controller.selection.marquee(placementIds)
+        const bounds = unionBounds(items)
+        if (bounds) h.flyTo(bounds)
+        return true
+      }
+      if (center()) return
+      // Cross-canvas rows (AI-IMP-065) fire right after navigateTo,
+      // but the destination scene applies asynchronously — wait for
+      // it, bounded.
+      const off = h.onSceneApplied(() => {
+        if (center()) {
+          off()
+          clearTimeout(timer)
+        }
+      })
+      const timer = setTimeout(() => off(), 2000)
     }),
   )
 

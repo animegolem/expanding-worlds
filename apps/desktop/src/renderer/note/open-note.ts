@@ -140,11 +140,20 @@ export const REVEAL_NOTE_EVENT = 'ew-reveal-note'
 export interface RevealNoteDetail {
   noteId: string
   title: string
+  /** Client coords of the activated link, so the §7.3 location
+   * chooser can anchor to it (AI-IMP-065). */
+  anchor?: { x: number; y: number }
 }
 
-export function requestRevealNote(noteId: string, title: string): void {
+export function requestRevealNote(
+  noteId: string,
+  title: string,
+  anchor?: { x: number; y: number },
+): void {
   window.dispatchEvent(
-    new CustomEvent<RevealNoteDetail>(REVEAL_NOTE_EVENT, { detail: { noteId, title } }),
+    new CustomEvent<RevealNoteDetail>(REVEAL_NOTE_EVENT, {
+      detail: { noteId, title, ...(anchor ? { anchor } : {}) },
+    }),
   )
 }
 

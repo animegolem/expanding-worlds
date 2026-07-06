@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - navigation
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-060, AI-IMP-064]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-065-uses-list-and-location-chooser
@@ -80,27 +80,27 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] UsesList in-panel behind "⌖ n places": canvas groups,
+- [x] UsesList in-panel behind "⌖ n places": canvas groups,
       Unplaced last, "here" marker correct for the reading
       placement; count in header live-updates on placement
       changes.
-- [ ] Row actions preserved from AI-IMP-049 (fly-to, Place on
+- [x] Row actions preserved from AI-IMP-049 (fly-to, Place on
       Current Canvas, place-note) with identical command
       payloads; cross-canvas row click navigates via navigateTo
       and enters history.
-- [ ] Zero placements: inline notice anchored at the activated
+- [x] Zero placements: inline notice anchored at the activated
       link; "open note" opens the loose-note panel; canvas
       viewport untouched.
-- [ ] One placement: flight (same- and cross-canvas) + note opens
+- [x] One placement: flight (same- and cross-canvas) + note opens
       tethered at the destination; anchor starts at the clicked
       link and re-tethers on arrival (no flash of unanchored
       panel).
-- [ ] Many placements: chooser panel anchored to the clicked
+- [x] Many placements: chooser panel anchored to the clicked
       link, shared row grammar; selection executes the
       one-placement path; Esc dismisses.
-- [ ] UsesSidebar + Workspace interim notice deleted; no orphaned
+- [x] UsesSidebar + Workspace interim notice deleted; no orphaned
       events; `pnpm -r build` green.
-- [ ] e2e: zero/one/many scenarios including a cross-canvas
+- [x] e2e: zero/one/many scenarios including a cross-canvas
       flight that Back reverses; uses grouping asserted; full
       gates green hidden-window.
 
@@ -130,3 +130,25 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Deviations and findings. (1) The chooser anchors to the REAL link:
+wikiLinkActivation now carries the clicked token's client rect —
+an additive extension to a file the 064 metric had frozen, but
+065's anchored-chooser scope owns it. (2) Zero placements keeps the
+existing contract exactly: text-first already opened the note, so
+the pipeline emits the same ew-board-notice ("no placed locations")
+the old Workspace handler did, now rendered by the §8.6 toast.
+(3) TWO scene-apply races surfaced, same shape: code that runs
+right after navigateTo resolves sees an EMPTY items() because the
+destination scene applies asynchronously — jumpToPlacement got a
+bounded waitForItem, and Workspace's onCenterPlacements a bounded
+retry-on-scene-applied. Rule of thumb recorded: anything that
+touches items() after a navigation must wait for the scene.
+(4) UsesList keeps the uses-sidebar/uses-node/... testids (zero
+churn in the §6.10 flows) and became a dumb component — the panel
+owns the one getNoteUses query that feeds both the "⌖ n" header
+count and the list. (5) node-menu's Open Note row stays
+deliberately: a context menu legitimately duplicates the page
+charm, and removing it would churn notes.spec for no user value.
+(6) The chooser groups by canvas but does not preview thumbnails —
+the §14.4 compressed-gallery row grammar arrives with EPIC-014;
+rows say "Fly here" with the node dot until then.

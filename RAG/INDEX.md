@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 2 |
-| Planned | 4 | 2 |
+| Planned | 4 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 8 | 63 |
+| Completed | 8 | 64 |
 | **Total** | **14** | **67** |
 
 ## In Progress
@@ -25,7 +25,7 @@
 - [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — completed
 - [[AI-IMP-063-charms-and-click-grammar|IMP-063]] Charms and click grammar — completed
 - [[AI-IMP-064-note-panel-rehost|IMP-064]] Note panel rehost — completed
-- [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — planned
+- [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — completed
 - [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — in-progress
 - [[AI-IMP-067-pin-dock-tool|IMP-067]] Pin dock tool — planned
 
@@ -82,9 +82,10 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3273 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1119 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (908 LOC)
+- apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
-- apps/desktop/e2e/notes.spec.ts (731 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (721 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (713 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -113,14 +114,15 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
+- apps/desktop/src/renderer/note/panels.ts (392 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/queries-structure.ts (386 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
+- apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - packages/commands/src/payloads/structure.ts (350 LOC)
-- apps/desktop/src/renderer/note/open-note.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/hit-test.ts (340 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (340 LOC)
@@ -136,7 +138,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>8 EPICs, 63 IMPs completed</summary>
+<summary>8 EPICs, 64 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

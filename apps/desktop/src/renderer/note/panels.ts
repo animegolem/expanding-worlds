@@ -9,12 +9,15 @@
  * A note already showing in a pinned panel never opens twice — the
  * request focuses that panel instead (one buffer per note).
  */
+import { itemWorldAABB } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from '../canvas/host'
+import { navigateTo } from '../chrome/navigation'
 import { toast } from '../chrome/status'
 import {
   onOpenNote,
   onOpenPhantom,
   onRenameNote,
+  onRevealNote,
   type OpenNoteAnchor,
 } from './open-note'
 import { createNoteProjectPort } from './project-port'
@@ -209,6 +212,135 @@ export async function flushAllPanels(): Promise<void> {
   await Promise.all([...flushers.values()].map((flush) => flush().catch(() => undefined)))
 }
 
+// ---- §7.3 activation pipeline (AI-IMP-065): text resolved first
+// (the panel already loaded the note); space resolves by location
+// count — zero: a notice, canvas untouched; one: fly there (cross-
+// canvas as a history event) and RE-TETHER the note at the
+// destination; many: the link-anchored chooser.
+
+export interface UsesView {
+  totalPlacements: number
+  canvases: Array<{
+    canvasId: string
+    canvasTitle: string | null
+    isRoot: boolean
+    nodes: Array<{ nodeId: string; placements: Array<{ placementId: string }> }>
+  }>
+}
+
+export interface ChooserState {
+  noteId: string
+  title: string
+  uses: UsesView
+  /** Client coords of the activated link; null centers the chooser. */
+  anchor: { x: number; y: number } | null
+}
+
+let chooser: ChooserState | null = null
+const chooserListeners = new Set<(state: ChooserState | null) => void>()
+
+function notifyChooser(): void {
+  for (const listener of chooserListeners) listener(chooser)
+}
+
+export function onChooserChanged(listener: (state: ChooserState | null) => void): () => void {
+  chooserListeners.add(listener)
+  listener(chooser)
+  return () => chooserListeners.delete(listener)
+}
+
+export function dismissChooser(): void {
+  chooser = null
+  notifyChooser()
+}
+
+/** The one-placement behavior, also the chooser's row action: fly
+ * (navigating first when the placement lives elsewhere — a §8.1
+ * history event), select, and re-tether the note there. */
+export async function jumpToPlacement(
+  noteId: string,
+  title: string,
+  canvasId: string,
+  placementId: string,
+): Promise<void> {
+  if (!host) return
+  chooser = null
+  notifyChooser()
+  if (canvasId !== host.canvasId) await navigateTo(canvasId, title)
+  // The destination scene applies asynchronously after openCanvas;
+  // wait for the placement to exist before selecting it.
+  const item = await waitForItem(placementId)
+  if (item) {
+    host.controller.selection.click(placementId)
+    const aabb = itemWorldAABB(item)
+    if (aabb) host.flyTo(aabb)
+  }
+  // Anchor handoff: the panel rode the clicked link until now; the
+  // flight has a destination, so the note re-tethers to it.
+  openNotePanel(noteId, { canvasId, placementId, label: title })
+}
+
+function waitForItem(
+  placementId: string,
+  timeoutMs = 2000,
+): Promise<ReturnType<CanvasHostHandle['controller']['items']>[number] | null> {
+  return new Promise((resolve) => {
+    const find = (): ReturnType<CanvasHostHandle['controller']['items']>[number] | undefined =>
+      host?.controller.items().find((candidate) => candidate.id === placementId)
+    const immediate = find()
+    if (immediate || !host) {
+      resolve(immediate ?? null)
+      return
+    }
+    const off = host.onSceneApplied(() => {
+      const found = find()
+      if (found) {
+        off()
+        clearTimeout(timer)
+        resolve(found)
+      }
+    })
+    const timer = setTimeout(() => {
+      off()
+      resolve(find() ?? null)
+    }, timeoutMs)
+  })
+}
+
+async function revealNote(detail: {
+  noteId: string
+  title: string
+  anchor?: { x: number; y: number }
+}): Promise<void> {
+  if (!host) return
+  const response = await window.ew.project.query('getNoteUses', { noteId: detail.noteId })
+  if (!response.ok) return
+  const uses = response.result as UsesView
+  if (uses.totalPlacements === 0) {
+    // Text-first already opened the note; the canvas stays put.
+    window.dispatchEvent(
+      new CustomEvent('ew-board-notice', {
+        detail: { message: `“${detail.title}” has no placed locations` },
+      }),
+    )
+    return
+  }
+  const all = uses.canvases.flatMap((canvas) =>
+    canvas.nodes.flatMap((node) =>
+      node.placements.map((placement) => ({
+        canvasId: canvas.canvasId,
+        placementId: placement.placementId,
+      })),
+    ),
+  )
+  if (all.length === 1) {
+    await jumpToPlacement(detail.noteId, detail.title, all[0]!.canvasId, all[0]!.placementId)
+    return
+  }
+  chooser = { noteId: detail.noteId, title: detail.title, uses, anchor: detail.anchor ?? null }
+  notifyChooser()
+}
+
 export function attachPanels(handle: CanvasHostHandle): () => void {
   host = handle
   void createNoteProjectPort().then(({ port }) => (storePort = port))
@@ -216,6 +348,7 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
   const disposers = [
     onOpenNote((noteId, anchor) => openNotePanel(noteId, anchor)),
     onOpenPhantom((title) => openPhantomPanel(title)),
+    onRevealNote((detail) => void revealNote(detail)),
     // Rename from a surface with no open panel for that note: flush
     // everything, then execute directly. A §7.7 conflict on this rare
     // path degrades to a toast (the dialog needs an owning panel).
@@ -251,6 +384,8 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
     records = []
     flushers.clear()
     renamers.clear()
+    chooser = null
+    notifyChooser()
     host = null
     notify()
   }

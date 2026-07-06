@@ -92,6 +92,66 @@ test('pin accumulation and the escalation ladder (§8.5)', async () => {
   await app.close()
 })
 
+test('cross-canvas activation re-tethers at the destination; uses rows fly as history (§7.3–7.4, §17-16)', async () => {
+  const { app, win } = await launchApp('ew-e2e-xcanvas-')
+  const root = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // "Far" lives ONLY on canvas B; a source note on root links to it.
+  const farNote = crypto.randomUUID()
+  const farNode = crypto.randomUUID()
+  const canvasB = crypto.randomUUID()
+  const bOwner = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: bOwner })
+  await exec(win, 'CreateCanvas', { canvasId: canvasB, nodeId: bOwner })
+  await exec(win, 'CreateNote', { noteId: farNote, title: 'Far', body: 'distant shore' })
+  await exec(win, 'CreatePin', {
+    nodeId: farNode,
+    canvasId: canvasB,
+    placementId: crypto.randomUUID(),
+    x: 400,
+    y: 300,
+    appearance: { kind: 'dot', color: '#77aaff' },
+    note: { kind: 'attach', noteId: farNote },
+  })
+  await seedPlacedNote(win, 'Source', 'go [[Far]]', { x: 300, y: 240 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // One placement, on ANOTHER canvas: activation flies there as a
+  // §8.1 history event AND the note opens tethered at the arrival.
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.getByTestId('note-editor')).toContainText('Far')
+  await win.locator('.cm-content [data-link-title="Far"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Far/)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection().length))
+    .toBe(1)
+  // Back returns to the source board: the flight entered history.
+  await win.keyboard.press('ControlOrMeta+BracketLeft')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  // The in-panel uses list: "⌖ 1", the here marker after arrival,
+  // and a cross-canvas row that flies as a navigation event.
+  await win.evaluate((id) => {
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+  }, farNote)
+  await expect(win.getByTestId('uses-toggle')).toContainText('⌖ 1')
+  await win.getByTestId('uses-toggle').click()
+  await expect(win.getByTestId('uses-sidebar')).toBeVisible()
+  await win.getByTestId('uses-node').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection().length))
+    .toBe(1)
+  await win.keyboard.press('ControlOrMeta+BracketLeft')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  await app.close()
+})
+
 test('corner charm: ghost, first committed edit materializes, Escape never persists (§8.5)', async () => {
   const { app, win } = await launchApp('ew-e2e-corner-')
 

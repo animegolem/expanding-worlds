@@ -394,7 +394,8 @@ test('bound activation loads the note and resolves space by location count (§17
   await expect(win.getByTestId('board-notice')).toContainText('no placed locations')
   await win.getByTestId('board-notice-dismiss').click()
 
-  // Many locations: viewport kept, count notice (chooser is EPIC-006).
+  // Many locations: the link-anchored chooser (§7.3/§7.4 rev 0.17,
+  // AI-IMP-065) — viewport untouched until a row is chosen.
   await exec(win, 'CreatePlacement', {
     placementId: crypto.randomUUID(),
     canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
@@ -422,8 +423,28 @@ test('bound activation loads the note and resolves space by location count (§17
   await win.locator('.cm-content [data-link-title="Alpha"]').click({
     modifiers: ['ControlOrMeta'],
   })
-  await expect(win.getByTestId('board-notice')).toContainText('2 locations')
+  await expect(win.getByTestId('location-chooser')).toBeVisible()
+  await expect(win.locator('[data-testid="chooser-row"]')).toHaveCount(2)
   expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(cameraBefore)
+
+  // Escape keeps the viewport and dismisses; re-open and choose.
+  // (Text-first activation already switched the editor to Alpha, so
+  // reopen the SOURCE note to click its link again.)
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('location-chooser')).toHaveCount(0)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(cameraBefore)
+  await win.evaluate((id) => {
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+  }, sId)
+  await expect(win.getByTestId('note-editor')).toContainText('NoWhere')
+  await win.locator('.cm-content [data-link-title="Alpha"]').click({
+    modifiers: ['ControlOrMeta'],
+  })
+  await win.locator('[data-testid="chooser-row"]').last().click()
+  await expect(win.getByTestId('location-chooser')).toHaveCount(0)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection().length))
+    .toBe(1)
 
   await app.close()
 })
