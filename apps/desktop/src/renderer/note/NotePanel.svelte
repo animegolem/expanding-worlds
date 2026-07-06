@@ -24,10 +24,13 @@
   } from './open-note'
   import {
     closePanel,
+    DEFAULT_PANEL_SIZE,
     movePanel,
+    openBigEditor,
     pinPanel,
     registerPanelFlush,
     registerPanelRename,
+    resizePanel,
     setPanelAnchor,
     setPanelRequest,
     type PanelRecord,
@@ -51,7 +54,18 @@
     }>
   }
 
-  const { handle, record }: { handle: CanvasHostHandle; record: PanelRecord } = $props()
+  const {
+    handle,
+    record,
+    overlayHost = null,
+  }: {
+    handle: CanvasHostHandle
+    record: PanelRecord
+    /** §8.5 big editor: when NotePanels opens the overlay for THIS
+     * panel it hands the mounted container down; the live CM buffer
+     * moves there and comes home when it turns null again. */
+    overlayHost?: HTMLElement | null
+  } = $props()
 
   let editorHost = $state<HTMLElement | null>(null)
   let note = $state<NoteRecord | null>(null)
@@ -438,6 +452,9 @@
 
   let panelEl = $state<HTMLElement | null>(null)
   let pos = $state<{ x: number; y: number }>({ x: 0, y: 0 })
+  /** §8.5 rev 0.31: tethered panels render at THE default (size is
+   * null until pinned); a pinned panel wears its own size. */
+  const size = $derived(record.size ?? DEFAULT_PANEL_SIZE)
   /** Tail endpoints in host coordinates, tethered-with-anchor only. */
   let tail = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   let anchorGone = $state(false)
@@ -535,6 +552,45 @@
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
   }
+
+  // Corner resize grip, pinned panels only (§8.5: pinning is what
+  // makes it a proper window). Pointer-driven — CSS `resize` is not
+  // reliable across platforms in Electron overlay layers.
+  function onGripPointerDown(event: PointerEvent): void {
+    if (!record.pinned) return
+    event.preventDefault()
+    event.stopPropagation()
+    const start = { x: event.clientX, y: event.clientY }
+    const origin = { ...(record.size ?? DEFAULT_PANEL_SIZE) }
+    const onMove = (move: PointerEvent): void => {
+      resizePanel(record.key, {
+        width: origin.width + (move.clientX - start.x),
+        height: origin.height + (move.clientY - start.y),
+      })
+      schedule()
+    }
+    const onUp = (): void => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  // §8.5 big editor handoff: the LIVE CodeMirror DOM moves to the
+  // overlay container and back — never a second editor instance
+  // against the same note (one buffer per note; §7.1 untouched).
+  $effect(() => {
+    const target = overlayHost
+    const home = editorHost
+    if (!paneController) return
+    if (target) {
+      paneController.reparent(target)
+      paneController.focus()
+    } else if (home) {
+      paneController.reparent(home)
+    }
+  })
 
   const originLabel = $derived(
     record.pinned &&
@@ -680,7 +736,7 @@
   class="note-panel"
   class:pinned={record.pinned}
   class:pulse
-  style={`left:${pos.x}px;top:${pos.y}px`}
+  style={`left:${pos.x}px;top:${pos.y}px;width:${size.width}px;height:${size.height}px`}
   data-testid={record.pinned ? `note-panel-pinned-${record.key}` : 'note-pane'}
   data-panel-key={record.key}
   bind:this={panelEl}
@@ -725,6 +781,17 @@
         use:tooltip={{ name: `Fly to ${originLabel}` }}
       >
         ⌂ {originLabel}
+      </button>
+    {/if}
+    {#if note && !phantom}
+      <button
+        type="button"
+        class="chrome-btn"
+        data-testid="panel-expand"
+        onclick={() => openBigEditor(record.key)}
+        use:tooltip={{ name: 'Expand — big editor over the board' }}
+      >
+        ⤢
       </button>
     {/if}
     {#if !record.pinned}
@@ -896,6 +963,15 @@
       onChooseDifferent={() => (conflict = null)}
     />
   {/if}
+  {#if record.pinned}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="resize-grip"
+      data-testid="panel-resize-grip"
+      aria-hidden="true"
+      onpointerdown={onGripPointerDown}
+    ></div>
+  {/if}
 </section>
 
 <style>
@@ -915,12 +991,15 @@
     opacity: 0.75;
   }
 
+  /* Size comes from the record via inline style: THE default while
+     tethered, the panel's own size once pinned (§8.5 rev 0.31). The
+     shadow is the depth cue — screen-space panels float above the
+     world; board cards render flat. */
   .note-panel {
     position: absolute;
     display: flex;
     flex-direction: column;
-    width: 320px;
-    max-height: 55vh;
+    box-sizing: border-box; /* the record size IS the rendered size */
     min-height: 0;
     overflow: hidden;
     background: var(--ew-paper-surface);
@@ -933,6 +1012,7 @@
 
   .note-panel.pinned {
     border-color: var(--ew-paper-pinned-border);
+    box-shadow: 0 10px 30px var(--ew-shadow);
   }
 
   .note-panel.pulse {
@@ -1055,9 +1135,10 @@
 
   /* A definite height, not content-sized: the writing surface is a
      real page (clicking the empty area below the last line lands the
-     cursor at document end, as in the docked pane). */
+     cursor at document end, as in the docked pane). The panel now has
+     an explicit height, so the page fills whatever the size grants. */
   .editor :global(.cm-editor) {
-    height: 16rem;
+    height: 100%;
     background: var(--ew-paper-page);
   }
 
@@ -1193,5 +1274,23 @@
     margin: 0.4rem 0.6rem;
     color: var(--ew-danger);
     font-size: 0.8rem;
+  }
+
+  .resize-grip {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 14px;
+    height: 14px;
+    border-right: 2px solid var(--ew-paper-text-muted);
+    border-bottom: 2px solid var(--ew-paper-text-muted);
+    border-bottom-right-radius: 7px;
+    opacity: 0.55;
+    cursor: nwse-resize;
+    touch-action: none;
+  }
+
+  .resize-grip:hover {
+    opacity: 1;
   }
 </style>

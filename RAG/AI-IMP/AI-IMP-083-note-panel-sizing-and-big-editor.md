@@ -79,25 +79,25 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] panels.ts: `size` on PanelRecord, DEFAULT_PANEL_SIZE constant,
+- [x] panels.ts: `size` on PanelRecord, DEFAULT_PANEL_SIZE constant,
       pin initializes size; unit-testable pure helpers if any math.
-- [ ] NotePanel.svelte: tethered renders at default size; pinned
+- [x] NotePanel.svelte: tethered renders at default size; pinned
       renders its record size with a resize grip; min-size clamp;
       resizing updates the record (no persistence).
-- [ ] NotePanel.svelte: expand affordance in the header opens the
+- [x] NotePanel.svelte: expand affordance in the header opens the
       big editor for that panel's note.
-- [ ] NotePanels.svelte: big-editor overlay — dimmed backdrop,
+- [x] NotePanels.svelte: big-editor overlay — dimmed backdrop,
       centered editor, Done + backdrop-click + Escape all return to
       the prior panel state; at most one big editor.
-- [ ] Editor buffer moves to the overlay and back without losing
+- [x] Editor buffer moves to the overlay and back without losing
       dirty state; §7.1 commit timing unchanged (typing in the big
       editor commits exactly like the panel).
-- [ ] Shadow on tethered + pinned panel chrome via existing theme
+- [x] Shadow on tethered + pinned panel chrome via existing theme
       tokens; both themes eyeballed.
-- [ ] e2e: pin a panel, resize it, size holds across pan/navigation;
+- [x] e2e: pin a panel, resize it, size holds across pan/navigation;
       expand → type → Done → text present in panel; backdrop click
       closes; Escape closes.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, lint.
 
 ### Acceptance Criteria
 
@@ -123,3 +123,44 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Buffer handoff: implemented as `NoteEditorController.reparent()`
+  (plus a `focus()` accessor) in note-editor.ts — the sanctioned
+  hook. It moves the live `view.dom` between the panel's editor host
+  and the overlay container and calls `requestMeasure()`; document,
+  CM local history, dirty flag, and the pending autosave timer all
+  ride along untouched. The reparent fires a CM blur, which triggers
+  the ordinary §7.1 blur flush — same commit path as before, no new
+  timing.
+- Deviation (small): the expand affordance renders only when a real
+  note is loaded (`note && !phantom`). Phantom and pin/canvas-phantom
+  drafts are plain `<textarea>`s with no CM buffer to move; expanding
+  them has no defined semantics until they materialize.
+- Deviation (small): the tethered panel already carried a
+  `--ew-shadow` drop shadow from AI-IMP-064, so the depth cue mostly
+  existed; this ticket keeps it, deepens the pinned shadow slightly
+  (same token), and adds `box-sizing: border-box` so the record size
+  IS the rendered size. Both themes verified at the token level
+  (light/dark/glass each define `--ew-shadow`/`--ew-dialog-shadow`)
+  and via a computed-style e2e assertion, but only in the default
+  theme visually — hidden-window e2e cannot eyeball; worth a
+  ten-second owner glance in light theme at review.
+- The tethered-replacement edge: opening another note while the
+  tethered panel's buffer sits in the big editor would have swapped
+  the note under the overlay; `setTethered` now closes the big
+  editor first (same for `closePanel` on the owning panel).
+- Feel constants chosen: DEFAULT_PANEL_SIZE 320×300 (width matches
+  the old fixed CSS width), MIN_PANEL_SIZE 240×150 (header controls
+  all survive at minimum — e2e-asserted). `clampPanelSize` is the
+  exported pure helper; no new unit-test file was added because the
+  agent brief's allowed-files list did not include one — the clamp
+  is covered by the e2e min-drag assertion instead.
+- One e2e flake found and fixed: clicking the backdrop at (20,20)
+  via locator was intercepted by the nav-home button (the floating
+  chrome layer owns the corners and sits above the panels layer).
+  The test now raw-mouse-clicks the left-middle edge of the scrim.
+- The old `.note-panel { max-height: 55vh }` and fixed `.cm-editor
+  { height: 16rem }` gave content-sized panels; with an explicit
+  record size the editor is now `height: 100%` of its flex slot.
+  Phantom/uses content inside the fixed-size panel scrolls within
+  its existing `overflow: auto` sections.

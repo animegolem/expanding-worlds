@@ -84,6 +84,25 @@ export class NoteEditorController {
     this.#view = null
   }
 
+  /**
+   * Move the LIVE editor DOM to a new host (§8.5 big editor: the
+   * buffer moves to the overlay and back — one buffer per note,
+   * never a second view against the same note). CodeMirror survives
+   * reparenting; it only needs a re-measure afterwards. State —
+   * document, local history, dirty tracking, pending autosave —
+   * rides along untouched, so §7.1 commit timing is unchanged.
+   */
+  reparent(parent: HTMLElement): void {
+    const view = this.#view
+    if (!view || view.dom.parentElement === parent) return
+    parent.appendChild(view.dom)
+    view.requestMeasure()
+  }
+
+  focus(): void {
+    this.#view?.focus()
+  }
+
   /** Load a note, committing any pending burst on the previous one
    * first (§10.2 note-switch flush). */
   async open(noteId: string): Promise<void> {
