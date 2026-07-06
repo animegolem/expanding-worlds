@@ -124,13 +124,14 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   await expect(win.getByTestId('canvas-host')).toBeVisible()
 
   // Rail and dock are present; charms whose views haven't shipped
-  // stay disabled (outline and ☰ went live with AI-IMP-068).
+  // stay disabled (outline and ☰ went live with AI-IMP-068, ⌕
+  // with AI-IMP-073).
   await expect(win.getByTestId('charm-rail')).toBeVisible()
   await expect(win.getByTestId('dock')).toBeVisible()
-  for (const id of ['project', 'search', 'graph', 'gallery']) {
+  for (const id of ['project', 'graph', 'gallery']) {
     await expect(win.getByTestId(`charm-${id}`)).toHaveAttribute('aria-disabled', 'true')
   }
-  for (const id of ['outline', 'menu']) {
+  for (const id of ['search', 'outline', 'menu']) {
     await expect(win.getByTestId(`charm-${id}`)).not.toHaveAttribute('aria-disabled', 'true')
   }
   // Tool modes and the zoom cluster live in the dock.
