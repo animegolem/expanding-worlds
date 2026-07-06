@@ -63,8 +63,12 @@ booru drop adapters §4.7; the ⌥ moment-split in §6.9) and rev 0.22
 (gallery grouped-time buckets with the header-as-jump-control, kind
 facet, count-ordered tags, and the world·everything scope toggle —
 "everything" IS the library by construction of the mirror; Q26
-marked shaped-not-closed). Loose design-artifact extractions are
-now gitignored after riding `git add RAG/` into two commits.
+marked shaped-not-closed) and rev 0.23 (the end-session surface —
+☰ → End session: flush, optional vault regeneration, close, release
+the lock, THEN cloud sync may take the directory; the vault becomes
+a standing mirror with a body-and-title pull-back importer over our
+own export format). Loose design-artifact extractions are now
+gitignored after riding `git add RAG/` into two commits.
 
 ## Session Commits
 
@@ -73,7 +77,7 @@ ae12673 IMP cut → 84fc42e (059) → 771b323 (060) → 1e8bb3e/1853774
 41095b9 (061 merge) → 4f8b4d9/c5b8601 (066 merge+close+wake) →
 8177917/3ad9f4e (RFC 0.22 + artifact untrack) → 1ab3053 (064) →
 e230d54 (gitignore) → 568e972 (065) → c066183 (067 + epic close +
-v0.6.0). Tag v0.6.0 pushed. All gates green at every close:
+v0.6.0) → 1c20dbd (RFC 0.23). Tag v0.6.0 pushed. All gates green at every close:
 finally 51 desktop e2e, 8 desktop unit, 375 persistence, 244
 canvas-engine, 18 commands, lint, spike.
 
@@ -116,8 +120,6 @@ search/quick-open, settings + themes). Follow-ups queued: a small
 crop-editor ticket (the charm bar ships crop disabled — the app has
 never had one); hand-verify trackpad swipe and mouse buttons 4/5
 (machine-unverifiable); owner curates the seeded public-domain art;
-design turns for Q26 (gallery keyboard) and Q27 (OS-drop dialogue);
-the owner floated an end-session surface (close + sync + optional
-vault export) — discussion pending, nothing written. Release note:
+design turns for Q26 (gallery keyboard) and Q27 (OS-drop dialogue). Release note:
 v0.6.0 builds unsigned installers via the tag workflow; perf e2e
 remains a local hardware gate.
