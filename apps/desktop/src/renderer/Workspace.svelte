@@ -40,21 +40,20 @@
 
   // §6.10/§7.4 placement flows from the Uses sidebar (AI-IMP-049).
   // Bulk place (AI-IMP-079): the gallery's action bar fires one
-  // request per selected node in a single synchronous burst. Two
-  // burst adaptations, neither visible to a lone Place: requests
-  // cascade like a multi-file drop (import-surfaces'
-  // MULTI_DROP_OFFSET) so they never stack invisibly at dead center
-  // — the step counter resets on the next macrotask — and the
-  // commits are SERIALIZED through a promise chain, because parallel
-  // executes share one observed revision and every command after the
-  // first would fail the §10.2 optimistic check (the gateway notes
-  // each committed revision, so the chain keeps the check fresh).
+  // request per selected node in a single synchronous burst. Requests
+  // cascade like a multi-file drop (import-surfaces' MULTI_DROP_OFFSET)
+  // so they never stack invisibly at dead center — the step counter
+  // resets on the next macrotask. The commits no longer need a manual
+  // promise chain: CommandGateway now serializes a burst internally
+  // (AI-IMP-112), so plain parallel fire-and-forget executes each get
+  // a fresh revision and pass the §10.2 optimistic check.
   const PLACE_CASCADE_OFFSET = 24
   let placeBurst = 0
   let placeBurstReset: ReturnType<typeof setTimeout> | null = null
-  let placeQueue: Promise<void> = Promise.resolve()
   onMount(() =>
     onPlaceNode((nodeId) => {
+      const h = hostHandle
+      if (!h) return
       const step = placeBurst
       placeBurst += 1
       if (placeBurstReset === null) {
@@ -63,25 +62,24 @@
           placeBurstReset = null
         }, 0)
       }
-      placeQueue = placeQueue.then(async () => {
-        const h = hostHandle
-        if (!h) return
-        const center = viewCenterWorld()
-        const result = await h.gateway.execute('CreatePlacement', {
+      const center = viewCenterWorld()
+      h.gateway
+        .execute('CreatePlacement', {
           placementId: uuidv7(),
           canvasId: h.canvasId,
           nodeId,
           x: center.x + step * PLACE_CASCADE_OFFSET,
           y: center.y + step * PLACE_CASCADE_OFFSET,
         })
-        if (result.status !== 'committed')
-          boardNotice('Place on Current Canvas failed — retry')
-      })
-      // A THROWN execute (IPC death, not a status) must not poison
-      // the chain — later placements would silently never run.
-      placeQueue = placeQueue.catch(() =>
-        boardNotice('Place on Current Canvas failed — retry'),
-      )
+        .then(
+          (result) => {
+            if (result.status !== 'committed')
+              boardNotice('Place on Current Canvas failed — retry')
+          },
+          // A THROWN execute (IPC death, not a status) still surfaces
+          // to the user; the gateway chain is already insulated.
+          () => boardNotice('Place on Current Canvas failed — retry'),
+        )
     }),
   )
 
