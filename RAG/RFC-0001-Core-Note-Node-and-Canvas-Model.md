@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.40         | 6 July 2026      |
+| Accepted for Phase 1 | 0.41         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -580,6 +580,25 @@ version is a Pinterest-review problem, not a technical one. All
 three are versioned adapters behind the connector store, and the
 ongoing-import mode obeys the same never-blocks rules as the §14.4
 mirror.
+
+**External libraries and the page picker (rev 0.41 — musings from
+the artist session, low priority, plausibility-confirmed).** Two
+more connector-store citizens. (a) An EXTERNAL LIBRARY: a
+connector answers the gallery's own query grammar against a remote
+source — a booru tag search or a Pinterest search browses INSIDE
+the library surface as a fourth transport (the source panel's
+grammar unchanged), and pulling an item runs the ordinary
+download + staged import; nothing external is ever referenced,
+only copied (§14.4 holds). (b) The PAGE PICKER: paste any URL, the
+connector fetches the page ONCE as a user-initiated act, and a
+picker shows its images for selective import (the
+Pinterest-mobile grabber generalized; no RSS needed). The honest
+cost of both is the NETWORK POSTURE: §15's
+one-permitted-networking-act line must be amended when these
+activate — attaching a connector IS the consent for that
+connector's traffic (search calls, thumbnail fetches), mirroring
+the §11.5 double-gate shape. Nothing fetches from an unattached
+source, ever.
 
 **Deferred with scope: the importer dialogue and import adapters.**
 The importer dialogue is the single expansion point for what content
@@ -1810,6 +1829,45 @@ surrenders window focus, so the exit keybind MUST register as an
 Electron globalShortcut for exactly the duration of ghost mode —
 the OS routes it to us even while the painting app holds focus —
 and MUST unregister on exit.
+
+## 8.8 The occlusion contract (rev 0.41)
+
+Chrome accreted per-feature and the 2026-07-06 audit found the
+cost: two silently mismatched z-index tiers (surfaces marked
+"modal" trapped inside lower stacking contexts, so the dock and
+toasts render over the big editor's backdrop), clamping present on
+content panels but absent on canvas affordances, and eleven
+unguarded collision pairs (inventory in AI-EPIC-016). The
+contract, ratified with the owner:
+
+1. **One ladder, named rungs.** A single exported z-scale — world
+   content → canvas affordances → note panels → takeover →
+   chrome/source panel → anchored popovers → modal → notices →
+   tooltip. Every z-index references a rung constant; a guard test
+   fails ad-hoc numbers (the token-guard pattern).
+2. **Modals escape their parents.** Anything with a backdrop
+   mounts at a root overlay host, never inside a lower stacking
+   context.
+3. **Everything anchored clamps.** One shared clamp-and-flip
+   helper (the tooltip's logic generalized); charm bar, per-item
+   charms, context menus, and inline inputs obey it like the
+   content panels already do.
+4. **Named chrome bands.** Corner furniture (rail, dock, toasts,
+   import strip, path bar) declares reserved margins — the
+   edge-chip's 48px rule generalized — anchored surfaces clamp
+   into the free region, and corner stacks that grow toward each
+   other get growth caps instead of meeting.
+5. **Flights reserve space for what they open.** Camera fits
+   target the viewport minus bands minus companion panels
+   (AI-IMP-100's inset, generalized).
+6. **World content may overlap itself; chrome may never occlude
+   what it annotates.** §4.5's no-legibility-clamp stands for
+   content; the label/outline clearance and halo/edge-chip margins
+   are the precedent class for everything chrome adds.
+
+Lands as AI-EPIC-016's opening infrastructure (the menu grammar
+needs the same ladder); the two trapped-modal pairs are
+bugfix-grade and go in the next hardening batch (AI-IMP-101).
 
 # 9. Deletion, trash, and resource retention
 
@@ -3603,6 +3661,13 @@ Accepted for the Phase 1 prototype:
   ship as defaults and feel constants are not settings. Themes are
   dark, light, and Mac-only glass with scrim-chip legibility and
   CSS-custom-property tokens.
+
+- The occlusion contract (rev 0.41, §8.8): one named z-ladder
+  (guard-tested), modals mount at the root host, everything
+  anchored clamps through one shared helper, corner chrome
+  declares reserved bands, flights reserve space for what they
+  open, and chrome never occludes what it annotates. Lands as
+  AI-EPIC-016's opening infrastructure.
 
 - AI features are double-gated (rev 0.32, §11.5): buried under the
   Advanced settings group behind a master AI toggle (off by

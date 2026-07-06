@@ -55,6 +55,30 @@ top-level sprawl. Frame verbs (auto-sort-in-frame,
 load-from-library, save composite — AI-EPIC-017) and replace-file
 (rev 0.35) are natural context-menu citizens.
 
+**Opening infrastructure: the §8.8 occlusion contract (rev 0.41,
+audited 2026-07-06).** This epic's first IMP builds the ladder the
+menus need. Audit condensate:
+- NO z-scale exists; the only writeup is a stale TakeoverLayer
+  comment. Outer tier: canvas 0 · charms 6 · pin dot 7 · panels 8
+  · takeover/tag/search 9 · chrome/text-entry/strip 10 · source
+  panel 11 · rename input 25 · node menu 30 · attach picker 35 ·
+  tooltip 1000 (body-mounted, the only true global).
+- TRAPPED tiers: everything inside ChromeLayer (toasts 20, mirror
+  ask 21, chips 21, perch 30) ranks at outer 10; everything inside
+  the panels layer (big editor 40/41, conflict dialog 40) ranks at
+  outer 8 — the two "modals" are covered by chrome (AI-IMP-101
+  frees them ahead of this epic).
+- Clamping: content panels (tag/search/location/note/mirror/chip)
+  clamp; canvas affordances (charm bar, per-item charms, node
+  menu, label-rename) do NOT; flip-side logic exists only in the
+  tooltip.
+- Unguarded pairs (the mechanical checklist): charm bar vs dock;
+  charm bar/tag chips/rename off-viewport; node menu off-edge;
+  item charms vs rail; toasts vs source panel; toasts vs import
+  strip (opposite corners, no arbitration); condition panel growth
+  vs toasts; mirror ask vs recognition chip (same anchor, mutually
+  blind); path bar vs origin label (hard-coded offsets).
+
 ## Path(s) Not Taken
 
 To be determined at scoping.

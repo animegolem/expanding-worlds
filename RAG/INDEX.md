@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 6 | 3 |
+| Planned | 6 | 4 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 12 | 96 |
-| **Total** | **19** | **100** |
+| **Total** | **19** | **101** |
 
 ## In Progress
 
@@ -45,6 +45,7 @@
 - [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — completed
 - [[AI-IMP-099-grid-lod-crossfade|IMP-099]] Grid lod crossfade — completed
 - [[AI-IMP-100-panel-aware-flyto|IMP-100]] Panel aware flyto — planned
+- [[AI-IMP-101-trapped-modals|IMP-101]] Trapped modals — backlog
 
 ---
 
@@ -94,7 +95,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3717 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3782 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1373 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (938 LOC)
