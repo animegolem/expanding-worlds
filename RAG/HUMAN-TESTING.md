@@ -53,6 +53,15 @@ record — history lives in the tickets.
 - [ ] **Escalation sequence feel** (rev 0.31, whole arc): tethered
   card → pin → resize → big editor → place on board — does the
   one-step-at-a-time ladder feel deliberate rather than bureaucratic?
+- [ ] **Seed set curation** (AI-IMP-094, 2026-07-06): the example
+  library ships GENERATED placeholder gradients under fictional
+  artists — swap for a curated public-domain set when you and
+  Raphaël pick one (drop replacements into
+  apps/desktop/resources/seed/, update LICENSE.md).
+- [ ] **Does the example teach?** (AI-IMP-094, 2026-07-06): create
+  a fresh library — does the artists-root → artist-boards → tagged
+  works arrangement read as "this is what the surface is for"?
+  Clear-the-example from the gallery header when done.
 - [ ] **Light-theme legibility over art** (EPIC-013, carried):
   chrome and scrim chips readable over bright and busy boards in
   the light theme.

@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 2 | 4 |
+| Planned | 2 | 3 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 89 |
+| Completed | 11 | 90 |
 | **Total** | **15** | **94** |
 
 ## In Progress
@@ -52,7 +52,7 @@
 - [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — completed
 - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — planned
 - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
-- [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — planned
+- [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
 
 ---
 
@@ -76,8 +76,8 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3606 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (1277 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (840 LOC)
@@ -86,10 +86,10 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (720 LOC)
 - packages/persistence/src/queries-structure.ts (709 LOC)
+- apps/desktop/src/main/index.ts (686 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
-- apps/desktop/src/main/index.ts (644 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (628 LOC)
 
 ### > 300 LOC
@@ -119,6 +119,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.test.ts (421 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (409 LOC)
+- apps/desktop/src/utility/index.ts (401 LOC)
 - packages/persistence/src/handlers/nodes.ts (398 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
@@ -133,7 +134,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.ts (341 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
-- apps/desktop/src/utility/index.ts (337 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (330 LOC)
@@ -151,7 +151,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 89 IMPs completed</summary>
+<summary>11 EPICs, 90 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

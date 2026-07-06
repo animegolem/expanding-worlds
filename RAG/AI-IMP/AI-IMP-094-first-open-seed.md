@@ -5,12 +5,12 @@ tags:
   - Implementation
   - library
   - onboarding
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-089]
 parent_epic: [[AI-EPIC-015-library-and-cross-project-sourcing]]
 confidence_score: 0.65
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-094-first-open-seed
