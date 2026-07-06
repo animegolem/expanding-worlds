@@ -89,6 +89,80 @@
       uses = response.ok ? (response.result as UsesData) : null
   }
 
+  // §8.5 place-on-board (AI-IMP-084): the note's node, when one
+  // exists. Zero-node notes keep their §6.10 embodiment flow (Uses
+  // list / outline); the control simply doesn't exist for them.
+  let placeNode = $state<{ id: string; appearanceKind: string | null } | null>(null)
+
+  async function refreshPlaceNode(): Promise<void> {
+    const project = paneProject
+    const current = paneController?.note?.id ?? null
+    if (!project || !current) {
+      placeNode = null
+      return
+    }
+    try {
+      const rows = await project.query<
+        Array<{ id: string; noteId: string | null; appearanceKind: string | null }>
+      >('listNodeLibrary')
+      if ((paneController?.note?.id ?? null) !== current) return
+      const candidates = rows.filter((row) => row.noteId === current)
+      // A shared note may ride several nodes (§6.4): prefer the
+      // panel's own anchor node, else the first.
+      const anchored = candidates.find((row) => row.id === subjectNodeId())
+      placeNode = anchored ?? candidates[0] ?? null
+    } catch {
+      placeNode = null
+    }
+  }
+
+  /** §8.5 place-on-board (AI-IMP-084): one deliberate control, one
+   * way — like phantom → note. (a) Dots (and appearance-less nodes)
+   * flip to the §4.6 card appearance; icon/image nodes place as-is —
+   * their look already represents them. (b) An ordinary §6.10
+   * CreatePlacement lands at the panel's board-projected position.
+   * Then the panel closes: the world owns it now. */
+  async function placeOnBoard(): Promise<void> {
+    const project = paneProject
+    const current = paneController?.note
+    const node = placeNode
+    if (!project || !current || !node) return
+    // The card prints the note as saved: flush the burst first (§10.2).
+    await paneController?.flushPending()
+    try {
+      if (node.appearanceKind === 'dot' || node.appearanceKind === null) {
+        const set = await project.execute('SetNodeAppearance', {
+          nodeId: node.id,
+          appearance: { kind: 'card' },
+        })
+        if (set.status !== 'committed') {
+          error =
+            set.status === 'error' ? set.message : 'the project changed underneath (retry)'
+          return
+        }
+      }
+      const world = handle.controller.camera.screenToWorld({
+        x: pos.x + size.width / 2,
+        y: pos.y + size.height / 2,
+      })
+      const placed = await project.execute('CreatePlacement', {
+        placementId: uuidv7(),
+        canvasId: handle.canvasId,
+        nodeId: node.id,
+        x: world.x,
+        y: world.y,
+      })
+      if (placed.status !== 'committed') {
+        error =
+          placed.status === 'error' ? placed.message : 'the project changed underneath (retry)'
+        return
+      }
+      closePanel(record.key)
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : String(cause)
+    }
+  }
+
   // §8.5: the panel surfaces its SUBJECT NODE's tags as chips; a
   // zero-node note shows none.
   let tagChips = $state<Array<{ id: string; name: string; color: string | null }>>([])
@@ -636,6 +710,7 @@
           error = null
           void resolution.refresh(current?.id ?? null)
           void refreshUses()
+          void refreshPlaceNode()
           schedule()
         },
         onDirtyChanged: (value) => (dirty = value),
@@ -660,6 +735,7 @@
         void controller?.syncExternal()
         void refreshTagChips()
         void refreshUses()
+        void refreshPlaceNode()
         usesRefresh += 1
         const view = phantom
         if (view && paneProject) {
@@ -781,6 +857,21 @@
         use:tooltip={{ name: `Fly to ${originLabel}` }}
       >
         ⌂ {originLabel}
+      </button>
+    {/if}
+    {#if record.pinned && note && !phantom && placeNode}
+      <!-- §8.5 escalation, final step: place-on-board materializes
+           board content (a card for dot nodes) and closes the panel.
+           One-way, like phantom → note. Pinned panels only — the
+           tethered card's next step is the pin. -->
+      <button
+        type="button"
+        class="chrome-btn"
+        data-testid="panel-place-on-board"
+        onclick={() => void placeOnBoard()}
+        use:tooltip={{ name: 'Place on board — make this note board content' }}
+      >
+        ⤓
       </button>
     {/if}
     {#if note && !phantom}

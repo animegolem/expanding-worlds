@@ -96,7 +96,7 @@ Before marking an item complete on the checklist MUST **stop** and
 - [ ] queries-structure: placements of card-appearance nodes carry
       noteTitle + clamped excerpt (140ch, match gallery clamp);
       unit.
-- [ ] canvas-engine: scene item fields + card renderer branch —
+- [x] canvas-engine: scene item fields + card renderer branch —
       fixed chrome, title, excerpt, no shadow, correct hit box;
       renderer units; note edit → scene refresh repaints card.
 - [ ] NotePanel: place-on-board control on pinned panels — dot
@@ -137,3 +137,54 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**BLOCKER — schema CHECK constraint (needs a lead-owned migration).**
+`node.appearance_kind` carries `CHECK (appearance_kind IN ('dot',
+'icon', 'image'))` in `migrations/0001-init.ts`. Storing `card` is
+impossible without a schema change, migrations are append-only
+("never edit an applied migration"), and SQLite cannot ALTER a CHECK
+— a new `0006` migration must rebuild the node table (or use the
+`writable_schema` rewrite). The node table is FK-referenced by
+placement/canvas/tag_assignment, and `PRAGMA foreign_keys` is a
+no-op inside a transaction, so the rebuild shape needs care — left
+to the lead deliberately (migrations were outside the ticket fence).
+VALIDATED: with the one-line CHECK widening applied locally
+(reverted before commit), the ENTIRE stack goes green — persistence
+410/410, canvas-engine 270/270, desktop unit 36/36, e2e
+card-appearance + panels 6/6, build + lint clean. On the committed
+branch (constraint intact) the 4 new persistence card tests and the
+dot→card e2e fail at the CHECK, exactly as expected. Checklist items
+that depend on stored card rows stay unchecked until the migration
+lands.
+
+**@ew/commands union not extended.** `NodeAppearance` lives in
+`packages/commands/src/payloads/structure.ts` (also outside the
+fence; the ticket's Files to Touch placed "the union" in
+handlers/nodes.ts, where only validation lives). Shipped a local
+`WireNodeAppearance = NodeAppearance | { kind: 'card' }` widening
+inside nodes.ts plus one cast on the inverse payload. The proper fix
+is one line in the commands union; NotePanel dispatches through the
+untyped ProjectPort so nothing else needs it.
+
+**Decisions worth review.**
+- Appearance-less nodes (`appearance_kind` NULL) also flip to card
+  on place-on-board: a bare stroke circle represents a note no
+  better than a dot does. Icon/image place as-is per the ticket.
+- Zero-node notes get NO place-on-board control (CreatePin validates
+  dot/icon/image and pin.ts was fenced; §6.10's Place on Current
+  Canvas already embodies them). The control renders only when the
+  note has a node.
+- The card suppresses the §4.5 under-label — the chrome's title line
+  IS the label; rendering both prints the title twice.
+- Unsized card placements read a default 260×160 coalesced in the
+  scene projection (mirrored constants in queries-structure and the
+  renderer, cross-referenced comments) so hit box = card rect
+  without touching hit-test.ts. Renderer lays the chrome out once at
+  design size and group-scales onto the rect; title clamps at 28
+  chars (deterministic, no canvas text measuring), excerpt collapses
+  whitespace so a newline-heavy body cannot overflow the chrome.
+- Place-on-board commits TWO commands for dot nodes
+  (SetNodeAppearance + CreatePlacement), so §10.2 undo is two steps:
+  first undo removes the placement, second restores the dot. A
+  one-transaction shape needs a batch/compound command — flagged for
+  the lead rather than invented here.

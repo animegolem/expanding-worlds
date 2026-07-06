@@ -128,6 +128,17 @@ const NODE_APPEARANCE_SELECT = `n.appearance_kind AS appearanceKind,
     n.appearance_asset_id AS appearanceAssetId,
     n.appearance_crop AS appearanceCrop`
 
+/** §4.6 card appearance (AI-IMP-084): the fixed chrome's default
+ * world size for placements carrying no explicit size. MUST match
+ * CARD_DEFAULT_WIDTH/HEIGHT in @ew/canvas-engine renderers/
+ * placement.ts — persistence never imports the engine (§11.1), so
+ * the numbers are mirrored. Coalescing happens in the scene
+ * projection so hit box, selection chrome, snapping, and renderer
+ * all read ONE size through placement width/height (the same way an
+ * image body reads its natural asset dimensions). */
+const CARD_DEFAULT_WIDTH = 260
+const CARD_DEFAULT_HEIGHT = 160
+
 export function registerStructureQueries(registry: QueryRegistry): void {
   // §4.4: one render_order-sorted list across both content tables with
   // kind discriminators; UUID breaks ties deterministically.
@@ -227,6 +238,8 @@ export function registerStructureQueries(registry: QueryRegistry): void {
               ${NODE_APPEARANCE_SELECT},
               note.title AS noteTitle,
               note.id AS noteId,
+              CASE WHEN n.appearance_kind = 'card'
+                   THEN substr(note.body, 1, 140) END AS noteExcerpt,
               child.id AS childCanvasId,
               a.content_hash AS assetContentHash,
               a.mime_type AS assetMimeType,
@@ -251,7 +264,17 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       canvasId,
     )
     const items: CanvasContentItem[] = [
-      ...placements.map((p) => ({ ...p, itemKind: 'placement' }) as CanvasContentItem),
+      ...placements.map((p) => {
+        const item = { ...p, itemKind: 'placement' } as CanvasContentItem
+        // §4.6 card: fixed chrome has an intrinsic size the way an
+        // image has natural dimensions; unsized placements read the
+        // default here so the hit box IS the card rect (AI-IMP-084).
+        if (p['appearanceKind'] === 'card') {
+          item['width'] = p['width'] ?? CARD_DEFAULT_WIDTH
+          item['height'] = p['height'] ?? CARD_DEFAULT_HEIGHT
+        }
+        return item
+      }),
       ...decorations.map(
         (d) =>
           ({
