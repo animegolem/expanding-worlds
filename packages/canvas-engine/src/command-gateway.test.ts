@@ -65,4 +65,115 @@ describe('CommandGateway', () => {
     gateway.noteRevision(12)
     expect(gateway.revision).toBe(12)
   })
+
+  // AI-IMP-112. A port that enforces the optimistic check: it only
+  // commits when the envelope's expectedProjectRevision matches the
+  // record it has advanced to, otherwise it returns a conflict. This
+  // mirrors §10.2 and, against the old build-envelope-then-await
+  // gateway, would reject every parallel command after the first.
+  function revisionEnforcingExecutor(startRevision: number) {
+    let current = startRevision
+    let issued = 0
+    return {
+      get committed() {
+        return current - startRevision
+      },
+      execute: (envelope: CommandEnvelope): Promise<CommandResult> => {
+        // Resolve on a fresh microtask so genuinely parallel executes
+        // interleave rather than each finishing before the next builds.
+        const seq = issued++
+        return Promise.resolve().then(() => {
+          if (envelope.expectedProjectRevision !== current) {
+            return {
+              status: 'conflict',
+              commandId: envelope.commandId,
+              expectedRevision: envelope.expectedProjectRevision ?? -1,
+              actualRevision: current,
+            } satisfies CommandResult
+          }
+          current += 1
+          return {
+            status: 'committed',
+            commandId: envelope.commandId,
+            revision: current,
+            affected: [],
+            inverse: null,
+          } satisfies CommandResult
+        }).then((r) => {
+          void seq
+          return r
+        })
+      },
+    }
+  }
+
+  it('serializes a parallel burst so every command commits under the check', async () => {
+    const executor = revisionEnforcingExecutor(5)
+    let n = 0
+    const gateway = new CommandGateway(executor, 'project-1', 5, () => `01890a5d-ac96-774b-bcce-b3020000000${n++}`)
+    const results = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        gateway.execute('CreatePlacement', { placementId: `p${i}` }),
+      ),
+    )
+    expect(results.map((r) => r.status)).toEqual([
+      'committed',
+      'committed',
+      'committed',
+      'committed',
+      'committed',
+    ])
+    expect(gateway.revision).toBe(10)
+    expect(executor.committed).toBe(5)
+  })
+
+  it('a mid-chain rejection does not block the next queued command', async () => {
+    let call = 0
+    const executor = {
+      execute: (): Promise<CommandResult> => {
+        call += 1
+        // Second command throws (e.g. IPC death) — a thrown error, not
+        // a typed failure result.
+        if (call === 2) return Promise.reject(new Error('boom'))
+        return Promise.resolve(committed(call))
+      },
+    }
+    const gateway = new CommandGateway(executor, 'project-1', 0, () => '01890a5d-ac96-774b-bcce-b302099a8057')
+    const first = gateway.execute('CreatePlacement', { placementId: 'a' })
+    const second = gateway.execute('CreatePlacement', { placementId: 'b' })
+    const third = gateway.execute('CreatePlacement', { placementId: 'c' })
+    await expect(first).resolves.toMatchObject({ status: 'committed' })
+    // The rejection reaches ITS caller unchanged...
+    await expect(second).rejects.toThrow('boom')
+    // ...and the chain survived: the third command still ran.
+    await expect(third).resolves.toMatchObject({ status: 'committed' })
+    expect(call).toBe(3)
+  })
+
+  it('a mid-chain typed failure does not block the next queued command', async () => {
+    let call = 0
+    const executor = {
+      execute: (envelope: CommandEnvelope): Promise<CommandResult> => {
+        call += 1
+        if (call === 2)
+          return Promise.resolve({
+            status: 'error',
+            commandId: envelope.commandId,
+            code: 'invalid',
+            message: 'nope',
+          } satisfies CommandResult)
+        return Promise.resolve(committed(call))
+      },
+    }
+    const gateway = new CommandGateway(executor, 'project-1', 0, () => '01890a5d-ac96-774b-bcce-b302099a8057')
+    const [a, b, c] = await Promise.all([
+      gateway.execute('CreatePlacement', { placementId: 'a' }),
+      gateway.execute('CreatePlacement', { placementId: 'b' }),
+      gateway.execute('CreatePlacement', { placementId: 'c' }),
+    ])
+    expect(a.status).toBe('committed')
+    expect(b.status).toBe('error')
+    expect(c.status).toBe('committed')
+    expect(call).toBe(3)
+  })
 })

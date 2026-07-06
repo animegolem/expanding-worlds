@@ -5,7 +5,7 @@ tags:
   - Implementation
   - commands
   - canvas-engine
-kanban_status: planned
+kanban_status: in-progress
 depends_on:
 parent_epic: [[AI-EPIC-022-fleet-friction]]
 confidence_score: 0.8
@@ -70,17 +70,19 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Gateway serializes: guard test proves two PARALLEL executes
-      of independent CreatePlacements both commit with the
-      revision check ON (this test must FAIL against the old
-      gateway — verify by reverting locally once).
-- [ ] A rejected command does not poison the chain: the next
-      queued execute still runs (unit).
-- [ ] IMP-079's manual serialization retired or a candid report
-      why not.
-- [ ] Doc comment records the burst rule and the
-      checkRevision:false rule with rationale.
-- [ ] Full gates including the board/gallery e2e specs that
+- [x] Gateway serializes: guard test proves FIVE PARALLEL executes
+      of independent CreatePlacements all commit with the
+      revision check ON (this test FAILS against the old
+      gateway — verified by reverting locally: 4/5 came back
+      `conflict`).
+- [x] A rejected command does not poison the chain: the next
+      queued execute still runs (two units — a thrown IPC error
+      and a typed `error` result, each mid-chain).
+- [x] IMP-079's manual serialization retired (mechanical: kept
+      the visual cascade offset, dropped the `placeQueue` chain).
+- [x] Doc comment records the burst rule and the
+      checkRevision:false rule with the IMP-044/064 rationale.
+- [x] Full gates including the board/gallery e2e specs that
       exercise placement bursts.
 
 ### Acceptance Criteria
@@ -99,3 +101,35 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Chain design. `execute()` now builds a `run` promise that chains
+  off `#tail` (the prior execute's settle) and only then calls the
+  private `#run`, which reads `#revision` and builds the envelope.
+  `#tail` is reassigned to `run.then(noop, noop)` so BOTH fulfilment
+  and rejection settle the chain without propagating — a failed or
+  thrown command cannot stall later queued executes. The caller still
+  receives `run` itself (not the swallowed tail), so its own typed
+  failure or thrown error reaches it unchanged. Public signature and
+  result contract are untouched.
+- Reverted-gateway proof. Temporarily inlined the old
+  build-envelope-then-await body (no chain) and ran the burst guard:
+  it failed with `[ 'committed', 'conflict', 'conflict', 'conflict',
+  'conflict' ]` — exactly the defect (only the first command in the
+  parallel burst commits; the rest stamp the stale revision and
+  conflict). Restored the chain; 295/295 green.
+- IMP-079 retired (mechanical). Workspace.svelte's `onPlaceNode`
+  had TWO burst adaptations tangled together: a visual cascade
+  offset (`placeBurst` / `PLACE_CASCADE_OFFSET`) and a `placeQueue`
+  promise chain doing the serialization. Only the serialization was
+  IMP-079's workaround — removed it in favor of a plain
+  fire-and-forget `h.gateway.execute(...).then(ok, err)`. The visual
+  cascade stays (unrelated concern: keeps burst placements from
+  stacking at dead center). The gallery bulk-place e2e still passes.
+- Validation (exact): `pnpm -r build` OK; `@ew/canvas-engine test`
+  295 passed (25 files); `desktop test:unit` 39 passed (5 files);
+  `pnpm lint` clean; playwright `import.spec.ts panels.spec.ts`
+  13 passed; plus `gallery-selection.spec.ts gallery-scope.spec.ts`
+  7 passed (the actual burst-place path).
+- Friction. Fresh worktree had the husk Electron dist — applied the
+  documented dist-copy + path.txt fix to launch e2e. Initial lint
+  failure on an unused `_envelope` param in one unit; dropped it.
