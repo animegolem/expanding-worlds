@@ -5,12 +5,12 @@ tags:
   - Implementation
   - tags
   - persistence
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-016-context-click-menus]]
 confidence_score: 0.8
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-105-tag-lifecycle-commands
@@ -52,13 +52,13 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] DeleteTag + inverse round-trip byte-exact; units incl.
+- [x] DeleteTag + inverse round-trip byte-exact; units incl.
       tag-in-use, empty tag, already-deleted refusal.
-- [ ] MergeTag one-transaction; duplicate-assignment dedupe; unit
+- [x] MergeTag one-transaction; duplicate-assignment dedupe; unit
       proves loser gone, winner owns the union, one undo restores
       both exactly.
-- [ ] SetTagAppearance with prior-state inverse; units.
-- [ ] Full gates.
+- [x] SetTagAppearance with prior-state inverse; units.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -68,6 +68,15 @@ Before marking an item complete on the checklist MUST **stop** and
 loser is gone, and ONE undo restores the prior world byte-exact.
 
 ### Issues Encountered
+
+Opus-built, lead-transcribed. Merge inverse tracks addedNodeIds so
+undo removes only what the merge added — both tags return
+byte-exact (overlap unit proves it). DeleteTag hard-deletes with a
+full restoring inverse (tag row + every assignment, created_at
+verbatim). DESIGN-SESSION FLAG: SetTagAppearance is whole-replace
+(color+icon together, mirroring SetNodeAppearance) — if AI-IMP-107
+wants independent edits, cut a partial variant then. Gates: 459
+persistence (11 new) / 18 commands / 37 desktop units, lint clean.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

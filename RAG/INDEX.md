@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 0 | 0 |
-| Planned | 8 | 5 |
+| Planned | 8 | 4 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 99 |
+| Completed | 13 | 100 |
 | **Total** | **21** | **105** |
 
 ## Planned
@@ -33,7 +33,7 @@
 
 **IMPs:**
 - [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
-- [[AI-IMP-105-tag-lifecycle-commands|IMP-105]] Tag lifecycle commands — planned
+- [[AI-IMP-105-tag-lifecycle-commands|IMP-105]] Tag lifecycle commands — completed
 - [[AI-IMP-106-small-state-batch|IMP-106]] Small state batch — planned
 - [[AI-IMP-107-design-session-one|IMP-107]] Design session one — planned
 
@@ -116,9 +116,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (480 LOC)
 - packages/persistence/src/handlers/pin.ts (479 LOC)
+- packages/commands/src/payloads/structure.ts (471 LOC)
 - apps/desktop/src/utility/index.ts (471 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (470 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
+- packages/persistence/src/handlers/tags.ts (460 LOC)
 - apps/desktop/e2e/panels.spec.ts (460 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (455 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
@@ -127,7 +129,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
-- packages/commands/src/payloads/structure.ts (387 LOC)
+- packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (380 LOC)
@@ -158,7 +160,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 99 IMPs completed</summary>
+<summary>13 EPICs, 100 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
