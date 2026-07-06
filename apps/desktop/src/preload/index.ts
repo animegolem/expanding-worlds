@@ -82,6 +82,10 @@ const api = {
     },
   },
   app: {
+    /** §8.2 Help/About: the running app version from main's packaged
+     * metadata (app.getVersion), so the dialog never hardcodes it. */
+    getVersion: (): Promise<string> =>
+      ipcRenderer.invoke('app:get-version') as Promise<string>,
     /**
      * §10.2 quit flush: main intercepts window close, asks the
      * renderer to commit pending editor buffers, and waits for the

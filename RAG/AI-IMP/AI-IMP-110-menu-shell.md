@@ -70,15 +70,15 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Rows in ratified order with dividers; Settings stays live;
+- [x] Rows in ratified order with dividers; Settings stays live;
       Undo/Redo/Trash…/End Session deferred with naming tooltips;
       Undo/Redo print shortcuts.
-- [ ] Help/About opens a clamped anchored dialog with real app
+- [x] Help/About opens a clamped anchored dialog with real app
       version (no hardcoded string); Esc/click-off closes.
-- [ ] e2e: menu lists the full inventory in order; Help/About
+- [x] e2e: menu lists the full inventory in order; Help/About
       shows the version; disabled rows are aria-disabled and do
       nothing on click.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -98,3 +98,28 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- No version seam existed: grep of preload/main found nothing
+  version-shaped. Added the minimal one — `ipcMain.handle('app:get-version',
+  () => app.getVersion())` in `src/main/index.ts` (beside
+  `project:service-current`) and `app.getVersion()` in the preload's
+  existing `app` block. Both files touched ONLY for this seam.
+- Help/About lives inside MenuPopover's slot but portals to the root
+  overlay host via `overlayPortal` (imported from `note/panels`, not
+  edited) — the popover is a small clipped box, so a backdropped
+  dialog must escape it (§8.8 law 2). The menu popover stays mounted
+  behind the scrim while the dialog is up, so the portaled node keeps
+  its Svelte bindings; Esc (capture-phase, stopPropagation) closes the
+  dialog first, leaving the menu, and a second Esc closes the menu.
+- Deferred rows are `aria-disabled` (not the HTML `disabled` attr, to
+  keep tooltips hoverable). Playwright treats `aria-disabled=true` as
+  not-enabled, so the inertness assertion uses `click({ force: true })`
+  — a real DOM click that still does nothing (no onclick handler).
+- No named z-ladder exists yet (that is EPIC-016's opening infra); the
+  dialog reuses TitleConflictDialog's scrim idiom (z-index 40) as the
+  current convention. Shortcut chips print the ⌘ glyph (macOS is the
+  lead platform per §8.2).
+- Gates (all green): `pnpm -r build` Done; `pnpm --filter desktop
+  test:unit` 39 passed; `pnpm lint` clean; `npx playwright test
+  shell.spec.ts` 5 passed (fresh-worktree electron husk required the
+  documented dist copy before the suite could launch).

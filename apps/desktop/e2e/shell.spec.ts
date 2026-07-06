@@ -273,6 +273,65 @@ test('takeover framework: charm entry, Esc return, camera and board untouched', 
 })
 
 /**
+ * AI-IMP-110 acceptance: the ☰ menu carries the ratified §8.2 rev 0.45
+ * inventory — Undo · Redo · Trash… · End Session · Settings · Help/About
+ * (· Export) in that geography — disabled rows are aria-disabled and
+ * inert, Undo/Redo print their shortcuts, Help/About shows the real
+ * running version, and Settings still opens its takeover.
+ */
+test('☰ menu: ratified inventory, disabled rows inert, Help/About version', async () => {
+  const { app, win } = await launchApp('ew-e2e-menu-')
+
+  try {
+    await win.getByTestId('charm-menu').click()
+    await expect(win.getByTestId('rail-menu')).toBeVisible()
+
+    // The rows read top-to-bottom in the ratified geography.
+    const order = ['menu-undo', 'menu-redo', 'menu-trash', 'menu-end-session', 'menu-settings', 'menu-help', 'menu-export']
+    const domOrder = await win.getByTestId('rail-menu').evaluate((menu) =>
+      Array.from(menu.querySelectorAll('[data-testid^="menu-"]')).map(
+        (el) => (el as HTMLElement).dataset['testid'],
+      ),
+    )
+    expect(domOrder).toEqual(order)
+
+    // Undo/Redo print their shortcuts — self-teaching even while off.
+    await expect(win.getByTestId('menu-undo')).toContainText('⌘Z')
+    await expect(win.getByTestId('menu-redo')).toContainText('⇧⌘Z')
+
+    // Every deferred row is aria-disabled and inert: clicking it must
+    // neither close the menu nor open anything.
+    for (const id of ['menu-undo', 'menu-redo', 'menu-trash', 'menu-end-session', 'menu-export']) {
+      await expect(win.getByTestId(id)).toHaveAttribute('aria-disabled', 'true')
+      // force past actionability: even a real DOM click must do nothing.
+      await win.getByTestId(id).click({ force: true })
+      await expect(win.getByTestId('rail-menu')).toBeVisible()
+      await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
+      await expect(win.getByTestId('help-about-dialog')).toHaveCount(0)
+    }
+
+    // Help/About opens a clamped dialog with a real semver version and
+    // the repo address; Esc closes it, leaving the menu behind.
+    await win.getByTestId('menu-help').click()
+    await expect(win.getByTestId('help-about-dialog')).toBeVisible()
+    await expect(win.getByTestId('help-about-version')).toContainText(/\d+\.\d+\.\d+/)
+    await expect(win.getByTestId('help-about-repo')).toContainText('github.com/animegolem/expanding-worlds')
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('help-about-dialog')).toHaveCount(0)
+
+    // Settings stays live: it opens the §11.5 takeover and closes the menu.
+    await expect(win.getByTestId('rail-menu')).toBeVisible()
+    await win.getByTestId('menu-settings').click()
+    await expect(win.getByTestId('rail-menu')).toHaveCount(0)
+    await expect(win.getByTestId('takeover-settings')).toBeVisible()
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
+  } finally {
+    await app.close()
+  }
+})
+
+/**
  * AI-IMP-075 acceptance: theme tokens repaint chrome live, and glass
  * reports the applied theme or the dark fallback from main.
  */

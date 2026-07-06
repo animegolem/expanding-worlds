@@ -610,6 +610,10 @@ void app.whenReady().then(() => {
 
   ipcMain.handle('project:service-current', () => lastServiceEvent)
 
+  // §8.2 Help/About: the running app version, straight from the
+  // packaged metadata — never a hardcoded renderer string.
+  ipcMain.handle('app:get-version', () => app.getVersion())
+
   ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     return win ? setWindowVibrancy(win, Boolean(enabled)) : false
