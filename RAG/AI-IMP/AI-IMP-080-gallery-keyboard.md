@@ -62,7 +62,15 @@ from 077's grouping.
 
 `apps/desktop/src/renderer/views/GalleryView.svelte`: cursor,
 key map, roving focus.
-`apps/desktop/e2e/gallery.spec.ts`: keyboard scenarios.
+`apps/desktop/src/renderer/views/gallery-keys.ts` (+ `.test.ts`):
+the pure cursor/row/bucket index math, unit-tested (added during
+implementation — multi-bucket layouts are unreachable from e2e
+seeds).
+`apps/desktop/src/renderer/views/GalleryActionBar.svelte`: export
+`trashSelection` so Delete runs the bar's exact command path.
+`apps/desktop/e2e/gallery-keyboard.spec.ts`: keyboard scenarios
+(a new spec beside gallery-selection.spec.ts rather than inside
+gallery.spec.ts).
 
 ### Implementation Checklist
 
@@ -72,23 +80,26 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Cursor ring distinct from selection; plain arrows collapse
+- [x] Cursor ring distinct from selection; plain arrows collapse
       selection to the cursor; Left/Right wrap rows and buckets;
       Up/Down nearest-column incl. short rows and cross-bucket
-      (e2e over a seeded ragged grid).
-- [ ] Shift+arrows extend the linear document-order range from
+      (e2e over a seeded ragged grid; cross-BUCKET hops unit-only —
+      see Issues Encountered).
+- [x] Shift+arrows extend the linear document-order range from
       the anchor; agrees with Shift+click (e2e).
-- [ ] Mod+Space toggles the cursor cell without moving the
+- [x] Mod+Space toggles the cursor cell without moving the
       anchor; bare Space does nothing (reserved) (e2e).
-- [ ] Mod+A selects exactly the current filter scope (e2e with an
+- [x] Mod+A selects exactly the current filter scope (e2e with an
       active facet).
-- [ ] Enter: note panel for note-carrying, dive for board-kind
+- [x] Enter: note panel for note-carrying, dive for board-kind
       closing the takeover, create-on-demand panel for a bare
       image (e2e per kind).
-- [ ] Delete trashes the selection; Escape peels selection then
+- [x] Delete trashes the selection; Escape peels selection then
       takeover; PageUp/Down page; Mod+Up/Down bucket-jump under
-      date sort (e2e).
-- [ ] `pnpm -r build`, full gates green.
+      date sort (e2e for Delete/Escape/paging plus the
+      single-bucket Mod+Down no-op; multi-bucket jump targets
+      unit-tested — see Issues Encountered).
+- [x] `pnpm -r build`, full gates green.
 
 ### Acceptance Criteria
 
@@ -113,3 +124,53 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Bucket math is unit-tested, not e2e-tested.** Commands cannot
+backdate `created_at`, so every e2e seed lands in the "today"
+bucket — cross-bucket Up/Down hops and Mod+Up/Down jumps are
+unreachable from Playwright. Per the plan's fallback, the cursor
+math was extracted into `gallery-keys.ts` (pure index arithmetic:
+`cellRows` mirrors the layout's chunking exactly, per-bucket rows
+under date sort) and the multi-bucket paths are covered by 17
+vitest units over the same row structure the grid renders. The e2e
+suite covers everything reachable in one bucket, including ragged
+last rows (the spec measures the live column count, then tops up
+the seed until `total % columns === 1`) and asserts Mod+Down as a
+single-bucket no-op.
+
+**Create-on-demand transferred cleanly — via the phantom panel,
+not a literal CreateNote.** The §8.4 charm bar's note button for a
+note-less node opens the attach PICKER (`requestAttachNote`),
+which is a choose-or-create dialog, not "open its panel." The
+closer realization of §14.4's "opens its panel through the
+create-on-demand" is the §8.5 phantom seam the corner charm uses:
+`openCornerPanel(nodeId, null)` opens a `canvas-phantom` panel —
+empty editor, persists nothing, first committed edit runs
+CreateNote + AttachNoteToNode against that node. Enter on a
+note-less entry closes the takeover and opens exactly that. The
+function is named for the corner charm (the panel anchors
+corner-style rather than to a placement — the node has no
+placement to tether to), but its contract is node-generic; the
+e2e asserts the panel opens AND that `getNode(...).noteId` stays
+null (nothing persisted by merely opening).
+
+**Delete reuses the action bar verbatim.** `trashSelection` in
+GalleryActionBar became an instance export; the grid's Delete (and
+macOS Backspace) calls it through `bind:this`. The bar is mounted
+exactly while the selection is non-empty, so the handle is always
+live when Delete has anything to do. Same commands, same summary
+toast, same clear.
+
+**Focus survival under virtualization.** Roving tabindex lives on
+the cursor cell, but PageUp/Down (and bulk trash) can unmount the
+focused cell; keydown is attached to the grid listbox and focus
+falls back to it whenever the cursor's cell leaves the DOM, so the
+keyboard never dies mid-run. Cursor moves scroll by layout-row
+tops BEFORE any DOM read (indices, never geometry).
+
+**Worktree friction, for the record.** The brief's Electron repair
+step works, with one trap: writing `path.txt` with `echo` appends
+a newline, and electron's `index.js` does not trim it — Playwright
+then fails with `spawn .../Electron\n ENOENT`, which looks
+exactly like a missing binary while the binary runs fine by hand.
+Use `printf` (no trailing newline).

@@ -147,7 +147,9 @@
     }
   }
 
-  async function trashSelection(): Promise<void> {
+  /** Exported (AI-IMP-080): Delete in the grid runs THIS path — the
+   * keyboard must trash through the exact same commands and toast. */
+  export async function trashSelection(): Promise<void> {
     if (busy || selectedIds.length === 0) return
     busy = true
     try {

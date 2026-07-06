@@ -25,16 +25,39 @@
   requestPlaceNode seam; a single-cell HTML5 drag-out mirrors the
   outline's beginRowDrag (NODE_DRAG_MIME + close at the cell's
   bounds). Escape peels selection before the takeover's own Escape
-  (capture phase). The keyboard model arrives with 080.
+  (capture phase).
+
+  080 adds the keyboard model (rev 0.25): a cursor — focus ring
+  distinct from the selection highlight, roving tabindex — whose
+  math lives in gallery-keys.ts as pure index arithmetic (the
+  virtualization means the DOM can't be consulted). Plain arrows
+  move it and collapse selection; Shift+arrows extend the SAME
+  linear range Shift+click computes; Mod+Space toggles membership
+  (bare Space stays reserved for preview); Mod+A selects the filter
+  scope; Enter is the kind-appropriate primary action (§8.3);
+  Delete runs the action bar's trash; PageUp/Down page the
+  viewport; Mod+Up/Down bucket-jump under date sort. Keys live on
+  the grid listbox, so the facet strip's and action bar's fields
+  keep their own.
 -->
 <script lang="ts">
-  import { untrack } from 'svelte'
+  import { tick, untrack } from 'svelte'
   import { NODE_DRAG_MIME } from '../canvas/import-surfaces'
+  import { navigateTo } from '../chrome/navigation'
   import { closeTakeover } from '../chrome/takeover'
-  import { requestPlaceNode } from '../note/open-note'
+  import { requestOpenNote, requestPlaceNode } from '../note/open-note'
+  import { openCornerPanel } from '../note/panels'
   import GalleryActionBar from './GalleryActionBar.svelte'
   import GalleryFacets from './GalleryFacets.svelte'
   import { bucketByDate, type GalleryBucket } from './gallery-buckets'
+  import {
+    bucketJumpTarget,
+    cellRows,
+    columnOf,
+    horizontalTarget,
+    linearRange,
+    verticalTarget,
+  } from './gallery-keys'
 
   type GalleryKind = 'image' | 'note' | 'board'
   type GallerySort = 'date' | 'name' | 'size'
@@ -54,6 +77,7 @@
     width: number | null
     height: number | null
     childCanvasId: string | null
+    noteId: string | null
     noteExcerpt: string | null
     tagNames: string[]
   }
@@ -69,6 +93,7 @@
   let items = $state<Record<string, Item>>({})
   let thumbNonce = $state<Record<string, number>>({})
   let scroller = $state<HTMLElement | null>(null)
+  let gridEl = $state<HTMLElement | null>(null)
   let viewportWidth = $state(900)
   let viewportHeight = $state(700)
   let scrollTop = $state(0)
@@ -81,6 +106,14 @@
   let selected = $state<Set<string>>(new Set())
   let anchor = $state<string | null>(null)
   let tagOpen = $state(false)
+  let actionBar = $state<{ trashSelection: () => Promise<void> } | null>(null)
+
+  // ------------------------------------------- 080 keyboard cursor
+  // View state: the cursor's node id plus the remembered visual
+  // column for Up/Down runs (so a trip through a short row comes
+  // back out in the column the run started in).
+  let cursor = $state<string | null>(null)
+  let preferredCol = $state(0)
 
   // ---------------------------------------------------- 078 facets
   // Facet state is view state (§14.4): it composes into the index
@@ -120,6 +153,7 @@
       selected = new Set([...selected].filter((id) => live.has(id)))
     }
     if (anchor !== null && !live.has(anchor)) anchor = null
+    if (cursor !== null && !live.has(cursor)) cursor = null
   }
 
   // A facet change re-queries AND rehomes the viewport: the old
@@ -133,6 +167,8 @@
       selected = new Set()
       anchor = null
       tagOpen = false
+      cursor = null
+      preferredCol = 0
     })
   })
   $effect(() => window.ew.project.onChanged(() => void refresh(facetArgs)))
@@ -149,6 +185,9 @@
   const columns = $derived(
     Math.max(2, Math.floor((viewportWidth - PAD * 2 + GAP) / (CELL + GAP))),
   )
+  // 080: the visual row structure as pure index math — the cursor's
+  // Up/Down and the layout below MUST chunk identically.
+  const keyRows = $derived(cellRows(index.length, columns, buckets))
 
   type Row =
     | { kind: 'header'; bucket: GalleryBucket; top: number }
@@ -251,25 +290,220 @@
    * range from the anchor (bucket boundaries are invisible to it);
    * Mod+click toggles membership without disturbing the anchor. A
    * Shift+click with no live anchor degrades to a plain click. */
+  function indexOfNode(nodeId: string): number {
+    return index.findIndex((entry) => entry.nodeId === nodeId)
+  }
+
+  /** The one range computation (rev 0.25): the linear document-order
+   * span from the anchor — Shift+click and Shift+arrows agree by
+   * construction. False when there is no usable anchor. */
+  function selectRangeFromAnchor(nodeId: string): boolean {
+    if (anchor === null) return false
+    const from = indexOfNode(anchor)
+    const to = indexOfNode(nodeId)
+    if (from === -1 || to === -1) return false
+    const [lo, hi] = linearRange(from, to)
+    selected = new Set(index.slice(lo, hi + 1).map((entry) => entry.nodeId))
+    return true
+  }
+
+  function toggleMembership(nodeId: string): void {
+    const next = new Set(selected)
+    if (next.has(nodeId)) next.delete(nodeId)
+    else next.add(nodeId)
+    selected = next
+  }
+
   function onCellClick(event: MouseEvent, nodeId: string): void {
-    if (event.shiftKey && anchor !== null) {
-      const from = index.findIndex((entry) => entry.nodeId === anchor)
-      const to = index.findIndex((entry) => entry.nodeId === nodeId)
-      if (from !== -1 && to !== -1) {
-        const [lo, hi] = from <= to ? [from, to] : [to, from]
-        selected = new Set(index.slice(lo, hi + 1).map((entry) => entry.nodeId))
-        return
-      }
-    }
+    // Every click variant parks the cursor on the clicked cell (the
+    // keyboard picks up where the pointer left off).
+    cursor = nodeId
+    preferredCol = columnOf(keyRows, indexOfNode(nodeId))
+    if (event.shiftKey && selectRangeFromAnchor(nodeId)) return
     if (event.metaKey || event.ctrlKey) {
-      const next = new Set(selected)
-      if (next.has(nodeId)) next.delete(nodeId)
-      else next.add(nodeId)
-      selected = next
+      toggleMembership(nodeId)
       return
     }
     selected = new Set([nodeId])
     anchor = nodeId
+  }
+
+  // ------------------------------------------- 080 keyboard model
+  /** Virtualization contract: scroll BEFORE any DOM read — the
+   * cursor's cell may not be rendered. Row tops come from the same
+   * layout the grid draws; keyRows and layout's cells rows are
+   * parallel arrays by construction. */
+  function scrollIndexIntoView(i: number): void {
+    if (!scroller) return
+    const r = keyRows.findIndex((row) => i >= row.start && i < row.start + row.count)
+    const row = layout.rows.filter((candidate) => candidate.kind === 'cells')[r]
+    if (!row) return
+    const margin = sort === 'date' ? HEADER_H + 8 : 8 // clear the sticky header band
+    const viewTop = scroller.scrollTop
+    const viewBottom = viewTop + scroller.clientHeight
+    if (row.top < viewTop + margin) {
+      scroller.scrollTop = Math.max(0, row.top - margin)
+    } else if (row.top + CELL > viewBottom) {
+      scroller.scrollTop = row.top + CELL - scroller.clientHeight
+    }
+    scrollTop = scroller.scrollTop
+  }
+
+  /** Move the cursor: scroll its row into the render window, then
+   * rove focus to the cell (or keep it on the grid so keys stay
+   * alive when the cell is gone — e.g. right after a trash). */
+  async function setCursorIndex(i: number): Promise<void> {
+    const entry = index[i]
+    if (!entry) return
+    cursor = entry.nodeId
+    scrollIndexIntoView(i)
+    await tick()
+    const el = scroller?.querySelector<HTMLElement>(
+      `[data-testid="gallery-cell"][data-node-id="${entry.nodeId}"]`,
+    )
+    if (el) el.focus({ preventScroll: true })
+    else gridEl?.focus({ preventScroll: true })
+  }
+
+  /** Enter (§14.4 = §8.3's kind-appropriate primary action).
+   * Board-kind: close the takeover, then dive (OutlineView's dive
+   * ordering — the destination must be visible). Note-carrying:
+   * panels mount UNDER the takeover, so close to reveal, then open
+   * (OutlineView's openNote ordering). Note-less: the §8.4 charm
+   * grammar's create-on-demand — the §8.5 phantom panel over this
+   * node, which persists nothing until the first committed edit
+   * (CreateNote + AttachNoteToNode); openCornerPanel(nodeId, null)
+   * is that exact seam. */
+  function activate(nodeId: string): void {
+    const item = items[nodeId]
+    if (!item) return
+    closeTakeover()
+    if (item.childCanvasId) {
+      void navigateTo(item.childCanvasId, item.label)
+      return
+    }
+    if (item.noteId) {
+      requestOpenNote(item.noteId)
+      return
+    }
+    openCornerPanel(nodeId, null)
+  }
+
+  function onGridKeydown(event: KeyboardEvent): void {
+    // The grid owns these keys only for its own cells: the facet
+    // strip's tag input and the action bar's completion field are
+    // outside this listbox, and any future field inside it keeps
+    // its keys by target kind.
+    const target = event.target as HTMLElement | null
+    if (
+      target &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+    )
+      return
+    if (index.length === 0) return
+    const mod = event.metaKey || event.ctrlKey
+
+    // Mod+A: the current filter scope — the user selects what they see.
+    if (mod && event.key.toLowerCase() === 'a') {
+      event.preventDefault()
+      selected = new Set(index.map((entry) => entry.nodeId))
+      if (anchor === null) anchor = index[0]!.nodeId
+      return
+    }
+
+    // Space is RESERVED for preview (rev 0.25) — swallowed even
+    // bare, so it never page-scrolls; Mod+Space toggles the cursor
+    // cell's membership without disturbing the anchor.
+    if (event.key === ' ') {
+      event.preventDefault()
+      if (mod && cursor !== null) toggleMembership(cursor)
+      return
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      if (cursor !== null) activate(cursor)
+      return
+    }
+
+    // Delete = the action bar's trash, verbatim (the bar is mounted
+    // exactly while the selection is non-empty).
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault()
+      if (selected.size > 0) void actionBar?.trashSelection()
+      return
+    }
+
+    // PageUp/PageDown page the VIEWPORT; the cursor stays put. Its
+    // cell may leave the render window — refocus the grid so the
+    // keyboard survives the unmount.
+    if (event.key === 'PageDown' || event.key === 'PageUp') {
+      event.preventDefault()
+      if (!scroller) return
+      const dir = event.key === 'PageDown' ? 1 : -1
+      scroller.scrollTop = Math.max(0, scroller.scrollTop + dir * scroller.clientHeight)
+      scrollTop = scroller.scrollTop
+      void tick().then(() => {
+        const held = document.activeElement
+        if (!held || !scroller?.contains(held)) gridEl?.focus({ preventScroll: true })
+      })
+      return
+    }
+
+    const isVertical = event.key === 'ArrowUp' || event.key === 'ArrowDown'
+    if (!isVertical && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+    event.preventDefault()
+    const current = cursor === null ? -1 : indexOfNode(cursor)
+
+    // Mod+Up/Down: jump to the previous/next bucket header under
+    // date sort — the keyboard twin of the period list. No-op on
+    // flat sorts (bucketJumpTarget returns null without buckets).
+    if (mod) {
+      if (!isVertical) return
+      const jump = bucketJumpTarget(buckets, current === -1 ? 0 : current, event.key === 'ArrowDown' ? 1 : -1)
+      if (jump === null) return
+      const header = layout.rows.find(
+        (row) => row.kind === 'header' && row.bucket.startIndex === jump,
+      )
+      if (header && scroller) {
+        scroller.scrollTop = header.top
+        scrollTop = header.top
+      }
+      preferredCol = 0
+      selected = new Set([index[jump]!.nodeId])
+      anchor = index[jump]!.nodeId
+      void setCursorIndex(jump)
+      return
+    }
+
+    let next: number
+    if (current === -1) {
+      // First arrow with no cursor: land on the first entry.
+      next = 0
+      preferredCol = 0
+    } else if (isVertical) {
+      const vertical = verticalTarget(keyRows, current, event.key === 'ArrowDown' ? 1 : -1, preferredCol)
+      if (vertical === null) return // grid edge: cursor and selection stay
+      next = vertical
+    } else {
+      next = horizontalTarget(index.length, current, event.key === 'ArrowRight' ? 1 : -1)
+      preferredCol = columnOf(keyRows, next)
+    }
+
+    const nodeId = index[next]!.nodeId
+    if (event.shiftKey) {
+      // Extend the linear range from the anchor (Shift+click math).
+      if (anchor === null) anchor = cursor ?? nodeId
+      if (!selectRangeFromAnchor(nodeId)) {
+        selected = new Set([nodeId])
+        anchor = nodeId
+      }
+    } else {
+      // Plain arrows collapse selection to the cursor.
+      selected = new Set([nodeId])
+      anchor = nodeId
+    }
+    void setCursorIndex(next)
   }
 
   function clearSelection(): void {
@@ -407,11 +641,16 @@
         {/if}
       </p>
     {:else}
+      <!-- 080: the listbox owns the keyboard — keys fire only while
+           focus is on it or a cell inside it (roving tabindex). -->
       <div
         class="canvas"
         role="listbox"
         aria-multiselectable="true"
         aria-label="Gallery items"
+        tabindex="-1"
+        bind:this={gridEl}
+        onkeydown={onGridKeydown}
         style={`height: ${layout.totalHeight}px`}
       >
         {#each visibleRows as row (row.kind === 'header' ? `h-${row.bucket.key}` : `r-${row.entries[0]?.nodeId}`)}
@@ -431,13 +670,15 @@
                 <div
                   class="cell"
                   class:selected={selected.has(entry.nodeId)}
+                  class:cursor={cursor === entry.nodeId}
                   role="option"
-                  tabindex="-1"
+                  tabindex={entry.nodeId === (cursor ?? index[0]?.nodeId) ? 0 : -1}
                   aria-selected={selected.has(entry.nodeId)}
                   data-testid="gallery-cell"
                   data-node-id={entry.nodeId}
                   data-kind={entry.kind}
                   data-selected={selected.has(entry.nodeId) ? 'true' : 'false'}
+                  data-cursor={cursor === entry.nodeId ? 'true' : 'false'}
                   draggable="true"
                   onclick={(event) => onCellClick(event, entry.nodeId)}
                   ondragstart={(event) => beginCellDrag(event, entry.nodeId)}
@@ -479,6 +720,7 @@
 
   {#if selected.size > 0}
     <GalleryActionBar
+      bind:this={actionBar}
       selectedIds={[...selected]}
       bind:tagOpen
       onClear={clearSelection}
@@ -565,6 +807,10 @@
     position: relative;
   }
 
+  .canvas:focus {
+    outline: none;
+  }
+
   .bucket-header {
     position: absolute;
     left: 0;
@@ -602,10 +848,22 @@
   }
 
   /* 079 selection ring: the highlight vocabulary, distinct from the
-     080 cursor's focus ring to come. */
+     080 cursor's focus ring below. */
   .cell.selected {
     border-color: var(--ew-accent);
     box-shadow: 0 0 0 2px var(--ew-accent);
+  }
+
+  /* 080 cursor: the FOCUS ring — the class draws it (focus itself
+     may sit on the grid when the cell is unmounted), offset so it
+     reads beside the selection accent, never instead of it. */
+  .cell:focus {
+    outline: none;
+  }
+
+  .cell.cursor {
+    outline: 2px solid var(--ew-focus-ring);
+    outline-offset: 2px;
   }
 
   .cell img {
