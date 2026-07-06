@@ -5,12 +5,12 @@ tags:
   - Implementation
   - canvas
   - notes
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-083]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-084-card-appearance-and-place-on-board
@@ -91,26 +91,26 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] persistence: SetNodeAppearance accepts `{kind:'card'}`;
+- [x] persistence: SetNodeAppearance accepts `{kind:'card'}`;
       round-trips; units for validation and prior-state undo.
-- [ ] queries-structure: placements of card-appearance nodes carry
+- [x] queries-structure: placements of card-appearance nodes carry
       noteTitle + clamped excerpt (140ch, match gallery clamp);
       unit.
 - [x] canvas-engine: scene item fields + card renderer branch —
       fixed chrome, title, excerpt, no shadow, correct hit box;
       renderer units; note edit → scene refresh repaints card.
-- [ ] NotePanel: place-on-board control on pinned panels — dot
+- [x] NotePanel: place-on-board control on pinned panels — dot
       nodes flip to card appearance, icon/image nodes place as-is;
       placement lands at the panel's board position; panel closes.
-- [ ] Mutual highlight: selecting a card whose note has an open
+- [x] Mutual highlight: selecting a card whose note has an open
       panel flashes that panel; no passive highlight when neither
       is active.
-- [ ] Phantom card: card-appearance node with no note renders empty
+- [x] Phantom card: card-appearance node with no note renders empty
       card chrome; first committed edit fills it (§7.2).
-- [ ] e2e: pin panel → place on board → card visible with note text
+- [x] e2e: pin panel → place on board → card visible with note text
       → edit note → card text updates → select card → panel
       flashes.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, §12.1
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, §12.1
       perf, lint.
 
 ### Acceptance Criteria
@@ -130,6 +130,19 @@ if its note's panel is open, that panel lights up.
 is node-owned, §4.6).
 
 ### Issues Encountered
+
+Lead close-out (post-agent): migration 0006 rebuilds the node
+table with 'card' in the CHECK — defer_foreign_keys carries the
+four inbound references across the DROP/rename inside the runner's
+transaction; the index and both root-protection triggers are
+recreated verbatim, with four migration tests pinning row survival,
+trigger enforcement, FK enforcement, and the index. The
+@ew/commands NodeAppearance union gained the card member and the
+agent's WireNodeAppearance widening + inverse-payload cast were
+removed. Closing gates: 414/270/36 units, 86/86 e2e incl. §12.1
+perf, lint clean. Standing debt: place-on-board's two-command shape
+undoes in two steps (a compound command like DeleteContent would
+make it one — backlog, not invented here).
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

@@ -22,15 +22,9 @@ import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching, refreshNoteLinks } from '../links'
 import { requireLinkableTitle, requireTitleFree } from './notes'
 
-/**
- * §4.6 rev 0.31: the note card is the fourth appearance kind. It
- * carries NO payload — the card's content comes from the attached
- * note via the read model, never from appearance columns. The
- * @ew/commands NodeAppearance union has not been extended (outside
- * the AI-IMP-084 fence); this widening covers the wire shape until
- * the union catches up.
- */
-type WireNodeAppearance = NodeAppearance | { kind: 'card' }
+// §4.6 rev 0.31: the note card is the fourth appearance kind. It
+// carries NO payload — the card's content comes from the attached
+// note via the read model, never from appearance columns.
 
 function requireNode<T extends Record<string, unknown>>(
   ctx: CommandContext,
@@ -322,7 +316,7 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
     )
 
     // §4.6: dot, icon, image, and card are appearances, not node types.
-    const next = payload.appearance as WireNodeAppearance | null
+    const next = payload.appearance
     let kind: string | null = null
     let color: string | null = null
     let icon: string | null = null
@@ -367,7 +361,7 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       payload.nodeId,
     )
 
-    let priorAppearance: WireNodeAppearance | null = null
+    let priorAppearance: NodeAppearance | null = null
     if (prior.appearance_kind === 'dot' && prior.appearance_color !== null) {
       priorAppearance = { kind: 'dot', color: prior.appearance_color }
     } else if (prior.appearance_kind === 'card') {
@@ -394,12 +388,10 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       inverse: {
         commandType: COMMAND_SET_NODE_APPEARANCE,
         commandVersion: 1,
-        // Wire shape: card widens the @ew/commands union (see
-        // WireNodeAppearance above), so this is a cast, not satisfies.
         payload: {
           nodeId: payload.nodeId,
           appearance: priorAppearance,
-        } as SetNodeAppearancePayload,
+        } satisfies SetNodeAppearancePayload,
       },
     }
   })

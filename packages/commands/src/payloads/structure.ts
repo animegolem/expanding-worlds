@@ -51,6 +51,9 @@ export type NodeAppearance =
       /** Non-destructive crop/framing; the asset is never modified. */
       crop: { x: number; y: number; width: number; height: number } | null
     }
+  /** rev 0.31: card chrome renders the attached note — no payload,
+   * content comes from the note via the read model. */
+  | { kind: 'card' }
 
 export interface SetNodeAppearancePayload {
   nodeId: string

@@ -30,6 +30,16 @@ record — history lives in the tickets.
   all return. Right size (760px/70vh)? Note: the panel shadow in
   LIGHT theme got token-level validation only — worth a ten-second
   glance.
+- [ ] **Card appearance** (AI-IMP-084, 2026-07-06): pin a note
+  panel, click Place on board — a flat card (title + excerpt, no
+  shadow) lands near the panel. Does the chrome read at board
+  zoom levels? (Renderer text is "legible, not final" per ticket.)
+- [ ] **Card mutual highlight** (AI-IMP-084, 2026-07-06): select a
+  placed card while its note's panel is open — the panel should
+  flash; nothing should glow when neither is active.
+- [ ] **Escalation sequence feel** (rev 0.31, whole arc): tethered
+  card → pin → resize → big editor → place on board — does the
+  one-step-at-a-time ladder feel deliberate rather than bureaucratic?
 - [ ] **Light-theme legibility over art** (EPIC-013, carried):
   chrome and scrim chips readable over bright and busy boards in
   the light theme.
