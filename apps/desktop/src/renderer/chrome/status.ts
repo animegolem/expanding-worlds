@@ -152,11 +152,34 @@ export function onConditionsChanged(listener: ConditionsListener): () => void {
 
 let serviceAttached = false
 
+/** §11.4 startup-recovery outcome the service 'ok' event carries.
+ * Only `repairs` is consumed here; integrity ERRORS are an ongoing
+ * condition and keep their perch path — never a transient toast. */
+export interface RecoverySummary {
+  repairs: string[]
+}
+
+/**
+ * §11.4: successful startup repairs (rebuilt derivatives, reconciled
+ * imports) surface as ONE transient success toast naming the count.
+ * A clean open (empty repairs) says nothing. Integrity ERRORS are
+ * routed to the ⚠ perch elsewhere, never here.
+ */
+export function reportRecoveryRepairs(summary: RecoverySummary | undefined): void {
+  const count = summary?.repairs.length ?? 0
+  if (count === 0) return
+  toast(`Recovered on open: ${count} repairs`, {
+    kind: 'success',
+    surface: 'recovery-repairs',
+  })
+}
+
 /**
  * Wire the utility-process lifecycle (AI-IMP-053 ServiceStatusEvent)
  * into the §8.6 grammar: outage → ongoing condition (the perch holds
  * for the whole outage, §11.4) plus an enter toast; recovery → clear
- * plus a resolution toast. Replaces the interim StatusStrip.
+ * plus a resolution toast. A healthy open additionally toasts any
+ * §11.4 startup repairs it carries. Replaces the interim StatusStrip.
  */
 export function attachServiceStatus(): void {
   if (serviceAttached) return
@@ -173,10 +196,15 @@ export function attachServiceStatus(): void {
       const detail = `Project service failed: ${event.message ?? 'unknown'} — restart the app`
       service.raise(detail)
       toast(detail, { kind: 'error', surface: 'service-outage' })
-    } else if (outage) {
-      outage = false
-      service.clear()
-      toast('Project service recovered', { kind: 'success', surface: 'service-recovered' })
+    } else {
+      // status === 'ok': the open succeeded. Surface any repairs the
+      // recovery pass performed (§11.4), then resolve a prior outage.
+      reportRecoveryRepairs((event as { recovery?: RecoverySummary }).recovery)
+      if (outage) {
+        outage = false
+        service.clear()
+        toast('Project service recovered', { kind: 'success', surface: 'service-recovered' })
+      }
     }
   })
   // Deterministic condition control for hidden-window e2e — the same

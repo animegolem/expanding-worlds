@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { Db } from './db'
 import { LOCK_FILENAME, ProjectLockedError } from './lock'
 import { LATEST_SCHEMA_VERSION, MIGRATIONS } from './migrations/index'
 import { createProject, DB_FILENAME, openProject } from './project'
@@ -106,5 +107,39 @@ describe('openProject', () => {
     writeFileSync(join(dir, DB_FILENAME), 'not a database')
     expect(() => openProject(dir)).toThrow()
     expect(existsSync(join(dir, LOCK_FILENAME))).toBe(false)
+  })
+
+  it('refuses kindly when the schema is ahead of this build (§11.4)', () => {
+    // A project written by a newer version carries a higher
+    // schema_version; migrate() would silently no-op, so the writable
+    // open MUST refuse with the typed EW_SCHEMA_AHEAD error.
+    const created = createProject(dir, 'From The Future')
+    created.db.run('UPDATE project SET schema_version = ?', LATEST_SCHEMA_VERSION + 1)
+    created.close()
+
+    let thrown: (Error & { code?: string }) | undefined
+    try {
+      openProject(dir)
+    } catch (err) {
+      thrown = err as Error & { code?: string }
+    }
+    expect(thrown).toBeDefined()
+    expect(thrown?.code).toBe('EW_SCHEMA_AHEAD')
+    expect(thrown?.message).toMatch(/newer version of Expanding Worlds/)
+
+    // The refusal never touched the database (schema_version unchanged,
+    // no migration ran) and the lock released so it does not hang.
+    expect(existsSync(join(dir, LOCK_FILENAME))).toBe(false)
+    const raw = Db.open(join(dir, DB_FILENAME))
+    try {
+      const version = raw.get<{ schema_version: number }>(
+        'SELECT schema_version FROM project',
+      )?.schema_version
+      expect(version).toBe(LATEST_SCHEMA_VERSION + 1)
+    } finally {
+      raw.close()
+    }
+    // The refusal is stable: a second open refuses identically.
+    expect(() => openProject(dir)).toThrow(/newer version of Expanding Worlds/)
   })
 })
