@@ -2,18 +2,81 @@ import {
   COMMAND_ASSIGN_TAG_TO_NODE,
   COMMAND_CREATE_TAG,
   COMMAND_DELETE_DRAFT_TAG,
+  COMMAND_DELETE_TAG,
+  COMMAND_MERGE_TAG,
   COMMAND_RENAME_TAG,
+  COMMAND_RESTORE_TAG,
+  COMMAND_SET_TAG_APPEARANCE,
   COMMAND_UNASSIGN_TAG_FROM_NODE,
+  COMMAND_UNMERGE_TAG,
   DomainError,
+  type AffectedRecord,
   type AssignTagToNodePayload,
   type CommandRegistry,
   type CreateTagPayload,
   type DeleteDraftTagPayload,
+  type DeleteTagPayload,
+  type MergeTagPayload,
   type RenameTagPayload,
+  type RestoredTagAssignment,
+  type RestoreTagPayload,
+  type SetTagAppearancePayload,
   type UnassignTagFromNodePayload,
+  type UnmergeTagPayload,
 } from '@ew/commands'
 import { nameKey } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
+
+/** Full tag row an inverse must recreate byte-exact (§4.8). */
+interface TagRow extends Record<string, unknown> {
+  id: string
+  name: string
+  name_key: string
+  color: string | null
+  icon: string | null
+  created_at: string
+}
+
+/** Loads a tag's ordered assignment list for exact-restore inverses. */
+function loadAssignments(ctx: CommandContext, tagId: string): RestoredTagAssignment[] {
+  return ctx.db
+    .all<{ node_id: string; created_at: string }>(
+      'SELECT node_id, created_at FROM tag_assignment WHERE tag_id = ? ORDER BY node_id',
+      tagId,
+    )
+    .map((r) => ({ nodeId: r.node_id, createdAt: r.created_at }))
+}
+
+/** Re-inserts the tag row (updated_at re-stamped) then its assignments. */
+function insertTagRow(
+  ctx: CommandContext,
+  tag: RestoreTagPayload['tag'],
+  assignments: RestoredTagAssignment[],
+  affected: AffectedRecord[],
+): void {
+  ctx.db.run(
+    `INSERT INTO tag (id, project_id, name, name_key, color, icon, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    tag.tagId,
+    ctx.projectId,
+    tag.name,
+    tag.nameKey,
+    tag.color,
+    tag.icon,
+    tag.createdAt,
+    ctx.now(),
+  )
+  affected.push({ kind: 'tag', id: tag.tagId })
+  for (const a of assignments) {
+    ctx.db.run(
+      'INSERT INTO tag_assignment (tag_id, node_id, created_at) VALUES (?, ?, ?)',
+      tag.tagId,
+      a.nodeId,
+      a.createdAt,
+    )
+    affected.push({ kind: 'node', id: a.nodeId })
+  }
+}
 
 function requireTag<T extends Record<string, unknown>>(
   ctx: CommandContext,
@@ -215,4 +278,183 @@ export function registerTagHandlers(registry: CommandRegistry<CommandContext>): 
       }
     },
   )
+
+  // §4.8 lifecycle-aware delete (AI-IMP-105): unassign everywhere and
+  // remove the tag row in one transaction. Unlike DeleteDraftTag it
+  // accepts in-use tags; the inverse (RestoreTag) recreates the row and
+  // every prior assignment exactly.
+  registry.register<DeleteTagPayload>(COMMAND_DELETE_TAG, 1, (ctx, payload) => {
+    const tag = requireTag<TagRow>(
+      ctx,
+      payload.tagId,
+      'id, name, name_key, color, icon, created_at',
+    )
+    const assignments = loadAssignments(ctx, payload.tagId)
+
+    ctx.db.run('DELETE FROM tag_assignment WHERE tag_id = ?', payload.tagId)
+    ctx.db.run('DELETE FROM tag WHERE id = ?', payload.tagId)
+
+    const affected: AffectedRecord[] = [{ kind: 'tag', id: payload.tagId }]
+    for (const a of assignments) affected.push({ kind: 'node', id: a.nodeId })
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_RESTORE_TAG,
+        commandVersion: 1,
+        payload: {
+          tag: {
+            tagId: tag.id,
+            name: tag.name,
+            nameKey: tag.name_key,
+            color: tag.color,
+            icon: tag.icon,
+            createdAt: tag.created_at,
+          },
+          assignments,
+        } satisfies RestoreTagPayload,
+      },
+    }
+  })
+
+  registry.register<RestoreTagPayload>(COMMAND_RESTORE_TAG, 1, (ctx, payload) => {
+    const affected: AffectedRecord[] = []
+    insertTagRow(ctx, payload.tag, payload.assignments, affected)
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_DELETE_TAG,
+        commandVersion: 1,
+        payload: { tagId: payload.tag.tagId } satisfies DeleteTagPayload,
+      },
+    }
+  })
+
+  // §4.8 merge (AI-IMP-105): checks-before-writes (CreatePin shape).
+  // Loser assignments the winner already holds are dropped (dedupe);
+  // the rest move to the winner. The inverse restores the loser exactly
+  // and removes ONLY the assignments this merge added to the winner.
+  registry.register<MergeTagPayload>(COMMAND_MERGE_TAG, 1, (ctx, payload) => {
+    if (payload.loserTagId === payload.winnerTagId) {
+      throw new DomainError('VALIDATION_FAILED', 'MergeTag requires two distinct tags', {
+        loserTagId: payload.loserTagId,
+        winnerTagId: payload.winnerTagId,
+      })
+    }
+    const loser = requireTag<TagRow>(
+      ctx,
+      payload.loserTagId,
+      'id, name, name_key, color, icon, created_at',
+    )
+    requireTag(ctx, payload.winnerTagId, 'id')
+
+    const loserAssignments = loadAssignments(ctx, payload.loserTagId)
+    const winnerNodes = new Set(
+      ctx.db
+        .all<{ node_id: string }>(
+          'SELECT node_id FROM tag_assignment WHERE tag_id = ?',
+          payload.winnerTagId,
+        )
+        .map((r) => r.node_id),
+    )
+
+    const affected: AffectedRecord[] = [
+      { kind: 'tag', id: payload.loserTagId },
+      { kind: 'tag', id: payload.winnerTagId },
+    ]
+    const addedNodeIds: string[] = []
+    for (const a of loserAssignments) {
+      if (winnerNodes.has(a.nodeId)) {
+        // Overlap: the winner already carries this node — drop the
+        // loser's assignment so the node is tagged exactly once.
+        ctx.db.run(
+          'DELETE FROM tag_assignment WHERE tag_id = ? AND node_id = ?',
+          payload.loserTagId,
+          a.nodeId,
+        )
+      } else {
+        // Move the assignment onto the winner (created_at preserved).
+        ctx.db.run(
+          'UPDATE tag_assignment SET tag_id = ? WHERE tag_id = ? AND node_id = ?',
+          payload.winnerTagId,
+          payload.loserTagId,
+          a.nodeId,
+        )
+        addedNodeIds.push(a.nodeId)
+      }
+      affected.push({ kind: 'node', id: a.nodeId })
+    }
+    ctx.db.run('DELETE FROM tag WHERE id = ?', payload.loserTagId)
+
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_UNMERGE_TAG,
+        commandVersion: 1,
+        payload: {
+          loser: {
+            tagId: loser.id,
+            name: loser.name,
+            nameKey: loser.name_key,
+            color: loser.color,
+            icon: loser.icon,
+            createdAt: loser.created_at,
+          },
+          loserAssignments,
+          winnerTagId: payload.winnerTagId,
+          addedNodeIds,
+        } satisfies UnmergeTagPayload,
+      },
+    }
+  })
+
+  registry.register<UnmergeTagPayload>(COMMAND_UNMERGE_TAG, 1, (ctx, payload) => {
+    const affected: AffectedRecord[] = [{ kind: 'tag', id: payload.winnerTagId }]
+    // Remove only what the merge added to the winner; the winner's
+    // pre-existing assignments (overlap nodes included) stay put.
+    for (const nodeId of payload.addedNodeIds) {
+      ctx.db.run(
+        'DELETE FROM tag_assignment WHERE tag_id = ? AND node_id = ?',
+        payload.winnerTagId,
+        nodeId,
+      )
+      affected.push({ kind: 'node', id: nodeId })
+    }
+    // Recreate the loser row and its exact original assignments.
+    insertTagRow(ctx, payload.loser, payload.loserAssignments, affected)
+    // Internal inverse of a lifecycle command: redo re-issues MergeTag,
+    // so this offers no inverse of its own.
+    return { affected, inverse: null }
+  })
+
+  // §4.8 presentation fields (AI-IMP-105): sets the whole appearance —
+  // color and icon together (SetNodeAppearance shape) — with a
+  // prior-state inverse.
+  registry.register<SetTagAppearancePayload>(COMMAND_SET_TAG_APPEARANCE, 1, (ctx, payload) => {
+    const prior = requireTag<{ color: string | null; icon: string | null }>(
+      ctx,
+      payload.tagId,
+      'color, icon',
+    )
+    const color = payload.color ?? null
+    const icon = payload.icon ?? null
+    ctx.db.run(
+      'UPDATE tag SET color = ?, icon = ?, updated_at = ? WHERE id = ?',
+      color,
+      icon,
+      ctx.now(),
+      payload.tagId,
+    )
+    return {
+      affected: [{ kind: 'tag', id: payload.tagId }],
+      inverse: {
+        commandType: COMMAND_SET_TAG_APPEARANCE,
+        commandVersion: 1,
+        payload: {
+          tagId: payload.tagId,
+          color: prior.color,
+          icon: prior.icon,
+        } satisfies SetTagAppearancePayload,
+      },
+    }
+  })
 }

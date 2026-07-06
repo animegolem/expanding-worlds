@@ -242,6 +242,85 @@ export interface UnassignTagFromNodePayload {
   nodeId: string
 }
 
+/**
+ * §4.8: lifecycle-aware tag deletion (AI-IMP-105). Removes ALL of the
+ * tag's assignments and the tag row in one transaction — the in-use
+ * counterpart to DeleteDraftTag, which stays for the no-assignment
+ * create-undo case. The inverse restores the tag row and every prior
+ * assignment exactly (RestoreTag).
+ */
+export interface DeleteTagPayload {
+  tagId: string
+}
+
+/** One tag assignment carried across a delete/merge inverse. */
+export interface RestoredTagAssignment {
+  nodeId: string
+  /** Original tag_assignment.created_at, restored byte-exact. */
+  createdAt: string
+}
+
+/** The full tag row an inverse recreates (updated_at is re-stamped). */
+export interface RestoredTagRow {
+  tagId: string
+  name: string
+  /** Normalized §4.8 key; restored verbatim so identity is preserved. */
+  nameKey: string
+  color: string | null
+  icon: string | null
+  /** Original tag.created_at, restored byte-exact. */
+  createdAt: string
+}
+
+/**
+ * Internal inverse of DeleteTag: recreates the tag row (id, name,
+ * name_key, color, icon, created_at) and re-inserts every prior
+ * assignment exactly. Not part of the public UI command set.
+ */
+export interface RestoreTagPayload {
+  tag: RestoredTagRow
+  assignments: RestoredTagAssignment[]
+}
+
+/**
+ * §4.8: fold the loser tag into the winner (AI-IMP-105). Every
+ * loser-tagged node ends up carrying the winner exactly once —
+ * assignments the winner already holds are dropped (dedupe), the rest
+ * move over — and the loser row is removed, all in one transaction.
+ * Both tags must exist and differ.
+ */
+export interface MergeTagPayload {
+  loserTagId: string
+  winnerTagId: string
+}
+
+/**
+ * Internal inverse of MergeTag: recreates the loser row with its exact
+ * original assignments, and removes from the winner ONLY the
+ * assignments the merge added (`addedNodeIds`) — the winner's
+ * pre-existing assignments, including overlap nodes, are untouched.
+ * Not part of the public UI command set.
+ */
+export interface UnmergeTagPayload {
+  loser: RestoredTagRow
+  loserAssignments: RestoredTagAssignment[]
+  winnerTagId: string
+  /** Node ids whose assignment the merge moved onto the winner. */
+  addedNodeIds: string[]
+}
+
+/**
+ * §4.8: write a tag's presentation fields (AI-IMP-105). Sets the
+ * whole appearance — both color and icon — mirroring SetNodeAppearance
+ * (an omitted field clears to null). Prior-state inverse: the same
+ * command carrying the pre-existing color and icon.
+ */
+export interface SetTagAppearancePayload {
+  tagId: string
+  color?: string | null
+  icon?: string | null
+}
+
 // ------------------------------------------------------------ decorations
 
 export type DecorationKindPayload =
@@ -327,6 +406,11 @@ export const COMMAND_DELETE_DRAFT_TAG = 'DeleteDraftTag'
 export const COMMAND_RENAME_TAG = 'RenameTag'
 export const COMMAND_ASSIGN_TAG_TO_NODE = 'AssignTagToNode'
 export const COMMAND_UNASSIGN_TAG_FROM_NODE = 'UnassignTagFromNode'
+export const COMMAND_DELETE_TAG = 'DeleteTag'
+export const COMMAND_RESTORE_TAG = 'RestoreTag'
+export const COMMAND_MERGE_TAG = 'MergeTag'
+export const COMMAND_UNMERGE_TAG = 'UnmergeTag'
+export const COMMAND_SET_TAG_APPEARANCE = 'SetTagAppearance'
 
 export const COMMAND_CREATE_DECORATION = 'CreateDecoration'
 export const COMMAND_UPDATE_DECORATION = 'UpdateDecoration'
