@@ -17,6 +17,8 @@
   import NotePanels from './note/NotePanels.svelte'
   import TagPanel from './tags/TagPanel.svelte'
   import { onTagPanelChanged, type TagPanelState } from './tags/tag-panel'
+  import SearchPanel from './chrome/SearchPanel.svelte'
+  import { onSearchPanelChanged, type SearchPanelState } from './chrome/search'
 
   let {
     onready = undefined,
@@ -32,6 +34,9 @@
   // §4.8 tag panel (AI-IMP-071): the one instance, store-driven.
   let tagPanel = $state<TagPanelState | null>(null)
   $effect(() => onTagPanelChanged((next) => (tagPanel = next)))
+  // §8.3 search panel (AI-IMP-073): same physics, same mounting.
+  let searchPanel = $state<SearchPanelState | null>(null)
+  $effect(() => onSearchPanelChanged((next) => (searchPanel = next)))
 
   onMount(() => {
     let mounted: CanvasHostHandle | null = null
@@ -109,6 +114,9 @@
   {/if}
   {#if tagPanel && handle}
     <TagPanel {handle} hostElement={element} panel={tagPanel} />
+  {/if}
+  {#if searchPanel && handle}
+    <SearchPanel {handle} hostElement={element} panel={searchPanel} />
   {/if}
 </div>
 

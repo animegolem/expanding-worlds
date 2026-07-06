@@ -109,6 +109,19 @@ export interface TagViewNode extends NodeAppearanceColumns {
   placements: TagViewPlacement[]
 }
 
+/** One node's identity + active placement locations (§8.3, the ⌕
+ * panel's asset-row expansion). Label conventions match TagViewNode/
+ * TagViewPlacement; empty `placements` is the unplaced state. */
+export interface NodeLocations {
+  nodeId: string
+  label: string
+  appearanceKind: string | null
+  appearanceColor: string | null
+  appearanceIcon: string | null
+  noteId: string | null
+  placements: TagViewPlacement[]
+}
+
 const NODE_APPEARANCE_SELECT = `n.appearance_kind AS appearanceKind,
     n.appearance_color AS appearanceColor,
     n.appearance_icon AS appearanceIcon,
@@ -439,6 +452,66 @@ export function registerStructureQueries(registry: QueryRegistry): void {
         placements: placementsByNode.get(node.id) ?? [],
       }))
     return { tag, nodes }
+  })
+
+  // §8.3 (AI-IMP-073): one node's active placement locations, for
+  // surfaces that navigate to a node they only know by id — the ⌕
+  // panel's asset rows ("filename match surfaces the nodes using that
+  // asset"). Same label conventions as the tag view: node label is
+  // the note title else the short code, canvas labels read the owning
+  // node's title (root reads "Home"). Unplaced is a legitimate state
+  // (empty placements), not an error; a non-active node is null.
+  registry.register('getNodeLocations', (ctx, args): NodeLocations | null => {
+    const { nodeId } = args as { nodeId: string }
+    const node = ctx.db.get<
+      NodeAppearanceColumns & { id: string; noteId: string | null; noteTitle: string | null }
+    >(
+      `SELECT n.id, ${NODE_APPEARANCE_SELECT},
+              note.id AS noteId, note.title AS noteTitle
+       FROM node n
+       LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       WHERE n.id = ? AND n.project_id = ? AND n.lifecycle_state = 'active'`,
+      nodeId,
+      ctx.projectId,
+    )
+    if (!node) return null
+    const placements = ctx.db
+      .all<{
+        placementId: string
+        canvasId: string
+        canvasNodeId: string
+        canvasNoteTitle: string | null
+        isRoot: number
+      }>(
+        `SELECT p.id AS placementId, p.canvas_id AS canvasId,
+                c.node_id AS canvasNodeId, cnote.title AS canvasNoteTitle,
+                CASE WHEN c.node_id = pr.root_node_id THEN 1 ELSE 0 END
+                  AS isRoot
+         FROM placement p
+         JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
+         JOIN project pr ON pr.id = c.project_id
+         LEFT JOIN node cn ON cn.id = c.node_id
+         LEFT JOIN note cnote ON cnote.id = cn.note_id
+           AND cnote.lifecycle_state = 'active'
+         WHERE p.node_id = ? AND p.lifecycle_state = 'active'
+         ORDER BY p.id`,
+        nodeId,
+      )
+      .map((row) => ({
+        placementId: row.placementId,
+        canvasId: row.canvasId,
+        canvasLabel:
+          row.isRoot === 1 ? 'Home' : (row.canvasNoteTitle ?? shortCode(row.canvasNodeId)),
+      }))
+    return {
+      nodeId: node.id,
+      label: node.noteTitle ?? shortCode(node.id),
+      appearanceKind: node.appearanceKind,
+      appearanceColor: node.appearanceColor,
+      appearanceIcon: node.appearanceIcon,
+      noteId: node.noteId,
+      placements,
+    }
   })
 
   // §8.1 (AI-IMP-061): the bookmark menu's one read model — every

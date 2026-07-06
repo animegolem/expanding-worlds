@@ -78,25 +78,25 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] SearchPanel opens from ⌕ (anchored, charm active) and Mod+P
+- [x] SearchPanel opens from ⌕ (anchored, charm active) and Mod+P
       (quick-open mode); Escape closes; one instance.
-- [ ] Search mode: debounced searchProject, four kind groups,
+- [x] Search mode: debounced searchProject, four kind groups,
       arrow/Enter keyboard model across groups.
-- [ ] Note result opens the note panel; tag result opens the tag
+- [x] Note result opens the note panel; tag result opens the tag
       panel; asset result expands using-nodes that navigate and
       center; canvas-text result navigates and centers the
       decoration after the scene applies.
-- [ ] Leading # switches to tag mode with listTags completion;
+- [x] Leading # switches to tag mode with listTags completion;
       Enter lands on the tag panel (third door).
-- [ ] Quick-open: title matches over notes and canvas-owning nodes,
+- [x] Quick-open: title matches over notes and canvas-owning nodes,
       phantoms excluded; Enter opens note panel / navigates to
       canvas; canvas navigation is a history entry.
-- [ ] Mod+P suppressed while a takeover is open (068 guard); works
+- [x] Mod+P suppressed while a takeover is open (068 guard); works
       from board focus and from an open note panel.
-- [ ] e2e: one scenario per result kind incl. cross-canvas text
+- [x] e2e: one scenario per result kind incl. cross-canvas text
       match; # tag mode; keyboard-only Mod+P round trip to a note
       and to a canvas.
-- [ ] `pnpm -r build`, full gates green.
+- [x] `pnpm -r build`, full gates green.
 
 ### Acceptance Criteria
 
@@ -123,3 +123,38 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **New persistence query (deviation from Files to Touch):**
+  `getNodeLocations` in `queries-structure.ts` (+3 unit tests).
+  Nothing existing yields one node's placement locations by node id
+  (getTagView is per-tag, getNoteUses per-note), and the asset rows
+  need exactly that to navigate/center. Labels follow the tag-view
+  conventions (note title else short code; root reads "Home"). The
+  panel loads it lazily on asset-row expansion — no N+1 at search
+  time.
+- **Canvas-text centering needed no new seam.** The workspace
+  `onCenterPlacements` handler matches `controller.items()` by id —
+  decorations included — and `selection.marquee` doesn't validate
+  item kinds, so `requestCenterPlacements([decorationId])` after
+  `navigateTo` selects and centers the decoration with the seam's
+  own bounded scene-wait. Verified in e2e: camera centers on the
+  text AABB and `__ewDebug.selection()` holds the decoration id.
+  The event name now understates what it does; left as-is rather
+  than renaming a shared seam mid-wave.
+- **Mod+P vs CodeMirror:** registered at the shell seam
+  (attachNavigation) as a window CAPTURE listener with a first-line
+  `takeoverActive()` guard; capture runs before CM's editor-DOM
+  handlers, so no key eating. e2e proves it from `.cm-content`
+  focus. Mod+P is not in CM's default keymap, but capture makes
+  the ordering a non-issue.
+- **shell.spec.ts updated:** its rail assertion pinned ⌕ as
+  aria-disabled/deferred; moved 'search' to the live-charm list
+  (same pattern as when outline/☰ went live in 068).
+- **Not covered:** live re-query of open results on project-changed
+  (results refresh per keystroke only); quick-open phantom
+  exclusion is asserted at the persistence layer
+  (queries-search.test.ts), not re-proven in e2e; the ⌕ charm click
+  is not takeover-guarded (the rail stays interactive under a
+  takeover — only Mod+P carries the 068 guard per this ticket), so
+  a ⌕ click during a takeover opens the panel beneath the cover.
+  Flagging for lead review rather than growing CharmRail scope.

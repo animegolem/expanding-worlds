@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { titleKey, uuidv7 } from '@ew/domain'
+import { shortCode, titleKey, uuidv7 } from '@ew/domain'
 import { CommandRegistry, type CommittedResult } from '@ew/commands'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
@@ -19,6 +19,7 @@ import {
   type BookmarkListRow,
   type CanvasContentItem,
   type CanvasScene,
+  type NodeLocations,
   type TagViewNode,
 } from './queries-structure'
 
@@ -709,5 +710,53 @@ describe('listBookmarks (§8.1)', () => {
     expect(query<BookmarkListRow[]>('listBookmarks').map((r) => r.id)).toEqual([a, b])
     committed('ReorderBookmark', { bookmarkId: b, afterId: null, beforeId: a })
     expect(query<BookmarkListRow[]>('listBookmarks').map((r) => r.id)).toEqual([b, a])
+  })
+})
+
+describe('getNodeLocations (§8.3 asset-row expansion, AI-IMP-073)', () => {
+  it('returns label, appearance, and placement locations with tag-view label conventions', () => {
+    // Board B owned by a titled node; the subject node is placed on
+    // the root board AND on board B.
+    const ownerNode = createNode()
+    const ownerNote = insertNote('Ruins Board')
+    committed('AttachNoteToNode', { nodeId: ownerNode, noteId: ownerNote })
+    const boardB = uuidv7()
+    committed('CreateCanvas', { canvasId: boardB, nodeId: ownerNode })
+
+    const nodeId = createNode()
+    const noteId = insertNote('Watcher')
+    committed('AttachNoteToNode', { nodeId, noteId })
+    const pRoot = createPlacement(nodeId)
+    const pB = createPlacement(nodeId, boardB)
+
+    const locations = query<NodeLocations | null>('getNodeLocations', { nodeId })
+    expect(locations).not.toBeNull()
+    expect(locations!.label).toBe('Watcher')
+    expect(locations!.noteId).toBe(noteId)
+    expect(locations!.appearanceKind).toBeNull() // bare CreateNode: no appearance
+    const byId = new Map(locations!.placements.map((p) => [p.placementId, p]))
+    expect(byId.get(pRoot)!.canvasLabel).toBe('Home')
+    expect(byId.get(pB)!.canvasLabel).toBe('Ruins Board')
+    expect(byId.get(pB)!.canvasId).toBe(boardB)
+  })
+
+  it('an unplaced node is a row with empty placements; a noteless node labels by short code', () => {
+    const nodeId = createNode()
+    const locations = query<NodeLocations | null>('getNodeLocations', { nodeId })
+    expect(locations).not.toBeNull()
+    expect(locations!.placements).toEqual([])
+    expect(locations!.label).toBe(shortCode(nodeId))
+    expect(locations!.noteId).toBeNull()
+  })
+
+  it('excludes trashed placements and returns null for a trashed or unknown node', () => {
+    const nodeId = createNode()
+    const placementId = createPlacement(nodeId)
+    handle.db.run("UPDATE placement SET lifecycle_state = 'trashed' WHERE id = ?", placementId)
+    expect(query<NodeLocations | null>('getNodeLocations', { nodeId })!.placements).toEqual([])
+
+    handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
+    expect(query<NodeLocations | null>('getNodeLocations', { nodeId })).toBeNull()
+    expect(query<NodeLocations | null>('getNodeLocations', { nodeId: uuidv7() })).toBeNull()
   })
 })
