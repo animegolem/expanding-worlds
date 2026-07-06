@@ -75,6 +75,27 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
+    case 'checkpoint-wal': {
+      // §11.4 involuntary end-session (AI-IMP-096): truncate the WAL
+      // on the PRIMARY and on the LIBRARY secondary (it takes mirror
+      // writes). The source slot is read-only and no-ops in the
+      // service; a closed slot or closed project is simply skipped.
+      // A failure here is benign — report it typed, never throw.
+      try {
+        service?.checkpoint()
+        const library = secondaries.library
+        if (library && !library.readOnly) library.checkpoint()
+        return { type: 'checkpoint-wal', ok: true }
+      } catch (err) {
+        return {
+          type: 'checkpoint-wal',
+          ok: false,
+          code: 'CHECKPOINT_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'close-project': {
       unsubscribe?.()
       unsubscribe = null

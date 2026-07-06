@@ -252,10 +252,24 @@ export type MirrorToLibraryResponse =
   | { type: 'mirror-to-library'; ok: true; nodeId: string; assetId: string; deduplicated: boolean }
   | { type: 'mirror-to-library'; ok: false; code: string; message: string }
 
+/** §11.4 involuntary end-session (AI-IMP-096): checkpoint-and-truncate
+ * the WAL so the .sqlite is complete at rest — no live -wal for a
+ * cloud daemon to sync. No args: acts on the open PRIMARY and any
+ * WRITABLE secondary (the library takes mirror writes). Read-only
+ * services and a closed project no-op ok:true — nothing to flush. */
+export interface CheckpointWalRequest {
+  type: 'checkpoint-wal'
+}
+
+export type CheckpointWalResponse =
+  | { type: 'checkpoint-wal'; ok: true }
+  | { type: 'checkpoint-wal'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
   | CloseProjectRequest
+  | CheckpointWalRequest
   | ExecuteCommandRequest
   | RunQueryRequest
   | ImportAssetRequest
@@ -274,6 +288,7 @@ export type ProjectResponse =
   | PingResponse
   | InitProjectResponse
   | CloseProjectResponse
+  | CheckpointWalResponse
   | ExecuteCommandResponse
   | RunQueryResponse
   | ImportAssetResponse

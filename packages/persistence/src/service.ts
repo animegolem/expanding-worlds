@@ -87,6 +87,12 @@ export interface ProjectService {
   }): { assetId: string; contentHash: string } | null
   /** §11.4 startup recovery outcome for this open. */
   recovery(): RecoveryReport
+  /** §11.4 involuntary checkpoint (AI-IMP-096): PRAGMA
+   * wal_checkpoint(TRUNCATE) so the -wal file returns to zero and the
+   * .sqlite is complete at rest (the OS may sleep and a cloud daemon
+   * may sync at any moment). A read-only source no-ops — it holds no
+   * lock and owns no WAL to flush. */
+  checkpoint(): void
   close(): void
 }
 
@@ -191,6 +197,13 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
     },
     subscribe: (fn) => dispatcher.subscribe(fn),
     recovery: () => recoveryReport,
+    checkpoint: () => {
+      // A read-only source took no lock and left the WAL to its
+      // writable owner — checkpointing here would be a no-op the
+      // driver refuses, so skip it outright.
+      if (handle.readOnly) return
+      handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+    },
     importAsset: (input) => {
       if (handle.readOnly) return Promise.reject(readOnlyError())
       return importAsset(

@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { uuidv7 } from '@ew/domain'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
 import type {
+  CheckpointWalResponse,
   ClaimThumbnailJobResponse,
   ClearLibraryExampleResponse,
   CloseSecondaryResponse,
@@ -42,6 +43,11 @@ const api = {
      * EW_TEST_HOOKS=1, so this rejects in production. */
     killUtility: (): Promise<boolean> =>
       ipcRenderer.invoke('test:kill-utility') as Promise<boolean>,
+    /** AI-IMP-096 e2e only: drive the checkpoint-wal verb through the
+     * real main→utility→service path. Main registers the handler
+     * solely under EW_TEST_HOOKS=1. */
+    checkpointWal: (): Promise<CheckpointWalResponse> =>
+      ipcRenderer.invoke('test:checkpoint-wal') as Promise<CheckpointWalResponse>,
   },
   window: {
     setVibrancy: (enabled: boolean): Promise<boolean> =>

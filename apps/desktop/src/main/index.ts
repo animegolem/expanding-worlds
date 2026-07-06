@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, net, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
+import { app, BrowserWindow, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -450,6 +450,65 @@ function setWindowVibrancy(win: BrowserWindow, enabled: boolean): boolean {
   }
 }
 
+// §11.4 involuntary end-session ritual (AI-IMP-096): the OS sleeping
+// or locking, or the window losing focus long enough, is a natural
+// rest point. Flush the renderer's editor buffers (the same round-trip
+// the quit path uses, §10.2) then checkpoint the WAL so the .sqlite is
+// complete at rest — a cloud daemon must never sync a live -wal. This
+// path NEVER blocks quit (it does not touch the close handler) and
+// NEVER throws: callUtility already returns typed dead responses, and
+// a checkpoint failure is the utility's to report, not ours to raise.
+
+/** The renderer commits pending editor buffers on app:flush and acks
+ * with app:flush-done; bounded so a hung or dead renderer cannot trap
+ * the checkpoint. Mirrors the close path's timeout, but its own
+ * listener so it never entangles the quit flush. */
+function flushRenderers(): Promise<void> {
+  const wins = BrowserWindow.getAllWindows().filter((win) => !win.webContents.isDestroyed())
+  if (wins.length === 0) return Promise.resolve()
+  return new Promise<void>((resolve) => {
+    let remaining = wins.length
+    const finish = (): void => {
+      clearTimeout(timer)
+      ipcMain.removeListener('app:flush-done', onDone)
+      resolve()
+    }
+    const onDone = (): void => {
+      remaining -= 1
+      if (remaining <= 0) finish()
+    }
+    const timer = setTimeout(finish, 2_000)
+    ipcMain.on('app:flush-done', onDone)
+    for (const win of wins) win.webContents.send('app:flush')
+  })
+}
+
+async function flushAndCheckpoint(): Promise<void> {
+  await flushRenderers()
+  await callUtility({ type: 'checkpoint-wal' })
+}
+
+// Blur debounce: tabbing to a reference board must not thrash the
+// disk. A blur arms a single 30s timer; a focus before it fires
+// cancels it (the app never left); a second blur while one is armed
+// keeps the existing timer rather than resetting it.
+const BLUR_CHECKPOINT_DELAY_MS = 30_000
+let blurTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleBlurCheckpoint(): void {
+  if (blurTimer) return
+  blurTimer = setTimeout(() => {
+    blurTimer = null
+    void flushAndCheckpoint()
+  }, BLUR_CHECKPOINT_DELAY_MS)
+}
+
+function cancelBlurCheckpoint(): void {
+  if (!blurTimer) return
+  clearTimeout(blurTimer)
+  blurTimer = null
+}
+
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
     width: 1280,
@@ -495,6 +554,12 @@ async function createWindow(): Promise<void> {
     if (command === 'browser-backward') win.webContents.send('nav:gesture', 'back')
     else if (command === 'browser-forward') win.webContents.send('nav:gesture', 'forward')
   })
+
+  // §11.4 involuntary checkpoint (AI-IMP-096): a sustained blur is a
+  // natural rest point. Focus (returning to the app) cancels a pending
+  // checkpoint; the 30s debounce lives in the module-level timer.
+  win.on('blur', scheduleBlurCheckpoint)
+  win.on('focus', cancelBlurCheckpoint)
 
   const devUrl = process.env['ELECTRON_RENDERER_URL']
   if (devUrl) await win.loadURL(devUrl)
@@ -664,7 +729,18 @@ void app.whenReady().then(() => {
       utility?.kill()
       return true
     })
+    // AI-IMP-096 e2e only: the window→preload→main→utility→service
+    // checkpoint verb round-trip (the involuntary ritual's inner call,
+    // minus the untestable-in-CI power event). Gated identically.
+    ipcMain.handle('test:checkpoint-wal', () => callUtility({ type: 'checkpoint-wal' }))
   }
+
+  // §11.4 involuntary end-session (AI-IMP-096): the OS suspending or
+  // the screen locking is an immediate rest point — flush + checkpoint
+  // at once (no debounce; these are already deliberate).
+  powerMonitor.on('suspend', () => void flushAndCheckpoint())
+  powerMonitor.on('lock-screen', () => void flushAndCheckpoint())
+
   void createWindow()
 
   app.on('activate', () => {
