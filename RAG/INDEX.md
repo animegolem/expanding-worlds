@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 2 | 3 |
+| Planned | 2 | 2 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 90 |
+| Completed | 11 | 91 |
 | **Total** | **15** | **94** |
 
 ## In Progress
@@ -50,7 +50,7 @@
 - [[AI-IMP-089-library-scope-toggle|IMP-089]] Library scope toggle — completed
 - [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — completed
 - [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — completed
-- [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — planned
+- [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
 - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
 - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
 
@@ -86,7 +86,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (720 LOC)
 - packages/persistence/src/queries-structure.ts (709 LOC)
-- apps/desktop/src/main/index.ts (686 LOC)
+- apps/desktop/src/main/index.ts (692 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -110,6 +110,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (480 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (470 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
+- apps/desktop/src/utility/index.ts (450 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
@@ -119,11 +120,11 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.test.ts (421 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (409 LOC)
-- apps/desktop/src/utility/index.ts (401 LOC)
 - packages/persistence/src/handlers/nodes.ts (398 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
+- apps/desktop/src/renderer/canvas/import-surfaces.ts (380 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
@@ -136,7 +137,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
-- apps/desktop/src/renderer/canvas/import-surfaces.ts (330 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - apps/desktop/e2e/panels.spec.ts (322 LOC)
@@ -144,6 +144,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/shell.spec.ts (317 LOC)
+- packages/protocol/src/index.ts (316 LOC)
+- apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
+- apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
 
@@ -151,7 +154,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 90 IMPs completed</summary>
+<summary>11 EPICs, 91 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

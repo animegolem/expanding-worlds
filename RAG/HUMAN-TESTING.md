@@ -62,6 +62,15 @@ record — history lives in the tickets.
   a fresh library — does the artists-root → artist-boards → tagged
   works arrangement read as "this is what the surface is for"?
   Clear-the-example from the gallery header when done.
+- [ ] **Inbox mirror feel** (AI-IMP-092, 2026-07-06): designate a
+  library, drop an image on a world — the first-drop ask should
+  read right; with mirror on, the drop must feel instant (mirror is
+  background); drop a duplicate — the tag-offer chip should fade on
+  ignore with no debt.
+- [ ] **Source panel** (AI-IMP-091, 2026-07-06): open a project as
+  source from the new live ⧉ charm, browse the mini grid, set the
+  tag border, drag a cell onto the board — does the pull feel like
+  one motion?
 - [ ] **Light-theme legibility over art** (EPIC-013, carried):
   chrome and scrim chips readable over bright and busy boards in
   the light theme.
