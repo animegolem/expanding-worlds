@@ -19,7 +19,7 @@ AI_IMP_spawned:
 The shell's second physics — project-global views that take over the
 window (RFC §8.2) — has no implementation, and neither do the
 discovery surfaces that make the app's "act against the database"
-mode real: the tree that realizes the node-library MUST (§14.1), the
+mode real: the outline that realizes the node-library MUST (§14.1), the
 tag panel and lens (§4.8), search and quick-open in the ⌕ charm
 (§8.3), and the settings takeover with theming (§11.5). Without
 them, unplaced material is invisible and tags have no surface at
@@ -31,7 +31,7 @@ Per RFC rev 0.17, build the takeover framework once (enter from a
 rail charm, Esc or the charm returns, canvas camera untouched), then
 the views on it:
 
-- **Tree (▤)**: world-as-outline with charm glyphs, cycle-safe alias
+- **Outline (▤)**: the world as an outline with charm glyphs, cycle-safe alias
   rows, root-level loose bin, inline tag chips, and the shared
   filter chips (hide content-less · disconnected per §14.1's
   orphan/loose vocabulary · one tag). Realizes the node-library
@@ -57,12 +57,12 @@ The graph takeover (⊛, §14.2) is deliberately its own later epic —
 it is a second renderer (force layout, image-node LOD) and should
 not gate discovery. Multi-tag queries, note-attached tags, and the
 switcher HUD stay in RFC questions 22–24. No flat node-list view
-ships beside the tree. No theme engine is built.
+ships beside the outline. No theme engine is built.
 
 ## Success Metrics
 
 - RFC §17 slice items 8 (tag panel), 9 (library drag + note
-  placement), 21 (Unplaced recovery), and 24 (tree takeover
+  placement), 21 (Unplaced recovery), and 24 (outline takeover
   exclusions) pass end to end.
 - Quick-open and search return correct targets across all four
   indexed corpora (§8.3).
@@ -74,9 +74,9 @@ ships beside the tree. No theme engine is built.
 ### Functional Requirements
 
 - [ ] FR-1: Takeover framework — rail-charm entry, Esc/charm return, camera untouched per §8.2.
-- [ ] FR-2: Tree view with alias-row cycle handling, loose bin, filter chips per §14.1.
-- [ ] FR-3: Tree realizes library placement flows: drag-to-canvas and Place on Current Canvas per §6.10.
-- [ ] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8; queries built on the descendant-expansion helper with the visible include-descendants toggle (hierarchy-ready even while all tags sit at the root — the tree editor itself is EPIC-014).
+- [ ] FR-2: Outline view with alias-row cycle handling, loose bin, filter chips per §14.1.
+- [ ] FR-3: Outline realizes library placement flows: drag-to-canvas and Place on Current Canvas per §6.10.
+- [ ] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8 (tags are flat, rev 0.20).
 - [ ] FR-5: Lens view state sharing the §7.5 highlight implementation per §4.8.
 - [ ] FR-6: Three tag doors landing on one panel per §4.8.
 - [ ] FR-7: ⌕ search with kind-grouped results and navigation per §8.3.
@@ -87,10 +87,10 @@ ships beside the tree. No theme engine is built.
 ### Non-Functional Requirements
 
 - Takeovers scope to one project ID like every view (§8.2).
-- Tree and tag queries stay read-model projections; no new domain
+- Outline and tag queries stay read-model projections; no new domain
   records (§14.1).
 - Disconnection filters use the §14.1 orphan/loose vocabulary
-  consistently across tree, tag panel, and the future graph.
+  consistently across outline, tag panel, and the future graph.
 
 ## Implementation Breakdown
 

@@ -65,7 +65,7 @@ changes.
 
 ## Path(s) Not Taken
 
-Global takeover views (tree, tag panel, search/quick-open, settings,
+Global takeover views (outline, tag panel, search/quick-open, settings,
 themes) are AI-EPIC-013; the graph takeover is a later epic. The
 switcher HUD, New Window side-by-side, multi-tag queries, and
 note-attached tags are RFC questions 22–25. The Create Pin dialog
@@ -98,6 +98,7 @@ constants, tuned later.
 - [ ] FR-10: Canvas-note corner charm with ghost/solid states per §8.5.
 - [ ] FR-11: In-panel Uses list behind the places header; link-anchored location chooser; zero/one/many per §7.3–7.4.
 - [ ] FR-12: Toast system plus the ⚠ ongoing-state perch; status strip retired in the perch ticket per §8.6.
+- [ ] FR-13: Pin dock tool (◉, N) placing a dot node with its phantom note focused; Escape-before-typing persists nothing; Create Pin dialog retired per §6.2 (rev 0.20).
 
 ### Non-Functional Requirements
 
