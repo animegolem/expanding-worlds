@@ -43,6 +43,14 @@ pass gives it something pretty to show.
 
 No docs site generator/framework unless the single page outgrows
 hand-rolled HTML; no marketing domain — repo Pages is the scope.
+**No generated API docs (decided 2026-07-06):** TypeDoc-style
+rendering was considered and declined — the workspace packages
+have no external consumer, the doc-comment culture is RFC-anchored
+rather than API-descriptive, and the RFC is the true deep
+explanation. The wiki is hand-written orientation (build/run/test,
+process map, architecture sketch) linking INTO the RFC. Revisit
+generated docs only if a real external API ships (the OQ 30 agent
+seat or a connector SDK).
 
 ## Success Metrics
 
