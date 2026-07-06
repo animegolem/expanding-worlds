@@ -19,6 +19,7 @@ import { navigateTo } from '../chrome/navigation'
 import { onEngagementChanged } from '../chrome/engagement'
 import { tooltip } from '../chrome/tooltip'
 import { requestAttachNote, requestOpenNote } from '../note/open-note'
+import { openCornerPanel } from '../note/panels'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 
 export interface CharmsUiHandle {
@@ -197,6 +198,55 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       })
   })
 
+  // ------------------------------------------------- corner charm
+  // §8.5: the canvas is a node, and the active canvas's own note is
+  // "the node you are standing inside" — a screen-fixed lower-left
+  // page charm, ghost while no note exists, solid when one does.
+  let cornerNodeId: string | null = null
+  let cornerNoteId: string | null = null
+  let cornerCanvas: string | null = null
+  const corner = document.createElement('button')
+  corner.type = 'button'
+  corner.dataset['testid'] = 'corner-charm'
+  corner.textContent = PAGE_GLYPH
+  corner.style.cssText =
+    'position:absolute;left:12px;bottom:12px;width:26px;height:26px;display:grid;' +
+    'place-items:center;padding:0;background:rgba(16,19,26,0.72);color:#dde3ea;' +
+    'border:1px solid #2e3138;border-radius:6px;cursor:pointer;font-size:13px;' +
+    'pointer-events:auto;transition:opacity 120ms ease-out;'
+  const cornerTip = tooltip(corner, { name: 'This board’s note' })
+  disposers.push(cornerTip.destroy)
+  corner.addEventListener('click', (event) => {
+    event.stopPropagation()
+    if (cornerNodeId) openCornerPanel(cornerNodeId, cornerNoteId)
+  })
+  corner.addEventListener('pointerenter', () => (corner.style.opacity = '1'))
+  corner.addEventListener('pointerleave', () => applyCornerState())
+  layer.appendChild(corner)
+
+  function applyCornerState(): void {
+    // Ghost when empty (§8.5: appears on approach; hover solidifies),
+    // solid the moment the note exists.
+    corner.style.opacity = cornerNoteId ? '1' : '0.3'
+    corner.dataset['state'] = cornerNoteId ? 'solid' : 'ghost'
+  }
+
+  async function refreshCorner(): Promise<void> {
+    const canvasId = host.canvasId
+    const sceneResponse = await window.ew.project.query('getCanvasScene', { canvasId })
+    if (!sceneResponse.ok || sceneResponse.result === null) return
+    const scene = sceneResponse.result as { nodeId: string }
+    const nodeResponse = await window.ew.project.query('getNode', { nodeId: scene.nodeId })
+    if (host.canvasId !== canvasId) return // canvas changed under us
+    cornerCanvas = canvasId
+    cornerNodeId = scene.nodeId
+    cornerNoteId = nodeResponse.ok
+      ? ((nodeResponse.result as { noteId: string | null } | null)?.noteId ?? null)
+      : null
+    applyCornerState()
+  }
+  void refreshCorner()
+
   // ---------------------------------------------------- hint charms
   function hintButton(testId: string, glyph: string, name: string): HTMLButtonElement {
     const button = document.createElement('button')
@@ -238,9 +288,14 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
         const current = host.controller
           .items()
           .find((candidate) => candidate.id === item.id)
-        const noteId =
-          current && current.itemKind === 'placement' ? current.noteId : item.noteId
-        if (noteId) requestOpenNote(noteId)
+        const placement =
+          current && current.itemKind === 'placement' ? current : item
+        if (placement.noteId)
+          requestOpenNote(placement.noteId, {
+            canvasId: host.canvasId,
+            placementId: placement.id,
+            label: placement.noteTitle ?? '',
+          })
       })
       group.appendChild(page)
       created.page = page
@@ -344,7 +399,15 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   }
 
   disposers.push(host.controller.camera.onChanged(() => schedule()))
-  disposers.push(host.onSceneApplied(() => schedule()))
+  disposers.push(
+    host.onSceneApplied(() => {
+      schedule()
+      // The corner charm's ghost/solid state follows the ACTIVE
+      // canvas's note; scene applied covers both edits and dives.
+      if (host.canvasId !== cornerCanvas) applyCornerState()
+      void refreshCorner()
+    }),
+  )
   disposers.push(host.controller.selection.onChanged(() => schedule()))
   // One shared fade clock: the layer fades with the chrome; per-group
   // rest opacity + hover live in the injected stylesheet.

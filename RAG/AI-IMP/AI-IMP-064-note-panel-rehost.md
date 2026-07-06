@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - shell
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-063]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.7
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-064-note-panel-rehost
@@ -87,31 +87,31 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] NotePanel hosts the untouched note-editor controller;
+- [x] NotePanel hosts the untouched note-editor controller;
       autosave/flush/link/conflict behavior verified by the
       existing suite (no diffs under note/note-editor.ts,
       wiki-link-plugin.ts, link-resolution.ts, suggestions.ts).
-- [ ] Tethered panel: opens beside its node anchored to the
+- [x] Tethered panel: opens beside its node anchored to the
       summoning control, dashed tail, tracks camera (pan/zoom
       keeps tail attached, type at screen scale); opening another
       note replaces it.
-- [ ] Pin: ⇱ converts to screen-fixed; pinned panels accumulate;
+- [x] Pin: ⇱ converts to screen-fixed; pinned panels accumulate;
       nothing auto-unpins (navigation, canvas switch, and new
       tethered opens leave pinned panels alone).
-- [ ] Escalation: halo when pinned + on-screen; edge chip when
+- [x] Escalation: halo when pinned + on-screen; edge chip when
       off-screen (click flies home); origin label when
       cross-canvas (click navigates via navigateTo and enters
       history); each state exists exactly while its condition
       holds.
-- [ ] Corner charm lower-left: ghost on approach when canvas note
+- [x] Corner charm lower-left: ghost on approach when canvas note
       absent, solid when present; click toggles the anchored
       panel; phantom persists nothing until first committed edit
       and the charm turns solid at that moment.
-- [ ] Tag chips in panel header from the subject node; zero-node
+- [x] Tag chips in panel header from the subject node; zero-node
       note shows none.
-- [ ] NotePane deleted, App grid collapsed; no orphaned imports;
+- [x] NotePane deleted, App grid collapsed; no orphaned imports;
       `pnpm -r build` green.
-- [ ] Full notes e2e suite green against panels hidden-window;
+- [x] Full notes e2e suite green against panels hidden-window;
       new e2e for pin accumulation, all three escalation states,
       corner charm ghost→solid.
 
@@ -140,3 +140,33 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+The panel KEEPS the note-pane testids — §8.5 says the panel IS the
+note pane's realization — so the full EPIC-005 notes suite passed
+with only the shell launch assertion changed, and zero diffs under
+note-editor.ts / wiki-link-plugin.ts / link-resolution.ts /
+suggestions.ts (verified by git diff). Findings and deviations:
+(1) A real race my rehost introduced: the store's fallback rename
+(no panel holds the note) uses its own gateway, which learns the
+just-flushed buffer's commit revision only via the async
+project-changed push — the rename died as a silent conflict.
+Fixed with checkRevision:false (RenameNote targets a stable id);
+a §7.7 conflict on this no-panel path degrades to a toast, since
+the dialog needs an owning panel. (2) CM6 lesson: a content-sized
+editor puts a center click ON the text line and Ctrl-End is
+unbound on mac — the docked pane worked only because its editor
+filled a tall column, so clicks below the text snapped to doc end.
+The panel editor gets a definite 16rem height. (3) Window-is-the-
+board fallout in two other suites: import.spec's "cursor off the
+canvas" now requires a synthesized pointerleave (there is no
+docked chrome to park the pointer on), and board-tooling's stage
+flight frames differently in the 300px-wider viewport (camera
+reset before its screen-coordinate click). (4) Edge chips clamp
+48px in from the viewport edges — the corner chrome floats a
+z-layer above the panels layer and was eating their clicks.
+(5) The §8.5 canvas phantom materializes with title-from-first-
+line (§6.2's rule) via CreateNote + AttachNoteToNode; Escape
+persists nothing. (6) The Uses sidebar still renders inside the
+panel and node-menu's duplicate Open Note row survives — both are
+065's churn (it rebuilds those exact surfaces). (7) Anchorless
+opens (zero placements on the active canvas) park at a calm
+default position; the §7.3 link-anchored handoff is 065 scope.

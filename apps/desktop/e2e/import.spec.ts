@@ -206,7 +206,14 @@ test('import surfaces: drop, attribution, rejection, URL failure, paste', async 
   expect(findNear(pasted.items, { x: 220, y: 170 })).toHaveLength(1)
 
   // -- paste with the cursor OFF the canvas → view center (§6.1).
-  await win.mouse.move(10, 10) // over the note pane, leaves the host
+  // The window IS the board (AI-IMP-064): no docked chrome remains
+  // to park the pointer on, so "off the canvas" now means out of the
+  // window — synthesize the pointerleave that exit fires.
+  await win.evaluate(() =>
+    document
+      .querySelector('[data-testid="canvas-host"]')!
+      .dispatchEvent(new PointerEvent('pointerleave')),
+  )
   await paste('center-shot.png')
   await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(6)
   pasted = await query<{ items: Array<{ itemKind: string; x: number; y: number }> }>(

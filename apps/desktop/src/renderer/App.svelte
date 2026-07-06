@@ -1,5 +1,4 @@
 <script lang="ts">
-  import NotePane from './NotePane.svelte'
   import Workspace from './Workspace.svelte'
   import { attachServiceStatus } from './chrome/status'
 
@@ -10,12 +9,11 @@
 </script>
 
 <!--
-  Provisional workspace layout per RFC-0001 §8.2: persistent note pane
-  on the left, main workspace with the floating chrome frame. Status
-  lives in toasts and the §8.6 perch — no docked strip.
+  The window is the board (RFC §8.2, AI-IMP-064): the canvas fills
+  the shell; chrome floats over it and notes live in §8.5 floating
+  panels. Nothing docks, nothing reflows.
 -->
 <div class="shell">
-  <NotePane />
   <Workspace />
 </div>
 
@@ -36,9 +34,8 @@
 
   .shell {
     display: grid;
-    grid-template-areas: 'note-pane workspace';
-    /* The note pane sizes itself (300px, 28px collapsed). */
-    grid-template-columns: auto 1fr;
+    grid-template-areas: 'workspace';
+    grid-template-columns: 1fr;
     grid-template-rows: 1fr;
     height: 100%;
   }

@@ -19,18 +19,33 @@ import type { CanvasHostHandle } from '../canvas/host'
 
 export const OPEN_NOTE_EVENT = 'ew-open-note'
 
+/** §8.5: where the tethered panel should anchor — the placement the
+ * open request came from, when the caller knows one. */
+export interface OpenNoteAnchor {
+  canvasId: string
+  placementId: string
+  label?: string
+}
+
 export interface OpenNoteDetail {
   noteId: string
+  anchor?: OpenNoteAnchor
 }
 
-export function requestOpenNote(noteId: string): void {
-  window.dispatchEvent(new CustomEvent<OpenNoteDetail>(OPEN_NOTE_EVENT, { detail: { noteId } }))
+export function requestOpenNote(noteId: string, anchor?: OpenNoteAnchor): void {
+  window.dispatchEvent(
+    new CustomEvent<OpenNoteDetail>(OPEN_NOTE_EVENT, {
+      detail: { noteId, ...(anchor ? { anchor } : {}) },
+    }),
+  )
 }
 
-export function onOpenNote(listener: (noteId: string) => void): () => void {
+export function onOpenNote(
+  listener: (noteId: string, anchor?: OpenNoteAnchor) => void,
+): () => void {
   const handler = (event: Event): void => {
     const detail = (event as CustomEvent<OpenNoteDetail>).detail
-    if (detail?.noteId) listener(detail.noteId)
+    if (detail?.noteId) listener(detail.noteId, detail.anchor)
   }
   window.addEventListener(OPEN_NOTE_EVENT, handler)
   return () => window.removeEventListener(OPEN_NOTE_EVENT, handler)

@@ -40,11 +40,11 @@ test('shell launches and the Project API round-trips', async () => {
   )
   expect(requireType).toBe('undefined')
 
-  // The shell regions of the provisional layout (RFC-0001 §8.2). The
-  // interim status strip retired with the §8.6 toasts + perch
-  // (AI-IMP-066): no persistent status chrome exists, and no ongoing
-  // condition means no perch slot at all.
-  await expect(win.getByTestId('note-pane')).toBeVisible()
+  // The window is the board (§8.2): no docked note pane exists — a
+  // note panel appears only when a note opens (AI-IMP-064) — and the
+  // status strip retired with the §8.6 toasts + perch (AI-IMP-066):
+  // no persistent status chrome, no perch slot without a condition.
+  await expect(win.getByTestId('note-pane')).toHaveCount(0)
   await expect(win.getByTestId('workspace')).toBeVisible()
   await expect(win.getByTestId('status-strip')).toHaveCount(0)
   await expect(win.getByTestId('service-status')).toHaveCount(0)

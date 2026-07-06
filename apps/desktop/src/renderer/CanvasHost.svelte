@@ -10,7 +10,9 @@
   import { attachNodeMenu, type NodeMenuHandle } from './canvas/node-menu'
   import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
   import { attachOpenNoteSurface, onAttachNote, type OpenNoteSurfaceHandle } from './note/open-note'
+  import { attachPanels } from './note/panels'
   import AttachNotePicker from './note/AttachNotePicker.svelte'
+  import NotePanels from './note/NotePanels.svelte'
 
   let {
     onready = undefined,
@@ -31,6 +33,7 @@
     let textEntry: TextEntryController | null = null
     let openNote: OpenNoteSurfaceHandle | null = null
     let charms: CharmsUiHandle | null = null
+    let detachPanels: (() => void) | null = null
     let disposed = false
     // §9.2 board notices ride the ew-board-notice event to the §8.6
     // toast stack (chrome/status.ts) — no rendering here anymore.
@@ -58,6 +61,7 @@
         tooling = attachBoardTooling(h, element, notify)
         textEntry = attachTextEntry(h, element)
         openNote = attachOpenNoteSurface(h, element)
+        detachPanels = attachPanels(h)
         charms = attachCharmsUi(h, element)
         handle = h
         onready?.(h, element)
@@ -73,6 +77,7 @@
       textEntry?.destroy()
       openNote?.destroy()
       charms?.destroy()
+      detachPanels?.()
       tooling?.destroy()
       ui?.destroy()
       mounted?.destroy()
@@ -83,6 +88,7 @@
 <div class="canvas-host" data-testid="canvas-host" bind:this={element}>
   {#if handle && ui && tooling}
     <ChromeLayer {handle} {ui} {tooling} hostElement={element} />
+    <NotePanels {handle} hostElement={element} />
   {/if}
   {#if error}
     <p class="canvas-error" role="alert">Canvas failed to start: {error}</p>

@@ -609,6 +609,10 @@ test('background stage: grid, normalize, replace preserves extent, from-selectio
     ],
   })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  // Identity camera before the screen-coordinate click: the earlier
+  // background flight framed the stage, and the full-bleed board
+  // (AI-IMP-064) frames it differently than the old padded layout.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
   await win.mouse.click(box.x + 500, box.y + 300)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
   await expect(win.getByTestId('bg-set-from-selection')).toBeEnabled()

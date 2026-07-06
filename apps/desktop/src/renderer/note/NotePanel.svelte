@@ -1,28 +1,41 @@
 <!--
-  Persistent note editor pane (RFC-0001 §8.2, §10.2 — AI-IMP-044).
-  CodeMirror 6 Markdown editor with the autosave gesture model: one
-  UpdateNote per editing burst (idle debounce / blur / note switch /
-  quit). Opens notes via the ew-open-note event; collapsible to a
-  slim rail. Chrome-era layout (Baseline UI Vision) comes later.
+  One floating note panel (RFC §8.5, AI-IMP-064). The EPIC-005 pane's
+  editing machinery ports here whole — CM6 controller, autosave/flush,
+  §7.2 phantom flows, §7.7 rename + conflicts, §7.1 broken links,
+  trash recovery — with only the container changing: tethered beside
+  its node (dashed tail, tracks the camera, type at screen scale) or
+  pinned screen-fixed. It KEEPS the note-pane testids: the panel is
+  the note pane's realization, not its replacement.
 -->
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { LinkResolution } from './note/link-resolution'
-  import { NoteEditorController, type NoteRecord, type ProjectPort } from './note/note-editor'
   import { uuidv7, titleKey } from '@ew/domain'
+  import { itemWorldAABB } from '@ew/canvas-engine'
+  import type { CanvasHostHandle } from '../canvas/host'
+  import { navigateTo } from '../chrome/navigation'
+  import { tooltip } from '../chrome/tooltip'
+  import { LinkResolution } from './link-resolution'
+  import { NoteEditorController, type NoteRecord, type ProjectPort } from './note-editor'
   import {
-    onOpenNote,
-    onOpenPhantom,
-    onRenameNote,
     requestCreateAndPlace,
     requestOpenNote,
+    requestOpenPhantom,
     requestRevealNote,
-  } from './note/open-note'
-  import { createNoteProjectPort } from './note/project-port'
-  import { wikiLinkCompletion } from './note/suggestions'
-  import { wikiLinkActivation, wikiLinkHighlighter } from './note/wiki-link-plugin'
-  import TitleConflictDialog, { type TitleConflict } from './note/TitleConflictDialog.svelte'
-  import UsesSidebar from './note/UsesSidebar.svelte'
+  } from './open-note'
+  import {
+    closePanel,
+    movePanel,
+    pinPanel,
+    registerPanelFlush,
+    registerPanelRename,
+    setPanelRequest,
+    type PanelRecord,
+  } from './panels'
+  import { createNoteProjectPort } from './project-port'
+  import { wikiLinkCompletion } from './suggestions'
+  import { wikiLinkActivation, wikiLinkHighlighter } from './wiki-link-plugin'
+  import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
+  import UsesSidebar from './UsesSidebar.svelte'
 
   interface PhantomView {
     titleKey: string
@@ -35,20 +48,45 @@
     }>
   }
 
+  const { handle, record }: { handle: CanvasHostHandle; record: PanelRecord } = $props()
+
   let editorHost = $state<HTMLElement | null>(null)
   let note = $state<NoteRecord | null>(null)
   let dirty = $state(false)
-  let collapsed = $state(false)
   let error = $state<string | null>(null)
 
-  // §7.4 Uses sidebar (AI-IMP-049).
+  // §7.4 Uses sidebar (AI-IMP-049; moves in-panel behind ⌖ in 065).
   let usesOpen = $state(false)
   let usesRefresh = $state(0)
-  // Phase 1 shows the root canvas; workspace tabs land in EPIC-006.
-  let activeCanvasId = $state<string | null>(null)
+  let activeCanvasId = $state<string | null>(handle.canvasId)
 
-  // §7.2 phantom view: a projection only — nothing here persists
-  // until a materialization action commits.
+  // §8.5: the panel surfaces its SUBJECT NODE's tags as chips; a
+  // zero-node note shows none.
+  let tagChips = $state<Array<{ id: string; name: string; color: string | null }>>([])
+
+  function subjectNodeId(): string | null {
+    if (record.anchor.kind === 'placement') {
+      const anchor = record.anchor
+      const item = handle.controller.items().find((candidate) => candidate.id === anchor.placementId)
+      return item && item.itemKind === 'placement' ? item.nodeId : null
+    }
+    return null
+  }
+
+  async function refreshTagChips(): Promise<void> {
+    const nodeId =
+      subjectNodeId() ?? (record.request.kind === 'canvas-phantom' ? record.request.nodeId : null)
+    if (!nodeId) {
+      tagChips = []
+      return
+    }
+    const response = await window.ew.project.query('listNodeTags', { nodeId })
+    tagChips = response.ok
+      ? (response.result as Array<{ id: string; name: string; color: string | null }>)
+      : []
+  }
+
+  // §7.2 phantom view: a projection only.
   let phantom = $state<PhantomView | null>(null)
   let phantomDraft = $state('')
   let returnNoteId = $state<string | null>(null)
@@ -57,11 +95,17 @@
   let draftTimer: ReturnType<typeof setTimeout> | null = null
   let materializing = false
 
+  // §8.5 canvas phantom: nothing persists until the first committed
+  // edit; the first line becomes the title (§6.2's rule).
+  let canvasDraft = $state('')
+  let canvasDraftTimer: ReturnType<typeof setTimeout> | null = null
+  let canvasMaterializing = false
+
   async function openPhantom(title: string): Promise<void> {
     if (!paneProject || !paneController) return
-    collapsed = false
     returnNoteId = paneController.note?.id ?? returnNoteId
     await paneController.close()
+    note = null
     const view = await paneProject.query<PhantomView | null>('getPhantom', { titleKey: title })
     if (!view) {
       error = `no unresolved references to "${title}"`
@@ -79,12 +123,11 @@
     phantom = null
     phantomDraft = ''
     if (returnNoteId) requestOpenNote(returnNoteId)
+    else closePanel(record.key)
     returnNoteId = null
   }
 
-  /** Materialize via CreateNote (first-edit and Create Note paths,
-   * §7.2 items 1–2); the sweep binds matching tokens project-wide
-   * inside the same command. */
+  /** Materialize via CreateNote (§7.2 items 1–2). */
   async function materialize(body: string): Promise<void> {
     const project = paneProject
     const view = phantom
@@ -105,8 +148,6 @@
         returnNoteId = null
         requestOpenNote(noteId)
       } else if (result.status === 'error') {
-        // §7.7 creation flow: offer Use Existing; the phantom view
-        // and its draft stay put (draft retained).
         const found = conflictFrom(result, 'create', view.title)
         if (found) conflict = found
         else error = result.message
@@ -119,10 +160,7 @@
   }
 
   // First-edit materialization gets a LONGER idle window than note
-  // autosave: creating a note is a bigger commitment than saving one,
-  // and a short window yanks the Create-and-Place button away from a
-  // user (or slow test runner) who typed a draft and is reaching for
-  // it (AI-IMP-058 — CI caught this as an unstable-element timeout).
+  // autosave (AI-IMP-058).
   const PHANTOM_FIRST_EDIT_IDLE_MS = 4000
 
   function onDraftInput(): void {
@@ -136,8 +174,6 @@
   function createAndPlace(): void {
     const view = phantom
     if (!view) return
-    // The typed draft rides along (§7.2, AI-IMP-058); the pending
-    // first-edit timer is cancelled so it can't double-materialize.
     if (draftTimer !== null) clearTimeout(draftTimer)
     draftTimer = null
     const body = phantomDraft.trim()
@@ -145,6 +181,60 @@
     phantomDraft = ''
     returnNoteId = null
     requestCreateAndPlace(view.title, body)
+  }
+
+  /** §8.5 canvas phantom commit: CreateNote (title = first line) +
+   * AttachNoteToNode as the first durable record; Escape or close
+   * before this and nothing ever existed. */
+  async function materializeCanvasNote(): Promise<void> {
+    const project = paneProject
+    if (!project || record.request.kind !== 'canvas-phantom' || canvasMaterializing) return
+    const text = canvasDraft.trim()
+    if (text.length === 0) return
+    canvasMaterializing = true
+    if (canvasDraftTimer !== null) clearTimeout(canvasDraftTimer)
+    canvasDraftTimer = null
+    try {
+      const lines = text.split('\n')
+      const title = lines[0]!.trim()
+      const body = lines.slice(1).join('\n').trim()
+      const noteId = uuidv7()
+      const created = await project.execute('CreateNote', {
+        noteId,
+        title,
+        ...(body.length > 0 ? { body } : {}),
+      })
+      if (created.status === 'error') {
+        const found = conflictFrom(created, 'create', title)
+        if (found) conflict = found
+        else error = created.message
+        return
+      }
+      if (created.status !== 'committed') {
+        error = 'the project changed underneath (retry)'
+        return
+      }
+      const attached = await project.execute('AttachNoteToNode', {
+        nodeId: record.request.nodeId,
+        noteId,
+      })
+      if (attached.status === 'error') {
+        error = attached.message
+        return
+      }
+      canvasDraft = ''
+      setPanelRequest(record.key, { kind: 'note', noteId })
+    } finally {
+      canvasMaterializing = false
+    }
+  }
+
+  function onCanvasDraftInput(): void {
+    if (canvasDraftTimer !== null) clearTimeout(canvasDraftTimer)
+    canvasDraftTimer = setTimeout(() => {
+      canvasDraftTimer = null
+      void materializeCanvasNote()
+    }, PHANTOM_FIRST_EDIT_IDLE_MS)
   }
 
   // ---- §7.7 rename + title collisions (AI-IMP-047) ----
@@ -167,8 +257,6 @@
     }
   }
 
-  /** Title-field rename of the OPEN note; the draft survives every
-   * failure path (§7.7 MUST). */
   async function commitTitle(): Promise<void> {
     const controller = paneController
     const current = controller?.note
@@ -192,17 +280,17 @@
     }
   }
 
-  /** Rename requested from another surface (node menu): flush the
-   * pane's buffer first, whatever note it holds (§10.2). */
-  async function renameElsewhere(noteId: string, title: string): Promise<void> {
-    const project = paneProject
-    if (!project) return
+  /** Rename routed here by the store because THIS panel holds the
+   * note: flush first, whatever the surface (§10.2). */
+  async function renameHere(noteId: string, title: string): Promise<void> {
     if (paneController?.note?.id === noteId) {
       titleDraft = title
       await commitTitle()
       return
     }
     await paneController?.flushPending()
+    const project = paneProject
+    if (!project) return
     const result = await project.execute('RenameNote', { noteId, title })
     if (result.status === 'error') {
       const found = conflictFrom(result, 'rename', title)
@@ -239,8 +327,6 @@
     return rows.find((row) => row.titleKey === key) ?? null
   }
 
-  /** §7.3: the note pane loads the target immediately and
-   * unconditionally; the workspace resolves space independently. */
   async function activateBound(title: string): Promise<void> {
     const match = await findByTitle(title)
     if (!match) return
@@ -257,8 +343,6 @@
     }
   }
 
-  /** §7.1 explicit recovery: both paths flip the RECORDS via
-   * RelinkBrokenLinks — records never re-bind by title. */
   async function resolveBroken(kind: 'create' | 'relink'): Promise<void> {
     const project = paneProject
     const source = paneController?.note
@@ -288,9 +372,126 @@
       error = result.message
       return
     }
-    // Reopen to rebuild the editable state.
     await controller.open(current.id)
   }
+
+  // ---- panel physics (§8.5) ----
+
+  let panelEl = $state<HTMLElement | null>(null)
+  let pos = $state<{ x: number; y: number }>({ x: 0, y: 0 })
+  /** Tail endpoints in host coordinates, tethered-with-anchor only. */
+  let tail = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
+  let anchorGone = $state(false)
+
+  function viewportSize(): { width: number; height: number } {
+    const bounds = panelEl?.parentElement?.getBoundingClientRect()
+    return { width: bounds?.width ?? 1280, height: bounds?.height ?? 800 }
+  }
+
+  function layout(): void {
+    activeCanvasId = handle.canvasId
+    const view = viewportSize()
+    const width = panelEl?.offsetWidth ?? 320
+    const height = panelEl?.offsetHeight ?? 240
+    if (record.pinned) {
+      if (record.screen) pos = record.screen
+      tail = null
+      return
+    }
+    if (record.anchor.kind === 'placement' && record.anchor.canvasId === handle.canvasId) {
+      const item = handle.controller
+        .items()
+        .find((candidate) => candidate.id === (record.anchor as { placementId: string }).placementId)
+      const aabb = item ? itemWorldAABB(item) : null
+      if (aabb) {
+        anchorGone = false
+        const camera = handle.controller.camera
+        const rightEdge = camera.worldToScreen({ x: aabb.x + aabb.width, y: aabb.y })
+        let x = rightEdge.x + 24
+        let y = rightEdge.y
+        // Keep the panel inside the window; the tail stretches.
+        x = Math.min(Math.max(8, x), view.width - width - 8)
+        y = Math.min(Math.max(8, y), view.height - height - 8)
+        pos = { x, y }
+        const nodeEdge = camera.worldToScreen({
+          x: aabb.x + aabb.width,
+          y: aabb.y + aabb.height / 2,
+        })
+        tail = { x1: x, y1: y + 18, x2: nodeEdge.x, y2: nodeEdge.y }
+        return
+      }
+      anchorGone = true
+    }
+    if (record.anchor.kind === 'corner') {
+      pos = { x: 12, y: view.height - height - 46 }
+      tail = null
+      return
+    }
+    // Anchorless (zero placements / stale anchor): a calm default.
+    pos = { x: view.width - width - 16, y: 56 }
+    tail = null
+  }
+
+  let frame = 0
+  function schedule(): void {
+    if (frame) return
+    frame = requestAnimationFrame(() => {
+      frame = 0
+      layout()
+    })
+  }
+
+  function pinHere(): void {
+    pinPanel(record.key, pos)
+  }
+
+  // Header drag repositions pinned panels (§8.5: unpinning and
+  // closing are the user's acts; dragging is just placement).
+  function onHeaderPointerDown(event: PointerEvent): void {
+    if (!record.pinned) return
+    const target = event.target as HTMLElement
+    if (target.closest('button') || target.closest('input')) return
+    const start = { x: event.clientX, y: event.clientY }
+    const origin = { ...pos }
+    const onMove = (move: PointerEvent): void => {
+      movePanel(record.key, {
+        x: origin.x + (move.clientX - start.x),
+        y: origin.y + (move.clientY - start.y),
+      })
+      schedule()
+    }
+    const onUp = (): void => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const originLabel = $derived(
+    record.pinned &&
+      record.anchor.kind === 'placement' &&
+      record.anchor.canvasId !== activeCanvasId
+      ? record.anchor.label || 'origin board'
+      : null,
+  )
+
+  function flyToOrigin(): void {
+    if (record.anchor.kind !== 'placement') return
+    void navigateTo(record.anchor.canvasId, record.anchor.label || 'Board')
+  }
+
+  // Focus pulse when an open request landed on this pinned panel.
+  let pulse = $state(false)
+  $effect(() => {
+    if (record.focus > 0) {
+      pulse = true
+      const timer = setTimeout(() => (pulse = false), 700)
+      return () => clearTimeout(timer)
+    }
+  })
+
+  // ---- lifecycle ----
 
   onMount(() => {
     let controller: NoteEditorController | null = null
@@ -309,8 +510,8 @@
           note = current
           titleDraft = current?.title ?? ''
           error = null
-          // New note = new broken-record set for decoration state.
           void resolution.refresh(current?.id ?? null)
+          schedule()
         },
         onDirtyChanged: (value) => (dirty = value),
         onError: (message) => (error = message),
@@ -318,7 +519,7 @@
           wikiLinkHighlighter(resolution),
           wikiLinkCompletion(port),
           wikiLinkActivation((link) => {
-            if (link.state === 'unresolved') void openPhantom(link.title)
+            if (link.state === 'unresolved') requestOpenPhantom(link.title)
             else if (link.state === 'bound' || link.state === 'bound-trashed')
               void activateBound(link.title)
             else if (link.state === 'broken') void activateBroken(link.title)
@@ -328,24 +529,11 @@
       paneProject = port
       paneController = controller
       if (editorHost) controller.mount(editorHost)
-      void (async () => {
-        const project = await port.query<{ rootNodeId: string }>('getProject')
-        const canvas = await port.query<{ id: string } | null>('getCanvasByNode', {
-          nodeId: project.rootNodeId,
-        })
-        activeCanvasId = canvas?.id ?? null
-      })()
 
-      // Project-changed events deliver re-resolution sweep effects
-      // (materialization, rename, restore) to the open editor and the
-      // phantom view. Events arrive post-commit, so queries issued
-      // here already see fresh rows — no timer (AI-IMP-054); the
-      // LinkResolution epoch guard discards stale overlapping reads.
       const disposeRefresh = window.ew.project.onChanged(() => {
         void resolution.refresh(controller?.note?.id ?? null)
-        // §10.2: rename rewrites fold into the open buffer as a
-        // minimal external change inside local undo.
         void controller?.syncExternal()
+        void refreshTagChips()
         usesRefresh += 1
         const view = phantom
         if (view && paneProject) {
@@ -363,78 +551,141 @@
         disposeRefresh,
         () => {
           if (draftTimer !== null) clearTimeout(draftTimer)
+          if (canvasDraftTimer !== null) clearTimeout(canvasDraftTimer)
         },
-        onOpenNote((noteId) => {
-          collapsed = false
-          phantom = null
-          void controller?.open(noteId)
-        }),
-        onOpenPhantom((title) => void openPhantom(title)),
-        onRenameNote((detail) => void renameElsewhere(detail.noteId, detail.title)),
-        // §10.2 quit flush: main holds the window open until this
-        // resolves, so an edit inside its debounce window survives.
-        window.ew.app.onFlushRequest(() => controller?.flushPending() ?? Promise.resolve()),
+        registerPanelFlush(record.key, () => controller?.flushPending() ?? Promise.resolve()),
+        registerPanelRename(record.key, (noteId, title) => void renameHere(noteId, title)),
+        handle.controller.camera.onChanged(() => schedule()),
+        handle.onSceneApplied(() => schedule()),
       ]
+      applyRequest()
+      void refreshTagChips()
+      schedule()
     })()
 
     return () => {
       cancelled = true
       for (const dispose of disposers) dispose()
+      if (frame) cancelAnimationFrame(frame)
       controller?.destroy()
+    }
+  })
+
+  /** Load whatever the store asks this panel to show. */
+  function applyRequest(): void {
+    const request = record.request
+    if (!paneController) return
+    if (request.kind === 'note') {
+      phantom = null
+      void paneController.open(request.noteId)
+    } else if (request.kind === 'phantom') {
+      void openPhantom(request.title)
+    } else {
+      // canvas-phantom: empty draft; nothing persists yet.
+      void paneController.close()
+      note = null
+      phantom = null
+    }
+  }
+
+  let lastRequest = $state<string>('')
+  $effect(() => {
+    const signature = JSON.stringify(record.request)
+    if (signature !== lastRequest) {
+      lastRequest = signature
+      applyRequest()
+      void refreshTagChips()
     }
   })
 </script>
 
-<aside class="note-pane" class:collapsed data-testid="note-pane">
-  <header>
+{#if tail}
+  <svg class="tail" aria-hidden="true">
+    <line x1={tail.x1} y1={tail.y1} x2={tail.x2} y2={tail.y2} />
+  </svg>
+{/if}
+
+<section
+  class="note-panel"
+  class:pinned={record.pinned}
+  class:pulse
+  style={`left:${pos.x}px;top:${pos.y}px`}
+  data-testid={record.pinned ? `note-panel-pinned-${record.key}` : 'note-pane'}
+  data-panel-key={record.key}
+  bind:this={panelEl}
+>
+  <header onpointerdown={onHeaderPointerDown}>
+    {#if note && !phantom}
+      <input
+        class="title-input"
+        data-testid="note-title-input"
+        bind:value={titleDraft}
+        onblur={() => void commitTitle()}
+        onkeydown={(event) => {
+          if (event.key === 'Enter') (event.currentTarget as HTMLInputElement).blur()
+          if (event.key === 'Escape') titleDraft = note?.title ?? ''
+        }}
+      />
+      {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
+      <span hidden data-testid="note-pane-title">{note.title}</span>
+      <button
+        type="button"
+        class="chrome-btn"
+        data-testid="uses-toggle"
+        onclick={() => (usesOpen = !usesOpen)}
+        use:tooltip={{ name: 'Uses — where this note lives' }}
+      >
+        ⌖
+      </button>
+    {:else}
+      <h2 data-testid="note-pane-title">
+        {phantom ? phantom.title : record.request.kind === 'canvas-phantom' ? 'Canvas note' : 'Note'}
+        {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
+      </h2>
+    {/if}
+    {#if originLabel}
+      <button
+        type="button"
+        class="origin"
+        data-testid="panel-origin"
+        onclick={flyToOrigin}
+        use:tooltip={{ name: `Fly to ${originLabel}` }}
+      >
+        ⌂ {originLabel}
+      </button>
+    {/if}
+    {#if !record.pinned}
+      <button
+        type="button"
+        class="chrome-btn"
+        data-testid="panel-pin"
+        onclick={pinHere}
+        use:tooltip={{ name: 'Pin — keep this panel on screen' }}
+      >
+        ⇱
+      </button>
+    {/if}
     <button
       type="button"
-      class="collapse"
-      data-testid="note-pane-toggle"
-      title={collapsed ? 'Expand notes' : 'Collapse notes'}
-      onclick={() => (collapsed = !collapsed)}
+      class="chrome-btn"
+      data-testid={record.pinned ? `panel-close-${record.key}` : 'panel-close'}
+      onclick={() => closePanel(record.key)}
+      use:tooltip={{ name: 'Close' }}
     >
-      {collapsed ? '»' : '«'}
+      ✕
     </button>
-    {#if !collapsed}
-      {#if note && !phantom}
-        <!-- §7.7 rename surface: commit on Enter/blur, draft kept on
-             every failure path. -->
-        <input
-          class="title-input"
-          data-testid="note-title-input"
-          bind:value={titleDraft}
-          onblur={() => void commitTitle()}
-          onkeydown={(event) => {
-            if (event.key === 'Enter') (event.currentTarget as HTMLInputElement).blur()
-            if (event.key === 'Escape') titleDraft = note?.title ?? ''
-          }}
-        />
-        {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
-        <span hidden data-testid="note-pane-title">{note.title}</span>
-        <button
-          type="button"
-          class="uses-toggle"
-          data-testid="uses-toggle"
-          title="Uses"
-          onclick={() => (usesOpen = !usesOpen)}
-        >
-          ⌖
-        </button>
-      {:else}
-        <h2 data-testid="note-pane-title">
-          {phantom ? phantom.title : 'Notes'}
-          {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
-        </h2>
-      {/if}
-    {/if}
   </header>
-  {#if error && !collapsed}
+  {#if tagChips.length > 0 && !phantom}
+    <div class="tag-chips" data-testid="panel-tag-chips">
+      {#each tagChips as tag (tag.id)}
+        <span class="tag-chip" style={tag.color ? `color:${tag.color}` : ''}>#{tag.name}</span>
+      {/each}
+    </div>
+  {/if}
+  {#if error}
     <p class="error" data-testid="note-pane-error">{error}</p>
   {/if}
-  {#if !collapsed && note?.lifecycleState === 'trashed'}
-    <!-- §7.1: a bound link to a trashed note opens it with a clear
-         In Trash state and a Restore action; the body is read-only. -->
+  {#if note?.lifecycleState === 'trashed'}
     <div class="trash-banner" data-testid="note-in-trash">
       <span>In Trash — read-only</span>
       <button type="button" data-testid="note-restore" onclick={() => void restoreOpenNote()}>
@@ -442,7 +693,7 @@
       </button>
     </div>
   {/if}
-  {#if !collapsed && brokenLink}
+  {#if brokenLink}
     <div class="broken-panel" data-testid="broken-link-panel">
       <p>“{brokenLink.displayTitle}” was permanently deleted; this link is broken.</p>
       {#if brokenLink.activeMatch}
@@ -464,16 +715,31 @@
   <div
     class="editor"
     data-testid="note-editor"
-    hidden={collapsed || note === null}
+    hidden={note === null}
     bind:this={editorHost}
   ></div>
-  {#if !collapsed && phantom}
+  {#if record.request.kind === 'canvas-phantom' && !note && !phantom}
+    <div class="canvas-phantom" data-testid="canvas-phantom">
+      <p class="phantom-summary">This board has no note yet — nothing saves until you write.</p>
+      <textarea
+        class="phantom-draft"
+        data-testid="canvas-phantom-draft"
+        placeholder="First line becomes the title…"
+        bind:value={canvasDraft}
+        oninput={onCanvasDraftInput}
+        onblur={() => void materializeCanvasNote()}
+        onkeydown={(event) => {
+          if (event.key === 'Escape') closePanel(record.key)
+        }}
+      ></textarea>
+    </div>
+  {/if}
+  {#if phantom}
     <section class="phantom" data-testid="phantom-view">
       <p class="phantom-summary">
         Phantom note — {phantom.referenceCount}
         reference{phantom.referenceCount === 1 ? '' : 's'}, nothing saved yet.
       </p>
-      <!-- §7.2: equal peer actions, neither presented as primary. -->
       <div class="phantom-actions">
         <button type="button" data-testid="phantom-create-note" onclick={() => void materialize(phantomDraft)}>
           Create Note
@@ -508,12 +774,8 @@
         Dismiss
       </button>
     </section>
-  {:else if !collapsed && note === null}
-    <p class="empty" data-testid="note-pane-empty">
-      Double-click a placement with a note, or use the node menu.
-    </p>
   {/if}
-  {#if !collapsed && usesOpen && note && !phantom && paneProject}
+  {#if usesOpen && note && !phantom && paneProject}
     <UsesSidebar port={paneProject} noteId={note.id} {activeCanvasId} refresh={usesRefresh} />
   {/if}
   {#if conflict}
@@ -533,36 +795,73 @@
       onChooseDifferent={() => (conflict = null)}
     />
   {/if}
-</aside>
+</section>
 
 <style>
-  .note-pane {
-    position: relative;
-    grid-area: note-pane;
-    display: flex;
-    flex-direction: column;
-    width: 300px;
-    min-height: 0;
-    overflow: hidden;
-    border-right: 1px solid #ddd;
-    background: #fafafa;
+  .tail {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
   }
 
-  .note-pane.collapsed {
-    width: 28px;
+  .tail line {
+    stroke: #7f8898;
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+    opacity: 0.75;
+  }
+
+  .note-panel {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+    max-height: 55vh;
+    min-height: 0;
+    overflow: hidden;
+    background: #fafafa;
+    border: 1px solid #c9ced6;
+    border-radius: 9px;
+    box-shadow: 0 6px 22px rgba(8, 10, 14, 0.35);
+    pointer-events: auto;
+    z-index: 8;
+  }
+
+  .note-panel.pinned {
+    border-color: #9db7d3;
+  }
+
+  .note-panel.pulse {
+    animation: panel-pulse 700ms ease-out 1;
+  }
+
+  @keyframes panel-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(74, 157, 240, 0.8);
+    }
+    100% {
+      box-shadow: 0 0 0 14px rgba(74, 157, 240, 0);
+    }
   }
 
   header {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.5rem 0.25rem;
+    gap: 0.3rem;
+    padding: 0.4rem 0.45rem 0.25rem;
+    cursor: default;
   }
 
-  .collapse,
-  .uses-toggle {
+  .note-panel.pinned header {
+    cursor: grab;
+  }
+
+  .chrome-btn {
     flex: none;
-    padding: 0 0.35rem;
+    padding: 0 0.3rem;
     border: none;
     background: transparent;
     font: inherit;
@@ -570,7 +869,23 @@
     cursor: pointer;
   }
 
+  .origin {
+    flex: none;
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid #b9c6d6;
+    border-radius: 9px;
+    background: #eef3f9;
+    color: #33628f;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+
   h2 {
+    flex: 1;
     margin: 0;
     overflow: hidden;
     font-size: 0.85rem;
@@ -607,6 +922,22 @@
     vertical-align: middle;
   }
 
+  .tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0 0.55rem 0.3rem;
+  }
+
+  .tag-chip {
+    padding: 0 0.45rem;
+    border: 1px solid #d3d9e1;
+    border-radius: 8px;
+    background: #eef1f5;
+    color: #557;
+    font-size: 0.7rem;
+  }
+
   .editor {
     flex: 1;
     min-height: 0;
@@ -614,13 +945,23 @@
     font-size: 0.85rem;
   }
 
+  /* A definite height, not content-sized: the writing surface is a
+     real page (clicking the empty area below the last line lands the
+     cursor at document end, as in the docked pane). */
   .editor :global(.cm-editor) {
-    height: 100%;
+    height: 16rem;
     background: #fff;
   }
 
   .editor :global(.cm-editor.cm-focused) {
     outline: none;
+  }
+
+  .canvas-phantom {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0 0.6rem 0.6rem;
   }
 
   .phantom {
@@ -740,14 +1081,9 @@
     color: #9a5c56;
   }
 
-  .empty,
   .error {
-    margin: 0.5rem 0.75rem;
-    color: #888;
-    font-size: 0.8rem;
-  }
-
-  .error {
+    margin: 0.4rem 0.6rem;
     color: #b3403a;
+    font-size: 0.8rem;
   }
 </style>
