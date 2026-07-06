@@ -1,8 +1,8 @@
 <!--
   Hover-revealed title strip (RFC §8.2): file/view functions at the
   top edge, hidden otherwise. Carries the Board menu (the §6.7
-  background operation set, ported from BoardToolbar) and the interim
-  Create Pin… / Sources buttons until AI-IMP-067/065 retire them.
+  background operation set, ported from BoardToolbar); the interim
+  Create Pin… and Sources buttons retired with AI-IMP-067/070.
   Background EDIT mode renders as a persistent floating bar instead —
   Done/Cancel must not live behind a hover.
 -->
@@ -58,10 +58,6 @@
     if (file) void tooling.setBackgroundFromFile(file)
   }
 
-  function fire(name: string): void {
-    window.dispatchEvent(new CustomEvent(name))
-  }
-
   // Leaving the strip lowers it; the Board menu holds it up while
   // open and closes only on Escape or its own button — deliberately
   // NOT on click-away, so background work (pick image, click canvas,
@@ -98,15 +94,6 @@
       use:tooltip={{ name: 'Board — background and hidden items' }}
     >
       Board
-    </button>
-    <span class="spacer"></span>
-    <button
-      type="button"
-      data-testid="toggle-sources"
-      onclick={() => fire('ew-toggle-sources')}
-      use:tooltip={{ name: 'Placement sources (interim — the outline view replaces this)' }}
-    >
-      Sources
     </button>
   </div>
 {/if}
@@ -240,10 +227,6 @@
     font-size: 0.75rem;
     color: var(--ew-text);
     pointer-events: auto;
-  }
-
-  .spacer {
-    flex: 1;
   }
 
   .board-menu {
