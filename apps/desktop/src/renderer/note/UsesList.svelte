@@ -35,6 +35,7 @@
     requestPlaceNode,
     requestPlaceNote,
   } from './open-note'
+  import { reserveTetheredPanelSpace } from './panels'
 
   let {
     uses,
@@ -56,11 +57,17 @@
   function selectGroup(canvasId: string, canvasTitle: string | null, node: UsesNode): void {
     const ids = node.placements.map((placement) => placement.placementId)
     if (canvasId === activeCanvasId) {
+      // This list lives in the open note's panel; the fly keeps it, so
+      // reserve its band before the fit (AI-IMP-100).
+      reserveTetheredPanelSpace()
       requestCenterPlacements(ids)
       return
     }
     // Cross-canvas rows fly as §8.1 history events, then center.
-    void navigateTo(canvasId, canvasTitle ?? 'Board').then(() => requestCenterPlacements(ids))
+    void navigateTo(canvasId, canvasTitle ?? 'Board').then(() => {
+      reserveTetheredPanelSpace()
+      requestCenterPlacements(ids)
+    })
   }
 </script>
 

@@ -19,6 +19,19 @@ export interface Rect {
   height: number
 }
 
+/** Per-edge screen-space padding (px) a fit must keep clear (§6.9 rev
+ * 0.31, AI-IMP-100): the fit solves against the viewport MINUS these
+ * edges and centers its target in the region that remains, so a panel
+ * a flight is about to open lands beside the target, not over it. */
+export interface ScreenInset {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+export const ZERO_INSET: Readonly<ScreenInset> = { top: 0, right: 0, bottom: 0, left: 0 }
+
 export const MIN_ZOOM = 0.002
 export const MAX_ZOOM = 64
 
@@ -27,6 +40,11 @@ export class Camera {
   y = 0
   zoom = 1
   #changed = new Set<(camera: SceneCamera) => void>()
+  /** One-shot inset for the NEXT fit (AI-IMP-100). The host's flyTo
+   * calls fitTarget with no inset argument, and host.ts is a closed
+   * surface — so callers that reach the camera (the note layer) arm
+   * the reservation here and it is consumed by the fit that follows. */
+  #pendingInset: ScreenInset | null = null
 
   state(): SceneCamera {
     return { x: this.x, y: this.y, zoom: this.zoom }
@@ -62,22 +80,47 @@ export class Camera {
     this.#notify()
   }
 
-  /** Pure §6.9 fit computation; CameraFlight eases toward it
-   * (AI-IMP-032) and fitBounds applies it instantly. */
+  /** Arm a one-shot fit inset (AI-IMP-100): the NEXT fitTarget reserves
+   * these screen edges and centers its target in what remains, then the
+   * inset clears. Zero/absent leaves the fit byte-identical to before. */
+  setNextFitInset(inset: ScreenInset | null): void {
+    this.#pendingInset = inset
+  }
+
+  /** Every fit consumes the one-shot pending inset (an explicit inset
+   * argument wins). Absent both, the fit uses zero — today's behavior. */
+  #takeInset(explicit?: ScreenInset): ScreenInset {
+    const pending = this.#pendingInset
+    this.#pendingInset = null
+    return explicit ?? pending ?? ZERO_INSET
+  }
+
+  /** §6.9 fit computation; CameraFlight eases toward it (AI-IMP-032)
+   * and fitBounds applies it instantly. With a non-zero inset (§6.9 rev
+   * 0.31, AI-IMP-100) the fit solves against the viewport minus the
+   * inset and centers `bounds` in the REMAINING region. */
   fitTarget(
     bounds: Rect,
     viewport: { width: number; height: number },
     padding = 48,
+    inset?: ScreenInset,
   ): SceneCamera | null {
-    if (bounds.width <= 0 || bounds.height <= 0 || viewport.width <= 0 || viewport.height <= 0) {
+    const pad = this.#takeInset(inset)
+    const availWidth = viewport.width - pad.left - pad.right
+    const availHeight = viewport.height - pad.top - pad.bottom
+    if (bounds.width <= 0 || bounds.height <= 0 || availWidth <= 0 || availHeight <= 0) {
       return null
     }
-    const zoomX = (viewport.width - padding * 2) / bounds.width
-    const zoomY = (viewport.height - padding * 2) / bounds.height
+    const zoomX = (availWidth - padding * 2) / bounds.width
+    const zoomY = (availHeight - padding * 2) / bounds.height
     const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min(zoomX, zoomY)))
+    // The camera must map the bounds center onto the CENTER of the
+    // panel-free region (screen coords), not the raw viewport center.
+    const regionCenterX = pad.left + availWidth / 2
+    const regionCenterY = pad.top + availHeight / 2
     return {
-      x: bounds.x + bounds.width / 2 - viewport.width / 2 / zoom,
-      y: bounds.y + bounds.height / 2 - viewport.height / 2 / zoom,
+      x: bounds.x + bounds.width / 2 - regionCenterX / zoom,
+      y: bounds.y + bounds.height / 2 - regionCenterY / zoom,
       zoom,
     }
   }
