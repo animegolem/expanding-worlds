@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 5 | 2 |
+| Planned | 6 | 2 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 91 |
-| **Total** | **18** | **94** |
+| **Total** | **19** | **94** |
 
 ## In Progress
 
@@ -80,6 +80,11 @@
 
 ### [[AI-EPIC-018-rich-text-notes|EPIC-018: Rich text notes]]
 > Notes are raw Markdown in CodeMirror — right for Obsidian compat,
+
+---
+
+### [[AI-EPIC-019-public-face|EPIC-019: Public face]]
+> The user base is deliberately NON-TECHNICAL (artists), but the
 
 ---
 
