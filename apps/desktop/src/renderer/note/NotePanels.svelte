@@ -13,6 +13,8 @@
   import LocationChooser from './LocationChooser.svelte'
   import NotePanel from './NotePanel.svelte'
   import {
+    closeBigEditor,
+    onBigEditorChanged,
     onChooserChanged,
     onPanelsChanged,
     type ChooserState,
@@ -26,6 +28,20 @@
 
   let chooser = $state<ChooserState | null>(null)
   $effect(() => onChooserChanged((next) => (chooser = next)))
+
+  // §8.5 big editor (rev 0.31): at most ONE, tracked in the store.
+  // This layer mounts the dimmed backdrop + centered container; the
+  // owning NotePanel moves its live CM buffer in via `overlayHost`.
+  let bigEditorKey = $state<number | null>(null)
+  $effect(() => onBigEditorChanged((next) => (bigEditorKey = next)))
+  let bigEditorHost = $state<HTMLElement | null>(null)
+
+  // Escape maps to Done (§8.5): back to the prior panel state.
+  function onWindowKeydown(event: KeyboardEvent): void {
+    if (bigEditorKey === null || event.key !== 'Escape') return
+    event.stopPropagation()
+    closeBigEditor()
+  }
 
   interface Indicator {
     key: number
@@ -141,12 +157,43 @@
     {/if}
   {/each}
   {#each records as record (record.key)}
-    <NotePanel {handle} {record} />
+    <NotePanel
+      {handle}
+      {record}
+      overlayHost={bigEditorKey === record.key ? bigEditorHost : null}
+    />
   {/each}
+  {#if bigEditorKey !== null}
+    <!-- Dimmed board, not a hidden one: clicking the surround is
+         Done (§8.5). The container below receives the panel's live
+         editor DOM — the buffer moves, it is never re-created. -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="big-editor-backdrop"
+      data-testid="big-editor-backdrop"
+      onclick={() => closeBigEditor()}
+    ></div>
+    <section class="big-editor" data-testid="big-editor" aria-modal="true" role="dialog">
+      <header class="big-editor-header">
+        <button
+          type="button"
+          class="big-editor-done"
+          data-testid="big-editor-done"
+          onclick={() => closeBigEditor()}
+        >
+          Done
+        </button>
+      </header>
+      <div class="big-editor-body" bind:this={bigEditorHost}></div>
+    </section>
+  {/if}
   {#if chooser}
     <LocationChooser state={chooser} {hostElement} />
   {/if}
 </div>
+
+<svelte:window onkeydown={onWindowKeydown} />
 
 <style>
   .panels-layer {
@@ -158,8 +205,69 @@
   }
 
   .panels-layer :global(.note-panel),
-  .panels-layer .edge-chip {
+  .panels-layer .edge-chip,
+  .panels-layer .big-editor-backdrop,
+  .panels-layer .big-editor {
     pointer-events: auto;
+  }
+
+  .big-editor-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--ew-scrim);
+    z-index: 40;
+  }
+
+  /* Centered over a DIMMED board — not full-screen; the board stays
+     visible around it (§8.5). Shadow tokens only: the depth cue. */
+  .big-editor {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    width: min(760px, 78%);
+    height: min(70vh, 640px);
+    overflow: hidden;
+    background: var(--ew-paper-surface);
+    border: 1px solid var(--ew-paper-border-strong);
+    border-radius: 10px;
+    box-shadow: 0 18px 60px var(--ew-dialog-shadow);
+    z-index: 41;
+  }
+
+  .big-editor-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.4rem 0.5rem 0.25rem;
+  }
+
+  .big-editor-done {
+    padding: 0.15rem 0.7rem;
+    border: 1px solid var(--ew-paper-border-strong);
+    border-radius: 6px;
+    background: var(--ew-paper-page);
+    color: var(--ew-paper-text-heading);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .big-editor-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    font-size: 0.92rem;
+  }
+
+  .big-editor-body :global(.cm-editor) {
+    height: 100%;
+    background: var(--ew-paper-page);
+  }
+
+  .big-editor-body :global(.cm-editor.cm-focused) {
+    outline: none;
   }
 
   .halo {

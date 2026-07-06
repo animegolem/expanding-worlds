@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { exec, launchApp, seedPlacedNote } from './helpers'
+import { exec, launchApp, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * AI-IMP-064 acceptance (RFC §8.5): tethered panels track their node
@@ -88,6 +88,113 @@ test('pin accumulation and the escalation ladder (§8.5)', async () => {
   await win.mouse.dblclick(box.x + 700, box.y + 300)
   await expect(win.locator('.note-panel')).toHaveCount(2)
   await expect(tetheredTitle).toHaveText(/Harbor/) // tethered unchanged
+
+  await app.close()
+})
+
+test('panel sizing, pinned resize, and the big editor (§8.5 rev 0.31, AI-IMP-083)', async () => {
+  const { app, win } = await launchApp('ew-e2e-panelsize-')
+  const { noteId } = await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Tethered spawns at THE default size (feel constant) with the
+  // depth-cue shadow, and offers no resize grip.
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  const pane = win.getByTestId('note-pane')
+  await expect(pane.getByTestId('note-pane-title')).toHaveText(/Harbor/)
+  const spawn = (await pane.boundingBox())!
+  expect(Math.round(spawn.width)).toBe(320) // DEFAULT_PANEL_SIZE
+  expect(Math.round(spawn.height)).toBe(300)
+  const shadow = await pane.evaluate((el) => getComputedStyle(el).boxShadow)
+  expect(shadow).not.toBe('none')
+  await expect(win.getByTestId('panel-resize-grip')).toHaveCount(0)
+
+  // Expand from the TETHERED panel: the buffer MOVES to the overlay
+  // (the panel holds no editor meanwhile); Escape maps to Done.
+  await win.getByTestId('panel-expand').click()
+  await expect(win.getByTestId('big-editor')).toBeVisible()
+  await expect(win.getByTestId('big-editor-backdrop')).toBeVisible()
+  await expect(win.locator('[data-testid="big-editor"] .cm-content')).toContainText('stone quay')
+  await expect(win.locator('.note-panel .cm-editor')).toHaveCount(0) // one buffer, moved
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('big-editor')).toHaveCount(0)
+  await expect(win.getByTestId('note-editor')).toContainText('stone quay') // came home
+
+  // Pin: the grip appears; dragging it resizes the panel.
+  await win.getByTestId('panel-pin').click()
+  const pinned = win.locator('.note-panel.pinned')
+  await expect(pinned).toHaveCount(1)
+  await expect(win.getByTestId('panel-resize-grip')).toBeVisible()
+  const before = (await pinned.boundingBox())!
+  await win.mouse.move(before.x + before.width - 6, before.y + before.height - 6)
+  await win.mouse.down()
+  await win.mouse.move(before.x + before.width + 134, before.y + before.height + 104, { steps: 5 })
+  await win.mouse.up()
+  const grown = (await pinned.boundingBox())!
+  expect(Math.round(grown.width)).toBe(Math.round(before.width) + 140)
+  expect(Math.round(grown.height)).toBe(Math.round(before.height) + 110)
+
+  // The size holds across pan…
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 4000, y: 4000, zoom: 1 }))
+  const afterPan = (await pinned.boundingBox())!
+  expect(Math.round(afterPan.width)).toBe(Math.round(grown.width))
+  expect(Math.round(afterPan.height)).toBe(Math.round(grown.height))
+
+  // …and across navigation (pinned panels survive it, §8.5).
+  const nodeB = crypto.randomUUID()
+  const canvasB = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: nodeB })
+  await exec(win, 'CreateCanvas', { canvasId: canvasB, nodeId: nodeB })
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Elsewhere'), { id: canvasB })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await expect(pinned).toHaveCount(1)
+  const afterNav = (await pinned.boundingBox())!
+  expect(Math.round(afterNav.width)).toBe(Math.round(grown.width))
+  expect(Math.round(afterNav.height)).toBe(Math.round(grown.height))
+
+  // Min-size clamp: a hard shrink stops where the header controls
+  // still live.
+  const gripNow = (await win.getByTestId('panel-resize-grip').boundingBox())!
+  await win.mouse.move(gripNow.x + 7, gripNow.y + 7)
+  await win.mouse.down()
+  await win.mouse.move(gripNow.x - 900, gripNow.y - 900, { steps: 5 })
+  await win.mouse.up()
+  const clamped = (await pinned.boundingBox())!
+  expect(Math.round(clamped.width)).toBe(240) // MIN_PANEL_SIZE
+  expect(Math.round(clamped.height)).toBe(150)
+  await expect(win.getByTestId('panel-expand')).toBeVisible()
+  await expect(win.locator('[data-testid^="panel-close-"]')).toBeVisible()
+
+  // Big editor from the pinned panel: type, Done — the text is in
+  // the panel and commits per ordinary §7.1 rules; dirty state rides
+  // across the move.
+  await win.getByTestId('panel-expand').click()
+  await expect(win.getByTestId('big-editor')).toBeVisible()
+  await win.locator('[data-testid="big-editor"] .cm-content').click()
+  await win.keyboard.press('ControlOrMeta+a')
+  await win.keyboard.type('stone quay and tarred ropes')
+  await expect(win.getByTestId('note-pane-dirty')).toBeVisible() // dirty intact mid-overlay
+  await win.getByTestId('big-editor-done').click()
+  await expect(win.getByTestId('big-editor')).toHaveCount(0)
+  await expect(win.getByTestId('note-editor')).toContainText('tarred ropes')
+  await expect
+    .poll(
+      async () =>
+        (await runQuery<{ body: string } | null>(win, 'getNote', { noteId }))?.body ?? '',
+      { timeout: 10_000 },
+    )
+    .toContain('tarred ropes')
+
+  // Backdrop click is Done too. Raw mouse at the left-middle edge:
+  // the floating chrome owns the corners (path bar, rail, dock) and
+  // intercepts locator clicks there.
+  await win.getByTestId('panel-expand').click()
+  await expect(win.getByTestId('big-editor')).toBeVisible()
+  const scrim = (await win.getByTestId('big-editor-backdrop').boundingBox())!
+  await win.mouse.click(scrim.x + 25, scrim.y + scrim.height * 0.55)
+  await expect(win.getByTestId('big-editor')).toHaveCount(0)
+  await expect(win.getByTestId('note-editor')).toContainText('tarred ropes')
 
   await app.close()
 })

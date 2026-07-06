@@ -41,6 +41,27 @@ export type PanelRequest =
    * committed edit is ONE CreatePin (note + dot node + placement). */
   | { kind: 'pin-phantom'; canvasId: string; x: number; y: number }
 
+export interface PanelSize {
+  width: number
+  height: number
+}
+
+/** §8.5 rev 0.31 feel constant: the ONE size a tethered panel spawns
+ * at — sized for a glance and a quick line, not an essay. Never a
+ * remembered value; pinning is what makes a panel a proper window. */
+export const DEFAULT_PANEL_SIZE: PanelSize = { width: 320, height: 300 }
+
+/** Below this the header controls collapse; the resize grip never
+ * goes there. */
+export const MIN_PANEL_SIZE: PanelSize = { width: 240, height: 150 }
+
+export function clampPanelSize(size: PanelSize): PanelSize {
+  return {
+    width: Math.max(MIN_PANEL_SIZE.width, Math.round(size.width)),
+    height: Math.max(MIN_PANEL_SIZE.height, Math.round(size.height)),
+  }
+}
+
 export interface PanelRecord {
   key: number
   request: PanelRequest
@@ -48,6 +69,10 @@ export interface PanelRecord {
   pinned: boolean
   /** Screen-fixed position once pinned (or for anchorless panels). */
   screen: { x: number; y: number } | null
+  /** Presentation state, panel lifetime only (§8.5 rev 0.31):
+   * null = the tethered default; pinning initializes it and the
+   * grip drags it. Never persisted, never in the note record. */
+  size: PanelSize | null
   /** Focus pulse counter: bumps when an open request lands on an
    * already-pinned note so the panel can flash itself. */
   focus: number
@@ -109,10 +134,16 @@ async function resolveAnchor(noteId: string): Promise<PanelAnchor> {
 function setTethered(request: PanelRequest, anchor: PanelAnchor): void {
   const current = tethered()
   if (current) {
+    // Replacing the tethered content while its buffer sits in the big
+    // editor would swap the note under the overlay; close it first.
+    if (bigEditorKey === current.key) closeBigEditor()
     current.request = request
     current.anchor = anchor
   } else {
-    records = [...records, { key: nextKey++, request, anchor, pinned: false, screen: null, focus: 0 }]
+    records = [
+      ...records,
+      { key: nextKey++, request, anchor, pinned: false, screen: null, size: null, focus: 0 },
+    ]
   }
   notify()
 }
@@ -167,6 +198,17 @@ export function pinPanel(key: number, screen: { x: number; y: number }): void {
   if (!record || record.pinned) return
   record.pinned = true
   record.screen = screen
+  // Pinning makes it a proper window: the size starts at the tethered
+  // default and belongs to this panel for its lifetime (§8.5).
+  record.size = { ...DEFAULT_PANEL_SIZE }
+  notify()
+}
+
+/** Grip drag on a pinned panel; tethered panels keep THE default. */
+export function resizePanel(key: number, size: PanelSize): void {
+  const record = records.find((candidate) => candidate.key === key)
+  if (!record || !record.pinned) return
+  record.size = clampPanelSize(size)
   notify()
 }
 
@@ -196,9 +238,44 @@ export function setPanelAnchor(key: number, anchor: PanelAnchor): void {
 }
 
 export function closePanel(key: number): void {
+  if (bigEditorKey === key) closeBigEditor()
   flushers.delete(key)
   records = records.filter((record) => record.key !== key)
   notify()
+}
+
+// ---- §8.5 big editor (rev 0.31): ONE centered overlay editor over a
+// dimmed board. The panel's CodeMirror buffer MOVES there and back
+// (one buffer per note); commit semantics are untouched (§7.1).
+
+let bigEditorKey: number | null = null
+const bigEditorListeners = new Set<(key: number | null) => void>()
+
+function notifyBigEditor(): void {
+  for (const listener of bigEditorListeners) listener(bigEditorKey)
+}
+
+export function openBigEditor(key: number): void {
+  if (bigEditorKey === key) return
+  if (!records.some((record) => record.key === key)) return
+  bigEditorKey = key
+  notifyBigEditor()
+}
+
+export function closeBigEditor(): void {
+  if (bigEditorKey === null) return
+  bigEditorKey = null
+  notifyBigEditor()
+}
+
+export function bigEditorPanel(): number | null {
+  return bigEditorKey
+}
+
+export function onBigEditorChanged(listener: (key: number | null) => void): () => void {
+  bigEditorListeners.add(listener)
+  listener(bigEditorKey)
+  return () => bigEditorListeners.delete(listener)
 }
 
 export function panelRecords(): readonly PanelRecord[] {
@@ -407,6 +484,8 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
     renamers.clear()
     chooser = null
     notifyChooser()
+    bigEditorKey = null
+    notifyBigEditor()
     host = null
     notify()
   }
