@@ -77,6 +77,11 @@
         if (result.status !== 'committed')
           boardNotice('Place on Current Canvas failed — retry')
       })
+      // A THROWN execute (IPC death, not a status) must not poison
+      // the chain — later placements would silently never run.
+      placeQueue = placeQueue.catch(() =>
+        boardNotice('Place on Current Canvas failed — retry'),
+      )
     }),
   )
 

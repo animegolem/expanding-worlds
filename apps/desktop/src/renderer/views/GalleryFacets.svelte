@@ -325,7 +325,7 @@
   }
 
   .option-count {
-    color: var(--ew-text-dim);
+    color: var(--ew-text-muted);
   }
 
   .active-tag {

@@ -552,7 +552,7 @@
   }
 
   .count {
-    color: var(--ew-text-dim);
+    color: var(--ew-text-muted);
   }
 
   .scroller {
@@ -575,7 +575,7 @@
     align-items: center;
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--ew-text-dim);
+    color: var(--ew-text-muted);
   }
 
   .row {
@@ -630,7 +630,7 @@
 
   .glyph {
     font-size: 2.2rem;
-    color: var(--ew-text-dim);
+    color: var(--ew-text-muted);
   }
 
   .text-post {
@@ -660,7 +660,7 @@
     margin: 0;
     font-size: 0.72rem;
     line-height: 1.35;
-    color: var(--ew-text-dim);
+    color: var(--ew-text-muted);
     display: -webkit-box;
     -webkit-line-clamp: 7;
     -webkit-box-orient: vertical;
@@ -669,6 +669,6 @@
 
   .empty {
     padding: 2rem 1rem;
-    color: var(--ew-text-dim);
+    color: var(--ew-text-muted);
   }
 </style>
