@@ -53,6 +53,9 @@ never delegated. Implementation may be decomposed:
 - Give parallel agents non-overlapping resources (e.g. `SPIKE_PORT`)
   and never `git add -A` while agent worktrees exist under
   `.claude/worktrees/` (gitignored, but stay alert).
+- The lead reserves migration numbers at ticket-cut time; a brief
+  that may touch schema carries its number explicitly (parallel
+  agents collided on 0004 once — EPIC-022 meta-analysis).
 - Benchmark review check: verify the measurement environment before
   trusting numbers (headless Chromium runs WebGL on SwiftShader —
   this nearly inverted the renderer decision). The desktop perf suite
@@ -78,6 +81,11 @@ never delegated. Implementation may be decomposed:
   (`pandoc RAG/RFC-0001-....md -o check.docx` as a sanity check).
 - `spike/` is throwaway benchmark code — findings transfer via
   `RAG/spike-reports/`, code does not.
+- Domains expected to grow (appearance kinds, lifecycle states)
+  are validated in command handlers, NEVER as SQLite `CHECK IN`
+  constraints — SQLite cannot ALTER a CHECK, so every added value
+  becomes a full FK-aware table rebuild (migration 0006 blocker;
+  EPIC-022 meta-analysis).
 - Releases (AI-EPIC-011, revised at v0.7.0): SEQUENTIAL minor bump
   per epic close — epics do not finish in numeric order (a
   late-closing EPIC-007 must not want v0.7.0 after v0.14.0 exists),

@@ -42,6 +42,30 @@ router → settings surface → net-guard integration → the FIRST
 concrete connector as proof (candidate: the page picker — no
 external API, exercises fetch/consent/dialogue end to end).
 
+**Malicious-plugin containment (owner concern, 2026-07-06 — the
+execution-model ladder, decided direction before any store
+opens):** the day-one answer is that v1 connectors carry NO CODE —
+a declarative manifest (URL patterns, endpoint templates, response
+mappings) interpreted by our router covers the fetch-shaped
+connector family, and zero code means zero sandbox problem. The
+main-process net guard stays the exfiltration choke point under
+every model (nothing fetches hosts outside the attached
+manifest). When connectors genuinely need logic: preferred
+container is a WASM host in the utility process (Extism-style —
+authors write JS, it executes inside a QuickJS-in-WASM
+interpreter), because WASM is capability-based by construction:
+the module can only call host functions we hand it (fetch
+mediated by the net guard; no fs, no spawn) with memory/fuel
+limits. For connectors that must render or scrape live pages, the
+pragmatic middle is a hidden sandboxed BrowserWindow/webview
+(contextIsolation, no Node, CSP, per-window webRequest pinned to
+declared hosts) — Chromium's renderer sandbox is the same boundary
+Chrome trusts for hostile web content. RULED OUT: Firecracker/
+microVMs (Linux-KVM server tech, wrong platform for a desktop
+app) and raw in-process JS for third-party code (Node context =
+game over). Store-side signing/review is a social layer on top,
+not a substitute.
+
 ## Path(s) Not Taken
 
 No community distribution in this epic (packaging/signing/store
