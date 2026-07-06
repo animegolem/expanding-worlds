@@ -57,6 +57,7 @@
   import { tick, untrack } from 'svelte'
   import { NODE_DRAG_MIME } from '../canvas/import-surfaces'
   import { navigateTo } from '../chrome/navigation'
+  import { acquireSourceSlot, releaseSourceSlot } from '../chrome/source-slot'
   import { closeTakeover } from '../chrome/takeover'
   import { requestOpenNote, requestPlaceNode } from '../note/open-note'
   import { openCornerPanel } from '../note/panels'
@@ -144,12 +145,15 @@
   let libraryError = $state<string | null>(null)
   let mirrorOff = $state(false)
   let libraryDirInput = $state('')
-  // Async fences, both non-reactive: scopeEpoch invalidates in-flight
-  // open handshakes when the user flips again mid-open; holdsSource
-  // records that THIS view opened the slot, so leave/unmount close
-  // exactly what it opened and never stomp another surface's slot.
+  // 091: the source panel evicted this view from the source slot —
+  // everything degraded to this-world; one honest notice line says so.
+  let evictedNotice = $state(false)
+  // Async fence, non-reactive: scopeEpoch invalidates in-flight open
+  // handshakes when the user flips again mid-open. Slot OWNERSHIP
+  // moved to the source-slot registry (091): release closes only what
+  // this view still holds, so another surface's slot is never stomped.
   let scopeEpoch = 0
-  let holdsSource = false
+  const SLOT_OWNER = 'gallery'
 
   const scopeReady = $derived(scope === 'this-world' || sourceOpen)
 
@@ -244,6 +248,7 @@
   function setScope(next: GalleryScope): void {
     if (next === scope) return
     scope = next
+    evictedNotice = false
     scopeEpoch += 1
     itemsGeneration += 1
     items = {}
@@ -262,10 +267,16 @@
     needsLibrary = false
     libraryError = null
     sourceOpen = false
-    if (holdsSource) {
-      holdsSource = false
-      void window.ew.secondary.close('source')
-    }
+    releaseSourceSlot(SLOT_OWNER)
+  }
+
+  /** 091: the source panel took the slot out from under everything
+   * scope. Degrade to this-world (the transport is gone), then say
+   * so — the notice rides the mirror-notice line's grammar. */
+  function onSlotEvicted(): void {
+    if (scope !== 'everything') return
+    setScope('this-world')
+    evictedNotice = true
   }
 
   async function enterEverything(epoch: number): Promise<void> {
@@ -290,14 +301,16 @@
     await openLibrary(dir, epoch, false)
   }
 
-  /** Open the library into the source slot. `store` designates: the
-   * app setting is written only AFTER a successful open validated
-   * the directory as a real project. */
+  /** Open the library into the source slot (via the 091 registry —
+   * acquire evicts the panel if it holds the slot, symmetrically).
+   * `store` designates: the app setting is written only AFTER a
+   * successful open validated the directory as a real project. */
   async function openLibrary(dir: string, epoch: number, store: boolean): Promise<void> {
-    const opened = await window.ew.secondary.open('source', dir)
+    const opened = await acquireSourceSlot(SLOT_OWNER, dir, onSlotEvicted)
     if (epoch !== scopeEpoch) {
-      // The user flipped away mid-open: release the slot unshown.
-      if (opened.ok) void window.ew.secondary.close('source')
+      // The user flipped away mid-open: release the slot unshown
+      // (a no-op if another owner has meanwhile acquired it).
+      if (opened.ok) releaseSourceSlot(SLOT_OWNER)
       return
     }
     if (!opened.ok) {
@@ -306,7 +319,6 @@
       return
     }
     if (store) await window.ew.settings.setApp('libraryProjectDir', dir)
-    holdsSource = true
     needsLibrary = false
     libraryError = null
     sourceOpen = true
@@ -321,9 +333,7 @@
   // Unmount (the takeover closing) releases the source slot; scope
   // itself needs no reset — this component IS the gallery's state.
   $effect(() => {
-    return () => {
-      if (holdsSource) void window.ew.secondary.close('source')
-    }
+    return () => releaseSourceSlot(SLOT_OWNER)
   })
   // 076's push: a landed derivative repaints its cells by cache-bust.
   $effect(() =>
@@ -782,6 +792,12 @@
   {#if scope === 'everything' && mirrorOff}
     <p class="mirror-notice" data-testid="gallery-mirror-notice">
       everything may be incomplete — this world doesn't mirror
+    </p>
+  {/if}
+  {#if evictedNotice}
+    <!-- 091: the source panel replaced everything's transport. -->
+    <p class="mirror-notice" data-testid="gallery-evicted-notice">
+      everything closed — a source panel holds the source slot
     </p>
   {/if}
 

@@ -7,6 +7,7 @@ import {
   isImportBatchActive,
   type ImportOutcome,
 } from '../chrome/import-progress'
+import { sourceBorder } from '../chrome/source-slot'
 import { themeTokenValue } from '../theme'
 
 /**
@@ -20,6 +21,10 @@ import { themeTokenValue } from '../theme'
 /** Drag payload mimes set by outline-row dragstart (OutlineView). */
 export const NODE_DRAG_MIME = 'application/x-ew-node'
 export const NOTE_DRAG_MIME = 'application/x-ew-note'
+/** §14.4 source-panel drag-out (AI-IMP-091): JSON {contentHash} —
+ * the item lives in ANOTHER project, so the drop ingests by copy
+ * (090) before the ordinary placement. */
+export const SOURCE_ITEM_MIME = 'application/x-ew-source-item'
 
 /** §6.10: default dot appearance for placing a zero-node note. */
 export function zeroNodeNoteDotColor(): string {
@@ -195,6 +200,39 @@ export function attachImportSurfaces(
     await createImagePin(imported.assetId, world, canvasId)
   }
 
+  /** §14.4 pull from the source panel (AI-IMP-091): ingest-by-copy
+   * with the session's tag border (090 — bytes hash-copy, dedupe
+   * pulls place without recopying), then the ORDINARY placement at
+   * the drop point. The ingested node is this-world material; the
+   * placement is ordinary in every way. */
+  async function ingestSourceItem(payload: string, world: Point): Promise<void> {
+    const canvasId = host.canvasId // gesture-time board (AI-IMP-085)
+    let contentHash: string
+    try {
+      const parsed = JSON.parse(payload) as { contentHash?: unknown }
+      if (typeof parsed.contentHash !== 'string' || parsed.contentHash.length === 0) return
+      contentHash = parsed.contentHash
+    } catch {
+      return
+    }
+    const ingested = await window.ew.secondary.ingest('source', {
+      contentHash,
+      border: sourceBorder(),
+    })
+    if (!ingested.ok) {
+      onError(`ingest failed: ${ingested.message}`)
+      return
+    }
+    const result = await host.gateway.execute('CreatePlacement', {
+      placementId: uuidv7(),
+      canvasId,
+      nodeId: ingested.nodeId,
+      x: world.x,
+      y: world.y,
+    })
+    if (result.status !== 'committed') onError(describeFailure('CreatePlacement', result))
+  }
+
   /** §6.3: a node dragged from an outline row creates one placement. */
   async function placeNode(nodeId: string, world: Point): Promise<void> {
     const result = await host.gateway.execute('CreatePlacement', {
@@ -232,13 +270,17 @@ export function attachImportSurfaces(
     const dt = event.dataTransfer
     if (!dt) return
     // getData is only valid synchronously inside the drop event.
+    const sourceItem = dt.getData(SOURCE_ITEM_MIME)
     const nodeId = dt.getData(NODE_DRAG_MIME)
     const noteId = dt.getData(NOTE_DRAG_MIME)
     const uriList = dt.getData('text/uri-list')
     const html = dt.getData('text/html')
     const files = [...dt.files]
     const world = worldAt(event.clientX, event.clientY)
-    if (nodeId.length > 0) {
+    if (sourceItem.length > 0) {
+      // 091: FIRST — a foreign item must ingest, never place raw.
+      void ingestSourceItem(sourceItem, world)
+    } else if (nodeId.length > 0) {
       void placeNode(nodeId, world)
     } else if (noteId.length > 0) {
       void placeZeroNodeNote(noteId, world)
