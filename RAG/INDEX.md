@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 5 | 2 |
+| Planned | 6 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 85 |
-| **Total** | **17** | **87** |
+| **Total** | **18** | **87** |
 
 ## In Progress
 
@@ -69,6 +69,11 @@
 
 ---
 
+### [[AI-EPIC-018-rich-text-notes|EPIC-018: Rich text notes]]
+> Notes are raw Markdown in CodeMirror — right for Obsidian compat,
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -76,7 +81,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3674 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3699 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)

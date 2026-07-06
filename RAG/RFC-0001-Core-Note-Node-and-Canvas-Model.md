@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.38         | 6 July 2026      |
+| Accepted for Phase 1 | 0.39         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1261,6 +1261,31 @@ note by editing its body, choosing Create Note, or choosing Create and
 Place on Current Canvas. Semantics are specified in section 7.2.
 
 # 7. Titles, wiki links, and spatial resolution
+
+**Rich text, maybe (rev 0.39 — stubbed as AI-EPIC-018, not a
+promise).** Notes are Markdown today mostly for Obsidian compat,
+and that is fungible: the direction under consideration is a RICH
+TEXT editor over a LIMITED, Markdown-compatible surface —
+headings, emphasis, lists, links, alignment; nothing the mapping
+cannot round-trip — SERIALIZED to Markdown (pandoc as the
+workhorse) for the vault mirror (rev 0.23) and §16 export. Easier
+for artists ("I don't even bother italicizing" — the ceiling is
+low and known); wiki-link semantics (§7.1–7.7) are untouchable
+constraints on any editor swap. Two hard requirements ride along
+regardless of the epic's fate: **paste as plain text always
+exists** (the PureRef complaint: no plain paste means manual
+reformatting of everything), and canvas text (§4.5) stays the
+"slightly rich" alignment-and-reflow surface — the artist confirmed
+that ceiling too.
+
+**AI over a text region (rev 0.39 — musing, very low priority,
+§11.5-gated twice like everything AI).** Behind the Advanced AI
+toggles: right-click a text region or paste → "ask AI to format"
+(user-preset prompt or freeform), drop an article → extract the
+text for a note, dictate freeform → cleaned and formatted. Sized
+for a tiny on-device model; nothing runs, nothing phones out,
+nothing is advertised unless both §11.5 gates are set. First
+concrete tenant of the rev 0.32 gating design.
 
 ## 7.1 Wiki-link storage and link states
 
