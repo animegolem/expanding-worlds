@@ -2,6 +2,8 @@ import { Graphics, Sprite, type Container, type Text } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 import { fakeResources, makePlacement } from '../test-helpers'
 import {
+  CARD_DEFAULT_HEIGHT,
+  CARD_DEFAULT_WIDTH,
   DEFAULT_DOT_RADIUS,
   LABEL_HEIGHT_RATIO,
   cssColorToNumber,
@@ -304,5 +306,119 @@ describe('placement labels (§4.5)', () => {
     })
     const object = placementRenderer.create(item, fakeResources())
     expect(labelOf(object)!.style.fontSize).toBeCloseTo(40 * LABEL_HEIGHT_RATIO)
+  })
+})
+
+describe('card appearance (§4.6 rev 0.31, AI-IMP-084)', () => {
+  function cardGroup(object: Container): Container {
+    const group = object.children.find((child) => child.label === 'card') as Container
+    expect(group).toBeTruthy()
+    return group
+  }
+
+  it('renders fixed chrome with title and excerpt, scaled onto the placement rect', () => {
+    const item = makePlacement({
+      appearanceKind: 'card',
+      noteId: 'note-1',
+      noteTitle: 'Harbor Study',
+      noteExcerpt: 'stone quay\nand   gulls',
+      width: 520,
+      height: 320,
+      x: 10,
+      y: 20,
+    })
+    const object = placementRenderer.create(item, fakeResources())
+    expect(object.position).toMatchObject({ x: 10, y: 20 })
+    const group = cardGroup(object)
+    // Fixed design layout, group-scaled onto the rect (resize
+    // stretches like an image; layout constants never move).
+    expect(group.scale.x).toBeCloseTo(520 / CARD_DEFAULT_WIDTH)
+    expect(group.scale.y).toBeCloseTo(320 / CARD_DEFAULT_HEIGHT)
+    expect(group.getChildByLabel('card-chrome')).toBeTruthy()
+    const title = group.getChildByLabel('card-title') as Text
+    expect(title.text).toBe('Harbor Study')
+    const excerpt = group.getChildByLabel('card-excerpt') as Text
+    // Whitespace collapses so a newline-heavy body cannot overflow
+    // the fixed chrome (plain-text clamp).
+    expect(excerpt.text).toBe('stone quay and gulls')
+    // The chrome's title line IS the label — no duplicate under-label.
+    expect(object.children.find((child) => child.label === 'label')).toBeUndefined()
+  })
+
+  it('clamps long titles to one deterministic line', () => {
+    const item = makePlacement({
+      appearanceKind: 'card',
+      noteId: 'note-1',
+      noteTitle: 'A very long meandering harbor study title indeed',
+      noteExcerpt: 'body',
+      width: 260,
+      height: 160,
+    })
+    const object = placementRenderer.create(item, fakeResources())
+    const title = cardGroup(object).getChildByLabel('card-title') as Text
+    expect(title.text.length).toBeLessThanOrEqual(28)
+    expect(title.text.endsWith('…')).toBe(true)
+  })
+
+  it('renders the empty phantom card for a card node with no note (§7.2)', () => {
+    const item = makePlacement({
+      appearanceKind: 'card',
+      noteId: null,
+      noteTitle: null,
+      width: 260,
+      height: 160,
+    })
+    const object = placementRenderer.create(item, fakeResources())
+    const group = cardGroup(object)
+    expect(group.getChildByLabel('card-chrome-phantom')).toBeTruthy()
+    expect(group.getChildByLabel('card-title')).toBeNull()
+    expect(group.getChildByLabel('card-excerpt')).toBeNull()
+  })
+
+  it('repaints when a note edit flows new title/excerpt through the projection', () => {
+    const resources = fakeResources()
+    const before = makePlacement({
+      appearanceKind: 'card',
+      noteId: 'n',
+      noteTitle: 'Harbor',
+      noteExcerpt: 'old text',
+      width: 260,
+      height: 160,
+    })
+    const object = placementRenderer.create(before, resources)
+    const after = { ...before, noteTitle: 'Harbor II', noteExcerpt: 'new text' }
+    placementRenderer.update(object, after, before, resources)
+    const group = cardGroup(object)
+    expect((group.getChildByLabel('card-title') as Text).text).toBe('Harbor II')
+    expect((group.getChildByLabel('card-excerpt') as Text).text).toBe('new text')
+    // First committed edit fills a phantom card (§7.2): noteId lands.
+    const phantom = makePlacement({ appearanceKind: 'card', noteId: null, noteTitle: null })
+    const phantomObject = placementRenderer.create(phantom, resources)
+    const filled = { ...phantom, noteId: 'n2', noteTitle: 'Born', noteExcerpt: 'first words' }
+    placementRenderer.update(phantomObject, filled, phantom, resources)
+    expect(
+      (cardGroup(phantomObject).getChildByLabel('card-title') as Text).text,
+    ).toBe('Born')
+  })
+
+  it('resizes in place by rescaling the fixed chrome', () => {
+    const resources = fakeResources()
+    const item = makePlacement({
+      appearanceKind: 'card',
+      noteId: 'n',
+      noteTitle: 'Harbor',
+      noteExcerpt: 'quay',
+      width: 260,
+      height: 160,
+    })
+    const object = placementRenderer.create(item, resources)
+    const group = cardGroup(object)
+    const titleBefore = group.getChildByLabel('card-title')
+    const resized = { ...item, width: 130, height: 320 }
+    placementRenderer.update(object, resized, item, resources)
+    expect(group.scale.x).toBeCloseTo(0.5)
+    expect(group.scale.y).toBeCloseTo(2)
+    // Same display objects — no Text rebuild on resize.
+    expect(group.getChildByLabel('card-title')).toBe(titleBefore)
   })
 })

@@ -284,6 +284,45 @@ describe('SetNodeAppearance (§4.6)', () => {
       appearance_crop: null,
     })
   })
+
+  it('accepts the payload-less card appearance with prior-state undo (§4.6 rev 0.31)', () => {
+    const nodeId = createNode()
+    committed('SetNodeAppearance', { nodeId, appearance: { kind: 'dot', color: '#abc' } })
+
+    // Card carries NO payload columns — content comes from the note.
+    const card = committed('SetNodeAppearance', { nodeId, appearance: { kind: 'card' } })
+    expect(nodeRow(nodeId)).toMatchObject({
+      appearance_kind: 'card',
+      appearance_color: null,
+      appearance_icon: null,
+      appearance_asset_id: null,
+      appearance_crop: null,
+    })
+
+    // Undo restores the dot it replaced.
+    expect(card.inverse).toMatchObject({
+      payload: { nodeId, appearance: { kind: 'dot', color: '#abc' } },
+    })
+    undo(card.inverse)
+    expect(nodeRow(nodeId)).toMatchObject({ appearance_kind: 'dot', appearance_color: '#abc' })
+
+    // And card round-trips as a PRIOR state too.
+    committed('SetNodeAppearance', { nodeId, appearance: { kind: 'card' } })
+    const icon = committed('SetNodeAppearance', {
+      nodeId,
+      appearance: { kind: 'icon', icon: 'castle' },
+    })
+    expect(icon.inverse).toMatchObject({ payload: { nodeId, appearance: { kind: 'card' } } })
+    undo(icon.inverse)
+    expect(nodeRow(nodeId)).toMatchObject({ appearance_kind: 'card', appearance_icon: null })
+  })
+
+  it('still rejects unknown appearance kinds', () => {
+    const nodeId = createNode()
+    expect(
+      exec('SetNodeAppearance', { nodeId, appearance: { kind: 'hologram' } }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
 })
 
 /**

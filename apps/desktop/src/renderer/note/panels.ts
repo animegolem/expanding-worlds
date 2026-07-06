@@ -475,6 +475,36 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
     }),
     // §10.2 quit flush now covers every open buffer.
     window.ew.app.onFlushRequest(() => flushAllPanels()),
+    // §4.6/§8.5 mutual highlight (AI-IMP-084): selecting a card
+    // placement whose note is open in a panel flashes that panel —
+    // the counterpart of the pinned panel's source-node halo. When
+    // neither side is active nothing highlights (owner decision
+    // 2026-07-06): this fires on selection changes only.
+    handle.controller.selection.onChanged((ids) => {
+      if (ids.length === 0) return
+      const selected = new Set(ids)
+      const cardNotes = new Set<string>()
+      for (const item of handle.controller.items()) {
+        if (
+          item.itemKind === 'placement' &&
+          selected.has(item.id) &&
+          item.appearanceKind === 'card' &&
+          item.noteId !== null
+        ) {
+          cardNotes.add(item.noteId)
+        }
+      }
+      if (cardNotes.size === 0) return
+      let flashed = false
+      for (const record of records) {
+        const noteId = panelNoteId(record)
+        if (noteId !== null && cardNotes.has(noteId)) {
+          record.focus += 1
+          flashed = true
+        }
+      }
+      if (flashed) notify()
+    }),
   ]
 
   return () => {

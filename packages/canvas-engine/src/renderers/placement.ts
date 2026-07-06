@@ -20,6 +20,28 @@ export const LABEL_HEIGHT_RATIO = 0.14
 
 const LABEL_COLOR = 0xc8cfd8
 
+/**
+ * §4.6 card appearance (rev 0.31, AI-IMP-084): the fixed chrome's
+ * design size in world units. The chrome is laid out ONCE at this
+ * size and the group scales onto the placement rect, so resize
+ * stretches the card like an image body. The scene projection
+ * (persistence queries-structure) mirrors these numbers to coalesce
+ * unsized card placements — hit box = the card rect.
+ */
+export const CARD_DEFAULT_WIDTH = 260
+export const CARD_DEFAULT_HEIGHT = 160
+const CARD_CORNER_RADIUS = 10
+const CARD_PADDING = 14
+const CARD_TITLE_SIZE = 16
+const CARD_EXCERPT_SIZE = 12
+/** Deterministic single-line clamp — no canvas text measuring. */
+const CARD_TITLE_MAX_CHARS = 28
+const CARD_SURFACE = 0x2b323c
+const CARD_BORDER = 0x555f6d
+const CARD_TITLE_COLOR = 0xdde3ea
+const CARD_EXCERPT_COLOR = 0xa9b3bf
+const CARD_PHANTOM_BORDER = 0x8a94a0
+
 export function cssColorToNumber(color: string | null, fallback = 0x4a90d9): number {
   if (!color) return fallback
   const hex = color.startsWith('#') ? color.slice(1) : color
@@ -103,6 +125,11 @@ function buildBody(
     return
   }
 
+  if (kind === 'card') {
+    buildCardBody(container, item)
+    return
+  }
+
   if (kind === 'icon') {
     const size = item.width ?? DEFAULT_DOT_RADIUS * 2
     const half = size / 2
@@ -126,6 +153,81 @@ function buildBody(
   }
   dot.label = kind === 'dot' ? 'dot' : 'bare-node'
   container.addChild(dot)
+}
+
+/**
+ * §4.6 note card: fixed chrome — rounded rect, title line, clamped
+ * excerpt — rendered as world content with NO shadow (§8.5: the
+ * shadow is the depth cue for screen-space panels; flat means part
+ * of the world). Content comes from the projection's noteTitle /
+ * noteExcerpt, so note edits repaint through the ordinary scene
+ * refresh. A card node with NO note renders the §7.2 phantom state:
+ * empty chrome, nothing printed, until the first committed edit.
+ */
+function buildCardBody(container: PlacementObject, item: ScenePlacement): void {
+  const group = new Container()
+  group.label = 'card'
+  const hasNote = item.noteId !== null
+  const w = CARD_DEFAULT_WIDTH
+  const h = CARD_DEFAULT_HEIGHT
+  const chrome = new Graphics()
+  chrome.label = hasNote ? 'card-chrome' : 'card-chrome-phantom'
+  chrome.roundRect(-w / 2, -h / 2, w, h, CARD_CORNER_RADIUS)
+  if (hasNote) {
+    chrome.fill({ color: CARD_SURFACE }).stroke({ width: 1.5, color: CARD_BORDER })
+  } else {
+    // Phantom card (§7.2): visibly a card-shaped absence.
+    chrome.stroke({ width: 1.5, color: CARD_PHANTOM_BORDER })
+  }
+  group.addChild(chrome)
+  if (hasNote) {
+    const rawTitle = item.noteTitle ?? ''
+    const title =
+      rawTitle.length > CARD_TITLE_MAX_CHARS
+        ? `${rawTitle.slice(0, CARD_TITLE_MAX_CHARS - 1)}…`
+        : rawTitle
+    const titleText = new Text({
+      text: title,
+      style: { fontSize: CARD_TITLE_SIZE, fill: CARD_TITLE_COLOR, fontWeight: '600' },
+    })
+    titleText.label = 'card-title'
+    titleText.position.set(-w / 2 + CARD_PADDING, -h / 2 + CARD_PADDING)
+    group.addChild(titleText)
+    // Whitespace collapses so a newline-heavy body cannot overflow
+    // the fixed chrome vertically (plain-text clamp; rich rendering
+    // is polish per the ticket).
+    const excerpt = (item.noteExcerpt ?? '').replace(/\s+/g, ' ').trim()
+    if (excerpt.length > 0) {
+      const excerptText = new Text({
+        text: excerpt,
+        style: {
+          fontSize: CARD_EXCERPT_SIZE,
+          fill: CARD_EXCERPT_COLOR,
+          wordWrap: true,
+          wordWrapWidth: w - CARD_PADDING * 2,
+          lineHeight: CARD_EXCERPT_SIZE * 1.35,
+        },
+      })
+      excerptText.label = 'card-excerpt'
+      excerptText.position.set(-w / 2 + CARD_PADDING, -h / 2 + CARD_PADDING + CARD_TITLE_SIZE * 1.6)
+      group.addChild(excerptText)
+    }
+  }
+  // Fixed layout, scaled onto the placement rect (resize stretches).
+  group.scale.set((item.width ?? w) / w, (item.height ?? h) / h)
+  container.addChild(group)
+}
+
+/** In-place card resize: the chrome layout is fixed; only the group
+ * scale maps it onto the new rect (no per-frame Text rebuilds). */
+function resizeCardBody(container: PlacementObject, item: ScenePlacement): void {
+  const group = container.getChildByLabel('card')
+  if (group) {
+    group.scale.set(
+      (item.width ?? CARD_DEFAULT_WIDTH) / CARD_DEFAULT_WIDTH,
+      (item.height ?? CARD_DEFAULT_HEIGHT) / CARD_DEFAULT_HEIGHT,
+    )
+  }
 }
 
 async function attachTexture(
@@ -230,7 +332,9 @@ function syncLabel(container: Container, item: ScenePlacement): void {
     | Text
     | undefined
   const title = item.noteTitle
-  if (title === null || item.labelVisible !== 1) {
+  // §4.6 card: the chrome's title line IS the label — an under-label
+  // would print the title twice.
+  if (title === null || item.labelVisible !== 1 || item.appearanceKind === 'card') {
     existing?.destroy()
     return
   }
@@ -278,13 +382,23 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
   update(object, item, previous, resources) {
     const container = object as PlacementObject
     const sizeChanged = item.width !== previous.width || item.height !== previous.height
-    if (identitySignature(item) !== identitySignature(previous)) {
+    // §4.6 card content lives OUTSIDE identitySignature (adding note
+    // fields there would rebuild image bodies on every rename and
+    // drop texture residency): note edits repaint the card here.
+    const cardContentChanged =
+      item.appearanceKind === 'card' &&
+      (item.noteTitle !== previous.noteTitle ||
+        (item.noteExcerpt ?? null) !== (previous.noteExcerpt ?? null) ||
+        (item.noteId === null) !== (previous.noteId === null))
+    if (identitySignature(item) !== identitySignature(previous) || cardContentChanged) {
       // buildBody clears ALL children (label included); syncLabel below
       // recreates it against the new body size.
       buildBody(container, item, resources)
     } else if (sizeChanged) {
       if (item.appearanceKind === 'image' && item.assetContentHash) {
         resizeImageBody(container, item)
+      } else if (item.appearanceKind === 'card') {
+        resizeCardBody(container, item)
       } else {
         buildBody(container, item, resources)
       }

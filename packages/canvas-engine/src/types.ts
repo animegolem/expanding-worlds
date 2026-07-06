@@ -39,12 +39,16 @@ export interface ScenePlacement {
   labelVisible: 0 | 1
   /** §6.9 rev 0.17: locked placements refuse move/resize/rotate. */
   locked: 0 | 1
-  appearanceKind: 'dot' | 'icon' | 'image' | null
+  appearanceKind: 'dot' | 'icon' | 'image' | 'card' | null
   appearanceColor: string | null
   appearanceIcon: string | null
   appearanceAssetId: string | null
   appearanceCrop: string | null
   noteTitle: string | null
+  /** §4.6 card appearance (rev 0.31): clamped body excerpt from the
+   * attached note; the projection sends it for card nodes only.
+   * Optional — non-card rows and older wire shapes omit it. */
+  noteExcerpt?: string | null
   /** §8.4 hint charms: the node's active note and child canvas. */
   noteId: string | null
   childCanvasId: string | null

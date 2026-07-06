@@ -557,6 +557,76 @@ describe('getCanvasScene', () => {
     expect(item).toMatchObject({ noteId, childCanvasId })
   })
 
+  it('projects card placements with title, clamped excerpt, and default size (§4.6 rev 0.31)', () => {
+    const nodeId = createNode()
+    const noteId = insertNote('Harbor Study', 'x'.repeat(200))
+    handle.db.run('UPDATE node SET note_id = ? WHERE id = ?', noteId, nodeId)
+    committed('SetNodeAppearance', { nodeId, appearance: { kind: 'card' } })
+    const placementId = createPlacement(nodeId)
+
+    const scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    const item = scene.items.find((i) => i.id === placementId)!
+    expect(item).toMatchObject({
+      appearanceKind: 'card',
+      noteTitle: 'Harbor Study',
+      // The gallery's 140-char clamp idiom (queries-gallery).
+      noteExcerpt: 'x'.repeat(140),
+      // Unsized card placements read the fixed chrome's default so
+      // the hit box IS the card rect (mirrors the engine constants).
+      width: 260,
+      height: 160,
+    })
+  })
+
+  it('keeps explicit card sizes and sends no excerpt for non-card nodes', () => {
+    const cardNode = createNode()
+    const cardNote = insertNote('Sized Card', 'body text')
+    handle.db.run('UPDATE node SET note_id = ? WHERE id = ?', cardNote, cardNode)
+    committed('SetNodeAppearance', { nodeId: cardNode, appearance: { kind: 'card' } })
+    const sizedId = uuidv7()
+    committed('CreatePlacement', {
+      placementId: sizedId,
+      canvasId: handle.rootCanvasId,
+      nodeId: cardNode,
+      width: 400,
+      height: 250,
+    })
+
+    const dotNode = createNode()
+    const dotNote = insertNote('Plain Dot', 'never excerpted')
+    handle.db.run('UPDATE node SET note_id = ? WHERE id = ?', dotNote, dotNode)
+    committed('SetNodeAppearance', { nodeId: dotNode, appearance: { kind: 'dot', color: '#abc' } })
+    const dotId = createPlacement(dotNode)
+
+    const scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    expect(scene.items.find((i) => i.id === sizedId)).toMatchObject({
+      appearanceKind: 'card',
+      width: 400,
+      height: 250,
+    })
+    expect(scene.items.find((i) => i.id === dotId)).toMatchObject({
+      appearanceKind: 'dot',
+      noteExcerpt: null,
+      width: null,
+      height: null,
+    })
+  })
+
+  it('projects the phantom card: card appearance, no note (§7.2)', () => {
+    const nodeId = createNode()
+    committed('SetNodeAppearance', { nodeId, appearance: { kind: 'card' } })
+    const placementId = createPlacement(nodeId)
+    const scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    expect(scene.items.find((i) => i.id === placementId)).toMatchObject({
+      appearanceKind: 'card',
+      noteId: null,
+      noteTitle: null,
+      noteExcerpt: null,
+      width: 260,
+      height: 160,
+    })
+  })
+
   it('keeps the shared render order across placements and decorations', () => {
     const nodeId = createNode()
     const p1 = createPlacement(nodeId)

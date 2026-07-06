@@ -22,6 +22,16 @@ import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching, refreshNoteLinks } from '../links'
 import { requireLinkableTitle, requireTitleFree } from './notes'
 
+/**
+ * §4.6 rev 0.31: the note card is the fourth appearance kind. It
+ * carries NO payload — the card's content comes from the attached
+ * note via the read model, never from appearance columns. The
+ * @ew/commands NodeAppearance union has not been extended (outside
+ * the AI-IMP-084 fence); this widening covers the wire shape until
+ * the union catches up.
+ */
+type WireNodeAppearance = NodeAppearance | { kind: 'card' }
+
 function requireNode<T extends Record<string, unknown>>(
   ctx: CommandContext,
   nodeId: string,
@@ -311,8 +321,8 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       'appearance_kind, appearance_color, appearance_icon, appearance_asset_id, appearance_crop',
     )
 
-    // §4.6: dot, icon, and image are appearances, not node types.
-    const next = payload.appearance
+    // §4.6: dot, icon, image, and card are appearances, not node types.
+    const next = payload.appearance as WireNodeAppearance | null
     let kind: string | null = null
     let color: string | null = null
     let icon: string | null = null
@@ -335,8 +345,13 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
         assetId = next.assetId
         // Non-destructive crop/framing; the asset itself is untouched.
         crop = next.crop === null ? null : JSON.stringify(next.crop)
-      } else {
-        throw new DomainError('VALIDATION_FAILED', 'appearance kind must be dot, icon, or image')
+      } else if (next.kind !== 'card') {
+        // §4.6 rev 0.31: card is payload-less — content comes from
+        // the attached note through the read model.
+        throw new DomainError(
+          'VALIDATION_FAILED',
+          'appearance kind must be dot, icon, image, or card',
+        )
       }
     }
     ctx.db.run(
@@ -352,9 +367,11 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       payload.nodeId,
     )
 
-    let priorAppearance: NodeAppearance | null = null
+    let priorAppearance: WireNodeAppearance | null = null
     if (prior.appearance_kind === 'dot' && prior.appearance_color !== null) {
       priorAppearance = { kind: 'dot', color: prior.appearance_color }
+    } else if (prior.appearance_kind === 'card') {
+      priorAppearance = { kind: 'card' }
     } else if (prior.appearance_kind === 'icon' && prior.appearance_icon !== null) {
       priorAppearance = { kind: 'icon', icon: prior.appearance_icon }
     } else if (prior.appearance_kind === 'image' && prior.appearance_asset_id !== null) {
@@ -377,10 +394,12 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       inverse: {
         commandType: COMMAND_SET_NODE_APPEARANCE,
         commandVersion: 1,
+        // Wire shape: card widens the @ew/commands union (see
+        // WireNodeAppearance above), so this is a cast, not satisfies.
         payload: {
           nodeId: payload.nodeId,
           appearance: priorAppearance,
-        } satisfies SetNodeAppearancePayload,
+        } as SetNodeAppearancePayload,
       },
     }
   })
