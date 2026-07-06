@@ -17,6 +17,7 @@
     onBigEditorChanged,
     onChooserChanged,
     onPanelsChanged,
+    overlayPortal,
     type ChooserState,
     type PanelRecord,
   } from './panels'
@@ -166,15 +167,25 @@
   {#if bigEditorKey !== null}
     <!-- Dimmed board, not a hidden one: clicking the surround is
          Done (§8.5). The container below receives the panel's live
-         editor DOM — the buffer moves, it is never re-created. -->
+         editor DOM — the buffer moves, it is never re-created. Both
+         elements portal to the root overlay host (§8.8 law 2), so the
+         scrim covers chrome; the buffer-move survives the reparent
+         exactly as it already survives note-editor's own reparent. -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="big-editor-backdrop"
       data-testid="big-editor-backdrop"
       onclick={() => closeBigEditor()}
+      use:overlayPortal
     ></div>
-    <section class="big-editor" data-testid="big-editor" aria-modal="true" role="dialog">
+    <section
+      class="big-editor"
+      data-testid="big-editor"
+      aria-modal="true"
+      role="dialog"
+      use:overlayPortal
+    >
       <header class="big-editor-header">
         <button
           type="button"
@@ -205,17 +216,19 @@
   }
 
   .panels-layer :global(.note-panel),
-  .panels-layer .edge-chip,
-  .panels-layer .big-editor-backdrop,
-  .panels-layer .big-editor {
+  .panels-layer .edge-chip {
     pointer-events: auto;
   }
 
+  /* The big editor portals out of .panels-layer into the root overlay
+     host (pointer-events:none), so it opts back into hit-testing on
+     its own elements rather than inheriting it from the layer. */
   .big-editor-backdrop {
     position: absolute;
     inset: 0;
     background: var(--ew-scrim);
     z-index: 40;
+    pointer-events: auto;
   }
 
   /* Centered over a DIMMED board — not full-screen; the board stays
@@ -235,6 +248,7 @@
     border-radius: 10px;
     box-shadow: 0 18px 60px var(--ew-dialog-shadow);
     z-index: 41;
+    pointer-events: auto;
   }
 
   .big-editor-header {

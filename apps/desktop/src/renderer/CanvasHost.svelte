@@ -12,7 +12,7 @@
   import { attachPinTool, type PinToolHandle } from './canvas/pin-tool'
   import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
   import { attachOpenNoteSurface, onAttachNote, type OpenNoteSurfaceHandle } from './note/open-note'
-  import { attachPanels } from './note/panels'
+  import { attachPanels, setOverlayHost } from './note/panels'
   import AttachNotePicker from './note/AttachNotePicker.svelte'
   import NotePanels from './note/NotePanels.svelte'
   import TagPanel from './tags/TagPanel.svelte'
@@ -37,6 +37,13 @@
   // §8.3 search panel (AI-IMP-073): same physics, same mounting.
   let searchPanel = $state<SearchPanelState | null>(null)
   $effect(() => onSearchPanelChanged((next) => (searchPanel = next)))
+  // §8.8 law 2 root overlay host: modals portal into this element so
+  // their backdrops escape every local stacking context.
+  let overlayHost = $state<HTMLDivElement | null>(null)
+  $effect(() => {
+    setOverlayHost(overlayHost)
+    return () => setOverlayHost(null)
+  })
 
   onMount(() => {
     let mounted: CanvasHostHandle | null = null
@@ -118,6 +125,18 @@
   {#if searchPanel && handle}
     <SearchPanel {handle} hostElement={element} panel={searchPanel} />
   {/if}
+  <!--
+    §8.8 law 2 (rev 0.41): the root overlay host. Rendered LAST inside
+    the outer stacking context (.canvas-host) and given a clearly-top
+    z, so modals that portal into it — the big editor and the
+    title-conflict dialog — sit above ChromeLayer, SourcePanel, the
+    dock, toasts, and every other local surface. EPIC-016's named
+    z-ladder replaces this ad-hoc number with the "modal" rung; the
+    tooltip chip (body/1000) stays above modals deliberately — it dies
+    on pointer-leave. pointer-events:none keeps the empty host from
+    eating canvas input; the modal children opt back into hit-testing.
+  -->
+  <div class="overlay-host" data-testid="overlay-host" bind:this={overlayHost}></div>
 </div>
 
 <style>
@@ -133,6 +152,17 @@
     display: block;
     position: absolute;
     inset: 0;
+  }
+
+  .overlay-host {
+    position: absolute;
+    inset: 0;
+    /* Clearly above every local surface (chrome sits at 10, source
+       panel at 11). A single ad-hoc top value until EPIC-016's named
+       z-ladder introduces the "modal" rung; stays below the tooltip
+       chip at body/1000 by design. */
+    z-index: 500;
+    pointer-events: none;
   }
 
   .canvas-error {

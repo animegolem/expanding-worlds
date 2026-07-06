@@ -226,6 +226,35 @@ test('panel sizing, pinned resize, and the big editor (§8.5 rev 0.31, AI-IMP-08
   await app.close()
 })
 
+test('the big editor backdrop covers chrome — a dock click lands on the scrim, not the dock (§8.8 law 2, AI-IMP-101)', async () => {
+  const { app, win } = await launchApp('ew-e2e-modal-escape-')
+  await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Select is the default tool; the dock sits at the bottom edge,
+  // formerly ABOVE the big editor's backdrop (the trapped-modal bug).
+  await expect(win.getByTestId('tool-select')).toHaveClass(/active/)
+
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/)
+  await win.getByTestId('panel-expand').click()
+  await expect(win.getByTestId('big-editor')).toBeVisible()
+
+  // A raw click AT THE DOCK'S OWN COORDINATES: with the modal freed to
+  // the root overlay host, the backdrop now covers the dock, so the
+  // click is Done (editor closes) and the dock never sees it — the
+  // active tool is unchanged and no dock button (e.g. the shapes
+  // flyout) fired.
+  const dock = (await win.getByTestId('dock').boundingBox())!
+  await win.mouse.click(dock.x + dock.width / 2, dock.y + dock.height / 2)
+  await expect(win.getByTestId('big-editor')).toHaveCount(0)
+  await expect(win.getByTestId('tool-select')).toHaveClass(/active/)
+  await expect(win.getByTestId('tool-rect')).toHaveCount(0) // shapes flyout never opened
+
+  await app.close()
+})
+
 test('cross-canvas activation re-tethers at the destination; uses rows fly as history (§7.3–7.4, §17-16)', async () => {
   const { app, win } = await launchApp('ew-e2e-xcanvas-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
