@@ -51,13 +51,21 @@ set was already a whitelist of markdown-expressible shapes
 (3) code blocks are FIRST-CLASS — language tag, syntax
 highlighting, the thing the old project fought hardest for;
 (4) note-sized editor, not a document app;
-(5) ORG-MODE AS INTERACTION, NOT FORMAT (owner ask 2026-07-06,
-"probably" rider): heading FOLDING with fold-all/unfold-all and
-tab-cycling, org-style subtree keybindings, quotes and source
-blocks — all as view/input behavior over the UNCHANGED Markdown
-schema (folding is ProseMirror decorations, serialization never
-sees it). Org as a storage format is declined — the vault mirror
-and pandoc round-trip stay Markdown;
+(5) THE OUTLINER IDENTITY (owner, 2026-07-06, firmed same
+evening: "build the thing I wish Obsidian was"): org-mode as
+INTERACTION over the unchanged Markdown schema — headings PIN and
+their content FOLDS beneath (ProseMirror decorations;
+serialization never sees fold state), fold-all/unfold-all,
+tab-cycling, org-style subtree keybindings. Org as a storage
+format stays declined (vault mirror + pandoc round-trip are
+Markdown). Markdown's six heading levels accepted as the ceiling
+(org-depth outlining noted and traded away knowingly). Scope
+riders decided: CHECKLISTS render (GFM task lists); TABLES are in
+grudgingly ("someone's going to get mad if I don't") — capped at
+GFM pipe tables, nothing beyond what round-trips; CODE FENCES
+render with syntax highlight for the HEAVY HITTERS ONLY (rust,
+python, go, java, js/ts) — the long tail renders as plain fenced
+text, deliberately;
 (6) the DEFAULT typography is LOUD (owner, 2026-07-06): headings
 get size AND color, formatting reads as formatting at a glance —
 a nice jumpy palette, not gray-on-gray restraint. A quieter
