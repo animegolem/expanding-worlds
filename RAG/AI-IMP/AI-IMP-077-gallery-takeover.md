@@ -5,7 +5,7 @@ tags:
   - Implementation
   - gallery
   - takeover
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-076]
 parent_epic: [[AI-EPIC-014-gallery]]
 confidence_score: 0.6

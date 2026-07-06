@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 2 |
-| Planned | 3 | 5 |
+| In Progress | 2 | 4 |
+| Planned | 3 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 10 | 74 |
@@ -41,11 +41,11 @@
 
 **IMPs:**
 - [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
-- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — planned
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — in-progress
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
-- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — planned
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — in-progress
 
 ---
 
@@ -66,11 +66,11 @@
 
 **IMPs:**
 - [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
-- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — planned
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — in-progress
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
-- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — planned
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — in-progress
 
 ---
 
