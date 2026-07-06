@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 4 | 8 |
+| Planned | 4 | 7 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 8 | 58 |
+| Completed | 8 | 59 |
 | **Total** | **14** | **67** |
 
 ## In Progress
@@ -20,7 +20,7 @@
 
 **IMPs:**
 - [[AI-IMP-059-shell-chrome-frame|IMP-059]] Shell chrome frame — completed
-- [[AI-IMP-060-navigation-history-and-path|IMP-060]] Navigation history and path — planned
+- [[AI-IMP-060-navigation-history-and-path|IMP-060]] Navigation history and path — completed
 - [[AI-IMP-061-bookmarks|IMP-061]] Bookmarks — planned
 - [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — planned
 - [[AI-IMP-063-charms-and-click-grammar|IMP-063]] Charms and click grammar — planned
@@ -107,9 +107,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (459 LOC)
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
+- apps/desktop/src/main/index.ts (424 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
-- apps/desktop/src/main/index.ts (410 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (400 LOC)
 - packages/persistence/src/queries-notes.test.ts (393 LOC)
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
@@ -118,9 +118,9 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
-- apps/desktop/src/renderer/chrome/TitleStrip.svelte (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (327 LOC)
@@ -134,7 +134,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>8 EPICs, 58 IMPs completed</summary>
+<summary>8 EPICs, 59 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

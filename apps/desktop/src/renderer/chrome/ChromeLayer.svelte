@@ -12,8 +12,10 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import CharmRail from './CharmRail.svelte'
   import Dock from './Dock.svelte'
+  import PathBar from './PathBar.svelte'
   import TitleStrip from './TitleStrip.svelte'
   import { onEngagementChanged } from './engagement'
+  import { attachNavigation } from './navigation'
   import { CHROME_FADE_MS, CHROME_REST_OPACITY } from './feel'
 
   const {
@@ -30,6 +32,7 @@
 
   let engaged = $state(true)
   $effect(() => onEngagementChanged((next) => (engaged = next)))
+  $effect(() => attachNavigation(handle))
 </script>
 
 <div
@@ -40,6 +43,7 @@
   data-engaged={engaged}
 >
   <TitleStrip {handle} {tooling} {ui} />
+  <PathBar />
   <CharmRail />
   <Dock {handle} {ui} {tooling} {hostElement} />
 </div>

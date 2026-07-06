@@ -48,6 +48,16 @@ const api = {
       return () => ipcRenderer.removeListener('app:flush', listener)
     },
   },
+  nav: {
+    /** §8.1 gesture-first Back/Forward: swipe / mouse X-buttons,
+     * forwarded from main; the renderer owns the history. */
+    onGesture: (callback: (direction: 'back' | 'forward') => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, direction: 'back' | 'forward'): void =>
+        callback(direction)
+      ipcRenderer.on('nav:gesture', listener)
+      return () => ipcRenderer.removeListener('nav:gesture', listener)
+    },
+  },
   project: {
     ping: (): Promise<PingResponse> => ipcRenderer.invoke('project:ping') as Promise<PingResponse>,
     execute: async (envelope: CommandEnvelope): Promise<CommandResult> => {

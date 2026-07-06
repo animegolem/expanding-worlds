@@ -337,6 +337,20 @@ async function createWindow(): Promise<void> {
     })
   })
 
+  // §8.1 gesture-first Back/Forward: the macOS three-finger swipe and
+  // Windows mouse X-buttons arrive as window events; the renderer
+  // owns the history, so just forward the intent. (Swipe direction is
+  // the finger direction: swiping right pulls the previous board
+  // back, Safari-style.)
+  win.on('swipe', (_event, direction) => {
+    if (direction === 'right') win.webContents.send('nav:gesture', 'back')
+    else if (direction === 'left') win.webContents.send('nav:gesture', 'forward')
+  })
+  win.on('app-command', (_event, command) => {
+    if (command === 'browser-backward') win.webContents.send('nav:gesture', 'back')
+    else if (command === 'browser-forward') win.webContents.send('nav:gesture', 'forward')
+  })
+
   const devUrl = process.env['ELECTRON_RENDERER_URL']
   if (devUrl) await win.loadURL(devUrl)
   else await win.loadFile(join(__dirname, '../renderer/index.html'))

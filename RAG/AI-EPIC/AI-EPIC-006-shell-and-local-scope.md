@@ -98,7 +98,7 @@ constants, tuned later.
 - [x] FR-1: Mode charm rail, bottom dock with shape flyout and selection-conditional z-order, hover title strip per §8.2.
 - [ ] FR-2 (clock+hover done in 059; screen-size charm visibility lands with 063): Engagement cadence — one shared fade clock, charm-hover highlight, screen-size charm visibility per §8.2/§8.4.
 - [x] FR-3: Tooltip rule: name + shortcut chip on every control per §8.2.
-- [ ] FR-4: Path as rendered back-stack with viewport-restoring crumbs, ⌂ Home, gestures + Mod+[/] with hover ‹ › per §8.1.
+- [x] FR-4: Path as rendered back-stack with viewport-restoring crumbs, ⌂ Home, gestures + Mod+[/] with hover ‹ › per §8.1.
 - [ ] FR-5: Bookmark menu — jump/reorder/remove/add, row order = Mod+1–n with printed shortcuts, stale-target grey-out per §8.1.
 - [ ] FR-6: Page/frame hint charms with scrim chips, excluded from crop/flip previews and export, per §8.4.
 - [ ] FR-7: Click grammar and charm bar per §8.4 table.

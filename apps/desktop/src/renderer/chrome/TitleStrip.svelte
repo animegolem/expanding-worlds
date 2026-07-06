@@ -226,14 +226,18 @@
     top: 0;
     left: 0;
     right: 0;
+    z-index: 2; /* above the path bar so the top edge always reveals */
     pointer-events: auto;
   }
 
+  /* The strip and its sheets are a temporary top-edge layer and must
+     paint over the path bar (which occupies the same corner). */
   .title-strip {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
+    z-index: 3;
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -253,6 +257,7 @@
     position: absolute;
     top: 2rem;
     left: 0.5rem;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
@@ -268,6 +273,7 @@
   .bg-edit-bar {
     position: absolute;
     top: 0.5rem;
+    z-index: 3;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
