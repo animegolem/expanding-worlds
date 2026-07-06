@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.28         | 6 July 2026      |
+| Accepted for Phase 1 | 0.29         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -3046,6 +3046,23 @@ picking, possibly never. There is no merge moment; "resolve" is a
 browse-and-choose whenever, not a gate on anything. Nothing is
 destroyed either way. Awaits its design turn with the satellite
 work.
+
+29. (Shaped, rev 0.29 — early musing.) The pitch bible: an
+LLM-assisted export that reads the project's typed graph — boards,
+placements, notes, tags, provenance — and narrates it into a
+presentation artifact (PPTX/PDF), the world-bible/pitch-bible
+deliverable an animation pipeline actually asks for. The model
+tier is deliberately modest (Haiku-class riding the owner's
+subscription, the idle-bell precedent) because the layout
+intelligence lives in document-generation skills, not the model;
+the app's job is only to expose the graph in readable order (the
+§16 export plus queries already do). Two lives: near-term as
+OWNER TOOLING — point a Claude Code session with a design/pptx
+skill at a project.sqlite and generate the deck by hand, which
+also field-tests what the eventual in-app export needs — and
+long-term as an in-app export behind the §4.7 adapter grammar
+(versioned, external endpoint, outside the core domain). No
+schema involvement either way.
 
 # 20. Decision summary
 
