@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
-import { revealTitleStrip } from './helpers'
 
 declare global {
   interface Window {
@@ -385,12 +384,16 @@ test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', asy
   await app.close()
 })
 
-test('placement sources (§6.3/§6.10) and node context menu (§6.6)', async () => {
+test('node drag payload on the drop surface (§6.3) and node context menu (§6.6)', async () => {
   const { app, win } = await launch('ew-e2e-sources-')
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
 
-  // Seed one zero-node note and one bare node through the Project API.
-  const seeded = await win.evaluate(async () => {
+  // Seed a bare node, plus a labeled dot pin at the view center for
+  // the context-menu half. The §6.10 place/drag UI flows live in
+  // outline.spec and slice.spec since AI-IMP-070 retired the interim
+  // sources panel; this test keeps the board's drop-surface branch
+  // and the §6.6 menu honest.
+  const seeded = await win.evaluate(async (targetCanvasId) => {
     const project = await window.ew.project.query('getProject')
     if (!project.ok) throw new Error(project.message)
     const { id: projectId } = project.result as { id: string }
@@ -411,45 +414,27 @@ test('placement sources (§6.3/§6.10) and node context menu (§6.6)', async () 
     const nodeId = crypto.randomUUID()
     await run('CreateNote', { noteId, title: 'Wandering Isle' })
     await run('CreateNode', { nodeId })
+    const cam = window.__ewDebug!.camera()
+    const rect = document.querySelector('[data-testid="canvas-host"]')!.getBoundingClientRect()
+    await run('CreatePin', {
+      nodeId: crypto.randomUUID(),
+      canvasId: targetCanvasId,
+      placementId: crypto.randomUUID(),
+      x: rect.width / 2 / cam.zoom + cam.x,
+      y: rect.height / 2 / cam.zoom + cam.y,
+      appearance: { kind: 'dot', color: '#8a94a0' },
+      note: { kind: 'attach', noteId },
+    })
     return { noteId, nodeId }
-  })
-
-  await revealTitleStrip(win)
-  await win.getByTestId('toggle-sources').click()
-  // The bare node shows under the Unplaced filter (§14.1 minimal cut).
-  await win.getByTestId('sources-filter-unplaced').check()
-  await expect(win.locator(`[data-node-id="${seeded.nodeId}"]`)).toBeVisible()
-
-  // §6.10: Place on Current Canvas for a zero-node note commits ONE
-  // CreatePin: default dot + attach + placement; the label shows.
-  await win.getByTestId('sources-tab-notes').click()
-  const revBefore = await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    return (project.result as { revision: number }).revision
-  })
-  await win.locator(`[data-note-id="${seeded.noteId}"] button`).click()
+  }, canvasId)
   await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(1)
-  const revAfter = await win.evaluate(async () => {
-    const project = await window.ew.project.query('getProject')
-    if (!project.ok) throw new Error(project.message)
-    return (project.result as { revision: number }).revision
-  })
-  expect(revAfter).toBe(revBefore + 1)
   let scene = await query<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
     canvasId,
   })
   const dot = scene.items.find((item) => item['itemKind'] === 'placement')!
-  expect(dot).toMatchObject({
-    appearanceKind: 'dot',
-    appearanceColor: '#8a94a0',
-    noteTitle: 'Wandering Isle',
-    labelVisible: 1,
-  })
-  // The note now has a node, so it leaves the zero-node list.
-  await expect(win.locator(`[data-note-id="${seeded.noteId}"]`)).toHaveCount(0)
+  expect(dot).toMatchObject({ noteTitle: 'Wandering Isle', labelVisible: 1 })
 
-  // §6.3: drag the bare node from the panel onto the canvas → one
+  // §6.3: the internal node mime dropped on the canvas → one
   // CreatePlacement at the drop point (synthesized drop, custom mime).
   await win.evaluate(({ nodeId }) => {
     const dt = new DataTransfer()

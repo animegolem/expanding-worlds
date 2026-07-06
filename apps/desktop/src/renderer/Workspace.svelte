@@ -1,15 +1,14 @@
 <!--
   Main workspace (RFC-0001 §8.2 rev 0.17): the window is the board —
-  the canvas fills the region; chrome floats. The interim placement-
-  source panel opens from a title-strip button until the outline view
-  (EPIC-013) replaces it. The Create Pin dialog retired with the ◉
-  pin tool (§6.2, AI-IMP-067).
+  the canvas fills the region; chrome floats. The Create Pin dialog
+  retired with the ◉ pin tool (§6.2, AI-IMP-067); the interim
+  placement-source panel retired when the outline takeover became the
+  §6.10 placement source (AI-IMP-070).
 -->
 <script lang="ts">
   import { uuidv7 } from '@ew/domain'
   import { onMount } from 'svelte'
   import CanvasHost from './CanvasHost.svelte'
-  import PlacementSourcePanel from './PlacementSourcePanel.svelte'
   import type { CanvasHostHandle } from './canvas/host'
   import { unionBounds } from '@ew/canvas-engine'
   import { themeTokenValue } from './theme'
@@ -23,7 +22,6 @@
 
   let hostHandle = $state<CanvasHostHandle | null>(null)
   let hostElement = $state<HTMLElement | null>(null)
-  let panelOpen = $state(false)
 
   function viewCenterWorld(): { x: number; y: number } {
     if (!hostHandle || !hostElement) return { x: 0, y: 0 }
@@ -113,15 +111,6 @@
     }),
   )
 
-  // Interim entry point, fired by the title strip (AI-IMP-059).
-  onMount(() => {
-    const toggleSources = (): void => {
-      if (hostHandle) panelOpen = !panelOpen
-    }
-    window.addEventListener('ew-toggle-sources', toggleSources)
-    return () => window.removeEventListener('ew-toggle-sources', toggleSources)
-  })
-
   // §7.2 Create and Place on Current Canvas: phantom materialization
   // that needs the active canvas and view center — one CreatePin
   // (note + node + default dot + placement), then the pane opens the
@@ -160,9 +149,6 @@
 </script>
 
 <main class="workspace" data-testid="workspace">
-  {#if panelOpen && hostHandle}
-    <PlacementSourcePanel handle={hostHandle} viewCenter={viewCenterWorld} />
-  {/if}
   <div class="canvas-slot">
     <CanvasHost
       onready={(handle, element) => {
