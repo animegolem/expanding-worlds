@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 6 | 2 |
+| Planned | 6 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 85 |
+| Completed | 11 | 87 |
 | **Total** | **18** | **87** |
 
 ## In Progress
@@ -37,8 +37,8 @@
 - [[AI-IMP-083-note-panel-sizing-and-big-editor|IMP-083]] Note panel sizing and big editor — completed
 - [[AI-IMP-084-card-appearance-and-place-on-board|IMP-084]] Card appearance and place on board — completed
 - [[AI-IMP-085-review-ingest-hardening|IMP-085]] Review ingest hardening — completed
-- [[AI-IMP-086-compound-commands|IMP-086]] Compound commands — backlog
-- [[AI-IMP-087-label-outline-avoidance|IMP-087]] Label outline avoidance — backlog
+- [[AI-IMP-086-compound-commands|IMP-086]] Compound commands — completed
+- [[AI-IMP-087-label-outline-avoidance|IMP-087]] Label outline avoidance — completed
 
 ---
 
@@ -82,11 +82,11 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3699 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1373 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (889 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (840 LOC)
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
@@ -102,35 +102,37 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/main/index.ts (560 LOC)
+- packages/persistence/src/handlers/pin.test.ts (558 LOC)
+- packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/note/panels.ts (536 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
+- packages/persistence/src/handlers/nodes.ts (522 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (521 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
+- packages/canvas-engine/src/renderers/placement.test.ts (501 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (480 LOC)
+- packages/persistence/src/handlers/pin.ts (479 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (470 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
+- packages/canvas-engine/src/renderers/placement.ts (455 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
-- packages/canvas-engine/src/renderers/placement.test.ts (424 LOC)
+- apps/desktop/e2e/panels.spec.ts (431 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
-- packages/persistence/src/handlers/nodes.test.ts (421 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
-- packages/canvas-engine/src/renderers/placement.ts (409 LOC)
-- packages/persistence/src/handlers/nodes.ts (398 LOC)
-- packages/persistence/src/handlers/pin.test.ts (388 LOC)
+- packages/commands/src/payloads/structure.ts (387 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (373 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
-- packages/commands/src/payloads/structure.ts (353 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (353 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
@@ -141,8 +143,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
-- apps/desktop/e2e/panels.spec.ts (322 LOC)
-- packages/persistence/src/handlers/pin.ts (320 LOC)
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/shell.spec.ts (317 LOC)
@@ -153,7 +153,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 85 IMPs completed</summary>
+<summary>11 EPICs, 87 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

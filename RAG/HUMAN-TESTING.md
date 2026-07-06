@@ -22,6 +22,15 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Label clearance** (AI-IMP-087, 2026-07-06): select a labeled
+  item and zoom in/out — the title should never touch the selection
+  ring. Note: at high zoom the label sits a constant ~6.5px under
+  the item; if you'd rather it keep a "world feel" gap up close,
+  say so — it's a one-line max(worldGap, clearance) change.
+- [ ] **One-undo compounds** (AI-IMP-086, 2026-07-06): place a note
+  on the board as a card, then undo once — card AND dot restore
+  together. Attach-new-note paths behave identically to before.
+
 - [ ] **Rotate cursor glyph** (AI-IMP-031, 2026-07-06): hover just
   outside any corner of a selected item — a circular-arrow cursor
   should appear and read as "rotate" over both dark and light art.

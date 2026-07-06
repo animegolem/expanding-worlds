@@ -5,12 +5,12 @@ tags:
   - Implementation
   - commands
   - persistence
-kanban_status: backlog
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.7
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-086-compound-commands

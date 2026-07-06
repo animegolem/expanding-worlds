@@ -5,12 +5,12 @@ tags:
   - Implementation
   - canvas
   - chrome
-kanban_status: backlog
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-087-label-outline-avoidance
