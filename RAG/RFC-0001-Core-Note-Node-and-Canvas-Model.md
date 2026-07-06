@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.18         | 5 July 2026      |
+| Accepted for Phase 1 | 0.19         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -213,7 +213,9 @@ Phase 1 does NOT require:
 - A full asset-library manager, watched directories, or vendor-library
   synchronization.
 
-- Hierarchical tags or tag-to-tag relationships.
+- Tag aliases or tag-to-tag relationships. (The single-parent
+  organizing tree of section 4.8 is accepted direction, rev 0.19,
+  built with the library browser rather than in the Phase 1 slice.)
 
 - Named canvas layers.
 
@@ -244,7 +246,7 @@ Phase 1 does NOT require:
 | Placement | References exactly one node and one containing canvas. |
 | Asset | Stores managed imported media independently of nodes and placements. |
 | Decoration | Has stable identity, exists only inside one canvas, and has no note, tag, graph, or child-canvas capability. |
-| Tag | Project-scoped flat record assigned many-to-many to nodes. Acts as user-defined organization without application-defined entity types. |
+| Tag | Project-scoped record with flat name identity, assigned many-to-many to nodes; optionally organized in a single-parent tree. Acts as user-defined organization without application-defined entity types. |
 | Project | Owns one protected root node and root canvas and scopes titles, tags, commands, revisions, queries, and navigation. |
 
 ## 4.2 Note
@@ -550,8 +552,8 @@ codec ticket unlocks all three.
 
 ## 4.8 Tags
 
-Tags are flat, project-scoped, first-class records assigned many-to-many
-to nodes.
+Tags are project-scoped, first-class records with flat name identity,
+assigned many-to-many to nodes.
 
 A Tag MUST have a stable UUIDv7 ID, project membership, a user-facing
 name, a normalized name_key unique within the project, and creation and
@@ -587,8 +589,40 @@ note panel (§8.5). The query field takes exactly one tag in
 Phase 1; multi-tag AND/OR queries are deferred.
 
 Tag identity is independent of its name so renaming a tag does not
-rewrite assignments. Tag hierarchy, tag aliases, and tag-to-tag
-relationships are deferred until concrete usage demonstrates a need.
+rewrite assignments.
+
+**Tag hierarchy is organization, not identity (rev 0.19).** A tag
+MAY have one parent tag, forming a single-parent tree; a tag can
+never be moved under its own descendant, so no cycle machinery is
+needed. The tree is purely organizational: name_key stays globally
+unique within the project, renames never cascade, and moving a tag
+never touches its assignments or its meaning as a record. This is
+the deliberately reversible choice — globally unique names remain
+valid under any future path-scoped model, while the reverse
+migration would be impossible — and it keeps tags the thin layer:
+real structure belongs to canvases (containment) and links
+(relations), not to a tag ontology.
+
+Rules that follow:
+
+- Assignments always store the exact tag. Ancestors are implied at
+  query time only; an implied assignment is never written.
+
+- Querying or activating a tag includes its descendants' results by
+  default, identically on every surface (panel, lens, tree and
+  graph filters, browser). Every query surface exposes a visible
+  include-descendants toggle — recursion is never invisible magic.
+
+- Every tag is born at the root, exactly as today. Nesting is
+  retroactive drag organization in the management surface (the
+  §14.4 browser's tag tree); a user who never opens it never sees
+  a hierarchy.
+
+- Moving a tag is one durable command (SetTagParent) with a
+  trivial inverse.
+
+Tag aliases and tag-to-tag relationships remain deferred until
+concrete usage demonstrates a need.
 
 ## 4.9 Decoration
 
@@ -714,8 +748,10 @@ title_key, including while the note remains in Trash.
 
 7. Placements target node IDs.
 
-8. Tags are flat, project-scoped records assigned only to nodes in
-Phase 1.
+8. Tags are project-scoped records with flat, globally unique name
+identity, assigned only to nodes; the optional single-parent
+organizing tree never affects identity, names, or stored
+assignments.
 
 9. A node may have many placements, including several on one canvas.
 
@@ -2579,8 +2615,9 @@ The model is successfully implemented when:
 - Decorations support lock, visibility, group, ungroup, and
   placement-anchored connectors.
 
-- Flat project-scoped tags are assigned only to nodes, can be renamed
-  without rewriting assignments, and open the tag panel.
+- Project-scoped tags with flat name identity are assigned only to
+  nodes, can be renamed without rewriting assignments, and open the
+  tag panel.
 
 - Dot, icon, and image remain interchangeable appearances.
 
@@ -2681,8 +2718,9 @@ pane; only the project-switcher charm's menu remains undesigned.
 coordinates by fitting the new image into the prior stage extent
 (§6.7); the number is retained so later references stay stable.
 
-8. Whether flat tags later gain hierarchy, aliases, groups, or visual
-tag relationships.
+8. (Resolved for hierarchy, rev 0.19.) Tags gain a single-parent
+organizing tree over flat identity (§4.8), shipped with the library
+browser; aliases, groups, and visual tag relationships remain open.
 
 9. Whether named layers become necessary after prototype use.
 
@@ -2811,9 +2849,13 @@ Accepted for the Phase 1 prototype:
 - Uses and location views group by canvas, then node, then placement
   count.
 
-- Tags are first-class, flat, project-scoped records assigned only to
-  nodes, never serialized into note text; activating a tag opens the
-  tag panel (§4.8).
+- Tags are first-class, project-scoped records with flat name
+  identity assigned only to nodes, never serialized into note text;
+  activating a tag opens the tag panel (§4.8). An optional
+  single-parent organizing tree (rev 0.19) affects queries — which
+  include descendants by default behind a visible toggle — and
+  never identity or stored assignments; hierarchy chose the
+  reversible shape.
 
 - Pins and externally dropped images are nodes.
 
