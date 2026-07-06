@@ -28,6 +28,18 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Everything-scope pull → place cursor** (AI-IMP-115,
+  2026-07-06): in the gallery, flip to *everything*, click a single
+  image, hit **pull into this world** — the takeover should close and
+  a ghost of the image should ride the cursor over the board; click
+  lands it there, Escape stores it unplaced with a "stored in this
+  world — unplaced" toast. Feel calls wanted: does the ghost (fixed
+  120px, 70% opacity) read as "carrying it" or too small/detached?
+  Does the ingest→ghost handoff feel instant, or is there a beat where
+  nothing happens after the click? Pull the same image twice — the
+  second time it should recognize your existing copy (no duplicate),
+  which is invisible by design; just confirm nothing feels off.
+
 - [ ] **Panel-aware flights** (AI-IMP-100, 2026-07-06): follow a
   wiki link to a placed image — the target should land beside the
   opened note, never under it (your Beyrl → The Gang case).

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expanding Worlds — Surface Coverage</title>
+<style>
+  :root {
+    --bg: #16181d; --panel: #1e2128; --ink: #d8dbe2; --dim: #8b91a0;
+    --line: #2c303a; --shipped: #4cb782; --building: #5aa7e8;
+    --shaped: #d9a13f; --undesigned: #d96a5f; --chip-ink: #14161a;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f5f4f0; --panel:#ffffff; --ink:#2a2d33; --dim:#6a7080;
+            --line:#e2e0d8; --chip-ink:#fff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:2rem clamp(1rem,4vw,3rem); background:var(--bg);
+         color:var(--ink); font:15px/1.55 -apple-system,"Segoe UI",sans-serif; }
+  h1 { font-size:1.6rem; margin:0 0 .2rem; }
+  h2 { font-size:1.05rem; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--dim); margin:2.2rem 0 .7rem; border-bottom:1px solid var(--line);
+       padding-bottom:.35rem; }
+  .sub { color:var(--dim); margin:0 0 1.2rem; }
+  .legend { display:flex; flex-wrap:wrap; gap:.6rem 1.2rem; margin:1rem 0 0; }
+  .legend span { display:inline-flex; align-items:center; gap:.45rem;
+                 font-size:.85rem; color:var(--dim); }
+  .dot { width:.72rem; height:.72rem; border-radius:50%; display:inline-block; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
+          gap:.6rem; }
+  .cell { background:var(--panel); border:1px solid var(--line); border-radius:8px;
+          padding:.65rem .8rem .7rem; border-left:4px solid var(--dim); }
+  .cell b { display:block; font-size:.95rem; margin-bottom:.15rem; }
+  .cell p { margin:0; font-size:.82rem; color:var(--dim); }
+  .cell .ref { font-size:.72rem; color:var(--dim); opacity:.75; display:block;
+               margin-top:.35rem; font-variant-numeric:tabular-nums; }
+  .s-shipped    { border-left-color:var(--shipped); }
+  .s-building   { border-left-color:var(--building); }
+  .s-shaped     { border-left-color:var(--shaped); }
+  .s-undesigned { border-left-color:var(--undesigned); }
+  .tag { float:right; font-size:.66rem; font-weight:700; letter-spacing:.05em;
+         padding:.1rem .45rem; border-radius:99px; color:var(--chip-ink); }
+  .t-shipped    { background:var(--shipped); }
+  .t-building   { background:var(--building); }
+  .t-shaped     { background:var(--shaped); }
+  .t-undesigned { background:var(--undesigned); }
+  footer { margin-top:3rem; color:var(--dim); font-size:.8rem;
+           border-top:1px solid var(--line); padding-top:1rem; }
+</style>
+</head>
+<body>
+
+<h1>Surface coverage</h1>
+<p class="sub">Every user-facing surface and where it stands — the visual
+companion to <em>Design-letter-3.md</em>. Compiled 2026-07-06 at RFC
+rev&nbsp;0.48. Red cells are the design worklist.</p>
+<div class="legend">
+  <span><i class="dot" style="background:var(--shipped)"></i> shipped — built, gated, on main</span>
+  <span><i class="dot" style="background:var(--building)"></i> building — ratified, agent in flight / merging</span>
+  <span><i class="dot" style="background:var(--shaped)"></i> shaped — deferred with full scope in the RFC</span>
+  <span><i class="dot" style="background:var(--undesigned)"></i> needs design — mechanics may exist, the look/grammar doesn't</span>
+</div>
+
+<h2>Shell chrome</h2>
+<div class="grid">
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Charm rail</b><p>Project ⧉ · search ⌕ · graph ⊛ (stub) · gallery ⊞ · outline ▤ · menu ☰; engagement fade on one clock.</p><span class="ref">§8.2</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>☰ menu</b><p>Ratified geometry: Undo · Redo · Trash… · End Session · Settings · Help/About (+Export deferred). Undo rows print shortcuts.</p><span class="ref">§8.2 · IMP-110</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Help/About</b><p>Real version, repo pointer, clamped dialog.</p><span class="ref">§8.2 · IMP-110</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Dock</b><p>Tool modes · zoom cluster; z-order joins on selection.</p><span class="ref">§8.2</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Path bar + bookmarks</b><p>Breadcrumb, pin menu, Mod+1–9 jumps; degradation states.</p><span class="ref">§8.1</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Toasts + perch</b><p>Transient vs ongoing-condition grammar; recovery repairs now surface at boot.</p><span class="ref">§8.6 · IMP-106</span></div>
+  <div class="cell s-building"><span class="tag t-building">BUILDING</span><b>Keyboard settings section</b><p>Registry-backed, view-only, "rebinding coming soon."</p><span class="ref">§8.2/§11.5 · IMP-117</span></div>
+  <div class="cell s-undesigned"><span class="tag t-undesigned">NEEDS DESIGN</span><b>Library door styling</b><p>One ⧉ menu, two sections ratified — the divider/pinned-section visual weight is flagged "watch for too-subtle."</p><span class="ref">§8.2 · letter #7</span></div>
+</div>
+
+<h2>Board</h2>
+<div class="grid">
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Canvas + camera</b><p>Pan/zoom with eased chase (τ dial on the flush list), fit, grid crossfade.</p><span class="ref">§8.1/§12 · IMP-098/099</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Selection + transform</b><p>Accent outline, cursor-zone transforms, rotate cursor, snapping, z-order, select-all, delete batch.</p><span class="ref">§6.9 · IMP-028/029</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Charm bar</b><p>crop(stub) · flips · appearance · make-canvas · note · # · lock; tag-add field in the # popover.</p><span class="ref">§8.4 · IMP-108/109</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Appearance switcher</b><p>Dot swatches · icons · image… · card-when-note; one undo restores.</p><span class="ref">§4.6 · IMP-109</span></div>
+  <div class="cell s-undesigned"><span class="tag t-undesigned">NEEDS DESIGN</span><b>Icon glyphs + dot palette</b><p>Six icon ids all render one generic diamond; eight dot tokens were agent-coined placeholders.</p><span class="ref">§4.6 · letter #3</span></div>
+  <div class="cell s-undesigned"><span class="tag t-undesigned">NEEDS DESIGN</span><b>Context menus</b><p>The per-kind right-click verb inventory — EPIC-016's core, gates swap/replace/background rows.</p><span class="ref">§8.4 · letter #1</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Swap for… (node swap)</b><p>Picker + upload-new; displaced bucket survives unplaced. Dialog design = letter #9.</p><span class="ref">§6.5 rev 0.47</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Replace image…</b><p>Fork-the-pointer semantics ratified; ships with the menus.</p><span class="ref">§6.1 rev 0.35/0.40</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Canvas background (image)</b><p>Stage extent, void beyond, edit mode.</p><span class="ref">§6.7</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Canvas background color</b><p>Board-menu row: theme swatches + OS picker — ratified, rides the menus.</p><span class="ref">§6.7 rev 0.48</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Draw / shapes / connectors / text tool</b><p>Decoration family with styling memory.</p><span class="ref">§6.8 · rev 0.36</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Frames</b><p>Recorded membership, drag in/out, hover-dim, sort-on-drop — awaits its design turn + epic activation.</p><span class="ref">§6.8 rev 0.38 · EPIC-017 · letter #14</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Video on the board</b><p>Poster still + play charm + windowed HTML5 overlay; Chromium-native formats only.</p><span class="ref">§4.7 rev 0.47</span></div>
+</div>
+
+<h2>Notes</h2>
+<div class="grid">
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Tethered / pinned panels + big editor</b><p>Escalation ladder, flush discipline, quit flush, image-drop lands on the board.</p><span class="ref">§8.5 · IMP-085/096/097</span></div>
+  <div class="cell s-building"><span class="tag t-building">BUILDING</span><b>Tethered world-scaling</b><p>Panel scales with its node; pinned stays screen-fixed; legibility floor is a feel dial.</p><span class="ref">§8.5 rev 0.47 · IMP-116</span></div>
+  <div class="cell s-undesigned"><span class="tag t-undesigned">NEEDS DESIGN</span><b>Panel/card visual identity</b><p>Tethered vs sticky vs board-card chrome as one family; the shrink/fade treatment.</p><span class="ref">§8.5/§4.6 · letter #2</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Wiki links + phantoms</b><p>Completion, phantom materialization, re-resolution sweep, broken-relink/create offers.</p><span class="ref">§7.1/§7.2</span></div>
+  <div class="cell s-undesigned"><span class="tag t-undesigned">NEEDS DESIGN</span><b>Broken-link tone</b><p>Red+wavy shipped; gut-check vs "spelling error" reading.</p><span class="ref">§7.1 · letter #6</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Tag chips + add-field in panels</b><p>Same completing field as the # popover.</p><span class="ref">§4.8 rev 0.45 · IMP-108</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Rich text / outliner</b><p>TipTap direction, pin-and-fold headings, Tab/Shift-Tab cycle, loud typography default, images-in-notes.</p><span class="ref">EPIC-018 · letter #13</span></div>
+</div>
+
+<h2>Tags &amp; views</h2>
+<div class="grid">
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Tag panel + lens</b><p>Search, completion, cross-canvas rows, dim lens.</p><span class="ref">§4.8</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Tag lifecycle backend</b><p>Rename, delete, merge, appearance — all one-undo commands; management SURFACE rides the gallery/panel next.</p><span class="ref">§4.8 · IMP-105</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Gallery</b><p>Facets, buckets, keyboard model, bulk actions, scope toggle.</p><span class="ref">§14.4 · EPIC-014</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Outline view</b><p>Node library / unplaced reachability.</p><span class="ref">§14.1</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Trash browser</b><p>Flat list, impact rows, restore + fly-to toast, Empty Trash. Visual pass = letter #4.</p><span class="ref">§9.7 rev 0.46 · IMP-102</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Search / quick-open</b><p>⌕ panel + Mod+P; FTS5.</p><span class="ref">§8.3</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Graph view ⊛</b><p>Charm renders deferred; epic slot exists (EPIC-021).</p><span class="ref">§14.2</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Settings takeover</b><p>App + project tiers, retention, theme; gains Keyboard section (building).</p><span class="ref">§11.5</span></div>
+</div>
+
+<h2>Library &amp; cross-project</h2>
+<div class="grid">
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Everything scope</b><p>Read-only secondary browse inside the gallery.</p><span class="ref">§14.4 · EPIC-015</span></div>
+  <div class="cell s-building"><span class="tag t-building">BUILDING</span><b>Pull into this world</b><p>Ingest → place cursor over the board; Esc stores unplaced. Ghost visual = letter #10.</p><span class="ref">§14.4 rev 0.47 · IMP-115</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Source panels</b><p>Open-as-source, drag-out pulls with tag border.</p><span class="ref">§14.4 · IMP-091</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Inbox mirror</b><p>Once-per-project ask, hash recognition chips.</p><span class="ref">§14.4 · IMP-092</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>First-open seed</b><p>Provisional example set + clear-the-example. Real curation = letter #12.</p><span class="ref">§14.4 · IMP-094</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Project switching</b><p>Ratified door shape (one menu, two sections); ticket not yet cut.</p><span class="ref">§8.2 · letter #7</span></div>
+</div>
+
+<h2>Lifecycle &amp; safety</h2>
+<div class="grid">
+  <div class="cell s-building"><span class="tag t-building">BUILDING</span><b>Undo / redo</b><p>In-renderer stack over command inverses; Mod+Z, ☰ rows, UNDO_STALE, same-canvas fence, materialization rule.</p><span class="ref">§10.2 · IMP-114</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Trash / restore / purge model</b><p>Recoverable lifecycle, impact queries, retention setting.</p><span class="ref">§9</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Recovery + checkpoints</b><p>Open-time repairs (now visible), suspend/lock/blur checkpoints, lock + schema-ahead refusals.</p><span class="ref">§11.4 · IMP-096/106</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Git-snapshot backup</b><p>Local repo snapshotting at checkpoint moments + Advanced remote connect — needs its design pass.</p><span class="ref">EPIC-008</span></div>
+</div>
+
+<h2>Import, export &amp; connectors</h2>
+<div class="grid">
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Drops + paste + URL import</b><p>Files, browser drags, URL fetch with attribution; honest failure outcomes.</p><span class="ref">§6.1</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Text drops</b><p>Classify: lone URL → import; else text decoration; special cases open.</p><span class="ref">§6.1 rev 0.36</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Link router + page picker</b><p>One dispatch door: attached patterns → direct image → picker dialogue.</p><span class="ref">rev 0.42 · EPIC-020</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Connector store</b><p>Manifest/registry/net-guard; declarative-first, WASM when code arrives; AI behind the master toggle.</p><span class="ref">§11.5/§15 · EPIC-020</span></div>
+  <div class="cell s-shipped"><span class="tag t-shipped">SHIPPED</span><b>Export sheet</b><p>☰-anchored, UUIDv7 naming, size preflight deferred.</p><span class="ref">§16</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>Vault mirror / JSON Canvas / board renders</b><p>Grown §16 scope, FR homes in the rescoped EPIC-008.</p><span class="ref">§16 · EPIC-008</span></div>
+</div>
+
+<h2>Onboarding &amp; public face</h2>
+<div class="grid">
+  <div class="cell s-undesigned"><span class="tag t-undesigned">NEEDS DESIGN</span><b>First-run guide</b><p>~7 pages, asks intent, shows suited workflows, teaches imports-copy-bytes, dumps into the demo.</p><span class="ref">EPIC-019 · letter #11</span></div>
+  <div class="cell s-shaped"><span class="tag t-shaped">SHAPED</span><b>README / wiki / Pages site</b><p>Artist-first front door; wiki over generated docs decided.</p><span class="ref">EPIC-019</span></div>
+  <div class="cell s-undesigned"><span class="tag t-undesigned">NEEDS DESIGN</span><b>The noun + copy tone</b><p>"Item" as working noun, "file" banned, verb voice app-wide.</p><span class="ref">§6.5 · letter #8</span></div>
+</div>
+
+<footer>
+Compiled by the lead at RFC rev 0.48 · statuses move fast — the kanban
+(RAG/INDEX.md) and the RFC decision summary (§20) are authoritative;
+this map is the design pass's orientation view.
+</footer>
+
+</body>
+</html>

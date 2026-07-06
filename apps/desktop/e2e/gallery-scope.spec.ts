@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
-import { exec, launchApp, launchAppInDir, revision, seedPlacedNote } from './helpers'
+import { exec, launchApp, launchAppInDir, revision, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * §14.4 gallery scope toggle (AI-IMP-089): *this world · everything*
@@ -182,6 +182,129 @@ test('no library designated: the everything side prompts; the open validates bef
   await expect(cells.first()).toContainText('Seed Entry')
   const after = await win.evaluate(() => window.ew.settings.appAll())
   expect(after['libraryProjectDir']).toBe(libraryDir)
+
+  await app.close()
+})
+
+/**
+ * §14.4 the everything-scope pull (AI-IMP-115): the one live
+ * everything-scope action. Pull ingests the item by the ordinary copy
+ * semantics (or recognizes an existing node), closes the takeover, and
+ * hands the board a place cursor — click places, Escape stores unplaced
+ * with a toast. Covered end to end in one fixture: enablement (single
+ * asset-kind only), the Escape-stores-unplaced exit, the click-places
+ * exit landing at the click point, and hash recognition making no
+ * duplicate node on a second pull of the same item.
+ */
+async function imageNodeCount(win: Page): Promise<number> {
+  const index = await runQuery<Array<{ nodeId: string }>>(win, 'getGalleryIndex', {
+    kinds: ['image'],
+  })
+  return index.length
+}
+
+async function flipToEverything(win: Page): Promise<void> {
+  await win.getByTestId('charm-gallery').click()
+  await expect(win.getByTestId('takeover-gallery')).toBeVisible()
+  await win.getByTestId('gallery-scope-everything').click()
+}
+
+test('everything-scope pull: enablement, Escape stores unplaced, click places, hash recognition dedupes', async () => {
+  // Library fixture: one note + one real imported image (the image's
+  // blob lives ONLY in the library store until a pull copies it).
+  const libraryDir = mkdtempSync(join(tmpdir(), 'ew-e2e-pull-lib-'))
+  {
+    const { app, win } = await launchAppInDir(libraryDir)
+    await seedLibraryMaterial(win, 'archive')
+    await app.close()
+  }
+
+  const { app, win } = await launchApp('ew-e2e-pull-')
+  await win.evaluate((dir) => window.ew.settings.setApp('libraryProjectDir', dir), libraryDir)
+
+  // This world starts with no image nodes at all.
+  expect(await imageNodeCount(win)).toBe(0)
+
+  await flipToEverything(win)
+  const imageCell = win.locator('[data-testid="gallery-cell"][data-kind="image"]')
+  const noteCell = win.locator('[data-testid="gallery-cell"][data-kind="note"]')
+  await expect(imageCell).toHaveCount(1)
+
+  // Enablement: pull is live for a single asset-kind item; the other
+  // actions stay browse-only, and note-kind / multi-select do not pull.
+  await noteCell.first().click()
+  const pull = win.getByTestId('gallery-action-pull')
+  await expect(pull).toBeDisabled()
+  await expect(win.getByTestId('gallery-action-place')).toBeDisabled()
+  await expect(win.getByTestId('gallery-action-tag')).toBeDisabled()
+  await expect(win.getByTestId('gallery-action-trash')).toBeDisabled()
+  await imageCell.click()
+  await expect(pull).toBeEnabled()
+  await noteCell.first().click({ modifiers: ['Meta'] }) // extend to two
+  await expect(win.getByTestId('gallery-action-count')).toHaveText('2')
+  await expect(pull).toBeDisabled()
+
+  // --- Escape exit: pull ingests (bytes copied) then Escape stores the
+  // node UNPLACED with the toast; no placement is created. ---
+  await imageCell.click() // back to the single image
+  await expect(pull).toBeEnabled()
+  await pull.click()
+  await expect(win.getByTestId('takeover-gallery')).toHaveCount(0)
+  await expect(win.getByTestId('place-mode-ghost')).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('place-mode-ghost')).toHaveCount(0)
+  await expect(win.getByTestId('gallery-actions')).toContainText('unplaced')
+
+  // The node exists in this world (bytes copied), but unplaced.
+  await expect.poll(() => imageNodeCount(win)).toBe(1)
+  const pulledNode = (
+    await runQuery<Array<{ nodeId: string }>>(win, 'getGalleryIndex', { kinds: ['image'] })
+  )[0]!.nodeId
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const placementsFor = async (): Promise<Array<{ nodeId: string; x: number; y: number }>> => {
+    const scene = await runQuery<{
+      items: Array<{ itemKind: string; nodeId: string; x: number; y: number }>
+    }>(win, 'getCanvasScene', { canvasId })
+    return scene.items.filter((it) => it.itemKind === 'placement' && it.nodeId === pulledNode)
+  }
+  expect(await placementsFor()).toHaveLength(0)
+
+  // --- Click exit + recognition: a SECOND pull of the same item finds
+  // the node already in this world (dedupe), enters place mode with it,
+  // and a click places it at the cursor — no duplicate node is made. ---
+  await flipToEverything(win)
+  await imageCell.click()
+  await expect(pull).toBeEnabled()
+  await pull.click()
+  await expect(win.getByTestId('place-mode-ghost')).toBeVisible()
+
+  const host = (await win.getByTestId('canvas-host').boundingBox())!
+  const clickX = host.x + host.width * 0.6
+  const clickY = host.y + host.height * 0.45
+  await win.mouse.move(clickX, clickY)
+  const expected = await win.evaluate(
+    ({ cx, cy }) => {
+      const rect = document.querySelector('[data-testid="canvas-host"]')!.getBoundingClientRect()
+      const cam = window.__ewDebug!.camera()
+      return { x: (cx - rect.left) / cam.zoom + cam.x, y: (cy - rect.top) / cam.zoom + cam.y }
+    },
+    { cx: clickX, cy: clickY },
+  )
+  await win.mouse.down()
+  await win.mouse.up()
+  await expect(win.getByTestId('place-mode-ghost')).toHaveCount(0)
+
+  // The placement commits asynchronously behind the ghost's removal —
+  // poll until it lands on the active canvas for the recognized node.
+  await expect.poll(async () => (await placementsFor()).length).toBe(1)
+
+  // No duplicate: still exactly one image node, and it is the SAME node
+  // the first pull ingested — recognition reused it, and the placement
+  // landed at the click point.
+  expect(await imageNodeCount(win)).toBe(1)
+  const placed = await placementsFor()
+  expect(placed[0]!.x).toBeCloseTo(expected.x, 0)
+  expect(placed[0]!.y).toBeCloseTo(expected.y, 0)
 
   await app.close()
 })

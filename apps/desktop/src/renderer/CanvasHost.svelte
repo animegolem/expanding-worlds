@@ -10,6 +10,7 @@
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
   import { attachNodeMenu, type NodeMenuHandle } from './canvas/node-menu'
   import { attachPinTool, type PinToolHandle } from './canvas/pin-tool'
+  import { attachPlaceMode, type PlaceModeHandle } from './canvas/place-mode'
   import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
   import { attachOpenNoteSurface, onAttachNote, type OpenNoteSurfaceHandle } from './note/open-note'
   import { attachPanels, setOverlayHost } from './note/panels'
@@ -53,6 +54,7 @@
     let openNote: OpenNoteSurfaceHandle | null = null
     let charms: CharmsUiHandle | null = null
     let pinTool: PinToolHandle | null = null
+    let placeMode: PlaceModeHandle | null = null
     let detachPanels: (() => void) | null = null
     let disposed = false
     // §9.2 board notices ride the ew-board-notice event to the §8.6
@@ -84,6 +86,7 @@
         detachPanels = attachPanels(h)
         charms = attachCharmsUi(h, element)
         pinTool = attachPinTool(h, element)
+        placeMode = attachPlaceMode(h, element)
         handle = h
         onready?.(h, element)
       })
@@ -99,6 +102,7 @@
       openNote?.destroy()
       charms?.destroy()
       pinTool?.destroy()
+      placeMode?.destroy()
       detachPanels?.()
       tooling?.destroy()
       ui?.destroy()

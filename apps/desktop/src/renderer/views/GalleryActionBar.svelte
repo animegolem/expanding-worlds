@@ -34,8 +34,10 @@
     selectedIds,
     tagOpen = $bindable(false),
     readOnly = false,
+    canPull = false,
     onClear,
     onPlace,
+    onPull,
   }: {
     selectedIds: string[]
     tagOpen?: boolean
@@ -44,11 +46,17 @@
      * would write into a read-only source, place would hand the
      * board a foreign node id. */
     readOnly?: boolean
+    /** 115 (§14.4): the ONE live everything-scope action is Pull into
+     * this world — enabled only for a single asset-kind item (bulk and
+     * note-kind are out of scope). Shown exactly while readOnly. */
+    canPull?: boolean
     onClear: () => void
     onPlace: () => void
+    onPull?: (event: MouseEvent) => void
   } = $props()
 
   const READ_ONLY_HINT = 'browse-only in everything scope — switch to this world to act'
+  const PULL_HINT = 'select a single image to pull it into this world'
 
   let tagName = $state('')
   let tagFocus = $state(false)
@@ -190,6 +198,23 @@
 <div class="action-bar" data-testid="gallery-action-bar">
   <span class="count" data-testid="gallery-action-count">{selectedIds.length}</span>
 
+  {#if readOnly}
+    <!-- 115 (§14.4): the everything-scope pull — the one live action.
+         Ingests by copy (or recognizes an existing node) and hands off
+         to the board's place cursor; the tag/place/trash below stay
+         browse-only. -->
+    <button
+      type="button"
+      class="action pull"
+      data-testid="gallery-action-pull"
+      disabled={busy || !canPull}
+      title={canPull ? undefined : PULL_HINT}
+      onclick={(event) => onPull?.(event)}
+    >
+      pull into this world
+    </button>
+  {/if}
+
   {#if tagOpen}
     <span class="field-wrap">
       <input
@@ -312,6 +337,20 @@
     background: var(--ew-accent);
     border-color: var(--ew-accent);
     color: var(--ew-on-accent);
+  }
+
+  /* 115: the one live everything-scope action reads as the primary
+     move — accent-filled while enabled, greyed by the shared rule. */
+  .action.pull:not(:disabled) {
+    background: var(--ew-accent);
+    border-color: var(--ew-accent);
+    color: var(--ew-on-accent);
+    font-weight: 600;
+  }
+
+  .action.pull:not(:disabled):hover {
+    background: var(--ew-accent);
+    filter: brightness(1.05);
   }
 
   .action:disabled {

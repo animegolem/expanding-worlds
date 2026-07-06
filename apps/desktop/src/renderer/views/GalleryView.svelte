@@ -56,8 +56,10 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte'
   import { NODE_DRAG_MIME } from '../canvas/import-surfaces'
+  import { requestPlaceMode } from '../canvas/place-mode'
   import { navigateTo } from '../chrome/navigation'
   import { acquireSourceSlot, releaseSourceSlot } from '../chrome/source-slot'
+  import { toast } from '../chrome/status'
   import { closeTakeover } from '../chrome/takeover'
   import { requestOpenNote, requestPlaceNode } from '../note/open-note'
   import { openCornerPanel } from '../note/panels'
@@ -829,6 +831,102 @@
     for (const id of ids) requestPlaceNode(id)
   }
 
+  // ------------------------------------------- 115 everything-scope pull
+  /** The ONE live everything-scope action (§14.4): enabled for a single
+   * selected asset-kind item (bulk and note-kind are out of scope). The
+   * selected cell is hydrated by construction (the user clicked it). */
+  const pullable = $derived.by(() => {
+    if (scope !== 'everything') return false
+    if (selected.size !== 1) return false
+    const [id] = [...selected]
+    const item = id ? items[id] : undefined
+    return item?.kind === 'image' && item.contentHash != null
+  })
+
+  /** hasContentHash (the mirror chip's probe) proves presence but not
+   * identity, and the shared query surface has no hash→node lookup
+   * (packages are frozen for this ticket). The primary ("this world")
+   * is the SMALL side of the seam, so a bounded image-index scan
+   * resolves the existing node. A dedicated query is recorded debt. */
+  async function findWorldNodeByHash(contentHash: string): Promise<string | null> {
+    const idx = await window.ew.project.query('getGalleryIndex', { kinds: ['image'] })
+    if (!idx.ok) return null
+    const ids = (idx.result as Array<{ nodeId: string }>).map((entry) => entry.nodeId)
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200)
+      const hydrated = await window.ew.project.query('getGalleryItems', { nodeIds: chunk })
+      if (!hydrated.ok) continue
+      const hit = (hydrated.result as Array<{ nodeId: string; contentHash: string | null }>).find(
+        (it) => it.contentHash === contentHash,
+      )
+      if (hit) return hit.nodeId
+    }
+    return null
+  }
+
+  /** Ingest by copy, or recognize the existing node. Recognition FIRST
+   * (§14.4 dedupe): if this world already holds the bytes, skip the
+   * copy — no duplicate node — and place the node it already has. */
+  async function resolvePullNode(contentHash: string): Promise<string | null> {
+    try {
+      const probe = await window.ew.project.query('hasContentHash', { contentHash })
+      if (probe.ok && (probe.result as { present: boolean }).present) {
+        const existing = await findWorldNodeByHash(contentHash)
+        if (existing !== null) return existing
+      }
+    } catch {
+      // A failed probe falls through to the ordinary copy.
+    }
+    const ingested = await window.ew.secondary.ingest('source', { contentHash, border: 'none' })
+    if (!ingested.ok) {
+      toast(`Pull failed: ${ingested.message}`, {
+        kind: 'error',
+        sticky: true,
+        surface: 'import-error',
+        dismissTestid: 'import-error-dismiss',
+      })
+      return null
+    }
+    return ingested.nodeId
+  }
+
+  /** Pull into this world (§14.4): ingest (or recognize), close the
+   * takeover, and hand the board a place cursor at the click point. */
+  async function pullSelection(event: MouseEvent): Promise<void> {
+    if (scope === 'this-world') return
+    const ids = [...selected]
+    if (ids.length !== 1) return
+    const id = ids[0]!
+    let contentHash = items[id]?.contentHash ?? null
+    if (contentHash === null) {
+      // Defensive hydration: a selected image is normally cached, but a
+      // scope/filter churn could have dropped it.
+      try {
+        const fetched = await window.ew.secondary.query('source', 'getGalleryItems', {
+          nodeIds: [id],
+        })
+        if (fetched.ok) {
+          contentHash =
+            (fetched.result as Array<{ contentHash: string | null }>)[0]?.contentHash ?? null
+        }
+      } catch {
+        contentHash = null
+      }
+    }
+    if (contentHash === null) {
+      toast('Only images can be pulled into this world', {
+        kind: 'error',
+        surface: 'gallery-actions',
+      })
+      return
+    }
+    const anchor = { clientX: event.clientX, clientY: event.clientY }
+    const nodeId = await resolvePullNode(contentHash)
+    if (nodeId === null) return
+    closeTakeover()
+    requestPlaceMode({ nodeId, contentHash, clientX: anchor.clientX, clientY: anchor.clientY })
+  }
+
   /**
    * Cell dragstart, mirroring OutlineView's beginRowDrag: set the
    * import-surface payload and watch the drag — the moment the
@@ -1116,8 +1214,10 @@
       selectedIds={[...selected]}
       bind:tagOpen
       readOnly={scope !== 'this-world'}
+      canPull={pullable}
       onClear={clearSelection}
       onPlace={placeSelection}
+      onPull={(event) => void pullSelection(event)}
     />
   {/if}
 </div>
