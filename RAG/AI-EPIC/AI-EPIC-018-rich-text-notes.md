@@ -51,7 +51,14 @@ set was already a whitelist of markdown-expressible shapes
 (3) code blocks are FIRST-CLASS — language tag, syntax
 highlighting, the thing the old project fought hardest for;
 (4) note-sized editor, not a document app;
-(5) the DEFAULT typography is LOUD (owner, 2026-07-06): headings
+(5) ORG-MODE AS INTERACTION, NOT FORMAT (owner ask 2026-07-06,
+"probably" rider): heading FOLDING with fold-all/unfold-all and
+tab-cycling, org-style subtree keybindings, quotes and source
+blocks — all as view/input behavior over the UNCHANGED Markdown
+schema (folding is ProseMirror decorations, serialization never
+sees it). Org as a storage format is declined — the vault mirror
+and pandoc round-trip stay Markdown;
+(6) the DEFAULT typography is LOUD (owner, 2026-07-06): headings
 get size AND color, formatting reads as formatting at a glance —
 a nice jumpy palette, not gray-on-gray restraint. A quieter
 alternate MAY ship as an option, but loud is the default. Colors

@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 0 | 0 |
-| Planned | 7 | 2 |
+| Planned | 8 | 5 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 99 |
-| **Total** | **20** | **102** |
+| **Total** | **21** | **105** |
 
 ## Planned
 
@@ -33,6 +33,9 @@
 
 **IMPs:**
 - [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
+- [[AI-IMP-105-tag-lifecycle-commands|IMP-105]] Tag lifecycle commands — planned
+- [[AI-IMP-106-small-state-batch|IMP-106]] Small state batch — planned
+- [[AI-IMP-107-design-session-one|IMP-107]] Design session one — planned
 
 ---
 
@@ -53,6 +56,11 @@
 
 ### [[AI-EPIC-020-connector-store|EPIC-020: Connector store]]
 > Revs 0.33–0.44 shaped six connector citizens (booru drops,
+
+---
+
+### [[AI-EPIC-021-graph-view|EPIC-021: Graph view]]
+> §14.2's graph takeover: a second renderer (force layout, image-node
 
 ---
 

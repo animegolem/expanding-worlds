@@ -19,6 +19,10 @@ domain behavior.
   validated. Fill Issues Encountered honestly, including deviations.
 - End every implementation session with an `RAG/AI-LOG/` entry (the
   handoff to the next session), using its template.
+- Owner-assigned deliverables are ordinary AI-IMP tickets with
+  `assignee: owner` in frontmatter ("M-tickets") — design pushes,
+  curation, anything only the owner can do. Same kanban, same
+  close discipline.
 - `RAG/DESIGN-QUEUE.md` lists decisions needing a design
   conversation before their work proceeds; prune like the flush
   list — resolved items move into the RFC.

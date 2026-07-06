@@ -41,6 +41,15 @@ script or manually execute all 26 §17 slice items and audit every §18
 acceptance criterion, fixing gaps or filing follow-up tickets, and
 record the result in an AI-LOG that declares Phase 1 complete.
 
+> Scope refresh (2026-07-06 doc review): §16 grew past this epic's
+> FRs — the Markdown escape-hatch export with uses sections, JSON
+> Canvas per board (rev 0.21), full-res rendered board images, the
+> standing vault mirror (rev 0.23), git session snapshots (rev
+> 0.24), and the git-backup-at-checkpoint direction above. Re-cut
+> the FRs against current §16 at activation; §17/§18 are also
+> stale against EPIC-013/014/015 surfaces and the sign-off audit
+> (FR-5/6) must reconcile them first.
+
 ## Path(s) Not Taken
 
 No cross-project merge, no partial/selective import, no cloud or sync

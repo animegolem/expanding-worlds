@@ -168,4 +168,4 @@ one component are a merge trap). Final gates: 82 desktop e2e, 404
 persistence units, 36 desktop units, lint, build. RFC moved
 0.25 → 0.30 across the epic (keyboard model, iPad satellite +
 lazy superposition, pitch bible, renderer-codec thumbnails, text
-posts). Epic stays in-progress pending the PR review round-trip.
+posts). Closed after the PR #3 review round-trip.
