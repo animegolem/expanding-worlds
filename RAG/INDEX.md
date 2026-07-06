@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 3 | 2 |
+| In Progress | 2 | 1 |
+| Planned | 2 | 8 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 85 |
-| **Total** | **15** | **87** |
+| **Total** | **15** | **94** |
 
 ## In Progress
 
@@ -42,6 +42,20 @@
 
 ---
 
+### [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015: Library and cross project sourcing]]
+> The first outside tester's reference library lives in Allusion,
+
+**IMPs:**
+- [[AI-IMP-088-secondary-project-seam|IMP-088]] Secondary project seam — in-progress
+- [[AI-IMP-089-library-scope-toggle|IMP-089]] Library scope toggle — planned
+- [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — planned
+- [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — planned
+- [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — planned
+- [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — planned
+- [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — planned
+
+---
+
 ## Planned
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
@@ -51,11 +65,6 @@
 
 ### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
 > RFC §16 requires portable export with lossless reimport, and §17–18
-
----
-
-### [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015: Library and cross project sourcing]]
-> The first outside tester's reference library lives in Allusion,
 
 ---
 
