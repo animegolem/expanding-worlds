@@ -37,6 +37,7 @@
     unplaced,
     queryScope = 'this-world',
     scopeReady = true,
+    showCleanup = true,
     onSort,
     onToggleKind,
     onAddTag,
@@ -51,6 +52,9 @@
     unplaced: boolean
     queryScope?: 'this-world' | 'everything'
     scopeReady?: boolean
+    /** 091: the source panel's compression drops the cleanup pair —
+     * untagged/unplaced are curation controls, not browse facets. */
+    showCleanup?: boolean
     onSort: (sort: GallerySort) => void
     onToggleKind: (kind: GalleryKind) => void
     onAddTag: (tag: TagRef) => void
@@ -204,28 +208,30 @@
     </span>
   {/each}
 
-  <span class="chips cleanup" role="group" aria-label="Cleanup filters">
-    <button
-      type="button"
-      class="chip"
-      data-testid="gallery-filter-untagged"
-      aria-pressed={untagged}
-      class:on={untagged}
-      onclick={onToggleUntagged}
-    >
-      untagged
-    </button>
-    <button
-      type="button"
-      class="chip"
-      data-testid="gallery-filter-unplaced"
-      aria-pressed={unplaced}
-      class:on={unplaced}
-      onclick={onToggleUnplaced}
-    >
-      unplaced
-    </button>
-  </span>
+  {#if showCleanup}
+    <span class="chips cleanup" role="group" aria-label="Cleanup filters">
+      <button
+        type="button"
+        class="chip"
+        data-testid="gallery-filter-untagged"
+        aria-pressed={untagged}
+        class:on={untagged}
+        onclick={onToggleUntagged}
+      >
+        untagged
+      </button>
+      <button
+        type="button"
+        class="chip"
+        data-testid="gallery-filter-unplaced"
+        aria-pressed={unplaced}
+        class:on={unplaced}
+        onclick={onToggleUnplaced}
+      >
+        unplaced
+      </button>
+    </span>
+  {/if}
 </div>
 
 <style>

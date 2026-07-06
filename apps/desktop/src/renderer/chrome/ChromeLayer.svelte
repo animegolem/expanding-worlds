@@ -14,10 +14,12 @@
   import Dock from './Dock.svelte'
   import ImportProgressStrip from './ImportProgressStrip.svelte'
   import PathBar from './PathBar.svelte'
+  import SourcePanel from './SourcePanel.svelte'
   import TitleStrip from './TitleStrip.svelte'
   import Toasts from './Toasts.svelte'
   import { onEngagementChanged } from './engagement'
   import { attachNavigation } from './navigation'
+  import { onSourcePanelChanged, type SourcePanelState } from './source-slot'
   import { onTakeoverChanged } from './takeover'
   import { CHROME_FADE_MS, CHROME_REST_OPACITY } from './feel'
 
@@ -35,8 +37,11 @@
 
   let engaged = $state(true)
   let takeoverOpen = $state(false)
+  // §14.4 source panel (AI-IMP-091): screen-fixed chrome, one at most.
+  let sourcePanel = $state<SourcePanelState | null>(null)
   $effect(() => onEngagementChanged((next) => (engaged = next)))
   $effect(() => onTakeoverChanged((kind) => (takeoverOpen = kind !== null)))
+  $effect(() => onSourcePanelChanged((next) => (sourcePanel = next)))
   $effect(() => attachNavigation(handle))
 </script>
 
@@ -64,6 +69,14 @@
      root on purpose — a running batch is fade-exempt, so the strip
      must not inherit the layer's opacity clock. -->
 <ImportProgressStrip />
+
+<!-- §14.4 open-as-source panel (AI-IMP-091): pinned chrome — also a
+     fade-exempt sibling (a panel the user pinned open must not dim
+     with the idle chrome). Retargeting to another dir re-runs the
+     panel's own slot handshake; replace-on-open swaps the transport. -->
+{#if sourcePanel}
+  <SourcePanel dir={sourcePanel.dir} />
+{/if}
 
 <style>
   .chrome-layer {

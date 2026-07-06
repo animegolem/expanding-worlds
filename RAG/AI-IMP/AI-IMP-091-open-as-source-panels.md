@@ -66,18 +66,18 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Project menu rows: switch + open-as-source; source opens the
+- [x] Project menu rows: switch + open-as-source; source opens the
       pinned mini-gallery against the secondary seam.
-- [ ] Mini grid: thumbnails, sort + kind + tag facets, read-only.
-- [ ] Header border control: none/all/pick, session-scoped,
+- [x] Mini grid: thumbnails, sort + kind + tag facets, read-only.
+- [x] Header border control: none/all/pick, session-scoped,
       defaults by source kind (library → all, world → none).
-- [ ] Drag out → ingest with the border decision → placement at
+- [x] Drag out → ingest with the border decision → placement at
       the drop point; dedupe pull places without recopying.
-- [ ] Panel physics: screen-fixed, survives navigation, closes
+- [x] Panel physics: screen-fixed, survives navigation, closes
       cleanly (secondary released when panel closes).
-- [ ] e2e: open fixture as source, pull one tagged image onto the
+- [x] e2e: open fixture as source, pull one tagged image onto the
       board, assert placement + copied bytes + merged tags.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -96,3 +96,42 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Landed as specified; deviations and decisions worth knowing:
+
+- No project-list menu existed (the ⧉ charm was a deferred stub, and
+  the app is single-project), so the "every row offers two actions"
+  shape compresses to a two-action popover on the ⧉ charm itself:
+  a deferred "Switch project…" row plus the live open-as-source
+  directory prompt (plain text field, the 089 designation idiom —
+  never `<datalist>`, AI-IMP-069). Rows re-derive naturally when a
+  project list arrives.
+- The one-source-slot ownership moved into a small renderer registry
+  (`chrome/source-slot.ts`): both the gallery's everything scope and
+  the panel acquire/release by owner id; acquire REPLACES the other
+  owner and notifies it first (gallery → this-world + a notice line
+  `gallery-evicted-notice`; panel → closes itself). GalleryView's
+  `holdsSource` flag is subsumed by the registry's owner check; the
+  scopeEpoch fence and hydration-generation guards are untouched and
+  the 089 e2e stays green.
+- The registry also carries the session tag border
+  (`setSourceBorder`/`sourceBorder`) so import-surfaces' drop branch
+  never depends on a Svelte component, plus the panel open-request
+  store (the search-panel pattern); the panel mounts in ChromeLayer
+  as a FADE-EXEMPT sibling of the fading root (ImportProgressStrip
+  precedent) — pinned chrome must not dim with the idle clock, and
+  it survives navigation and takeovers (z above the takeover cover).
+- Drag-out shipped as real HTML5 DnD (`application/x-ew-source-item`
+  carrying `{contentHash}`; sourceTags stay behind — the border is
+  session state, not drag payload). The e2e drives it with
+  dispatchEvent-built DragEvents sharing one real DataTransfer
+  (dragstart on the cell, drop on the board), since raw mouse moves
+  cannot synthesize Chromium's drag loop under Playwright; no
+  click-to-place fallback was needed.
+- The mini grid skips 077's virtualization: cells hydrate lazily via
+  IntersectionObserver batches instead — viewport-scaled work at
+  panel scale without duplicating the windowing math. Note/board
+  cells render but do not drag (090's ingest is asset-shaped).
+- `RAG/INDEX.md` was NOT regenerated (outside this ticket's file
+  fence); the lead should run `./RAG/scripts/generate-index.sh` on
+  merge.

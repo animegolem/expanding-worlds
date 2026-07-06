@@ -13,6 +13,7 @@
   import MenuPopover from './MenuPopover.svelte'
   import { PERCH_PULSE_MS } from './feel'
   import { onSearchPanelChanged, toggleSearchPanel } from './search'
+  import { openSourcePanel } from './source-slot'
   import { onConditionsChanged, type Condition } from './status'
   import {
     activeTakeover,
@@ -26,6 +27,13 @@
   let conditions = $state<readonly Condition[]>([])
   let panelOpen = $state(false)
   let menuOpen = $state(false)
+  // §14.4 project menu (AI-IMP-091): single-project reality — no
+  // project LIST yet, so the menu carries the deferred switch row
+  // and the live open-as-source action, whose directory prompt is a
+  // plain text field (NEVER <datalist> — it segfaults Electron under
+  // hidden windows, AI-IMP-069; the 089 designation-prompt idiom).
+  let projectOpen = $state(false)
+  let sourceDirInput = $state('')
   let searchOpen = $state(false)
   let takeover = $state<TakeoverKind | null>(activeTakeover())
   $effect(() =>
@@ -42,22 +50,34 @@
     | { state: 'takeover'; kind: TakeoverKind }
     | { state: 'search' }
     | { state: 'menu' }
+    | { state: 'project' }
   )
 
   const charms: Charm[] = [
-    {
-      id: 'project',
-      glyph: '⧉',
-      name: 'Project',
-      state: 'deferred',
-      deferred: 'arrives with the library (EPIC-014)',
-    },
+    { id: 'project', glyph: '⧉', name: 'Project', state: 'project' },
     { id: 'search', glyph: '⌕', name: 'Search', state: 'search' },
     { id: 'graph', glyph: '⊛', name: 'Graph', state: 'deferred', deferred: 'arrives with the graph epic' },
     { id: 'gallery', glyph: '⊞', name: 'Gallery', state: 'takeover', kind: 'gallery' },
     { id: 'outline', glyph: '▤', name: 'Outline', state: 'takeover', kind: 'outline' },
     { id: 'menu', glyph: '☰', name: 'Menu', state: 'menu' },
   ]
+
+  function confirmOpenSource(): void {
+    const dir = sourceDirInput.trim()
+    if (dir.length === 0) return
+    openSourcePanel(dir)
+    projectOpen = false
+    sourceDirInput = ''
+  }
+
+  $effect(() => {
+    if (!projectOpen) return
+    const onKeydown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') projectOpen = false
+    }
+    window.addEventListener('keydown', onKeydown)
+    return () => window.removeEventListener('keydown', onKeydown)
+  })
 </script>
 
 <nav class="charm-rail" data-testid="charm-rail">
@@ -95,6 +115,57 @@
       >
         {charm.glyph}
       </button>
+    {:else if charm.state === 'project'}
+      <!-- §14.4 rows offer switch + open as source; with one project
+           there are no switch rows yet, so the two actions stand
+           alone (switch deferred with the multi-project epic). -->
+      <div class="menu-slot">
+        <button
+          type="button"
+          class="charm"
+          class:active={projectOpen}
+          aria-expanded={projectOpen}
+          data-testid={`charm-${charm.id}`}
+          onclick={() => (projectOpen = !projectOpen)}
+          use:tooltip={{ name: charm.name }}
+        >
+          {charm.glyph}
+        </button>
+        {#if projectOpen}
+          <div class="project-menu" data-testid="project-menu" role="menu">
+            <button
+              type="button"
+              role="menuitem"
+              class="row deferred"
+              aria-disabled="true"
+              data-testid="project-switch"
+              use:tooltip={{ name: 'Switch project — arrives with the multi-project list' }}
+            >
+              Switch project…
+            </button>
+            <span class="row-label">Open as source…</span>
+            <div class="source-prompt">
+              <input
+                type="text"
+                data-testid="project-source-dir-input"
+                placeholder="/path/to/project"
+                bind:value={sourceDirInput}
+                onkeydown={(event) => {
+                  if (event.key === 'Enter') confirmOpenSource()
+                }}
+              />
+              <button
+                type="button"
+                class="row"
+                data-testid="project-source-dir-confirm"
+                onclick={confirmOpenSource}
+              >
+                open
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
     {:else if charm.state === 'menu'}
       <div class="menu-slot">
         <button
@@ -189,6 +260,75 @@
   .menu-slot,
   .perch-slot {
     position: relative;
+  }
+
+  /* §14.4 project menu: the ☰ popover's grammar (MenuPopover),
+     anchored to its own charm. */
+  .project-menu {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 0.35rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.35rem;
+    background: var(--ew-surface-menu);
+    border: 1px solid var(--ew-border);
+    border-radius: 7px;
+    white-space: nowrap;
+  }
+
+  .project-menu .row {
+    padding: 0.25rem 0.6rem;
+    text-align: left;
+    background: transparent;
+    color: var(--ew-text);
+    border: none;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .project-menu .row:hover {
+    background: var(--ew-surface-raised);
+  }
+
+  .project-menu .row.deferred {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .project-menu .row.deferred:hover {
+    background: transparent;
+  }
+
+  .row-label {
+    padding: 0.25rem 0.6rem 0;
+    font-size: 0.75rem;
+    color: var(--ew-text-muted);
+  }
+
+  .source-prompt {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.1rem 0.35rem 0.2rem;
+  }
+
+  .source-prompt input {
+    width: 13rem;
+    box-sizing: border-box;
+    padding: 0.2rem 0.45rem;
+    background: var(--ew-surface-input);
+    color: var(--ew-text);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 5px;
+    font: inherit;
+    font-size: 0.72rem;
+  }
+
+  .source-prompt .row {
+    border: 1px solid var(--ew-border-strong);
+    background: var(--ew-surface-raised);
   }
 
   .charm.perch {
