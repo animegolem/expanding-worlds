@@ -63,6 +63,11 @@ never delegated. Implementation may be decomposed:
 - Playwright: never hand `waitForFunction` an async closure — a
   Promise is truthy, so the wait passes vacuously (produced a
   false-green in EPIC-004). Use `expect.poll` with `win.evaluate`.
+- Never read `items()`/camera synchronously after `navigateTo` or a
+  commit — the scene applies asynchronously. Await the host's
+  `waitForItems(ids)` / `whenSceneApplied()` (AI-IMP-113); do not
+  hand-roll a try-now/onSceneApplied/timeout wrapper — every
+  hand-rolled copy has regressed as a "flake".
 - Run `pnpm -r build` before desktop e2e after touching packages/*
   (vitest and the utility bundle resolve workspace deps through dist).
 - Fresh worktrees get a husk `electron/dist` (macOS+pnpm exits 0

@@ -111,6 +111,12 @@ record — history lives in the tickets.
   source from the new live ⧉ charm, browse the mini grid, set the
   tag border, drag a cell onto the board — does the pull feel like
   one motion?
+- [ ] **The trash browser** (AI-IMP-102, 2026-07-06): trash a note,
+  a node, and a board; ☰ → Trash… — all three should list with
+  impact context; restore the node and click the toast's "Fly to
+  it"; then Empty Trash and confirm the §9 summary reads right.
+  First surface where deletes stop being one-way — gut-check the
+  whole loop.
 - [ ] **The ☰ menu** (AI-IMP-110, 2026-07-06): open it — the full
   ratified geography should read as one stable place (Undo · Redo
   greyed with their printed shortcuts, Trash…, End Session,

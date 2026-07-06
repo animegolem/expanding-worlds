@@ -5,12 +5,12 @@ tags:
   - Implementation
   - lifecycle
   - chrome
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [[AI-IMP-110-menu-shell]]
 parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.6
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-102-trash-browser

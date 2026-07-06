@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 8 | 7 |
+| In Progress | 1 | 0 |
+| Planned | 8 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 106 |
+| Completed | 13 | 108 |
 | **Total** | **22** | **115** |
 
 ## In Progress
@@ -21,7 +21,7 @@
 **IMPs:**
 - [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
 - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
-- [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — in-progress
+- [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — completed
 
 ---
 
@@ -31,7 +31,7 @@
 > RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
 
 **IMPs:**
-- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — planned
+- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
 - [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — planned
 
 ---
@@ -125,6 +125,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/e2e/panels.spec.ts (536 LOC)
+- apps/desktop/src/renderer/views/TrashView.svelte (533 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (526 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
@@ -152,8 +153,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
+- apps/desktop/e2e/shell.spec.ts (386 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
-- apps/desktop/e2e/shell.spec.ts (376 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
@@ -180,7 +181,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 106 IMPs completed</summary>
+<summary>13 EPICs, 108 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
