@@ -7,8 +7,8 @@ tags:
   - thumbnails
   - import
 date_created: 2026-07-06
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-06
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-076
   - AI-IMP-077

@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 2 |
+| In Progress | 1 | 2 |
 | Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 10 | 79 |
+| Completed | 11 | 79 |
 | **Total** | **15** | **81** |
 
 ## In Progress
@@ -33,19 +33,6 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
-
----
-
-### [[AI-EPIC-014-gallery|EPIC-014: Gallery]]
-> Reference material is only visible where it is placed. A project
-
-**IMPs:**
-- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
-- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
-- [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — completed
-- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
-- [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — completed
-- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
 
 ---
 
@@ -90,7 +77,7 @@ Generated from tracked files; binary assets excluded.
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3432 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (932 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (840 LOC)
 - packages/persistence/src/queries-structure.test.ts (762 LOC)
@@ -108,7 +95,7 @@ Generated from tracked files; binary assets excluded.
 
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/main/index.ts (555 LOC)
+- apps/desktop/src/main/index.ts (560 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
@@ -156,7 +143,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>10 EPICs, 79 IMPs completed</summary>
+<summary>11 EPICs, 79 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -229,5 +216,12 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-073-search-and-quick-open|IMP-073]] Search and quick open — completed
   - [[AI-IMP-074-settings-takeover|IMP-074]] Settings takeover — completed
   - [[AI-IMP-075-theme-tokens|IMP-075]] Theme tokens — completed
+- [[AI-EPIC-014-gallery|EPIC-014]] Gallery — 2026-07-06
+  - [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
+  - [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
+  - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — completed
+  - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
+  - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — completed
+  - [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
 
 </details>
