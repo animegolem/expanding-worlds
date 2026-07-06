@@ -6,12 +6,12 @@ tags:
   - canvas
   - gestures
   - feel
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-019, AI-IMP-029]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-031-rotation-fidelity
@@ -106,7 +106,12 @@ Before marking an item complete on the checklist MUST **stop** and
       ≈ π/2 and top-left unchanged (single selection); handles()
       report oriented positions for a rotated image; resize of a 90°
       -rotated placement changes the expected local dimension.
-- [ ] Full gates: `pnpm -r build`, unit suites, desktop e2e, §12.1
+- [x] Owner feel-pass fixes (2026-07-06): a real rotate cursor — SVG
+      glyph owned by theme.css as --ew-cursor-rotate (white on black
+      halo, crosshair fallback), read via getComputedStyle — and the
+      rotate band widened 14 → 24 px outer (≈18 usable px of ring
+      past the resize box's diagonal overhang).
+- [x] Full gates: `pnpm -r build`, unit suites, desktop e2e, §12.1
       perf, lint; owner feel pass on rotate/resize of rotated
       images.
 
@@ -149,4 +154,12 @@ Owner feel pass landed 2026-07-06: resize on rotated content feels
 fine, but (1) the rotate cursor state never appears on corner hover
 — the acceptance scenario's "rotate cursor appears" line is not met
 in practice — and (2) the rotate hover zone is too narrow to find
-by feel; pad it. Both fixed under this ticket before close.
+by feel; pad it. Both fixed under this ticket before close. The
+crosshair stand-in never read as rotate; the replacement SVG glyph
+lives in theme.css (the raw-color guard test correctly rejected hex
+in gestures-ui.ts — the token move is the right home anyway, and a
+theme could restyle the cursor). Closing gates: 253 engine / 405
+persistence / 36 desktop units, 82/82 e2e incl. §12.1 perf, lint
+clean. The new glyph itself awaits the owner's next daily-use
+eyeball; if it reads wrong that is a fresh finding, not this
+ticket.

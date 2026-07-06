@@ -137,9 +137,11 @@ export function attachGesturesUI(
     ne: 315,
   }
   const AXIS_CURSORS = ['ew-resize', 'nwse-resize', 'ns-resize', 'nesw-resize'] as const
-  /** CSS has no rotate cursor; crosshair is the provisional stand-in
-   * (feel constant — swap for a custom asset if the owner wants). */
-  const ROTATE_CURSOR = 'crosshair'
+  /** CSS has no native rotate cursor; theme.css owns the SVG glyph
+   * (--ew-cursor-rotate, crosshair fallback baked into the token). */
+  const ROTATE_CURSOR =
+    getComputedStyle(document.documentElement).getPropertyValue('--ew-cursor-rotate').trim() ||
+    'crosshair'
   function zoneCursor(zone: CursorZone, rotation: number): string | null {
     if (zone === 'move') return 'move'
     if (zone.startsWith('resize-')) {

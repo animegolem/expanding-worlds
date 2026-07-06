@@ -243,8 +243,11 @@ export function marqueeHits(rect: Rect, items: readonly SceneItem[]): SceneItem[
  */
 export const CURSOR_ZONES = {
   edgePx: 4,
+  // 4..24 keeps ~18 usable px of ring after the resize box's diagonal
+  // overhang (edge·√2) — 14 left ~8 px, too thin to find by feel
+  // (owner pass 2026-07-06, AI-IMP-031).
   rotateInnerPx: 4,
-  rotateOuterPx: 14,
+  rotateOuterPx: 24,
 } as const
 
 export type CursorZoneWidths = { edgePx: number; rotateInnerPx: number; rotateOuterPx: number }

@@ -56,6 +56,12 @@
   --ew-warn-pulse: rgba(230, 179, 74, 0.7);
   --ew-warn-pulse-fade: rgba(230, 179, 74, 0);
 
+  /* Rotate-zone cursor (AI-IMP-031): CSS has no native rotate
+     cursor, so the glyph is an inline SVG — white over a black halo
+     so it reads over any art at any theme (a cursor bitmap, not
+     themed chrome). Crosshair is the fallback. */
+  --ew-cursor-rotate: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M10 4a6 6 0 1 1-6 6' fill='none' stroke='%23000' stroke-width='4.5' stroke-linecap='round'/><path d='M10 4a6 6 0 1 1-6 6' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'/><path d='M4 5 L1.5 10.5 L6.5 10.5 Z' fill='%23fff' stroke='%23000' stroke-width='1'/></svg>") 10 10, crosshair;
+
   --ew-body-text: #222222;
   --ew-paper-surface: #fafafa;
   --ew-paper-page: #ffffff;

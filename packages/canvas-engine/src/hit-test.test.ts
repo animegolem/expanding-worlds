@@ -236,10 +236,11 @@ describe('classifyCursorZone (§6.9 rev 0.17, AI-IMP-062)', () => {
   })
 
   it('cuts the rotate band off at its outer radius', () => {
-    // 14 px out is the last rotate ring; 15+ px falls to the canvas.
-    expect(zone(50 + 14, 30)).toBe('rotate-se')
-    expect(zone(50 + 15, 30)).toBe('none')
-    expect(zone(50 + 11, 30 + 11)).toBe('none') // √242 ≈ 15.6
+    // 24 px out is the last rotate ring (widened from 14, owner feel
+    // pass, AI-IMP-031); 25+ px falls to the canvas.
+    expect(zone(50 + 24, 30)).toBe('rotate-se')
+    expect(zone(50 + 25, 30)).toBe('none')
+    expect(zone(50 + 18, 30 + 18)).toBe('none') // √648 ≈ 25.5
   })
 
   it('leaves edge midpoints beyond the band as none', () => {
@@ -264,10 +265,11 @@ describe('classifyCursorZone (§6.9 rev 0.17, AI-IMP-062)', () => {
     expect(zone(0, -33, 0, 1)).toBe('resize-n')
     expect(zone(0, -33, 0, 2)).toBe('none')
     expect(zone(0, -33, 0, 0.5)).toBe('resize-n')
-    // Rotate band: 10 world px outside the corner reads 20 screen px
-    // at zoom 2 (past the 14 px cutoff) but still rotates at zoom 0.5.
-    expect(zone(57, 37, 0, 1)).toBe('rotate-se')
-    expect(zone(57, 37, 0, 2)).toBe('none')
+    // Rotate band: ~14 world px outside the corner reads ~28 screen
+    // px at zoom 2 (past the 24 px cutoff) but still rotates at 1
+    // and at zoom 0.5 (where 19.8 world px is ~10 screen px).
+    expect(zone(60, 40, 0, 1)).toBe('rotate-se')
+    expect(zone(60, 40, 0, 2)).toBe('none')
     expect(zone(64, 44, 0, 0.5)).toBe('rotate-se')
   })
 

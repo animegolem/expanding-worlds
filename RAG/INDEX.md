@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 1 | 0 |
 | Planned | 3 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 80 |
+| Completed | 11 | 81 |
 | **Total** | **15** | **84** |
 
 ## In Progress
@@ -20,7 +20,7 @@
 
 **IMPs:**
 - [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — completed
-- [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — in-progress
+- [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — completed
 - [[AI-IMP-032-grid-and-stage|IMP-032]] Grid and stage — completed
 - [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — completed
 - [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — completed
@@ -92,8 +92,8 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
-- apps/desktop/e2e/gestures.spec.ts (484 LOC)
-- apps/desktop/src/renderer/canvas/gestures-ui.ts (478 LOC)
+- apps/desktop/e2e/gestures.spec.ts (486 LOC)
+- apps/desktop/src/renderer/canvas/gestures-ui.ts (480 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (464 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
@@ -112,8 +112,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (353 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - packages/commands/src/payloads/structure.ts (350 LOC)
+- packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
-- packages/canvas-engine/src/hit-test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
@@ -131,7 +131,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 80 IMPs completed</summary>
+<summary>11 EPICs, 81 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

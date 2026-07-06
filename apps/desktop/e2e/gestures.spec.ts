@@ -207,7 +207,8 @@ test('move, resize, rotate, reorder, and flip: one durable command per zone gest
   // cardinal orientation magnet (§6.9 rev 0.12) — no handles drawn.
   await expectZone(win, 317, 163, 'rotate-ne')
   await win.mouse.move(box.x + 317, box.y + 163)
-  expect(await cursorOf(win)).toBe('crosshair')
+  // Custom SVG rotate glyph with crosshair fallback (AI-IMP-031).
+  expect(await cursorOf(win)).toMatch(/^url\(.*svg.*\).*crosshair$/)
   await win.mouse.down()
   // (317,163) − center = (47,−37); rotated +90° → (37,47) → (307,247).
   await win.mouse.move(box.x + 307, box.y + 247, { steps: 6 })
@@ -371,7 +372,8 @@ test('rotation fidelity: shapes spin in place, zones follow the angle (AI-IMP-03
   })
   await expectZone(win, zonePoint.x, zonePoint.y, 'rotate-ne')
   await win.mouse.move(box.x + zonePoint.x, box.y + zonePoint.y)
-  expect(await cursorOf(win)).toBe('crosshair')
+  // Custom SVG rotate glyph with crosshair fallback (AI-IMP-031).
+  expect(await cursorOf(win)).toMatch(/^url\(.*svg.*\).*crosshair$/)
 
   await app.close()
 })
