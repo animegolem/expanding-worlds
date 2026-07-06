@@ -19,6 +19,17 @@ record — history lives in the tickets.
   corner toward a neighbor — the dragged edge should snap with a
   guide line; Shift and Alt should bypass; engage/release
   thresholds feel right at different zooms?
+- [ ] **Panel default size** (AI-IMP-083, 2026-07-06): open a few
+  notes tethered — is 320×300 the right "glance and a quick line"
+  size?
+- [ ] **Pinned panel resize** (AI-IMP-083, 2026-07-06): pin a note,
+  drag the corner grip — does the floating sticky note feel like a
+  proper window? Min clamp is 240×150.
+- [ ] **Big editor** (AI-IMP-083, 2026-07-06): expand a panel —
+  centered editor over dimmed board; Done, click-off, and Escape
+  all return. Right size (760px/70vh)? Note: the panel shadow in
+  LIGHT theme got token-level validation only — worth a ten-second
+  glance.
 - [ ] **Light-theme legibility over art** (EPIC-013, carried):
   chrome and scrim chips readable over bright and busy boards in
   the light theme.
