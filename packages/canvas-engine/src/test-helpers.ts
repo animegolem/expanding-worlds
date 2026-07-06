@@ -39,6 +39,8 @@ export function makePlacement(overrides: Partial<ScenePlacement> = {}): ScenePla
     appearanceAssetId: null,
     appearanceCrop: null,
     noteTitle: null,
+    noteId: null,
+    childCanvasId: null,
     assetContentHash: null,
     assetMimeType: null,
     assetWidth: null,

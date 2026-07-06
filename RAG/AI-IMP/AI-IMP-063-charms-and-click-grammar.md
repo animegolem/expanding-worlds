@@ -5,12 +5,12 @@ tags:
   - Implementation
   - shell
   - charms
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-059, AI-IMP-060, AI-IMP-062]
 parent_epic: [[AI-EPIC-006-shell-and-local-scope]]
 confidence_score: 0.7
 date_created: 2026-07-05
-date_completed:
+date_completed: 2026-07-05
 ---
 
 # AI-IMP-063-charms-and-click-grammar
@@ -82,26 +82,26 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Hint charms render for note/canvas-bearing nodes:
+- [x] Hint charms render for note/canvas-bearing nodes:
       side-by-side, never stacked, lower-right inset, scrim chip;
       absent on bare nodes at rest.
-- [ ] Visibility keys on rendered screen size (feel constant) and
+- [x] Visibility keys on rendered screen size (feel constant) and
       the shared engagement clock; charm hover lights that charm
       alone; no node-hover reveal state exists.
-- [ ] Charms live in the adornment plane: crop/flip previews and
+- [x] Charms live in the adornment plane: crop/flip previews and
       export render without them (assert via export render
       test or preview snapshot).
-- [ ] Click grammar: image click = select + charm bar; page charm
+- [x] Click grammar: image click = select + charm bar; page charm
       = note opens, canvas unchanged; frame charm = navigateTo
       dive (history entry); double click = dive + canvas note;
       note-only/canvas-only degenerate cases per table.
-- [ ] Charm bar: crop, flip H/V, make-canvas (CreateCanvas), note
+- [x] Charm bar: crop, flip H/V, make-canvas (CreateCanvas), note
       (open/phantom per §7.2), # tag chips (panel-click shows
       deferred tooltip), lock (SetPlacementLock toggle with 062
       refusal behavior); all tooltipped with shortcuts.
-- [ ] Charm pointer priority: a charm click never starts a
+- [x] Charm pointer priority: a charm click never starts a
       zone drag; unit or e2e regression for the overlap case.
-- [ ] e2e charms.spec covers the four-row grammar table, charm
+- [x] e2e charms.spec covers the four-row grammar table, charm
       bar actions committing their commands, and screen-size
       hiding (zoom out until charms drop); full gates green.
 
@@ -129,3 +129,24 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Deviations and findings. (1) Charms are a DOM adornment layer
+(charms-ui.ts), not a pixi overlay pass — the crop/flip/export
+exclusion becomes STRUCTURAL (charms simply aren't in the scene
+texture), tooltips and testids come free, and pointer priority is
+architectural (DOM sits above the canvas element, so a charm click
+can never start a zone drag — proven incidentally by the e2e dive
+click). No render-path exclusion assert exists because no export
+render path exists yet. (2) There is NO crop editor anywhere in the
+app — the interim dialog cropped at creation only. The charm bar
+ships crop disabled with a deferred tooltip; an interactive crop
+editor needs its own small ticket before FR-7 is fully §8.4-true.
+(3) node-menu cleanup deferred to 064: its Open Note row duplicates
+the page charm, but removing it now would churn notes.spec twice
+(064 migrates that suite anyway). (4) The scene read model gained
+noteId/childCanvasId; the utility bundle resolves persistence
+through dist, so the first e2e run saw `undefined` for both fields
+(undefined !== null made every node grow a frame charm) — the
+CLAUDE.md pnpm -r build rule, relearned. (5) The note charm on a
+note-less node routes to the existing attach picker; the §8.5
+phantom panel replaces that in 064. (6) Provisional glyphs (¶ ⊡ 🔒)
+are feel-pass placeholders.

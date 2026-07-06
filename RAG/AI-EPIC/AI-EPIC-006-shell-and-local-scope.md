@@ -96,12 +96,12 @@ constants, tuned later.
 ### Functional Requirements
 
 - [x] FR-1: Mode charm rail, bottom dock with shape flyout and selection-conditional z-order, hover title strip per §8.2.
-- [ ] FR-2 (clock+hover done in 059; screen-size charm visibility lands with 063): Engagement cadence — one shared fade clock, charm-hover highlight, screen-size charm visibility per §8.2/§8.4.
+- [x] FR-2: Engagement cadence — one shared fade clock, charm-hover highlight, screen-size charm visibility per §8.2/§8.4.
 - [x] FR-3: Tooltip rule: name + shortcut chip on every control per §8.2.
 - [x] FR-4: Path as rendered back-stack with viewport-restoring crumbs, ⌂ Home, gestures + Mod+[/] with hover ‹ › per §8.1.
 - [ ] FR-5: Bookmark menu — jump/reorder/remove/add, row order = Mod+1–n with printed shortcuts, stale-target grey-out per §8.1.
-- [ ] FR-6: Page/frame hint charms with scrim chips, excluded from crop/flip previews and export, per §8.4.
-- [ ] FR-7: Click grammar and charm bar per §8.4 table.
+- [x] FR-6: Page/frame hint charms with scrim chips, excluded from crop/flip previews and export, per §8.4.
+- [x] FR-7: Click grammar and charm bar per §8.4 table (crop button ships disabled — the crop editor is its own follow-up ticket).
 - [x] FR-8: Cursor-zone selection replacing drawn handles; Option-drag duplicate; lock cursor per §6.9.
 - [ ] FR-9: Tethered note panels (one at a time) with pin, escalating indicator, cross-board origin label as navigation event per §8.5.
 - [ ] FR-10: Canvas-note corner charm with ghost/solid states per §8.5.

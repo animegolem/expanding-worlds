@@ -45,6 +45,9 @@ export interface ScenePlacement {
   appearanceAssetId: string | null
   appearanceCrop: string | null
   noteTitle: string | null
+  /** §8.4 hint charms: the node's active note and child canvas. */
+  noteId: string | null
+  childCanvasId: string | null
   assetContentHash: string | null
   assetMimeType: string | null
   assetWidth: number | null

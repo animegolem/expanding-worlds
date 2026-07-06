@@ -185,6 +185,21 @@ describe('getTagView (§4.8)', () => {
   })
 })
 
+describe('listNodeTags (§8.4 charm bar)', () => {
+  it('lists a node\'s active tags in name order', () => {
+    const nodeId = createNode()
+    const inkId = uuidv7()
+    const azureId = uuidv7()
+    committed('CreateTag', { tagId: inkId, name: 'ink' })
+    committed('CreateTag', { tagId: azureId, name: 'azure' })
+    committed('AssignTagToNode', { tagId: inkId, nodeId })
+    committed('AssignTagToNode', { tagId: azureId, nodeId })
+    const tags = query<Array<{ id: string; name: string }>>('listNodeTags', { nodeId })
+    expect(tags.map((t) => t.name)).toEqual(['azure', 'ink'])
+    expect(query<unknown[]>('listNodeTags', { nodeId: uuidv7() })).toEqual([])
+  })
+})
+
 describe('getCanvasByNode', () => {
   it('returns the node canvas or null', () => {
     expect(query('getCanvasByNode', { nodeId: handle.rootNodeId })).toMatchObject({
@@ -357,6 +372,23 @@ describe('getCanvasScene', () => {
       assetHeight: 600,
       labelVisible: 1,
     })
+  })
+
+  it('carries noteId and childCanvasId for the §8.4 hint charms', () => {
+    const nodeId = createNode()
+    const noteId = insertNote('Keep Interior')
+    handle.db.run('UPDATE node SET note_id = ? WHERE id = ?', noteId, nodeId)
+    const placementId = createPlacement(nodeId)
+
+    let scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    let item = scene.items.find((i) => i.id === placementId)!
+    expect(item).toMatchObject({ noteId, childCanvasId: null })
+
+    const childCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: childCanvasId, nodeId })
+    scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
+    item = scene.items.find((i) => i.id === placementId)!
+    expect(item).toMatchObject({ noteId, childCanvasId })
   })
 
   it('keeps the shared render order across placements and decorations', () => {

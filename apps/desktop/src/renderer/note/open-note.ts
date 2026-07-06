@@ -5,6 +5,7 @@ import {
   type SceneItem,
   type ScenePlacement,
 } from '@ew/canvas-engine'
+import { navigateTo } from '../chrome/navigation'
 import type { CanvasHostHandle } from '../canvas/host'
 
 /**
@@ -306,16 +307,16 @@ export function attachOpenNoteSurface(
             return label ? { placement: label, rename: true } : null
           })()
     if (!target) return
-    void (async () => {
-      const response = await window.ew.project.query('getNode', {
-        nodeId: target.placement.nodeId,
-      })
-      if (!response.ok) return
-      const node = response.result as { noteId: string | null } | null
-      if (!node?.noteId) return
-      if (target.rename) openRename(target.placement, node.noteId)
-      else requestOpenNote(node.noteId)
-    })()
+    const { noteId, childCanvasId, noteTitle } = target.placement
+    if (target.rename) {
+      if (noteId) openRename(target.placement, noteId)
+      return
+    }
+    // §8.4 double-click = EVERYTHING: dive into the canvas AND open
+    // its note; a note-only node opens the note, a canvas-only node
+    // dives. Charms are the exploded view of this gesture.
+    if (childCanvasId) void navigateTo(childCanvasId, noteTitle ?? 'Board')
+    if (noteId) requestOpenNote(noteId)
   }
   element.addEventListener('dblclick', onDblClick)
   return {

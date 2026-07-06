@@ -144,12 +144,16 @@ export function registerStructureQueries(registry: QueryRegistry): void {
               p.locked,
               ${NODE_APPEARANCE_SELECT},
               note.title AS noteTitle,
+              note.id AS noteId,
+              child.id AS childCanvasId,
               a.content_hash AS assetContentHash,
               a.mime_type AS assetMimeType,
               a.width AS assetWidth, a.height AS assetHeight
        FROM placement p
        JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
        LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       LEFT JOIN canvas child ON child.node_id = n.id
+         AND child.lifecycle_state = 'active'
        LEFT JOIN asset a ON a.id = n.appearance_asset_id
          AND a.lifecycle_state = 'active'
        WHERE p.canvas_id = ? AND p.lifecycle_state = 'active'`,
@@ -247,6 +251,20 @@ export function registerStructureQueries(registry: QueryRegistry): void {
 
   // §4.8: flat project tag vocabulary — pickers (Create Pin dialog,
   // tag assignment UI) list every active tag with usage counts.
+  // §8.4: the charm bar's # pops the node's tag chips.
+  registry.register('listNodeTags', (ctx, args) => {
+    const { nodeId } = args as { nodeId: string }
+    return ctx.db.all(
+      `SELECT t.id, t.name, t.color, t.icon
+       FROM tag_assignment ta
+       JOIN tag t ON t.id = ta.tag_id AND t.lifecycle_state = 'active'
+       WHERE ta.node_id = ? AND t.project_id = ?
+       ORDER BY t.name_key`,
+      nodeId,
+      ctx.projectId,
+    )
+  })
+
   registry.register('listTags', (ctx) =>
     ctx.db.all(
       `SELECT t.id, t.name, t.color, t.icon,

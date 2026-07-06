@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import ChromeLayer from './chrome/ChromeLayer.svelte'
   import { attachBoardTooling, type BoardTooling } from './canvas/board-tooling'
+  import { attachCharmsUi, type CharmsUiHandle } from './canvas/charms-ui'
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
@@ -48,6 +49,7 @@
     let menu: NodeMenuHandle | null = null
     let textEntry: TextEntryController | null = null
     let openNote: OpenNoteSurfaceHandle | null = null
+    let charms: CharmsUiHandle | null = null
     let disposed = false
     const onNotice = (event: Event): void => {
       const detail = (event as CustomEvent<{ message: string; keepNodeIds?: string[] }>).detail
@@ -71,6 +73,7 @@
         tooling = attachBoardTooling(h, element, notify)
         textEntry = attachTextEntry(h, element)
         openNote = attachOpenNoteSurface(h, element)
+        charms = attachCharmsUi(h, element)
         handle = h
         onready?.(h, element)
       })
@@ -86,6 +89,7 @@
       menu?.destroy()
       textEntry?.destroy()
       openNote?.destroy()
+      charms?.destroy()
       tooling?.destroy()
       ui?.destroy()
       mounted?.destroy()
