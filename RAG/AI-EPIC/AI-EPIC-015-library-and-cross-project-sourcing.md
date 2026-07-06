@@ -93,7 +93,7 @@ they shipped in AI-EPIC-014-gallery (v0.7.0).
 - [ ] FR-2: Read-only source-project opening per §11.1/§14.4.
 - [ ] FR-3: Ingest-by-copy with provenance and the tag border decision (none/all/pick, name_key merge) per §14.4.
 - [ ] FR-4: Placement picker as compressed gallery; sources open as pinned mini-gallery panels from the project charm per §14.4.
-- [ ] FR-5: Export size preflight, asked once per project, per §16.
+- [ ] FR-5: Export size preflight, asked once per project, per §16. (Deferred to EPIC-008 with AI-IMP-093 — no export surface exists yet.)
 - [ ] FR-6: First-open seeded example (public-domain set, ordinary records) with the one-time clear affordance per §14.4.
 - [ ] FR-7: Inbox mirror — once-per-project opt-in, one-way, hash-recognized, non-blocking per §14.4.
 - [ ] FR-8 (stretch): Allusion importer as a versioned adapter, hierarchy flattened, leaf collisions renamed per §14.4.

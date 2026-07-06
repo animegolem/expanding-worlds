@@ -4,7 +4,7 @@ tags:
   - IMP-LIST
   - Implementation
   - export
-kanban_status: planned
+kanban_status: deferred
 depends_on:
 parent_epic: [[AI-EPIC-015-library-and-cross-project-sourcing]]
 confidence_score: 0.85
@@ -15,6 +15,13 @@ date_completed:
 # AI-IMP-093-export-size-preflight
 
 ## Summary of Issue #1
+
+> DEFERRED at epic activation (2026-07-06): §16 export does not
+> exist yet — it is EPIC-008, still planned — so there is no export
+> surface to attach the preflight to. This ticket rides EPIC-008;
+> §16's rev 0.18 "reports rather than blocks" language already
+> defines the ask-once acknowledge shape it must take.
+
 
 §16/§14.4 (FR-5): once library-scale projects exist, exports get
 big — the export flow gains a size preflight, asked ONCE per

@@ -7,8 +7,8 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 2 | 8 |
-| Deferred | 0 | 0 |
+| Planned | 2 | 7 |
+| Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 86 |
 | **Total** | **15** | **94** |
@@ -51,7 +51,7 @@
 - [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — planned
 - [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — planned
 - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — planned
-- [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — planned
+- [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
 - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — planned
 
 ---
@@ -75,7 +75,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3558 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3584 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
