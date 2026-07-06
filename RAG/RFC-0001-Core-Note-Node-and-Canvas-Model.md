@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.31         | 6 July 2026      |
+| Accepted for Phase 1 | 0.32         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2106,6 +2106,24 @@ NOT settings. The Phase 1 inventory:
 - **Windows/Linux only:** ☰ menu in the charm rail or the system
   bar.
 
+- **Advanced:** AI features (master toggle, off) · then one toggle
+  per AI feature, each off (rev 0.32).
+
+**AI gating (rev 0.32, normative).** This is an artist-focused app
+and AI is charged ground in that community; this audience's
+relationship to it is complicated, not absent. AI features exist —
+the pitch-bible export and the agent seat are shaped in open
+questions 29 and 30 — but every one of them MUST ship buried: under
+the Advanced group, behind a master AI toggle that is off by
+default, and then behind an individual per-feature toggle, also off.
+Turning anything on is two deliberate acts. No AI feature may
+execute, touch project data, or contact any external endpoint until
+both toggles for it are set, and nothing in the default experience
+may reference, advertise, or nudge toward the AI features. The
+master toggle is an application setting; per-feature enablement
+whose blast radius is a project's data is project-scoped, per this
+section's tier rule.
+
 **Theming.** Three themes: dark (default), light, and glass — a
 translucent window whose chrome blurs what lies behind it. Glass is
 macOS-only and falls back to dark elsewhere. All chrome must read on
@@ -3107,6 +3125,25 @@ long-term as an in-app export behind the §4.7 adapter grammar
 (versioned, external endpoint, outside the core domain). No
 schema involvement either way.
 
+30. (Shaped, rev 0.32 — early musing, deliberately unclosed.) The
+agent seat: an AI collaborator working the project WITH the user —
+a chat surface passes a message, the agent works, the user waits on
+the turn. This is NOT the two-live-writers scope §11.1 closed: the
+agent is a second input source to the same single writer, entering
+through the same seam the renderer uses — serializable command
+envelopes through the one dispatcher with §10.2 revision checks,
+and name-addressable read-model queries — most plausibly exposed as
+an MCP server over the command registry. The one real addition is
+attribution: an origin marker on command records so agent edits are
+visible as a group and undoable as a batch ("undo what the AI did"
+is non-negotiable). The option stays open at zero present cost as
+long as two already-true invariants hold: every mutation is a
+serializable command envelope, and read models stay addressable by
+name — no future refactor may weld that door shut. OQ 29's
+pitch-bible export is the read-only rung of this ladder; the agent
+seat is the read-write rung. Unconditionally subject to the §11.5
+AI gating.
+
 # 20. Decision summary
 
 Accepted for the Phase 1 prototype:
@@ -3387,6 +3424,13 @@ Accepted for the Phase 1 prototype:
   ship as defaults and feel constants are not settings. Themes are
   dark, light, and Mac-only glass with scrim-chip legibility and
   CSS-custom-property tokens.
+
+- AI features are double-gated (rev 0.32, §11.5): buried under the
+  Advanced settings group behind a master AI toggle (off by
+  default) plus a per-feature toggle (off); nothing AI runs,
+  touches project data, or phones out until both are set, and the
+  default experience never advertises them. The agent seat and the
+  pitch bible stay shaped in open questions 30 and 29.
 
 - Ongoing conditions get a rail perch that exists exactly as long
   as the condition does; transitions get toasts; the status strip
