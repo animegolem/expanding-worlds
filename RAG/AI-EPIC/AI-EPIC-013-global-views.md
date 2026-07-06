@@ -76,7 +76,7 @@ ships beside the tree. No theme engine is built.
 - [ ] FR-1: Takeover framework — rail-charm entry, Esc/charm return, camera untouched per §8.2.
 - [ ] FR-2: Tree view with alias-row cycle handling, loose bin, filter chips per §14.1.
 - [ ] FR-3: Tree realizes library placement flows: drag-to-canvas and Place on Current Canvas per §6.10.
-- [ ] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8.
+- [ ] FR-4: Tag panel with completion, shared row grammar, cross-canvas fly-to as history events per §4.8; queries built on the descendant-expansion helper with the visible include-descendants toggle (hierarchy-ready even while all tags sit at the root — the tree editor itself is EPIC-014).
 - [ ] FR-5: Lens view state sharing the §7.5 highlight implementation per §4.8.
 - [ ] FR-6: Three tag doors landing on one panel per §4.8.
 - [ ] FR-7: ⌕ search with kind-grouped results and navigation per §8.3.

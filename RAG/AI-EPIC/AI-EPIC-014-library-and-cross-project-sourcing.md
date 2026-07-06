@@ -45,9 +45,15 @@ Per RFC §14.4 (self-contained there; read it first):
   tag border decision (none/all/pick, name_key merge).
 - The placement picker as the compressed browser (one grammar,
   three compressions per §14.4).
-- Capstone: the Allusion importer as a versioned adapter — after
-  verifying the tester's Allusion version and whether its tags live
-  in its internal database or file metadata.
+- The inbox mirror (§14.4): once-per-project opt-in that also
+  imports world drops into the library, one-way, hash-recognized,
+  never blocking the foreground drop.
+- The tag tree editor (§4.8 rev 0.19): drag-to-nest organizing
+  hierarchy in the browser's tag sidebar, with the visible
+  include-descendants toggle wherever tags query.
+- Stretch: the Allusion importer as a versioned adapter (§14.4;
+  deprioritized — the mirror and native browser let the tester's
+  library re-accrete through use).
 
 ## Path(s) Not Taken
 
@@ -63,8 +69,12 @@ DAM feature race with Eagle.
 - Material drags from a read-only source project into a world with
   tags carried by decision, and the destination exports
   self-contained.
-- The tester's Allusion library imports with tags intact (flattened
-  per §14.4) and zero manual per-file work.
+- With the mirror on, a file dropped into any world is findable in
+  the library browser moments later, tagged or not, exactly once
+  (hash dedupe).
+- If the stretch adapter is built: the tester's Allusion library
+  imports with tags and hierarchy intact and zero manual per-file
+  work.
 
 ## Requirements
 
@@ -76,9 +86,11 @@ DAM feature race with Eagle.
 - [ ] FR-4: Read-only source-project opening per §11.1/§14.4.
 - [ ] FR-5: Ingest-by-copy with provenance and the tag border decision per §14.4.
 - [ ] FR-6: Placement picker as compressed browser per §14.4.
-- [ ] FR-7: Allusion importer as a versioned adapter per §14.4/§4.7.
-- [ ] FR-8: Export size preflight, asked once per project, per §16.
-- [ ] FR-9: First-open seeded example (public-domain set, ordinary records) with the one-time clear affordance per §14.4.
+- [ ] FR-7: Export size preflight, asked once per project, per §16.
+- [ ] FR-8: First-open seeded example (public-domain set, ordinary records) with the one-time clear affordance per §14.4.
+- [ ] FR-9: Inbox mirror — once-per-project opt-in, one-way, hash-recognized, non-blocking per §14.4.
+- [ ] FR-10: Tag tree editor in the browser sidebar; include-descendants toggle on every tag query surface per §4.8.
+- [ ] FR-11 (stretch): Allusion importer as a versioned adapter, hierarchy carried, leaf collisions renamed per §14.4.
 
 ### Non-Functional Requirements
 
