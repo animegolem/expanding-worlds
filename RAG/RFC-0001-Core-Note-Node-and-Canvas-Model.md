@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.29         | 6 July 2026      |
+| Accepted for Phase 1 | 0.30         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2372,7 +2372,11 @@ without adding a library concept to the domain:
   facets (date, name, size), a **kind facet** (image · note ·
   board, rev 0.22), a flat tag filter with counts (orderable by
   name or by count), and the two cleanup filters the model already
-  owns (untagged · unplaced). Bulk selection summons a floating
+  owns (untagged · unplaced). Note-kind entries render as TEXT
+  POSTS (rev 0.30, from the first tester's "diary of sorts"):
+  title and a clamped body excerpt in the cell, tags on hover — so
+  clippings and book excerpts sit beside pictures as first-class
+  gallery material. Bulk selection summons a floating
   action bar (tag · place · trash). Large drops run as an
   interruptible progress strip with a live hash-dedupe count,
   never a modal. The gallery has its own rail charm and also
