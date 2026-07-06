@@ -12,8 +12,7 @@ related_files:
   - RAG/AI-EPIC/AI-EPIC-006-shell-and-local-scope.md
   - RAG/AI-EPIC/AI-EPIC-013-global-views.md
   - RAG/AI-EPIC/AI-EPIC-014-library-and-cross-project-sourcing.md
-  - RAG/archive/design-spec-v2-canonical.zip
-  - RAG/archive/design-ux-memo-2026-07-05.zip
+  - RAG/Design-Artifacts-v1.0.zip
 confidence_score: 0.95
 ---
 
@@ -64,8 +63,9 @@ note, mirror moments with ignore-as-dismissal, export as a ☰ sheet,
 and Q20 closed — the pin becomes a dock tool (◉, N) and the Create
 Pin dialog retires when it ships.
 
-Canonical design artifacts archived beside the RFC
-(RAG/archive/design-spec-v2-canonical.zip, design-ux-memo). Working
+Canonical design artifacts live beside the RFC as
+RAG/Design-Artifacts-v1.0.zip — a living artifact, versioned from
+1.0 and replaced in place as design evolves (owner's call). Working
 letters and intermediate exports deliberately not committed.
 
 ## Session Commits
@@ -104,7 +104,7 @@ zones (this retires drawn handles — e2e that clicks them must
 migrate); note-panel rehost (the CM6 controller ports unchanged —
 container work only); toasts + perch (retire StatusStrip and
 retarget recovery.spec in the same ticket); pin dock tool. Read
-Design Spec v2 in the archive before cutting — it is the visual
-authority. EPIC-006 ships as v0.6.0 per the release ritual. Open
+Design Spec v2 (in RAG/Design-Artifacts-v1.0.zip beside the RFC)
+before cutting — it is the visual authority. EPIC-006 ships as v0.6.0 per the release ritual. Open
 design turns queued for a future cycle: gallery keyboard model
 (Q26), OS-drop importer dialogue (Q27).

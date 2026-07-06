@@ -1410,8 +1410,10 @@ ignored.
 ## 8.2 Shell and workspace model
 
 The shell model was decided in the owner's design-consult wireframe
-cycle (July 2026). The canonical artifact is **Design Spec v2**,
-archived beside this RFC; where wireframe turns and the spec
+cycle (July 2026). The canonical design artifact set lives beside
+this RFC as **RAG/Design-Artifacts-v1.0.zip** (versioned from 1.0,
+replaced in place as design evolves); its Design Spec document is
+the visual authority, and where wireframe turns and the spec
 disagree, the spec wins. It supersedes the earlier
 tabbed-workspace direction and the Baseline UI Vision v0.1 sidebar:
 there are no workspace tabs, no docked sidebar, and no persistent
