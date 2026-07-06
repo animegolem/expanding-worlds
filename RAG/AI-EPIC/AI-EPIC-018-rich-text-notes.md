@@ -50,7 +50,12 @@ set was already a whitelist of markdown-expressible shapes
 (headings, quote, lists, code, links/autolink, HR, highlight);
 (3) code blocks are FIRST-CLASS — language tag, syntax
 highlighting, the thing the old project fought hardest for;
-(4) note-sized editor, not a document app.
+(4) note-sized editor, not a document app;
+(5) the DEFAULT typography is LOUD (owner, 2026-07-06): headings
+get size AND color, formatting reads as formatting at a glance —
+a nice jumpy palette, not gray-on-gray restraint. A quieter
+alternate MAY ship as an option, but loud is the default. Colors
+ride theme tokens like all chrome (the raw-color guard applies).
 
 **Library direction (rev 0.40, owner + lead):** TipTap
 (ProseMirror lineage — the Linear-class shape) as the lead
