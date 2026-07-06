@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
 import type { SceneDecoration } from '@ew/canvas-engine'
+import { openBoardMenu, selectShapeTool } from './helpers'
 
 declare global {
   interface Window {
@@ -89,7 +90,10 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     to: [number, number],
     via: Array<[number, number]> = [],
   ): Promise<void> {
-    await win.getByTestId(`tool-${tool}`).click()
+    // Shape kinds live behind the dock's flyout (AI-IMP-059).
+    if (['rect', 'ellipse', 'triangle', 'shape-arrow'].includes(tool))
+      await selectShapeTool(win, tool)
+    else await win.getByTestId(`tool-${tool}`).click()
     const before = await revision()
     const count = (await decorations()).length
     await win.mouse.move(...at(...from))
@@ -272,7 +276,9 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     .toBe(1)
   expect(await win.evaluate((id) => window.__ewDebug!.decorationVisible(id), line.id)).toBe(false)
   expect((await decorations()).some((d) => d.id === line.id)).toBe(true)
+  await openBoardMenu(win)
   await win.getByTestId(`deco-show-${line.id}`).click()
+  await win.keyboard.press('Escape') // close the Board menu again
   await expect
     .poll(async () => (await decorations()).find((d) => d.id === line.id)?.hidden)
     .toBe(0)
@@ -415,7 +421,7 @@ test('shift-constrained drawing (AI-IMP-035)', async () => {
     win.evaluate(() => window.__ewDebug!.decorations() as never)
 
   // Shift-rect commits a square from the dominant drag extent.
-  await win.getByTestId('tool-rect').click()
+  await selectShapeTool(win, 'rect')
   await win.keyboard.down('Shift')
   await win.mouse.move(box.x + 200, box.y + 200)
   await win.mouse.down()
@@ -442,7 +448,7 @@ test('shift-constrained drawing (AI-IMP-035)', async () => {
   expect(Math.atan2(dy, dx)).toBeCloseTo(Math.PI / 4, 5)
 
   // AI-IMP-038: the arrow SHAPE scales with its box like any shape.
-  await win.getByTestId('tool-shape-arrow').click()
+  await selectShapeTool(win, 'shape-arrow')
   await win.mouse.move(box.x + 600, box.y + 200)
   await win.mouse.down()
   await win.mouse.move(box.x + 700, box.y + 250, { steps: 4 })

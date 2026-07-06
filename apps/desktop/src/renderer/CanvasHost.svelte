@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import BoardToolbar from './BoardToolbar.svelte'
-  import DecorationToolbar from './DecorationToolbar.svelte'
+  import ChromeLayer from './chrome/ChromeLayer.svelte'
   import { attachBoardTooling, type BoardTooling } from './canvas/board-tooling'
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
@@ -95,11 +94,8 @@
 </script>
 
 <div class="canvas-host" data-testid="canvas-host" bind:this={element}>
-  {#if handle && ui}
-    <DecorationToolbar {handle} {ui} />
-  {/if}
-  {#if handle && tooling}
-    <BoardToolbar {handle} {tooling} />
+  {#if handle && ui && tooling}
+    <ChromeLayer {handle} {ui} {tooling} hostElement={element} />
   {/if}
   {#if error}
     <p class="canvas-error" role="alert">Canvas failed to start: {error}</p>

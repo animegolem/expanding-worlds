@@ -99,3 +99,31 @@ export async function seedPlacedNote(
   })
   return { noteId, nodeId }
 }
+
+/**
+ * Chrome helpers (AI-IMP-059): the title strip is hover-revealed at
+ * the top edge; the Board menu (background ops, hidden list) hangs
+ * off it and closes on Escape or its button, never on click-away.
+ * Both helpers are idempotent.
+ */
+export async function revealTitleStrip(win: Page): Promise<void> {
+  if (await win.getByTestId('title-strip').isVisible().catch(() => false)) return
+  // Raw mouse.move, not locator.hover(): the strip appears UNDER the
+  // pointer and would fail hover's "intercepts pointer events" check.
+  const zone = (await win.getByTestId('title-strip-reveal').boundingBox())!
+  await win.mouse.move(zone.x + zone.width / 2, zone.y + zone.height / 2)
+  await expect(win.getByTestId('title-strip')).toBeVisible()
+}
+
+export async function openBoardMenu(win: Page): Promise<void> {
+  if (await win.getByTestId('board-menu').isVisible().catch(() => false)) return
+  await revealTitleStrip(win)
+  await win.getByTestId('board-menu-button').click()
+  await expect(win.getByTestId('board-menu')).toBeVisible()
+}
+
+/** Pick a shape kind through the dock's shape flyout. */
+export async function selectShapeTool(win: Page, kind: string): Promise<void> {
+  await win.getByTestId('dock-shape').click()
+  await win.getByTestId(`tool-${kind}`).click()
+}

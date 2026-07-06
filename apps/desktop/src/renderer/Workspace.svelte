@@ -1,8 +1,9 @@
 <!--
-  Tabbed main workspace (RFC-0001 §8.2). One canvas tab hosting the
-  root canvas; real tab management arrives with EPIC-006. AI-IMP-020
-  adds the Create Pin dialog, the placement-source panel, and their
-  toolbar buttons.
+  Main workspace (RFC-0001 §8.2 rev 0.17): the window is the board —
+  the canvas fills the region with no tab bar (AI-IMP-059 retired it;
+  there are no workspace tabs in the shell model). The interim Create
+  Pin dialog and placement-source panel open from title-strip buttons
+  via window events until AI-IMP-067/065 retire them.
 -->
 <script lang="ts">
   import { uuidv7 } from '@ew/domain'
@@ -137,6 +138,22 @@
     }),
   )
 
+  // Interim entry points, fired by the title strip (AI-IMP-059).
+  onMount(() => {
+    const openPin = (): void => {
+      if (hostHandle) dialogOpen = true
+    }
+    const toggleSources = (): void => {
+      if (hostHandle) panelOpen = !panelOpen
+    }
+    window.addEventListener('ew-open-create-pin', openPin)
+    window.addEventListener('ew-toggle-sources', toggleSources)
+    return () => {
+      window.removeEventListener('ew-open-create-pin', openPin)
+      window.removeEventListener('ew-toggle-sources', toggleSources)
+    }
+  })
+
   // §7.2 Create and Place on Current Canvas: phantom materialization
   // that needs the active canvas and view center — one CreatePin
   // (note + node + default dot + placement), then the pane opens the
@@ -175,40 +192,17 @@
 </script>
 
 <main class="workspace" data-testid="workspace">
-  <div class="tab-bar" role="tablist">
-    <button class="tab active" role="tab" aria-selected="true">Canvas</button>
-    <span class="toolbar">
-      <button
-        type="button"
-        disabled={!hostHandle}
-        onclick={() => (panelOpen = !panelOpen)}
-        data-testid="toggle-sources"
-      >
-        Sources
-      </button>
-      <button
-        type="button"
-        disabled={!hostHandle}
-        onclick={() => (dialogOpen = true)}
-        data-testid="open-create-pin"
-      >
-        Create Pin…
-      </button>
-    </span>
+  {#if panelOpen && hostHandle}
+    <PlacementSourcePanel handle={hostHandle} viewCenter={viewCenterWorld} />
+  {/if}
+  <div class="canvas-slot">
+    <CanvasHost
+      onready={(handle, element) => {
+        hostHandle = handle
+        hostElement = element
+      }}
+    />
   </div>
-  <section class="tab-content" role="tabpanel">
-    {#if panelOpen && hostHandle}
-      <PlacementSourcePanel handle={hostHandle} viewCenter={viewCenterWorld} />
-    {/if}
-    <div class="canvas-slot">
-      <CanvasHost
-        onready={(handle, element) => {
-          hostHandle = handle
-          hostElement = element
-        }}
-      />
-    </div>
-  </section>
   {#if dialogOpen && hostHandle}
     <CreatePinDialog
       handle={hostHandle}
@@ -222,52 +216,9 @@
   .workspace {
     grid-area: workspace;
     display: flex;
-    flex-direction: column;
     min-width: 0;
     overflow: hidden;
-  }
-
-  .tab-bar {
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #ddd;
-    background: #f4f4f4;
-  }
-
-  .tab {
-    padding: 0.4rem 1rem;
-    border: none;
-    border-right: 1px solid #ddd;
-    background: transparent;
-    font: inherit;
-    color: #666;
-    cursor: default;
-  }
-
-  .tab.active {
-    background: #fff;
-    color: #222;
-  }
-
-  .toolbar {
-    display: flex;
-    gap: 0.4rem;
-    margin-left: auto;
-    padding-right: 0.5rem;
-  }
-
-  .toolbar button {
-    padding: 0.2rem 0.7rem;
-    font: inherit;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-
-  .tab-content {
-    flex: 1;
-    display: flex;
-    min-height: 0;
-    overflow: hidden;
+    position: relative;
   }
 
   .canvas-slot {

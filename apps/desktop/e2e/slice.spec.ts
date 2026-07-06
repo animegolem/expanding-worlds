@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test, type Page } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
+import { revealTitleStrip } from './helpers'
 
 declare global {
   interface Window {
@@ -385,6 +386,7 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   expect(nodeUses.length).toBe(2)
   const looseNote = crypto.randomUUID()
   await exec(ctx, 'CreateNote', { noteId: looseNote, title: 'Unplaced Legend' })
+  await revealTitleStrip(win)
   await win.getByTestId('toggle-sources').click()
   await win.getByTestId('sources-tab-notes').click()
   await win
@@ -394,6 +396,7 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   await expect
     .poll(() => win.evaluate(() => window.__ewGestureDebug!.labelTexts()))
     .toContain('Unplaced Legend')
+  await revealTitleStrip(win)
   await win.getByTestId('toggle-sources').click()
 
   // ---- Item 10: open a node's canvas (persisted immediately), add

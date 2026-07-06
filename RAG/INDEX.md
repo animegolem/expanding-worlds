@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 1 |
-| Planned | 4 | 9 |
+| Planned | 4 | 8 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 8 | 57 |
+| Completed | 8 | 58 |
 | **Total** | **14** | **67** |
 
 ## In Progress
@@ -19,7 +19,7 @@
 > RFC §8.2's shell model — the window is the board, floating chrome,
 
 **IMPs:**
-- [[AI-IMP-059-shell-chrome-frame|IMP-059]] Shell chrome frame — planned
+- [[AI-IMP-059-shell-chrome-frame|IMP-059]] Shell chrome frame — completed
 - [[AI-IMP-060-navigation-history-and-path|IMP-060]] Navigation history and path — planned
 - [[AI-IMP-061-bookmarks|IMP-061]] Bookmarks — planned
 - [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — planned
@@ -87,25 +87,25 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/e2e/notes.spec.ts (731 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (721 LOC)
+- apps/desktop/src/renderer/chrome/Dock.svelte (713 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
-- apps/desktop/e2e/board-tooling.spec.ts (614 LOC)
+- apps/desktop/e2e/board-tooling.spec.ts (621 LOC)
 
 ### > 300 LOC
 
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/e2e/decorations.spec.ts (563 LOC)
-- apps/desktop/e2e/slice.spec.ts (541 LOC)
+- apps/desktop/e2e/decorations.spec.ts (569 LOC)
+- apps/desktop/e2e/slice.spec.ts (544 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
-- apps/desktop/e2e/import.spec.ts (480 LOC)
+- apps/desktop/e2e/import.spec.ts (485 LOC)
 - packages/persistence/src/handlers/placements.ts (476 LOC)
 - apps/desktop/e2e/canvas.spec.ts (469 LOC)
 - packages/persistence/src/handlers/placements.test.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (460 LOC)
 - apps/desktop/src/renderer/CreatePinDialog.svelte (459 LOC)
-- apps/desktop/src/renderer/DecorationToolbar.svelte (456 LOC)
 - packages/persistence/src/queries-structure.test.ts (447 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
@@ -120,6 +120,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/commands/src/payloads/structure.ts (338 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (334 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (327 LOC)
@@ -133,7 +134,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>8 EPICs, 57 IMPs completed</summary>
+<summary>8 EPICs, 58 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

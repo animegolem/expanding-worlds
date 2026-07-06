@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
+import { revealTitleStrip } from './helpers'
 
 declare global {
   interface Window {
@@ -230,6 +231,7 @@ test('Create Pin dialog commits one command; inverse cleans up', async () => {
 
   // -- dialog-driven dot pin with a new note title.
   const before = await revisionOf()
+  await revealTitleStrip(win)
   await win.getByTestId('open-create-pin').click()
   await win.getByTestId('pin-note-new').check()
   await win.getByTestId('pin-note-title').fill('Harbor Watch')
@@ -253,6 +255,7 @@ test('Create Pin dialog commits one command; inverse cleans up', async () => {
 
   // -- dialog-driven image pin with a non-destructive crop + note.
   const beforeImage = await revisionOf()
+  await revealTitleStrip(win)
   await win.getByTestId('open-create-pin').click()
   await win.getByTestId('pin-kind-image').check()
   await win
@@ -283,6 +286,7 @@ test('Create Pin dialog commits one command; inverse cleans up', async () => {
   })
 
   // -- duplicate title in the dialog: §7.7 error shown, nothing created.
+  await revealTitleStrip(win)
   await win.getByTestId('open-create-pin').click()
   await win.getByTestId('pin-note-new').check()
   await win.getByTestId('pin-note-title').fill('Harbor Watch')
@@ -360,6 +364,7 @@ test('placement sources (§6.3/§6.10) and node context menu (§6.6)', async () 
     return { noteId, nodeId }
   })
 
+  await revealTitleStrip(win)
   await win.getByTestId('toggle-sources').click()
   // The bare node shows under the Unplaced filter (§14.1 minimal cut).
   await win.getByTestId('sources-filter-unplaced').check()

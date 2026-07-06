@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test, type Page } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
+import { openBoardMenu } from './helpers'
 
 declare global {
   interface Window {
@@ -154,9 +155,10 @@ async function importPng(win: Page, color: string): Promise<string> {
 test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', async () => {
   const { app, win } = await launch('ew-e2e-board-')
 
-  // Buttons gate on selection size before anything is selected.
-  await expect(win.getByTestId('align-left')).toBeDisabled()
-  await expect(win.getByTestId('distribute-horizontal')).toBeDisabled()
+  // The selection segment does not exist without a selection
+  // (AI-IMP-059: it joins the dock only while one exists, §8.2).
+  await expect(win.getByTestId('align-left')).toHaveCount(0)
+  await expect(win.getByTestId('distribute-horizontal')).toHaveCount(0)
 
   // Seed three 40×40 dot placements.
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
@@ -286,6 +288,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
   await win.mouse.click(box.x + 400, box.y + 300)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await openBoardMenu(win)
   await expect(win.getByTestId('bg-set-from-selection')).toBeEnabled()
   const beforeSet = await revision(win)
   await win.getByTestId('bg-set-from-selection').click()
@@ -303,6 +306,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
 
   // Edit Background Position: explicit mode, ephemeral drag, ONE
   // SetCanvasBackground on Done.
+  await openBoardMenu(win)
   await win.getByTestId('bg-edit').click()
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundMode()))
@@ -326,6 +330,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   expect(await win.evaluate(() => window.__ewBoardDebug!.backgroundMode())).toBe(false)
 
   // Escape reverts the sprite and commits nothing.
+  await openBoardMenu(win)
   await win.getByTestId('bg-edit').click()
   await expect
     .poll(() => win.evaluate(() => window.__ewBoardDebug!.backgroundMode()))
@@ -350,6 +355,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
 
   // Reset Background Transform: one command back to the normalized
   // stage default (§6.7 rev 0.11): 2048 / 8 native px = scale 256.
+  await openBoardMenu(win)
   const beforeReset = await revision(win)
   await win.getByTestId('bg-reset').click()
   await expect
@@ -508,6 +514,7 @@ test('background stage: grid, normalize, replace preserves extent, from-selectio
 
   // Set an 8×8 image from file → the STAGE normalizes to 2048 world
   // units, the grid hides, and the camera eases to frame the extent.
+  await openBoardMenu(win)
   await win.getByTestId('bg-file-input').setInputFiles({
     name: 'tiny-map.png',
     mimeType: 'image/png',
