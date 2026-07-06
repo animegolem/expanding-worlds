@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 2 |
-| Planned | 3 | 2 |
+| Planned | 3 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 9 | 71 |
+| Completed | 9 | 72 |
 | **Total** | **14** | **75** |
 
 ## In Progress
@@ -42,7 +42,7 @@
 **IMPs:**
 - [[AI-IMP-068-takeover-framework|IMP-068]] Takeover framework — completed
 - [[AI-IMP-069-outline-view|IMP-069]] Outline view — completed
-- [[AI-IMP-070-outline-placement-flows|IMP-070]] Outline placement flows — planned
+- [[AI-IMP-070-outline-placement-flows|IMP-070]] Outline placement flows — completed
 - [[AI-IMP-071-tag-panel|IMP-071]] Tag panel — completed
 - [[AI-IMP-072-lens|IMP-072]] Lens — completed
 - [[AI-IMP-073-search-and-quick-open|IMP-073]] Search and quick open — completed
@@ -89,6 +89,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-structure.test.ts (762 LOC)
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
+- apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (720 LOC)
 - packages/persistence/src/queries-structure.ts (685 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
@@ -100,10 +101,9 @@ Generated from tracked files; binary assets excluded.
 
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/e2e/slice.spec.ts (542 LOC)
-- apps/desktop/e2e/import.spec.ts (535 LOC)
-- apps/desktop/src/renderer/views/OutlineView.svelte (533 LOC)
+- apps/desktop/e2e/slice.spec.ts (540 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
+- apps/desktop/e2e/import.spec.ts (520 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (513 LOC)
 - apps/desktop/src/main/index.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
@@ -130,13 +130,14 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/hit-test.ts (340 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
-- apps/desktop/src/renderer/chrome/TitleStrip.svelte (333 LOC)
 - packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/persistence/src/handlers/pin.ts (320 LOC)
+- apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/shell.spec.ts (317 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (316 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
 
@@ -144,7 +145,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>9 EPICs, 71 IMPs completed</summary>
+<summary>9 EPICs, 72 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
