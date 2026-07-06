@@ -5,12 +5,12 @@ tags:
   - Implementation
   - import
   - library
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-088]
 parent_epic: [[AI-EPIC-015-library-and-cross-project-sourcing]]
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-090-ingest-by-copy-and-tag-border
@@ -70,7 +70,7 @@ Before marking an item complete on the checklist MUST **stop** and
 - [x] Tag border: none/all/pick applied; name_key merge with
       existing destination tags; units for all three modes +
       merge-vs-create.
-- [ ] Seam exposure: verb reachable from the renderer with a
+- [x] Seam exposure: verb reachable from the renderer with a
       secondary open; typed failures (no secondary, unknown hash).
       (Utility verb + preload shipped and typed failures covered;
       the ipcMain route in main/index.ts was outside the agent's
@@ -94,6 +94,16 @@ source — and exports self-contained.
 still apply.
 
 ### Issues Encountered
+
+Lead close-out: the main route the agent correctly fenced on is
+wired (secondary:ingest → ingest-from-secondary), and a full-seam
+e2e proves the circle — source seeded with a tagged image, hash
+resolved through the source slot's gallery projection, border=all
+ingest, destination holds an unplaced node carrying the tag.
+Standing debts recorded by the agent and kept: multi-command undo
+shape (AI-IMP-086) and source-project-id provenance having no
+schema home (travels in the response; a schema turn can adopt it).
+Gates: 431/36 units, lint, 90/90 e2e.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 2 | 7 |
+| Planned | 2 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 86 |
+| Completed | 11 | 87 |
 | **Total** | **15** | **94** |
 
 ## In Progress
@@ -48,7 +48,7 @@
 **IMPs:**
 - [[AI-IMP-088-secondary-project-seam|IMP-088]] Secondary project seam — completed
 - [[AI-IMP-089-library-scope-toggle|IMP-089]] Library scope toggle — planned
-- [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — planned
+- [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — completed
 - [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — planned
 - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — planned
 - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
@@ -90,10 +90,10 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (628 LOC)
+- apps/desktop/src/main/index.ts (602 LOC)
 
 ### > 300 LOC
 
-- apps/desktop/src/main/index.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
@@ -131,6 +131,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.ts (341 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
+- apps/desktop/src/utility/index.ts (337 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
@@ -147,7 +148,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 86 IMPs completed</summary>
+<summary>11 EPICs, 87 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

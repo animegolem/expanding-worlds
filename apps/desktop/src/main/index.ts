@@ -543,6 +543,20 @@ void app.whenReady().then(() => {
         ...(input.sourceUrl !== undefined ? { sourceUrl: input.sourceUrl } : {}),
       }),
   )
+  ipcMain.handle(
+    'secondary:ingest',
+    (
+      _event,
+      target: 'source' | 'library',
+      input: { contentHash: string; border: 'none' | 'all' | string[] },
+    ) =>
+      callUtility({
+        type: 'ingest-from-secondary',
+        target,
+        contentHash: String(input.contentHash),
+        border: input.border,
+      }),
+  )
   ipcMain.handle('app-settings:get', () => loadAppSettings())
   ipcMain.handle('app-settings:set', (_event, key: string, value: unknown) => {
     setAppSetting(String(key), value)
