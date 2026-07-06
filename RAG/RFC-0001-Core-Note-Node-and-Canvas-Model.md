@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.32         | 6 July 2026      |
+| Accepted for Phase 1 | 0.33         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -549,6 +549,19 @@ the importer-dialogue language below, keyed by site family rather
 than per site; authentication, rate limits, and the exact family
 coverage list are implementation-time concerns inside the adapters,
 never domain concerns.
+
+**Connector surface (rev 0.33 — musing, awaiting the artist
+conversation).** The probable UX shape for these link-drop
+adapters: a **connector store** in settings, where the user
+attaches the connectors for the sites they actually use — a generic
+booru connector, splitting into per-family variants (e.g. a
+Moebooru connector) only when a family's API genuinely diverges.
+Attaching is the user's act; nothing fetches from a site whose
+connector is not attached. This is packaging over the §4.7 adapter
+grammar, not new domain surface, and it composes with the §11.5
+settings tiers (attachment is app-level; per-project behavior stays
+project-level). Held as a musing: the shape needs talking over with
+the first tester before it hardens.
 
 **Deferred with scope: the importer dialogue and import adapters.**
 The importer dialogue is the single expansion point for what content
@@ -3473,7 +3486,9 @@ Accepted for the Phase 1 prototype:
   dropping a booru post link imports media, curated tags (through
   the explicit tag border), thumbnail, and attribution as one
   CreatePin; versioned adapters keyed by API family (Danbooru,
-  Moebooru), Sakugabooru first.
+  Moebooru), Sakugabooru first. Their probable UX is a connector
+  store in settings — attach the connectors for the sites you use
+  (rev 0.33, musing pending the artist conversation).
 
 - Option splits by moment (rev 0.21, §6.9): at drag start it
   duplicates; mid-drag it bypasses snapping.
