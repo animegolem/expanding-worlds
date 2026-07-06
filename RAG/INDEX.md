@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 4 | 2 |
+| Planned | 5 | 2 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 85 |
-| **Total** | **16** | **87** |
+| **Total** | **17** | **87** |
 
 ## In Progress
 
@@ -64,6 +64,11 @@
 
 ---
 
+### [[AI-EPIC-017-frames|EPIC-017: Frames]]
+> Groups are select-and-move aids; the artist's real workflow
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -71,7 +76,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3635 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3674 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
