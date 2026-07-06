@@ -72,22 +72,22 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pointer selection: click, Shift linear range in document
+- [x] Pointer selection: click, Shift linear range in document
       order across bucket boundaries, Mod toggle; anchor rules
       match rev 0.25 (e2e).
-- [ ] Floating action bar appears on non-empty selection with
+- [x] Floating action bar appears on non-empty selection with
       live count; disappears on empty (e2e).
-- [ ] Bulk tag: completion field assigns to all selected nodes,
+- [x] Bulk tag: completion field assigns to all selected nodes,
       name_key merge respected; one toast (e2e).
-- [ ] Place on current canvas: takeover closes first, all
+- [x] Place on current canvas: takeover closes first, all
       selected nodes place via the §6.10 seam (e2e); single-cell
       drag-out sets NODE_DRAG_MIME and the import surface accepts
       it (e2e if the outline drag test pattern transfers, else
       documented manual check).
-- [ ] Bulk trash over the selection; grid refreshes on push;
+- [x] Bulk trash over the selection; grid refreshes on push;
       summary toast (e2e).
-- [ ] Escape peels selection first, closes takeover second (e2e).
-- [ ] `pnpm -r build`, full gates green.
+- [x] Escape peels selection first, closes takeover second (e2e).
+- [x] `pnpm -r build`, full gates green.
 
 ### Acceptance Criteria
 
@@ -113,3 +113,43 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Bulk place needed two Workspace-side adaptations, not one.** The
+  anticipated fix was the cascade offset (repeated requests all
+  landed at dead view center — mirrored import-surfaces'
+  MULTI_DROP_OFFSET, 24, with the step counter resetting on the next
+  macrotask so a lone Place still lands exactly at center). But the
+  first e2e run landed 1 of 3: the burst's parallel
+  `gateway.execute` calls share one observed revision, so every
+  CreatePlacement after the first failed the §10.2 optimistic check.
+  Fixed in the same onPlaceNode handler by serializing the burst
+  through a promise chain — the gateway notes each committed
+  revision, so the check stays fresh and stays ON (no
+  `checkRevision: false` weakening).
+- **Duplicate assigns**: the AssignTagToNode handler throws
+  TAG_ALREADY_ASSIGNED (packages/persistence/src/handlers/tags.ts),
+  so the bar assigns per node and buckets that error code as
+  "already tagged" in the one summary toast; any other non-committed
+  result counts as failed. Verified by e2e (a pre-tagged node in the
+  selection).
+- **Completion list source**: `galleryTagCounts` count-ordered (the
+  facet strip's own vocabulary/order) rather than plain `listTags`.
+  That query omits assignment-less draft tags, so typing a draft
+  tag's name routes through CreateTag → TAG_NAME_CONFLICT; the bar
+  falls back to the conflict's `existingTagId` detail — the same
+  path that closes the create/lookup race.
+- Pre-existing, untouched: GalleryView's 078 styles reference
+  `--ew-text-dim`, which is not defined in theme.css (silently
+  inherits). New 079 styles use defined tokens only; flagging for
+  the lead rather than fixing out-of-scope styling.
+- Tagging keeps the selection (only trash clears it) so a
+  tag-then-place curation pass works without reselecting.
+- **Bucket-boundary honesty**: the range e2e seeds one date bucket
+  (CreateNode cannot backdate created_at). The claim still holds by
+  construction — the range is computed over the flat index array,
+  which is document order; buckets are date sort's PRESENTATION
+  (gallery-buckets slices that same array) and are invisible to the
+  selection model. No selection code path branches on buckets.
+- The drag-out e2e transferred directly from the outline row drag
+  test (synthesized DragEvent + DataTransfer); no manual check
+  needed.
