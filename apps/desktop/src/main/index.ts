@@ -191,7 +191,9 @@ function setAppSetting(key: string, value: unknown): void {
  */
 let projectReady = false
 const ASSET_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/?$/
-const THUMB_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/thumb\/?$/
+// The trailing query tolerates the renderer's ?v= cache-bust on
+// thumbnail-ready repaints (PR #3 review): same file, fresh fetch.
+const THUMB_URL_RE = /^ew-asset:\/\/([0-9a-f]{64})\/thumb\/?(?:\?[^#]*)?$/
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -465,6 +467,11 @@ void app.whenReady().then(() => {
       return
     }
     projectReady = true
+    // Windows racing a slow open need the same ready signal the
+    // recovery path sends — the renderer's thumbnail drive (076)
+    // re-kicks on it, and a window created after this broadcast
+    // is covered by its own boot kick.
+    broadcastService({ status: 'ok' })
   })
 
   ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {
@@ -492,12 +499,10 @@ void app.whenReady().then(() => {
   ipcMain.handle('project:claim-thumbnail-job', () => callUtility({ type: 'claim-thumbnail-job' }))
   ipcMain.handle(
     'project:submit-thumbnail',
-    (_event, input: { jobId: string; assetId: string; contentHash: string; bytes: Uint8Array | null }) =>
+    (_event, input: { jobId: string; bytes: Uint8Array | null }) =>
       callUtility({
         type: 'submit-thumbnail',
         jobId: input.jobId,
-        assetId: input.assetId,
-        contentHash: input.contentHash,
         bytes: input.bytes,
       }),
   )

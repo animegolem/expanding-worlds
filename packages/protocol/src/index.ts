@@ -120,9 +120,9 @@ export type ClaimThumbnailJobResponse =
 export interface SubmitThumbnailRequest {
   type: 'submit-thumbnail'
   jobId: string
-  assetId: string
-  contentHash: string
-  /** WebP bytes; null marks the job failed (undecodable source). */
+  /** WebP bytes; null marks the job failed (undecodable source).
+   * The asset identity and hash come from the JOB on the service
+   * side — the renderer is never trusted with a path component. */
   bytes: Uint8Array | null
 }
 

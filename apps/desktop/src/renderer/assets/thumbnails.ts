@@ -20,26 +20,30 @@ const WEBP_QUALITY = 0.82
 let driving = false
 
 /** Drains the derivative queue; concurrent calls collapse into the
- * running drive (re-triggering during a drive is safe and cheap). */
+ * running drive (re-triggering during a drive is safe and cheap).
+ * A failed CLAIM (service down, project not open yet) or a failed
+ * SUBMIT (read-only dir, disk full) STOPS the drive instead of
+ * spinning on the same queued job — the next trigger retries
+ * (PR #3 review). */
 export async function driveThumbnails(): Promise<void> {
   if (driving) return
   driving = true
   try {
     for (;;) {
-      const job = await window.ew.derivatives.claimThumbnailJob()
-      if (!job) return
+      const claim = await window.ew.derivatives.claimThumbnailJob()
+      if (!claim.ok || claim.job === null) return
+      const job = claim.job
       let bytes: Uint8Array | null = null
       try {
         bytes = await generateThumbnail(job.contentHash)
       } catch {
         bytes = null // undecodable source: submit the failure
       }
-      await window.ew.derivatives.submitThumbnail({
+      const submitted = await window.ew.derivatives.submitThumbnail({
         jobId: job.jobId,
-        assetId: job.assetId,
-        contentHash: job.contentHash,
         bytes,
       })
+      if (!submitted.ok) return
     }
   } finally {
     driving = false
@@ -82,8 +86,13 @@ export function initThumbnailPipeline(): void {
   window.ew.project.onChanged((event) => {
     if (event.commandType === 'CommitAssetImport') void driveThumbnails()
   })
-  // The window may attach after main finished init (no further
-  // service-status broadcast): one unconditional kick covers it. A
-  // claim before the project opens just returns null.
+  // Boot kick with a short retry ladder: the window and the initial
+  // project open race (main broadcasts 'ok' on init success, but a
+  // window created AFTER that broadcast never hears it — and one
+  // created before may load first and claim into NO_PROJECT). The
+  // retries stop mattering the moment any trigger above lands.
   void driveThumbnails()
+  for (const delay of [1000, 3000, 8000]) {
+    setTimeout(() => void driveThumbnails(), delay)
+  }
 }

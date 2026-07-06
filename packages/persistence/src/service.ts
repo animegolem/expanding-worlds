@@ -60,12 +60,14 @@ export interface ProjectService {
   /** §11.2 derivative queue, renderer-driven (AI-IMP-076): the
    * oldest queued thumbnail job, or null when drained. */
   claimThumbnailJob(): ThumbnailJob | null
-  /** Lands generated thumbnail bytes (null = generation failed). */
+  /** Lands generated thumbnail bytes (null bytes = generation
+   * failed). The hash/asset come from the JOB, never the caller;
+   * returns them for the ready broadcast, or null when nothing
+   * landed. */
   completeThumbnailJob(input: {
     jobId: string
-    contentHash: string
     bytes: Uint8Array | null
-  }): void
+  }): { assetId: string; contentHash: string } | null
   /** §11.4 startup recovery outcome for this open. */
   recovery(): RecoveryReport
   close(): void

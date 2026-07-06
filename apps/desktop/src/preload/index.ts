@@ -10,7 +10,6 @@ import type {
   ServiceStatusEvent,
   SetSettingResponse,
   SubmitThumbnailResponse,
-  ThumbnailJobInfo,
   ThumbnailReadyEvent,
 } from '@ew/protocol'
 
@@ -132,16 +131,13 @@ const api = {
    * renderer claims queued jobs, generates WebP thumbnails with
    * Chromium codecs, and submits bytes back to the utility. */
   derivatives: {
-    claimThumbnailJob: async (): Promise<ThumbnailJobInfo | null> => {
-      const response = (await ipcRenderer.invoke(
-        'project:claim-thumbnail-job',
-      )) as ClaimThumbnailJobResponse
-      return response.ok ? response.job : null
-    },
+    /** The full response — ok:false (service down, project not yet
+     * open) is distinct from an empty queue, and the drive loop
+     * treats them differently. */
+    claimThumbnailJob: (): Promise<ClaimThumbnailJobResponse> =>
+      ipcRenderer.invoke('project:claim-thumbnail-job') as Promise<ClaimThumbnailJobResponse>,
     submitThumbnail: (input: {
       jobId: string
-      assetId: string
-      contentHash: string
       bytes: Uint8Array | null
     }): Promise<SubmitThumbnailResponse> =>
       ipcRenderer.invoke('project:submit-thumbnail', input) as Promise<SubmitThumbnailResponse>,

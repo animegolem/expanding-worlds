@@ -114,7 +114,12 @@ describe('renderer-driven thumbnail pipeline (AI-IMP-076)', () => {
     expect(job).toEqual({ jobId, assetId, contentHash: 'aa11', mimeType: 'image/png' })
 
     const bytes = new Uint8Array([1, 2, 3, 4])
-    completeThumbnailJob(ctx, dir, { jobId, contentHash: 'aa11', bytes })
+    // The hash comes from the JOB, never the caller (P1: a caller
+    // string would be a filesystem path component).
+    expect(completeThumbnailJob(ctx, dir, { jobId, bytes })).toEqual({
+      assetId,
+      contentHash: 'aa11',
+    })
     expect(readFileSync(thumbnailPath(dir, 'aa11'))).toEqual(Buffer.from(bytes))
     expect(
       project.db.get<{ state: string }>('SELECT state FROM derivative_jobs WHERE id = ?', jobId),
@@ -124,22 +129,30 @@ describe('renderer-driven thumbnail pipeline (AI-IMP-076)', () => {
 
   it('null bytes mark the job failed and write nothing', () => {
     const jobId = enqueueThumbnail(ctx, insertAsset('bb22'))
-    completeThumbnailJob(ctx, dir, { jobId, contentHash: 'bb22', bytes: null })
+    expect(completeThumbnailJob(ctx, dir, { jobId, bytes: null })).toBeNull()
     expect(existsSync(thumbnailPath(dir, 'bb22'))).toBe(false)
     expect(
       project.db.get<{ state: string }>('SELECT state FROM derivative_jobs WHERE id = ?', jobId),
     ).toEqual({ state: 'failed' })
   })
 
+  it('an unknown or finished job lands nothing — the caller never picks a path', () => {
+    // Unknown job id: no write, no crash, null result.
+    expect(
+      completeThumbnailJob(ctx, dir, { jobId: 'no-such-job', bytes: new Uint8Array([1]) }),
+    ).toBeNull()
+    // A finished job cannot be re-landed with different bytes.
+    const jobId = enqueueThumbnail(ctx, insertAsset('9977'))
+    completeThumbnailJob(ctx, dir, { jobId, bytes: new Uint8Array([1]) })
+    expect(completeThumbnailJob(ctx, dir, { jobId, bytes: new Uint8Array([2]) })).toBeNull()
+    expect(readFileSync(thumbnailPath(dir, '9977'))).toEqual(Buffer.from([1]))
+  })
+
   it('claim skips-and-completes jobs whose thumbnail already exists (shared bytes)', () => {
     // Two assets share a hash: the first job materializes the file,
     // the second must resolve without a decode.
     const first = enqueueThumbnail(ctx, insertAsset('cc33'))
-    completeThumbnailJob(ctx, dir, {
-      jobId: first,
-      contentHash: 'cc33',
-      bytes: new Uint8Array([9]),
-    })
+    completeThumbnailJob(ctx, dir, { jobId: first, bytes: new Uint8Array([9]) })
     const second = enqueueThumbnail(ctx, insertAsset('cc33'))
     expect(claimNextThumbnailJob(ctx, dir)).toBeNull()
     expect(
@@ -152,11 +165,7 @@ describe('renderer-driven thumbnail pipeline (AI-IMP-076)', () => {
     insertAsset('dd44') // shared bytes: one job, not two
     const materialized = insertAsset('ee55')
     const done = enqueueThumbnail(ctx, materialized)
-    completeThumbnailJob(ctx, dir, {
-      jobId: done,
-      contentHash: 'ee55',
-      bytes: new Uint8Array([7]),
-    })
+    completeThumbnailJob(ctx, dir, { jobId: done, bytes: new Uint8Array([7]) })
 
     expect(enqueueMissingThumbnails(ctx, dir)).toBe(1)
     // Idempotent: the queued job suppresses re-enqueue.
@@ -173,11 +182,7 @@ describe('renderer-driven thumbnail pipeline (AI-IMP-076)', () => {
     try {
       const job = service.claimThumbnailJob()
       expect(job?.contentHash).toBe('ff66')
-      service.completeThumbnailJob({
-        jobId: job!.jobId,
-        contentHash: 'ff66',
-        bytes: new Uint8Array([5]),
-      })
+      service.completeThumbnailJob({ jobId: job!.jobId, bytes: new Uint8Array([5]) })
       expect(existsSync(thumbnailPath(dir, 'ff66'))).toBe(true)
       expect(service.claimThumbnailJob()).toBeNull()
     } finally {

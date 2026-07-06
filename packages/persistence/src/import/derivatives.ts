@@ -114,22 +114,37 @@ export function claimNextThumbnailJob(ctx: DerivativeCtx, dir: string): Thumbnai
  * failed (undecodable source — the grid falls back to the
  * original). The thumbnails directory is recreated on demand: a
  * user deleting derivatives/ must never wedge the pipeline.
+ *
+ * The write path DERIVES the content hash from the job's own asset
+ * row — the submitting renderer is never trusted with a filesystem
+ * path component (PR #3 review, P1: a compromised renderer could
+ * otherwise smuggle separators through the preload surface). An
+ * unknown or non-queued job writes nothing and returns null.
  */
 export function completeThumbnailJob(
   ctx: DerivativeCtx,
   dir: string,
-  input: { jobId: string; contentHash: string; bytes: Uint8Array | null },
-): void {
+  input: { jobId: string; bytes: Uint8Array | null },
+): { assetId: string; contentHash: string } | null {
+  const job = ctx.db.get<{ assetId: string; contentHash: string; state: string }>(
+    `SELECT j.asset_id AS assetId, a.content_hash AS contentHash, j.state
+     FROM derivative_jobs j
+     JOIN asset a ON a.id = j.asset_id
+     WHERE j.id = ? AND j.kind = 'thumbnail'`,
+    input.jobId,
+  )
+  if (!job || job.state !== 'queued') return null
   if (input.bytes === null || input.bytes.length === 0) {
     markJobFailed(ctx, input.jobId)
-    return
+    return null
   }
-  const dest = thumbnailPath(dir, input.contentHash)
+  const dest = thumbnailPath(dir, job.contentHash)
   mkdirSync(dirname(dest), { recursive: true })
   const tmp = `${dest}.tmp-${input.jobId}`
   writeFileSync(tmp, input.bytes)
   renameSync(tmp, dest)
   markJobDone(ctx, input.jobId)
+  return { assetId: job.assetId, contentHash: job.contentHash }
 }
 
 /**

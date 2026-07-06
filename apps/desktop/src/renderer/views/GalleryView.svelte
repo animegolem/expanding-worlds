@@ -91,6 +91,9 @@
   let index = $state<IndexEntry[]>([])
   let loaded = $state(false)
   let items = $state<Record<string, Item>>({})
+  // Bumped when the cache clears; in-flight hydrations from an
+  // older generation are dropped instead of resurrecting stale rows.
+  let itemsGeneration = 0
   let thumbNonce = $state<Record<string, number>>({})
   let scroller = $state<HTMLElement | null>(null)
   let gridEl = $state<HTMLElement | null>(null)
@@ -171,7 +174,17 @@
       preferredCol = 0
     })
   })
-  $effect(() => window.ew.project.onChanged(() => void refresh(facetArgs)))
+  // Hydrated items are NOT immutable across project changes (titles,
+  // excerpts, tag names, child canvases) — drop the cache with the
+  // stale index; the visible window rehydrates in one batch
+  // (PR #3 review).
+  $effect(() =>
+    window.ew.project.onChanged(() => {
+      itemsGeneration += 1
+      items = {}
+      void refresh(facetArgs)
+    }),
+  )
   // 076's push: a landed derivative repaints its cells by cache-bust.
   $effect(() =>
     window.ew.derivatives.onThumbnailReady(({ contentHash }) => {
@@ -235,8 +248,9 @@
   })
 
   // Hydrate exactly the visible window; in-flight ids are not
-  // re-requested. Item records are immutable per node, so a stale
-  // response can never clobber a fresher one.
+  // re-requested. Item records are mutable across project changes
+  // (the cache clears then), so responses carry the generation they
+  // were requested under and stale ones are dropped whole.
   const pending = new Set<string>()
   $effect(() => {
     const wanted: string[] = []
@@ -248,8 +262,10 @@
     }
     if (wanted.length === 0) return
     for (const id of wanted) pending.add(id)
+    const generation = itemsGeneration
     void runQuery<Item[]>('getGalleryItems', { nodeIds: wanted })
       .then((fetched) => {
+        if (generation !== itemsGeneration) return
         const next = { ...items }
         for (const item of fetched) next[item.nodeId] = item
         items = next

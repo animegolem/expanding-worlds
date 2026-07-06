@@ -134,16 +134,15 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
         }
       }
       try {
-        service.completeThumbnailJob({
+        const landed = service.completeThumbnailJob({
           jobId: request.jobId,
-          contentHash: request.contentHash,
           bytes: request.bytes,
         })
-        if (request.bytes !== null && request.bytes.length > 0) {
+        if (landed) {
           post({
             kind: 'thumbnail-ready',
-            assetId: request.assetId,
-            contentHash: request.contentHash,
+            assetId: landed.assetId,
+            contentHash: landed.contentHash,
           })
         }
         return { type: 'submit-thumbnail', ok: true }
