@@ -147,6 +147,8 @@ importer dialogue (open question 27) stays deferred.
   hash-store rule; the thumbnail is the only re-encode in the
   system and must not be the place transparency dies.
 
+Shipped in v0.7.0 (with EPIC-013; sequential-minor convention).
+
 ## Implementation Breakdown
 
 Cut 2026-07-06: AI-IMP-076 thumbnail pipeline (FR-1, the codec

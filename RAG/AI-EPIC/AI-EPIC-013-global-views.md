@@ -100,6 +100,8 @@ ships beside the outline. No theme engine is built.
 - Disconnection filters use the §14.1 orphan/loose vocabulary
   consistently across outline, tag panel, and the future graph.
 
+Shipped in v0.7.0 (with EPIC-014; sequential-minor convention).
+
 ## Implementation Breakdown
 
 Cut 2026-07-05: AI-IMP-068 takeover framework (FR-1) →

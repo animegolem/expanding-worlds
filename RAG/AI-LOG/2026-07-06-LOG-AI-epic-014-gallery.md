@@ -113,12 +113,22 @@ gallery-keys 17, import-progress 6).
 
 ## Next Steps
 
-**PR #3 is the gate**: Codex review → triage → merge commit → pull
-main → flip AI-EPIC-014 completed → regenerate index. Then the
-release convention (CLAUDE.md): bump apps/desktop version and tag —
-NOTE: EPIC-013 closed without its version bump/tag (still 0.6.0);
-decide at close whether to tag v0.13.0 retroactively or fold both
-into v0.14.0. Owner eyeballs invited: light-theme legibility over
+*(Amended post-close.)* PR #3's round-trip completed inside the
+session: Codex found five findings — a P1 (renderer-supplied
+contentHash reached a filesystem path; fixed by deriving asset and
+hash from the job row, so the submit surface carries only jobId +
+bytes) and four P2s (cache-busted /thumb URLs rejected by the
+protocol regex; stale hydrated gallery items, fixed with a
+clear-on-change plus a generation guard; the drive loop hot-spinning
+on persistent submit failure; the init/window race stranding
+backfill, fixed with an initial service-ok broadcast plus a boot
+retry ladder). All fixed, gates re-green (82/405/36), merge commit
+b694d89, epic completed. **Versioning revised (owner decision)**:
+epics do not close in numeric order, so minor-equals-epic-number is
+dead — SEQUENTIAL minor per epic close, epic named in the tag
+annotation and a "shipped in vX.Y.0" epic-doc line; v0.7.0 tags
+this merge covering EPIC-013 + EPIC-014; CLAUDE.md updated. Owner
+eyeballs invited: light-theme legibility over
 art (carried), 'earlier this year' as named months, gallery cell
 sizing/feel on real art. EPIC-015 (library ecosystem) is fully
 scoped in §14.4: library project, scope toggle, inbox mirror,

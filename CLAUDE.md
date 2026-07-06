@@ -67,9 +67,13 @@ never delegated. Implementation may be decomposed:
   (`pandoc RAG/RFC-0001-....md -o check.docx` as a sanity check).
 - `spike/` is throwaway benchmark code — findings transfer via
   `RAG/spike-reports/`, code does not.
-- Releases (AI-EPIC-011): versioning is minor = epic number
-  (EPIC-006 ships v0.6.0), patch for hotfixes. On epic close: bump
-  `apps/desktop/package.json` version, tag `vX.Y.Z`, push the tag —
+- Releases (AI-EPIC-011, revised at v0.7.0): SEQUENTIAL minor bump
+  per epic close — epics do not finish in numeric order (a
+  late-closing EPIC-007 must not want v0.7.0 after v0.14.0 exists),
+  so the epic↔version mapping lives in the tag annotation, the
+  GitHub release title, and a "shipped in vX.Y.0" line in the epic
+  doc, never in the number. Patch for hotfixes. On epic close: bump
+  `apps/desktop/package.json` minor, tag `vX.Y.0`, push the tag —
   the release workflow builds unsigned DMG/NSIS/AppImage and
   attaches them to the GitHub Release. Perf e2e is a local hardware
   gate only (CI runners have no GPU; the suite refuses software GL).
