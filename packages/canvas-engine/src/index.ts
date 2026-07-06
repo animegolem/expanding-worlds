@@ -38,6 +38,12 @@ export { BackgroundSync } from './renderers/background'
 export { Camera, MAX_ZOOM, MIN_ZOOM, type Point, type Rect } from './camera'
 export { CameraFlight, FLIGHT_DURATION_MS } from './camera-flight'
 export {
+  CameraZoomChase,
+  ZOOM_CHASE_HEADSTART_MS,
+  ZOOM_CHASE_SNAP_LOG_EPSILON,
+  ZOOM_CHASE_TAU_MS,
+} from './camera-zoom-chase'
+export {
   drawGrid,
   gridLevels,
   gridLinePositions,
