@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
-import { launchApp, launchAppInDir, revision, runQuery } from './helpers'
+import { exec, launchApp, launchAppInDir, revision, runQuery } from './helpers'
 
 /**
  * §11.5 settings takeover (AI-IMP-074): commit-on-click with no save
@@ -39,7 +39,19 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   await win.getByTestId('settings-title-strip-always').click()
   await win.getByTestId('settings-fade-never').click()
   await expect(win.getByTestId('settings-fade-never')).toHaveAttribute('aria-pressed', 'true')
+
+  // Flat canvas color repaints the background-less board live.
   await win.getByTestId('settings-flat-3').click()
+  await expect
+    .poll(() =>
+      win.evaluate(() => {
+        const wanted = getComputedStyle(document.documentElement)
+          .getPropertyValue('--ew-canvas-flat-3')
+          .trim()
+        return window.__ewDebug!.stage().fallbackColor === wanted
+      }),
+    )
+    .toBe(true)
 
   // App-tier changes never enter command history: same revision.
   expect(await revision(win)).toBe(revisionBefore)
@@ -87,6 +99,56 @@ test('settings commit on click, apply live, and persist per tier across relaunch
     'arrives with the grid feature',
   )
   await second.app.close()
+})
+
+test('charm corner flips existing hint charms live (§11.5)', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-appcfg-corner-'))
+  const { app, win } = await launchApp('ew-e2e-settings-corner-', {
+    EW_APP_CONFIG_DIR: configDir,
+  })
+
+  // A noted 200×200 placement grows lower-right hint charms (§8.4).
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'CreatePin', {
+    nodeId: crypto.randomUUID(),
+    canvasId,
+    placementId,
+    x: 400,
+    y: 300,
+    appearance: { kind: 'dot', color: '#77aaff' },
+    note: { kind: 'create', noteId: crypto.randomUUID(), title: 'Corner Probe' },
+  })
+  await exec(win, 'TransformContent', {
+    canvasId,
+    items: [
+      {
+        kind: 'placement',
+        placementId,
+        x: 400,
+        y: 300,
+        width: 200,
+        height: 200,
+        scale: 1,
+        rotation: 0,
+      },
+    ],
+  })
+  const group = win.getByTestId(`hint-charms-${placementId}`)
+  await expect(group).toBeVisible()
+  const before = (await group.boundingBox())!
+
+  await openSettings(win)
+  await win.getByTestId('settings-charm-corner-upper-right').click()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('settings-view')).toHaveCount(0)
+
+  // The flip moves the charm group up by roughly the placement height.
+  await expect
+    .poll(async () => ((await group.boundingBox()) ?? { y: before.y }).y)
+    .toBeLessThan(before.y - 100)
+
+  await app.close()
 })
 
 test('corrupt app-settings file falls back to defaults', async () => {

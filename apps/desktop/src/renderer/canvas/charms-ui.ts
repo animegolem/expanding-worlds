@@ -20,6 +20,7 @@ import { onEngagementChanged } from '../chrome/engagement'
 import { tooltip } from '../chrome/tooltip'
 import { requestAttachNote, requestOpenNote } from '../note/open-note'
 import { openCornerPanel } from '../note/panels'
+import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { openTagPanel } from '../tags/tag-panel'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 
@@ -363,15 +364,17 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       if (Math.min(screenW, screenH) < CHARM_MIN_SCREEN_PX) continue
       seen.add(item.id)
       const entry = entryFor(item)
+      // Inset inside the chosen right corner: lower-right by default,
+      // upper-right via the §11.5 charm-corner setting (AI-IMP-074).
+      const upper = appSettings().charmCorner === 'upper-right'
       const corner = camera.worldToScreen({
         x: aabb.x + aabb.width,
-        y: aabb.y + aabb.height,
+        y: upper ? aabb.y : aabb.y + aabb.height,
       })
-      // Inset inside the lower-right image corner (§8.4).
       const width = entry.group.offsetWidth || 20
       const height = entry.group.offsetHeight || 20
       entry.group.style.left = `${corner.x - width - 4}px`
-      entry.group.style.top = `${corner.y - height - 4}px`
+      entry.group.style.top = upper ? `${corner.y + 4}px` : `${corner.y - height - 4}px`
     }
     for (const id of [...entries.keys()]) {
       if (!seen.has(id)) removeEntry(id)
@@ -419,6 +422,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     }),
   )
   disposers.push(host.controller.selection.onChanged(() => schedule()))
+  // §11.5 charm corner applies to charms already on screen (074).
+  disposers.push(onAppSettingsChanged(() => schedule()))
   // One shared fade clock: the layer fades with the chrome; per-group
   // rest opacity + hover live in the injected stylesheet.
   disposers.push(

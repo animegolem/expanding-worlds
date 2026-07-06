@@ -118,6 +118,7 @@ declare global {
         gridVisible: boolean
         extent: { x: number; y: number; width: number; height: number } | null
         flightActive: boolean
+        fallbackColor: string
       }
       /** Test seam: place the camera deterministically (cancels any
        * flight through the external-change hook). */
@@ -774,6 +775,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       gridVisible: stageExtent(sceneBackground) === null,
       extent: stageExtent(sceneBackground),
       flightActive: flight.active,
+      // §11.5 flat canvas color (074): what a background-less board
+      // actually paints right now.
+      fallbackColor: stageFallbackColor,
     }),
     setCamera: (state: { x: number; y: number; zoom: number }) => {
       controller.camera.set(state)
