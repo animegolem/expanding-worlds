@@ -7,8 +7,8 @@ tags:
   - settings
   - theming
 date_created: 2026-07-05
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-06
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-068
   - AI-IMP-069
@@ -109,3 +109,9 @@ flows (FR-3) · AI-IMP-071 tag panel (FR-4, FR-6) · AI-IMP-072 lens
 AI-IMP-074 settings takeover (FR-9, depends on 075) · AI-IMP-075
 theme tokens (FR-10). 072 and 075 are framework-independent and
 fan out first; 070/071/073 parallelize after 069.
+
+Closed 2026-07-06: all eight IMPs completed across two waves; the
+epic shipped as PR #1 (epic-013-wave-two), Codex's PR review found
+five P2s (search asset/canvas-text edge cases, panels surviving a
+takeover, a stale tag lens, an unwired settings row), all accepted
+and fixed on the branch before the merge.

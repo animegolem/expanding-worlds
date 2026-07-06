@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 2 |
+| In Progress | 1 | 2 |
 | Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 9 | 73 |
+| Completed | 10 | 73 |
 | **Total** | **14** | **75** |
 
 ## In Progress
@@ -33,21 +33,6 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
-
----
-
-### [[AI-EPIC-013-global-views|EPIC-013: Global views]]
-> The shell's second physics — project-global views that take over the
-
-**IMPs:**
-- [[AI-IMP-068-takeover-framework|IMP-068]] Takeover framework — completed
-- [[AI-IMP-069-outline-view|IMP-069]] Outline view — completed
-- [[AI-IMP-070-outline-placement-flows|IMP-070]] Outline placement flows — completed
-- [[AI-IMP-071-tag-panel|IMP-071]] Tag panel — completed
-- [[AI-IMP-072-lens|IMP-072]] Lens — completed
-- [[AI-IMP-073-search-and-quick-open|IMP-073]] Search and quick open — completed
-- [[AI-IMP-074-settings-takeover|IMP-074]] Settings takeover — completed
-- [[AI-IMP-075-theme-tokens|IMP-075]] Theme tokens — completed
 
 ---
 
@@ -82,7 +67,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3343 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3375 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (840 LOC)
@@ -102,20 +87,20 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
+- apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
+- apps/desktop/src/renderer/tags/TagPanel.svelte (521 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
-- apps/desktop/src/renderer/tags/TagPanel.svelte (513 LOC)
 - apps/desktop/src/main/index.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
-- apps/desktop/src/renderer/chrome/SearchPanel.svelte (498 LOC)
 - apps/desktop/e2e/gestures.spec.ts (484 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (478 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (464 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (439 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
 - apps/desktop/src/renderer/note/panels.ts (413 LOC)
@@ -123,6 +108,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
+- packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
@@ -130,7 +116,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/hit-test.ts (340 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
-- packages/persistence/src/queries-search.test.ts (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
@@ -139,13 +124,14 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/shell.spec.ts (317 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (308 LOC)
+- apps/desktop/e2e/search.spec.ts (305 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
 
 ---
 
 ## Completed
 <details>
-<summary>9 EPICs, 73 IMPs completed</summary>
+<summary>10 EPICs, 73 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -209,5 +195,14 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-056-feel-constants-label-rename-link-affordance|IMP-056]] Feel constants label rename link affordance — completed
   - [[AI-IMP-057-ssrf-guard-and-e2e-helpers|IMP-057]] Ssrf guard and e2e helpers — completed
   - [[AI-IMP-058-external-review-follow-ups|IMP-058]] External review follow ups — completed
+- [[AI-EPIC-013-global-views|EPIC-013]] Global views — 2026-07-06
+  - [[AI-IMP-068-takeover-framework|IMP-068]] Takeover framework — completed
+  - [[AI-IMP-069-outline-view|IMP-069]] Outline view — completed
+  - [[AI-IMP-070-outline-placement-flows|IMP-070]] Outline placement flows — completed
+  - [[AI-IMP-071-tag-panel|IMP-071]] Tag panel — completed
+  - [[AI-IMP-072-lens|IMP-072]] Lens — completed
+  - [[AI-IMP-073-search-and-quick-open|IMP-073]] Search and quick open — completed
+  - [[AI-IMP-074-settings-takeover|IMP-074]] Settings takeover — completed
+  - [[AI-IMP-075-theme-tokens|IMP-075]] Theme tokens — completed
 
 </details>
