@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.42         | 6 July 2026      |
+| Accepted for Phase 1 | 0.43         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -592,6 +592,24 @@ mirror's summary chip and recognition offers get a natural landing
 ("N mirrored → view inbox"); provenance enables a came-via-mirror
 refinement if plain untouched proves too broad. No schema: it is a
 filter over facts the records already carry, like its siblings.
+
+**Quality metrics and the curation list (rev 0.43 — owner musing,
+library-scoped surface, project-agnostic facts).** Cheap
+header-level quality signals per asset: JPEG quantization-table
+quality estimation (the classic Q-table → encoder-quality mapping,
+pure byte reading, no decode), bytes-per-pixel, chroma
+subsampling, bit depth, resolution floor — upscale detection is
+the one non-cheap signal and stays stretch. Collected by a
+per-asset scan job on the §11.2 derivative-queue pattern (lazy
+backfill, self-healing); stored as asset-level facts (a schema
+turn: metrics table or columns). Surface: an ADMIN/CURATION mode
+of the library's gallery beside the inbox facet — a flagged list
+with reasons ("JPEG q≈35 · 0.4 bpp · 812px") — library-scoped v1,
+but the metrics ride assets, so extending the surface to any
+project is trivial by construction. The composition is the point:
+the quality list is the WORKLIST for replace-file (rev 0.35), and
+source-identity dedupe keeps every upgrade fixed against connector
+re-scans.
 
 **External libraries and the page picker (rev 0.41 — musings from
 the artist session, low priority, plausibility-confirmed).** Two
