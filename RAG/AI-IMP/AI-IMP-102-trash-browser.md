@@ -5,7 +5,7 @@ tags:
   - Implementation
   - lifecycle
   - chrome
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [[AI-IMP-110-menu-shell]]
 parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.6
@@ -66,17 +66,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Trash takeover opens from the ☰ Trash… row; flat list rows
+- [x] Trash takeover opens from the ☰ Trash… row; flat list rows
       show kind glyph, title, trashed-when, impact summary for
       trashed note, node, and canvas records.
-- [ ] Per-row restore dispatches RestoreRecord; the row leaves the
+- [x] Per-row restore dispatches RestoreRecord; the row leaves the
       list; a toast offers fly-to (and flying works cross-canvas).
-- [ ] Empty Trash shows the §9 impact confirmation, purges all
+- [x] Empty Trash shows the §9 impact confirmation, purges all
       eligible records on confirm, and the list empties.
-- [ ] Empty state renders when nothing is trashed.
-- [ ] e2e: trash a note/node/canvas → all list; restore the node →
+- [x] Empty state renders when nothing is trashed.
+- [x] e2e: trash a note/node/canvas → all list; restore the node →
       it returns intact; Empty Trash → purge semantics hold.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -93,3 +93,37 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Empty-trash command path.** No dedicated EmptyTrash command
+  exists; the ratified purge verb is `PurgeRecord {kind, id}`
+  (`packages/persistence/src/handlers/lifecycle.ts:613`). Empty Trash
+  therefore loops `getEmptyTrashEligibility` → one `PurgeRecord` per
+  entry (the GalleryActionBar hand-rolled-envelope pattern, since the
+  takeover has no canvas gateway). One summary toast reports the
+  count; the list reloads on the project push.
+- **Fly-to per kind.** canvas → `navigateTo(id, 'Board')`; node →
+  `getNodeLocations(id)` first placement → `navigateTo(canvasId,
+  canvasLabel)` then `requestCenterPlacements([placementId])` (a
+  placement-less node with a note falls back to opening that note);
+  note → notes carry no placement, so `requestOpenNote(id)` opens the
+  note panel (as the brief directed). The fly-to action closes the
+  takeover first, then flies — restore itself is stays-put.
+- **Restore is stays-put.** Restore removes the row locally and shows
+  a `trash-restored` toast; the takeover stays open. The toast lives
+  in the chrome layer (z-index 10), which stays mounted above the
+  takeover cover (z-index 9) — the fly-to action survives the later
+  takeover close.
+- **Type seam.** Followed the renderer convention (bookmarks.ts): the
+  renderer imports only `@ew/commands`; query shapes cross the seam
+  untyped, so TrashView mirrors the lifecycle/structure query shapes
+  locally rather than importing `@ew/persistence` types.
+- **Deviation — shell.spec.ts.** AI-IMP-110's menu test iterated
+  `menu-trash` in its disabled-row loop; this ticket makes that row
+  live, so I removed `menu-trash` from that loop and added an
+  enabled+opens-takeover-trash assertion. AI-IMP-114 (Undo/Redo rows)
+  edits the same file/test — a merge touch-up the lead will resolve.
+- **Impact summaries** reuse `getNoteImpact` / `getNodeImpact` /
+  `getCanvasImpact` on trashed records (their aggregate members stay
+  active rows under the trashed parent, so counts read correctly),
+  fetched in parallel on open. Fine for small trash; revisit if a
+  project ever trashes thousands of records.

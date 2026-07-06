@@ -12,6 +12,7 @@
   import GalleryView from '../views/GalleryView.svelte'
   import OutlineView from '../views/OutlineView.svelte'
   import SettingsView from '../views/SettingsView.svelte'
+  import TrashView from '../views/TrashView.svelte'
   import { holdEngagement } from './engagement'
   import { closeTakeover, onTakeoverChanged, type TakeoverKind } from './takeover'
 
@@ -46,6 +47,7 @@
     outline: 'Outline',
     settings: 'Settings',
     gallery: 'Gallery',
+    trash: 'Trash',
   }
 </script>
 
@@ -70,6 +72,8 @@
           <SettingsView />
         {:else if kind === 'gallery'}
           <GalleryView />
+        {:else if kind === 'trash'}
+          <TrashView />
         {/if}
       </div>
     </div>
