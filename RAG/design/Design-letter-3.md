@@ -1,12 +1,13 @@
 # Design letter #3 — the surface tie-down pass
 
 From the lead developer, to the design pass. 2026-07-06, written at
-RFC rev 0.48, app v0.8.0+. Companion artifact:
-`RAG/surface-coverage.html` — the visual census of every surface
-and its status. The prior pass's assets
-(`RAG/Design-Artifacts-v1.0.zip`: Design Spec v2, UI Vision, How It
-Works, Shell Wireframes) remain the visual-language baseline; this
-letter is the delta and the worklist.
+RFC rev 0.48, app v0.8.0+. Everything the design pass needs lives
+in THIS directory (`RAG/design/`): this letter, the companion
+`surface-coverage.html` — the visual census of every surface and
+its status — and the prior pass's assets
+(`Design-Artifacts-v1.0.zip`: Design Spec v2, UI Vision, How It
+Works, Shell Wireframes), which remain the visual-language
+baseline. This letter is the delta and the worklist.
 
 ## What happened since Design Artifacts v1.0
 

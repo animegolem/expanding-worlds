@@ -1733,7 +1733,7 @@ ignored.
 
 The shell model was decided in the owner's design-consult wireframe
 cycle (July 2026). The canonical design artifact set lives beside
-this RFC as **RAG/Design-Artifacts-v1.0.zip** (versioned from 1.0,
+this RFC as **RAG/design/Design-Artifacts-v1.0.zip** (versioned from 1.0,
 replaced in place as design evolves); its Design Spec document is
 the visual authority, and where wireframe turns and the spec
 disagree, the spec wins. It supersedes the earlier
