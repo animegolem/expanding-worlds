@@ -2429,6 +2429,29 @@ preflight and asks once; acknowledgment persists per project so the
 question is never repeated for that project. The threshold is an
 application preference. There is no hard size limiter.
 
+**The escape-hatch export (rev 0.19, deferred with scope).**
+Distinct from the roundtrip backup, this is the data-freedom answer
+to "I am leaving; give me my work in a form that is mine," and it is
+honest about what survives (everything made) versus what dies
+(interactivity):
+
+- Notes export as plain Markdown files named by title, wiki-link
+  tokens intact — a folder an Obsidian vault reads natively. An
+  optional appended section per note lists the nodes and images
+  associated with that note, embedding Obsidian-style `![[...]]`
+  links to the exported asset files, so the vault shows each note
+  with its art. A canvas cannot be represented in another tool;
+  linked images beside the prose is the best portable record.
+
+- Assets export as original files under original filenames with a
+  collision policy, optionally organized into tag-named folders,
+  plus a sidecar manifest (filename, hash, tags, source
+  attribution) in a spreadsheet-readable form.
+
+- Every canvas exports as a full-resolution rendered image: the
+  human-readable format of a board is a picture of it. Every
+  arrangement ever made stays viewable forever, in anything.
+
 Export is paired with import. Phase 1 MUST import a project export,
 recreating the project in a new project directory with all record
 identities preserved so that wiki links, bookmarks, command
@@ -3112,3 +3135,15 @@ Accepted for the Phase 1 prototype:
   placement picker is the compressed browser; the Allusion importer
   is a versioned adapter. Export gains a once-per-project size
   preflight instead of any hard limiter.
+
+- The inbox mirror (rev 0.19): a drop anywhere may also import into
+  the library project — asked once per project, one-way, never
+  blocking the drop — with content hashes providing recognition
+  without reference. Experientially one library; physically
+  hermetic projects.
+
+- The escape-hatch export (rev 0.19, deferred with scope): notes as
+  Obsidian-readable Markdown with an optional appended uses section
+  embedding `![[...]]` links to exported assets; originals with a
+  tag manifest and optional tag folders; every canvas as a
+  full-resolution rendered image — boards leave as pictures.
