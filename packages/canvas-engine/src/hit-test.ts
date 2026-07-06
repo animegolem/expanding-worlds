@@ -98,6 +98,50 @@ function decorationAABB(item: SceneDecoration): Rect | null {
   return null
 }
 
+/** Unrotated body box + orientation: the frame cursor zones and
+ * selection chrome share. Stroke included for shapes (AI-IMP-029). */
+export interface OrientedBox {
+  cx: number
+  cy: number
+  halfW: number
+  halfH: number
+  /** Radians about (cx, cy). */
+  rotation: number
+}
+
+/**
+ * Oriented visual box for single-selection chrome and cursor zones
+ * (AI-IMP-031/062). Null for kinds with no oriented rect (lines,
+ * paths, text, connectors) — callers fall back to the axis-aligned
+ * bounds.
+ */
+export function orientedBox(item: SceneItem): OrientedBox | null {
+  if (item.itemKind === 'placement') {
+    const size = placementSize(item)
+    return {
+      cx: item.x,
+      cy: item.y,
+      halfW: size.width / 2,
+      halfH: size.height / 2,
+      rotation: item.rotation,
+    }
+  }
+  if (item.kind === 'shape') {
+    const d = item.data as Record<string, unknown>
+    const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+    if (!num(d['x']) || !num(d['y']) || !num(d['width']) || !num(d['height'])) return null
+    const strokePad = num(d['strokeWidth']) ? d['strokeWidth'] / 2 : 0
+    return {
+      cx: d['x'] + d['width'] / 2,
+      cy: d['y'] + d['height'] / 2,
+      halfW: d['width'] / 2 + strokePad,
+      halfH: d['height'] / 2 + strokePad,
+      rotation: num(d['rotation']) ? d['rotation'] : 0,
+    }
+  }
+  return null
+}
+
 /**
  * Oriented body corners for single-selection chrome (AI-IMP-031):
  * the visual box (stroke included for shapes) rotated with the item,
@@ -106,31 +150,9 @@ function decorationAABB(item: SceneDecoration): Rect | null {
  * back to the axis-aligned bounds.
  */
 export function orientedCorners(item: SceneItem): [Point, Point, Point, Point] | null {
-  let cx: number
-  let cy: number
-  let halfW: number
-  let halfH: number
-  let rotation: number
-  if (item.itemKind === 'placement') {
-    const size = placementSize(item)
-    cx = item.x
-    cy = item.y
-    halfW = size.width / 2
-    halfH = size.height / 2
-    rotation = item.rotation
-  } else if (item.kind === 'shape') {
-    const d = item.data as Record<string, unknown>
-    const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
-    if (!num(d['x']) || !num(d['y']) || !num(d['width']) || !num(d['height'])) return null
-    const strokePad = num(d['strokeWidth']) ? d['strokeWidth'] / 2 : 0
-    cx = d['x'] + d['width'] / 2
-    cy = d['y'] + d['height'] / 2
-    halfW = d['width'] / 2 + strokePad
-    halfH = d['height'] / 2 + strokePad
-    rotation = num(d['rotation']) ? d['rotation'] : 0
-  } else {
-    return null
-  }
+  const box = orientedBox(item)
+  if (!box) return null
+  const { cx, cy, halfW, halfH, rotation } = box
   const cos = Math.cos(rotation)
   const sin = Math.sin(rotation)
   const corner = (lx: number, ly: number): Point => ({
@@ -209,6 +231,90 @@ export function marqueeHits(rect: Rect, items: readonly SceneItem[]): SceneItem[
     const aabb = itemWorldAABB(item)
     return aabb !== null && rectsIntersect(rect, aabb)
   })
+}
+
+// ------------------------------------------------------- cursor zones
+
+/**
+ * Cursor-zone widths (§6.9 rev 0.17): provisional feel constants, in
+ * SCREEN pixels so the zones feel identical at any zoom. The resize
+ * band straddles each edge by ±edgePx; the rotate band lies
+ * rotateInnerPx..rotateOuterPx outside each corner.
+ */
+export const CURSOR_ZONES = {
+  edgePx: 4,
+  rotateInnerPx: 4,
+  rotateOuterPx: 14,
+} as const
+
+export type CursorZoneWidths = { edgePx: number; rotateInnerPx: number; rotateOuterPx: number }
+
+export type CursorZone =
+  | 'move'
+  | 'resize-n'
+  | 'resize-ne'
+  | 'resize-e'
+  | 'resize-se'
+  | 'resize-s'
+  | 'resize-sw'
+  | 'resize-w'
+  | 'resize-nw'
+  | 'rotate-ne'
+  | 'rotate-se'
+  | 'rotate-sw'
+  | 'rotate-nw'
+  | 'none'
+
+/**
+ * Cursor-zone classification (§6.9 rev 0.17): the cursor is the
+ * affordance — no handles are drawn. `bounds` is the item's UNROTATED
+ * body rect in world units, `rotation` its angle about the rect
+ * center (0 with the union AABB of a multi-selection). The pointer is
+ * rotated into the local frame, so returned directions name the
+ * item's own edges — exactly the frame createResizeDriver resizes in
+ * (AI-IMP-031). Zone widths are screen px divided by `cameraScale`
+ * into world units, so zones feel constant at any zoom. Priority:
+ * move/resize inside the edge-expanded box, then the rotate band
+ * outside a corner, then none (empty canvas — grab/pan).
+ */
+export function classifyCursorZone(
+  pointerWorld: Point,
+  bounds: Rect,
+  rotation: number,
+  cameraScale: number,
+  zones: CursorZoneWidths = CURSOR_ZONES,
+): CursorZone {
+  const scale = cameraScale > 0 ? cameraScale : 1
+  const edge = zones.edgePx / scale
+  const rotInner = zones.rotateInnerPx / scale
+  const rotOuter = zones.rotateOuterPx / scale
+  const halfW = bounds.width / 2
+  const halfH = bounds.height / 2
+  const cx = bounds.x + halfW
+  const cy = bounds.y + halfH
+  const cos = Math.cos(-rotation)
+  const sin = Math.sin(-rotation)
+  const dx = pointerWorld.x - cx
+  const dy = pointerWorld.y - cy
+  const lx = dx * cos - dy * sin
+  const ly = dx * sin + dy * cos
+  if (Math.abs(lx) <= halfW + edge && Math.abs(ly) <= halfH + edge) {
+    // The inward half of the band clamps on small-on-screen items so
+    // the move zone never vanishes entirely.
+    const insetX = Math.min(edge, halfW / 2)
+    const insetY = Math.min(edge, halfH / 2)
+    const xBand = lx <= -(halfW - insetX) ? 'w' : lx >= halfW - insetX ? 'e' : ''
+    const yBand = ly <= -(halfH - insetY) ? 'n' : ly >= halfH - insetY ? 's' : ''
+    if (xBand === '' && yBand === '') return 'move'
+    return `resize-${yBand}${xBand}` as CursorZone
+  }
+  const cornerX = lx >= 0 ? halfW : -halfW
+  const cornerY = ly >= 0 ? halfH : -halfH
+  const d = Math.hypot(lx - cornerX, ly - cornerY)
+  if (d >= rotInner && d <= rotOuter) {
+    return `rotate-${ly >= 0 ? 's' : 'n'}${lx >= 0 ? 'e' : 'w'}` as CursorZone
+  }
+  return 'none'
 }
 
 /** Union AABB of the given items (zoom-to-selection, handle frames). */

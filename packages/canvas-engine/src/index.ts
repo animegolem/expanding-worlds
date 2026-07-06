@@ -40,13 +40,19 @@ export {
   type GridLevel,
 } from './background-grid'
 export {
+  classifyCursorZone,
+  CURSOR_ZONES,
   hitTest,
   isHittable,
   itemWorldAABB,
   marqueeHits,
+  orientedBox,
   orientedCorners,
   placementSize,
   unionBounds,
+  type CursorZone,
+  type CursorZoneWidths,
+  type OrientedBox,
 } from './hit-test'
 export { Selection } from './selection'
 export {

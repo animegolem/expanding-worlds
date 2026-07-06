@@ -37,6 +37,8 @@ export interface ScenePlacement {
   flipY: 0 | 1
   renderOrder: number
   labelVisible: 0 | 1
+  /** §6.9 rev 0.17: locked placements refuse move/resize/rotate. */
+  locked: 0 | 1
   appearanceKind: 'dot' | 'icon' | 'image' | null
   appearanceColor: string | null
   appearanceIcon: string | null

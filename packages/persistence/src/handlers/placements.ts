@@ -5,6 +5,7 @@ import {
   COMMAND_MOVE_PLACEMENT,
   COMMAND_REORDER_CONTENT,
   COMMAND_SET_PLACEMENT_LABEL_VISIBILITY,
+  COMMAND_SET_PLACEMENT_LOCK,
   COMMAND_TRANSFORM_CONTENT,
   DomainError,
   type CommandRegistry,
@@ -14,6 +15,7 @@ import {
   type MovePlacementPayload,
   type ReorderContentPayload,
   type SetPlacementLabelVisibilityPayload,
+  type SetPlacementLockPayload,
   type TransformContentItem,
   type TransformContentPayload,
 } from '@ew/commands'
@@ -40,12 +42,13 @@ interface PlacementRow {
   flip_y: number
   render_order: number
   label_visible: number
+  locked: number
 }
 
 function requirePlacement(ctx: CommandContext, placementId: string): PlacementRow {
   const row = ctx.db.get<PlacementRow>(
     `SELECT id, canvas_id, node_id, x, y, width, height, scale, rotation,
-            flip_x, flip_y, render_order, label_visible
+            flip_x, flip_y, render_order, label_visible, locked
      FROM placement
      WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
     placementId,
@@ -134,9 +137,9 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
     ctx.db.run(
       `INSERT INTO placement
          (id, project_id, canvas_id, node_id, x, y, width, height, scale,
-          rotation, flip_x, flip_y, render_order, label_visible,
+          rotation, flip_x, flip_y, render_order, label_visible, locked,
           created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       payload.placementId,
       ctx.projectId,
       payload.canvasId,
@@ -152,6 +155,7 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
       payload.renderOrder ?? nextRenderOrder(ctx, payload.canvasId),
       // §4.5: label visibility defaults to visible.
       (payload.labelVisible ?? true) ? 1 : 0,
+      payload.locked ? 1 : 0,
       now,
       now,
     )
@@ -194,6 +198,7 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
             flipY: prior.flip_y === 1,
             renderOrder: prior.render_order,
             labelVisible: prior.label_visible === 1,
+            locked: prior.locked === 1,
           } satisfies CreatePlacementPayload,
         },
       }
@@ -259,6 +264,33 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
       }
     },
   )
+
+  registry.register<SetPlacementLockPayload>(COMMAND_SET_PLACEMENT_LOCK, 1, (ctx, payload) => {
+    // §6.9 rev 0.17: lock is enforced at the gesture surface (refusal
+    // cursor, no drag starts); the handler only persists the flag so
+    // undoing a pre-lock transform can never dead-end on a lock check.
+    if (typeof payload.locked !== 'boolean') {
+      throw new DomainError('VALIDATION_FAILED', 'SetPlacementLock locked must be a boolean')
+    }
+    const prior = requirePlacement(ctx, payload.placementId)
+    ctx.db.run(
+      'UPDATE placement SET locked = ?, updated_at = ? WHERE id = ?',
+      payload.locked ? 1 : 0,
+      ctx.now(),
+      payload.placementId,
+    )
+    return {
+      affected: [{ kind: 'placement', id: payload.placementId }],
+      inverse: {
+        commandType: COMMAND_SET_PLACEMENT_LOCK,
+        commandVersion: 1,
+        payload: {
+          placementId: payload.placementId,
+          locked: prior.locked === 1,
+        } satisfies SetPlacementLockPayload,
+      },
+    }
+  })
 
   registry.register<FlipPlacementPayload>(COMMAND_FLIP_PLACEMENT, 1, (ctx, payload) => {
     if (payload.axis !== 'x' && payload.axis !== 'y') {

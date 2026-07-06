@@ -63,7 +63,8 @@ export function registerStructureQueries(registry: QueryRegistry): void {
     const placements = ctx.db.all<Record<string, unknown>>(
       `SELECT p.id, p.node_id AS nodeId, p.x, p.y, p.width, p.height, p.scale,
               p.rotation, p.flip_x AS flipX, p.flip_y AS flipY,
-              p.render_order AS renderOrder, p.label_visible AS labelVisible
+              p.render_order AS renderOrder, p.label_visible AS labelVisible,
+              p.locked
        FROM placement p
        JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
        WHERE p.canvas_id = ? AND p.lifecycle_state = 'active'`,
@@ -140,6 +141,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       `SELECT p.id, p.node_id AS nodeId, p.x, p.y, p.width, p.height, p.scale,
               p.rotation, p.flip_x AS flipX, p.flip_y AS flipY,
               p.render_order AS renderOrder, p.label_visible AS labelVisible,
+              p.locked,
               ${NODE_APPEARANCE_SELECT},
               note.title AS noteTitle,
               a.content_hash AS assetContentHash,

@@ -218,6 +218,48 @@ describe('placement presentation state', () => {
     undo(flip.inverse)
     expect(placementRow(placementId)).toMatchObject({ flip_x: 0, flip_y: 1 })
   })
+
+  it('SetPlacementLock persists the flag with inverse (§6.9 rev 0.17, default unlocked)', () => {
+    const placementId = createPlacement()
+    expect(placementRow(placementId)!.locked).toBe(0)
+    const lock = committed('SetPlacementLock', { placementId, locked: true })
+    expect(placementRow(placementId)!.locked).toBe(1)
+    // Lock is enforced at the gesture surface, not the handler: a
+    // pre-lock transform's undo must still apply while locked.
+    committed('MovePlacement', {
+      placementId,
+      x: 9,
+      y: 9,
+      width: null,
+      height: null,
+      scale: 1,
+      rotation: 0,
+    })
+    expect(placementRow(placementId)).toMatchObject({ x: 9, locked: 1 })
+    undo(lock.inverse)
+    expect(placementRow(placementId)!.locked).toBe(0)
+  })
+
+  it('SetPlacementLock validates payload and target', () => {
+    const placementId = createPlacement()
+    expect(exec('SetPlacementLock', { placementId, locked: 1 })).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+    })
+    expect(exec('SetPlacementLock', { placementId: uuidv7(), locked: true })).toMatchObject({
+      status: 'error',
+      code: 'PLACEMENT_NOT_FOUND',
+    })
+  })
+
+  it('DeleteDraftPlacement restores the lock flag on redo', () => {
+    const placementId = createPlacement()
+    committed('SetPlacementLock', { placementId, locked: true })
+    const removed = committed('DeleteDraftPlacement', { placementId })
+    expect(placementRow(placementId)).toBeUndefined()
+    undo(removed.inverse)
+    expect(placementRow(placementId)!.locked).toBe(1)
+  })
 })
 
 describe('ReorderContent (§4.4 shared plane)', () => {

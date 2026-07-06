@@ -8,7 +8,7 @@ declare global {
   interface Window {
     ew: EwApi
     __ewGestureDebug?: {
-      handles: () => Array<{ kind: string; dir: string | null; x: number; y: number }>
+      zoneAt: (x: number, y: number) => string
       labelTexts: () => string[]
     }
   }
@@ -265,27 +265,25 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   ).toBeTruthy()
 
   // ---- Item 6: attach a note → the placement shows its title as a
-  // label; toggle it off from the selection controls (pointer-driven).
+  // label; toggle it off with one SetPlacementLabelVisibility (§6.9
+  // rev 0.17 removed drawn selection controls; the pointer affordance
+  // is the AI-IMP-063 charm bar).
   const noteId = crypto.randomUUID()
   await exec(ctx, 'CreateNote', { noteId, title: 'Harbor Watch' })
   await exec(ctx, 'AttachNoteToNode', { nodeId: dotNode, noteId })
   await expect
     .poll(() => win.evaluate(() => window.__ewGestureDebug!.labelTexts()))
     .toContain('Harbor Watch')
-  await win.mouse.click(box.x + 400, box.y + 120)
-  await expect
-    .poll(() => win.evaluate(() => window.__ewGestureDebug!.handles().length))
-    .toBeGreaterThan(0)
-  const labelHandle = await win.evaluate(
-    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'label')!,
-  )
+  const labelPlacement = (await scene()).items.find((i) => i['nodeId'] === dotNode)!
   rev = await revision(win)
-  await win.mouse.click(box.x + labelHandle.x, box.y + labelHandle.y)
+  await exec(ctx, 'SetPlacementLabelVisibility', {
+    placementId: labelPlacement['id'],
+    visible: false,
+  })
   await expect
     .poll(() => win.evaluate(() => window.__ewGestureDebug!.labelTexts()))
     .not.toContain('Harbor Watch')
   expect(await revision(win)).toBe(rev + 1)
-  await win.mouse.click(box.x + 700, box.y + 500) // clear selection
 
   // ---- Item 4: marquee select, one-command multi-drag with snapping
   // guides and the Alt bypass, align/distribute, flip, zoom to fit

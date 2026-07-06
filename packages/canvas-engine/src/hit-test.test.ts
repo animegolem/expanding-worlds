@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { hitTest, itemWorldAABB, marqueeHits, orientedCorners, unionBounds } from './hit-test'
+import {
+  classifyCursorZone,
+  hitTest,
+  itemWorldAABB,
+  marqueeHits,
+  orientedCorners,
+  unionBounds,
+} from './hit-test'
 import { makeDecoration, makePlacement } from './test-helpers'
 
 describe('hitTest', () => {
@@ -187,5 +194,86 @@ describe('rotated shape bounds and oriented corners (AI-IMP-031)', () => {
       data: { x1: 0, y1: 0, x2: 10, y2: 10, stroke: '#fff', strokeWidth: 2 },
     })
     expect(orientedCorners(line)).toBeNull()
+  })
+})
+
+describe('classifyCursorZone (§6.9 rev 0.17, AI-IMP-062)', () => {
+  // 100×60 body centered at the origin: corners at (±50, ±30).
+  const bounds = { x: -50, y: -30, width: 100, height: 60 }
+  const zone = (x: number, y: number, rotation = 0, scale = 1) =>
+    classifyCursorZone({ x, y }, bounds, rotation, scale)
+
+  it('classifies the interior as move', () => {
+    expect(zone(0, 0)).toBe('move')
+    expect(zone(-40, 20)).toBe('move')
+  })
+
+  it('classifies every edge band, inside and outside the edge line', () => {
+    expect(zone(0, -30)).toBe('resize-n')
+    expect(zone(0, -33)).toBe('resize-n') // outside half of the band
+    expect(zone(0, -27)).toBe('resize-n') // inside half of the band
+    expect(zone(0, 30)).toBe('resize-s')
+    expect(zone(-50, 0)).toBe('resize-w')
+    expect(zone(50, 0)).toBe('resize-e')
+    expect(zone(53, 0)).toBe('resize-e')
+  })
+
+  it('classifies every corner as diagonal resize', () => {
+    expect(zone(-50, -30)).toBe('resize-nw')
+    expect(zone(50, -30)).toBe('resize-ne')
+    expect(zone(50, 30)).toBe('resize-se')
+    expect(zone(-50, 30)).toBe('resize-sw')
+  })
+
+  it('classifies the band outside each corner as rotate', () => {
+    // 10 px diagonally outside each corner (√50 ≈ 7.07 per axis).
+    expect(zone(-57, -37)).toBe('rotate-nw')
+    expect(zone(57, -37)).toBe('rotate-ne')
+    expect(zone(57, 37)).toBe('rotate-se')
+    expect(zone(-57, 37)).toBe('rotate-sw')
+    // Straight out along one axis also rotates while near the corner.
+    expect(zone(50, -40)).toBe('rotate-ne')
+  })
+
+  it('cuts the rotate band off at its outer radius', () => {
+    // 14 px out is the last rotate ring; 15+ px falls to the canvas.
+    expect(zone(50 + 14, 30)).toBe('rotate-se')
+    expect(zone(50 + 15, 30)).toBe('none')
+    expect(zone(50 + 11, 30 + 11)).toBe('none') // √242 ≈ 15.6
+  })
+
+  it('leaves edge midpoints beyond the band as none', () => {
+    expect(zone(0, -40)).toBe('none') // 10 px above the top edge, far from corners
+    expect(zone(200, 200)).toBe('none')
+  })
+
+  it('classifies in the item local frame when rotated', () => {
+    // 90° turn: the local n edge faces world +x (east side on screen).
+    const quarter = Math.PI / 2
+    expect(zone(32, 0, quarter)).toBe('resize-n') // world (32,0) → local (0,−32)
+    expect(zone(-32, 0, quarter)).toBe('resize-s')
+    expect(zone(0, 52, quarter)).toBe('resize-e') // world (0,52) → local (52,0)
+    expect(zone(0, 0, quarter)).toBe('move')
+    // Local ne corner (50,−30) lands at world (30,50); 10 px out rotates.
+    expect(zone(37, 57, quarter)).toBe('rotate-ne')
+  })
+
+  it('keeps zone widths screen-constant across zoom (invariance)', () => {
+    // 3 world px above the top edge: inside the ±4 px band at zoom 1,
+    // 6 screen px (outside) at zoom 2, well inside at zoom 0.5.
+    expect(zone(0, -33, 0, 1)).toBe('resize-n')
+    expect(zone(0, -33, 0, 2)).toBe('none')
+    expect(zone(0, -33, 0, 0.5)).toBe('resize-n')
+    // Rotate band: 10 world px outside the corner reads 20 screen px
+    // at zoom 2 (past the 14 px cutoff) but still rotates at zoom 0.5.
+    expect(zone(57, 37, 0, 1)).toBe('rotate-se')
+    expect(zone(57, 37, 0, 2)).toBe('none')
+    expect(zone(64, 44, 0, 0.5)).toBe('rotate-se')
+  })
+
+  it('clamps the inward inset so tiny items keep a move zone', () => {
+    const tiny = { x: -3, y: -3, width: 6, height: 6 }
+    expect(classifyCursorZone({ x: 0, y: 0 }, tiny, 0, 1)).toBe('move')
+    expect(classifyCursorZone({ x: 3, y: 3 }, tiny, 0, 1)).toBe('resize-se')
   })
 })
