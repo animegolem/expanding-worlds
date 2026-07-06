@@ -101,7 +101,12 @@ export {
   type PlacementTransform,
 } from './gesture'
 export { noopSnapProvider, type SnapGuide, type SnapProvider, type SnapQuery, type SnapResult } from './snap'
-export { CommandGateway, type ProjectExecutor } from './command-gateway'
+export {
+  CommandGateway,
+  onCommittedAnywhere,
+  type CommittedNotice,
+  type ProjectExecutor,
+} from './command-gateway'
 export {
   CanvasController,
   type ControllerHost,

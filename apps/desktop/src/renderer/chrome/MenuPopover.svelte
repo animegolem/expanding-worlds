@@ -12,13 +12,26 @@
   import HelpAboutDialog from './HelpAboutDialog.svelte'
   import { openTakeover } from './takeover'
   import { tooltip } from './tooltip'
+  import { canRedo, canUndo, onUndoChanged, redo, undo } from '../undo/undo-store'
 
   const { onclose }: { onclose: () => void } = $props()
 
   // macOS is the lead platform (§8.2); the shortcut chips print the
-  // ⌘ glyph. Undo/Redo are listed disabled purely to teach the keys.
+  // ⌘ glyph. The rows print their keys even when disabled, so the menu
+  // stays self-teaching (§8.2, AI-IMP-110).
   const UNDO_SHORTCUT = '⌘Z'
   const REDO_SHORTCUT = '⇧⌘Z'
+
+  // §10.2 stack depth (AI-IMP-114): the rows flip live between
+  // enabled and disabled as commands land, undo, and redo.
+  let undoEnabled = $state(false)
+  let redoEnabled = $state(false)
+  $effect(() =>
+    onUndoChanged(() => {
+      undoEnabled = canUndo()
+      redoEnabled = canRedo()
+    }),
+  )
 
   let helpOpen = $state(false)
 
@@ -36,10 +49,18 @@
   <button
     type="button"
     role="menuitem"
-    class="deferred"
-    aria-disabled="true"
+    class:deferred={!undoEnabled}
+    aria-disabled={!undoEnabled}
     data-testid="menu-undo"
-    use:tooltip={{ name: 'Undo — arrives with the undo epic (EPIC-007)', shortcut: UNDO_SHORTCUT }}
+    onclick={() => {
+      if (!undoEnabled) return
+      onclose()
+      undo()
+    }}
+    use:tooltip={{
+      name: undoEnabled ? 'Undo the last change' : 'Nothing to undo',
+      shortcut: UNDO_SHORTCUT,
+    }}
   >
     <span class="label">Undo</span>
     <span class="shortcut">{UNDO_SHORTCUT}</span>
@@ -47,10 +68,18 @@
   <button
     type="button"
     role="menuitem"
-    class="deferred"
-    aria-disabled="true"
+    class:deferred={!redoEnabled}
+    aria-disabled={!redoEnabled}
     data-testid="menu-redo"
-    use:tooltip={{ name: 'Redo — arrives with the undo epic (EPIC-007)', shortcut: REDO_SHORTCUT }}
+    onclick={() => {
+      if (!redoEnabled) return
+      onclose()
+      redo()
+    }}
+    use:tooltip={{
+      name: redoEnabled ? 'Redo the undone change' : 'Nothing to redo',
+      shortcut: REDO_SHORTCUT,
+    }}
   >
     <span class="label">Redo</span>
     <span class="shortcut">{REDO_SHORTCUT}</span>

@@ -128,6 +128,17 @@ record — history lives in the tickets.
   note isn't placed on this board) with the "images live on the
   board" toast; text drops/paste into the editor must behave
   exactly as before.
+- [ ] **Undo/redo feel** (AI-IMP-114, 2026-07-06): move, flip, draw,
+  delete, place-on-board, and materialize things, then Mod+Z / Shift+
+  Mod+Z your way back and forth. Does one keypress map to one gesture
+  you actually remember making (drags/resizes commit once, a batch
+  delete comes back whole)? Type inside an open note between undos —
+  Mod+Z there must be the EDITOR's text history, never the board's.
+  The ☰ Undo/Redo rows should grey/ungrey as you go. Two gut calls:
+  (1) undoing a change you made on ANOTHER board just toasts "made on
+  «Board» — open that board to undo it" and does nothing — does that
+  read as safe or as broken? (2) the stale-undo toast "That change can
+  no longer be undone" — right words?
 - [ ] **Light-theme legibility over art** (EPIC-013, carried):
   chrome and scrim chips readable over bright and busy boards in
   the light theme.

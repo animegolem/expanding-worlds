@@ -273,8 +273,13 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
       }
       const createdNote =
         payload.createdNoteId != null
-          ? ctx.db.get<{ id: string; lifecycle_state: string }>(
-              'SELECT id, lifecycle_state FROM note WHERE id = ? AND project_id = ?',
+          ? ctx.db.get<{
+              id: string
+              lifecycle_state: string
+              title: string
+              title_key: string
+            }>(
+              'SELECT id, lifecycle_state, title, title_key FROM note WHERE id = ? AND project_id = ?',
               payload.createdNoteId,
               ctx.projectId,
             )
@@ -300,6 +305,36 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
       affected.push({ kind: 'node', id: payload.nodeId })
 
       if (createdNote && createdNote.lifecycle_state === 'active') {
+        // §7.2 rev 0.47 materialization-undo: CreatePin's create branch
+        // ran the re-resolution sweep (bindUnresolvedMatching), binding
+        // every matching unresolved token project-wide to this new note.
+        // Un-materializing must revert that binding in the SAME step so
+        // the typed text survives as the unresolved token it began as —
+        // otherwise the token would stay bound to a now-trashed note
+        // (links resolve against trashed notes too, links.ts). Nothing
+        // could have bound to this brand-new note except that sweep, so
+        // every inbound bound record reverts to unresolved, re-keyed to
+        // the note's title (the original raw token text is not retained;
+        // the title reconstitutes the phantom).
+        const rebound = ctx.db.all<{ id: string }>(
+          "SELECT id FROM link WHERE project_id = ? AND state = 'bound' AND target_note_id = ?",
+          ctx.projectId,
+          createdNote.id,
+        )
+        if (rebound.length > 0) {
+          ctx.db.run(
+            `UPDATE link
+             SET state = 'unresolved', target_note_id = NULL,
+                 target_title_key = ?, display_text = ?, updated_at = ?
+             WHERE project_id = ? AND state = 'bound' AND target_note_id = ?`,
+            createdNote.title_key,
+            createdNote.title,
+            ctx.now(),
+            ctx.projectId,
+            createdNote.id,
+          )
+          for (const link of rebound) affected.push({ kind: 'link', id: link.id })
+        }
         // Purge-safe, mirroring CreateNote↔TrashNote: the created note
         // may have gained inbound links or body text; trashing keeps
         // links and the title reservation intact. An ATTACHED note is

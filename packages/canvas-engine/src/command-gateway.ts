@@ -40,6 +40,38 @@ export interface ProjectExecutor {
   execute(envelope: CommandEnvelope): Promise<CommandResult>
 }
 
+/**
+ * Surfaced to the in-renderer undo stack (EPIC-007, AI-IMP-114) for
+ * every committed command: the type and payload rebuild a redo, and
+ * `result.inverse` is what an undo re-executes.
+ */
+export interface CommittedNotice {
+  commandType: string
+  commandVersion: number
+  payload: unknown
+  result: Extract<CommandResult, { status: 'committed' }>
+}
+
+/**
+ * Committed-command listeners at MODULE scope, not per instance. The
+ * note pane runs its OWN gateway (renderer note/project-port.ts,
+ * "deliberately independent of the canvas host's gateway"), so a
+ * §8.5 place-on-board — a canvas command issued through that gateway —
+ * is invisible to any single instance's hook. An app-wide undo stack
+ * needs to see commits from every gateway, so each `#run` broadcasts
+ * here. This copies the instance `#conflict` listener-set idiom below
+ * (add → unsubscribe closure, iterate on the event) but hoists it to
+ * the module because the capture must span gateways; conflict UX
+ * stays per-surface and therefore per-instance.
+ */
+const committedListeners = new Set<(notice: CommittedNotice) => void>()
+
+/** Subscribe to every gateway's committed commands; returns unsub. */
+export function onCommittedAnywhere(listener: (notice: CommittedNotice) => void): () => void {
+  committedListeners.add(listener)
+  return () => committedListeners.delete(listener)
+}
+
 export class CommandGateway {
   #executor: ProjectExecutor
   #projectId: string
@@ -101,8 +133,18 @@ export class CommandGateway {
       issuedAt: new Date().toISOString(),
       payload,
     })
-    if (result.status === 'committed') this.noteRevision(result.revision)
-    else if (result.status === 'conflict') {
+    if (result.status === 'committed') {
+      this.noteRevision(result.revision)
+      if (committedListeners.size > 0) {
+        const notice: CommittedNotice = {
+          commandType,
+          commandVersion: opts.commandVersion ?? 1,
+          payload,
+          result,
+        }
+        for (const listener of committedListeners) listener(notice)
+      }
+    } else if (result.status === 'conflict') {
       this.noteRevision(result.actualRevision)
       for (const listener of this.#conflict) listener(result)
     }

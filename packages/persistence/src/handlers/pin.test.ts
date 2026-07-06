@@ -316,6 +316,51 @@ describe('DeleteDraftPin (inverse round-trip)', () => {
     expect(inverse.inverse).toBeNull()
   })
 
+  it('reverts the materialization binding so the token becomes an unresolved phantom again (§7.2 rev 0.47)', () => {
+    // A source note references [[Target]] — unresolved (a phantom).
+    const sourceId = uuidv7()
+    committed('CreateNote', { noteId: sourceId, title: 'Source', body: 'see [[Target]]' })
+    const before = handle.db.get<{ state: string; target_title_key: string | null }>(
+      'SELECT state, target_title_key FROM link WHERE source_note_id = ?',
+      sourceId,
+    )!
+    expect(before).toMatchObject({ state: 'unresolved', target_title_key: 'target' })
+
+    // Materialize Target via CreatePin(create): the sweep binds the token.
+    const noteId = uuidv7()
+    const create = committed(
+      'CreatePin',
+      pinPayload({ note: { kind: 'create', noteId, title: 'Target' } }),
+    )
+    expect(
+      handle.db.get('SELECT state, target_note_id FROM link WHERE source_note_id = ?', sourceId),
+    ).toMatchObject({ state: 'bound', target_note_id: noteId })
+
+    // One undo un-materializes AND un-binds in the SAME step: the token
+    // is an unresolved phantom again, and the words survive in the source.
+    undo(create.inverse)
+    const after = handle.db.get<{
+      state: string
+      target_note_id: string | null
+      target_title_key: string | null
+      display_text: string | null
+    }>('SELECT state, target_note_id, target_title_key, display_text FROM link WHERE source_note_id = ?', sourceId)!
+    expect(after).toMatchObject({
+      state: 'unresolved',
+      target_note_id: null,
+      target_title_key: 'target',
+    })
+    expect(after.display_text).toBe('Target')
+    // The source note's typed text is intact.
+    expect(handle.db.get('SELECT body FROM note WHERE id = ?', sourceId)).toMatchObject({
+      body: 'see [[Target]]',
+    })
+    // The materialized note un-exists from active (trashed).
+    expect(handle.db.get('SELECT lifecycle_state FROM note WHERE id = ?', noteId)).toMatchObject({
+      lifecycle_state: 'trashed',
+    })
+  })
+
   it('leaves an attached note untouched', () => {
     const noteId = uuidv7()
     committed('CreateNote', { noteId, title: 'Keeper' })

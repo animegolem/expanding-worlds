@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CommandGateway } from './command-gateway'
+import { CommandGateway, onCommittedAnywhere, type CommittedNotice } from './command-gateway'
 import type { CommandEnvelope, CommandResult } from '@ew/commands'
 
 function fakeExecutor(script: (envelope: CommandEnvelope) => CommandResult) {
@@ -33,6 +33,40 @@ describe('CommandGateway', () => {
       expectedProjectRevision: 5,
     })
     expect(gateway.revision).toBe(6)
+  })
+
+  it('broadcasts committed commands to onCommittedAnywhere listeners across instances', async () => {
+    const inverse = { commandType: 'TransformContent', commandVersion: 1, payload: { back: true } }
+    const committedWith = (revision: number): CommandResult => ({
+      status: 'committed',
+      commandId: 'c',
+      revision,
+      affected: [],
+      inverse,
+    })
+    const notices: CommittedNotice[] = []
+    const off = onCommittedAnywhere((n) => notices.push(n))
+    // Two distinct gateway instances (host + note pane): both feed the
+    // one module-level stream the undo stack subscribes to.
+    const host = new CommandGateway(fakeExecutor(() => committedWith(2)), 'p', 1, () => '01890a5d-ac96-774b-bcce-b302099a8057')
+    const pane = new CommandGateway(fakeExecutor(() => committedWith(3)), 'p', 2, () => '01890a5d-ac96-774b-bcce-b302099a8057')
+    await host.execute('TransformContent', { x: 1 })
+    await pane.execute('PlaceAsCard', { placementId: 'q' })
+    expect(notices).toHaveLength(2)
+    expect(notices[0]).toMatchObject({ commandType: 'TransformContent', payload: { x: 1 } })
+    expect(notices[0]!.result.inverse).toEqual(inverse)
+    expect(notices[1]).toMatchObject({ commandType: 'PlaceAsCard', payload: { placementId: 'q' } })
+    // Unsubscribing stops the stream; a non-committed result never fires.
+    off()
+    const conflicting = new CommandGateway(
+      fakeExecutor((e) => ({ status: 'conflict', commandId: e.commandId, expectedRevision: 1, actualRevision: 9 })),
+      'p',
+      1,
+      () => '01890a5d-ac96-774b-bcce-b302099a8057',
+    )
+    await host.execute('TransformContent', { x: 2 })
+    await conflicting.execute('TransformContent', {})
+    expect(notices).toHaveLength(2)
   })
 
   it('surfaces conflicts to listeners and adopts the actual revision', async () => {

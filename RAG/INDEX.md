@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 8 | 8 |
+| In Progress | 1 | 1 |
+| Planned | 8 | 7 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 105 |
@@ -32,7 +32,7 @@
 
 **IMPs:**
 - [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — planned
-- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — planned
+- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — in-progress
 
 ---
 
@@ -112,6 +112,7 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (628 LOC)
+- packages/persistence/src/handlers/pin.test.ts (603 LOC)
 
 ### > 300 LOC
 
@@ -120,7 +121,6 @@ Generated from tracked files; binary assets excluded.
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (560 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
-- packages/persistence/src/handlers/pin.test.ts (558 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/e2e/panels.spec.ts (536 LOC)
@@ -129,13 +129,13 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/nodes.ts (522 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
+- packages/persistence/src/handlers/pin.ts (514 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (501 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (480 LOC)
-- packages/persistence/src/handlers/pin.ts (479 LOC)
 - packages/commands/src/payloads/structure.ts (471 LOC)
 - apps/desktop/src/utility/index.ts (471 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (470 LOC)
