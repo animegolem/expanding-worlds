@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 2 |
-| Planned | 3 | 0 |
+| Planned | 4 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 10 | 73 |
-| **Total** | **14** | **75** |
+| **Total** | **15** | **75** |
 
 ## In Progress
 
@@ -45,6 +45,11 @@
 
 ### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
 > RFC §16 requires portable export with lossless reimport, and §17–18
+
+---
+
+### [[AI-EPIC-014-gallery|EPIC-014: Gallery]]
+> Reference material is only visible where it is placed. A project
 
 ---
 
