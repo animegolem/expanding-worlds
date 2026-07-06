@@ -419,3 +419,127 @@ describe('MakeNoteIndependent link integration', () => {
     expect(result).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
   })
 })
+
+/**
+ * AI-IMP-086: creating a note and attaching it is one user act — ONE
+ * command, one transaction, one future undo step. A rejection on the
+ * attach side must leave zero records (no loose note reserving its
+ * title, the Codex 2026-07-06 finding), and the inverse must restore
+ * the node's prior state exactly.
+ */
+describe('CreateNoteAndAttach / DetachAndTrashNote (AI-IMP-086)', () => {
+  function projectRevision(): number {
+    return handle.db.get<{ project_revision: number }>(
+      'SELECT project_revision FROM project WHERE id = ?',
+      handle.projectId,
+    )!.project_revision
+  }
+
+  function noteCount(): number {
+    return handle.db.get<{ n: number }>('SELECT count(*) AS n FROM note')!.n
+  }
+
+  it('creates, attaches, and indexes links in one committed command', () => {
+    const nodeId = createNode()
+    const noteId = uuidv7()
+    const before = projectRevision()
+    const result = committed('CreateNoteAndAttach', {
+      nodeId,
+      noteId,
+      title: 'Harbor',
+      body: 'see [[Lighthouse]]',
+    })
+    // ONE revision bump for the whole act.
+    expect(result.revision).toBe(before + 1)
+    expect(nodeRow(nodeId)).toMatchObject({ note_id: noteId })
+    expect(
+      handle.db.get('SELECT title, body FROM note WHERE id = ?', noteId),
+    ).toMatchObject({ title: 'Harbor', body: 'see [[Lighthouse]]' })
+    // The body's outbound tokens were indexed (invariant 26).
+    expect(
+      handle.db.get(
+        "SELECT id FROM link WHERE source_note_id = ? AND state = 'unresolved'",
+        noteId,
+      ),
+    ).toBeDefined()
+    expect(result.affected).toEqual(
+      expect.arrayContaining([
+        { kind: 'note', id: noteId },
+        { kind: 'node', id: nodeId },
+      ]),
+    )
+  })
+
+  it('rejects a node that already has a note — and commits NOTHING', () => {
+    const nodeId = createNode()
+    committed('AttachNoteToNode', { nodeId, noteId: insertNote('Occupied') })
+    const notes = noteCount()
+    const revision = projectRevision()
+    const result = exec('CreateNoteAndAttach', { nodeId, noteId: uuidv7(), title: 'Loose' })
+    expect(result).toMatchObject({ status: 'error', code: 'NODE_HAS_NOTE' })
+    // No loose note, no reserved title, no revision bump.
+    expect(noteCount()).toBe(notes)
+    expect(
+      handle.db.get('SELECT id FROM note WHERE title_key = ?', titleKey('Loose')),
+    ).toBeUndefined()
+    expect(projectRevision()).toBe(revision)
+  })
+
+  it('rejects a missing or trashed node with zero records', () => {
+    const notes = noteCount()
+    expect(
+      exec('CreateNoteAndAttach', { nodeId: uuidv7(), noteId: uuidv7(), title: 'Ghost' }),
+    ).toMatchObject({ status: 'error', code: 'NODE_NOT_FOUND' })
+    const trashed = createNode()
+    handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", trashed)
+    expect(
+      exec('CreateNoteAndAttach', { nodeId: trashed, noteId: uuidv7(), title: 'Ghost' }),
+    ).toMatchObject({ status: 'error', code: 'NODE_NOT_FOUND' })
+    expect(noteCount()).toBe(notes)
+  })
+
+  it('returns the §7.7 conflict shape on title collision, leaving the node untouched', () => {
+    const existing = insertNote('Taken')
+    const nodeId = createNode()
+    const result = exec('CreateNoteAndAttach', { nodeId, noteId: uuidv7(), title: 'Taken' })
+    expect(result).toMatchObject({ status: 'error', code: 'NOTE_TITLE_CONFLICT' })
+    expect((result as { details?: Record<string, unknown> }).details).toMatchObject({
+      existingNoteId: existing,
+    })
+    expect(nodeRow(nodeId)).toMatchObject({ note_id: null })
+  })
+
+  it('inverse round-trips: one undo detaches AND trashes; node row matches byte-for-byte', () => {
+    const nodeId = createNode()
+    const before = { ...nodeRow(nodeId)! }
+    const noteId = uuidv7()
+    const create = committed('CreateNoteAndAttach', { nodeId, noteId, title: 'Ephemeral' })
+    expect(create.inverse).toMatchObject({ commandType: 'DetachAndTrashNote' })
+
+    const undone = undo(create.inverse)
+    // The node row is exactly its prior self (timestamps aside).
+    const after = { ...nodeRow(nodeId)! }
+    delete before['updated_at']
+    delete after['updated_at']
+    expect(after).toEqual(before)
+    // The note is trashed (purge-safe: reservation and links hold),
+    // matching CreateNote↔TrashNote and DeleteDraftPin.
+    expect(
+      handle.db.get('SELECT lifecycle_state FROM note WHERE id = ?', noteId),
+    ).toMatchObject({ lifecycle_state: 'trashed' })
+    // Internal inverse: no inverse of its own.
+    expect(undone.inverse).toBeNull()
+  })
+
+  it('undo refuses when the node meanwhile references a different note (UNDO_STALE)', () => {
+    const nodeId = createNode()
+    const noteId = uuidv7()
+    const create = committed('CreateNoteAndAttach', { nodeId, noteId, title: 'Swapped Away' })
+    committed('DetachNoteFromNode', { nodeId })
+    committed('AttachNoteToNode', { nodeId, noteId: insertNote('Newer') })
+    expect(exec(create.inverse!.commandType, create.inverse!.payload)).toMatchObject({
+      status: 'error',
+      code: 'UNDO_STALE',
+    })
+  })
+})

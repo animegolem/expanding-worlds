@@ -1,11 +1,16 @@
 import {
   COMMAND_CREATE_PIN,
   COMMAND_DELETE_DRAFT_PIN,
+  COMMAND_PLACE_AS_CARD,
+  COMMAND_UNPLACE_CARD,
   DomainError,
   type AffectedRecord,
   type CommandRegistry,
   type CreatePinPayload,
   type DeleteDraftPinPayload,
+  type NodeAppearance,
+  type PlaceAsCardPayload,
+  type UnplaceCardPayload,
 } from '@ew/commands'
 import { titleKey } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
@@ -317,4 +322,158 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
       return { affected, inverse: null }
     },
   )
+
+  registry.register<PlaceAsCardPayload>(COMMAND_PLACE_AS_CARD, 1, (ctx, payload) => {
+    // §8.5 place-on-board (AI-IMP-086): appearance flip + placement
+    // are one user act, so they commit as ONE transaction and revert
+    // in one undo. Validation precedes the first write.
+    for (const key of ['nodeId', 'canvasId', 'placementId'] as const) {
+      if (typeof payload?.[key] !== 'string' || payload[key].length === 0) {
+        throw new DomainError('VALIDATION_FAILED', `PlaceAsCard requires payload.${key}`)
+      }
+    }
+    if (typeof payload.x !== 'number' || typeof payload.y !== 'number') {
+      throw new DomainError('VALIDATION_FAILED', 'PlaceAsCard requires numeric x and y')
+    }
+    const canvas = ctx.db.get<{ id: string }>(
+      `SELECT id FROM canvas
+       WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+      payload.canvasId,
+      ctx.projectId,
+    )
+    if (!canvas) throw new DomainError('CANVAS_NOT_FOUND', `no active canvas ${payload.canvasId}`)
+    const node = ctx.db.get<{ appearance_kind: string | null; appearance_color: string | null }>(
+      `SELECT appearance_kind, appearance_color FROM node
+       WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+      payload.nodeId,
+      ctx.projectId,
+    )
+    if (!node) throw new DomainError('NODE_NOT_FOUND', `no active node ${payload.nodeId}`)
+
+    const now = ctx.now()
+    const affected: AffectedRecord[] = []
+    // AI-IMP-084 rule, verbatim: dots (and appearance-less nodes)
+    // flip to the §4.6 card; icon/image nodes place as-is — their
+    // look already represents them.
+    const flips = node.appearance_kind === 'dot' || node.appearance_kind === null
+    if (flips) {
+      ctx.db.run(
+        `UPDATE node SET appearance_kind = 'card', appearance_color = NULL,
+                appearance_icon = NULL, appearance_asset_id = NULL,
+                appearance_crop = NULL, updated_at = ?
+         WHERE id = ?`,
+        now,
+        payload.nodeId,
+      )
+      affected.push({ kind: 'node', id: payload.nodeId })
+    }
+
+    ctx.db.run(
+      `INSERT INTO placement
+         (id, project_id, canvas_id, node_id, x, y, width, height, scale,
+          rotation, flip_x, flip_y, render_order, label_visible,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, 1, 0, 0, 0, ?, 1, ?, ?)`,
+      payload.placementId,
+      ctx.projectId,
+      payload.canvasId,
+      payload.nodeId,
+      payload.x,
+      payload.y,
+      nextRenderOrder(ctx, payload.canvasId),
+      now,
+      now,
+    )
+    affected.push({ kind: 'placement', id: payload.placementId })
+
+    // The pre-flip appearance is dot or unset by construction.
+    const priorAppearance: NodeAppearance | null =
+      node.appearance_kind === 'dot' && node.appearance_color !== null
+        ? { kind: 'dot', color: node.appearance_color }
+        : null
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_UNPLACE_CARD,
+        commandVersion: 1,
+        payload: {
+          placementId: payload.placementId,
+          nodeId: payload.nodeId,
+          appearanceChanged: flips,
+          priorAppearance,
+        } satisfies UnplaceCardPayload,
+      },
+    }
+  })
+
+  registry.register<UnplaceCardPayload>(COMMAND_UNPLACE_CARD, 1, (ctx, payload) => {
+    const placement = ctx.db.get<{ id: string; node_id: string }>(
+      `SELECT id, node_id FROM placement
+       WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+      payload.placementId,
+      ctx.projectId,
+    )
+    if (!placement) {
+      throw new DomainError('PLACEMENT_NOT_FOUND', `no active placement ${payload.placementId}`)
+    }
+    if (placement.node_id !== payload.nodeId) {
+      throw new DomainError('VALIDATION_FAILED', 'placement does not belong to nodeId', {
+        placementId: payload.placementId,
+        nodeId: payload.nodeId,
+      })
+    }
+    const node = ctx.db.get<{ appearance_kind: string | null }>(
+      'SELECT appearance_kind FROM node WHERE id = ? AND project_id = ?',
+      payload.nodeId,
+      ctx.projectId,
+    )
+    if (!node) throw new DomainError('NODE_NOT_FOUND', `no node ${payload.nodeId}`)
+    if (payload.appearanceChanged && node.appearance_kind !== 'card') {
+      // The appearance moved on since the flip: an exact restore
+      // would clobber the newer look (UnmakeNoteIndependent's
+      // staleness discipline).
+      throw new DomainError(
+        'UNDO_STALE',
+        'UnplaceCard expects the node to still wear the card it flipped to',
+        { nodeId: payload.nodeId, appearanceKind: node.appearance_kind },
+      )
+    }
+
+    const affected: AffectedRecord[] = []
+    const freed = releaseConnectorAnchors(ctx, payload.placementId)
+    ctx.db.run('DELETE FROM placement WHERE id = ?', payload.placementId)
+    affected.push({ kind: 'placement', id: payload.placementId })
+    affected.push(...freed.map((id) => ({ kind: 'decoration' as const, id })))
+
+    if (payload.appearanceChanged) {
+      const prior = payload.priorAppearance
+      let color: string | null = null
+      let icon: string | null = null
+      let assetId: string | null = null
+      let crop: string | null = null
+      if (prior?.kind === 'dot') color = prior.color
+      else if (prior?.kind === 'icon') icon = prior.icon
+      else if (prior?.kind === 'image') {
+        assetId = prior.assetId
+        crop = prior.crop === null ? null : JSON.stringify(prior.crop)
+      }
+      ctx.db.run(
+        `UPDATE node SET appearance_kind = ?, appearance_color = ?, appearance_icon = ?,
+                appearance_asset_id = ?, appearance_crop = ?, updated_at = ?
+         WHERE id = ?`,
+        prior?.kind ?? null,
+        color,
+        icon,
+        assetId,
+        crop,
+        ctx.now(),
+        payload.nodeId,
+      )
+      affected.push({ kind: 'node', id: payload.nodeId })
+    }
+
+    // Internal inverse of a composite: not redoable as one step (redo
+    // re-issues PlaceAsCard), so no inverse is offered.
+    return { affected, inverse: null }
+  })
 }

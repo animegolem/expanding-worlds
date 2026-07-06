@@ -19,6 +19,38 @@ export interface DetachNoteFromNodePayload {
 }
 
 /**
+ * AI-IMP-086 compound: create a note (linkable-title + title-free
+ * rules, §4.2/§7.7) AND attach it to an existing note-less active
+ * node. One user act — "Attach New Note…", the attach picker's
+ * create row, the corner charm's first committed edit — is ONE
+ * durable command (§10.2) and one future undo step. Any rejection
+ * (node trashed, node already has a note, title collision) commits
+ * nothing: no loose note, no reserved title.
+ */
+export interface CreateNoteAndAttachPayload {
+  nodeId: string
+  /** Client-supplied UUIDv7 for the new note. */
+  noteId: string
+  title: string
+  /** Optional initial body (corner-charm drafts, §8.5). */
+  body?: string
+}
+
+/**
+ * Internal inverse of CreateNoteAndAttach: clears the node's note
+ * reference (its prior note_id was NULL by construction — the
+ * forward command refuses nodes that already reference a note) and
+ * trashes the created note if still active (purge-safe, mirroring
+ * CreateNote↔TrashNote and DeleteDraftPin: by undo time the note may
+ * have gained body text or inbound links). Not part of the public UI
+ * command set.
+ */
+export interface DetachAndTrashNotePayload {
+  nodeId: string
+  noteId: string
+}
+
+/**
  * §6.6: copy the current shared note's body into a new note under a
  * new project-unique title and swap the node's reference to it.
  * Collisions return the §7.7 NOTE_TITLE_CONFLICT shape.
@@ -271,6 +303,8 @@ export interface UngroupDecorationsPayload {
 
 export const COMMAND_ATTACH_NOTE_TO_NODE = 'AttachNoteToNode'
 export const COMMAND_DETACH_NOTE_FROM_NODE = 'DetachNoteFromNode'
+export const COMMAND_CREATE_NOTE_AND_ATTACH = 'CreateNoteAndAttach'
+export const COMMAND_DETACH_AND_TRASH_NOTE = 'DetachAndTrashNote'
 export const COMMAND_MAKE_NOTE_INDEPENDENT = 'MakeNoteIndependent'
 export const COMMAND_UNMAKE_NOTE_INDEPENDENT = 'UnmakeNoteIndependent'
 export const COMMAND_SET_NODE_APPEARANCE = 'SetNodeAppearance'

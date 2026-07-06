@@ -1,7 +1,9 @@
 import {
   COMMAND_ATTACH_NOTE_TO_NODE,
   COMMAND_CREATE_NODE,
+  COMMAND_CREATE_NOTE_AND_ATTACH,
   COMMAND_DELETE_DRAFT_NODE,
+  COMMAND_DETACH_AND_TRASH_NOTE,
   COMMAND_DETACH_NOTE_FROM_NODE,
   COMMAND_MAKE_NOTE_INDEPENDENT,
   COMMAND_SET_NODE_APPEARANCE,
@@ -11,7 +13,9 @@ import {
   type AttachNoteToNodePayload,
   type CommandRegistry,
   type CreateNodePayload,
+  type CreateNoteAndAttachPayload,
   type DeleteDraftNodePayload,
+  type DetachAndTrashNotePayload,
   type DetachNoteFromNodePayload,
   type MakeNoteIndependentPayload,
   type NodeAppearance,
@@ -171,6 +175,126 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       },
     }
   })
+
+  registry.register<CreateNoteAndAttachPayload>(COMMAND_CREATE_NOTE_AND_ATTACH, 1, (ctx, payload) => {
+    // AI-IMP-086: "Attach New Note…" is one user act, so note
+    // creation and attachment commit as ONE transaction — an
+    // attach-side rejection can never strand a loose note reserving
+    // its title. All validation precedes the first write (CreatePin's
+    // §6.2 shape).
+    if (typeof payload?.nodeId !== 'string' || payload.nodeId.length === 0) {
+      throw new DomainError('VALIDATION_FAILED', 'CreateNoteAndAttach requires payload.nodeId')
+    }
+    if (typeof payload.noteId !== 'string' || payload.noteId.length === 0) {
+      throw new DomainError('VALIDATION_FAILED', 'CreateNoteAndAttach requires payload.noteId')
+    }
+    if (payload.body !== undefined && typeof payload.body !== 'string') {
+      throw new DomainError(
+        'VALIDATION_FAILED',
+        'CreateNoteAndAttach body must be a string when present',
+      )
+    }
+    const node = requireNode<{ note_id: string | null }>(ctx, payload.nodeId, 'note_id')
+    if (node.note_id !== null) {
+      // Invariant 3: a node references at most one note.
+      throw new DomainError('NODE_HAS_NOTE', `node ${payload.nodeId} already references a note`, {
+        nodeId: payload.nodeId,
+        noteId: node.note_id,
+      })
+    }
+    const { title, key } = requireLinkableTitle(payload.title)
+    requireTitleFree(ctx, key, title)
+
+    const now = ctx.now()
+    ctx.db.run(
+      `INSERT INTO note (id, project_id, title, title_key, body, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      payload.noteId,
+      ctx.projectId,
+      title,
+      key,
+      payload.body ?? '',
+      now,
+      now,
+    )
+    ctx.db.run(
+      'UPDATE node SET note_id = ?, updated_at = ? WHERE id = ?',
+      payload.noteId,
+      now,
+      payload.nodeId,
+    )
+
+    const affected: AffectedRecord[] = [
+      { kind: 'note', id: payload.noteId },
+      { kind: 'node', id: payload.nodeId },
+    ]
+    // Mirrors CreateNote: index the body's outbound tokens (invariant
+    // 26), then the re-resolution sweep (invariant 27).
+    affected.push(...refreshNoteLinks(ctx, payload.noteId))
+    affected.push(...bindUnresolvedMatching(ctx, key, payload.noteId))
+
+    return {
+      affected,
+      inverse: {
+        commandType: COMMAND_DETACH_AND_TRASH_NOTE,
+        commandVersion: 1,
+        payload: {
+          nodeId: payload.nodeId,
+          noteId: payload.noteId,
+        } satisfies DetachAndTrashNotePayload,
+      },
+    }
+  })
+
+  registry.register<DetachAndTrashNotePayload>(
+    COMMAND_DETACH_AND_TRASH_NOTE,
+    1,
+    (ctx, payload, envelope) => {
+      const node = requireNode<{ note_id: string | null }>(ctx, payload.nodeId, 'note_id')
+      if (node.note_id !== payload.noteId) {
+        throw new DomainError(
+          'UNDO_STALE',
+          'DetachAndTrashNote expects the node to still reference the created note',
+          { nodeId: payload.nodeId, noteId: node.note_id },
+        )
+      }
+      const note = ctx.db.get<{ id: string; lifecycle_state: string }>(
+        'SELECT id, lifecycle_state FROM note WHERE id = ? AND project_id = ?',
+        payload.noteId,
+        ctx.projectId,
+      )
+      if (!note) throw new DomainError('NOTE_NOT_FOUND', `no note ${payload.noteId}`)
+
+      const now = ctx.now()
+      // The prior note_id was NULL by construction: CreateNoteAndAttach
+      // refuses nodes that already reference a note.
+      ctx.db.run('UPDATE node SET note_id = NULL, updated_at = ? WHERE id = ?', now, payload.nodeId)
+      const affected: AffectedRecord[] = [
+        { kind: 'node', id: payload.nodeId },
+        { kind: 'note', id: payload.noteId },
+      ]
+      if (note.lifecycle_state === 'active') {
+        // Purge-safe, mirroring CreateNote↔TrashNote and DeleteDraftPin:
+        // the note may have gained body text or inbound links since
+        // creation; trashing keeps links and the title reservation
+        // intact.
+        ctx.db.run(
+          `UPDATE note
+           SET lifecycle_state = 'trashed', trashed_at = ?, trashed_by_command_id = ?,
+               updated_at = ?
+           WHERE id = ?`,
+          now,
+          envelope.commandId,
+          now,
+          payload.noteId,
+        )
+      }
+      // Internal inverse of a composite create: not redoable as one
+      // step (redo re-issues CreateNoteAndAttach), so no inverse is
+      // offered — matching DeleteDraftPin.
+      return { affected, inverse: null }
+    },
+  )
 
   registry.register<MakeNoteIndependentPayload>(COMMAND_MAKE_NOTE_INDEPENDENT, 1, (ctx, payload) => {
     const node = requireNode<{ note_id: string | null }>(ctx, payload.nodeId, 'note_id')

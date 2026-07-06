@@ -42,5 +42,40 @@ export interface DeleteDraftPinPayload {
   createdNoteId?: string | null
 }
 
+/**
+ * §8.5 place-on-board compound (AI-IMP-086): the pinned panel's one
+ * deliberate act is ONE durable command (§10.2). In a single
+ * transaction it (a) flips the node's appearance to the §4.6 card
+ * ONLY when the current appearance is a dot or unset — icon/image
+ * nodes place as-is, their look already represents them (AI-IMP-084)
+ * — and (b) creates the placement at x/y.
+ */
+export interface PlaceAsCardPayload {
+  nodeId: string
+  canvasId: string
+  placementId: string
+  x: number
+  y: number
+}
+
+/**
+ * Internal inverse of PlaceAsCard: hard-deletes the placement
+ * (freeing anchored connector endpoints, like DeleteDraftPlacement)
+ * and, when the forward command flipped the appearance, restores the
+ * exact prior value — one undo reverts both. Refuses (UNDO_STALE)
+ * when the appearance moved on since the flip. Not part of the
+ * public UI command set.
+ */
+export interface UnplaceCardPayload {
+  placementId: string
+  nodeId: string
+  /** True when PlaceAsCard flipped the appearance to card. */
+  appearanceChanged: boolean
+  /** The pre-flip appearance to restore; null = unset (§4.6). */
+  priorAppearance: NodeAppearance | null
+}
+
 export const COMMAND_CREATE_PIN = 'CreatePin'
 export const COMMAND_DELETE_DRAFT_PIN = 'DeleteDraftPin'
+export const COMMAND_PLACE_AS_CARD = 'PlaceAsCard'
+export const COMMAND_UNPLACE_CARD = 'UnplaceCard'

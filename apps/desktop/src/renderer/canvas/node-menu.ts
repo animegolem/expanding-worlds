@@ -121,10 +121,9 @@ export function attachNodeMenu(
     if (noteId === null) {
       addEntry('Attach New Note…', 'node-menu-attach-new', () => {
         promptTitle('New note title', (title) => {
-          const newNoteId = uuidv7()
-          void execute('CreateNote', { noteId: newNoteId, title }).then((ok) => {
-            if (ok) void execute('AttachNoteToNode', { nodeId, noteId: newNoteId })
-          })
+          // AI-IMP-086: one act, ONE command — a failed attach can no
+          // longer strand a loose note reserving the title.
+          void execute('CreateNoteAndAttach', { nodeId, noteId: uuidv7(), title })
         })
       })
       // Search-or-create picker (AI-IMP-049) replaces the old
