@@ -7,7 +7,9 @@ import type { SceneItem } from './types'
  * the static (non-moving) content's world-AABB edges and centers per
  * axis, plus the canvas origin axes; `query` finds the smallest
  * within-threshold adjustment for the moving bounds' own
- * edges/centers on each axis independently. Thresholds are SCREEN
+ * edges/centers on each axis independently (or only the masked edges
+ * when the query carries an edge mask — resize, AI-IMP-082).
+ * Thresholds are SCREEN
  * pixels divided by zoom, so the feel is constant at any
  * magnification. Ephemeral by construction: the provider only adjusts
  * proposed deltas and emits guides — it never issues commands.
@@ -70,6 +72,24 @@ function bestHit(stops: readonly Stop[], candidates: readonly number[], threshol
 }
 
 /**
+ * Moving candidates for one axis. Unmasked queries (move) offer the
+ * min edge, center, and max edge; a masked query (resize, AI-IMP-082)
+ * offers ONLY the named edge — no center, no opposite edge — and an
+ * axis omitted from the mask offers nothing at all.
+ */
+function axisCandidates(
+  min: number,
+  size: number,
+  masked: boolean,
+  edge: 'min' | 'max' | undefined,
+): number[] {
+  if (!masked) return [min, min + size / 2, min + size]
+  if (edge === 'min') return [min]
+  if (edge === 'max') return [min + size]
+  return []
+}
+
+/**
  * One axis of hysteresis: while engaged, re-measure the SAME
  * stop/candidate pairing and hold it anywhere inside the release
  * radius (stability beats optimality mid-drag — a marginally closer
@@ -126,7 +146,7 @@ export function createSnapProvider(engagePx = SNAP_ENGAGE_PX, releasePx = SNAP_R
       yStops.sort((a, b) => a.value - b.value)
     },
 
-    query({ movingBounds, proposedDelta, disabled, zoom }) {
+    query({ movingBounds, proposedDelta, disabled, zoom, edges }) {
       if (disabled) {
         // The modifier breaks any engagement: re-enabling re-evaluates
         // fresh at the (tighter) engage radius.
@@ -138,14 +158,14 @@ export function createSnapProvider(engagePx = SNAP_ENGAGE_PX, releasePx = SNAP_R
       const releaseThreshold = releasePx / zoom
       const x = resolveAxis(
         xStops,
-        [movingBounds.x, movingBounds.x + movingBounds.width / 2, movingBounds.x + movingBounds.width],
+        axisCandidates(movingBounds.x, movingBounds.width, edges !== undefined, edges?.x),
         engagedX,
         engageThreshold,
         releaseThreshold,
       )
       const y = resolveAxis(
         yStops,
-        [movingBounds.y, movingBounds.y + movingBounds.height / 2, movingBounds.y + movingBounds.height],
+        axisCandidates(movingBounds.y, movingBounds.height, edges !== undefined, edges?.y),
         engagedY,
         engageThreshold,
         releaseThreshold,

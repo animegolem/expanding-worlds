@@ -258,3 +258,68 @@ describe('hysteresis (§6.9 rev 0.9)', () => {
     expect(step(snap, 125)).toEqual({ adjust: -5, engaged: true })
   })
 })
+
+describe('edge mask (AI-IMP-082)', () => {
+  it('offers only the named edge as a moving candidate', () => {
+    // Static AABB 80..120. Moving max edge at 77: 3 px from stop 80.
+    const bounds = { x: 37, y: 300, width: 40, height: 40 }
+    const max = provider().query(query({ movingBounds: bounds, edges: { x: 'max' } }))
+    expect(max.dx).toBe(3)
+    expect(max.guides[0]).toMatchObject({ axis: 'x', position: 80 })
+    // The same bounds with a min mask: the min edge (37) is near no
+    // stop, and the max edge is no longer a candidate.
+    const min = provider().query(query({ movingBounds: bounds, edges: { x: 'min' } }))
+    expect(min.dx).toBe(0)
+    expect(min.guides).toHaveLength(0)
+  })
+
+  it('excludes the opposite edge and the center under a mask', () => {
+    // Min edge at 123 (3 px from 120) snaps unmasked; masked to max
+    // (candidate 163, near nothing) it must not.
+    const opposite = provider().query(
+      query({ movingBounds: { x: 123, y: 300, width: 40, height: 40 }, edges: { x: 'max' } }),
+    )
+    expect(opposite.dx).toBe(0)
+    expect(opposite.guides).toHaveLength(0)
+    // Moving center at 103 (3 px from the static center 100) snaps
+    // unmasked; with a min mask (candidate 53) it must not.
+    const center = provider().query(
+      query({ movingBounds: { x: 53, y: 300, width: 100, height: 40 }, edges: { x: 'min' } }),
+    )
+    expect(center.dx).toBe(0)
+    expect(center.guides).toHaveLength(0)
+  })
+
+  it('never snaps an axis omitted from the mask', () => {
+    // Both axes within threshold of the static corner (120, 120); the
+    // mask names only x, so y passes through untouched, guide-free.
+    const result = provider().query(
+      query({ movingBounds: { x: 77, y: 117, width: 40, height: 40 }, edges: { x: 'max' } }),
+    )
+    expect(result.dx).toBe(3) // max edge 117 → static max edge 120
+    expect(result.dy).toBe(0)
+    expect(result.guides.map((g) => g.axis)).toEqual(['x'])
+    // An empty mask disables both axes outright.
+    const none = provider().query(
+      query({ movingBounds: { x: 123, y: 117, width: 40, height: 40 }, edges: {} }),
+    )
+    expect(none).toEqual({ dx: 0, dy: 0, guides: [] })
+  })
+
+  it('keeps hysteresis semantics for masked candidates', () => {
+    const snap = provider()
+    const at = (x: number) =>
+      snap.query(query({ movingBounds: { x, y: 300, width: 40, height: 40 }, edges: { x: 'max' } }))
+    expect(at(77).dx).toBe(3) // max edge 117: engages 3 px from stop 120
+    expect(at(87).dx).toBe(-7) // max edge 127, 7 px from 120: hold band
+    expect(at(90).dx).toBe(0) // max edge 130, 10 px: past release
+  })
+
+  it('unmasked queries are unchanged (mask absent = move semantics)', () => {
+    const masked = provider().query(
+      query({ movingBounds: { x: 123, y: 300, width: 40, height: 40 } }),
+    )
+    expect(masked.dx).toBe(-3)
+    expect(masked.guides[0]).toMatchObject({ axis: 'x', position: 120 })
+  })
+})

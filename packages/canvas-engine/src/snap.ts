@@ -22,6 +22,13 @@ export interface SnapQuery {
   /** Moving selection's world bounds at the proposed position. */
   movingBounds: Rect
   proposedDelta: { dx: number; dy: number }
+  /**
+   * Optional edge mask (AI-IMP-082, resize): when present, ONLY the
+   * named edges of movingBounds are moving candidates — no centers,
+   * no opposite edges — and an omitted axis never snaps. Absent mask
+   * means the full edge/center/edge candidate set (move semantics).
+   */
+  edges?: { x?: 'min' | 'max' | undefined; y?: 'min' | 'max' | undefined }
   /** Held modifier temporarily disables snapping (§6.9). */
   disabled: boolean
   zoom: number

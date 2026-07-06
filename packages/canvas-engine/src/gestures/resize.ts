@@ -2,7 +2,7 @@ import { placementTransformOf } from '../gesture'
 import { placementSize, unionBounds } from '../hit-test'
 import { scaleDecorationData, scaleTextData } from './decoration-data'
 import type { GestureDriver } from '../controller'
-import type { Rect } from '../camera'
+import type { Point, Rect } from '../camera'
 import type { SceneItem } from '../types'
 
 /**
@@ -15,7 +15,17 @@ import type { SceneItem } from '../types'
  * about the shared anchor: placement centers move with the scale and
  * their explicit width/height absorb the factors (placement x/y is
  * the body CENTER; `scale` is left untouched so the durable result is
- * always expressed in dimensions). Resize does not consult snapping.
+ * always expressed in dimensions).
+ *
+ * Snapping (§6.9, AI-IMP-082): the union-AABB path consults the snap
+ * seam with an edge mask — only the edge(s) the handle drives are
+ * candidates — then folds the returned adjustment back into the
+ * pointer and recomputes the factors once, so the snapped geometry
+ * flows through the ordinary per-member application. Shift promises
+ * exact geometry (AI-IMP-041) and Alt is the §6.9 bypass, so either
+ * disables snapping, exactly like move (AI-IMP-043). The rotated
+ * single-item local-frame path never queries: its edges are not
+ * world-axis-aligned, so edge guides would be ill-defined.
  */
 
 export type ResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
@@ -76,7 +86,7 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
   const affectsX = handle.includes('e') || handle.includes('w')
   const affectsY = handle.includes('n') || handle.includes('s')
   return {
-    update({ session, startWorld, currentWorld, modifiers }) {
+    update({ session, startWorld, currentWorld, modifiers, snap, camera }) {
       const items = session.priorItems()
       // A single rotated body resizes in its LOCAL frame (AI-IMP-031):
       // rotate the pointer into the body's axes, run the exact same
@@ -161,19 +171,76 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
       const bounds = unionBounds(items)
       if (!bounds) return []
       const anchor = anchorOf(handle, bounds)
-      let sx = affectsX ? safeFactor(currentWorld.x - anchor.x, startWorld.x - anchor.x) : 1
-      let sy = affectsY ? safeFactor(currentWorld.y - anchor.y, startWorld.y - anchor.y) : 1
       const corner = affectsX && affectsY
       // Aspect lock: images by default (Alt frees); Shift forces it
       // for anything and wins over Alt (AI-IMP-041). Follows
       // whichever axis moved further from rest.
-      if (
+      const locked =
         corner &&
         ((hasImageAppearance(items) && !(modifiers.alt ?? false)) || (modifiers.shift ?? false))
-      ) {
-        const s = Math.abs(sx - 1) >= Math.abs(sy - 1) ? sx : sy
-        sx = s
-        sy = s
+      const rawFactors = (current: Point) => ({
+        sx: affectsX ? safeFactor(current.x - anchor.x, startWorld.x - anchor.x) : 1,
+        sy: affectsY ? safeFactor(current.y - anchor.y, startWorld.y - anchor.y) : 1,
+      })
+      let { sx, sy } = rawFactors(currentWorld)
+      // When locked, the leading axis is decided ONCE from the raw
+      // pointer, so a snap adjustment can never flip dominance and
+      // pull the snapped edge back off its guide.
+      const lockAxis: 'x' | 'y' | null = locked
+        ? Math.abs(sx - 1) >= Math.abs(sy - 1)
+          ? 'x'
+          : 'y'
+        : null
+      const applyLock = (f: { sx: number; sy: number }): { sx: number; sy: number } => {
+        if (!lockAxis) return f
+        const s = lockAxis === 'x' ? f.sx : f.sy
+        return { sx: s, sy: s }
+      }
+      ;({ sx, sy } = applyLock({ sx, sy }))
+      // Snap consultation (§6.9, AI-IMP-082): the proposed post-scale
+      // union bounds go to the provider with the handle's dragged
+      // edge(s) as the only candidates. Under an aspect lock the
+      // dominant axis alone snaps — the locked aspect follows, and
+      // the one guide drawn is honest. Shift promises exact geometry
+      // (AI-IMP-041); Alt is §6.9's bypass — both disable, exactly
+      // like move (AI-IMP-043).
+      const { dx, dy, guides } = snap.query({
+        movingBounds: {
+          x: anchor.x + (bounds.x - anchor.x) * sx,
+          y: anchor.y + (bounds.y - anchor.y) * sy,
+          width: bounds.width * sx,
+          height: bounds.height * sy,
+        },
+        proposedDelta: { dx: 0, dy: 0 },
+        edges: {
+          x:
+            affectsX && (lockAxis === null || lockAxis === 'x')
+              ? handle.includes('e')
+                ? 'max'
+                : 'min'
+              : undefined,
+          y:
+            affectsY && (lockAxis === null || lockAxis === 'y')
+              ? handle.includes('s')
+                ? 'max'
+                : 'min'
+              : undefined,
+        },
+        disabled: (modifiers.alt ?? false) || (modifiers.shift ?? false),
+        zoom: camera.zoom,
+      })
+      if (dx !== 0 || dy !== 0) {
+        // The pointer and the dragged edge scale about the same
+        // anchor, so an edge adjustment maps into pointer travel by
+        // the ratio of their start offsets; recompute the factors
+        // ONCE from the nudged pointer.
+        const edgeX = handle.includes('e') ? bounds.x + bounds.width : bounds.x
+        const edgeY = handle.includes('s') ? bounds.y + bounds.height : bounds.y
+        const px =
+          Math.abs(edgeX - anchor.x) < 1e-6 ? 0 : dx * ((startWorld.x - anchor.x) / (edgeX - anchor.x))
+        const py =
+          Math.abs(edgeY - anchor.y) < 1e-6 ? 0 : dy * ((startWorld.y - anchor.y) / (edgeY - anchor.y))
+        ;({ sx, sy } = applyLock(rawFactors({ x: currentWorld.x + px, y: currentWorld.y + py })))
       }
       for (const id of session.ids()) {
         const prior = session.prior(id)
@@ -216,7 +283,7 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
           })
         }
       }
-      return []
+      return guides
     },
   }
 }
