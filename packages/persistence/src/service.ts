@@ -26,6 +26,7 @@ import {
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
+import { registerGalleryQueries } from './queries-gallery'
 import { registerLifecycleQueries } from './queries-lifecycle'
 import { registerNoteQueries } from './queries-notes'
 import { registerSearchQueries } from './queries-search'
@@ -109,6 +110,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerSearchQueries(queries)
   registerLifecycleQueries(queries)
   registerSettingsQueries(queries)
+  registerGalleryQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {

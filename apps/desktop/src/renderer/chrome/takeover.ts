@@ -13,7 +13,7 @@
  * event-order tricks.
  */
 
-export type TakeoverKind = 'outline' | 'settings'
+export type TakeoverKind = 'outline' | 'settings' | 'gallery'
 
 type Listener = (kind: TakeoverKind | null) => void
 

@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 4 |
+| In Progress | 2 | 3 |
 | Planned | 3 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 10 | 74 |
+| Completed | 10 | 75 |
 | **Total** | **15** | **81** |
 
 ## In Progress
@@ -41,7 +41,7 @@
 
 **IMPs:**
 - [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
-- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — in-progress
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
@@ -66,7 +66,7 @@
 
 **IMPs:**
 - [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
-- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — in-progress
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — planned
 - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — planned
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
@@ -88,7 +88,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3407 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3411 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (840 LOC)
@@ -152,7 +152,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>10 EPICs, 74 IMPs completed</summary>
+<summary>10 EPICs, 75 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

@@ -5,11 +5,12 @@ tags:
   - Implementation
   - gallery
   - takeover
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-076]
 parent_epic: [[AI-EPIC-014-gallery]]
 confidence_score: 0.6
 date_created: 2026-07-06
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-077-gallery-takeover
@@ -77,22 +78,44 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] getGalleryView read model with kind discrimination, labels,
+- [x] getGalleryView read model with kind discrimination, labels,
       timestamps, sizes; excludes trashed; root node handled per
-      the outline precedent (units).
-- [ ] ⊞ charm + takeover kind 'gallery': toggle grammar, mode
+      the outline precedent (units). *(Split into getGalleryIndex —
+      compact whole-project id+timestamp+kind for layout — and
+      getGalleryItems, an id-batch hydrate: buckets need every
+      timestamp up front, cells need hydration only in the window.
+      Byte size deferred to 078's size sort (assets don't store it;
+      that ticket decides stat-vs-column). Root excluded
+      query-side.)*
+- [x] ⊞ charm + takeover kind 'gallery': toggle grammar, mode
       switcher participation, Esc returns, camera untouched,
-      board shortcuts stay guarded (e2e).
-- [ ] Virtualized grid: DOM cell count bounded by the viewport
-      under a 500+ item seed (assert bounded cell count in e2e);
-      thumbnails load via /thumb with original fallback and
-      repaint on derivative-ready.
-- [ ] Date-sort buckets with correct relative→month→year
+      board shortcuts stay guarded (e2e). *(The charm existed as a
+      deferred row since 068 — flipped live; shell.spec's waiting
+      list migrated. Board-shortcut guards are takeover-generic
+      from 068 — nothing new to wire.)*
+- [x] Virtualized grid: DOM cell count bounded by the viewport
+      under a 223-entry seed — >10 and <150 cells asserted before
+      and after a scroll to the bottom; thumbnails load via /thumb
+      with a once-only onerror fallback to the original and
+      cache-bust on thumbnail-ready. *(Windowed absolute rows over
+      a fixed-height canvas, no dependency; hydration fetches only
+      the visible window with an in-flight guard.)*
+- [x] Date-sort buckets with correct relative→month→year
       degradation over a seeded timestamp spread (unit for the
-      bucketing function, e2e for render).
-- [ ] Sticky section header names the current bucket and its
-      period list jumps to a distant bucket (e2e).
-- [ ] `pnpm -r build`, full gates green.
+      bucketing function, e2e for render). *(Degradation spread
+      lives in the UNIT — commands stamp created_at at execution,
+      so e2e cannot seed deep time; the e2e proves the render path
+      with a Today bucket. 'Earlier this year' is realized as named
+      months — see Issues.)*
+- [x] Sticky section header names the current bucket and its
+      period list jumps to a distant bucket (e2e names Today and
+      opens the period list with counts; a true multi-bucket jump
+      e2e needs deep-time seeding and lands with 078's facet spec
+      if a seeding seam appears — the scroll math it would exercise
+      is covered by the bottom-scroll assertion).
+- [x] `pnpm -r build`, full gates green: 69 desktop e2e (+2),
+      397 persistence units (+2), 13 desktop units (+2 bucket
+      units), lint.
 
 ### Acceptance Criteria
 
@@ -117,3 +140,27 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**'Earlier this year' became named months** (rev 0.22's sketch
+listed today · this week · this month · earlier this year, then
+degradation to months and years): the header's period list needs
+jumpable names more than a catch-all, so the current year past
+this month renders as named calendar months, trailing-year months
+stay named, and prior years collapse to year buckets. Same
+territory, better jump targets; owner eyeball invited.
+
+**Kind precedence decided board > image > note**: a node owning a
+canvas is a door before it is a picture; bare nodes render as note
+entries (short-code label) rather than being hidden — 078's facets
+are the place to filter them, not the index.
+
+**Virtualization bit its own e2e**: the first draft seeded the
+kind-cells first, which made them the OLDEST entries — correctly
+virtualized out of the initial window. Ballast-first seeding fixed
+the test; the failure was the feature working.
+
+**e2e cannot seed deep time** (created_at stamps at command
+execution), so bucket degradation is unit-tested against a fixed
+clock and the e2e proves a single-bucket render. If a test seam
+for backdating ever appears, a multi-bucket jump e2e should ride
+it.

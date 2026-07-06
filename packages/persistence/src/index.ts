@@ -45,6 +45,12 @@ export {
   type OrderedItem,
 } from './render-order'
 export { registerStructureQueries, type CanvasContentItem } from './queries-structure'
+export {
+  registerGalleryQueries,
+  type GalleryIndexEntry,
+  type GalleryItem,
+  type GalleryKind,
+} from './queries-gallery'
 export { ftsMatchExpression, rebuildSearchIndex } from './search'
 export {
   registerSearchQueries,
