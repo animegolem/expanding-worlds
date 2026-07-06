@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
+| In Progress | 2 | 0 |
 | Planned | 6 | 3 |
-| Deferred | 0 | 0 |
+| Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 90 |
-| **Total** | **18** | **93** |
+| Completed | 11 | 96 |
+| **Total** | **19** | **100** |
 
 ## In Progress
 
@@ -48,6 +48,20 @@
 
 ---
 
+### [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015: Library and cross project sourcing]]
+> The first outside tester's reference library lives in Allusion,
+
+**IMPs:**
+- [[AI-IMP-088-secondary-project-seam|IMP-088]] Secondary project seam — completed
+- [[AI-IMP-089-library-scope-toggle|IMP-089]] Library scope toggle — completed
+- [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — completed
+- [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — completed
+- [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
+- [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
+- [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
+
+---
+
 ## Planned
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
@@ -57,11 +71,6 @@
 
 ### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
 > RFC §16 requires portable export with lossless reimport, and §17–18
-
----
-
-### [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015: Library and cross project sourcing]]
-> The first outside tester's reference library lives in Allusion,
 
 ---
 
@@ -80,6 +89,11 @@
 
 ---
 
+### [[AI-EPIC-019-public-face|EPIC-019: Public face]]
+> The user base is deliberately NON-TECHNICAL (artists), but the
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -88,8 +102,8 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3717 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1373 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (938 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
@@ -98,6 +112,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (720 LOC)
 - packages/persistence/src/queries-structure.ts (709 LOC)
+- apps/desktop/src/main/index.ts (692 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -107,7 +122,7 @@ Generated from tracked files; binary assets excluded.
 
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/main/index.ts (560 LOC)
+- apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/pin.test.ts (558 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
@@ -127,6 +142,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/board-tooling.ts (470 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (455 LOC)
+- apps/desktop/src/utility/index.ts (450 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
@@ -135,11 +151,13 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
 - packages/commands/src/payloads/structure.ts (387 LOC)
-- apps/desktop/src/renderer/views/GalleryActionBar.svelte (373 LOC)
+- apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
+- apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
+- apps/desktop/src/renderer/canvas/import-surfaces.ts (380 LOC)
+- apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
-- apps/desktop/src/renderer/views/GalleryFacets.svelte (353 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/queries-notes.ts (341 LOC)
@@ -152,6 +170,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/shell.spec.ts (317 LOC)
+- packages/protocol/src/index.ts (316 LOC)
+- apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
+- apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
 
@@ -159,7 +180,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 90 IMPs completed</summary>
+<summary>11 EPICs, 96 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

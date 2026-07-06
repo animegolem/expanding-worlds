@@ -80,6 +80,13 @@ export {
   type ServiceOptions,
 } from './service'
 export {
+  ingestFromSource,
+  type IngestBorder,
+  type IngestInput,
+  type IngestResult,
+  type IngestSource,
+} from './import/ingest'
+export {
   commitStaged,
   hashStaged,
   importAsset,

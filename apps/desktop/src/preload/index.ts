@@ -3,10 +3,18 @@ import { uuidv7 } from '@ew/domain'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
 import type {
   ClaimThumbnailJobResponse,
+  ClearLibraryExampleResponse,
+  CloseSecondaryResponse,
   ExecuteCommandResponse,
   ImportAssetResponse,
+  IngestFromSecondaryResponse,
+  MirrorToLibraryResponse,
+  OpenSecondaryResponse,
   PingResponse,
   RunQueryResponse,
+  SecondaryImportResponse,
+  SecondaryQueryResponse,
+  SecondaryTarget,
   ServiceStatusEvent,
   SetSettingResponse,
   SubmitThumbnailResponse,
@@ -126,6 +134,50 @@ const api = {
       ipcRenderer.on('project:service', listener)
       return () => ipcRenderer.removeListener('project:service', listener)
     },
+  },
+  /** §14.4 secondary project slots (AI-IMP-088): source = read-only
+   * browse of another project, library = the writable mirror target.
+   * Same query vocabulary as the primary; writes into source refuse
+   * EW_READ_ONLY at the service. */
+  secondary: {
+    /** `options.createIfMissing` (AI-IMP-094, library target only)
+     * creates the project when the directory holds none — and seeds
+     * the §14.4 first-open example into a fresh create. */
+    open: (
+      target: SecondaryTarget,
+      dir: string,
+      options?: { createIfMissing?: boolean; title?: string },
+    ): Promise<OpenSecondaryResponse> =>
+      ipcRenderer.invoke('secondary:open', target, dir, options) as Promise<OpenSecondaryResponse>,
+    /** The default location the create-new-library path proposes. */
+    defaultLibraryDir: (): Promise<string> =>
+      ipcRenderer.invoke('library:default-dir') as Promise<string>,
+    /** §14.4 clear-the-example (AI-IMP-094): trash every node tagged
+     * 'example' in the OPEN library slot via ordinary commands. */
+    clearLibraryExample: (): Promise<ClearLibraryExampleResponse> =>
+      ipcRenderer.invoke('secondary:clear-library-example') as Promise<ClearLibraryExampleResponse>,
+    close: (target: SecondaryTarget): Promise<CloseSecondaryResponse> =>
+      ipcRenderer.invoke('secondary:close', target) as Promise<CloseSecondaryResponse>,
+    query: (target: SecondaryTarget, name: string, args?: unknown): Promise<SecondaryQueryResponse> =>
+      ipcRenderer.invoke('secondary:query', target, name, args) as Promise<SecondaryQueryResponse>,
+    importAsset: (
+      target: SecondaryTarget,
+      input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string },
+    ): Promise<SecondaryImportResponse> =>
+      ipcRenderer.invoke('secondary:import-asset', target, input) as Promise<SecondaryImportResponse>,
+    /** §14.4 ingest-by-copy (AI-IMP-090): pull one asset by content
+     * hash from the secondary into the PRIMARY, applying the tag
+     * border ('none' | 'all' | picked tag names). */
+    ingest: (
+      target: SecondaryTarget,
+      input: { contentHash: string; border: 'none' | 'all' | string[] },
+    ): Promise<IngestFromSecondaryResponse> =>
+      ipcRenderer.invoke('secondary:ingest', target, input) as Promise<IngestFromSecondaryResponse>,
+    /** §14.4 inbox mirror (AI-IMP-092): the inverse direction —
+     * ingest the primary's bytes (by content hash) into the LIBRARY
+     * slot as an unplaced node, border 'none' by construction. */
+    mirrorToLibrary: (input: { contentHash: string }): Promise<MirrorToLibraryResponse> =>
+      ipcRenderer.invoke('secondary:mirror', input) as Promise<MirrorToLibraryResponse>,
   },
   /** §11.2 renderer-driven thumbnail pipeline (AI-IMP-076): the
    * renderer claims queued jobs, generates WebP thumbnails with

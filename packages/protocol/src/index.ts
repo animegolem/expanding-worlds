@@ -130,6 +130,128 @@ export type SubmitThumbnailResponse =
   | { type: 'submit-thumbnail'; ok: true }
   | { type: 'submit-thumbnail'; ok: false; code: string; message: string }
 
+/** §11.1/§14.4 secondary project slots (AI-IMP-088): a SOURCE opens
+ * read-only (browse/ingest-from; replace-on-open), the LIBRARY opens
+ * writable under the ordinary lock (the inbox mirror's target). Both
+ * live beside the primary; a dead secondary never takes it down. */
+export type SecondaryTarget = 'source' | 'library'
+
+export interface OpenSecondaryRequest {
+  type: 'open-secondary'
+  target: SecondaryTarget
+  dir: string
+  /** §14.4 create-new library (AI-IMP-094): LIBRARY target only — a
+   * source opens read-only, so creating one is refused in the
+   * utility. When the open creates a fresh project, the bundled
+   * example set is seeded into it through ordinary commands. */
+  createIfMissing?: boolean
+  title?: string
+  /** Bundled seed-asset directory, resolved by MAIN (the utility
+   * knows no app paths). Only consulted when the open creates. */
+  seedDir?: string
+}
+
+export type OpenSecondaryResponse =
+  | {
+      type: 'open-secondary'
+      ok: true
+      project: ProjectInfo
+      /** AI-IMP-094: true when this open created the project. */
+      created?: boolean
+      /** True when the first-open example set landed (create only). */
+      seeded?: boolean
+    }
+  | { type: 'open-secondary'; ok: false; code: string; message: string }
+
+export interface CloseSecondaryRequest {
+  type: 'close-secondary'
+  target: SecondaryTarget
+}
+
+export interface CloseSecondaryResponse {
+  type: 'close-secondary'
+  ok: true
+}
+
+export interface SecondaryQueryRequest {
+  type: 'secondary-query'
+  target: SecondaryTarget
+  name: string
+  args?: unknown
+}
+
+export type SecondaryQueryResponse =
+  | { type: 'secondary-query'; ok: true; result: unknown }
+  | { type: 'secondary-query'; ok: false; code: string; message: string }
+
+/** Import INTO the library slot (mirror direction); the source slot
+ * is read-only by construction and refuses at the service. */
+export interface SecondaryImportRequest {
+  type: 'secondary-import'
+  target: SecondaryTarget
+  originalFilename: string
+  bytes: Uint8Array
+  sourceUrl?: string
+}
+
+export type SecondaryImportResponse =
+  | { type: 'secondary-import'; ok: true; assetId: string; deduplicated: boolean }
+  | { type: 'secondary-import'; ok: false; code: string; message: string }
+
+/** §14.4 ingest-by-copy (AI-IMP-090): pull one asset (identified by
+ * content hash) plus its tag facts from a secondary INTO THE PRIMARY,
+ * applying the session's tag border. Bytes hash-copy through the
+ * ordinary staged pipeline (dedupe free); carried tags find-or-create
+ * by name_key. The border is 'none' | 'all' | picked tag names. */
+export interface IngestFromSecondaryRequest {
+  type: 'ingest-from-secondary'
+  target: SecondaryTarget
+  contentHash: string
+  border: 'none' | 'all' | string[]
+}
+
+export type IngestFromSecondaryResponse =
+  | {
+      type: 'ingest-from-secondary'
+      ok: true
+      nodeId: string
+      assetId: string
+      deduplicated: boolean
+      /** §14.4 provenance: the source project's id — no schema home
+       * in Phase 1, so it rides the response for the caller. */
+      sourceProjectId: string
+    }
+  | { type: 'ingest-from-secondary'; ok: false; code: string; message: string }
+
+/** §14.4 first-open seed (AI-IMP-094): trash every node carrying
+ * the 'example' tag in the LIBRARY slot — the seeded example plus
+ * its explainer — through ordinary TrashNode commands. Honest v1 of
+ * the RFC's "the explainer note's one power": the explainer lives in
+ * the library while the user stands in a primary project, so the
+ * clear action crosses the seam as a verb instead of a note
+ * affordance (recorded for the RFC consistency pass at epic close). */
+export interface ClearLibraryExampleRequest {
+  type: 'clear-library-example'
+}
+
+export type ClearLibraryExampleResponse =
+  | { type: 'clear-library-example'; ok: true; trashed: number }
+  | { type: 'clear-library-example'; ok: false; code: string; message: string }
+
+/** §14.4 inbox mirror (AI-IMP-092): the INVERSE of ingest — read the
+ * just-imported bytes from the PRIMARY and ingest them into the
+ * LIBRARY slot as an unplaced node with provenance. Border is always
+ * 'none' on this direction: world curation never leaks into the
+ * library; library tags travel the other way via recognition. */
+export interface MirrorToLibraryRequest {
+  type: 'mirror-to-library'
+  contentHash: string
+}
+
+export type MirrorToLibraryResponse =
+  | { type: 'mirror-to-library'; ok: true; nodeId: string; assetId: string; deduplicated: boolean }
+  | { type: 'mirror-to-library'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -140,6 +262,13 @@ export type ProjectRequest =
   | SetSettingRequest
   | ClaimThumbnailJobRequest
   | SubmitThumbnailRequest
+  | OpenSecondaryRequest
+  | CloseSecondaryRequest
+  | SecondaryQueryRequest
+  | SecondaryImportRequest
+  | IngestFromSecondaryRequest
+  | ClearLibraryExampleRequest
+  | MirrorToLibraryRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -151,6 +280,13 @@ export type ProjectResponse =
   | SetSettingResponse
   | ClaimThumbnailJobResponse
   | SubmitThumbnailResponse
+  | OpenSecondaryResponse
+  | CloseSecondaryResponse
+  | SecondaryQueryResponse
+  | SecondaryImportResponse
+  | IngestFromSecondaryResponse
+  | ClearLibraryExampleResponse
+  | MirrorToLibraryResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. */

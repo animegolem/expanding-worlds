@@ -12,6 +12,11 @@ directories:
   output: dist-artifacts
 files:
   - out/**
+# §14.4 first-open seed (AI-IMP-094): the utility resolves the seed
+# images from process.resourcesPath in packaged builds.
+extraResources:
+  - from: resources/seed
+    to: seed
 npmRebuild: false
 mac:
   target:

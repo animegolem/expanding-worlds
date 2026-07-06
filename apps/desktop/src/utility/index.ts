@@ -1,5 +1,8 @@
-import { openProjectService, type ProjectService } from '@ew/persistence'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { DB_FILENAME, openProjectService, type ProjectService } from '@ew/persistence'
 import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage } from '@ew/protocol'
+import { clearLibraryExample, seedLibrary } from './seed-library'
 
 /**
  * Project utility process (RFC-0001 §13.2): hosts the authoritative
@@ -9,6 +12,25 @@ import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage }
 
 let service: ProjectService | null = null
 let unsubscribe: (() => void) | null = null
+
+/** §14.4 secondary slots (AI-IMP-088): source = read-only browse,
+ * library = writable mirror target. Independent of the primary — a
+ * secondary failure surfaces as ok:false, never as a dead utility.
+ * No change-event subscription: fan-out for secondaries is a later
+ * ticket's concern if a surface needs it. */
+const secondaries: Record<'source' | 'library', ProjectService | null> = {
+  source: null,
+  library: null,
+}
+
+function closeSecondary(target: 'source' | 'library'): void {
+  try {
+    secondaries[target]?.close()
+  } catch {
+    // A close failure must not poison the slot.
+  }
+  secondaries[target] = null
+}
 
 function post(message: UtilityMessage): void {
   process.parentPort.postMessage(message)
@@ -58,7 +80,244 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       unsubscribe = null
       service?.close()
       service = null
+      // Secondaries are scoped to the foreground project session.
+      closeSecondary('source')
+      closeSecondary('library')
       return { type: 'close-project', ok: true }
+    }
+
+    case 'open-secondary': {
+      // §14.4 create-new library (AI-IMP-094): LIBRARY only — a
+      // source opens read-only, so creating one is a contradiction.
+      if (request.createIfMissing === true && request.target !== 'library') {
+        return {
+          type: 'open-secondary',
+          ok: false,
+          code: 'INVALID_TARGET',
+          message: 'createIfMissing applies to the library slot only — a source opens read-only',
+        }
+      }
+      try {
+        closeSecondary(request.target) // replace-on-open
+        const creating =
+          request.createIfMissing === true && !existsSync(join(request.dir, DB_FILENAME))
+        const options: { readOnly: boolean; createIfMissing?: boolean; title?: string } = {
+          readOnly: request.target === 'source',
+        }
+        if (request.createIfMissing === true) options.createIfMissing = true
+        if (request.title !== undefined) options.title = request.title
+        const secondary = openProjectService(request.dir, options)
+        secondaries[request.target] = secondary
+        // First open teaches by example (§14.4): a FRESH library is
+        // seeded here, in-process against the new service, through
+        // ordinary commands. Designating an EXISTING project never
+        // seeds (creating === false). A failed seed does not fail
+        // the open — the library itself is fine; report seeded.
+        let seeded = false
+        if (creating && request.seedDir !== undefined) {
+          try {
+            await seedLibrary(secondary, request.seedDir)
+            seeded = true
+          } catch (err) {
+            console.error('[utility] library example seed failed:', err)
+          }
+        }
+        return {
+          type: 'open-secondary',
+          ok: true,
+          project: secondary.info(),
+          created: creating,
+          seeded,
+        }
+      } catch (err) {
+        secondaries[request.target] = null
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'OPEN_SECONDARY_FAILED'
+        return {
+          type: 'open-secondary',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'close-secondary': {
+      closeSecondary(request.target)
+      return { type: 'close-secondary', ok: true }
+    }
+
+    case 'clear-library-example': {
+      // §14.4 the explainer's one power, over the seam (AI-IMP-094):
+      // enumerate by the shared 'example' tag in the LIBRARY slot and
+      // trash through ordinary TrashNode commands.
+      const library = secondaries.library
+      if (!library) {
+        return {
+          type: 'clear-library-example',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: 'no library project is open',
+        }
+      }
+      try {
+        return { type: 'clear-library-example', ok: true, trashed: clearLibraryExample(library) }
+      } catch (err) {
+        return {
+          type: 'clear-library-example',
+          ok: false,
+          code: 'CLEAR_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'secondary-query': {
+      const secondary = secondaries[request.target]
+      if (!secondary) {
+        return {
+          type: 'secondary-query',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: `no ${request.target} project is open`,
+        }
+      }
+      const result = secondary.query(request.name, request.args)
+      return result.ok
+        ? { type: 'secondary-query', ok: true, result: result.result }
+        : { type: 'secondary-query', ok: false, code: result.code, message: result.message }
+    }
+
+    case 'secondary-import': {
+      const secondary = secondaries[request.target]
+      if (!secondary) {
+        return {
+          type: 'secondary-import',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: `no ${request.target} project is open`,
+        }
+      }
+      try {
+        const input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string } = {
+          bytes: request.bytes,
+          originalFilename: request.originalFilename,
+        }
+        if (request.sourceUrl !== undefined) input.sourceUrl = request.sourceUrl
+        const { assetId, deduplicated } = await secondary.importAsset(input)
+        return { type: 'secondary-import', ok: true, assetId, deduplicated }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'IMPORT_FAILED'
+        return {
+          type: 'secondary-import',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'ingest-from-secondary': {
+      // §14.4 ingest-by-copy (AI-IMP-090): reads from the secondary,
+      // WRITES into the primary. The secondary's {db, dir} read
+      // handle comes from its own service (ingestSource()), so no
+      // separate dir bookkeeping exists to drift out of sync.
+      if (!service) {
+        return {
+          type: 'ingest-from-secondary',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no project is open',
+        }
+      }
+      const secondary = secondaries[request.target]
+      if (!secondary) {
+        return {
+          type: 'ingest-from-secondary',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: `no ${request.target} project is open`,
+        }
+      }
+      try {
+        const result = await service.ingestFrom(secondary.ingestSource(), {
+          contentHash: request.contentHash,
+          border: request.border,
+        })
+        return {
+          type: 'ingest-from-secondary',
+          ok: true,
+          nodeId: result.nodeId,
+          assetId: result.assetId,
+          deduplicated: result.deduplicated,
+          sourceProjectId: result.sourceProjectId,
+        }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'INGEST_FAILED'
+        return {
+          type: 'ingest-from-secondary',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'mirror-to-library': {
+      // §14.4 inbox mirror (AI-IMP-092): the exact inverse of
+      // ingest-from-secondary — reads from the PRIMARY's {db, dir}
+      // handle, WRITES into the library slot. Border 'none' by
+      // construction: the mirror is one-way and carries bytes plus
+      // provenance, never world curation.
+      if (!service) {
+        return {
+          type: 'mirror-to-library',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no project is open',
+        }
+      }
+      const library = secondaries.library
+      if (!library) {
+        return {
+          type: 'mirror-to-library',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: 'no library project is open',
+        }
+      }
+      try {
+        const result = await library.ingestFrom(service.ingestSource(), {
+          contentHash: request.contentHash,
+          border: 'none',
+        })
+        return {
+          type: 'mirror-to-library',
+          ok: true,
+          nodeId: result.nodeId,
+          assetId: result.assetId,
+          deduplicated: result.deduplicated,
+        }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'MIRROR_FAILED'
+        return {
+          type: 'mirror-to-library',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
     }
 
     case 'execute-command': {
