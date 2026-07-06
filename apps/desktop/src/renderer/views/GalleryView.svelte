@@ -6,13 +6,23 @@
   and opens the period list for random access into deep time (one
   control, two jobs). Thumbnails load over ew-asset://<hash>/thumb
   with a one-line fallback to the original, and repaint as the
-  background generator (076) lands derivatives. Facets, selection,
-  and the keyboard model arrive with 078/079/080.
+  background generator (076) lands derivatives.
+
+  078 adds the retrieval half: a facet strip (sort · kind mask · tag
+  filter · cleanup toggles) whose state composes into the index
+  query's arguments — filtering happens in SQL, the virtualization
+  core is untouched. Buckets are DATE sort's presentation; name and
+  size render the flat grid. Note-kind cells are text posts (FR-8):
+  title plus a clamped body excerpt, tags on hover. Selection and
+  the keyboard model arrive with 079/080.
 -->
 <script lang="ts">
+  import { untrack } from 'svelte'
+  import GalleryFacets from './GalleryFacets.svelte'
   import { bucketByDate, type GalleryBucket } from './gallery-buckets'
 
   type GalleryKind = 'image' | 'note' | 'board'
+  type GallerySort = 'date' | 'name' | 'size'
 
   interface IndexEntry {
     nodeId: string
@@ -29,6 +39,8 @@
     width: number | null
     height: number | null
     childCanvasId: string | null
+    noteExcerpt: string | null
+    tagNames: string[]
   }
 
   const CELL = 168
@@ -47,25 +59,48 @@
   let scrollTop = $state(0)
   let jumpOpen = $state(false)
 
+  // ---------------------------------------------------- 078 facets
+  // Facet state is view state (§14.4): it composes into the index
+  // query's arguments and never writes.
+  let sort = $state<GallerySort>('date')
+  let kinds = $state<GalleryKind[]>([])
+  let tagFilters = $state<Array<{ id: string; name: string }>>([])
+  let untagged = $state(false)
+  let unplaced = $state(false)
+
+  const facetArgs = $derived({
+    sort,
+    kinds: [...kinds],
+    tagIds: tagFilters.map((tag) => tag.id),
+    untagged,
+    unplaced,
+  })
+
   async function runQuery<T>(name: string, args?: unknown): Promise<T> {
     const response = await window.ew.project.query(name, args)
     if (!response.ok) throw new Error(response.message)
     return response.result as T
   }
 
-  async function refresh(): Promise<void> {
+  async function refresh(args: typeof facetArgs): Promise<void> {
     try {
-      index = await runQuery<IndexEntry[]>('getGalleryIndex')
+      index = await runQuery<IndexEntry[]>('getGalleryIndex', args)
     } catch {
       index = []
     }
     loaded = true
   }
 
+  // A facet change re-queries AND rehomes the viewport: the old
+  // scroll offset points into a grid that no longer exists.
   $effect(() => {
-    void refresh()
+    void refresh(facetArgs)
+    untrack(() => {
+      scroller?.scrollTo({ top: 0 })
+      scrollTop = 0
+    })
   })
-  $effect(() => window.ew.project.onChanged(() => void refresh()))
+  $effect(() => window.ew.project.onChanged(() => void refresh(facetArgs)))
   // 076's push: a landed derivative repaints its cells by cache-bust.
   $effect(() =>
     window.ew.derivatives.onThumbnailReady(({ contentHash }) => {
@@ -73,7 +108,9 @@
     }),
   )
 
-  const buckets = $derived(bucketByDate(index, new Date()))
+  // Buckets are DATE sort's presentation (§14.4): name and size
+  // render the flat grid — no headers, no period control.
+  const buckets = $derived(sort === 'date' ? bucketByDate(index, new Date()) : [])
   const columns = $derived(
     Math.max(2, Math.floor((viewportWidth - PAD * 2 + GAP) / (CELL + GAP))),
   )
@@ -85,12 +122,20 @@
   const layout = $derived.by(() => {
     const rows: Row[] = []
     let top = 0
-    for (const bucket of buckets) {
-      rows.push({ kind: 'header', bucket, top })
-      top += HEADER_H
-      const end = bucket.startIndex + bucket.count
-      for (let i = bucket.startIndex; i < end; i += columns) {
-        rows.push({ kind: 'cells', entries: index.slice(i, Math.min(i + columns, end)), top })
+    if (sort === 'date') {
+      for (const bucket of buckets) {
+        rows.push({ kind: 'header', bucket, top })
+        top += HEADER_H
+        const end = bucket.startIndex + bucket.count
+        for (let i = bucket.startIndex; i < end; i += columns) {
+          rows.push({ kind: 'cells', entries: index.slice(i, Math.min(i + columns, end)), top })
+          top += CELL + GAP
+        }
+      }
+    } else {
+      top = PAD
+      for (let i = 0; i < index.length; i += columns) {
+        rows.push({ kind: 'cells', entries: index.slice(i, i + columns), top })
         top += CELL + GAP
       }
     }
@@ -167,6 +212,23 @@
 </script>
 
 <div class="gallery" data-testid="gallery-view">
+  <GalleryFacets
+    {sort}
+    {kinds}
+    tags={tagFilters}
+    {untagged}
+    {unplaced}
+    onSort={(next) => (sort = next)}
+    onToggleKind={(kind) =>
+      (kinds = kinds.includes(kind) ? kinds.filter((k) => k !== kind) : [...kinds, kind])}
+    onAddTag={(tag) => {
+      if (!tagFilters.some((t) => t.id === tag.id)) tagFilters = [...tagFilters, tag]
+    }}
+    onRemoveTag={(tagId) => (tagFilters = tagFilters.filter((t) => t.id !== tagId))}
+    onToggleUntagged={() => (untagged = !untagged)}
+    onToggleUnplaced={() => (unplaced = !unplaced)}
+  />
+
   {#if currentBucket}
     <div class="current-header">
       <button
@@ -202,7 +264,11 @@
   >
     {#if loaded && index.length === 0}
       <p class="empty" data-testid="gallery-empty">
-        Nothing here yet — anything imported or created lands in the gallery.
+        {#if kinds.length > 0 || tagFilters.length > 0 || untagged || unplaced}
+          Nothing matches the current filters.
+        {:else}
+          Nothing here yet — anything imported or created lands in the gallery.
+        {/if}
       </p>
     {:else}
       <div class="canvas" style={`height: ${layout.totalHeight}px`}>
@@ -238,8 +304,19 @@
                     <span class="glyph">▣</span>
                     <span class="cell-label">{item.label}</span>
                   {:else if item}
-                    <span class="glyph note">¶</span>
-                    <span class="cell-label">{item.label}</span>
+                    <!-- FR-8 text post: the clipping reads in place;
+                         tags surface on hover. -->
+                    <div
+                      class="text-post"
+                      title={item.tagNames.length > 0
+                        ? item.tagNames.map((t) => `#${t}`).join('  ')
+                        : undefined}
+                    >
+                      <span class="post-title">{item.label}</span>
+                      {#if item.noteExcerpt}
+                        <p class="post-excerpt">{item.noteExcerpt}</p>
+                      {/if}
+                    </div>
                   {/if}
                 </div>
               {/each}
@@ -387,6 +464,40 @@
   .glyph {
     font-size: 2.2rem;
     color: var(--ew-text-dim);
+  }
+
+  .text-post {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem 0.65rem;
+    overflow: hidden;
+    text-align: left;
+  }
+
+  .post-title {
+    flex: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ew-text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-excerpt {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--ew-text-dim);
+    display: -webkit-box;
+    -webkit-line-clamp: 7;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .empty {

@@ -70,19 +70,19 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Facet-parameterized gallery query: sort × kind × tags ×
+- [x] Facet-parameterized gallery query: sort × kind × tags ×
       cleanup flags compose; units cover each alone and a stacked
       combination.
-- [ ] galleryTagCounts scoped to the active kind mask; orderable
+- [x] galleryTagCounts scoped to the active kind mask; orderable
       name/count (units).
-- [ ] Facet strip UI: sort segmented, kind chips, tag completion
+- [x] Facet strip UI: sort segmented, kind chips, tag completion
       with counts (custom list), removable active chips,
       untagged · unplaced toggles; grid updates live (e2e).
-- [ ] Non-date sorts drop buckets for a flat grid; returning to
+- [x] Non-date sorts drop buckets for a flat grid; returning to
       date sort restores them (e2e).
-- [ ] Text posts: note-kind cell shows title + excerpt, tags on
+- [x] Text posts: note-kind cell shows title + excerpt, tags on
       hover; readable under both themes (e2e presence check).
-- [ ] `pnpm -r build`, full gates green.
+- [x] `pnpm -r build`, full gates green.
 
 ### Acceptance Criteria
 
@@ -107,3 +107,41 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Size-sort decision (recorded per ticket).** Assets store no byte
+size and adding a column or stat()ing files was out of proportion
+for a sort facet, so the size key is
+`COALESCE(asset.width * asset.height, length(note.body), 0) DESC`:
+pixel area is the honest cheap proxy for anything with an image
+appearance, noted entries fall back to body length, bare nodes sink
+to 0. Ties break on created_at. If real byte-size sorting is ever
+wanted, it is a schema turn (a `byte_size` column filled at import),
+not a query tweak.
+
+**Name-sort fallback sorts untitled FIRST, not last.** The label's
+fallback is shortCode(node id), so the sort key is
+`COALESCE(note.title_key, n.id)` — but uuidv7 hex leads with digits,
+which collate BEFORE letters, so untitled entries group together
+ahead of the titled ones (in creation order). Documented in the
+query header; deliberate: grouping them beats pretending they have
+names, and which end they land on is presentation nobody specified.
+
+**Tag intersection semantics.** Several active tag chips AND
+together (each additional chip narrows). §4.8 defers multi-tag
+AND/OR to a future turn for the tag panel's query field; the gallery
+chips are filters, not a query language, so intersection is the
+only sane default. galleryTagCounts omits tags with zero in-scope
+carriers — suggesting a filter that empties the grid helps nobody.
+
+**Untagged counts trashed-tag assignments as untagged** (assignment
+rows to a trashed tag are invisible everywhere else too, matching
+listTags/getTagView), and unplaced uses listNodeLibrary's exact
+clause: active placement on an active canvas.
+
+**Theme readability** is carried by the token system (all text-post
+and facet colors are var(--ew-*) tokens); the e2e is the presence
+check the checklist names, not a per-theme screenshot diff.
+
+No blockers. Full gates: `pnpm -r build`, persistence units 404
+(7 new), desktop units 19, e2e 72 (71 base + 1 new facet spec),
+lint clean.
