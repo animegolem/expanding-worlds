@@ -1,5 +1,8 @@
-import { openProjectService, type ProjectService } from '@ew/persistence'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { DB_FILENAME, openProjectService, type ProjectService } from '@ew/persistence'
 import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage } from '@ew/protocol'
+import { clearLibraryExample, seedLibrary } from './seed-library'
 
 /**
  * Project utility process (RFC-0001 §13.2): hosts the authoritative
@@ -84,12 +87,48 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
     }
 
     case 'open-secondary': {
+      // §14.4 create-new library (AI-IMP-094): LIBRARY only — a
+      // source opens read-only, so creating one is a contradiction.
+      if (request.createIfMissing === true && request.target !== 'library') {
+        return {
+          type: 'open-secondary',
+          ok: false,
+          code: 'INVALID_TARGET',
+          message: 'createIfMissing applies to the library slot only — a source opens read-only',
+        }
+      }
       try {
         closeSecondary(request.target) // replace-on-open
-        secondaries[request.target] = openProjectService(request.dir, {
+        const creating =
+          request.createIfMissing === true && !existsSync(join(request.dir, DB_FILENAME))
+        const options: { readOnly: boolean; createIfMissing?: boolean; title?: string } = {
           readOnly: request.target === 'source',
-        })
-        return { type: 'open-secondary', ok: true, project: secondaries[request.target]!.info() }
+        }
+        if (request.createIfMissing === true) options.createIfMissing = true
+        if (request.title !== undefined) options.title = request.title
+        const secondary = openProjectService(request.dir, options)
+        secondaries[request.target] = secondary
+        // First open teaches by example (§14.4): a FRESH library is
+        // seeded here, in-process against the new service, through
+        // ordinary commands. Designating an EXISTING project never
+        // seeds (creating === false). A failed seed does not fail
+        // the open — the library itself is fine; report seeded.
+        let seeded = false
+        if (creating && request.seedDir !== undefined) {
+          try {
+            await seedLibrary(secondary, request.seedDir)
+            seeded = true
+          } catch (err) {
+            console.error('[utility] library example seed failed:', err)
+          }
+        }
+        return {
+          type: 'open-secondary',
+          ok: true,
+          project: secondary.info(),
+          created: creating,
+          seeded,
+        }
       } catch (err) {
         secondaries[request.target] = null
         const code =
@@ -108,6 +147,31 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
     case 'close-secondary': {
       closeSecondary(request.target)
       return { type: 'close-secondary', ok: true }
+    }
+
+    case 'clear-library-example': {
+      // §14.4 the explainer's one power, over the seam (AI-IMP-094):
+      // enumerate by the shared 'example' tag in the LIBRARY slot and
+      // trash through ordinary TrashNode commands.
+      const library = secondaries.library
+      if (!library) {
+        return {
+          type: 'clear-library-example',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: 'no library project is open',
+        }
+      }
+      try {
+        return { type: 'clear-library-example', ok: true, trashed: clearLibraryExample(library) }
+      } catch (err) {
+        return {
+          type: 'clear-library-example',
+          ok: false,
+          code: 'CLEAR_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
     }
 
     case 'secondary-query': {

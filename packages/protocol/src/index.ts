@@ -140,10 +140,27 @@ export interface OpenSecondaryRequest {
   type: 'open-secondary'
   target: SecondaryTarget
   dir: string
+  /** §14.4 create-new library (AI-IMP-094): LIBRARY target only — a
+   * source opens read-only, so creating one is refused in the
+   * utility. When the open creates a fresh project, the bundled
+   * example set is seeded into it through ordinary commands. */
+  createIfMissing?: boolean
+  title?: string
+  /** Bundled seed-asset directory, resolved by MAIN (the utility
+   * knows no app paths). Only consulted when the open creates. */
+  seedDir?: string
 }
 
 export type OpenSecondaryResponse =
-  | { type: 'open-secondary'; ok: true; project: ProjectInfo }
+  | {
+      type: 'open-secondary'
+      ok: true
+      project: ProjectInfo
+      /** AI-IMP-094: true when this open created the project. */
+      created?: boolean
+      /** True when the first-open example set landed (create only). */
+      seeded?: boolean
+    }
   | { type: 'open-secondary'; ok: false; code: string; message: string }
 
 export interface CloseSecondaryRequest {
@@ -206,6 +223,21 @@ export type IngestFromSecondaryResponse =
     }
   | { type: 'ingest-from-secondary'; ok: false; code: string; message: string }
 
+/** §14.4 first-open seed (AI-IMP-094): trash every node carrying
+ * the 'example' tag in the LIBRARY slot — the seeded example plus
+ * its explainer — through ordinary TrashNode commands. Honest v1 of
+ * the RFC's "the explainer note's one power": the explainer lives in
+ * the library while the user stands in a primary project, so the
+ * clear action crosses the seam as a verb instead of a note
+ * affordance (recorded for the RFC consistency pass at epic close). */
+export interface ClearLibraryExampleRequest {
+  type: 'clear-library-example'
+}
+
+export type ClearLibraryExampleResponse =
+  | { type: 'clear-library-example'; ok: true; trashed: number }
+  | { type: 'clear-library-example'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -221,6 +253,7 @@ export type ProjectRequest =
   | SecondaryQueryRequest
   | SecondaryImportRequest
   | IngestFromSecondaryRequest
+  | ClearLibraryExampleRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -237,6 +270,7 @@ export type ProjectResponse =
   | SecondaryQueryResponse
   | SecondaryImportResponse
   | IngestFromSecondaryResponse
+  | ClearLibraryExampleResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. */
