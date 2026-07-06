@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 0 |
+| In Progress | 1 | 0 |
 | Planned | 6 | 3 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 96 |
+| Completed | 12 | 96 |
 | **Total** | **19** | **100** |
 
 ## In Progress
@@ -48,20 +48,6 @@
 
 ---
 
-### [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015: Library and cross project sourcing]]
-> The first outside tester's reference library lives in Allusion,
-
-**IMPs:**
-- [[AI-IMP-088-secondary-project-seam|IMP-088]] Secondary project seam — completed
-- [[AI-IMP-089-library-scope-toggle|IMP-089]] Library scope toggle — completed
-- [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — completed
-- [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — completed
-- [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
-- [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
-- [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
-
----
-
 ## Planned
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
@@ -91,6 +77,13 @@
 
 ### [[AI-EPIC-019-public-face|EPIC-019: Public face]]
 > The user base is deliberately NON-TECHNICAL (artists), but the
+
+---
+
+## Anomalies
+
+### Status Mismatches
+- [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-015 is completed
 
 ---
 
@@ -180,7 +173,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 96 IMPs completed</summary>
+<summary>12 EPICs, 96 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -260,5 +253,13 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
   - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — completed
   - [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
+- [[AI-EPIC-015-library-and-cross-project-sourcing|EPIC-015]] Library and cross project sourcing — 2026-07-06
+  - [[AI-IMP-088-secondary-project-seam|IMP-088]] Secondary project seam — completed
+  - [[AI-IMP-089-library-scope-toggle|IMP-089]] Library scope toggle — completed
+  - [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — completed
+  - [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — completed
+  - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
+  - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
+  - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
 
 </details>

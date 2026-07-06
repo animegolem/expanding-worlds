@@ -6,8 +6,8 @@ tags:
   - library
   - import
 date_created: 2026-07-05
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-06
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-088
   - AI-IMP-089
@@ -97,6 +97,10 @@ they shipped in AI-EPIC-014-gallery (v0.7.0).
 - [x] FR-6: First-open seeded example (public-domain set, ordinary records) with the one-time clear affordance per §14.4.
 - [x] FR-7: Inbox mirror — once-per-project opt-in, one-way, hash-recognized, non-blocking per §14.4.
 - [ ] FR-8 (stretch): Allusion importer as a versioned adapter, hierarchy flattened, leaf collisions renamed per §14.4.
+
+Shipped in v0.8.0 (sequential-minor convention; PR #4 merge
+commit 9c04469). FR-5 deferred to EPIC-008; FR-8 stretch not
+built.
 
 ### Non-Functional Requirements
 
