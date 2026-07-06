@@ -1,3 +1,4 @@
+import { shortCode } from '@ew/domain'
 import type { QueryRegistry } from './queries'
 
 /**
@@ -50,6 +51,38 @@ interface NodeAppearanceColumns {
   appearanceIcon: string | null
   appearanceAssetId: string | null
   appearanceCrop: string | null
+}
+
+/** One placement row inside an outline canvas entry (§14.1). */
+export interface OutlineChildRow extends NodeAppearanceColumns {
+  placementId: string
+  nodeId: string
+  renderOrder: number
+  noteId: string | null
+  noteTitle: string | null
+  childCanvasId: string | null
+  placementCount: number
+  tags: string[]
+}
+
+/** One active canvas in the outline projection (§14.1). The view
+ * assembles the tree from childCanvasId references with a visited
+ * set per branch; cycles render as alias rows there, never here. */
+export interface OutlineCanvasRow {
+  canvasId: string
+  nodeId: string
+  label: string
+  isRoot: boolean
+  /** Root canvas, or a canvas whose owning node is unplaced (it can
+   * appear as no board's child and must surface at root level). */
+  isRootLevel: boolean
+  children: OutlineChildRow[]
+}
+
+/** A loose note (§14.1): active, attached to no active node. */
+export interface LooseNoteRow {
+  id: string
+  title: string
 }
 
 const NODE_APPEARANCE_SELECT = `n.appearance_kind AS appearanceKind,
@@ -383,4 +416,126 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       ) ?? null
     )
   })
+
+  // §14.1 (AI-IMP-069): the outline projection — every active canvas
+  // with its child placements, flat. Containment is a graph with
+  // legal cycles (invariant 19), so the TREE is assembled by the
+  // view with a visited set per expansion path; this query never
+  // recurses. Labels follow the quick-open convention: owning
+  // node's note title, else the node's short code.
+  registry.register('getOutlineTree', (ctx): OutlineCanvasRow[] => {
+    const canvases = ctx.db.all<{
+      canvasId: string
+      nodeId: string
+      noteTitle: string | null
+      rootNodeId: string
+      ownerPlacements: number
+    }>(
+      `SELECT c.id AS canvasId, n.id AS nodeId,
+              note.title AS noteTitle,
+              pr.root_node_id AS rootNodeId,
+              (SELECT count(*) FROM placement p
+                JOIN canvas pc ON pc.id = p.canvas_id AND pc.lifecycle_state = 'active'
+                WHERE p.node_id = n.id AND p.lifecycle_state = 'active')
+                AS ownerPlacements
+       FROM canvas c
+       JOIN node n ON n.id = c.node_id AND n.lifecycle_state = 'active'
+       JOIN project pr ON pr.id = c.project_id
+       LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       WHERE c.project_id = ? AND c.lifecycle_state = 'active'`,
+      ctx.projectId,
+    )
+    const children = ctx.db.all<
+      NodeAppearanceColumns & {
+        canvasId: string
+        placementId: string
+        nodeId: string
+        renderOrder: number
+        noteId: string | null
+        noteTitle: string | null
+        childCanvasId: string | null
+        placementCount: number
+      }
+    >(
+      `SELECT p.canvas_id AS canvasId, p.id AS placementId, n.id AS nodeId,
+              p.render_order AS renderOrder, ${NODE_APPEARANCE_SELECT},
+              note.id AS noteId, note.title AS noteTitle,
+              child.id AS childCanvasId,
+              (SELECT count(*) FROM placement p2
+                JOIN canvas pc ON pc.id = p2.canvas_id AND pc.lifecycle_state = 'active'
+                WHERE p2.node_id = n.id AND p2.lifecycle_state = 'active')
+                AS placementCount
+       FROM placement p
+       JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
+       JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
+       LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       LEFT JOIN canvas child ON child.node_id = n.id AND child.lifecycle_state = 'active'
+       WHERE p.project_id = ? AND p.lifecycle_state = 'active'
+       ORDER BY p.canvas_id, p.render_order, p.id`,
+      ctx.projectId,
+    )
+    const tags = ctx.db.all<{ nodeId: string; name: string }>(
+      `SELECT ta.node_id AS nodeId, t.name
+       FROM tag_assignment ta
+       JOIN tag t ON t.id = ta.tag_id AND t.lifecycle_state = 'active'
+       JOIN node n ON n.id = ta.node_id AND n.lifecycle_state = 'active'
+       WHERE t.project_id = ?
+       ORDER BY t.name_key`,
+      ctx.projectId,
+    )
+    const tagsByNode = new Map<string, string[]>()
+    for (const row of tags) {
+      const list = tagsByNode.get(row.nodeId)
+      if (list) list.push(row.name)
+      else tagsByNode.set(row.nodeId, [row.name])
+    }
+    const byCanvas = new Map<string, OutlineChildRow[]>()
+    for (const row of children) {
+      const { canvasId, ...child } = row
+      const entry: OutlineChildRow = { ...child, tags: tagsByNode.get(row.nodeId) ?? [] }
+      const list = byCanvas.get(canvasId)
+      if (list) list.push(entry)
+      else byCanvas.set(canvasId, [entry])
+    }
+    return canvases
+      .map((row) => ({
+        canvasId: row.canvasId,
+        nodeId: row.nodeId,
+        label: row.noteTitle ?? shortCode(row.nodeId),
+        isRoot: row.nodeId === row.rootNodeId,
+        // A canvas whose owning node has no active placement cannot
+        // appear as any board's child — it surfaces at root level.
+        isRootLevel: row.nodeId === row.rootNodeId || row.ownerPlacements === 0,
+        children: byCanvas.get(row.canvasId) ?? [],
+      }))
+      .sort((a, b) =>
+        a.isRoot !== b.isRoot
+          ? a.isRoot
+            ? -1
+            : 1
+          : a.label.toLowerCase() < b.label.toLowerCase()
+            ? -1
+            : a.label.toLowerCase() > b.label.toLowerCase()
+              ? 1
+              : a.canvasId < b.canvasId
+                ? -1
+                : 1,
+      )
+  })
+
+  // §14.1 (AI-IMP-069): loose NOTES for the outline's root bin —
+  // active notes attached to no active node. Notes riding an
+  // unplaced node surface through listNodeLibrary's unplaced filter
+  // instead; counting them here would list them twice.
+  registry.register('listLooseNotes', (ctx): LooseNoteRow[] =>
+    ctx.db.all<LooseNoteRow>(
+      `SELECT note.id, note.title
+       FROM note
+       WHERE note.project_id = ? AND note.lifecycle_state = 'active'
+         AND NOT EXISTS (SELECT 1 FROM node n
+           WHERE n.note_id = note.id AND n.lifecycle_state = 'active')
+       ORDER BY note.title_key, note.id`,
+      ctx.projectId,
+    ),
+  )
 }

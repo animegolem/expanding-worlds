@@ -256,6 +256,102 @@ describe('canvas cycles (invariants 18–19)', () => {
   })
 })
 
+describe('getOutlineTree / listLooseNotes (§14.1, AI-IMP-069)', () => {
+  it('projects every active canvas flat with children, labels, and root-level flags', () => {
+    // Root holds an image node and a titled canvas node; the nested
+    // canvas holds one child. A second canvas rides an UNPLACED node
+    // and must surface as root-level.
+    const image = createNode()
+    createPlacement(image)
+    const boardNode = createNode()
+    const boardNoteId = insertNote('Ruins Board')
+    committed('AttachNoteToNode', { nodeId: boardNode, noteId: boardNoteId })
+    const boardCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: boardCanvasId, nodeId: boardNode })
+    createPlacement(boardNode)
+    const nested = createNode()
+    createPlacement(nested, boardCanvasId)
+    const strayNode = createNode()
+    const strayCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: strayCanvasId, nodeId: strayNode })
+    const tagId = uuidv7()
+    committed('CreateTag', { tagId, name: 'ruins' })
+    committed('AssignTagToNode', { tagId, nodeId: image })
+
+    const rows = query<Array<Record<string, unknown>>>('getOutlineTree')
+    const byCanvas = new Map(rows.map((row) => [row.canvasId as string, row]))
+    expect(rows[0]).toMatchObject({ canvasId: handle.rootCanvasId, isRoot: true, isRootLevel: true })
+
+    const root = byCanvas.get(handle.rootCanvasId)!
+    const children = root.children as Array<Record<string, unknown>>
+    expect(children).toHaveLength(2)
+    const imageRow = children.find((c) => c.nodeId === image)!
+    expect(imageRow).toMatchObject({
+      noteId: null,
+      childCanvasId: null,
+      placementCount: 1,
+      tags: ['ruins'],
+    })
+    const boardRow = children.find((c) => c.nodeId === boardNode)!
+    expect(boardRow).toMatchObject({ noteTitle: 'Ruins Board', childCanvasId: boardCanvasId })
+
+    const board = byCanvas.get(boardCanvasId)!
+    expect(board).toMatchObject({ label: 'Ruins Board', isRoot: false, isRootLevel: false })
+    expect(board.children as unknown[]).toHaveLength(1)
+
+    // The unplaced-node canvas is root-level with a short-code label.
+    const stray = byCanvas.get(strayCanvasId)!
+    expect(stray).toMatchObject({ isRoot: false, isRootLevel: true })
+    expect(typeof stray.label).toBe('string')
+    expect((stray.label as string).length).toBeGreaterThan(0)
+  })
+
+  it('a cyclic containment pair projects each canvas exactly once (cycles are view work)', () => {
+    const nodeId = createNode()
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId })
+    createPlacement(nodeId, handle.rootCanvasId)
+    createPlacement(handle.rootNodeId, canvasId) // cycle back to root
+
+    const rows = query<Array<Record<string, unknown>>>('getOutlineTree')
+    expect(rows.map((row) => row.canvasId).sort()).toEqual(
+      [handle.rootCanvasId, canvasId].sort(),
+    )
+    const child = (rows.find((row) => row.canvasId === canvasId)!.children as Array<
+      Record<string, unknown>
+    >)[0]!
+    expect(child.childCanvasId).toBe(handle.rootCanvasId)
+  })
+
+  it('excludes trashed placements, nodes, and canvases from the projection', () => {
+    const nodeId = createNode()
+    const placementId = createPlacement(nodeId)
+    const trashedCanvasNode = createNode()
+    const trashedCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: trashedCanvasId, nodeId: trashedCanvasNode })
+    handle.db.run("UPDATE placement SET lifecycle_state = 'trashed' WHERE id = ?", placementId)
+    handle.db.run("UPDATE canvas SET lifecycle_state = 'trashed' WHERE id = ?", trashedCanvasId)
+
+    const rows = query<Array<Record<string, unknown>>>('getOutlineTree')
+    expect(rows.map((row) => row.canvasId)).toEqual([handle.rootCanvasId])
+    expect(rows[0]!.children as unknown[]).toEqual([])
+  })
+
+  it('listLooseNotes: unattached active notes only, once each', () => {
+    const looseId = insertNote('Adrift')
+    const attachedId = insertNote('Attached')
+    const unplacedNode = createNode()
+    committed('AttachNoteToNode', { nodeId: unplacedNode, noteId: attachedId })
+    const trashedId = insertNote('Gone')
+    handle.db.run("UPDATE note SET lifecycle_state = 'trashed' WHERE id = ?", trashedId)
+
+    // 'Attached' rides an (unplaced) node: it belongs to the node
+    // library's unplaced rows, not here — never listed twice.
+    const rows = query<Array<{ id: string; title: string }>>('listLooseNotes')
+    expect(rows).toEqual([{ id: looseId, title: 'Adrift' }])
+  })
+})
+
 describe('acceptance: shared note, tags, interleaved reorder (RFC slice 5-9)', () => {
   it('runs the full AI-IMP-012 scenario at service level', () => {
     // GIVEN a note attached to node X placed twice on the root canvas.

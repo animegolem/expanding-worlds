@@ -9,6 +9,7 @@
   mode discipline.
 -->
 <script lang="ts">
+  import OutlineView from '../views/OutlineView.svelte'
   import { holdEngagement } from './engagement'
   import { closeTakeover, onTakeoverChanged, type TakeoverKind } from './takeover'
 
@@ -60,7 +61,10 @@
         </button>
       </header>
       <div class="sheet-body" data-testid="takeover-body">
-        <!-- AI-IMP-069 mounts the outline here; AI-IMP-074 settings. -->
+        {#if kind === 'outline'}
+          <OutlineView />
+        {/if}
+        <!-- AI-IMP-074 mounts settings here. -->
       </div>
     </div>
   </div>
