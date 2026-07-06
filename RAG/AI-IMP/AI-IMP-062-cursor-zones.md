@@ -82,26 +82,26 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] canvas-engine zone helper: unit tests cover every zone,
+- [x] canvas-engine zone helper: unit tests cover every zone,
       rotated items, zoom invariance (screen-space widths), and
       the outside-corner rotate band including its outer cutoff.
-- [ ] gestures-ui: handle rendering and handle hit-testing
+- [x] gestures-ui: handle rendering and handle hit-testing
       deleted; selection draws outline only (verify no adornment
       draw calls remain).
-- [ ] Cursor reflects zone on hover and during drag: move /
+- [x] Cursor reflects zone on hover and during drag: move /
       directional resize (8 ways) / rotate / grab on empty
       canvas.
-- [ ] Drag dispatch by zone commits the same single durable
+- [x] Drag dispatch by zone commits the same single durable
       command per gesture as today (move/resize/rotate parity
       with existing behavior — no regression in
       TransformContent payloads).
-- [ ] ⌥-drag inside duplicates: one CreatePlacement of the same
+- [x] ⌥-drag inside duplicates: one CreatePlacement of the same
       node at release; Esc cancels cleanly.
-- [ ] Placement lock: migration + SetPlacementLock + validator +
+- [x] Placement lock: migration + SetPlacementLock + validator +
       unit tests; locked placements refuse move/resize/rotate
       with `not-allowed` cursor; locked decorations refuse the
       same way.
-- [ ] gestures.spec migrated to zone-position gestures; new cases
+- [x] gestures.spec migrated to zone-position gestures; new cases
       for rotate band, ⌥-duplicate, lock refusal; full gates
       green (`pnpm -r build`, unit, desktop e2e hidden-window).
 
@@ -129,3 +129,54 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Delivered as specified, with these deviations and judgment calls:
+
+- **No dedicated feel-constants file exists** — AI-IMP-056 retuned
+  constants in place (camera.ts, snap-guides.ts, placement.ts), so
+  `CURSOR_ZONES` (edge ±4 px, rotate band 4–14 px, screen-space)
+  lives beside `classifyCursorZone` in
+  `packages/canvas-engine/src/hit-test.ts`, exported for retuning.
+- **Migration took 0004** (`0004-placement-lock`); 061 gets 0005.
+- **⌥ collision found by the full suite**: board-tooling.spec used
+  ⌥-at-drag-start as the snap bypass, which rev 0.17 reassigns to
+  duplicate. The move driver reads modifiers per pointermove, so ⌥
+  pressed AFTER the press still bypasses snapping; the test now does
+  that. UX consequence worth an RFC note: the snap-disable modifier
+  for move gestures is ⌥-mid-drag, not ⌥-at-start.
+- **⌥-duplicate scope**: single-placement selections only (the §6.5
+  copy semantics and the "one CreatePlacement, one undo" acceptance
+  are singular); ⌥ on a multi-selection or a decoration falls back to
+  a plain move. Threshold 4 px so ⌥-click never duplicates. The drag
+  renders a translated outline ghost (transient feedback like
+  marquee/guides, not selection adornment).
+- **Lock enforcement is gesture-surface only** (deliberate): the
+  SetPlacementLock handler does not gate TransformContent/
+  MovePlacement, so undoing a pre-lock transform can never dead-end
+  on a lock check (unit test pins this). Toolbar align/distribute on
+  a marquee that includes a locked placement therefore still
+  transforms it — BoardToolbar was out of bounds for this ticket;
+  flag for 063/lead.
+- **Mixed selections refuse wholesale**: any locked member makes all
+  transform zones show `not-allowed` and refuse (simplest coherent
+  rule; splitting the session would need controller surgery). Cmd+A
+  still includes locked placements (Delete is not a transform);
+  locked decorations remain entirely unhittable as before.
+- **Rotate cursor is `crosshair`** (provisional stand-in; CSS has no
+  rotate cursor — a custom asset slot is noted in gestures-ui).
+  During a move drag the cursor stays the host's `grabbing`;
+  zone-started resize/rotate hold their directional cursor for the
+  whole drag.
+- **Empty-canvas hover is now `grab`** per §6.9; canvas.spec's old
+  `default` assertion updated. Inside a MULTI-selection's union box,
+  gaps read `move` but a drag there still marquees (controller
+  semantics untouched); single selections use the oriented body box
+  so zone and behavior agree exactly.
+- Label visibility lost its drawn toggle with the handles; slice and
+  gestures specs exercise SetPlacementLabelVisibility directly until
+  the 063 charm bar lands the pointer affordance.
+- The `__ewGestureDebug.handles()` e2e seam became `zoneAt(x, y)`;
+  all consumers (slice, canvas, decorations specs) migrated to
+  zone-position gestures per the lead's mid-flight instruction.
+- One unrelated flake observed once under full-suite load
+  (import.spec drop test, passes in isolation and on re-run); not
+  touched.

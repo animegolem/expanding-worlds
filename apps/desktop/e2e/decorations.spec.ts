@@ -390,11 +390,23 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     .toBe(systemFamily)
   expect(systemFamily).toContain('sans-serif')
 
-  // Art-text resize: dragging a corner scales fontSize uniformly.
+  // Art-text resize: dragging the SE corner ZONE (AI-IMP-062 — no
+  // drawn handles) scales fontSize uniformly. Corner from the text's
+  // measured bounds; camera is identity.
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  const seHandle = await win.evaluate(
-    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
-  )
+  const textBounds = (await byKind('text'))[0]!.data as {
+    x: number
+    y: number
+    measuredWidth: number
+    measuredHeight: number
+  }
+  const seHandle = {
+    x: textBounds.x + textBounds.measuredWidth,
+    y: textBounds.y + textBounds.measuredHeight,
+  }
+  await expect
+    .poll(() => win.evaluate(({ x, y }) => window.__ewGestureDebug!.zoneAt(x, y), seHandle))
+    .toBe('resize-se')
   const beforeScale = await revision()
   await win.mouse.move(box.x + seHandle.x, box.y + seHandle.y)
   await win.mouse.down()
@@ -459,9 +471,12 @@ test('shift-constrained drawing (AI-IMP-035)', async () => {
   await win.getByTestId('tool-select').click()
   await win.mouse.click(box.x + 650, box.y + 225)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  const se = await win.evaluate(
-    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
-  )
+  // SE corner ZONE of the drawn 600,200→700,250 box (AI-IMP-062 — no
+  // drawn handles; the ±4 px band absorbs the stroke-pad offset).
+  const se = { x: 700, y: 250 }
+  await expect
+    .poll(() => win.evaluate(({ x, y }) => window.__ewGestureDebug!.zoneAt(x, y), se))
+    .toBe('resize-se')
   await win.mouse.move(box.x + se.x, box.y + se.y)
   await win.mouse.down()
   await win.mouse.move(box.x + se.x + 100, box.y + se.y + 50, { steps: 5 })

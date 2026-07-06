@@ -236,11 +236,14 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   // Guides never outlive the gesture.
   expect(await win.evaluate(() => window.__ewDebug!.guides().length)).toBe(0)
 
-  // Alt-drag repeats a near-edge drop without snapping.
+  // Alt held MID-drag repeats a near-edge drop without snapping.
+  // (⌥ at drag START duplicates since §6.9 rev 0.17 / AI-IMP-062;
+  // the snap bypass reads the modifier per pointermove, so pressing
+  // it after the press keeps the escape hatch.)
   const beforeAlt = await revision(win)
-  await win.keyboard.down('Alt')
   await win.mouse.move(box.x + 190, box.y + 150)
   await win.mouse.down()
+  await win.keyboard.down('Alt')
   await win.mouse.move(box.x + 192, box.y + 154, { steps: 2 })
   expect(await win.evaluate(() => window.__ewDebug!.guides().length)).toBe(0)
   await win.mouse.up()

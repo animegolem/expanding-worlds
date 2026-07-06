@@ -107,6 +107,7 @@ export interface CreatePlacementPayload {
   labelVisible?: boolean
   flipX?: boolean
   flipY?: boolean
+  locked?: boolean
 }
 
 /**
@@ -143,6 +144,16 @@ export interface SetPlacementLabelVisibilityPayload {
 export interface FlipPlacementPayload {
   placementId: string
   axis: 'x' | 'y'
+}
+
+/**
+ * §6.9 rev 0.17: a locked placement refuses move/resize/rotate at the
+ * gesture surface (refusal cursor, no drag starts). Command-only
+ * until the §8.4 charm bar ships its toggle (AI-IMP-063).
+ */
+export interface SetPlacementLockPayload {
+  placementId: string
+  locked: boolean
 }
 
 /**
@@ -271,6 +282,7 @@ export const COMMAND_DELETE_DRAFT_PLACEMENT = 'DeleteDraftPlacement'
 export const COMMAND_MOVE_PLACEMENT = 'MovePlacement'
 export const COMMAND_SET_PLACEMENT_LABEL_VISIBILITY = 'SetPlacementLabelVisibility'
 export const COMMAND_FLIP_PLACEMENT = 'FlipPlacement'
+export const COMMAND_SET_PLACEMENT_LOCK = 'SetPlacementLock'
 export const COMMAND_REORDER_CONTENT = 'ReorderContent'
 
 export const COMMAND_CREATE_TAG = 'CreateTag'

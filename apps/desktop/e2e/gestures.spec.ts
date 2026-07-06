@@ -8,21 +8,27 @@ declare global {
   interface Window {
     ew: EwApi
     __ewGestureDebug?: {
-      handles: () => Array<{ kind: string; dir: string | null; x: number; y: number }>
+      zoneAt: (x: number, y: number) => string
       labelTexts: () => string[]
     }
   }
 }
 
 /**
- * AI-IMP-019 acceptance: one durable command per completed gesture
- * (§10.2), handle-based resize/rotate, reorder over the shared plane,
- * flip persistence, and labels that follow renames and toggle from
- * the selection controls (§4.5).
+ * AI-IMP-019/062 acceptance: one durable command per completed
+ * gesture (§10.2) driven through CURSOR ZONES (§6.9 rev 0.17) — no
+ * drawn handles. Pointer positions are computed from the selection's
+ * known world geometry (camera is identity unless a test moves it):
+ * inside = move, edge band = directional resize, the band outside a
+ * corner = rotate. Also: ⌥-duplicate (§6.5), placement lock refusal,
+ * reorder, flip, and labels that follow renames (§4.5; the toggle
+ * affordance moved to the AI-IMP-063 charm bar, so visibility is
+ * exercised via its command here).
  */
 
 interface ScenePlacementLite {
   id: string
+  nodeId: string
   x: number
   y: number
   width: number | null
@@ -30,6 +36,7 @@ interface ScenePlacementLite {
   rotation: number
   flipX: number
   labelVisible: number
+  locked: number
 }
 
 async function launch(prefix: string) {
@@ -86,6 +93,7 @@ async function scenePlacements(win: Page): Promise<ScenePlacementLite[]> {
       .filter((item) => item.itemKind === 'placement')
       .map((item) => ({
         id: item['id'] as string,
+        nodeId: item['nodeId'] as string,
         x: item['x'] as number,
         y: item['y'] as number,
         width: item['width'] as number | null,
@@ -93,58 +101,54 @@ async function scenePlacements(win: Page): Promise<ScenePlacementLite[]> {
         rotation: item['rotation'] as number,
         flipX: item['flipX'] as number,
         labelVisible: item['labelVisible'] as number,
+        locked: item['locked'] as number,
       }))
   })
 }
 
-async function handleAt(
-  win: Page,
-  kind: string,
-  dir: string | null = null,
-): Promise<{ x: number; y: number }> {
-  const box = (await win.getByTestId('canvas-host').boundingBox())!
-  await expect
-    .poll(() =>
-      win.evaluate(
-        ({ kind, dir }) =>
-          window
-            .__ewGestureDebug!.handles()
-            .some((h) => h.kind === kind && (dir === null || h.dir === dir)),
-        { kind, dir },
-      ),
-    )
-    .toBe(true)
-  const handle = await win.evaluate(
-    ({ kind, dir }) =>
-      window
-        .__ewGestureDebug!.handles()
-        .find((h) => h.kind === kind && (dir === null || h.dir === dir))!,
-    { kind, dir },
+async function cursorOf(win: Page): Promise<string> {
+  return win.evaluate(
+    () =>
+      document.querySelector<HTMLCanvasElement>('[data-testid="canvas-host"] canvas')!.style
+        .cursor,
   )
-  return { x: box.x + handle.x, y: box.y + handle.y }
 }
 
-test('move, resize, rotate, reorder, and flip: one durable command per gesture', async () => {
+/** Wait until the zone classifier sees `zone` at a canvas-local point
+ * — the deterministic replacement for polling drawn handle positions
+ * (selection and scene sync land asynchronously after commits). */
+async function expectZone(win: Page, x: number, y: number, zone: string): Promise<void> {
+  await expect
+    .poll(() => win.evaluate(({ x, y }) => window.__ewGestureDebug!.zoneAt(x, y), { x, y }))
+    .toBe(zone)
+}
+
+async function seedPlacement(
+  win: Page,
+  at: { x: number; y: number },
+  size = 40,
+): Promise<{ nodeId: string; placementId: string }> {
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  await runCommand(win, 'CreateNode', { nodeId })
+  await runCommand(win, 'CreatePlacement', {
+    placementId,
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    nodeId,
+    x: at.x,
+    y: at.y,
+    width: size,
+    height: size,
+  })
+  return { nodeId, placementId }
+}
+
+test('move, resize, rotate, reorder, and flip: one durable command per zone gesture', async () => {
   const { app, win } = await launch('ew-e2e-gestures-')
 
   // Seed two 40×40 dot placements.
-  const nodeA = await win.evaluate(() => crypto.randomUUID())
-  const nodeB = await win.evaluate(() => crypto.randomUUID())
-  for (const [nodeId, x, y] of [
-    [nodeA, 150, 150],
-    [nodeB, 260, 200],
-  ] as const) {
-    await runCommand(win, 'CreateNode', { nodeId })
-    await runCommand(win, 'CreatePlacement', {
-      placementId: crypto.randomUUID(),
-      canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
-      nodeId,
-      x,
-      y,
-      width: 40,
-      height: 40,
-    })
-  }
+  await seedPlacement(win, { x: 150, y: 150 })
+  await seedPlacement(win, { x: 260, y: 200 })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
   const [first, second] = await scenePlacements(win)
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -156,7 +160,9 @@ test('move, resize, rotate, reorder, and flip: one durable command per gesture',
   await win.mouse.up()
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 2)
 
-  // Drag both by (100, 40): exactly ONE TransformContent → revision +1.
+  // Drag from INSIDE (the move zone) by (100, 40): exactly ONE
+  // TransformContent → revision +1.
+  await expectZone(win, 150, 150, 'move')
   const beforeMove = await revision(win)
   await win.mouse.move(box.x + 150, box.y + 150)
   await win.mouse.down()
@@ -173,17 +179,18 @@ test('move, resize, rotate, reorder, and flip: one durable command per gesture',
     ])
   expect(await revision(win)).toBe(beforeMove + 1)
 
-  // Select the first placement alone and resize by the se handle:
-  // bounds 230..270 × 170..210, anchor nw → drag +40/+20 doubles x,
-  // stretches y ×1.5 (free aspect for a non-image appearance).
+  // Select the first placement alone and resize from the SE corner
+  // zone: bounds 230..270 × 170..210, anchor nw → drag +40/+20
+  // doubles x, stretches y ×1.5 (free aspect for a non-image).
   await win.mouse.click(box.x + 500, box.y + 350) // clear
   await win.mouse.click(box.x + 250, box.y + 190)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await expectZone(win, 270, 210, 'resize-se')
+  await win.mouse.move(box.x + 270, box.y + 210)
+  expect(await cursorOf(win)).toBe('nwse-resize')
   const beforeResize = await revision(win)
-  const se = await handleAt(win, 'resize', 'se')
-  await win.mouse.move(se.x, se.y)
   await win.mouse.down()
-  await win.mouse.move(se.x + 40, se.y + 20, { steps: 5 })
+  await win.mouse.move(box.x + 310, box.y + 230, { steps: 5 })
   await win.mouse.up()
   await expect
     .poll(async () => {
@@ -194,21 +201,16 @@ test('move, resize, rotate, reorder, and flip: one durable command per gesture',
     .toEqual({ w: 80, h: 60 })
   expect(await revision(win)).toBe(beforeResize + 1)
 
-  // Rotate by the handle: sweep from above the bounds (−90°) to the
-  // right of the center (0°) → +90° in one command. Wait for the
-  // overlay to re-render at the post-resize bounds (center x = 270)
-  // so we don't grab a stale handle position.
-  await expect
-    .poll(() =>
-      win.evaluate(() => window.__ewGestureDebug!.handles().find((h) => h.kind === 'rotate')?.x),
-    )
-    .toBe(270)
-  const rotate = await handleAt(win, 'rotate')
-  const center = { x: box.x + 270, y: box.y + 200 } // post-resize body center
-  await win.mouse.move(rotate.x, rotate.y)
+  // Rotate from the band 10 px outside the NE corner: post-resize
+  // bounds are 230..310 × 170..230 (center 270,200). Sweeping the
+  // pointer a quarter turn about the center lands on +90° via the
+  // cardinal orientation magnet (§6.9 rev 0.12) — no handles drawn.
+  await expectZone(win, 317, 163, 'rotate-ne')
+  await win.mouse.move(box.x + 317, box.y + 163)
+  expect(await cursorOf(win)).toBe('crosshair')
   await win.mouse.down()
-  const radius = center.y - rotate.y
-  await win.mouse.move(center.x + radius, center.y, { steps: 6 })
+  // (317,163) − center = (47,−37); rotated +90° → (37,47) → (307,247).
+  await win.mouse.move(box.x + 307, box.y + 247, { steps: 6 })
   await win.mouse.up()
   await expect
     .poll(async () => {
@@ -235,21 +237,11 @@ test('move, resize, rotate, reorder, and flip: one durable command per gesture',
   await app.close()
 })
 
-test('labels: follow the note title, resize with the placement, toggle from selection controls', async () => {
+test('labels: follow the note title, visibility persists via SetPlacementLabelVisibility', async () => {
   const { app, win } = await launch('ew-e2e-labels-')
 
-  const nodeId = await win.evaluate(() => crypto.randomUUID())
-  const noteId = await win.evaluate(() => crypto.randomUUID())
-  await runCommand(win, 'CreateNode', { nodeId })
-  await runCommand(win, 'CreatePlacement', {
-    placementId: crypto.randomUUID(),
-    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
-    nodeId,
-    x: 200,
-    y: 200,
-    width: 40,
-    height: 40,
-  })
+  const { nodeId, placementId } = await seedPlacement(win, { x: 200, y: 200 })
+  const noteId = crypto.randomUUID()
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
   // No note → no label (§4.5).
@@ -269,20 +261,15 @@ test('labels: follow the note title, resize with the placement, toggle from sele
       !window.__ewGestureDebug!.labelTexts().includes('Harbor'),
   )
 
-  // Toggle from the selection controls; the state persists in the scene.
-  const box = (await win.getByTestId('canvas-host').boundingBox())!
-  await win.mouse.click(box.x + 200, box.y + 200)
-  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  const toggleOff = await handleAt(win, 'label')
-  await win.mouse.click(toggleOff.x, toggleOff.y)
+  // Visibility persists in the scene. (The pointer affordance is the
+  // §8.4 charm bar, AI-IMP-063 — selection draws no controls now.)
+  await runCommand(win, 'SetPlacementLabelVisibility', { placementId, visible: false })
   await expect
     .poll(async () => (await scenePlacements(win))[0]!.labelVisible)
     .toBe(0)
   await win.waitForFunction(() => window.__ewGestureDebug!.labelTexts().length === 0)
 
-  // Re-toggling restores it.
-  const toggleOn = await handleAt(win, 'label')
-  await win.mouse.click(toggleOn.x, toggleOn.y)
+  await runCommand(win, 'SetPlacementLabelVisibility', { placementId, visible: true })
   await expect
     .poll(async () => (await scenePlacements(win))[0]!.labelVisible)
     .toBe(1)
@@ -291,11 +278,11 @@ test('labels: follow the note title, resize with the placement, toggle from sele
   await app.close()
 })
 
-test('rotation fidelity: shapes spin in place, chrome and resize follow the angle (AI-IMP-031)', async () => {
+test('rotation fidelity: shapes spin in place, zones follow the angle (AI-IMP-031/062)', async () => {
   const { app, win } = await launch('ew-e2e-rotation-')
   const box = (await win.getByTestId('canvas-host').boundingBox())!
 
-  // A rect shape: center (360, 230).
+  // A rect shape: center (360, 230); stroke 2 → visual half 61×31.
   await runCommand(win, 'CreateDecoration', {
     decorationId: crypto.randomUUID(),
     canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
@@ -306,51 +293,61 @@ test('rotation fidelity: shapes spin in place, chrome and resize follow the angl
   await win.mouse.click(box.x + 360, box.y + 230)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
 
-  // Drag the rotate lollipop a quarter turn clockwise.
+  // Rotate a quarter turn from the band outside the NE corner
+  // (421,199): 10 px out along the diagonal → (428,192).
+  await expectZone(win, 428, 192, 'rotate-ne')
   const beforeRotate = await revision(win)
-  const rotate = await handleAt(win, 'rotate')
-  await win.mouse.move(rotate.x, rotate.y)
+  await win.mouse.move(box.x + 428, box.y + 192)
   await win.mouse.down()
-  const radius = 230 - (rotate.y - box.y)
-  await win.mouse.move(box.x + 360 + radius, box.y + 230, { steps: 8 })
+  // (428,192) − center = (68,−38); rotated +90° → (38,68) → (398,298).
+  await win.mouse.move(box.x + 398, box.y + 298, { steps: 8 })
   await win.mouse.up()
   await expect.poll(() => revision(win)).toBe(beforeRotate + 1)
 
-  const shapeData = await win.evaluate(async () => {
-    const scene = await window.ew.project.query('getCanvasScene', {
-      canvasId: window.__ewDebug!.canvasId(),
+  const dataOf = async (): Promise<Record<string, number>> =>
+    win.evaluate(async () => {
+      const scene = await window.ew.project.query('getCanvasScene', {
+        canvasId: window.__ewDebug!.canvasId(),
+      })
+      if (!scene.ok) throw new Error(scene.message)
+      const { items } = scene.result as {
+        items: Array<{ itemKind: string; data?: Record<string, number> }>
+      }
+      return items.find((item) => item.itemKind === 'decoration')!.data!
     })
-    if (!scene.ok) throw new Error(scene.message)
-    const { items } = scene.result as {
-      items: Array<{ itemKind: string; data?: Record<string, number> }>
-    }
-    return items.find((item) => item.itemKind === 'decoration')!.data!
-  })
   // Spin in place: rotation ≈ π/2, top-left untouched (no orbit).
+  const shapeData = await dataOf()
   expect(shapeData['rotation']).toBeCloseTo(Math.PI / 2, 1)
   expect(shapeData['x']).toBeCloseTo(300, 0)
   expect(shapeData['y']).toBeCloseTo(200, 0)
 
-  // Chrome follows the angle: the local e handle now sits BELOW the
+  // Zones follow the angle: the local E edge now sits BELOW the
   // center (local +x rotated 90° → world +y), at center + (0, 61).
   await win.mouse.click(box.x + 360, box.y + 230)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  // handles() report canvas-local coordinates.
-  const eHandle = await win.evaluate(
-    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'e')!,
-  )
-  expect(eHandle.x).toBeCloseTo(360, 0)
-  expect(eHandle.y).toBeCloseTo(291, 0)
+  await expectZone(win, 360, 291, 'resize-e')
+  await win.mouse.move(box.x + 360, box.y + 291)
+  // Local e rotated 90° quantizes onto the vertical screen axis.
+  expect(await cursorOf(win)).toBe('ns-resize')
 
-  // Resize in the local frame: dragging that handle further down
+  // Resize in the local frame: dragging that zone further down
   // widens the shape along its own axis; rotation is untouched.
   const beforeResize = await revision(win)
-  await win.mouse.move(box.x + eHandle.x, box.y + eHandle.y)
   await win.mouse.down()
-  await win.mouse.move(box.x + eHandle.x, box.y + eHandle.y + 30, { steps: 5 })
+  await win.mouse.move(box.x + 360, box.y + 321, { steps: 5 })
   await win.mouse.up()
   await expect.poll(() => revision(win)).toBe(beforeResize + 1)
-  const resized = await win.evaluate(async () => {
+  const resized = await dataOf()
+  expect(resized['width']).toBeGreaterThan(140)
+  expect(resized['height']).toBeCloseTo(60, 0)
+  expect(resized['rotation']).toBeCloseTo(Math.PI / 2, 1)
+
+  // Corner-hover rotate affordance on the RESIZED, rotated shape:
+  // compute the rotated NE corner from live data and step 10 px out
+  // along its diagonal; the rotate cursor shows without any chrome.
+  await win.mouse.click(box.x + 360, box.y + 230)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  const zonePoint = await win.evaluate(async () => {
     const scene = await window.ew.project.query('getCanvasScene', {
       canvasId: window.__ewDebug!.canvasId(),
     })
@@ -358,27 +355,130 @@ test('rotation fidelity: shapes spin in place, chrome and resize follow the angl
     const { items } = scene.result as {
       items: Array<{ itemKind: string; data?: Record<string, number> }>
     }
-    return items.find((item) => item.itemKind === 'decoration')!.data!
+    const d = items.find((item) => item.itemKind === 'decoration')!.data!
+    const pad = (d['strokeWidth'] ?? 0) / 2
+    const cx = d['x']! + d['width']! / 2
+    const cy = d['y']! + d['height']! / 2
+    const halfW = d['width']! / 2 + pad
+    const halfH = d['height']! / 2 + pad
+    const rot = d['rotation'] ?? 0
+    const cos = Math.cos(rot)
+    const sin = Math.sin(rot)
+    const out = 10 / Math.SQRT2
+    const lx = halfW + out
+    const ly = -halfH - out
+    return { x: cx + lx * cos - ly * sin, y: cy + lx * sin + ly * cos }
   })
-  expect(resized['width']).toBeGreaterThan(140)
-  expect(resized['height']).toBeCloseTo(60, 0)
-  expect(resized['rotation']).toBeCloseTo(Math.PI / 2, 1)
+  await expectZone(win, zonePoint.x, zonePoint.y, 'rotate-ne')
+  await win.mouse.move(box.x + zonePoint.x, box.y + zonePoint.y)
+  expect(await cursorOf(win)).toBe('crosshair')
 
-  // Corner-hover rotate affordance: a rotate zone sits outside each
-  // corner and shows the rotate cursor.
-  await win.mouse.click(box.x + 360, box.y + 230)
+  await app.close()
+})
+
+test('⌥-drag inside duplicates: one CreatePlacement, single undo removes it, Esc cancels', async () => {
+  const { app, win } = await launch('ew-e2e-duplicate-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  const { nodeId } = await seedPlacement(win, { x: 200, y: 200 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const [source] = await scenePlacements(win)
+
+  await win.mouse.click(box.x + 200, box.y + 200)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  const cornerZone = await win.evaluate(() => {
-    const zones = window.__ewGestureDebug!.handles().filter((h) => h.kind === 'rotate')
-    return zones[zones.length - 1]!
-  })
-  await win.mouse.move(box.x + cornerZone.x, box.y + cornerZone.y)
-  const cursor = await win.evaluate(
-    () =>
-      document.querySelector<HTMLCanvasElement>('[data-testid="canvas-host"] canvas')!.style
-        .cursor,
-  )
-  expect(cursor).toBe('crosshair')
+
+  // ⌥-drag from the move zone to (320, 260). Playwright's click
+  // `modifiers` never reach synthesized pointer events in Electron —
+  // hold the key around the drag instead (decorations.spec precedent).
+  const beforeDup = await revision(win)
+  await win.keyboard.down('Alt')
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 320, box.y + 260, { steps: 5 })
+  await win.mouse.up()
+  await win.keyboard.up('Alt')
+
+  // One CreatePlacement of the SAME node at the release point (§6.5);
+  // the source never moved.
+  await expect.poll(async () => (await scenePlacements(win)).length).toBe(2)
+  expect(await revision(win)).toBe(beforeDup + 1)
+  const placements = await scenePlacements(win)
+  const copy = placements.find((p) => p.id !== source!.id)!
+  expect(copy.nodeId).toBe(nodeId)
+  expect(Math.round(copy.x)).toBe(320)
+  expect(Math.round(copy.y)).toBe(260)
+  expect(placements.find((p) => p.id === source!.id)).toMatchObject({ x: 200, y: 200 })
+
+  // Single undo: CreatePlacement's inverse is one DeleteDraftPlacement
+  // (the interactive stack is EPIC-007's; data-level undo per slice
+  // precedent).
+  await runCommand(win, 'DeleteDraftPlacement', { placementId: copy.id })
+  await expect.poll(async () => (await scenePlacements(win)).length).toBe(1)
+
+  // Esc mid-drag cancels with nothing committed.
+  const beforeEsc = await revision(win)
+  await win.keyboard.down('Alt')
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 280, box.y + 240, { steps: 4 })
+  await win.keyboard.press('Escape')
+  await win.mouse.up()
+  await win.keyboard.up('Alt')
+  await expect.poll(async () => (await scenePlacements(win)).length).toBe(1)
+  expect(await revision(win)).toBe(beforeEsc)
+
+  await app.close()
+})
+
+test('locked placements refuse move and resize with the not-allowed cursor', async () => {
+  const { app, win } = await launch('ew-e2e-lock-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  const { placementId } = await seedPlacement(win, { x: 200, y: 200 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await runCommand(win, 'SetPlacementLock', { placementId, locked: true })
+  await expect.poll(async () => (await scenePlacements(win))[0]!.locked).toBe(1)
+
+  // A locked placement stays selectable (it must be unlockable), but
+  // shows the refusal cursor and never starts a drag.
+  await win.mouse.click(box.x + 200, box.y + 200)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await win.mouse.move(box.x + 200, box.y + 200)
+  expect(await cursorOf(win)).toBe('not-allowed')
+
+  // Move attempt: no drag, no command.
+  const beforeMove = await revision(win)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 300, box.y + 260, { steps: 5 })
+  await win.mouse.up()
+  expect(await revision(win)).toBe(beforeMove)
+  expect((await scenePlacements(win))[0]).toMatchObject({ x: 200, y: 200 })
+
+  // Resize attempt from the SE corner zone: refused the same way.
+  await expectZone(win, 220, 220, 'resize-se')
+  await win.mouse.move(box.x + 220, box.y + 220)
+  expect(await cursorOf(win)).toBe('not-allowed')
+  await win.mouse.down()
+  await win.mouse.move(box.x + 260, box.y + 260, { steps: 5 })
+  await win.mouse.up()
+  expect(await revision(win)).toBe(beforeMove)
+  expect((await scenePlacements(win))[0]!.width).toBe(40)
+
+  // Unlocking restores the move: proof the refusal was the lock.
+  await runCommand(win, 'SetPlacementLock', { placementId, locked: false })
+  await expect.poll(async () => (await scenePlacements(win))[0]!.locked).toBe(0)
+  const beforeFree = await revision(win)
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 300, box.y + 260, { steps: 5 })
+  await win.mouse.up()
+  await expect
+    .poll(async () => {
+      const p = (await scenePlacements(win))[0]!
+      return [Math.round(p.x), Math.round(p.y)]
+    })
+    .toEqual([300, 260])
+  expect(await revision(win)).toBe(beforeFree + 1)
 
   await app.close()
 })

@@ -268,7 +268,8 @@ test('§6.9 camera input mapping: pinch zooms at pointer, scroll pans, cursors t
   expect(afterPan.y).toBeCloseTo(beforePan.y + 80 / beforePan.zoom, 3)
 
   // Cursor feedback: grab while Space is held, grabbing during the
-  // drag, default again after release.
+  // drag, and grab again over empty canvas (§6.9 rev 0.17: empty
+  // canvas means grab and pan).
   const cursorOf = () =>
     win.evaluate(
       () =>
@@ -284,10 +285,11 @@ test('§6.9 camera input mapping: pinch zooms at pointer, scroll pans, cursors t
   await win.mouse.up()
   await win.keyboard.up('Space')
   await win.mouse.move(box.x + 155, box.y + 155)
-  expect(await cursorOf()).toBe('default')
+  expect(await cursorOf()).toBe('grab')
 
-  // Handle hover: select a placement, hover its resize handle, and
-  // the directional cursor from gestures-ui wins over the base cursor.
+  // Zone hover (AI-IMP-062): select a placement, hover its SE corner
+  // zone, and the directional cursor from gestures-ui wins over the
+  // base cursor — no handles are drawn.
   await win.evaluate(async () => {
     const project = await window.ew.project.query('getProject')
     if (!project.ok) throw new Error(project.message)
@@ -324,10 +326,17 @@ test('§6.9 camera input mapping: pinch zooms at pointer, scroll pans, cursors t
   })
   await win.mouse.click(box.x + target.x, box.y + target.y)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  const handle = await win.evaluate(
-    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
-  )
-  await win.mouse.move(box.x + handle.x, box.y + handle.y)
+  // SE corner of the 80×80 body centered at world (300,300).
+  const corner = await win.evaluate(() => {
+    const cam = window.__ewDebug!.camera()
+    return { x: (340 - cam.x) * cam.zoom, y: (340 - cam.y) * cam.zoom }
+  })
+  await expect
+    .poll(() =>
+      win.evaluate(({ x, y }) => window.__ewGestureDebug!.zoneAt(x, y), corner),
+    )
+    .toBe('resize-se')
+  await win.mouse.move(box.x + corner.x, box.y + corner.y)
   expect(await cursorOf()).toBe('nwse-resize')
 
   await app.close()
@@ -397,15 +406,43 @@ test('image texture survives move, resize, and residency round-trip (AI-IMP-025)
   await win.mouse.move(box.x + 430, box.y + 290, { steps: 6 })
   await win.mouse.up()
   await expect.poll(body).toBe('image')
+  // Wait for the committed move before deriving zone geometry from it.
+  await expect
+    .poll(() =>
+      win.evaluate(async (id) => {
+        const scene = await window.ew.project.query('getCanvasScene', {
+          canvasId: window.__ewDebug!.canvasId(),
+        })
+        if (!scene.ok) throw new Error(scene.message)
+        const p = (scene.result as { items: Array<{ id: string; x: number }> }).items.find(
+          (item) => item.id === id,
+        )!
+        return Math.round(p.x)
+      }, placementId),
+    )
+    .toBe(430)
 
-  // Resize gesture via the se handle: the pre-fix regression turned
-  // the image into a permanent placeholder here.
-  const handleSe = await win.evaluate(
-    () => window.__ewGestureDebug!.handles().find((h) => h.kind === 'resize' && h.dir === 'se')!,
-  )
-  await win.mouse.move(box.x + handleSe.x, box.y + handleSe.y)
+  // Resize gesture via the SE corner zone (AI-IMP-062): the pre-fix
+  // regression turned the image into a permanent placeholder here.
+  const seZone = await win.evaluate(async (id) => {
+    const scene = await window.ew.project.query('getCanvasScene', {
+      canvasId: window.__ewDebug!.canvasId(),
+    })
+    if (!scene.ok) throw new Error(scene.message)
+    const p = (
+      scene.result as {
+        items: Array<{ id: string; x: number; y: number; width: number; height: number; scale: number }>
+      }
+    ).items.find((item) => item.id === id)!
+    // Camera is identity here; placement x/y is the body center.
+    return { x: p.x + (p.width * p.scale) / 2, y: p.y + (p.height * p.scale) / 2 }
+  }, placementId)
+  await expect
+    .poll(() => win.evaluate(({ x, y }) => window.__ewGestureDebug!.zoneAt(x, y), seZone))
+    .toBe('resize-se')
+  await win.mouse.move(box.x + seZone.x, box.y + seZone.y)
   await win.mouse.down()
-  await win.mouse.move(box.x + handleSe.x + 50, box.y + handleSe.y + 50, { steps: 6 })
+  await win.mouse.move(box.x + seZone.x + 50, box.y + seZone.y + 50, { steps: 6 })
   await win.mouse.up()
   await expect.poll(body).toBe('image')
   const stats = await win.evaluate(() => window.__ewDebug!.textureStats())
