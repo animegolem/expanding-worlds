@@ -5,11 +5,12 @@ tags:
   - Implementation
   - gallery
   - selection
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-077]
 parent_epic: [[AI-EPIC-014-gallery]]
 confidence_score: 0.6
 date_created: 2026-07-06
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-079-gallery-selection-actions

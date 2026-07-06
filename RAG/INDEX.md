@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 3 |
+| In Progress | 2 | 2 |
 | Planned | 3 | 1 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 10 | 77 |
+| Completed | 10 | 78 |
 | **Total** | **15** | **81** |
 
 ## In Progress
@@ -43,7 +43,7 @@
 - [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
 - [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — completed
-- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — in-progress
+- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
 - [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
 
@@ -68,7 +68,7 @@
 - [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
 - [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
 - [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — completed
-- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — in-progress
+- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
 - [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — planned
 - [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
 
@@ -98,6 +98,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (720 LOC)
 - packages/persistence/src/queries-structure.ts (685 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (674 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -114,7 +115,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/tags/TagPanel.svelte (521 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (507 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - apps/desktop/e2e/gestures.spec.ts (484 LOC)
@@ -130,6 +130,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
+- apps/desktop/src/renderer/views/GalleryActionBar.svelte (371 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
@@ -155,7 +156,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>10 EPICs, 77 IMPs completed</summary>
+<summary>10 EPICs, 78 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
