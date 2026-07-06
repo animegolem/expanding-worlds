@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 8 | 8 |
+| In Progress | 1 | 1 |
+| Planned | 8 | 7 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 105 |
@@ -97,7 +97,7 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4002 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1450 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (938 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
@@ -145,12 +145,12 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (426 LOC)
+- apps/desktop/src/renderer/views/GalleryActionBar.svelte (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
-- apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
 - apps/desktop/e2e/shell.spec.ts (376 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
@@ -172,6 +172,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
+- apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
 
@@ -294,6 +295,6 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
   - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
   - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
-  - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — planned
+  - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — in-progress
 
 </details>
