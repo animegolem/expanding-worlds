@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.30         | 6 July 2026      |
+| Accepted for Phase 1 | 0.31         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -220,8 +220,6 @@ Phase 1 does NOT require:
 - Named canvas layers.
 
 - Automatic semantic graph relationships inferred from drawn connectors.
-
-- Note-body preview cards rendered on canvas.
 
 - SVG, video, audio, or PDF import.
 
@@ -451,7 +449,7 @@ not model state.
 
 ## 4.6 Appearance
 
-Dot, icon, and image are appearances, not different node types.
+Dot, icon, image, and card are appearances, not different node types.
 
 A node's default appearance MAY be:
 
@@ -460,6 +458,16 @@ A node's default appearance MAY be:
 - A built-in icon.
 
 - An imported image.
+
+- A note card (rev 0.31, resolving open question 16): fixed card
+  chrome rendering the attached note's title and a clamped body
+  excerpt, updating with note edits. The card is display, not a live
+  editor — activating it opens the ordinary §8.5 note surface. It
+  reuses the placement, label, and render-order machinery unchanged,
+  and renders flat: no shadow, because a shadow is the §8.5 depth
+  cue for screen-space panels, and a card is world content. A card
+  appearance on a node with no note renders the phantom state
+  (§7.2). Its primary door is the §8.5 place-on-board control.
 
 An image appearance references a managed asset and non-destructive crop
 or framing settings. The original asset MUST remain unchanged.
@@ -1568,6 +1576,35 @@ replaces it. A **pin** action converts the tethered panel to a
 screen-fixed panel that survives panning and navigation; pinned
 panels accumulate, and nothing ever auto-unpins them — unpinning is
 the user's act alone.
+
+**Panel sizing and the big editor (rev 0.31, from owner use).** A
+tethered panel spawns at one default size — a feel constant, not a
+remembered value — sized for a glance and a quick line, not an
+essay. Pinning is what makes it a proper window: a pinned panel is a
+user-resizable floating sticky note, and each pinned panel keeps its
+own size for its lifetime. Sizes are presentation state and never
+enter the note record. When a note wants more room than a card, an
+expand affordance on any panel opens the **big editor**: one
+centered overlay editor over a dimmed board — not full-screen, the
+board stays visible around it. Clicking the dimmed surround or an
+explicit Done control returns to the panel state it came from; at
+most one big editor exists at a time. The overlay changes nothing
+about commit semantics — §7.1's ordinary save rules apply
+throughout.
+
+**The escalation sequence and the depth cue (rev 0.31).** The note
+surface escalates one deliberate step at a time, and a panel never
+changes nature in place: tethered card → pin detaches it into the
+floating window → a separate **place-on-board** control
+materializes board content. Place-on-board commits a placement of
+the note's node with the card appearance (§4.6) roughly where the
+panel sits over the board, and the panel closes — the world owns it
+now, with z-order, selection, and export like any placement. The
+materialization is one-way, like phantom → note (§7.2); closing or
+trashing the card never retracts a panel. Screen-space panels —
+tethered or pinned — carry a drop shadow; a board card renders
+flat. The shadow IS the depth cue: shadowed means floating above
+the world, flat means part of it.
 
 **The indicator escalates with how broken the spatial link is:**
 
@@ -2969,11 +3006,13 @@ settled by feel during canvas-engine prototyping. Zoom behavior
 itself is decided: labels scale with their placement, and all canvas
 content is world-space (rev 0.8, §4.5/§4.9).
 
-16. Whether note-body preview cards later join dot, icon, and image as
-an on-canvas appearance direction. The expected shape is a fourth
-appearance kind rendering the attached note's title and a body excerpt
-inside fixed card chrome, updating with note edits and reusing the
-placement, label, and render-order machinery unchanged.
+16. RESOLVED (rev 0.31): note-body preview cards join dot, icon, and
+image as the fourth appearance kind — the attached note's title and
+a clamped body excerpt inside fixed card chrome, updating with note
+edits, reusing the placement, label, and render-order machinery
+unchanged (§4.6). Materialized primarily through the §8.5
+place-on-board control; renders flat (no shadow) per the §8.5 depth
+cue.
 
 17. When the web-reference asset kind lands, its metadata fetch
 pipeline, overlay playback behavior, and the configuration surface for
@@ -3143,12 +3182,12 @@ Accepted for the Phase 1 prototype:
 - Every canvas supports one managed image background with set, replace,
   edit, reset, and remove operations.
 
-- Dot, icon, and image are appearances.
+- Dot, icon, image, and the note card (rev 0.31) are appearances.
 
 - Placement labels display attached note titles only; visibility is
   per-placement presentation state defaulting to visible, with an
-  inline toggle on the selection controls. Note-body preview cards are
-  deferred.
+  inline toggle on the selection controls. Note-body preview cards
+  landed as the card appearance (rev 0.31, closing open question 16).
 
 - Images selected inside Create Pin attach to that node and do not
   create a second node.
@@ -3430,3 +3469,13 @@ Accepted for the Phase 1 prototype:
   owns queue and files; zero native dependencies, format envelope
   identical to the board's by construction, generation needs a
   live window, unclaimed jobs self-heal across opens.
+
+- Note panel sizing and escalation (rev 0.31, §8.5/§4.6): tethered
+  panels spawn at one default size; pinning makes a user-resizable
+  floating window that keeps its size for its lifetime; the big
+  editor is a centered overlay expand state (dimmed surround,
+  click-off or Done returns); a separate place-on-board control
+  materializes a placement with the card appearance (one-way, closes
+  the panel). Screen-space panels carry a drop shadow, board cards
+  render flat — the shadow is the depth cue. Sizes are presentation
+  state, and no surface changes §7.1 commit semantics.

@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 1 |
-| Planned | 3 | 0 |
+| Planned | 3 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 80 |
-| **Total** | **15** | **81** |
+| **Total** | **15** | **84** |
 
 ## In Progress
 
@@ -33,6 +33,9 @@
 - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
 - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
 - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
+- [[AI-IMP-082-resize-snapping|IMP-082]] Resize snapping — planned
+- [[AI-IMP-083-note-panel-sizing-and-big-editor|IMP-083]] Note panel sizing and big editor — planned
+- [[AI-IMP-084-card-appearance-and-place-on-board|IMP-084]] Card appearance and place on board — planned
 
 ---
 
@@ -60,7 +63,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3432 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3481 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)

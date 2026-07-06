@@ -24,6 +24,9 @@ AI_IMP_spawned:
   - AI-IMP-041
   - AI-IMP-042
   - AI-IMP-043
+  - AI-IMP-082
+  - AI-IMP-083
+  - AI-IMP-084
 ---
 
 # AI-EPIC-010-hands-on-hardening
