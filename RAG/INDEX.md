@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 8 | 5 |
+| Planned | 8 | 8 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 105 |
-| **Total** | **22** | **111** |
+| **Total** | **22** | **114** |
 
 ## In Progress
 
@@ -32,6 +32,7 @@
 
 **IMPs:**
 - [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — planned
+- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — planned
 
 ---
 
@@ -51,6 +52,7 @@
 - [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — planned
 - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — planned
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
+- [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — planned
 
 ---
 
@@ -83,6 +85,7 @@
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-015 is completed
+- [[AI-IMP-115-everything-scope-pull|IMP-115]] — open but parent epic AI-EPIC-015 is completed
 
 ---
 
@@ -93,9 +96,9 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3945 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4002 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1432 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1450 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (938 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
@@ -115,11 +118,12 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/panels.ts (597 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (560 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/pin.test.ts (558 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
-- apps/desktop/e2e/panels.spec.ts (535 LOC)
+- apps/desktop/e2e/panels.spec.ts (536 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (526 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
@@ -138,13 +142,13 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (455 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (444 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (437 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (426 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
 - packages/persistence/src/handlers/notes.ts (420 LOC)
+- apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
@@ -290,5 +294,6 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
   - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
   - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
+  - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — planned
 
 </details>

@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.46         | 6 July 2026      |
+| Accepted for Phase 1 | 0.47         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -498,6 +498,22 @@ Phase 1 imports raster images: PNG, JPEG, WebP, GIF, and AVIF. SVG,
 video, audio, and PDF are deferred. Staged-import validation rejects
 unsupported or unrecognized types with a clear notice and creates no
 records.
+
+**Video, shaped (rev 0.47 — owner, deferred with scope).** When the
+video kind activates: a video asset renders on the board as a
+STILL — a captured poster frame (the renderer's own <video> decode,
+the same renderer-as-codec principle as thumbnails; no native
+deps) — never as inline playing video, and animated GIFs likewise
+do not animate on the canvas. The placement carries a **play
+charm** in the §8.4 charm grammar; activating it opens a WINDOWED
+overlay (§8.8 modal family — a window over the board, not a
+fullscreen takeover) hosting a plain HTML5 player; click-off or
+Esc closes it. Format envelope = what Chromium plays natively
+(H.264/AAC MP4, WebM VP8/VP9/AV1, Ogg; MKV only when its codecs
+happen to be supported) — anything outside refuses kindly at
+staged import with a clear notice, exactly like unsupported images
+today. No transcoding, no bundled ffmpeg: out-of-envelope formats
+are the user's to convert, stated plainly.
 
 An image asset SHOULD record:
 
@@ -1120,14 +1136,16 @@ under ONE node; swap node moves placements BETWEEN nodes. Both are
 real and serve different moments — placeholder-with-notes wants
 replace (the bucket's meaning survives, only the art changes);
 placeholder-as-pure-stand-in wants swap (a different bucket takes
-these places). Design review owes two calls (IMP-107): the BUCKET
-RULE — the displaced node (note, canvas, tags) should survive as
-an unplaced node, nothing destroyed — and the VERB LANGUAGE for
-the pair, agreed with the first tester to need work. One hard
-constraint from that conversation: the copy avoids the word
-"file" — the tester's instinct was that replacing might delete
-pictures off his drive; the app never touches his files, and the
-verbs must not imply it could.
+these places). Ratified rev 0.47: the USER-FACING VERBS are
+**"Replace image…"** and **"Swap for…"** — no jargon nouns, and
+never the word "file" (the tester's instinct was that replacing
+might delete pictures off his drive; the app never touches his
+files and the copy must not imply it could). The BUCKET RULE: the
+displaced node survives as an unplaced node — note, canvas, tags
+intact, findable through §14.1 — destroy-nothing default. The
+"node" term itself stays a docs-and-graph word; UI copy avoids
+needing a noun, and where one is unavoidable the working choice is
+"item" (final tone at the design pass).
 
 ## 6.6 Attach, detach, and make independent
 
@@ -1495,6 +1513,12 @@ sweep, binding every matching unresolved token project-wide in the
 same command. Dismissing a phantom view without materializing persists
 nothing.
 
+**Undoing a materialization (rev 0.47, ratified — closing the §7.2
+vs §10.2 contradiction):** the materializing edit IS structural.
+One undo removes the note and its binding in one step; the typed
+text is not lost — it survives in the editor as the unresolved
+token it began as. The record un-exists; the words remain.
+
 A note created without placements is not orphaned: it remains
 reachable through the links that reference it, search, and Unplaced
 views, and can be embodied later through the note-side placement flow.
@@ -1847,6 +1871,17 @@ replaces it. A **pin** action converts the tethered panel to a
 screen-fixed panel that survives panning and navigation; pinned
 panels accumulate, and nothing ever auto-unpins them — unpinning is
 the user's act alone.
+
+**Revision (rev 0.47, owner zoom finding — supersedes the
+screen-scale type rule above for the tethered state):** a TETHERED
+panel belongs to its node, so it scales WITH the world — zooming
+out shrinks it proportionally beside its image instead of leaving
+a full-size card looming over a tiny board ("very silly looking").
+A PINNED panel is the sticky note on the glass: screen-fixed, as
+today. Shaping detail owed at build: a legibility floor — below
+some rendered size the tethered panel's text is unreadable anyway,
+so it should degrade gracefully (fade with the charm
+screen-size rule, or clamp), a feel constant to dial by hand.
 
 **Panel sizing and the big editor (rev 0.31, from owner use).** A
 tethered panel spawns at one default size — a feel constant, not a
@@ -2751,6 +2786,18 @@ inbox mirror, and the first-open seed. Still open: the Allusion
 adapter (stretch, unbuilt), the OS-drop importer dialogue (question
 27), and the export size preflight (rides EPIC-008 with §16's
 export surface). This section stays self-contained on purpose.
+
+**The everything-scope pull (rev 0.47, ratified — closing the
+found-it-now-what dead-end).** In everything scope the action bar
+gains ONE live action, **Pull into this world**: it ingests the
+item by the ordinary §14.4 copy semantics and hands it to the
+artist as a PLACE CURSOR — the takeover closes and the cursor
+carries a ghosted preview of the item over the board; click places
+it there (an ordinary placement), Escape keeps it stored unplaced
+with a toast saying where it went. Owner's shaping call: pulling
+means you probably want it HERE, so the gesture ends over the
+canvas, not in a list — with Escape as the store-only exit. The
+other bar actions stay browse-only in everything scope.
 
 **Shipped deviation (rev 0.37): clear-the-example.** The RFC below
 wants clearing as "the explainer note's one power," but as shipped
@@ -3943,3 +3990,13 @@ Accepted for the Phase 1 prototype:
   one flat list with kind glyphs and impact summaries,
   restore-stays-put with a fly-to toast, Empty Trash behind the §9
   confirmation. Ratified in the one-ticket-at-a-time PM flow.
+
+- The second ratification batch (rev 0.47, same flow):
+  materialization-undo is one structural step whose typed text
+  survives as the unresolved token (§7.2); swap's displaced node
+  survives unplaced, verbs are "Replace image…" / "Swap for…" with
+  "file" banned from copy (§6.5); the everything-scope pull ends
+  as a place cursor over the board, Escape stores unplaced
+  (§14.4). Video is shaped deferred (§4.7): poster-frame still +
+  play charm + windowed HTML5 overlay, Chromium-native formats
+  only, no bundled transcoder.

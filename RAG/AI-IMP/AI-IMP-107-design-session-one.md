@@ -40,31 +40,24 @@ Agenda (proposals in RAG/DESIGN-QUEUE.md + the lead's readout):
 4. ~~Trash browser shape~~ — RATIFIED 2026-07-06 as proposed
    (rev 0.46 §9.7): flat list, restore-stays-put + fly-to toast,
    takeover. IMP-102 is loop-safe.
-5. Everything-scope pull (proposal: action bar in everything scope
-   offers "Pull into this world" → ingest unplaced + toast with
-   place-now affordance).
+5. ~~Everything-scope pull~~ — RATIFIED with adjustment 2026-07-06
+   (rev 0.47 §14.4): pull ends as a PLACE CURSOR over the board;
+   Escape stores unplaced.
 6. Context-menu grammar (the EPIC-016 core: per-kind verb
-   inventory over the PureRef reference).
-7. Materialization-undo rule (§7.2 vs §10.2 contradiction —
-   proposal: the materializing edit IS structural; one undo removes
-   note+binding, editor text survives as unresolved token).
+   inventory over the PureRef reference). → design-letter scope.
+7. ~~Materialization-undo rule~~ — RATIFIED as proposed 2026-07-06
+   (rev 0.47 §7.2): one structural undo, typed text survives.
 8. Canvas background color picker placement (proposal: board menu
    row beside background image ops).
 9. Panel/card visual identity (tabled from rev 0.31).
 10. Bookmark-this-board keybind (proposal: Mod+D).
-11. Swap-node bucket rule (rev 0.45 §6.5, from the tester
-    conversation): when placements repoint to the picked node,
-    what happens to the displaced node — proposal: it survives
-    unplaced with its note/canvas/tags intact, discoverable via
-    §14.1; destroy-nothing default.
-12. The replace/swap verb pair + the user-facing noun for "node"
-    (rev 0.45 §6.5; owner + tester agree the language needs work).
-    Constraints: never the word "file" (tester feared drive
-    deletion); the two actions must read as different at a glance.
-    Lead's starting proposal: "Replace image…" (same bucket, new
-    picture, everywhere) vs "Swap item…" (another bucket takes
-    these places); UI noun "item" wherever one is unavoidable,
-    "node" stays a docs/graph-view word.
+11. ~~Swap-node bucket rule~~ — RATIFIED as proposed 2026-07-06
+    (rev 0.47 §6.5): displaced node survives unplaced,
+    destroy-nothing.
+12. ~~Replace/swap verb pair~~ — RATIFIED 2026-07-06 (rev 0.47
+    §6.5): "Replace image…" / "Swap for…", no jargon nouns, "file"
+    banned; "item" is the working noun where unavoidable, final
+    tone at the design pass.
 
 ### Files to Touch
 
