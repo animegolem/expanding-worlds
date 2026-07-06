@@ -118,6 +118,15 @@ mechanics, roughly ordered by how much build work they unblock.
     token, not a second color), padding generosity, whether the
     edge is hard, soft, or vignetted, corner treatment, and how
     the first placement's "bloom" on an empty board should feel.
+16. **The note metadata card** (rev 0.51, §7.8): a system-owned
+    block at the tail of a note's body (placements tree with
+    fly-to entries, provenance: original filename / import date /
+    source). In-app it renders as a structured card below the
+    editor, never as raw text — design the card: how it separates
+    from user prose, how a 40-board placement tree stays scannable,
+    how fly-to entries read as navigation, and the per-note toggle.
+    In exports it's plain markdown; the on-disk shape is fixed,
+    the card is yours.
 
 ## Constraints the design must honor (load-bearing, not taste)
 

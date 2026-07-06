@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.50         | 6 July 2026      |
+| Accepted for Phase 1 | 0.51         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1693,6 +1693,52 @@ conflict with a trashed note SHOULD offer Restore Existing Note.
 Create Another Using This Note MAY be offered when a user attempts to
 create a node and note with an existing title. Make Note Independent
 preserves the copied body while requesting another unique title.
+
+## 7.8 System metadata block (rev 0.51)
+
+A note MAY carry a system-owned metadata block at the tail of its
+body: derived, system-written information persisted into the note
+text so it survives export and external reading — the note becomes
+self-documenting in any plain markdown reader. The block sits under
+a stable marker (a horizontal rule plus a comment fence the parser
+owns); the system reads it, never discards it, and regenerates it
+WHOLESALE on refresh. Hand edits inside the block are overwritten by
+design. Content is plain markdown so foreign readers render it
+sensibly.
+
+The block is composed of sections from a fixed v1 registry:
+
+- **Placements** (default ON): where this note's nodes are placed —
+  a tree grouped by board respecting board nesting, each board named
+  with its placement count. In-app, each entry is a fly-to
+  navigation target (reusing panel-aware flights and the §7.4
+  location machinery).
+- **Provenance** (default ON, image-backed nodes): original
+  filename, import date, and import source — the source path or URL
+  when known, and the importing connector's name when a connector
+  (§11.5) did the ingesting. This answers "are these my actual
+  files" inside every export.
+- **Timestamps** (default OFF): note created / last modified.
+
+The section registry is a future connector surface (declarative
+manifests MAY add sections), but v1 ships the fixed set only.
+
+**Freshness (lazy refresh).** Every derived section is a cache. The
+in-app display ALWAYS computes live; the persisted block refreshes
+lazily at moments that matter — export, backup snapshots, and
+whenever the system rewrites that note body for other reasons (e.g.
+rename re-keying). The on-disk copy may therefore be slightly stale;
+its only job is being readable outside the app. System refreshes
+follow the rename-rewrite discipline: they never enter the undo
+stack, never dirty an open editor, and defer when the editor holds
+unsaved text.
+
+**Surface and toggles.** The note panel renders the block as a
+structured metadata card below the editor — never as raw text — with
+a per-note toggle; Settings holds the global default per section.
+Toggling a note off stops refreshes and strips the block at the next
+system touch. Card styling is design-pass scope (Design-letter-3
+item 16).
 
 # 8. Navigation and provisional workspace direction
 
@@ -4075,3 +4121,15 @@ Accepted for the Phase 1 prototype:
   nothing is persisted and nothing migrates. An empty board is all
   void until the first placement lights it. Visual treatment is
   design-pass scope (Design-letter-3 item 15).
+
+- System metadata block (rev 0.51, §7.8): notes MAY carry a
+  system-owned block at the body tail — derived metadata persisted
+  into the text so exports are self-documenting. V1 sections:
+  Placements tree (default ON, fly-to entries in-app), Provenance
+  (default ON for image nodes: original filename, import date,
+  source path/URL/connector), Timestamps (OFF). Lazy refresh: live
+  display always computes; the persisted cache rewrites only at
+  export, backups, and existing system touches, under the
+  rename-rewrite discipline (no undo entry, never clobbers a dirty
+  editor). Per-note toggle + Settings global defaults; card styling
+  is Design-letter-3 item 16.

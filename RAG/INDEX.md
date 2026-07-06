@@ -11,7 +11,7 @@
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 112 |
-| **Total** | **22** | **116** |
+| **Total** | **22** | **117** |
 
 ## In Progress
 
@@ -86,6 +86,7 @@
 
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-118-content-defined-stage|IMP-118]] — planned, no epic dependency found
+- [[AI-IMP-119-note-metadata-block|IMP-119]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-015 is completed
@@ -99,7 +100,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4077 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4135 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1450 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (999 LOC)
