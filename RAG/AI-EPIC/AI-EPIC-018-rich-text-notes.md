@@ -41,6 +41,17 @@ Gated stretch riding this epic if it activates: the rev 0.39
 AI-over-a-text-region verbs (format/extract/dictate-cleanup),
 double-gated per §11.5, tiny on-device model.
 
+**Owner reference (2026-07-06):**
+github.com/animegolem/chimera-chat-playground — an earlier Lexical
+build; not code or styling to reuse, but the VALUES to preserve:
+(1) markdown shortcuts ARE the formatting UI (typing `---`, `**`,
+` ```lang ` transforms live — no toolbar dependence); (2) the node
+set was already a whitelist of markdown-expressible shapes
+(headings, quote, lists, code, links/autolink, HR, highlight);
+(3) code blocks are FIRST-CLASS — language tag, syntax
+highlighting, the thing the old project fought hardest for;
+(4) note-sized editor, not a document app.
+
 **Library direction (rev 0.40, owner + lead):** TipTap
 (ProseMirror lineage — the Linear-class shape) as the lead
 candidate: headless, Svelte-workable, and its schema is a
