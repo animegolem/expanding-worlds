@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 8 | 7 |
+| In Progress | 1 | 2 |
+| Planned | 8 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 102 |
@@ -19,7 +19,7 @@
 > (1) Electron's postinstall silently ships a husk `dist/` in every
 
 **IMPs:**
-- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — planned
+- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — in-progress
 - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — in-progress
 - [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — planned
 
@@ -99,7 +99,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/host.ts (938 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
-- apps/desktop/src/main/index.ts (789 LOC)
+- apps/desktop/src/main/index.ts (793 LOC)
 - apps/desktop/e2e/notes.spec.ts (752 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
@@ -148,6 +148,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (386 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
+- apps/desktop/e2e/shell.spec.ts (376 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
@@ -165,7 +166,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
-- apps/desktop/e2e/shell.spec.ts (317 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)

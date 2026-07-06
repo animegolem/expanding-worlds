@@ -65,6 +65,10 @@ never delegated. Implementation may be decomposed:
   false-green in EPIC-004). Use `expect.poll` with `win.evaluate`.
 - Run `pnpm -r build` before desktop e2e after touching packages/*
   (vitest and the utility bundle resolve workspace deps through dist).
+- Fresh worktrees get a husk `electron/dist` (macOS+pnpm exits 0
+  without extracting); the playwright globalSetup auto-runs
+  `scripts/repair-electron.sh` (AI-IMP-111) — run it by hand if
+  launching electron outside e2e.
 - Dev mode serves `@ew/*` live (excluded from vite's prebundle,
   AI-IMP-036): after `pnpm -r build`, a plain window reload refreshes
   a running `pnpm dev` session — no server restart. `predev` clears
