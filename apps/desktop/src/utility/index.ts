@@ -103,6 +103,59 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
+    case 'claim-thumbnail-job': {
+      if (!service) {
+        return {
+          type: 'claim-thumbnail-job',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no project is open',
+        }
+      }
+      try {
+        return { type: 'claim-thumbnail-job', ok: true, job: service.claimThumbnailJob() }
+      } catch (err) {
+        return {
+          type: 'claim-thumbnail-job',
+          ok: false,
+          code: 'CLAIM_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'submit-thumbnail': {
+      if (!service) {
+        return {
+          type: 'submit-thumbnail',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no project is open',
+        }
+      }
+      try {
+        const landed = service.completeThumbnailJob({
+          jobId: request.jobId,
+          bytes: request.bytes,
+        })
+        if (landed) {
+          post({
+            kind: 'thumbnail-ready',
+            assetId: landed.assetId,
+            contentHash: landed.contentHash,
+          })
+        }
+        return { type: 'submit-thumbnail', ok: true }
+      } catch (err) {
+        return {
+          type: 'submit-thumbnail',
+          ok: false,
+          code: 'SUBMIT_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'import-asset': {
       if (!service) {
         return { type: 'import-asset', ok: false, code: 'NO_PROJECT', message: 'no project is open' }

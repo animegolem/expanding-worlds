@@ -97,6 +97,39 @@ export type SetSettingResponse =
   | { type: 'set-setting'; ok: true }
   | { type: 'set-setting'; ok: false; code: string; message: string }
 
+/** §11.2 renderer-driven thumbnail pipeline (AI-IMP-076): the
+ * renderer claims the oldest queued job, decodes/resizes/encodes
+ * with Chromium codecs, and submits WebP bytes back; the utility
+ * owns the queue and the derivative files. Claiming does not lock —
+ * a dead renderer leaves the job queued and the pipeline heals. */
+export interface ClaimThumbnailJobRequest {
+  type: 'claim-thumbnail-job'
+}
+
+export interface ThumbnailJobInfo {
+  jobId: string
+  assetId: string
+  contentHash: string
+  mimeType: string
+}
+
+export type ClaimThumbnailJobResponse =
+  | { type: 'claim-thumbnail-job'; ok: true; job: ThumbnailJobInfo | null }
+  | { type: 'claim-thumbnail-job'; ok: false; code: string; message: string }
+
+export interface SubmitThumbnailRequest {
+  type: 'submit-thumbnail'
+  jobId: string
+  /** WebP bytes; null marks the job failed (undecodable source).
+   * The asset identity and hash come from the JOB on the service
+   * side — the renderer is never trusted with a path component. */
+  bytes: Uint8Array | null
+}
+
+export type SubmitThumbnailResponse =
+  | { type: 'submit-thumbnail'; ok: true }
+  | { type: 'submit-thumbnail'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -105,6 +138,8 @@ export type ProjectRequest =
   | RunQueryRequest
   | ImportAssetRequest
   | SetSettingRequest
+  | ClaimThumbnailJobRequest
+  | SubmitThumbnailRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -114,6 +149,8 @@ export type ProjectResponse =
   | RunQueryResponse
   | ImportAssetResponse
   | SetSettingResponse
+  | ClaimThumbnailJobResponse
+  | SubmitThumbnailResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. */
@@ -132,5 +169,12 @@ export interface UtilityEnvelope<T> {
 export type UtilityMessage =
   | { kind: 'response'; id: number; payload: ProjectResponse }
   | { kind: 'event'; event: ProjectChangedEvent }
+  | { kind: 'thumbnail-ready'; assetId: string; contentHash: string }
+
+/** Main → renderer broadcast when a thumbnail derivative lands. */
+export interface ThumbnailReadyEvent {
+  assetId: string
+  contentHash: string
+}
 
 export type { CommandEnvelope, CommandResult, ProjectChangedEvent }

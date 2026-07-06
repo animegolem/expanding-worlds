@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 2 |
+| In Progress | 2 | 2 |
 | Planned | 3 | 0 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 10 | 73 |
-| **Total** | **14** | **75** |
+| Completed | 10 | 79 |
+| **Total** | **15** | **81** |
 
 ## In Progress
 
@@ -36,6 +36,19 @@
 
 ---
 
+### [[AI-EPIC-014-gallery|EPIC-014: Gallery]]
+> Reference material is only visible where it is placed. A project
+
+**IMPs:**
+- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
+- [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — completed
+- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
+- [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — completed
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
+
+---
+
 ## Planned
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
@@ -50,6 +63,14 @@
 
 ### [[AI-EPIC-014-library-and-cross-project-sourcing|EPIC-014: Library and cross project sourcing]]
 > The first outside tester's reference library lives in Allusion,
+
+**IMPs:**
+- [[AI-IMP-076-thumbnail-pipeline|IMP-076]] Thumbnail pipeline — completed
+- [[AI-IMP-077-gallery-takeover|IMP-077]] Gallery takeover — completed
+- [[AI-IMP-078-gallery-facets|IMP-078]] Gallery facets — completed
+- [[AI-IMP-079-gallery-selection-actions|IMP-079]] Gallery selection actions — completed
+- [[AI-IMP-080-gallery-keyboard|IMP-080]] Gallery keyboard — completed
+- [[AI-IMP-081-import-progress-strip|IMP-081]] Import progress strip — completed
 
 ---
 
@@ -67,8 +88,9 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3375 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3432 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1197 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (932 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (840 LOC)
 - packages/persistence/src/queries-structure.test.ts (762 LOC)
@@ -86,12 +108,12 @@ Generated from tracked files; binary assets excluded.
 
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
+- apps/desktop/src/main/index.ts (555 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (521 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
-- apps/desktop/src/main/index.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - apps/desktop/e2e/canvas.spec.ts (506 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
@@ -108,13 +130,16 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.test.ts (388 LOC)
 - packages/persistence/src/handlers/nodes.ts (387 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (382 LOC)
+- apps/desktop/src/renderer/views/GalleryActionBar.svelte (373 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (361 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
+- apps/desktop/src/renderer/views/GalleryFacets.svelte (353 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - packages/commands/src/payloads/structure.ts (350 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/hit-test.ts (340 LOC)
+- packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/persistence/src/queries-notes.ts (334 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
@@ -131,7 +156,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>10 EPICs, 73 IMPs completed</summary>
+<summary>10 EPICs, 79 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

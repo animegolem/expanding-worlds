@@ -54,13 +54,7 @@
     },
     { id: 'search', glyph: '⌕', name: 'Search', state: 'search' },
     { id: 'graph', glyph: '⊛', name: 'Graph', state: 'deferred', deferred: 'arrives with the graph epic' },
-    {
-      id: 'gallery',
-      glyph: '⊞',
-      name: 'Gallery',
-      state: 'deferred',
-      deferred: 'arrives with the library (EPIC-014)',
-    },
+    { id: 'gallery', glyph: '⊞', name: 'Gallery', state: 'takeover', kind: 'gallery' },
     { id: 'outline', glyph: '▤', name: 'Outline', state: 'takeover', kind: 'outline' },
     { id: 'menu', glyph: '☰', name: 'Menu', state: 'menu' },
   ]

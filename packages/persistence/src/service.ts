@@ -17,9 +17,16 @@ import { registerNoteHandlers } from './handlers/notes'
 import { registerPinHandlers } from './handlers/pin'
 import { registerPlacementHandlers } from './handlers/placements'
 import { registerTagHandlers } from './handlers/tags'
+import {
+  claimNextThumbnailJob,
+  completeThumbnailJob,
+  enqueueMissingThumbnails,
+  type ThumbnailJob,
+} from './import/derivatives'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
+import { registerGalleryQueries } from './queries-gallery'
 import { registerLifecycleQueries } from './queries-lifecycle'
 import { registerNoteQueries } from './queries-notes'
 import { registerSearchQueries } from './queries-search'
@@ -50,6 +57,17 @@ export interface ProjectService {
   subscribe(fn: (event: ProjectChangedEvent) => void): () => void
   /** Staged asset import per §11.2; throws DomainError on rejection. */
   importAsset(input: ImportInput): Promise<ImportResult>
+  /** §11.2 derivative queue, renderer-driven (AI-IMP-076): the
+   * oldest queued thumbnail job, or null when drained. */
+  claimThumbnailJob(): ThumbnailJob | null
+  /** Lands generated thumbnail bytes (null bytes = generation
+   * failed). The hash/asset come from the JOB, never the caller;
+   * returns them for the ready broadcast, or null when nothing
+   * landed. */
+  completeThumbnailJob(input: {
+    jobId: string
+    bytes: Uint8Array | null
+  }): { assetId: string; contentHash: string } | null
   /** §11.4 startup recovery outcome for this open. */
   recovery(): RecoveryReport
   close(): void
@@ -94,6 +112,7 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerSearchQueries(queries)
   registerLifecycleQueries(queries)
   registerSettingsQueries(queries)
+  registerGalleryQueries(queries)
 
   const dispatcher = new Dispatcher(handle, commands)
   const queryCtx = {
@@ -102,6 +121,12 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
     rootNodeId: handle.rootNodeId,
     rootCanvasId: handle.rootCanvasId,
   }
+
+  // §11.4 lazy rebuild: missing thumbnail derivatives re-enqueue on
+  // every open (deleted derivatives dir, pre-076 project). The
+  // renderer drains the queue in the background once a window is up.
+  const derivCtx = { db: handle.db, now: () => new Date().toISOString() }
+  enqueueMissingThumbnails(derivCtx, handle.dir)
 
   return {
     info(): ProjectInfo {
@@ -132,6 +157,8 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
         },
         input,
       ),
+    claimThumbnailJob: () => claimNextThumbnailJob(derivCtx, handle.dir),
+    completeThumbnailJob: (input) => completeThumbnailJob(derivCtx, handle.dir, input),
     close: () => handle.close(),
   }
 }

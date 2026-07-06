@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.24         | 6 July 2026      |
+| Accepted for Phase 1 | 0.30         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -560,10 +560,17 @@ warn the original is lost. Batch imports offer apply-to-queue and
 remember-choice options. Adapters are versioned, declare the source
 patterns they claim, may be built in (image codec) or externally
 configured (yt-dlp-style endpoints), and stay outside the core domain
-model; the auto-optimize threshold is an application preference. The
-conversion adapters need a main-process image codec — the same
-dependency as the deferred thumbnail and tile derivatives, so one
-codec ticket unlocks all three.
+model; the auto-optimize threshold is an application preference.
+Thumbnail derivatives ride the RENDERER's Chromium codecs (rev
+0.27, AI-IMP-076): the renderer claims queued jobs, decodes/
+resizes/encodes WebP-with-alpha, and submits bytes back to the
+project service, which owns the queue and the files — zero native
+dependencies, and the thumbnail format envelope can never drift
+from what the board displays. Generation therefore needs a live
+window; jobs queue and self-heal across opens. Conversion adapters
+(PSD and kin) still need their own decode dependency when they
+arrive — neither Chromium nor a stock native codec reads them, so
+that ticket stands alone.
 
 ## 4.8 Tags
 
@@ -2365,7 +2372,11 @@ without adding a library concept to the domain:
   facets (date, name, size), a **kind facet** (image · note ·
   board, rev 0.22), a flat tag filter with counts (orderable by
   name or by count), and the two cleanup filters the model already
-  owns (untagged · unplaced). Bulk selection summons a floating
+  owns (untagged · unplaced). Note-kind entries render as TEXT
+  POSTS (rev 0.30, from the first tester's "diary of sorts"):
+  title and a clamped body excerpt in the cell, tags on hover — so
+  clippings and book excerpts sit beside pictures as first-class
+  gallery material. Bulk selection summons a floating
   action bar (tag · place · trash). Large drops run as an
   interruptible progress strip with a live hash-dedupe count,
   never a modal. The gallery has its own rail charm and also
@@ -2386,6 +2397,30 @@ without adding a library concept to the domain:
   time — one control, two jobs, anchored to itself like all
   chrome. Grouping is view state over indexed timestamps; no
   schema is involved.
+
+- **The keyboard model (rev 0.25, resolving question 26).** The
+  grid keeps a cursor — a focus ring distinct from the selection
+  highlight. Plain arrows move the cursor and collapse selection to
+  it: Left/Right walk document order, wrapping across rows and
+  bucket boundaries; Up/Down move by visual column, taking the
+  nearest column when the next row is short or belongs to the next
+  bucket. Shift-extension selects the linear document-order range
+  from the anchor — never a visual rectangle, which stops meaning
+  anything across bucket gaps — and Shift+click agrees. Mod+click
+  and Mod+Space toggle membership without disturbing the anchor;
+  Space itself is RESERVED for preview (the Quick Look reflex) even
+  before a preview surface exists, because burning it on toggle
+  would make that retrofit awkward. Mod+A selects the current
+  filter scope: the user selects what they see. Enter is the
+  kind-appropriate primary action, as in search (§8.3):
+  note-carrying entries open the note panel over the gallery,
+  board-kind entries close the takeover and dive, and a note-less
+  image opens its panel through the charm grammar's
+  create-on-demand (§8.4). Delete trashes the selection — the
+  action bar's command. Escape peels, selection first, takeover
+  second, exactly as the canvas does. PageUp/PageDown page the
+  viewport; Mod+Up/Down jump to the previous/next bucket header
+  under date sort — the keyboard twin of the header's period list.
 
 - **Scope is project choice (rev 0.22).** The gallery's primary
   toggle — *this world · everything* — selects WHOSE gallery is
@@ -2469,12 +2504,11 @@ without adding a library concept to the domain:
   just a note; gone forever after clearing. The tutorial is made of
   the app's own furniture, which is itself the lesson.
 
-The gallery depends on the thumbnail derivative pipeline and its
-main-process image codec (§4.7's shared-codec note). Watched
-directories stay deferred separately. Two library surfaces await
-their own design turns and are open questions: the gallery keyboard
-model (arrow navigation, range select) and the OS-drop importer
-dialogue as the third compression.
+The gallery depends on the thumbnail derivative pipeline —
+renderer-generated over Chromium codecs, service-owned files (rev
+0.27, §4.7). Watched directories stay deferred separately. One library surface still
+awaits its design turn and is an open question: the OS-drop
+importer dialogue as the third compression.
 
 # 15. Future authoritative collaboration seam
 
@@ -2984,13 +3018,55 @@ workspace tabs. Expected shape: a second window onto the same
 project, which requires the multi-window story the §11.1
 single-writer rule already anticipates.
 
-26. (Shaped, rev 0.22 — not closed.) The gallery's navigation model
-gained grouped time buckets with a header-anchored jump control
-(§14.4); the keyboard half — arrow navigation and range
-selection over the grid (§14.4) — awaits its design turn.
+26. (Resolved, rev 0.25.) The gallery's navigation model gained
+grouped time buckets with a header-anchored jump control (rev
+0.22), and the keyboard half closed at EPIC-014 activation: cursor
+distinct from selection, linear document-order ranges, Space
+reserved for preview, kind-appropriate Enter, Escape peeling, and
+bucket jumps (§14.4).
 
 27. The OS-drop importer dialogue as the third compression of the
 gallery grammar (§14.4, §4.7) awaits its design turn.
+
+28. (Shaped, rev 0.26 — early musing, deliberately unclosed.) The
+iPad direction: the web renderer carries over through a WKWebView
+shell (Tauri-class), macOS becoming the WebKit lead platform when
+that work actually starts — not before; Windows/Linux stay on
+Electron/Chromium (WebKitGTK is the weak WebGL target). Persistence
+authority STAYS a desktop feature: the iPad is a satellite holding
+a read replica (the §16 export as the snapshot vehicle) plus a
+command outbox the desktop grabs and replays through the real
+pipeline — the single-writer rule (§11.1) is preserved, asset
+transfer is idempotent by content hash, and §15's
+command-as-sync-unit becomes concrete. Two live writers stay out
+of scope; a server-authoritative client would be a different
+product. The open half is the rejected-replay surface, and its
+governing rule (rev 0.28) is that superposition is LAZY: a replay
+that no longer applies never interrupts the sync and never demands
+resolution — both versions persist as ordinary records, the board
+shows one (default: the authoritative store's), and the stack of
+unresolved alternates just sits there until the user feels like
+picking, possibly never. There is no merge moment; "resolve" is a
+browse-and-choose whenever, not a gate on anything. Nothing is
+destroyed either way. Awaits its design turn with the satellite
+work.
+
+29. (Shaped, rev 0.29 — early musing.) The pitch bible: an
+LLM-assisted export that reads the project's typed graph — boards,
+placements, notes, tags, provenance — and narrates it into a
+presentation artifact (PPTX/PDF), the world-bible/pitch-bible
+deliverable an animation pipeline actually asks for. The model
+tier is deliberately modest (Haiku-class riding the owner's
+subscription, the idle-bell precedent) because the layout
+intelligence lives in document-generation skills, not the model;
+the app's job is only to expose the graph in readable order (the
+§16 export plus queries already do). Two lives: near-term as
+OWNER TOOLING — point a Claude Code session with a design/pptx
+skill at a project.sqlite and generate the deck by hand, which
+also field-tests what the eventual in-app export needs — and
+long-term as an in-app export behind the §4.7 adapter grammar
+(versioned, external endpoint, outside the core domain). No
+schema involvement either way.
 
 # 20. Decision summary
 
@@ -3341,3 +3417,16 @@ Accepted for the Phase 1 prototype:
   the tag facet orders by name or count; and the scope toggle —
   this world · everything — selects whose gallery is shown, the
   library being "everything" by construction of the mirror.
+
+- The gallery keyboard model (rev 0.25, §14.4): a cursor distinct
+  from selection; plain arrows collapse, Shift extends the linear
+  document-order range, Mod toggles, and Space stays reserved for
+  preview; Mod+A selects the current filter scope; Enter is the
+  kind-appropriate primary action; Escape peels selection before
+  the takeover; Mod+Up/Down jump buckets under date sort.
+
+- Thumbnails ride the renderer's Chromium codecs (rev 0.27, §4.7):
+  renderer claims → decodes/resizes → WebP-with-alpha → service
+  owns queue and files; zero native dependencies, format envelope
+  identical to the board's by construction, generation needs a
+  live window, unclaimed jobs self-heal across opens.

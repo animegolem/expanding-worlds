@@ -45,6 +45,12 @@ export {
   type OrderedItem,
 } from './render-order'
 export { registerStructureQueries, type CanvasContentItem } from './queries-structure'
+export {
+  registerGalleryQueries,
+  type GalleryIndexEntry,
+  type GalleryItem,
+  type GalleryKind,
+} from './queries-gallery'
 export { ftsMatchExpression, rebuildSearchIndex } from './search'
 export {
   registerSearchQueries,
@@ -95,11 +101,16 @@ export {
   importTempDir,
   importTempRelativeDir,
   moveIntoStore,
+  thumbnailPath,
+  thumbnailRelativePath,
 } from './import/store'
 export { SNIFF_HEADER_BYTES, sniff, type SniffResult, type SniffedFormat } from './import/sniff'
 export {
   NoopThumbnailGenerator,
   claimNextJob,
+  claimNextThumbnailJob,
+  completeThumbnailJob,
+  enqueueMissingThumbnails,
   enqueueThumbnail,
   markJobDone,
   markJobFailed,
@@ -107,4 +118,5 @@ export {
   type DerivativeCtx,
   type DerivativeGenerator,
   type DerivativeJob,
+  type ThumbnailJob,
 } from './import/derivatives'

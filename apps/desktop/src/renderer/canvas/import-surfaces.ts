@@ -1,6 +1,12 @@
 import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from './host'
+import {
+  IMPORT_BATCH_THRESHOLD,
+  enqueueImportBatch,
+  isImportBatchActive,
+  type ImportOutcome,
+} from '../chrome/import-progress'
 import { themeTokenValue } from '../theme'
 
 /**
@@ -88,27 +94,67 @@ export function attachImportSurfaces(
     if (result.status !== 'committed') onError(describeFailure('CreatePin', result))
   }
 
-  /** §6.1: import each file, then one CreatePin per success. A sniff
-   * rejection surfaces its notice and issues zero commands. */
+  /** One file through the staged pipeline, then its CreatePin. A
+   * sniff rejection surfaces its notice and issues zero commands;
+   * the outcome feeds the §14.4 batch counts. */
+  async function importOneFile(
+    file: File,
+    world: Point,
+    sourceUrl?: string,
+  ): Promise<ImportOutcome> {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string } = {
+      bytes,
+      originalFilename: file.name.length > 0 ? file.name : 'pasted-image',
+    }
+    if (sourceUrl !== undefined) input.sourceUrl = sourceUrl
+    const imported = await window.ew.project.importAsset(input)
+    if (!imported.ok) {
+      onError(imported.message)
+      return 'failed'
+    }
+    await createImagePin(imported.assetId, world)
+    return imported.deduplicated ? 'deduped' : 'imported'
+  }
+
+  /** §6.1: import each file, then one CreatePin per success. Small
+   * drops keep the quiet sequential path; a drop past the §14.4
+   * threshold — or ANY drop while a batch runs — queues into the
+   * progress strip instead (each file stays its own committed
+   * import, so strip cancel never rolls anything back). */
   async function importFiles(files: File[], world: Point, sourceUrl?: string): Promise<void> {
+    if (files.length > IMPORT_BATCH_THRESHOLD || isImportBatchActive()) {
+      // The pump runs tasks strictly in order, so a shared per-drop
+      // success count keeps the cascade offsets identical to the
+      // quiet path's placement semantics.
+      const drop = { placed: 0 }
+      enqueueImportBatch(
+        files.map((file) => async () => {
+          const outcome = await importOneFile(
+            file,
+            {
+              x: world.x + drop.placed * MULTI_DROP_OFFSET,
+              y: world.y + drop.placed * MULTI_DROP_OFFSET,
+            },
+            sourceUrl,
+          )
+          if (outcome !== 'failed') drop.placed += 1
+          return outcome
+        }),
+      )
+      return
+    }
     let placed = 0
     for (const file of files) {
-      const bytes = new Uint8Array(await file.arrayBuffer())
-      const input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string } = {
-        bytes,
-        originalFilename: file.name.length > 0 ? file.name : 'pasted-image',
-      }
-      if (sourceUrl !== undefined) input.sourceUrl = sourceUrl
-      const imported = await window.ew.project.importAsset(input)
-      if (!imported.ok) {
-        onError(imported.message)
-        continue
-      }
-      await createImagePin(imported.assetId, {
-        x: world.x + placed * MULTI_DROP_OFFSET,
-        y: world.y + placed * MULTI_DROP_OFFSET,
-      })
-      placed += 1
+      const outcome = await importOneFile(
+        file,
+        {
+          x: world.x + placed * MULTI_DROP_OFFSET,
+          y: world.y + placed * MULTI_DROP_OFFSET,
+        },
+        sourceUrl,
+      )
+      if (outcome !== 'failed') placed += 1
     }
   }
 

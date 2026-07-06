@@ -9,6 +9,7 @@
   mode discipline.
 -->
 <script lang="ts">
+  import GalleryView from '../views/GalleryView.svelte'
   import OutlineView from '../views/OutlineView.svelte'
   import SettingsView from '../views/SettingsView.svelte'
   import { holdEngagement } from './engagement'
@@ -44,6 +45,7 @@
   const TITLES: Record<TakeoverKind, string> = {
     outline: 'Outline',
     settings: 'Settings',
+    gallery: 'Gallery',
   }
 </script>
 
@@ -66,6 +68,8 @@
           <OutlineView />
         {:else if kind === 'settings'}
           <SettingsView />
+        {:else if kind === 'gallery'}
+          <GalleryView />
         {/if}
       </div>
     </div>

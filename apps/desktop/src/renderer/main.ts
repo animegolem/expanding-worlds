@@ -1,6 +1,7 @@
 import { mount } from 'svelte'
 import App from './App.svelte'
 import './theme.css'
+import { initThumbnailPipeline } from './assets/thumbnails'
 import { initSettings } from './settings/settings'
 import { applyTheme, type ThemeName } from './theme'
 
@@ -16,3 +17,8 @@ window.__ewTheme = {
 // opacity) so the window never flashes the defaults; a failed load
 // falls back to them inside initSettings.
 void initSettings().finally(() => mount(App, { target }))
+
+// §11.2 background thumbnail generation (AI-IMP-076): drains the
+// derivative queue after boot and after every asset import; never
+// blocks anything above.
+initThumbnailPipeline()

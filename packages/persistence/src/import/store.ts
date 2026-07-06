@@ -36,6 +36,19 @@ export function blobPath(dir: string, hash: string): string {
   return join(dir, blobRelativePath(hash))
 }
 
+/** Thumbnail location relative to the project dir, keyed by SOURCE
+ * content hash so byte-identical assets share one derivative
+ * (AI-IMP-076). Always WebP — the one re-encode in the system, and
+ * it must carry alpha (EPIC-014 NFR). */
+export function thumbnailRelativePath(hash: string): string {
+  return join(THUMBNAILS_DIR, `${hash}.webp`)
+}
+
+/** Absolute thumbnail path for a source content hash. */
+export function thumbnailPath(dir: string, hash: string): string {
+  return join(dir, thumbnailRelativePath(hash))
+}
+
 /** Per-import staging dir relative to the project dir. */
 export function importTempRelativeDir(importId: string): string {
   return join(IMPORT_TMP_DIR, importId)
