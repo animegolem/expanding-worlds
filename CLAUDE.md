@@ -19,6 +19,10 @@ domain behavior.
   validated. Fill Issues Encountered honestly, including deviations.
 - End every implementation session with an `RAG/AI-LOG/` entry (the
   handoff to the next session), using its template.
+- `RAG/HUMAN-TESTING.md` is the owner-validation queue: append an
+  entry (ticket + what to try) whenever landed work needs a human
+  feel pass; the owner flushes it intermittently. Never check items
+  off for them.
 - Deferred features must carry self-contained scope in the RFC —
   enough for a future contributor (possibly a weaker model) to execute
   without this conversation.
