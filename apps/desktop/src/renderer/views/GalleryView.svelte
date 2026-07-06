@@ -13,11 +13,26 @@
   query's arguments — filtering happens in SQL, the virtualization
   core is untouched. Buckets are DATE sort's presentation; name and
   size render the flat grid. Note-kind cells are text posts (FR-8):
-  title plus a clamped body excerpt, tags on hover. Selection and
-  the keyboard model arrive with 079/080.
+  title plus a clamped body excerpt, tags on hover.
+
+  079 adds the pointer selection model (rev 0.25): click selects one
+  cell and sets the anchor; Shift+click extends the LINEAR
+  document-order range from the anchor across bucket boundaries —
+  never a rectangle; Mod+click toggles membership without disturbing
+  the anchor. A non-empty selection mounts the floating action bar
+  (tag · place · trash, GalleryActionBar). Place closes the takeover
+  FIRST (070 precedent), then runs every id through the §6.10
+  requestPlaceNode seam; a single-cell HTML5 drag-out mirrors the
+  outline's beginRowDrag (NODE_DRAG_MIME + close at the cell's
+  bounds). Escape peels selection before the takeover's own Escape
+  (capture phase). The keyboard model arrives with 080.
 -->
 <script lang="ts">
   import { untrack } from 'svelte'
+  import { NODE_DRAG_MIME } from '../canvas/import-surfaces'
+  import { closeTakeover } from '../chrome/takeover'
+  import { requestPlaceNode } from '../note/open-note'
+  import GalleryActionBar from './GalleryActionBar.svelte'
   import GalleryFacets from './GalleryFacets.svelte'
   import { bucketByDate, type GalleryBucket } from './gallery-buckets'
 
@@ -59,6 +74,14 @@
   let scrollTop = $state(0)
   let jumpOpen = $state(false)
 
+  // ------------------------------------------- 079 pointer selection
+  // View state (rev 0.25): a set of node ids plus the anchor the
+  // Shift range extends from. Document order is the CURRENT index
+  // array — whatever sort/filter produced it.
+  let selected = $state<Set<string>>(new Set())
+  let anchor = $state<string | null>(null)
+  let tagOpen = $state(false)
+
   // ---------------------------------------------------- 078 facets
   // Facet state is view state (§14.4): it composes into the index
   // query's arguments and never writes.
@@ -89,15 +112,27 @@
       index = []
     }
     loaded = true
+    // A project push (trash, external edits) can retire selected
+    // nodes: prune the selection to ids still in the grid. Runs after
+    // the await, so these reads are outside the effect's tracking.
+    const live = new Set(index.map((entry) => entry.nodeId))
+    if ([...selected].some((id) => !live.has(id))) {
+      selected = new Set([...selected].filter((id) => live.has(id)))
+    }
+    if (anchor !== null && !live.has(anchor)) anchor = null
   }
 
   // A facet change re-queries AND rehomes the viewport: the old
-  // scroll offset points into a grid that no longer exists.
+  // scroll offset points into a grid that no longer exists — and so
+  // does the selection that referenced it (079).
   $effect(() => {
     void refresh(facetArgs)
     untrack(() => {
       scroller?.scrollTo({ top: 0 })
       scrollTop = 0
+      selected = new Set()
+      anchor = null
+      tagOpen = false
     })
   })
   $effect(() => window.ew.project.onChanged(() => void refresh(facetArgs)))
@@ -209,6 +244,107 @@
   function onScroll(): void {
     if (scroller) scrollTop = scroller.scrollTop
   }
+
+  // ------------------------------------------- 079 selection gestures
+  /** Rev 0.25 mouse model: plain click selects only this cell and
+   * sets the anchor; Shift+click selects the linear document-order
+   * range from the anchor (bucket boundaries are invisible to it);
+   * Mod+click toggles membership without disturbing the anchor. A
+   * Shift+click with no live anchor degrades to a plain click. */
+  function onCellClick(event: MouseEvent, nodeId: string): void {
+    if (event.shiftKey && anchor !== null) {
+      const from = index.findIndex((entry) => entry.nodeId === anchor)
+      const to = index.findIndex((entry) => entry.nodeId === nodeId)
+      if (from !== -1 && to !== -1) {
+        const [lo, hi] = from <= to ? [from, to] : [to, from]
+        selected = new Set(index.slice(lo, hi + 1).map((entry) => entry.nodeId))
+        return
+      }
+    }
+    if (event.metaKey || event.ctrlKey) {
+      const next = new Set(selected)
+      if (next.has(nodeId)) next.delete(nodeId)
+      else next.add(nodeId)
+      selected = next
+      return
+    }
+    selected = new Set([nodeId])
+    anchor = nodeId
+  }
+
+  function clearSelection(): void {
+    selected = new Set()
+    anchor = null
+    tagOpen = false
+  }
+
+  // Escape peels one layer per press (rev 0.25), BEFORE the takeover
+  // layer's window-level close listener: capture phase, the TagPanel
+  // pattern. Field open → close it; selection → clear it; empty →
+  // decline, and the takeover closes as today.
+  $effect(() => {
+    const onKeydown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      if (tagOpen) {
+        event.preventDefault()
+        event.stopPropagation()
+        tagOpen = false
+        return
+      }
+      if (selected.size > 0) {
+        event.preventDefault()
+        event.stopPropagation()
+        clearSelection()
+      }
+    }
+    window.addEventListener('keydown', onKeydown, true)
+    return () => window.removeEventListener('keydown', onKeydown, true)
+  })
+
+  /** §6.10 place for the whole selection: close the takeover FIRST
+   * (070 precedent — the user watches the result land), then request
+   * one placement per id in selection order. The workspace owns the
+   * commits, the cascade offsets, and failure toasts. */
+  function placeSelection(): void {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    closeTakeover()
+    for (const id of ids) requestPlaceNode(id)
+  }
+
+  /**
+   * Cell dragstart, mirroring OutlineView's beginRowDrag: set the
+   * import-surface payload and watch the drag — the moment the
+   * pointer leaves the originating cell's bounds (§6.10's operative
+   * "sheet edge"), the takeover closes so the board can receive the
+   * drop.
+   */
+  function beginCellDrag(event: DragEvent, nodeId: string): void {
+    const dt = event.dataTransfer
+    if (!dt) return
+    dt.setData(NODE_DRAG_MIME, nodeId)
+    dt.effectAllowed = 'copy'
+    const cell = event.currentTarget as HTMLElement
+    const edge = cell.getBoundingClientRect()
+    const stop = (): void => {
+      window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('dragend', stop)
+      window.removeEventListener('drop', stop)
+    }
+    const onDragOver = (over: DragEvent): void => {
+      const inside =
+        over.clientX >= edge.left &&
+        over.clientX <= edge.right &&
+        over.clientY >= edge.top &&
+        over.clientY <= edge.bottom
+      if (inside) return
+      stop()
+      closeTakeover()
+    }
+    window.addEventListener('dragover', onDragOver)
+    window.addEventListener('dragend', stop)
+    window.addEventListener('drop', stop)
+  }
 </script>
 
 <div class="gallery" data-testid="gallery-view">
@@ -271,7 +407,13 @@
         {/if}
       </p>
     {:else}
-      <div class="canvas" style={`height: ${layout.totalHeight}px`}>
+      <div
+        class="canvas"
+        role="listbox"
+        aria-multiselectable="true"
+        aria-label="Gallery items"
+        style={`height: ${layout.totalHeight}px`}
+      >
         {#each visibleRows as row (row.kind === 'header' ? `h-${row.bucket.key}` : `r-${row.entries[0]?.nodeId}`)}
           {#if row.kind === 'header'}
             <h2
@@ -288,9 +430,17 @@
                 {@const item = items[entry.nodeId]}
                 <div
                   class="cell"
+                  class:selected={selected.has(entry.nodeId)}
+                  role="option"
+                  tabindex="-1"
+                  aria-selected={selected.has(entry.nodeId)}
                   data-testid="gallery-cell"
                   data-node-id={entry.nodeId}
                   data-kind={entry.kind}
+                  data-selected={selected.has(entry.nodeId) ? 'true' : 'false'}
+                  draggable="true"
+                  onclick={(event) => onCellClick(event, entry.nodeId)}
+                  ondragstart={(event) => beginCellDrag(event, entry.nodeId)}
                 >
                   {#if item && item.kind === 'image' && item.contentHash}
                     <img
@@ -326,6 +476,15 @@
       </div>
     {/if}
   </div>
+
+  {#if selected.size > 0}
+    <GalleryActionBar
+      selectedIds={[...selected]}
+      bind:tagOpen
+      onClear={clearSelection}
+      onPlace={placeSelection}
+    />
+  {/if}
 </div>
 
 <style>
@@ -439,6 +598,14 @@
     border-radius: 8px;
     background: var(--ew-surface-subtle);
     border: 1px solid var(--ew-border);
+    cursor: pointer;
+  }
+
+  /* 079 selection ring: the highlight vocabulary, distinct from the
+     080 cursor's focus ring to come. */
+  .cell.selected {
+    border-color: var(--ew-accent);
+    box-shadow: 0 0 0 2px var(--ew-accent);
   }
 
   .cell img {
