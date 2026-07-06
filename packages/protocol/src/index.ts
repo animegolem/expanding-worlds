@@ -130,6 +130,57 @@ export type SubmitThumbnailResponse =
   | { type: 'submit-thumbnail'; ok: true }
   | { type: 'submit-thumbnail'; ok: false; code: string; message: string }
 
+/** §11.1/§14.4 secondary project slots (AI-IMP-088): a SOURCE opens
+ * read-only (browse/ingest-from; replace-on-open), the LIBRARY opens
+ * writable under the ordinary lock (the inbox mirror's target). Both
+ * live beside the primary; a dead secondary never takes it down. */
+export type SecondaryTarget = 'source' | 'library'
+
+export interface OpenSecondaryRequest {
+  type: 'open-secondary'
+  target: SecondaryTarget
+  dir: string
+}
+
+export type OpenSecondaryResponse =
+  | { type: 'open-secondary'; ok: true; project: ProjectInfo }
+  | { type: 'open-secondary'; ok: false; code: string; message: string }
+
+export interface CloseSecondaryRequest {
+  type: 'close-secondary'
+  target: SecondaryTarget
+}
+
+export interface CloseSecondaryResponse {
+  type: 'close-secondary'
+  ok: true
+}
+
+export interface SecondaryQueryRequest {
+  type: 'secondary-query'
+  target: SecondaryTarget
+  name: string
+  args?: unknown
+}
+
+export type SecondaryQueryResponse =
+  | { type: 'secondary-query'; ok: true; result: unknown }
+  | { type: 'secondary-query'; ok: false; code: string; message: string }
+
+/** Import INTO the library slot (mirror direction); the source slot
+ * is read-only by construction and refuses at the service. */
+export interface SecondaryImportRequest {
+  type: 'secondary-import'
+  target: SecondaryTarget
+  originalFilename: string
+  bytes: Uint8Array
+  sourceUrl?: string
+}
+
+export type SecondaryImportResponse =
+  | { type: 'secondary-import'; ok: true; assetId: string; deduplicated: boolean }
+  | { type: 'secondary-import'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -140,6 +191,10 @@ export type ProjectRequest =
   | SetSettingRequest
   | ClaimThumbnailJobRequest
   | SubmitThumbnailRequest
+  | OpenSecondaryRequest
+  | CloseSecondaryRequest
+  | SecondaryQueryRequest
+  | SecondaryImportRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -151,6 +206,10 @@ export type ProjectResponse =
   | SetSettingResponse
   | ClaimThumbnailJobResponse
   | SubmitThumbnailResponse
+  | OpenSecondaryResponse
+  | CloseSecondaryResponse
+  | SecondaryQueryResponse
+  | SecondaryImportResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. */

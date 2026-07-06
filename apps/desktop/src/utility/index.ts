@@ -10,6 +10,25 @@ import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage }
 let service: ProjectService | null = null
 let unsubscribe: (() => void) | null = null
 
+/** §14.4 secondary slots (AI-IMP-088): source = read-only browse,
+ * library = writable mirror target. Independent of the primary — a
+ * secondary failure surfaces as ok:false, never as a dead utility.
+ * No change-event subscription: fan-out for secondaries is a later
+ * ticket's concern if a surface needs it. */
+const secondaries: Record<'source' | 'library', ProjectService | null> = {
+  source: null,
+  library: null,
+}
+
+function closeSecondary(target: 'source' | 'library'): void {
+  try {
+    secondaries[target]?.close()
+  } catch {
+    // A close failure must not poison the slot.
+  }
+  secondaries[target] = null
+}
+
 function post(message: UtilityMessage): void {
   process.parentPort.postMessage(message)
 }
@@ -58,7 +77,85 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       unsubscribe = null
       service?.close()
       service = null
+      // Secondaries are scoped to the foreground project session.
+      closeSecondary('source')
+      closeSecondary('library')
       return { type: 'close-project', ok: true }
+    }
+
+    case 'open-secondary': {
+      try {
+        closeSecondary(request.target) // replace-on-open
+        secondaries[request.target] = openProjectService(request.dir, {
+          readOnly: request.target === 'source',
+        })
+        return { type: 'open-secondary', ok: true, project: secondaries[request.target]!.info() }
+      } catch (err) {
+        secondaries[request.target] = null
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'OPEN_SECONDARY_FAILED'
+        return {
+          type: 'open-secondary',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'close-secondary': {
+      closeSecondary(request.target)
+      return { type: 'close-secondary', ok: true }
+    }
+
+    case 'secondary-query': {
+      const secondary = secondaries[request.target]
+      if (!secondary) {
+        return {
+          type: 'secondary-query',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: `no ${request.target} project is open`,
+        }
+      }
+      const result = secondary.query(request.name, request.args)
+      return result.ok
+        ? { type: 'secondary-query', ok: true, result: result.result }
+        : { type: 'secondary-query', ok: false, code: result.code, message: result.message }
+    }
+
+    case 'secondary-import': {
+      const secondary = secondaries[request.target]
+      if (!secondary) {
+        return {
+          type: 'secondary-import',
+          ok: false,
+          code: 'NO_SECONDARY',
+          message: `no ${request.target} project is open`,
+        }
+      }
+      try {
+        const input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string } = {
+          bytes: request.bytes,
+          originalFilename: request.originalFilename,
+        }
+        if (request.sourceUrl !== undefined) input.sourceUrl = request.sourceUrl
+        const { assetId, deduplicated } = await secondary.importAsset(input)
+        return { type: 'secondary-import', ok: true, assetId, deduplicated }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'IMPORT_FAILED'
+        return {
+          type: 'secondary-import',
+          ok: false,
+          code,
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
     }
 
     case 'execute-command': {

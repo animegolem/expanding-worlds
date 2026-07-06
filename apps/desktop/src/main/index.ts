@@ -515,6 +515,34 @@ void app.whenReady().then(() => {
     }
     return response
   })
+  // §14.4 secondary slots (AI-IMP-088): source (read-only browse)
+  // and library (writable mirror target) ride the same utility.
+  ipcMain.handle('secondary:open', (_event, target: 'source' | 'library', dir: string) =>
+    callUtility({ type: 'open-secondary', target, dir: String(dir) }),
+  )
+  ipcMain.handle('secondary:close', (_event, target: 'source' | 'library') =>
+    callUtility({ type: 'close-secondary', target }),
+  )
+  ipcMain.handle(
+    'secondary:query',
+    (_event, target: 'source' | 'library', name: string, args: unknown) =>
+      callUtility({ type: 'secondary-query', target, name, args }),
+  )
+  ipcMain.handle(
+    'secondary:import-asset',
+    (
+      _event,
+      target: 'source' | 'library',
+      input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string },
+    ) =>
+      callUtility({
+        type: 'secondary-import',
+        target,
+        bytes: input.bytes,
+        originalFilename: input.originalFilename,
+        ...(input.sourceUrl !== undefined ? { sourceUrl: input.sourceUrl } : {}),
+      }),
+  )
   ipcMain.handle('app-settings:get', () => loadAppSettings())
   ipcMain.handle('app-settings:set', (_event, key: string, value: unknown) => {
     setAppSetting(String(key), value)

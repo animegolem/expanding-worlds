@@ -5,12 +5,12 @@ tags:
   - Implementation
   - persistence
   - protocol
-kanban_status: in-progress
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-015-library-and-cross-project-sourcing]]
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-088-secondary-project-seam
@@ -72,22 +72,22 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] persistence readOnly open: query_only enforced, execute/
+- [x] persistence readOnly open: query_only enforced, execute/
       import/setSetting throw EW_READ_ONLY, recovery skipped, lock
       untouched; units incl. opening a project that is ALSO open
       writable elsewhere.
-- [ ] library handle path: writable secondary open takes the
+- [x] library handle path: writable secondary open takes the
       ordinary lock; a locked library yields a typed failure the
       mirror can queue on (no crash, no block).
-- [ ] protocol: open/close/query/import secondary verbs; envelope
+- [x] protocol: open/close/query/import secondary verbs; envelope
       routing; utility slot lifecycle (replace-on-open, close on
       project close, primary unaffected by secondary death).
-- [ ] main: libraryProjectDir app setting + IPC; preload
+- [x] main: libraryProjectDir app setting + IPC; preload
       ew.secondary surface.
-- [ ] e2e: open a fixture project as secondary from a running
+- [x] e2e: open a fixture project as secondary from a running
       world, run getGalleryIndex against it, close it; primary
       revision unchanged throughout.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -102,6 +102,19 @@ against it fails EW_READ_ONLY, and the secondary took no lock.
 untouched.
 
 ### Issues Encountered
+
+Landed lead-built. Notes: libraryProjectDir needs NO new main code
+— the generic app-settings get/set covers arbitrary keys, so the
+designation is just a key (089 consumes it). Read-only opens double
+the guarantee (connection readOnly + PRAGMA query_only) and demand
+the CURRENT schema (EW_SCHEMA_MISMATCH tells the user to open
+writable once). Thumbnail claim/complete return null on read-only —
+a source serves the derivatives it has; missing ones are 089's
+placeholder concern. Secondaries take no change-event subscription
+(live everything-scope updates are a later ticket if a surface
+wants them) and replace-on-open is implemented but not e2e-pinned.
+Gates: 423/270/36 units (5 new read-only, incl. held-lock typed
+refusal), 89 e2e (2 new: source browse + library import), lint.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

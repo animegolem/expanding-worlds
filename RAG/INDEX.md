@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 1 |
+| In Progress | 2 | 0 |
 | Planned | 2 | 8 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 11 | 85 |
+| Completed | 11 | 86 |
 | **Total** | **15** | **94** |
 
 ## In Progress
@@ -46,7 +46,7 @@
 > The first outside tester's reference library lives in Allusion,
 
 **IMPs:**
-- [[AI-IMP-088-secondary-project-seam|IMP-088]] Secondary project seam — in-progress
+- [[AI-IMP-088-secondary-project-seam|IMP-088]] Secondary project seam — completed
 - [[AI-IMP-089-library-scope-toggle|IMP-089]] Library scope toggle — planned
 - [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — planned
 - [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — planned
@@ -75,7 +75,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3525 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3558 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1387 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (948 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
@@ -93,9 +93,9 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
+- apps/desktop/src/main/index.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/main/index.ts (560 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/note/panels.ts (536 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
@@ -147,7 +147,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>11 EPICs, 85 IMPs completed</summary>
+<summary>11 EPICs, 86 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

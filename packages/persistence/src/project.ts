@@ -14,11 +14,17 @@ export interface ProjectHandle {
   rootNodeId: string
   rootCanvasId: string
   dir: string
+  readOnly: boolean
   close(): void
 }
 
 export interface OpenOptions {
   lock?: LockOptions
+  /** §11.1/§14.4 source opening: no lock, no migration, no writes —
+   * a read-only open never mutates the source and never blocks (or
+   * is blocked by) the owning instance. Requires the source to be
+   * at the CURRENT schema (open it writable once to migrate). */
+  readOnly?: boolean
 }
 
 /**
@@ -95,11 +101,33 @@ export function createProject(
   }
 }
 
-/** Opens an existing project: lock, migrate pending, read identity. */
+/** Opens an existing project: lock, migrate pending, read identity.
+ * Read-only opens (§11.1/§14.4) skip lock AND migration. */
 export function openProject(dir: string, options: OpenOptions = {}): ProjectHandle {
   const dbPath = join(dir, DB_FILENAME)
   if (!existsSync(dbPath)) {
     throw new Error(`openProject: no project at ${dbPath}`)
+  }
+
+  if (options.readOnly) {
+    const db = Db.open(dbPath, { readOnly: true })
+    try {
+      const version = db.get<{ schema_version: number }>(
+        'SELECT schema_version FROM project',
+      )?.schema_version
+      if (version !== LATEST_SCHEMA_VERSION) {
+        const err = new Error(
+          `read-only open needs schema ${LATEST_SCHEMA_VERSION}, found ${version ?? 'none'} — ` +
+            'open the project writable once to migrate it',
+        ) as Error & { code: string }
+        err.code = 'EW_SCHEMA_MISMATCH'
+        throw err
+      }
+      return makeHandle(db, null, dir)
+    } catch (err) {
+      db.close()
+      throw err
+    }
   }
 
   const lock = ProjectLock.acquire(dir, options.lock)
@@ -113,7 +141,7 @@ export function openProject(dir: string, options: OpenOptions = {}): ProjectHand
   }
 }
 
-function makeHandle(db: Db, lock: ProjectLock, dir: string): ProjectHandle {
+function makeHandle(db: Db, lock: ProjectLock | null, dir: string): ProjectHandle {
   const project = db.get<{ id: string; root_node_id: string }>(
     'SELECT id, root_node_id FROM project',
   )
@@ -130,9 +158,10 @@ function makeHandle(db: Db, lock: ProjectLock, dir: string): ProjectHandle {
     rootNodeId: project.root_node_id,
     rootCanvasId: rootCanvas.id,
     dir,
+    readOnly: lock === null,
     close(): void {
       db.close()
-      lock.release()
+      lock?.release()
     },
   }
 }

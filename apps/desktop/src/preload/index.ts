@@ -3,10 +3,15 @@ import { uuidv7 } from '@ew/domain'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
 import type {
   ClaimThumbnailJobResponse,
+  CloseSecondaryResponse,
   ExecuteCommandResponse,
   ImportAssetResponse,
+  OpenSecondaryResponse,
   PingResponse,
   RunQueryResponse,
+  SecondaryImportResponse,
+  SecondaryQueryResponse,
+  SecondaryTarget,
   ServiceStatusEvent,
   SetSettingResponse,
   SubmitThumbnailResponse,
@@ -126,6 +131,23 @@ const api = {
       ipcRenderer.on('project:service', listener)
       return () => ipcRenderer.removeListener('project:service', listener)
     },
+  },
+  /** §14.4 secondary project slots (AI-IMP-088): source = read-only
+   * browse of another project, library = the writable mirror target.
+   * Same query vocabulary as the primary; writes into source refuse
+   * EW_READ_ONLY at the service. */
+  secondary: {
+    open: (target: SecondaryTarget, dir: string): Promise<OpenSecondaryResponse> =>
+      ipcRenderer.invoke('secondary:open', target, dir) as Promise<OpenSecondaryResponse>,
+    close: (target: SecondaryTarget): Promise<CloseSecondaryResponse> =>
+      ipcRenderer.invoke('secondary:close', target) as Promise<CloseSecondaryResponse>,
+    query: (target: SecondaryTarget, name: string, args?: unknown): Promise<SecondaryQueryResponse> =>
+      ipcRenderer.invoke('secondary:query', target, name, args) as Promise<SecondaryQueryResponse>,
+    importAsset: (
+      target: SecondaryTarget,
+      input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string },
+    ): Promise<SecondaryImportResponse> =>
+      ipcRenderer.invoke('secondary:import-asset', target, input) as Promise<SecondaryImportResponse>,
   },
   /** §11.2 renderer-driven thumbnail pipeline (AI-IMP-076): the
    * renderer claims queued jobs, generates WebP thumbnails with

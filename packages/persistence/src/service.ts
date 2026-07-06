@@ -48,6 +48,9 @@ export interface ProjectInfo {
  */
 export interface ProjectService {
   info(): ProjectInfo
+  /** §11.1/§14.4: true for a source open — every write path refuses
+   * with EW_READ_ONLY and no lock is held. */
+  readonly readOnly: boolean
   execute(envelope: CommandEnvelope): CommandResult
   query(name: string, args?: unknown): QueryResult
   /** §11.5 non-undoable project-setting write: never enters command
@@ -79,18 +82,25 @@ export interface ServiceOptions extends OpenOptions {
 }
 
 export function openProjectService(dir: string, options: ServiceOptions = {}): ProjectService {
+  if (options.readOnly && options.createIfMissing) {
+    throw new Error('openProjectService: readOnly and createIfMissing are contradictory')
+  }
   const exists = existsSync(join(dir, DB_FILENAME))
   const handle =
     !exists && options.createIfMissing
       ? createProject(dir, options.title ?? 'Untitled Project', options)
       : openProject(dir, options)
 
-  // §11.4: recover before the API accepts a single command.
-  const recoveryReport = runRecovery({
-    db: handle.db,
-    projectId: handle.projectId,
-    dir: handle.dir,
-  })
+  // §11.4: recover before the API accepts a single command — except
+  // read-only opens, which MUST NOT mutate the source (repairs are
+  // the owner's writable open's job).
+  const recoveryReport: RecoveryReport = handle.readOnly
+    ? { checksRun: [], repairs: [], integrityErrors: [] }
+    : runRecovery({
+        db: handle.db,
+        projectId: handle.projectId,
+        dir: handle.dir,
+      })
 
   const commands = new CommandRegistry<CommandContext>()
   registerNodeHandlers(commands)
@@ -123,10 +133,19 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   }
 
   // §11.4 lazy rebuild: missing thumbnail derivatives re-enqueue on
-  // every open (deleted derivatives dir, pre-076 project). The
-  // renderer drains the queue in the background once a window is up.
+  // every WRITABLE open (deleted derivatives dir, pre-076 project).
+  // The renderer drains the queue in the background once a window is
+  // up. A read-only source serves whatever derivatives it has.
   const derivCtx = { db: handle.db, now: () => new Date().toISOString() }
-  enqueueMissingThumbnails(derivCtx, handle.dir)
+  if (!handle.readOnly) enqueueMissingThumbnails(derivCtx, handle.dir)
+
+  const readOnlyError = (): Error & { code: string } => {
+    const err = new Error(
+      'this project is open read-only (§11.1 source open) — writes are refused',
+    ) as Error & { code: string }
+    err.code = 'EW_READ_ONLY'
+    return err
+  }
 
   return {
     info(): ProjectInfo {
@@ -141,13 +160,26 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
         revision,
       }
     },
-    execute: (envelope) => dispatcher.execute(envelope),
+    readOnly: handle.readOnly,
+    execute: (envelope) =>
+      handle.readOnly
+        ? {
+            status: 'error',
+            commandId: envelope.commandId,
+            code: 'EW_READ_ONLY',
+            message: 'this project is open read-only (§11.1 source open)',
+          }
+        : dispatcher.execute(envelope),
     query: (name, args) => queries.run(queryCtx, name, args),
-    setSetting: (key, value) => setProjectSetting(handle.db, handle.projectId, key, value),
+    setSetting: (key, value) => {
+      if (handle.readOnly) throw readOnlyError()
+      setProjectSetting(handle.db, handle.projectId, key, value)
+    },
     subscribe: (fn) => dispatcher.subscribe(fn),
     recovery: () => recoveryReport,
-    importAsset: (input) =>
-      importAsset(
+    importAsset: (input) => {
+      if (handle.readOnly) return Promise.reject(readOnlyError())
+      return importAsset(
         {
           db: handle.db,
           projectId: handle.projectId,
@@ -156,9 +188,13 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
           now: () => new Date().toISOString(),
         },
         input,
-      ),
-    claimThumbnailJob: () => claimNextThumbnailJob(derivCtx, handle.dir),
-    completeThumbnailJob: (input) => completeThumbnailJob(derivCtx, handle.dir, input),
+      )
+    },
+    // Claiming mutates the queue: a read-only source reports drained
+    // and lands nothing — it serves the derivatives it already has.
+    claimThumbnailJob: () => (handle.readOnly ? null : claimNextThumbnailJob(derivCtx, handle.dir)),
+    completeThumbnailJob: (input) =>
+      handle.readOnly ? null : completeThumbnailJob(derivCtx, handle.dir, input),
     close: () => handle.close(),
   }
 }
