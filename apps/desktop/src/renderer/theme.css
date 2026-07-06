@@ -105,6 +105,19 @@
   --ew-link-broken-decoration: #b3403a80;
 
   --ew-node-dot-default: #8ab4d8;
+  /* §4.6 appearance-switcher dot palette (AI-IMP-109): the swatch row
+     in the charm popover. Node dots are world content, like the canvas
+     flat swatches below — deliberately theme-independent, defined once
+     and never overridden per theme. There was no prior multi-colour
+     dot palette (only the single default); this is its source. */
+  --ew-node-dot-blue: #8ab4d8;
+  --ew-node-dot-teal: #62b6a6;
+  --ew-node-dot-green: #8cc47a;
+  --ew-node-dot-gold: #e8c450;
+  --ew-node-dot-orange: #e0975a;
+  --ew-node-dot-red: #d97a72;
+  --ew-node-dot-purple: #b295d6;
+  --ew-node-dot-pink: #d987b8;
   --ew-zero-node-note-dot: #8a94a0;
   --ew-tag-default: #a8c7e8;
   --ew-color-input-empty: #000000;

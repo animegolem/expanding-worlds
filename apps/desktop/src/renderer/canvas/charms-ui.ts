@@ -13,6 +13,7 @@
  * threshold — never zoom percentage.
  */
 import { itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
+import type { NodeAppearance } from '@ew/commands'
 import { uuidv7 } from '@ew/domain'
 import type { CanvasHostHandle } from './host'
 import { navigateTo } from '../chrome/navigation'
@@ -23,6 +24,8 @@ import { openCornerPanel } from '../note/panels'
 import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { openTagPanel } from '../tags/tag-panel'
 import { assignTagByName, filterTagCompletions } from '../tags/tag-assign'
+import { importErrorNotice } from './import-surfaces'
+import { themeTokenValue } from '../theme'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 
 export interface CharmsUiHandle {
@@ -31,6 +34,37 @@ export interface CharmsUiHandle {
 
 const PAGE_GLYPH = '¶'
 const FRAME_GLYPH = '⊡'
+
+// §4.6 appearance switcher (rev 0.45, AI-IMP-109). Dot swatches source
+// their colour from theme.css tokens — the raw-hex guard forbids
+// literals here, so the click resolves the token to its stored hex via
+// themeTokenValue (the same move the zero-node dot colour makes). There
+// was no canonical multi-colour dot palette before this ticket; these
+// tokens ARE it.
+const DOT_SWATCH_TOKENS = [
+  '--ew-node-dot-blue',
+  '--ew-node-dot-teal',
+  '--ew-node-dot-green',
+  '--ew-node-dot-gold',
+  '--ew-node-dot-orange',
+  '--ew-node-dot-red',
+  '--ew-node-dot-purple',
+  '--ew-node-dot-pink',
+] as const
+
+// The built-in icon set. The placement renderer draws ONE generic icon
+// glyph regardless of the stored value (§4.6 icon appearance), so this
+// list defines the vocabulary of icon ids the switcher can commit; the
+// glyph shown is the picker's own affordance. 'star'/'pin' match the
+// values already used in seeds and tests.
+const BUILTIN_ICONS: ReadonlyArray<{ id: string; glyph: string }> = [
+  { id: 'star', glyph: '★' },
+  { id: 'pin', glyph: '◉' },
+  { id: 'flag', glyph: '⚑' },
+  { id: 'heart', glyph: '♥' },
+  { id: 'bolt', glyph: '⚡' },
+  { id: 'leaf', glyph: '☘' },
+]
 
 interface CharmEntry {
   group: HTMLDivElement
@@ -122,6 +156,170 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   chipRow.dataset['testid'] = 'charm-tag-chip-row'
   chipRow.style.cssText = 'display:flex;gap:4px;align-items:center;flex-wrap:wrap;'
   chips.appendChild(chipRow)
+
+  // ------------------------------------------- appearance popover
+  // §4.6 rev 0.45: the appearance charm opens this popover — dot
+  // swatches · icon set · image… · card. One charm popover at a time
+  // (opening appearance folds the tag chips and vice versa). Built
+  // once; every pick acts on the CURRENT single selection and folds.
+  const appearance = document.createElement('div')
+  appearance.dataset['testid'] = 'charm-appearance-popover'
+  appearance.style.cssText =
+    'position:absolute;display:none;flex-direction:column;gap:6px;' +
+    'max-width:210px;padding:6px 7px;background:var(--ew-surface-menu);' +
+    'border:1px solid var(--ew-border);border-radius:7px;pointer-events:auto;' +
+    'font-size:11px;color:var(--ew-text);'
+  layer.appendChild(appearance)
+  let appearanceFor: string | null = null
+
+  function closeAppearance(): void {
+    appearanceFor = null
+    appearance.style.display = 'none'
+  }
+  function closeChips(): void {
+    chipsFor = null
+    chips.style.display = 'none'
+  }
+
+  /** Commit one appearance to the selected node and fold the popover.
+   * The scene re-renders through the ordinary onSceneApplied path — no
+   * reselection. The handler's inverse restores the prior appearance
+   * (one undo). */
+  function commitAppearance(next: NodeAppearance): void {
+    const placement = selectedPlacement()
+    if (!placement) return
+    void execute('SetNodeAppearance', { nodeId: placement.nodeId, appearance: next })
+    closeAppearance()
+  }
+
+  // Dot swatch row.
+  const dotRow = document.createElement('div')
+  dotRow.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap;'
+  for (const token of DOT_SWATCH_TOKENS) {
+    const name = token.replace('--ew-node-dot-', '')
+    const swatch = document.createElement('button')
+    swatch.type = 'button'
+    swatch.dataset['testid'] = `appearance-dot-${name}`
+    swatch.style.cssText =
+      'width:18px;height:18px;padding:0;border-radius:50%;cursor:pointer;' +
+      `border:1px solid var(--ew-border-strong);background:var(${token});`
+    const tip = tooltip(swatch, { name: `Dot — ${name}` })
+    disposers.push(tip.destroy)
+    swatch.addEventListener('click', (event) => {
+      event.stopPropagation()
+      // Resolve the token to its stored hex at click time (guard-safe).
+      commitAppearance({ kind: 'dot', color: themeTokenValue(token) })
+    })
+    dotRow.appendChild(swatch)
+  }
+  appearance.appendChild(dotRow)
+
+  // Built-in icon row.
+  const iconRow = document.createElement('div')
+  iconRow.style.cssText = 'display:flex;gap:4px;align-items:center;flex-wrap:wrap;'
+  for (const icon of BUILTIN_ICONS) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.dataset['testid'] = `appearance-icon-${icon.id}`
+    button.textContent = icon.glyph
+    button.style.cssText =
+      'width:22px;height:22px;padding:0;display:grid;place-items:center;cursor:pointer;' +
+      'border:1px solid var(--ew-border-strong);border-radius:5px;' +
+      'background:var(--ew-surface-raised);color:var(--ew-text);font-size:13px;'
+    const tip = tooltip(button, { name: `Icon — ${icon.id}` })
+    disposers.push(tip.destroy)
+    button.addEventListener('click', (event) => {
+      event.stopPropagation()
+      commitAppearance({ kind: 'icon', icon: icon.id })
+    })
+    iconRow.appendChild(button)
+  }
+  appearance.appendChild(iconRow)
+
+  // image… + card row.
+  const actionRow = document.createElement('div')
+  actionRow.style.cssText = 'display:flex;gap:5px;align-items:center;'
+
+  // image… routes through the ordinary §6.1 import pipeline (picker →
+  // importAsset → SetNodeAppearance image). A hidden file input kept in
+  // the DOM (opacity 0) so e2e setInputFiles can reach it, mirroring the
+  // background file input.
+  const imageInput = document.createElement('input')
+  imageInput.type = 'file'
+  imageInput.accept = 'image/*'
+  imageInput.dataset['testid'] = 'appearance-image-input'
+  imageInput.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;'
+  async function onImagePicked(event: Event): Promise<void> {
+    const input = event.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return // cancel imports nothing
+    const placement = selectedPlacement()
+    if (!placement) return
+    const nodeId = placement.nodeId // bind before the await (selection may move)
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const imported = await window.ew.project.importAsset({
+      bytes,
+      originalFilename: file.name.length > 0 ? file.name : 'image',
+    })
+    if (!imported.ok) {
+      importErrorNotice(imported.message)
+      return
+    }
+    void execute('SetNodeAppearance', {
+      nodeId,
+      appearance: { kind: 'image', assetId: imported.assetId, crop: null },
+    })
+    closeAppearance()
+  }
+  imageInput.addEventListener('change', (event) => void onImagePicked(event))
+  appearance.appendChild(imageInput)
+
+  const imageButton = document.createElement('button')
+  imageButton.type = 'button'
+  imageButton.dataset['testid'] = 'appearance-image'
+  imageButton.textContent = 'image…'
+  imageButton.style.cssText =
+    'flex:1;height:22px;padding:0 8px;cursor:pointer;border:1px solid var(--ew-border-strong);' +
+    'border-radius:5px;background:var(--ew-surface-raised);color:var(--ew-text);font:inherit;font-size:11px;'
+  const imageTip = tooltip(imageButton, { name: 'Image — pick a file to import' })
+  disposers.push(imageTip.destroy)
+  imageButton.addEventListener('click', (event) => {
+    event.stopPropagation()
+    imageInput.click()
+  })
+  actionRow.appendChild(imageButton)
+
+  // card: enabled only while a note is attached (§4.6). NOT a native
+  // `disabled` — disabled controls swallow pointer events, so the
+  // "why" tooltip would never fire; aria-disabled + a no-op click keep
+  // it hoverable.
+  const cardButton = document.createElement('button')
+  cardButton.type = 'button'
+  cardButton.dataset['testid'] = 'appearance-card'
+  cardButton.textContent = 'card'
+  cardButton.style.cssText =
+    'flex:1;height:22px;padding:0 8px;cursor:pointer;border:1px solid var(--ew-border-strong);' +
+    'border-radius:5px;background:var(--ew-surface-raised);color:var(--ew-text);font:inherit;font-size:11px;'
+  const cardTip = tooltip(cardButton, { name: 'Card — display the attached note' })
+  disposers.push(cardTip.destroy)
+  function setCardEnabled(hasNote: boolean): void {
+    cardButton.dataset['disabled'] = hasNote ? 'false' : 'true'
+    cardButton.style.opacity = hasNote ? '1' : '0.4'
+    cardButton.style.cursor = hasNote ? 'pointer' : 'default'
+    cardTip.update(
+      hasNote
+        ? { name: 'Card — display the attached note' }
+        : { name: 'Card needs a note — attach one first' },
+    )
+  }
+  cardButton.addEventListener('click', (event) => {
+    event.stopPropagation()
+    if (cardButton.dataset['disabled'] === 'true') return
+    commitAppearance({ kind: 'card' })
+  })
+  actionRow.appendChild(cardButton)
+  appearance.appendChild(actionRow)
 
   function renderCompletions(): void {
     const matches =
@@ -266,7 +464,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     await host.gateway.execute(commandType, payload)
   }
 
-  // §8.4 bar: crop · flip H · flip V · | · make-canvas · note · # · lock.
+  // §8.4 bar: crop · flip H · flip V · | · appearance · make-canvas ·
+  // note · # · lock.
   const cropButton = barButton(
     'charm-crop',
     '⬚',
@@ -285,6 +484,24 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     if (placement) void execute('FlipPlacement', { placementId: placement.id, axis: 'y' })
   })
   divider()
+  barButton(
+    'charm-appearance',
+    '◑',
+    { name: 'Appearance — dot, icon, image, or card' },
+    () => {
+      const placement = selectedPlacement()
+      if (!placement) return
+      if (appearanceFor === placement.id) {
+        closeAppearance()
+        return
+      }
+      appearanceFor = placement.id
+      closeChips() // one charm popover at a time (§4.8 idiom)
+      setCardEnabled(placement.noteId !== null)
+      appearance.style.display = 'flex'
+      schedule()
+    },
+  )
   const makeCanvasButton = barButton('charm-make-canvas', FRAME_GLYPH, { name: 'Make canvas' }, () => {
     const placement = selectedPlacement()
     if (!placement || placement.childCanvasId) return
@@ -305,6 +522,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       return
     }
     chipsFor = placement.id
+    closeAppearance() // one charm popover at a time
     addInput.value = ''
     addCompletions.style.display = 'none'
     void (async () => {
@@ -520,10 +738,20 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
         chipsFor = null
         chips.style.display = 'none'
       }
+      if (appearanceFor === selected.id) {
+        appearance.style.left = `${bottomCenter.x - barWidth / 2}px`
+        appearance.style.top = `${bottomCenter.y + 44}px`
+        // Keep card's enabled state fresh if a note is attached/detached
+        // while the popover is open.
+        setCardEnabled(selected.noteId !== null)
+      } else {
+        closeAppearance()
+      }
     } else {
       bar.style.display = 'none'
       chipsFor = null
       chips.style.display = 'none'
+      closeAppearance()
     }
   }
 
