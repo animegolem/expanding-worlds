@@ -19,6 +19,9 @@ domain behavior.
   validated. Fill Issues Encountered honestly, including deviations.
 - End every implementation session with an `RAG/AI-LOG/` entry (the
   handoff to the next session), using its template.
+- `RAG/DESIGN-QUEUE.md` lists decisions needing a design
+  conversation before their work proceeds; prune like the flush
+  list — resolved items move into the RFC.
 - `RAG/HUMAN-TESTING.md` is the owner-validation queue: append an
   entry (ticket + what to try) whenever landed work needs a human
   feel pass; the owner flushes it intermittently. Never check items

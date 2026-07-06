@@ -6,53 +6,20 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 6 | 2 |
+| In Progress | 0 | 0 |
+| Planned | 7 | 2 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 12 | 98 |
-| **Total** | **19** | **101** |
-
-## In Progress
-
-### [[AI-EPIC-010-hands-on-hardening|EPIC-010: Hands on hardening]]
-> The owner is now using the board daily and comparing it directly
-
-**IMPs:**
-- [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — completed
-- [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — completed
-- [[AI-IMP-032-grid-and-stage|IMP-032]] Grid and stage — completed
-- [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — completed
-- [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — completed
-- [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — completed
-- [[AI-IMP-036-dev-mode-hardening|IMP-036]] Dev mode hardening — completed
-- [[AI-IMP-037-system-font-picker|IMP-037]] System font picker — completed
-- [[AI-IMP-038-two-arrows|IMP-038]] Two arrows — completed
-- [[AI-IMP-039-legible-arrow-creation|IMP-039]] Legible arrow creation — completed
-- [[AI-IMP-040-render-fidelity|IMP-040]] Render fidelity — completed
-- [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
-- [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
-- [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
-- [[AI-IMP-082-resize-snapping|IMP-082]] Resize snapping — completed
-- [[AI-IMP-083-note-panel-sizing-and-big-editor|IMP-083]] Note panel sizing and big editor — completed
-- [[AI-IMP-084-card-appearance-and-place-on-board|IMP-084]] Card appearance and place on board — completed
-- [[AI-IMP-085-review-ingest-hardening|IMP-085]] Review ingest hardening — completed
-- [[AI-IMP-086-compound-commands|IMP-086]] Compound commands — completed
-- [[AI-IMP-087-label-outline-avoidance|IMP-087]] Label outline avoidance — completed
-- [[AI-IMP-095-token-exists-guard|IMP-095]] Token exists guard — completed
-- [[AI-IMP-096-checkpoint-on-suspend|IMP-096]] Checkpoint on suspend — completed
-- [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
-- [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — completed
-- [[AI-IMP-099-grid-lod-crossfade|IMP-099]] Grid lod crossfade — completed
-- [[AI-IMP-100-panel-aware-flyto|IMP-100]] Panel aware flyto — planned
-- [[AI-IMP-101-trapped-modals|IMP-101]] Trapped modals — completed
-
----
+| Completed | 13 | 99 |
+| **Total** | **20** | **102** |
 
 ## Planned
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
 > RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
+
+**IMPs:**
+- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — backlog
 
 ---
 
@@ -63,6 +30,9 @@
 
 ### [[AI-EPIC-016-context-click-menus|EPIC-016: Context click menus]]
 > Right-click surfaces have accreted per-feature rather than by
+
+**IMPs:**
+- [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
 
 ---
 
@@ -81,6 +51,11 @@
 
 ---
 
+### [[AI-EPIC-020-connector-store|EPIC-020: Connector store]]
+> Revs 0.33–0.44 shaped six connector citizens (booru drops,
+
+---
+
 ## Anomalies
 
 ### Status Mismatches
@@ -95,7 +70,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3832 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3863 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1373 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (938 LOC)
@@ -114,17 +89,17 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
+- apps/desktop/src/renderer/note/panels.ts (597 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/renderer/note/panels.ts (563 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/pin.test.ts (558 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
+- apps/desktop/src/renderer/tags/TagPanel.svelte (526 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/nodes.ts (522 LOC)
-- apps/desktop/src/renderer/tags/TagPanel.svelte (521 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
@@ -175,7 +150,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>12 EPICs, 98 IMPs completed</summary>
+<summary>13 EPICs, 99 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -228,6 +203,33 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-027-decoration-geometry-pass|IMP-027]] Decoration geometry pass — completed
   - [[AI-IMP-028-delete-zorder-safety-nets|IMP-028]] Delete zorder safety nets — completed
   - [[AI-IMP-029-render-quality-and-selection-fidelity|IMP-029]] Render quality and selection fidelity — completed
+- [[AI-EPIC-010-hands-on-hardening|EPIC-010]] Hands on hardening — 2026-07-06
+  - [[AI-IMP-030-text-interactivity|IMP-030]] Text interactivity — completed
+  - [[AI-IMP-031-rotation-fidelity|IMP-031]] Rotation fidelity — completed
+  - [[AI-IMP-032-grid-and-stage|IMP-032]] Grid and stage — completed
+  - [[AI-IMP-033-orientation-snap-and-bg-notice|IMP-033]] Orientation snap and bg notice — completed
+  - [[AI-IMP-034-text-sizing-and-styling|IMP-034]] Text sizing and styling — completed
+  - [[AI-IMP-035-draw-constraints-and-arrow-proportions|IMP-035]] Draw constraints and arrow proportions — completed
+  - [[AI-IMP-036-dev-mode-hardening|IMP-036]] Dev mode hardening — completed
+  - [[AI-IMP-037-system-font-picker|IMP-037]] System font picker — completed
+  - [[AI-IMP-038-two-arrows|IMP-038]] Two arrows — completed
+  - [[AI-IMP-039-legible-arrow-creation|IMP-039]] Legible arrow creation — completed
+  - [[AI-IMP-040-render-fidelity|IMP-040]] Render fidelity — completed
+  - [[AI-IMP-041-shift-resize-aspect|IMP-041]] Shift resize aspect — completed
+  - [[AI-IMP-042-shift-axis-move|IMP-042]] Shift axis move — completed
+  - [[AI-IMP-043-shift-overrides-snapping|IMP-043]] Shift overrides snapping — completed
+  - [[AI-IMP-082-resize-snapping|IMP-082]] Resize snapping — completed
+  - [[AI-IMP-083-note-panel-sizing-and-big-editor|IMP-083]] Note panel sizing and big editor — completed
+  - [[AI-IMP-084-card-appearance-and-place-on-board|IMP-084]] Card appearance and place on board — completed
+  - [[AI-IMP-085-review-ingest-hardening|IMP-085]] Review ingest hardening — completed
+  - [[AI-IMP-086-compound-commands|IMP-086]] Compound commands — completed
+  - [[AI-IMP-087-label-outline-avoidance|IMP-087]] Label outline avoidance — completed
+  - [[AI-IMP-095-token-exists-guard|IMP-095]] Token exists guard — completed
+  - [[AI-IMP-096-checkpoint-on-suspend|IMP-096]] Checkpoint on suspend — completed
+  - [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — completed
+  - [[AI-IMP-099-grid-lod-crossfade|IMP-099]] Grid lod crossfade — completed
+  - [[AI-IMP-100-panel-aware-flyto|IMP-100]] Panel aware flyto — completed
+  - [[AI-IMP-101-trapped-modals|IMP-101]] Trapped modals — completed
 - [[AI-EPIC-011-release-engineering|EPIC-011]] Release engineering — 2026-07-05
   - [[AI-IMP-050-remote-push-and-ci|IMP-050]] Remote push and ci — completed
   - [[AI-IMP-051-electron-builder-packaging|IMP-051]] Electron builder packaging — completed

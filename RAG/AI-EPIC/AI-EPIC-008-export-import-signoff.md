@@ -22,6 +22,15 @@ still undecided.
 
 ## Proposed Solution(s)
 
+> Owner direction (2026-07-06, strategy review): alongside the §16
+> portable export, DATA SAFETY rides a LOCAL GIT STORE — the
+> checkpoint/sleep moments (AI-IMP-096) also snapshot the database
+> into a local repo (a poor-man's event log; composes with the rev
+> 0.24 session-snapshot shape), and an Advanced setting exposes
+> connect/upload to a remote. Design pass on cadence, retention,
+> and repo layout is queued in RAG/DESIGN-QUEUE.md. The export
+> size preflight (AI-IMP-093) rides this epic.
+
 Decide the export container format (closing open question 11), then
 implement export per §16 — manifest, schema version, database or
 normalized data, Markdown note exports, original assets, full

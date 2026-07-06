@@ -28,6 +28,10 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Panel-aware flights** (AI-IMP-100, 2026-07-06): follow a
+  wiki link to a placed image — the target should land beside the
+  opened note, never under it (your Beyrl → The Gang case).
+
 - [ ] **Modal coverage** (AI-IMP-101, 2026-07-06): open the big
   editor — the dock/rail/toasts now sit UNDER the backdrop (click
   where the dock is: it closes the editor instead). Also: the

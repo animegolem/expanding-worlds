@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.43         | 6 July 2026      |
+| Accepted for Phase 1 | 0.44         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -610,6 +610,15 @@ project is trivial by construction. The composition is the point:
 the quality list is the WORKLIST for replace-file (rev 0.35), and
 source-identity dedupe keeps every upgrade fixed against connector
 re-scans.
+
+**Reverse image search (rev 0.44 — artist request, connector
+citizen).** Right-click an image → "find info": the hash's bytes go
+to a reverse-search connector (SauceNAO for anime-adjacent, Yandex,
+Google as available APIs allow) and matches come back as candidate
+sources — feeding replace-file (better versions) and source
+attribution (the artist's manual habit today). Also sensible as a
+library-view verb. Per-engine connectors behind the store; the
+§15 amendment covers their traffic like every connector.
 
 **External libraries and the page picker (rev 0.41 — musings from
 the artist session, low priority, plausibility-confirmed).** Two
@@ -2378,6 +2387,18 @@ master toggle is an application setting; per-feature enablement
 whose blast radius is a project's data is project-scoped, per this
 section's tier rule.
 
+**Refinement (rev 0.44, owner decision): AI features ARE AI
+connectors.** No native AI features are anticipated — the graph is
+exposed at rest (a database an external agent interrogates; the
+OQ 29/30 shapes work outside the app). The gate therefore
+simplifies: the master AI toggle governs the connector store's AI
+section — "enable AI connectors" — and each attached AI connector
+is its own per-feature toggle. If the store ever opens to
+community contribution, a contributed plugin MUST declare the AI
+flag when any part of it is AI-enabled; undeclared AI is grounds
+for delisting. Two-deliberate-acts and never-advertise stand
+unchanged.
+
 **Theming.** Three themes: dark (default), light, and glass — a
 translucent window whose chrome blurs what lies behind it. Glass is
 macOS-only and falls back to dark elsewhere. All chrome must read on
@@ -2829,7 +2850,14 @@ without adding a library concept to the domain:
   action — an ordinary trash command over the example records and
   itself. Unmissable because it is open; not naggy because it is
   just a note; gone forever after clearing. The tutorial is made of
-  the app's own furniture, which is itself the lesson.
+  the app's own furniture, which is itself the lesson. Additions
+(rev 0.44, owner): the shipped placeholder set is provisional —
+the first tester curates the real artists, layouts, and notes (an
+export the owner supplies); clearing the example can SPAWN the
+user into a real world (the empty-library moment should land
+somewhere useful, not nowhere); a settings action can RE-ADD the
+example later; and the create-new-project / switch moments MAY
+grow a small wizard where library designation naturally lives.
 
 The gallery depends on the thumbnail derivative pipeline —
 renderer-generated over Chromium codecs, service-owned files (rev
@@ -3724,7 +3752,10 @@ Accepted for the Phase 1 prototype:
   default) plus a per-feature toggle (off); nothing AI runs,
   touches project data, or phones out until both are set, and the
   default experience never advertises them. The agent seat and the
-  pitch bible stay shaped in open questions 30 and 29.
+  pitch bible stay shaped in open questions 30 and 29. Refined at
+  rev 0.44: AI features ARE AI connectors — the master toggle
+  governs the store's AI section, and contributed plugins must
+  declare the AI flag.
 
 - Ongoing conditions get a rail perch that exists exactly as long
   as the condition does; transitions get toasts; the status strip

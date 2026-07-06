@@ -7,8 +7,8 @@ tags:
   - feel
   - polish
 date_created: 2026-07-05
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-06
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-030
   - AI-IMP-031
@@ -27,7 +27,21 @@ AI_IMP_spawned:
   - AI-IMP-082
   - AI-IMP-083
   - AI-IMP-084
+  - AI-IMP-085
+  - AI-IMP-086
+  - AI-IMP-087
+  - AI-IMP-095
+  - AI-IMP-096
+  - AI-IMP-098
+  - AI-IMP-099
+  - AI-IMP-100
+  - AI-IMP-101
 ---
+
+> CLOSED 2026-07-06 (owner decision at the strategy review): a
+> rolling epic structurally cannot finish, and this one absorbed
+> thirty IMPs across three waves. Hands-on findings now land in
+> BOUNDED epics (AI-EPIC-016 onward); AI-IMP-097 reparented there.
 
 # AI-EPIC-010-hands-on-hardening
 

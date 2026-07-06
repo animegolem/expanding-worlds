@@ -6,12 +6,12 @@ tags:
   - canvas
   - notes
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-098]
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-100-panel-aware-flyto
@@ -64,13 +64,13 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Fit-with-inset in the engine; units (inset reduces the
+- [x] Fit-with-inset in the engine; units (inset reduces the
       effective viewport; zero inset byte-identical to today).
-- [ ] Activation paths derive the panel inset via one shared
+- [x] Activation paths derive the panel inset via one shared
       helper; flight frames placement beside the panel.
-- [ ] e2e: wiki-link jump → placement bounds ∩ panel bounds = ∅
+- [x] e2e: wiki-link jump → placement bounds ∩ panel bounds = ∅
       and placement fully on screen.
-- [ ] Full gates; HUMAN-TESTING entry on merge.
+- [x] Full gates; HUMAN-TESTING entry on merge.
 
 ### Acceptance Criteria
 
@@ -81,6 +81,18 @@ in the region beside the opened panel — nothing the flight framed
 sits underneath the note.
 
 ### Issues Encountered
+
+Opus-built, lead-transcribed. fitTarget gained the screen inset
+(zero-inset byte-identical, unit-proven); the note layer arms a
+ONE-SHOT pending inset on Camera because host.flyTo was a closed
+surface mid-wave — accepted with its consumed-once/inert-unset unit
+proof; EPIC-016's ladder pass may replace it with an explicit
+param. Tethered panels always spawn right of the node, so the
+reservation is a 368px right inset. Adopted at jumpToPlacement
+(wiki links + §7.3 chooser), UsesList both branches, TagPanel
+fly-to. Non-vacuity: the e2e fails with the reservation disabled.
+Gates: 292 engine / 37 desktop units, lint, 27 e2e on branch + 28
+combined post-merge.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
