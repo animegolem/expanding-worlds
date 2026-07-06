@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 0 | 0 |
-| Planned | 8 | 4 |
+| Planned | 8 | 3 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 100 |
+| Completed | 13 | 101 |
 | **Total** | **21** | **105** |
 
 ## Planned
@@ -32,7 +32,7 @@
 > Right-click surfaces have accreted per-feature rather than by
 
 **IMPs:**
-- [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
+- [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — completed
 - [[AI-IMP-105-tag-lifecycle-commands|IMP-105]] Tag lifecycle commands — completed
 - [[AI-IMP-106-small-state-batch|IMP-106]] Small state batch — planned
 - [[AI-IMP-107-design-session-one|IMP-107]] Design session one — planned
@@ -160,7 +160,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 100 IMPs completed</summary>
+<summary>13 EPICs, 101 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

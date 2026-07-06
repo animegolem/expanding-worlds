@@ -40,8 +40,20 @@ repo's front door is a developer README. Three surfaces:
   files on disk are never touched or deleted), one item can live
   many places, notes/boards ride the item. The tester's "I
   would've deleted 7 pictures off my drive without knowing" is the
-  exact fear this defuses. Shape at activation; pairs with the
-  demo curation M-ticket.
+  exact fear this defuses. Refined same conversation: the guide
+  ASKS WHAT YOU PLAN TO DO, then describes a few suited workflows
+  (grounding use cases: reference boards for a painter, a comic /
+  pitch bible, the tester's own "map story events on a timeline")
+  rather than touring features. Shape at activation; pairs with
+  the demo curation M-ticket.
+- **The composability principle** (owner, 2026-07-06 — README /
+  strategy-statement language): each tool is powerful but
+  deliberately narrow, and layers reveal themselves one at a time —
+  "you can learn how notes work, you don't need to know canvas;
+  you can only use the shape tool." The north-star discovery arc:
+  place shots → wait, I can make notes → wait, I have a canvas? →
+  six months later: wait, I built a database? Free-form on paper,
+  complexity hidden to the extent possible.
 
 ## Proposed Solution(s)
 

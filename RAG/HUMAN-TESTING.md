@@ -111,6 +111,12 @@ record — history lives in the tickets.
   source from the new live ⧉ charm, browse the mini grid, set the
   tag border, drag a cell onto the board — does the pull feel like
   one motion?
+- [ ] **Image drop on an open note** (AI-IMP-097, 2026-07-06): drag
+  an image from Finder onto a note panel and onto the big editor —
+  it should land on the board beside the note (view center if the
+  note isn't placed on this board) with the "images live on the
+  board" toast; text drops/paste into the editor must behave
+  exactly as before.
 - [ ] **Light-theme legibility over art** (EPIC-013, carried):
   chrome and scrim chips readable over bright and busy boards in
   the light theme.

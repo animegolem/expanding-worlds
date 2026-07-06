@@ -5,12 +5,12 @@ tags:
   - Implementation
   - notes
   - import
-kanban_status: backlog
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-016-context-click-menus]]
 confidence_score: 0.85
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-097-note-pane-image-drop
@@ -56,12 +56,12 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Image drop on tethered/pinned panel and big editor imports to
+- [x] Image drop on tethered/pinned panel and big editor imports to
       the active board near the note's placement + toast; no CM
       default interference for non-image drops.
-- [ ] e2e: drop onto the panel → placement exists near the note,
+- [x] e2e: drop onto the panel → placement exists near the note,
       toast visible, note body unchanged.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -79,3 +79,15 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Agent-built (worktree), lead-reviewed and merged at d34269b. The
+close ritual ran a session later than the merge: the lead was
+interrupted mid-merge by a context outage, so gates re-ran on main
+2026-07-06 evening — build clean, desktop unit 5 files green, lint
+clean, panels/notes/import e2e 26 passed including the new §6.1
+panel-drop spec. Notes from review: drop interception is
+capture-phase so CodeMirror never sees file drags (text drops keep
+CM behavior, per out-of-scope); `importFilesAt` was extracted to
+module scope in import-surfaces.ts as a mechanical move with the
+board paths passing unchanged; drop-point derivation falls back to
+view center for anchorless/cross-canvas panels.
