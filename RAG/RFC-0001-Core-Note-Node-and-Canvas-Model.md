@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.47         | 6 July 2026      |
+| Accepted for Phase 1 | 0.48         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1181,6 +1181,10 @@ Background, Edit Background Position, Reset Background Transform, and
 Remove Background. A placement backed by an image MAY expose Set as
 Background. Setting or clearing the canvas background color is an
 ordinary durable command available alongside these operations.
+Surface (rev 0.48, ratified): a background-color row in the board
+context menu beside the background-image operations — a theme
+swatch row plus the OS color picker for arbitrary colors,
+presentation state on the canvas record.
 
 Background editing occurs through an explicit mode so the background
 cannot be accidentally selected during ordinary work. Oversized
@@ -1706,7 +1710,9 @@ small map pin with a generous hit target) opening one menu that does
 everything: click a row to jump, drag rows to reorder, ✕ to remove,
 and a bottom row to bookmark the current board. Row order IS the
 Mod+1–n shortcut binding, and each row prints its current shortcut,
-so the bindings are self-teaching. A bookmark whose target is trashed
+so the bindings are self-teaching. **Mod+D bookmarks the current
+board** (rev 0.48, ratified — browser muscle memory), equivalent to
+the menu's bottom row and printed in the pin control's tooltip. A bookmark whose target is trashed
 greys out with an In Trash label per the degradation rules below — it
 never silently vanishes from the menu. A hold-Mod switcher HUD
 (thumbnail flash of bookmarked boards) is deferred as a complement
@@ -1784,6 +1790,20 @@ are provisional feel constants, not model state.
 control and printing its keyboard shortcut, in one chip style
 app-wide, after a short delay. No control ships without one: the GUI
 is the tutorial for the keyboard-driven app.
+
+**The keymap registry (rev 0.48 — owner ask, shaped).** Keybindings
+today are per-module window listeners; every new binding deepens
+the retrofit cost. Direction: one thin REGISTRY where every
+binding is declared (id, default combo, human name, scope —
+board / global / gallery), the existing listeners migrate to
+consult it, and it becomes the single source the tooltip chips
+print from. Settings (§11.5) gains a **Keyboard** section listing
+every registered binding — view-only first ("the page most people
+never open, and the people who open it would be very mad if it
+were missing"), REBINDING deferred until the registry has proven
+itself (rebind = a settings-stored combo override the registry
+resolves before dispatch; collision detection at assignment
+time). CodeMirror's editor-local keymap stays its own world.
 
 **The ☰ menu (rev 0.45, ratified).** Top to bottom: **Undo · Redo**
 (Mod+Z · Shift+Mod+Z, printed beside the rows) · divider ·
@@ -4000,3 +4020,12 @@ Accepted for the Phase 1 prototype:
   (§14.4). Video is shaped deferred (§4.7): poster-frame still +
   play charm + windowed HTML5 overlay, Chromium-native formats
   only, no bundled transcoder.
+
+- The agenda empties (rev 0.48): background color is a board-menu
+  row (theme swatches + OS picker, §6.7); Mod+D bookmarks the
+  current board (§8.1); tethered panels scale with the world while
+  pinned stays screen-fixed (rev 0.47 §8.5); and the keymap
+  registry is shaped (§8.2) — one declaration point feeding
+  tooltips and a view-only Keyboard settings section, rebinding
+  deferred. AI-IMP-107, the first M-ticket, closes with every
+  item decided or explicitly moved to the design-letter scope.

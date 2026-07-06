@@ -6,12 +6,12 @@ tags:
   - OWNER-DELIVERABLE
   - design
 assignee: owner
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-016-context-click-menus]]
 confidence_score: 0.8
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-107-design-session-one
@@ -47,10 +47,13 @@ Agenda (proposals in RAG/DESIGN-QUEUE.md + the lead's readout):
    inventory over the PureRef reference). → design-letter scope.
 7. ~~Materialization-undo rule~~ — RATIFIED as proposed 2026-07-06
    (rev 0.47 §7.2): one structural undo, typed text survives.
-8. Canvas background color picker placement (proposal: board menu
-   row beside background image ops).
-9. Panel/card visual identity (tabled from rev 0.31).
-10. Bookmark-this-board keybind (proposal: Mod+D).
+8. ~~Canvas background color picker~~ — RATIFIED as proposed
+   2026-07-06 (rev 0.48 §6.7): board-menu row, swatches + OS
+   picker.
+9. Panel/card visual identity (tabled from rev 0.31). →
+   design-letter scope.
+10. ~~Bookmark-this-board keybind~~ — RATIFIED 2026-07-06
+    (rev 0.48 §8.1): Mod+D.
 11. ~~Swap-node bucket rule~~ — RATIFIED as proposed 2026-07-06
     (rev 0.47 §6.5): displaced node survives unplaced,
     destroy-nothing.
@@ -72,7 +75,7 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] All ten agenda items decided or explicitly re-tabled;
+- [x] All ten agenda items decided or explicitly re-tabled;
       outcomes scribed to the RFC; blocked tickets updated.
 
 ### Acceptance Criteria
@@ -89,3 +92,13 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Completed across one evening in the one-ticket-at-a-time PM flow
+(three batches + two singles) rather than one sitting — the flow
+the owner asked for mid-session and the memory now records. Items
+1-5, 7, 8, 10-12 ratified (revs 0.45-0.48); items 6 and 9
+explicitly re-tabled into the design-letter scope, which is the
+next deliverable. Every ratification unblocked its ticket the same
+hour (108/109/110 → wave two; 102/114/115 → wave three; 116, 117
+cut). The everything-scope pull was the one adjusted proposal:
+owner reshaped it to end as a place cursor over the board.
