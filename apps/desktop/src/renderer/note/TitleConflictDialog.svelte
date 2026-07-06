@@ -15,6 +15,8 @@
 </script>
 
 <script lang="ts">
+  import { overlayPortal } from './panels'
+
   let {
     conflict,
     onOpenExisting,
@@ -30,7 +32,10 @@
   } = $props()
 </script>
 
-<div class="scrim" role="presentation">
+<!-- Portals to the root overlay host (§8.8 law 2): this dialog is
+     spawned from within a note panel or the attach picker, both of
+     which are trapped in lower stacking contexts. -->
+<div class="scrim" role="presentation" use:overlayPortal>
   <div class="dialog" role="alertdialog" aria-modal="true" data-testid="title-conflict-dialog">
     <p>
       A note titled “{conflict.requestedTitle}” already exists{conflict.conflictingLifecycle ===
@@ -81,6 +86,9 @@
     align-items: center;
     justify-content: center;
     background: var(--ew-dialog-scrim);
+    /* Portaled into the root overlay host (pointer-events:none); opt
+       back into hit-testing so the scrim catches modal clicks. */
+    pointer-events: auto;
   }
 
   .dialog {

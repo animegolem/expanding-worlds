@@ -292,6 +292,33 @@ export function onBigEditorChanged(listener: (key: number | null) => void): () =
   return () => bigEditorListeners.delete(listener)
 }
 
+// §8.8 law 2 (rev 0.41): modals escape their parents. The app shell
+// registers ONE root overlay host; surfaces with a backdrop portal
+// into it so they mount above every local stacking context. The full
+// named z-ladder is EPIC-016; this registry frees the two live
+// prisoners (the big editor and the title-conflict dialog).
+let overlayHost: HTMLElement | null = null
+
+export function setOverlayHost(host: HTMLElement | null): void {
+  overlayHost = host
+}
+
+/**
+ * Svelte action: relocate `node` into the root overlay host. Only the
+ * element's DOM position moves — its Svelte bindings, event handlers,
+ * reactive updates, and scoped styles ride along untouched (the same
+ * property note-editor's `reparent` relies on for the CM buffer). If
+ * no host is registered yet the element stays put, still rendered.
+ */
+export function overlayPortal(node: HTMLElement): { destroy: () => void } {
+  if (overlayHost) overlayHost.appendChild(node)
+  return {
+    destroy() {
+      node.remove()
+    },
+  }
+}
+
 export function panelRecords(): readonly PanelRecord[] {
   return records
 }
