@@ -458,3 +458,78 @@ test('corner-charm create-and-attach is ONE command; one undo detaches and remov
 
   await app.close()
 })
+
+// AI-IMP-097: a note surface is not an embed target yet — an image
+// dropped on the panel imports through the ordinary §6.1 pipeline
+// onto the active board, BESIDE the note's placement, and a toast
+// says where it went. The note body is never touched.
+const PNG_1X1_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQAB' +
+  'h6FO1AAAAABJRU5ErkJggg=='
+
+test('image dropped on a note panel lands on the board beside it (§6.1, AI-IMP-097)', async () => {
+  const { app, win } = await launchApp('ew-e2e-note-drop-')
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const { noteId, nodeId } = await seedPlacedNote(win, 'DropTarget', 'quiet body', {
+    x: 400,
+    y: 300,
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Open the note tethered beside its dot.
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/DropTarget/)
+
+  // The seeded dot's placement position — the anchor the drop places
+  // beside (read it rather than assume the pin's world point).
+  type SceneItem = { itemKind: string; nodeId: string; x: number; y: number; appearanceKind: string }
+  const scene = () => runQuery<{ items: SceneItem[] }>(win, 'getCanvasScene', { canvasId })
+  const notePlacement = (await scene()).items.find(
+    (item) => item.itemKind === 'placement' && item.nodeId === nodeId,
+  )!
+  expect(notePlacement).toBeTruthy()
+
+  // Drop a real PNG File onto the tethered panel (dispatchEvent with a
+  // DataTransfer — HTML5 DnD is not synthesizable from raw mouse moves
+  // under Playwright+Electron).
+  await win.evaluate((base64) => {
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+    const dt = new DataTransfer()
+    dt.items.add(new File([bytes], 'dropped.png', { type: 'image/png' }))
+    const panel = document.querySelector('[data-testid="note-pane"]')!
+    const rect = panel.getBoundingClientRect()
+    panel.dispatchEvent(
+      new DragEvent('drop', {
+        dataTransfer: dt,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+  }, PNG_1X1_BASE64)
+
+  // The image imports onto the board as a second placement (the note's
+  // node is untouched; a brand-new image node carries it).
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+  const imagePlacement = (await scene()).items.find(
+    (item) => item.itemKind === 'placement' && item.appearanceKind === 'image',
+  )!
+  expect(imagePlacement).toBeTruthy()
+
+  // Placed BESIDE the note: to its right, and near it.
+  expect(imagePlacement.x).toBeGreaterThan(notePlacement.x)
+  expect(
+    Math.hypot(imagePlacement.x - notePlacement.x, imagePlacement.y - notePlacement.y),
+  ).toBeLessThan(300)
+
+  // A word about where it went.
+  await expect(win.getByTestId('board-notice')).toContainText('Images live on the board')
+
+  // The note body is exactly as seeded — the drop never reached CM.
+  const note = await runQuery<{ body: string }>(win, 'getNote', { noteId })
+  expect(note.body).toBe('quiet body')
+
+  await app.close()
+})

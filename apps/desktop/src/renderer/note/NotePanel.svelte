@@ -12,6 +12,7 @@
   import { uuidv7, titleKey } from '@ew/domain'
   import { itemWorldAABB } from '@ew/canvas-engine'
   import type { CanvasHostHandle } from '../canvas/host'
+  import { importFilesAt } from '../canvas/import-surfaces'
   import { navigateTo } from '../chrome/navigation'
   import { tooltip } from '../chrome/tooltip'
   import { LinkResolution } from './link-resolution'
@@ -590,6 +591,62 @@
     pinPanel(record.key, pos)
   }
 
+  // §6.1 note-pane image drop (AI-IMP-097): a note surface is not an
+  // embed target yet (that waits on AI-EPIC-018) — so an image dropped
+  // on the panel imports through the ORDINARY pipeline onto the active
+  // board, placed BESIDE the note's placement. World point per anchor
+  // kind: a live placement → just right of its node; a provisional pin
+  // point → the point itself; corner/anchorless/stale → the view
+  // center. Text drops never reach here (we only claim file drags), so
+  // CM keeps its own drop behavior.
+  function imageDropWorld(): { x: number; y: number } {
+    const camera = handle.controller.camera
+    const anchor = record.anchor
+    if (anchor.kind === 'placement' && anchor.canvasId === handle.canvasId) {
+      const item = handle.controller.items().find((candidate) => candidate.id === anchor.placementId)
+      const aabb = item ? itemWorldAABB(item) : null
+      if (aabb) {
+        const gap = 32 / camera.zoom // a constant screen gap, in world units
+        return { x: aabb.x + aabb.width + gap, y: aabb.y }
+      }
+    }
+    if (anchor.kind === 'point' && anchor.canvasId === handle.canvasId) {
+      return { x: anchor.x, y: anchor.y }
+    }
+    const view = viewportSize()
+    return camera.screenToWorld({ x: view.width / 2, y: view.height / 2 })
+  }
+
+  // Capture phase so we claim an image drop before CodeMirror sees it
+  // (and stopPropagation keeps CM out of file drops entirely). A text
+  // drag carries no 'Files' type, so we never preventDefault it — CM's
+  // own drop stays live.
+  function onSurfaceDragOver(event: DragEvent): void {
+    if (!event.dataTransfer?.types.includes('Files')) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+  }
+
+  function onSurfaceDrop(event: DragEvent): void {
+    const dt = event.dataTransfer
+    if (!dt || dt.files.length === 0) return // not a file drop → leave to CM
+    event.preventDefault()
+    event.stopPropagation()
+    const images = [...dt.files].filter((file) => file.type.startsWith('image/'))
+    if (images.length === 0) return // a non-image file: nothing to place
+    const canvasId = handle.canvasId // gesture-time board (AI-IMP-085)
+    void importFilesAt(handle, images, imageDropWorld(), canvasId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+    window.dispatchEvent(
+      new CustomEvent('ew-board-notice', {
+        detail: { message: 'Images live on the board — placed beside the note.' },
+      }),
+    )
+  }
+
   // Header drag repositions pinned panels (§8.5: unpinning and
   // closing are the user's acts; dragging is just placement).
   function onHeaderPointerDown(event: PointerEvent): void {
@@ -802,6 +859,8 @@
   data-testid={record.pinned ? `note-panel-pinned-${record.key}` : 'note-pane'}
   data-panel-key={record.key}
   bind:this={panelEl}
+  ondragovercapture={onSurfaceDragOver}
+  ondropcapture={onSurfaceDrop}
 >
   <header onpointerdown={onHeaderPointerDown}>
     {#if note && !phantom}
