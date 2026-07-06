@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.24         | 6 July 2026      |
+| Accepted for Phase 1 | 0.25         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2387,6 +2387,30 @@ without adding a library concept to the domain:
   chrome. Grouping is view state over indexed timestamps; no
   schema is involved.
 
+- **The keyboard model (rev 0.25, resolving question 26).** The
+  grid keeps a cursor — a focus ring distinct from the selection
+  highlight. Plain arrows move the cursor and collapse selection to
+  it: Left/Right walk document order, wrapping across rows and
+  bucket boundaries; Up/Down move by visual column, taking the
+  nearest column when the next row is short or belongs to the next
+  bucket. Shift-extension selects the linear document-order range
+  from the anchor — never a visual rectangle, which stops meaning
+  anything across bucket gaps — and Shift+click agrees. Mod+click
+  and Mod+Space toggle membership without disturbing the anchor;
+  Space itself is RESERVED for preview (the Quick Look reflex) even
+  before a preview surface exists, because burning it on toggle
+  would make that retrofit awkward. Mod+A selects the current
+  filter scope: the user selects what they see. Enter is the
+  kind-appropriate primary action, as in search (§8.3):
+  note-carrying entries open the note panel over the gallery,
+  board-kind entries close the takeover and dive, and a note-less
+  image opens its panel through the charm grammar's
+  create-on-demand (§8.4). Delete trashes the selection — the
+  action bar's command. Escape peels, selection first, takeover
+  second, exactly as the canvas does. PageUp/PageDown page the
+  viewport; Mod+Up/Down jump to the previous/next bucket header
+  under date sort — the keyboard twin of the header's period list.
+
 - **Scope is project choice (rev 0.22).** The gallery's primary
   toggle — *this world · everything* — selects WHOSE gallery is
   shown: the current project's, or the library project's. There is
@@ -2471,10 +2495,9 @@ without adding a library concept to the domain:
 
 The gallery depends on the thumbnail derivative pipeline and its
 main-process image codec (§4.7's shared-codec note). Watched
-directories stay deferred separately. Two library surfaces await
-their own design turns and are open questions: the gallery keyboard
-model (arrow navigation, range select) and the OS-drop importer
-dialogue as the third compression.
+directories stay deferred separately. One library surface still
+awaits its design turn and is an open question: the OS-drop
+importer dialogue as the third compression.
 
 # 15. Future authoritative collaboration seam
 
@@ -2984,10 +3007,12 @@ workspace tabs. Expected shape: a second window onto the same
 project, which requires the multi-window story the §11.1
 single-writer rule already anticipates.
 
-26. (Shaped, rev 0.22 — not closed.) The gallery's navigation model
-gained grouped time buckets with a header-anchored jump control
-(§14.4); the keyboard half — arrow navigation and range
-selection over the grid (§14.4) — awaits its design turn.
+26. (Resolved, rev 0.25.) The gallery's navigation model gained
+grouped time buckets with a header-anchored jump control (rev
+0.22), and the keyboard half closed at EPIC-014 activation: cursor
+distinct from selection, linear document-order ranges, Space
+reserved for preview, kind-appropriate Enter, Escape peeling, and
+bucket jumps (§14.4).
 
 27. The OS-drop importer dialogue as the third compression of the
 gallery grammar (§14.4, §4.7) awaits its design turn.
@@ -3341,3 +3366,10 @@ Accepted for the Phase 1 prototype:
   the tag facet orders by name or count; and the scope toggle —
   this world · everything — selects whose gallery is shown, the
   library being "everything" by construction of the mirror.
+
+- The gallery keyboard model (rev 0.25, §14.4): a cursor distinct
+  from selection; plain arrows collapse, Shift extends the linear
+  document-order range, Mod toggles, and Space stays reserved for
+  preview; Mod+A selects the current filter scope; Enter is the
+  kind-appropriate primary action; Escape peels selection before
+  the takeover; Mod+Up/Down jump buckets under date sort.
