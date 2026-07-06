@@ -835,28 +835,22 @@ one dialogue pattern instead of a bare rejection.
 
 ## 6.2 Create Pin
 
-Create Pin opens an inspector or sidebar flow. The user chooses:
+The CreatePin command is the one-transaction backbone behind
+imports, phantom materialization, and note placement: one committed
+CreatePin performs asset import when applicable, node creation, note
+creation or attachment when applicable, appearance assignment, tags,
+and placement creation as a single user-level transaction.
 
-- New node or Place Existing.
-
-- Appearance: colored dot, built-in icon, or image.
-
-- Icon, color, or image file.
-
-- Non-destructive crop and framing for an image appearance.
-
-- Optional new note title.
-
-- Optional existing note to share.
-
-- Optional node tags.
-
-Selecting an image inside this dialog attaches the asset as the pin
-node's appearance. It does not create a second image node.
-
-Pressing Create commits one user-level transaction: asset import when
-applicable, node creation, note creation or attachment when applicable,
-appearance assignment, tags, and placement creation.
+Its user surface is the **pin tool** (rev 0.20, resolving open
+question 20): a dock tool (◉, shortcut N) sharing the map-pin glyph
+with the §8.1 bookmark control — pins mean places, everywhere.
+Clicking with the tool places a dot node with its phantom note
+already open and focused: type and the first committed edit
+materializes note, node, and placement (§7.2 rules); press Escape
+first and nothing ever persisted. Icon and image appearances, tags,
+and note attachment flow through the ordinary node operations
+afterward (§8.4 charm bar, §6.6) rather than a creation dialog. The
+interim Create Pin dialog retires when the pin tool ships.
 
 ## 6.3 Place Existing
 
@@ -1446,7 +1440,8 @@ them — one physics rule everywhere.
 
 - One floating dock, bottom-center: tool modes (select · text ·
   shape with press-and-hold flyout · draw · line · arrow ·
-  connector) · divider · zoom out · percentage · zoom in · fit.
+  connector · pin ◉, §6.2) · divider · zoom out · percentage ·
+  zoom in · fit.
   Render-order send-forward and send-backward join the dock only
   while a selection exists.
 
@@ -2823,15 +2818,11 @@ section 6.8 — become necessary after prototype use, and what
 containment semantics they carry (spatial capture on drag versus
 explicit membership).
 
-20. Whether the Create Pin dialog survives as a surface. The
-CreatePin command stays regardless — it is the one-transaction
-backbone behind imports, phantom materialization, and note
-placement — but with every object a full node, a dedicated pin
-dialog duplicates the mental model. The rev 0.17 shell resolves the
-direction — the §8.4 charm bar and creation flows carry attach,
-make-canvas, and tagging — but the shell has not yet designed a
-surface for creating a standalone dot or icon node, so the dialog is
-not removed before one exists.
+20. (Resolved, rev 0.20.) The pin tool in the dock replaces the
+Create Pin dialog (§6.2): click places a dot node with its phantom
+note focused; Escape before typing and nothing persisted. The
+CreatePin command is unchanged as the one-transaction backbone. The
+dialog retires when the tool ships.
 
 21. Whether zero-node ("hidden") notes justify themselves —
 equivalently, whether this is the user's entire campaign wiki or
@@ -3090,10 +3081,11 @@ Accepted for the Phase 1 prototype:
   the same source buffer, deferred with scope in section 7.3
   (rev 0.16).
 
-- The Create Pin dialog's future and the zero-node-note question are
-  held open as questions 20 and 21 (rev 0.16); rev 0.17 resolves the
-  dialog's direction but keeps it alive until a standalone dot/icon
-  creation surface exists.
+- The Create Pin dialog retires when the pin dock tool ships
+  (rev 0.20, §6.2): ◉ places a dot node with its phantom note
+  focused, Escape-before-typing persists nothing, and pins mean
+  places everywhere — the tool shares the bookmark control's glyph.
+  The zero-node-note question stays open as question 21.
 
 - The shell model (rev 0.17, from the July 2026 design-consult
   cycle): the window is the board; chrome floats and never reflows
