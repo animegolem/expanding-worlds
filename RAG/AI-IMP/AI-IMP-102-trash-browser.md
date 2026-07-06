@@ -5,8 +5,8 @@ tags:
   - Implementation
   - lifecycle
   - chrome
-kanban_status: backlog
-depends_on:
+kanban_status: planned
+depends_on: [[AI-IMP-110-menu-shell]]
 parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.6
 date_created: 2026-07-06
@@ -15,9 +15,9 @@ date_completed:
 
 # AI-IMP-102-trash-browser
 
-> **DESIGN REVIEW REQUIRED before proceeding** (owner, 2026-07-06):
-> the shape below is a starting sketch, not a decided design — it
-> goes through the design queue first.
+> Design RATIFIED 2026-07-06 (rev 0.46 §9.7, one-ticket PM flow):
+> ☰-entered takeover, one flat list, restore-stays-put + fly-to
+> toast. Loop-safe.
 
 ## Summary of Issue #1
 
@@ -25,10 +25,10 @@ Trash has a complete model (recoverable lifecycle state, §9;
 getTrashView and impact queries exist since EPIC-013-era work) and
 ZERO user surface — nothing lists trashed records, nothing
 restores, nothing purges. From the user's chair every delete is
-one-way. Done = a Trash surface listing trashed records with
-restore and purge (empty-trash) actions riding the existing
-commands, entered from a sensible door (candidate: the ☰ menu or a
-takeover view — design review decides).
+one-way. Done = the rev 0.46 §9.7 trash browser: a takeover
+listing every trashed record with per-row restore and Empty Trash,
+entered from the ☰ menu's Trash… row (built disabled by
+AI-IMP-110; this ticket enables it).
 
 ### Out of Scope
 
@@ -37,16 +37,26 @@ takeover view — design review decides).
 
 ### Design/Approach
 
-To be settled at design review. Sketch: a takeover-or-panel list
-in the §7.4 row grammar (kind glyph, title, trashed-at, impact
-summary from the existing impact queries), restore per row,
-empty-trash with the §9 confirmation shape. Open questions for the
-review: door placement; per-kind grouping vs one list; whether
-restore navigates to the restored thing.
+Ratified (rev 0.46 §9.7): a takeover in the gallery/settings
+family (TakeoverKind gains 'trash'; TakeoverLayer renders it; the
+☰ Trash… row from AI-IMP-110 flips live and opens it). ONE flat
+list across kinds in the §7.4 row grammar — kind glyph (note ·
+node · board), title, trashed-when, impact summary from the
+existing impact queries (getTrashView, getEmptyTrashEligibility in
+queries-lifecycle.ts) — restore per row dispatching RestoreRecord
+{kind, id}, and Empty Trash at the bottom behind the §9
+impact-summary confirmation. Restore does NOT navigate: the row
+leaves the list and a toast offers fly-to (reuse the board-notice/
+toast action grammar). Empty state: a quiet "trash is empty" line.
 
 ### Files to Touch
 
-To be confirmed post-review.
+`apps/desktop/src/renderer/chrome/takeover.ts` + `TakeoverLayer.svelte`:
+'trash' kind.
+`apps/desktop/src/renderer/views/TrashView.svelte`: new.
+`apps/desktop/src/renderer/chrome/MenuPopover.svelte`: flip the
+Trash… row live (depends on AI-IMP-110 landing first).
+`apps/desktop/e2e/` (new or lifecycle spec home): coverage.
 
 ### Implementation Checklist
 
@@ -56,7 +66,17 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] To be cut after design review.
+- [ ] Trash takeover opens from the ☰ Trash… row; flat list rows
+      show kind glyph, title, trashed-when, impact summary for
+      trashed note, node, and canvas records.
+- [ ] Per-row restore dispatches RestoreRecord; the row leaves the
+      list; a toast offers fly-to (and flying works cross-canvas).
+- [ ] Empty Trash shows the §9 impact confirmation, purges all
+      eligible records on confirm, and the list empties.
+- [ ] Empty state renders when nothing is trashed.
+- [ ] e2e: trash a note/node/canvas → all list; restore the node →
+      it returns intact; Empty Trash → purge semantics hold.
+- [ ] Full gates.
 
 ### Acceptance Criteria
 

@@ -31,7 +31,7 @@
 > RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
 
 **IMPs:**
-- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — backlog
+- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — planned
 
 ---
 
@@ -93,7 +93,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3931 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3945 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1469 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1432 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (938 LOC)

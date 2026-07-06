@@ -37,8 +37,9 @@ Agenda (proposals in RAG/DESIGN-QUEUE.md + the lead's readout):
 3. ~~☰ menu inventory~~ — RATIFIED as proposed 2026-07-06, scribed
    at rev 0.45 §8.2 (trash door question in item 4 is answered:
    the ☰ Trash… row; only the browser's internal shape remains).
-4. Trash browser shape (AI-IMP-102 sketch: door, grouping,
-   restore-navigates?).
+4. ~~Trash browser shape~~ — RATIFIED 2026-07-06 as proposed
+   (rev 0.46 §9.7): flat list, restore-stays-put + fly-to toast,
+   takeover. IMP-102 is loop-safe.
 5. Everything-scope pull (proposal: action bar in everything scope
    offers "Pull into this world" → ingest unplaced + toast with
    place-now affordance).

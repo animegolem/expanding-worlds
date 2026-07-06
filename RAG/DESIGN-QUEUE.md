@@ -7,10 +7,6 @@ flush list — resolved items move into the RFC and leave.
 
 ## Blocking planned work
 
-- **Trash browser shape** (AI-IMP-102, EPIC-007): grouping and
-  restore-navigates-or-not still open; the DOOR is ratified
-  2026-07-06 — the ☰ menu's Trash… row (rev 0.45 §8.2). Owner
-  wants explicit review of the browser itself before any build.
 - **Swap-node bucket rule** (rev 0.45 §6.5, IMP-107 item 11): the
   displaced node's fate when placements repoint — proposal is
   survives-unplaced, destroy-nothing.

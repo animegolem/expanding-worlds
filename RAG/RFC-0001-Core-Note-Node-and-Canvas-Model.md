@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.45         | 6 July 2026      |
+| Accepted for Phase 1 | 0.46         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2116,6 +2116,15 @@ Empty Trash purges all eligible trashed records after an impact summary.
 Automatic retention, when enabled, applies the same purge rules to
 records older than the configured duration.
 
+**The trash browser (rev 0.46, ratified).** Entered only through
+the ☰ menu's Trash… row (rev 0.45 §8.2), the browser is a takeover
+in the gallery/settings family: ONE flat list across kinds — kind
+glyph (note · node · board), title, trashed-when, impact summary
+from the existing impact queries — a restore action per row, and
+Empty Trash at the bottom behind the §9 confirmation shape.
+Restore does not navigate: the row leaves the list and a toast
+offers fly-to. AI-IMP-102 builds exactly this.
+
 ## 9.8 Garbage collection
 
 Assets, immutable blobs, notes, and other resources referenced by active
@@ -3929,3 +3938,8 @@ Accepted for the Phase 1 prototype:
   node (§6.5) is shaped for the EPIC-016 menus: a node-level picker
   repointing placements between nodes — the placeholder workflow's
   exit — with the displaced-bucket rule owed to design review.
+
+- The trash browser shape (rev 0.46, §9.7): ☰-entered takeover,
+  one flat list with kind glyphs and impact summaries,
+  restore-stays-put with a fly-to toast, Empty Trash behind the §9
+  confirmation. Ratified in the one-ticket-at-a-time PM flow.
