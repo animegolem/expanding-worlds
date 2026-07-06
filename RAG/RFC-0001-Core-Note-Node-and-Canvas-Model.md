@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.20         | 5 July 2026      |
+| Accepted for Phase 1 | 0.21         | 5 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -526,6 +526,21 @@ preview. An optional user-configured media-backup adapter, such as a
 self-hosted yt-dlp endpoint, MAY archive the underlying media into
 managed storage; it defaults to off and remains a versioned adapter
 outside the core domain model.
+
+**Deferred with scope: booru drop adapters (rev 0.21).** Dropping a
+link to a booru post — Sakugabooru first (a Moebooru instance),
+ideally a wide net over the Danbooru and Moebooru API families —
+imports an already-tagged document in one motion: the post's media
+becomes the managed asset (hash-deduped), the site's curated tags
+arrive as tag assignments through the same explicit tag-border
+decision that governs cross-project ingest (§14.4), the post
+thumbnail serves as the placeholder derivative, and the post URL is
+recorded as source attribution. The whole drop lands as one CreatePin
+through the staged import pipeline. These are versioned adapters per
+the importer-dialogue language below, keyed by site family rather
+than per site; authentication, rate limits, and the exact family
+coverage list are implementation-time concerns inside the adapters,
+never domain concerns.
 
 **Deferred with scope: the importer dialogue and import adapters.**
 The importer dialogue is the single expansion point for what content
@@ -1063,6 +1078,9 @@ and centers of nearby content, with smart guides rendered in the
 temporary interaction overlay plane. Snapping is an ephemeral
 interaction aid: the gesture still commits exactly one durable command
 on completion, and a modifier key SHOULD temporarily disable snapping.
+Option carries two meanings that read at different moments and so
+never collide (rev 0.21): held at drag START it duplicates (the
+cursor-zone rule above); pressed MID-drag it is the snap bypass.
 Shift's tidy constraints take precedence (rev 0.15): while Shift
 enforces an axis or proportion, snapping is disabled so nothing pulls
 the result off the enforced geometry.
@@ -1582,6 +1600,31 @@ the same existence rule as the §8.5 indicators: the surface lives
 exactly as long as the broken state does. The §11.4 no-silent-hang
 requirement surfaces here; a transient toast alone never satisfies
 it. The interim status strip retires only when this perch ships.
+
+## 8.7 Ghost overlay mode (deferred with scope)
+
+The PureRef-completing feature (rev 0.21): a per-window mode for
+drawing UNDER the reference. The window turns frameless and
+transparent at a chosen opacity, floats always-on-top, and passes
+all pointer input through to whatever application lies beneath —
+an artist's pen drives their painting app straight through the
+board. Electron's `setIgnoreMouseEvents(ignore, {forward: true})`
+is the accepted mechanism: input passes through while mouse-move
+still reaches the app, so one small floating grab handle can stay
+hot for repositioning.
+
+Because a click-through window cannot be clicked back out of,
+entry is gated by one hard confirmation naming the exit: "only
+the keybind leaves this mode — sure?" (the exact binding is a feel
+choice; it also appears in the mode's tooltip and the confirmation
+text). Closing the window always resets the state — a project
+never reopens in ghost mode. macOS is the lead platform and the
+mechanism is native there and on Windows; Linux behavior is
+compositor-dependent and MAY degrade to opacity-without-
+click-through. Fullscreen-space interaction on macOS needs the
+elevated window level. Ghost mode is presentation state only:
+no domain records change, and the mode never enters the command
+log.
 
 # 9. Deletion, trash, and resource retention
 
@@ -2460,6 +2503,18 @@ honest about what survives (everything made) versus what dies
   human-readable format of a board is a picture of it. Every
   arrangement ever made stays viewable forever, in anything.
 
+- Every canvas ALSO exports as a **JSON Canvas** `.canvas` file
+  (rev 0.21) — the open format Obsidian's Canvas reads natively — so
+  boards stay navigable in the vault, not just viewable: placed art
+  becomes file nodes pointing at the exported assets with true
+  position and size, notes become file nodes pointing at the
+  exported Markdown, arrows and connectors become edges with their
+  labels, and a nested canvas becomes a file node referencing the
+  child `.canvas` — recursion survives the export. The format's
+  honest limits: no rotation, crop, flip, or drawn ink — such items
+  flatten to pre-rendered images or drop, which is why the rendered
+  image above remains the pixel-true record.
+
 Export is paired with import. Phase 1 MUST import a project export,
 recreating the project in a new project directory with all record
 identities preserved so that wiki links, bookmarks, command
@@ -3160,3 +3215,23 @@ Accepted for the Phase 1 prototype:
   embedding `![[...]]` links to exported assets; originals with a
   tag manifest and optional tag folders; every canvas as a
   full-resolution rendered image — boards leave as pictures.
+
+- Boards also leave as JSON Canvas (rev 0.21): each canvas exports
+  as an Obsidian-readable `.canvas` with art, notes, edges, and
+  nested-canvas references intact; rotation, crop, flip, and ink
+  flatten or drop, with the rendered image as the pixel-true
+  sibling.
+
+- Ghost overlay mode (rev 0.21, deferred with scope, §8.7):
+  transparent, always-on-top, click-through per window for drawing
+  under the reference; entered past one hard confirmation naming
+  the escape keybind; closing the window always resets it.
+
+- Booru drop adapters (rev 0.21, deferred with scope, §4.7):
+  dropping a booru post link imports media, curated tags (through
+  the explicit tag border), thumbnail, and attribution as one
+  CreatePin; versioned adapters keyed by API family (Danbooru,
+  Moebooru), Sakugabooru first.
+
+- Option splits by moment (rev 0.21, §6.9): at drag start it
+  duplicates; mid-drag it bypasses snapping.
