@@ -5,7 +5,7 @@ tags:
   - Implementation
   - keyboard
   - settings
-kanban_status: backlog
+kanban_status: planned
 depends_on:
 parent_epic: [[AI-EPIC-016-context-click-menus]]
 confidence_score: 0.75
@@ -48,8 +48,15 @@ dispatch but reads its combo + match predicate from the registry
 the registry knows every binding. Tooltip chips that print
 shortcuts source the string from `formatCombo`. SettingsView gains
 a Keyboard section: registered bindings grouped by scope, name +
-combo chips, read-only. e2e: the section lists at least the known
-set; a spot-check that a migrated binding (Mod+P) still fires.
+combo chips, read-only, with a quiet "rebinding coming soon" line at the
+section head (owner call 2026-07-06: the page states the plan
+instead of looking finished-and-limited). This ticket also ships
+**Mod+D bookmark-current-board** (rev 0.48 §8.1, ratified — no
+other ticket owns it) as the registry's first new binding,
+declared through the registry and dispatched in the bookmarks
+module, equivalent to the menu's bottom row. e2e: the section
+lists at least the known set; a spot-check that a migrated
+binding (Mod+P) still fires; Mod+D bookmarks the board.
 
 ### Files to Touch
 

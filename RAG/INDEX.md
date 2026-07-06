@@ -53,7 +53,7 @@
 - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — planned
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — planned
-- [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — backlog
+- [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — planned
 
 ---
 
