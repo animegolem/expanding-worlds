@@ -6,14 +6,30 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
-| Planned | 5 | 0 |
+| In Progress | 2 | 1 |
+| Planned | 4 | 9 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 8 | 57 |
-| **Total** | **14** | **58** |
+| **Total** | **14** | **67** |
 
 ## In Progress
+
+### [[AI-EPIC-006-shell-and-local-scope|EPIC-006: Shell and local scope]]
+> RFC §8.2's shell model — the window is the board, floating chrome,
+
+**IMPs:**
+- [[AI-IMP-059-shell-chrome-frame|IMP-059]] Shell chrome frame — planned
+- [[AI-IMP-060-navigation-history-and-path|IMP-060]] Navigation history and path — planned
+- [[AI-IMP-061-bookmarks|IMP-061]] Bookmarks — planned
+- [[AI-IMP-062-cursor-zones|IMP-062]] Cursor zones — planned
+- [[AI-IMP-063-charms-and-click-grammar|IMP-063]] Charms and click grammar — planned
+- [[AI-IMP-064-note-panel-rehost|IMP-064]] Note panel rehost — planned
+- [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — planned
+- [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — planned
+- [[AI-IMP-067-pin-dock-tool|IMP-067]] Pin dock tool — planned
+
+---
 
 ### [[AI-EPIC-010-hands-on-hardening|EPIC-010: Hands on hardening]]
 > The owner is now using the board daily and comparing it directly
@@ -37,11 +53,6 @@
 ---
 
 ## Planned
-
-### [[AI-EPIC-006-shell-and-local-scope|EPIC-006: Shell and local scope]]
-> RFC §8.2's shell model — the window is the board, floating chrome,
-
----
 
 ### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
 > RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
@@ -70,7 +81,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5045 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3160 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (3162 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (899 LOC)
 - apps/desktop/src/renderer/NotePane.svelte (753 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)

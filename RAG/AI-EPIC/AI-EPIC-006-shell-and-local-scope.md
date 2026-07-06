@@ -8,8 +8,17 @@ tags:
   - notes
 date_created: 2026-07-03
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
+  - AI-IMP-059
+  - AI-IMP-060
+  - AI-IMP-061
+  - AI-IMP-062
+  - AI-IMP-063
+  - AI-IMP-064
+  - AI-IMP-065
+  - AI-IMP-066
+  - AI-IMP-067
 ---
 
 # AI-EPIC-006-shell-and-local-scope
@@ -109,4 +118,15 @@ constants, tuned later.
 
 ## Implementation Breakdown
 
-IMPs to be cut when this epic activates.
+Cut 2026-07-05. Dependency shape: 059 and 062 start in parallel;
+064 is the keystone the note-shaped tickets wait on.
+
+- AI-IMP-059 shell-chrome-frame — FR-1/2/3
+- AI-IMP-060 navigation-history-and-path — FR-4 (after 059)
+- AI-IMP-061 bookmarks — FR-5 (after 060; carries persistence)
+- AI-IMP-062 cursor-zones — FR-8 (parallel; adds placement lock)
+- AI-IMP-063 charms-and-click-grammar — FR-6/7 (after 059/060/062)
+- AI-IMP-064 note-panel-rehost — FR-9/10 (after 063)
+- AI-IMP-065 uses-list-and-location-chooser — FR-11 (after 060/064)
+- AI-IMP-066 toasts-and-perch — FR-12 (after 059; retires StatusStrip)
+- AI-IMP-067 pin-dock-tool — FR-13 (after 059/064; retires dialog)
