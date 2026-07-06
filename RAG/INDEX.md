@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 6 | 2 |
+| Planned | 6 | 3 |
 | Deferred | 0 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 11 | 88 |
-| **Total** | **18** | **90** |
+| **Total** | **18** | **91** |
 
 ## In Progress
 
@@ -42,6 +42,7 @@
 - [[AI-IMP-095-token-exists-guard|IMP-095]] Token exists guard — completed
 - [[AI-IMP-096-checkpoint-on-suspend|IMP-096]] Checkpoint on suspend — backlog
 - [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — backlog
+- [[AI-IMP-098-zoom-smoothing|IMP-098]] Zoom smoothing — planned
 
 ---
 
