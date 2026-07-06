@@ -304,10 +304,13 @@ export type ProjectResponse =
   | MirrorToLibraryResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
- * utility process dies, restarts, or fails to come back. */
+ * utility process dies, restarts, or fails to come back. A healthy
+ * open carries the §11.4 recovery summary so startup repairs can
+ * surface as a toast (AI-IMP-106). */
 export interface ServiceStatusEvent {
   status: 'restarting' | 'ok' | 'failed'
   message?: string
+  recovery?: RecoverySummary
 }
 
 /** Envelope used on the main → utility request channel. */

@@ -55,7 +55,15 @@ function deadResponse(request: ProjectRequest, message: string): ProjectResponse
   }
 }
 
+// Cold-boot init resolves before App mounts (the renderer gates its
+// mount on initSettings), so the event carrying the recovery summary
+// — or a boot refusal — fires into a room with no listener. Retain
+// the latest event; the renderer PULLS it when it attaches
+// (project:service-current), then stays subscribed (AI-IMP-106).
+let lastServiceEvent: ServiceStatusEvent | null = null
+
 function broadcastService(event: ServiceStatusEvent): void {
+  lastServiceEvent = event
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send('project:service', event)
   }
@@ -90,7 +98,11 @@ function onUtilityDied(reason: string): void {
     }
     projectReady = true
     restartAttempted = false
-    broadcastService({ status: 'ok' })
+    broadcastService(
+      'recovery' in response
+        ? { status: 'ok', recovery: response.recovery }
+        : { status: 'ok' },
+    )
   })
 }
 
@@ -579,6 +591,9 @@ void app.whenReady().then(() => {
   }).then((response) => {
     if ('ok' in response && !response.ok) {
       console.error('[main] project init failed:', response)
+      // A cold-boot refusal (EW_SCHEMA_AHEAD, lock held, …) must
+      // reach the user, not just the console (AI-IMP-106).
+      broadcastService({ status: 'failed', message: response.message })
       return
     }
     projectReady = true
@@ -586,8 +601,14 @@ void app.whenReady().then(() => {
     // recovery path sends — the renderer's thumbnail drive (076)
     // re-kicks on it, and a window created after this broadcast
     // is covered by its own boot kick.
-    broadcastService({ status: 'ok' })
+    broadcastService(
+      'recovery' in response
+        ? { status: 'ok', recovery: response.recovery }
+        : { status: 'ok' },
+    )
   })
+
+  ipcMain.handle('project:service-current', () => lastServiceEvent)
 
   ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {
     const win = BrowserWindow.fromWebContents(event.sender)

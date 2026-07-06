@@ -186,7 +186,11 @@ export function attachServiceStatus(): void {
   serviceAttached = true
   const service = condition('project-service')
   let outage = false
-  window.ew.project.onServiceStatus((event) => {
+  const apply = (event: {
+    status: 'restarting' | 'ok' | 'failed'
+    message?: string
+    recovery?: RecoverySummary
+  }): void => {
     if (event.status === 'restarting') {
       outage = true
       service.raise('Project service crashed — restarting…')
@@ -199,14 +203,26 @@ export function attachServiceStatus(): void {
     } else {
       // status === 'ok': the open succeeded. Surface any repairs the
       // recovery pass performed (§11.4), then resolve a prior outage.
-      reportRecoveryRepairs((event as { recovery?: RecoverySummary }).recovery)
+      reportRecoveryRepairs(event.recovery)
       if (outage) {
         outage = false
         service.clear()
         toast('Project service recovered', { kind: 'success', surface: 'service-recovered' })
       }
     }
-  })
+  }
+  window.ew.project.onServiceStatus(apply)
+  // Cold-boot events fire before App mounts (main gates init on
+  // nothing, the renderer gates mount on initSettings) — catch up on
+  // the retained event so a boot refusal or repair summary is never
+  // lost to the race (AI-IMP-106). Same-surface toasts replace, so a
+  // live event arriving alongside the catch-up stays one toast.
+  const pull = window.ew.project.serviceStatus
+  if (pull) {
+    void pull().then((event) => {
+      if (event) apply(event)
+    })
+  }
   // Deterministic condition control for hidden-window e2e — the same
   // pattern as engagement's ew-test-set-engagement event.
   window.addEventListener('ew-test-condition', ((event: Event) => {

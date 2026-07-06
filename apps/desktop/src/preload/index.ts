@@ -140,6 +140,10 @@ const api = {
       ipcRenderer.on('project:service', listener)
       return () => ipcRenderer.removeListener('project:service', listener)
     },
+    /** The latest health event, for attach-time catch-up — cold-boot
+     * events fire before App mounts (AI-IMP-106). */
+    serviceStatus: (): Promise<ServiceStatusEvent | null> =>
+      ipcRenderer.invoke('project:service-current') as Promise<ServiceStatusEvent | null>,
   },
   /** §14.4 secondary project slots (AI-IMP-088): source = read-only
    * browse of another project, library = the writable mirror target.

@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
@@ -173,5 +173,40 @@ test('the perch stacks conditions with a count and clears to nothing', async () 
   const railAfter = (await win.getByTestId('charm-rail').boundingBox())!
   expect(railAfter.height).toBe(railAtRest.height)
 
+  await app.close()
+})
+
+/**
+ * AI-IMP-106 (§11.4): successful startup repairs are VISIBLE — one
+ * success toast naming the count. A stray entry planted in the
+ * import-temp cache between sessions is swept by the open-time
+ * recovery pass, and the renderer must say so.
+ */
+test('startup repairs surface as one success toast', async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-repairs-'))
+
+  // First launch creates the project cleanly, then shuts down.
+  const first = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir, EW_TEST_HOOKS: '1' },
+  })
+  const firstWin = await first.firstWindow()
+  await firstWin.waitForFunction(() => window.__ewDebug !== undefined)
+  // A clean open reports nothing.
+  await expect(firstWin.getByTestId('recovery-repairs')).toHaveCount(0)
+  await first.close()
+
+  // Plant an orphan where an interrupted import would have left one.
+  const tmpRoot = join(projectDir, 'cache', 'import-tmp')
+  mkdirSync(tmpRoot, { recursive: true })
+  writeFileSync(join(tmpRoot, 'orphan-e2e'), 'stranded bytes')
+
+  // Second launch sweeps it and says so.
+  const app = await electron.launch({
+    args: ['out/main/index.cjs'],
+    env: { ...process.env, EW_PROJECT_DIR: projectDir, EW_TEST_HOOKS: '1' },
+  })
+  const win = await app.firstWindow()
+  await expect(win.getByTestId('recovery-repairs')).toContainText('Recovered on open: 1 repairs')
   await app.close()
 })
