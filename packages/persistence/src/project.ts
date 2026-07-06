@@ -133,6 +133,22 @@ export function openProject(dir: string, options: OpenOptions = {}): ProjectHand
   const lock = ProjectLock.acquire(dir, options.lock)
   try {
     const db = Db.open(dbPath)
+    // §11.4 refuse-kindly: a project written by a newer build carries
+    // migrations this binary does not have, so migrate() would silently
+    // no-op and expose a schema it cannot understand. Refuse before any
+    // write, with a human sentence the init-failure surface displays.
+    const ahead = db.get<{ schema_version: number }>(
+      'SELECT schema_version FROM project',
+    )?.schema_version
+    if (ahead !== undefined && ahead > LATEST_SCHEMA_VERSION) {
+      db.close()
+      const err = new Error(
+        'this project was written by a newer version of Expanding Worlds — ' +
+          'update the app to open it',
+      ) as Error & { code: string }
+      err.code = 'EW_SCHEMA_AHEAD'
+      throw err
+    }
     migrate(db)
     return makeHandle(db, lock, dir)
   } catch (err) {

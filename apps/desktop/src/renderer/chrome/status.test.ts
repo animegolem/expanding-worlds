@@ -6,6 +6,7 @@ import {
   dismissToast,
   onConditionsChanged,
   onToastsChanged,
+  reportRecoveryRepairs,
   toast,
   type Condition,
   type ToastEntry,
@@ -99,6 +100,21 @@ describe('status store (RFC §8.6)', () => {
     vi.advanceTimersByTime(TOAST_DURATION_MS * 10)
     expect(seenToasts.current).toEqual([])
     expect(seenConditions.current).toHaveLength(1)
+  })
+
+  it('toasts §11.4 startup repairs once, naming the count', () => {
+    const seen = trackToasts()
+    reportRecoveryRepairs({ repairs: ['swept orphaned import temp x', 'removed orphan blob y'] })
+    expect(seen.current.map((t) => t.message)).toEqual(['Recovered on open: 2 repairs'])
+    expect(seen.current[0]?.kind).toBe('success')
+    expect(seen.current[0]?.surface).toBe('recovery-repairs')
+  })
+
+  it('says nothing when the open was clean (no repairs)', () => {
+    const seen = trackToasts()
+    reportRecoveryRepairs({ repairs: [] })
+    reportRecoveryRepairs(undefined)
+    expect(seen.current).toEqual([])
   })
 
   it('subscription fires immediately with current state and unsubscribes', () => {
