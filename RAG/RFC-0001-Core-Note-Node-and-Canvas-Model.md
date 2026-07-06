@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.37         | 6 July 2026      |
+| Accepted for Phase 1 | 0.38         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1094,6 +1094,45 @@ mobs and treasure, say), the sanctioned shape is a **frame**: an
 on-canvas object placed and ordered like any other content that other
 content sits inside — not a new relational overlay. Frames are
 deferred pending artist feedback (§19).
+
+**Frames, shaped (rev 0.38 — the artist feedback arrived,
+2026-07-06 design session; owns its future epic).** The frame is
+NOT a new record kind: it is the existing grammar — a node with a
+note and optionally a canvas — whose board presence is a DRAWN
+REGION instead of a dot, icon, image, or card. Because the node is
+not its placement, the same frame is reusable across canvases, and
+everything a node owns (tags, doors, the data view's grouping)
+comes free. Decided shape from the session:
+
+- **Membership is recorded, edited by clean drag in and out** —
+  capture on drag-in, release on drag-out; never inferred live from
+  geometry (a two-pixel nudge must not silently change a group's
+  data view). Moving the frame moves its members; the members list
+  IS what the outline/data views show grouped under the frame.
+- **Acceptance visualization**: while a drag hovers a frame, the
+  frame focuses and the REST of the canvas dims — the dim is the
+  "this will land inside" affordance.
+- **Sort-on-drop defaults ON per frame**: a freshly spawned frame
+  arranges drops within itself; a per-frame toggle disables it.
+  Right-click offers auto-sort-items-in-frame on demand, and
+  load-from-library-into-frame picks items and arranges them to
+  the drawn size.
+- **Arrange and normalize vocabulary** (PureRef reference, captured
+  in AI-EPIC-016's notes — adopt selectively, not wholesale): the
+  existing §6.9 arrange (compact packing) gains sort keys, and
+  normalize equalizes height/width/size/area across a selection.
+- **The drop-behavior setting**: on multi-drop/big-paste, ask /
+  sort / group (in frame) / group and sort — default is a modal
+  that asks and offers remember-this-choice (the §14.4 first-drop
+  ask idiom), changeable in settings.
+- **Big paste asks "separate images or an arranged frame."** A
+  composite NEVER lands in the library (each image stays its own
+  node and asset — tags and hash dedupe stay per-image); a
+  composite MAY be saved FROM a frame on demand.
+- The moodboard truth this serves (the artist's words): visual
+  clutter fires the brain; the balance is between doors/nesting
+  and moodboard density — frames give overview without imposing a
+  shape. Most things should have ~5 ways to do them.
 
 Connector endpoints MAY be free points or anchored to placements.
 Connector geometry remains visual decoration and does not create a

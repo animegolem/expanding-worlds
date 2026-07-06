@@ -40,6 +40,21 @@ every right-clickable kind → a shared menu grammar and component →
 per-surface adoption tickets. Sequencing constraint from the owner:
 this epic lands BEFORE the end-UI tie-down/CSS-polish pass.
 
+**Reference material (2026-07-06 design session — capture, not
+commitment; adopt selectively):** PureRef's right-click depth is
+the bar the artist knows. Its menu: Undo/Redo · Copy/Paste ·
+Note · Draw · Mode/Window/Canvas submenus · **Images →** Select
+all · Selection · **Arrange** (Optimal Ctrl+P · By name · By
+path · By order · By addition · Randomly) · **Align** ·
+**Normalize** (From-first/Average × Height · Width · Size · Area ·
+Scale, each with accelerators) · Manage images · Replace image ·
+Relink missing. Notables for our grammar: every verb carries its
+accelerator inline (self-teaching, like our bookmark menu), and
+selection-scoped verbs live under one submenu rather than
+top-level sprawl. Frame verbs (auto-sort-in-frame,
+load-from-library, save composite — AI-EPIC-017) and replace-file
+(rev 0.35) are natural context-menu citizens.
+
 ## Path(s) Not Taken
 
 To be determined at scoping.
