@@ -3,27 +3,25 @@
  * (RFC rev 0.31 §4.6, AI-IMP-084).
  *
  * SQLite cannot ALTER a CHECK constraint, so this is the documented
- * table-rebuild dance. The runner wraps every migration in one
- * transaction with connection-level foreign_keys ON, which shapes
- * the SQL below:
+ * table-rebuild dance, and it REQUIRES connection-level
+ * foreign_keys OFF (the disableForeignKeys flag): deferred FKs are
+ * a violation COUNTER, so DROP TABLE's implicit DELETE of a
+ * populated node table increments per child reference and nothing
+ * ever decrements — the commit can never succeed on real data. The
+ * first cut used defer_foreign_keys, passed on fresh (empty-at-
+ * migration-time) test projects, and failed on the owner's live
+ * project; migrate.ts runs foreign_key_check afterward to repay
+ * the integrity debt.
  *
- * - `PRAGMA foreign_keys = OFF` would be a NO-OP inside the
- *   transaction; `defer_foreign_keys` is the transaction-scoped tool
- *   (same trick project open uses). It postpones enforcement of the
- *   four inbound references (project.root_node_id, canvas.node_id,
- *   placement.node_id, tag_assignment.node_id) to COMMIT, by which
- *   time the rebuilt table holds every row again. It resets itself
- *   at commit.
  * - DROP TABLE's implicit DELETE fires no triggers (so
- *   trg_root_node_no_delete cannot abort the rebuild) and its FK
- *   checks are deferred with the rest.
+ *   trg_root_node_no_delete cannot abort the rebuild).
  * - The index and both root-protection triggers die with the old
  *   table and are recreated verbatim from 0001.
  */
 export const id = 6
 export const name = 'card-appearance'
+export const disableForeignKeys = true
 export const sql = `
-PRAGMA defer_foreign_keys = ON;
 
 CREATE TABLE node_new (
   id TEXT PRIMARY KEY,

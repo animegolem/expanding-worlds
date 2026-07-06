@@ -57,7 +57,16 @@ export class Db {
       return result
     } catch (err) {
       this.#txDepth -= 1
-      this.#raw.exec(this.#txDepth === 0 ? 'ROLLBACK' : `ROLLBACK TO ${name}; RELEASE ${name}`)
+      try {
+        this.#raw.exec(this.#txDepth === 0 ? 'ROLLBACK' : `ROLLBACK TO ${name}; RELEASE ${name}`)
+      } catch {
+        // Certain failures (e.g. a deferred FK violation at commit)
+        // auto-roll-back the WHOLE transaction first, so our rollback
+        // finds nothing. The original error is the one that matters —
+        // swallowing this rollback error stops it being masked
+        // ("no such savepoint" hid the real cause, AI-IMP-084 0006).
+        this.#txDepth = 0
+      }
       throw err
     }
   }
