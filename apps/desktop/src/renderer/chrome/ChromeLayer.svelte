@@ -12,6 +12,7 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import CharmRail from './CharmRail.svelte'
   import Dock from './Dock.svelte'
+  import ImportProgressStrip from './ImportProgressStrip.svelte'
   import PathBar from './PathBar.svelte'
   import TitleStrip from './TitleStrip.svelte'
   import Toasts from './Toasts.svelte'
@@ -58,6 +59,11 @@
   <CharmRail />
   <Toasts {handle} />
 </div>
+
+<!-- §14.4 batch import strip (AI-IMP-081): a SIBLING of the fading
+     root on purpose — a running batch is fade-exempt, so the strip
+     must not inherit the layer's opacity clock. -->
+<ImportProgressStrip />
 
 <style>
   .chrome-layer {
