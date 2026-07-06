@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.44         | 6 July 2026      |
+| Accepted for Phase 1 | 0.45         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -472,6 +472,16 @@ A node's default appearance MAY be:
 An image appearance references a managed asset and non-destructive crop
 or framing settings. The original asset MUST remain unchanged.
 
+**The appearance switcher (rev 0.45, ratified).** Appearance is
+editable after creation through one door: the §8.4 charm bar gains
+an **appearance charm** (swatch glyph) opening a small popover — a
+dot color-swatch row, the built-in icon set, **image…** (routing
+through the §6.1 replace-file semantics), and **card**, enabled
+only while a note is attached. This is the surface §6.2's "flow
+through the ordinary node operations" always pointed at; until this
+revision the reference dangled and appearance was frozen at
+creation.
+
 Phase 1 uses one shared default appearance per node. Placement-specific
 overrides are deferred.
 
@@ -706,6 +716,16 @@ through three doors that land on one surface: the charm bar's tag
 chips (§8.4), the ⌕ field's tag mode (§8.3), and tag chips on a
 note panel (§8.5). The query field takes exactly one tag in
 Phase 1; multi-tag AND/OR queries are deferred.
+
+**Assigning tags at the moment of arranging (rev 0.45, ratified).**
+The §8.4 `#` charm's popover stops being display-only: above the
+node's chips sits a completing input — typing completes against
+existing tags by name_key, Enter assigns the selected completion,
+and novel text creates-and-assigns in one gesture, the same field
+grammar as the tag panel's search. The identical component mounts
+in the note panel's chip row (§8.5). One component, two doors, and
+the gallery action bar (§14.4) stops being the only assignment
+surface in the app.
 
 Tag identity is independent of its name so renaming a tag does not
 rewrite assignments.
@@ -1084,6 +1104,30 @@ Copying a placement creates another placement of the same node.
 
 A future explicit Duplicate as New Node operation may create a new node
 and copy selected aspects. It is not the default copy behavior.
+
+**Swap node (rev 0.45 — shaped with the first tester; lands with
+the EPIC-016 menus).** The placeholder workflow the first tester
+asked for needs no placeholder feature — drop any image, tag it
+`placeholder`, keep working; the app doesn't care — except the
+exit. A node context verb **swap node…** opens a picker listing the
+project's nodes, with **upload new…** at the top (imports and
+starts a fresh node); confirming repoints the current node's
+placements at the chosen node. The swap is node-level: one
+placeholder placed five hundred times updates everywhere, and the
+note's Uses list (§7.4) is the audit trail of where it lives.
+Distinct from replace file (§6.1), which forks the byte pointer
+under ONE node; swap node moves placements BETWEEN nodes. Both are
+real and serve different moments — placeholder-with-notes wants
+replace (the bucket's meaning survives, only the art changes);
+placeholder-as-pure-stand-in wants swap (a different bucket takes
+these places). Design review owes two calls (IMP-107): the BUCKET
+RULE — the displaced node (note, canvas, tags) should survive as
+an unplaced node, nothing destroyed — and the VERB LANGUAGE for
+the pair, agreed with the first tester to need work. One hard
+constraint from that conversation: the copy avoids the word
+"file" — the tester's instinct was that replacing might delete
+pictures off his drive; the app never touches his files, and the
+verbs must not imply it could.
 
 ## 6.6 Attach, detach, and make independent
 
@@ -1717,6 +1761,17 @@ control and printing its keyboard shortcut, in one chip style
 app-wide, after a short delay. No control ships without one: the GUI
 is the tutorial for the keyboard-driven app.
 
+**The ☰ menu (rev 0.45, ratified).** Top to bottom: **Undo · Redo**
+(Mod+Z · Shift+Mod+Z, printed beside the rows) · divider ·
+**Trash…** · **End Session** · divider · **Settings** ·
+**Help/About**. Undo and redo are listed so the shortcuts are
+discoverable — the tooltip rule's self-teaching duty in menu form.
+Trash… is the trash browser's one entry door (§9.7; the browser's
+shape remains a design-review item, its address does not). End
+Session is the §11.4 put-it-away ritual, and Settings opens the
+§11.5 takeover. The export sheet keeps its existing ☰ anchoring
+(§16).
+
 macOS is the lead platform. Windows and Linux gain a ☰ menu entry
 point and diverge nowhere else. Side-by-side comparison of two boards
 is deferred (expected shape: a second window per project), recorded
@@ -1774,10 +1829,11 @@ nothing to memorize.
 **Selection and the charm bar.** Selection renders as a thin accent
 outline only — no drawn handles, ever (§6.9 cursor zones carry the
 transform affordances). The charm bar floats beneath the selected
-node: crop · flip H · flip V · divider · make-canvas · note · tags
-`#` · lock, reusing the same page/frame glyphs as the hint charms.
-`#` pops the node's tag chips; clicking a chip opens the tag panel
-(§4.8).
+node: crop · flip H · flip V · divider · appearance · make-canvas ·
+note · tags `#` · lock, reusing the same page/frame glyphs as the
+hint charms. `#` pops the node's tag chips over a completing
+add-field (§4.8, rev 0.45); clicking a chip opens the tag panel.
+The appearance charm opens the §4.6 switcher popover (rev 0.45).
 
 ## 8.5 Note panels
 
@@ -3861,3 +3917,15 @@ Accepted for the Phase 1 prototype:
   seeded first-open example with clear-the-example (shipped as a
   gallery-header action over the seam — deviation recorded in
   §14.4). Connector re-scans dedupe by source identity (rev 0.35).
+
+- The first design-session ratifications (rev 0.45, §4.6/§4.8/§8.2/
+  §8.4): the `#` charm popover and note-panel chip row gain one
+  shared completing add-field, ending gallery-only tag assignment;
+  the charm bar gains an appearance charm whose popover (dot
+  swatches · icons · image-via-replace-file · card-when-note) makes
+  §6.2's operations reference real; the ☰ menu inventory is Undo ·
+  Redo · Trash… · End Session · Settings · Help/About, giving undo
+  its printed shortcuts and the trash browser its entry door. Swap
+  node (§6.5) is shaped for the EPIC-016 menus: a node-level picker
+  repointing placements between nodes — the placeholder workflow's
+  exit — with the displaced-bucket rule owed to design review.

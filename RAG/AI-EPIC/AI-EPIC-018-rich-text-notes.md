@@ -56,7 +56,11 @@ evening: "build the thing I wish Obsidian was"): org-mode as
 INTERACTION over the unchanged Markdown schema — headings PIN and
 their content FOLDS beneath (ProseMirror decorations;
 serialization never sees fold state), fold-all/unfold-all,
-tab-cycling, org-style subtree keybindings. Org as a storage
+tab-cycling, org-style subtree keybindings. Exact cycle grammar
+(owner demo to the first tester, 2026-07-06): Tab folds/unfolds
+the heading at point; Shift-Tab cycles the global states all-open
+→ folded-to-headings-but-not-content → all-closed. "Still markdown,
+works like an outliner." Org as a storage
 format stays declined (vault mirror + pandoc round-trip are
 Markdown). Markdown's six heading levels accepted as the ceiling
 (org-depth outlining noted and traded away knowingly). Scope

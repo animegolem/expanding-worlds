@@ -32,6 +32,16 @@ repo's front door is a developer README. Three surfaces:
   pitch, download buttons pointing at the latest release), served
   from the repo via Pages. Verify the standard repo-Pages
   workflow at activation (docs/ dir or gh-pages branch + Actions).
+- **In-app first-run guide** (owner to the first tester,
+  2026-07-06: "a startup like 7-page how-to-use guide, then dump
+  in the demo"): a short paged walkthrough shown once before
+  landing in the seeded example library (RFC §14.4). Prime job:
+  the mental model artists won't guess — imports COPY bytes (your
+  files on disk are never touched or deleted), one item can live
+  many places, notes/boards ride the item. The tester's "I
+  would've deleted 7 pictures off my drive without knowing" is the
+  exact fear this defuses. Shape at activation; pairs with the
+  demo curation M-ticket.
 
 ## Proposed Solution(s)
 
