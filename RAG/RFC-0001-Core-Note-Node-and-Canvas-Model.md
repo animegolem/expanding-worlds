@@ -1416,8 +1416,9 @@ ignored.
 ## 8.2 Shell and workspace model
 
 The shell model was decided in the owner's design-consult wireframe
-cycle (July 2026; Design Spec v1 plus its reply turn — a consolidated
-Spec v2 will be archived beside this RFC). It supersedes the earlier
+cycle (July 2026). The canonical artifact is **Design Spec v2**,
+archived beside this RFC; where wireframe turns and the spec
+disagree, the spec wins. It supersedes the earlier
 tabbed-workspace direction and the Baseline UI Vision v0.1 sidebar:
 there are no workspace tabs, no docked sidebar, and no persistent
 status strip. Its stance: **the window is the board.** Chrome is
@@ -1429,7 +1430,7 @@ surface.
 
 **Two scopes, two physics.** Node-local content floats as panels
 above the canvas (notes, choosers, tag chips); project-global views —
-graph, tree/wiki, settings — take over the window. Esc or the
+graph, gallery, outline, settings — take over the window. Esc or the
 originating control returns from a takeover, and the canvas camera is
 untouched by it. Panels open anchored to the control that summoned
 them — one physics rule everywhere.
@@ -1438,9 +1439,10 @@ them — one physics rule everywhere.
 
 - Window controls upper-left, with the §8.1 path beside them.
 
-- A vertical mode charm rail, upper-right: project switcher · search
-  ⌕ · graph ⊛ · tree/wiki ▤ · menu ☰. Icon-only, generous hit
-  targets.
+- A vertical mode charm rail, upper-right: project ⧉ · search ⌕ ·
+  graph ⊛ · gallery ⊞ · outline ▤ · menu ☰. Icon-only, generous hit
+  targets. The §8.6 ongoing-condition charm appends below when
+  present.
 
 - One floating dock, bottom-center: tool modes (select · text ·
   shape with press-and-hold flyout · draw · line · arrow ·
@@ -1959,7 +1961,7 @@ preferences, the cross-canvas undo behavior toggle, and future adapter
 configuration such as a media-backup endpoint.
 
 **The settings surface (rev 0.17).** Settings open as a takeover view
-like graph and tree (§8.2), entered from the ☰ charm — but the sheet
+like graph and outline (§8.2), entered from the ☰ charm — but the sheet
 is partially transparent and inset, so the real board stays visible
 at the edges and through it, and appearance changes apply live to the
 world behind the sheet. There are no apply or save buttons: settings
@@ -1974,7 +1976,8 @@ NOT settings. The Phase 1 inventory:
 
 - **Behavior:** charm corner (lower-right default · upper-right) ·
   chrome fade delay (slider · never) · snap to grid (when grid
-  snapping ships, §6.9).
+  snapping ships, §6.9) · mirror drops to library (per-project,
+  set by the first-drop ask, §14.4).
 
 - **Window:** title strip (hover-reveal · always · never) · border ·
   rounded corners.
@@ -2191,7 +2194,7 @@ Svelte and the canvas renderer.
 
 # 14. Graph and data views
 
-## 14.1 The tree view and the node library requirement
+## 14.1 The outline view and the node library requirement
 
 Phase 1 MUST provide a node library: a view covering every active
 node in the project — appearance or thumbnail, attached note title
@@ -2200,14 +2203,15 @@ locations — with filtering to unplaced nodes. The library is the
 durable home for stashed and unplaced material: keeping an unplaced
 node in the project is a legitimate workflow, not an error state.
 
-The **tree view** (the ▤ takeover, rev 0.17) realizes this
+The **outline view** (the ▤ takeover, rev 0.17; "tree" in early
+wireframes) realizes this
 requirement: the world as an outline, canvas ▸ children, using the
 same page/frame glyphs as the §8.4 charms, with bare images shown as
 their own row kind. Because containment is a graph with legal
 cycles, a canvas already rendered on the current expansion path
 renders as an alias row that flies to the real entry rather than
 unfolding again. Unplaced material gathers in a root-level loose
-bin. Tags show inline as chips, and the tree shares the graph's
+bin. Tags show inline as chips, and the outline shares the graph's
 filter chips and honors the §4.8 lens. No separate flat list view
 ships; multi-facet sorting, richer data views, and note browsing
 remain future iterations.
@@ -2226,7 +2230,7 @@ loose means no place.
 The relationship graph is a separate projection from the art canvas
 and SHOULD ship as the ⊛ takeover view (rev 0.17): a force layout
 with physics the user can grab. **Wiki links are the only edges** —
-structure lives in the tree, and drawn lines, arrows, and connectors
+structure lives in the outline, and drawn lines, arrows, and connectors
 are decorations that never appear as semantic edges; a future
 explicit relationship feature may promote semantic edges through a
 separate operation.
@@ -2278,20 +2282,31 @@ without adding a library concept to the domain:
   or designate a library project and present it distinctly, but the
   distinction is packaging, not schema.
 
-- **The file-browser projection** is a view any project can open:
-  a thumbnail grid over the project's nodes with sort facets, bulk
-  selection, and tag filtering, sharing query machinery with the
-  tree (§14.1) and tag panel (§4.8). It is the traditional file
-  browser as a projection over nodes, tags, and assets.
+- **The gallery** (⊞) is the file-browser projection, and a view
+  any project can open — "library" is the project kind, "gallery"
+  is the view. A thumbnail grid over the project's nodes with sort
+  facets (date, name, size), a flat tag filter with counts, and the
+  two cleanup filters the model already owns (untagged · unplaced).
+  Bulk selection summons a floating action bar (tag · place ·
+  trash). Large drops run as an interruptible progress strip with a
+  live hash-dedupe count, never a modal. The gallery has its own
+  rail charm and also participates in the takeover mode switcher —
+  graph ⊛ · outline ▤ · gallery ⊞ are projections of one database,
+  and the user hops freely among them inside the takeover. Query
+  machinery is shared with the outline (§14.1) and tag panel
+  (§4.8).
 
 - **Projects source, never reference.** A second project MAY be
   opened read-only as an import source (§11.1 already contemplates
-  read-only opening). Placing from a source runs the ordinary
-  staged import: bytes copy by content hash into the destination's
-  managed storage and provenance is recorded. A project never holds
-  references outside itself, which is what preserves export
-  self-containment (§16), the single-writer rule (§11.1), and the
-  Phase 2 collaboration seam (§15).
+  read-only opening). Every row in the project charm's menu offers
+  two actions — switch, and open as source — and a source opens as
+  a pinned panel (the compressed gallery: same facets, a mini
+  grid) obeying ordinary panel physics. Dragging out of it runs
+  the ordinary staged import: bytes copy by content hash into the
+  destination's managed storage and provenance is recorded. A
+  project never holds references outside itself, which is what
+  preserves export self-containment (§16), the single-writer rule
+  (§11.1), and the Phase 2 collaboration seam (§15).
 
 - **Tags cross the border by decision.** Ingesting an item asks
   whether to carry its tags (none, all, or pick); carried tags are
@@ -2313,10 +2328,17 @@ without adding a library concept to the domain:
   offer the library's tags for the incoming item. The mirror is
   strictly one-way — nothing ever syncs out of the library — and a
   locked or unavailable library never blocks the foreground drop
-  (queue or notice instead).
+  (queue or notice instead). Both surfaces ride the drop and never
+  block it: the once-per-project ask is a two-button panel anchored
+  to the first drop (the import runs either way; the answer stores
+  as the "mirror drops to library" settings line), and the
+  recognition offer is a transient chip beside the fresh node that
+  obeys the engagement fade — ignoring it IS the dismissal gesture;
+  it dissolves at the next idle with no dismissal debt. Bulk drops
+  collapse to one summary chip.
 
-- **The placement picker is the compressed browser.** One grammar,
-  three compressions: the full browser is a takeover view; placing
+- **The placement picker is the compressed gallery.** One grammar,
+  three compressions: the full gallery is a takeover view; placing
   from a source presents the same rows in an anchored panel; an OS
   drag-in routes through the §4.7 importer dialogue.
 
@@ -2337,14 +2359,21 @@ without adding a library concept to the domain:
   nodes dive into per-artist boards with placed works, notes, and
   tags — so the user sees what the surface is for before owning
   it. The seed is ordinary records (nodes, placements, notes,
-  tags), not a special content class; a one-time affordance on the
-  seeded canvas clears the example through an ordinary trash
-  command, after which it is a normal canvas. Nothing special-class
-  persists after clearing.
+  tags), not a special content class, and the explainer is an
+  ordinary pinned note whose one power is the "clear the example"
+  action — an ordinary trash command over the example records and
+  itself. Unmissable because it is open; not naggy because it is
+  just a note; gone forever after clearing. The tutorial is made of
+  the app's own furniture, which is itself the lesson.
 
-The browser view depends on the thumbnail derivative pipeline and
-its main-process image codec (§4.7's shared-codec note). Watched
-directories stay deferred separately.
+The gallery depends on the thumbnail derivative pipeline and its
+main-process image codec (§4.7's shared-codec note). Watched
+directories stay deferred separately. Two library surfaces await
+their own design turns and are open questions: the gallery keyboard
+model (arrow navigation, range select) and the OS-drop importer
+dialogue as the third compression.
+
+# 15. Future authoritative collaboration seam
 
 Phase 1 remains local-only: no server, sync, account, or protocol
 infrastructure, and no CRDTs merely to prepare for Phase 2. The single
@@ -2399,11 +2428,16 @@ A complete project backup SHOULD preserve Trash unless the user
 explicitly requests an active-content-only export. Purged records and
 evictable derivatives are not export requirements.
 
-Export reports rather than blocks (rev 0.18): when a project's
-export size exceeds a warn threshold, the export presents a size
-preflight and asks once; acknowledgment persists per project so the
-question is never repeated for that project. The threshold is an
-application preference. There is no hard size limiter.
+Export reports rather than blocks (rev 0.18): the computed size is
+a live footer fact on every export surface, and when it exceeds a
+warn threshold the first export adds one acknowledge line —
+confirmed once per project, never repeated, never a gate. The
+threshold is an application preference. There is no hard size
+limiter.
+
+The export surface is a sheet anchored to the ☰ charm rather than a
+takeover — leaving is not browsing — with three sections mirroring
+the three record kinds below (notes · files · boards).
 
 **The escape-hatch export (rev 0.19, deferred with scope).**
 Distinct from the roundtrip backup, this is the data-freedom answer
@@ -2420,9 +2454,10 @@ honest about what survives (everything made) versus what dies
   linked images beside the prose is the best portable record.
 
 - Assets export as original files under original filenames with a
-  collision policy, optionally organized into tag-named folders,
-  plus a sidecar manifest (filename, hash, tags, source
-  attribution) in a spreadsheet-readable form.
+  collision policy, plus a sidecar manifest (filename, hash, tags,
+  source attribution) in a spreadsheet-readable form. Tag-named
+  folder copies are a sub-option, default off — duplicative by
+  design.
 
 - Every canvas exports as a full-resolution rendered image: the
   human-readable format of a board is a picture of it. Every
@@ -2527,7 +2562,7 @@ and that purging it produces a broken link offering explicit recreate.
 23. Verify Trash retention defaults to Never and that permanent purge
 invalidates dependent undo and enables safe garbage collection.
 
-24. Open the tree and graph takeover views and confirm trashed
+24. Open the outline and graph takeover views and confirm trashed
 records are excluded by default and drawn connectors appear as
 edges in neither.
 
@@ -2757,9 +2792,9 @@ canvas-local visibility and view filters.
 13. Exact-node and exact-placement link syntax.
 
 14. (Resolved in direction, rev 0.18.) The node library grows into
-the §14.4 library shape: the file-browser projection, library
-projects, and cross-project sourcing with copy-on-ingest. Note
-browsing and multi-facet detail still deserve their design pass.
+the §14.4 library shape: the gallery projection, library projects,
+and cross-project sourcing with copy-on-ingest. Note browsing and
+multi-facet detail still deserve their design pass.
 
 15. Label styling (typography, chrome, and the exact
 placement-proportional ratio with any legibility clamps), to be
@@ -2819,6 +2854,12 @@ the bookmark menu, not replacing it.
 workspace tabs. Expected shape: a second window onto the same
 project, which requires the multi-window story the §11.1
 single-writer rule already anticipates.
+
+26. The gallery keyboard model — arrow navigation and range
+selection over the grid (§14.4) — awaits its design turn.
+
+27. The OS-drop importer dialogue as the third compression of the
+gallery grammar (§14.4, §4.7) awaits its design turn.
 
 # 20. Decision summary
 
@@ -2919,7 +2960,7 @@ Accepted for the Phase 1 prototype:
 
 - A nodes-only node library with an Unplaced filter is a Phase 1
   requirement and the durable home for unplaced material, realized by
-  the tree takeover view (rev 0.17).
+  the outline takeover view (rev 0.17).
 
 - Trash is a lifecycle state and query view, not a container; automatic
   purge defaults to Never.
@@ -3057,7 +3098,8 @@ Accepted for the Phase 1 prototype:
 - The shell model (rev 0.17, from the July 2026 design-consult
   cycle): the window is the board; chrome floats and never reflows
   the canvas; node-local content opens as panels anchored to what
-  summoned them while project-global views (graph ⊛, tree ▤,
+  summoned them while project-global views (graph ⊛, gallery ⊞,
+  outline ▤,
   settings) take over the window, Esc-returning with the camera
   untouched. Mode charm rail, bottom dock, hover title strip, one
   shared engagement-fade clock, and the tooltip rule (every control
@@ -3104,8 +3146,9 @@ Accepted for the Phase 1 prototype:
   retires when the perch ships (rev 0.17).
 
 - The library direction (rev 0.18, §14.4): library entries are
-  unplaced nodes; a library is internally a project; the
-  file-browser projection is a view any project can open; projects
+  unplaced nodes; a library is internally a project ("library" is
+  the project kind, "gallery" is the view, rev 0.20); the gallery
+  projection is a view any project can open; projects
   source other projects read-only and ingest by copy, never by
   reference; tags cross that border by explicit decision; the
   placement picker is the compressed browser; the Allusion importer
