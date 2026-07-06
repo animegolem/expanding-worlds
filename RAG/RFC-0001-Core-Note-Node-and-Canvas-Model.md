@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.27         | 6 July 2026      |
+| Accepted for Phase 1 | 0.28         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -3036,12 +3036,16 @@ pipeline — the single-writer rule (§11.1) is preserved, asset
 transfer is idempotent by content hash, and §15's
 command-as-sync-unit becomes concrete. Two live writers stay out
 of scope; a server-authoritative client would be a different
-product. The open half is the rejected-replay surface: outbox
-commands that no longer apply need a picker presented not as a
-merge but as superposition (jj-style) — both versions persist as
-ordinary records, the user only picks which one the board shows,
-and nothing is destroyed. Awaits its design turn with the
-satellite work.
+product. The open half is the rejected-replay surface, and its
+governing rule (rev 0.28) is that superposition is LAZY: a replay
+that no longer applies never interrupts the sync and never demands
+resolution — both versions persist as ordinary records, the board
+shows one (default: the authoritative store's), and the stack of
+unresolved alternates just sits there until the user feels like
+picking, possibly never. There is no merge moment; "resolve" is a
+browse-and-choose whenever, not a gate on anything. Nothing is
+destroyed either way. Awaits its design turn with the satellite
+work.
 
 # 20. Decision summary
 
