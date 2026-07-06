@@ -19,6 +19,7 @@ import {
   type BookmarkListRow,
   type CanvasContentItem,
   type CanvasScene,
+  type TagViewNode,
 } from './queries-structure'
 
 let dir: string
@@ -191,6 +192,65 @@ describe('getTagView (§4.8)', () => {
     })
 
     expect(query('getTagView', { tagId: uuidv7() })).toBeNull()
+  })
+
+  it('carries active placement locations with canvas labels (AI-IMP-071)', () => {
+    // Board B: a titled canvas-owning node, so its canvas has a label.
+    const ownerNode = createNode()
+    committed('AttachNoteToNode', { nodeId: ownerNode, noteId: insertNote('Ruins Board') })
+    const boardB = uuidv7()
+    committed('CreateCanvas', { canvasId: boardB, nodeId: ownerNode })
+
+    // Carriers: multi-placed (root twice + board B), placed once, unplaced.
+    const multi = createNode()
+    const single = createNode()
+    const unplaced = createNode()
+    const multiRoot1 = createPlacement(multi)
+    const multiRoot2 = createPlacement(multi)
+    const multiB = createPlacement(multi, boardB)
+    const singleB = createPlacement(single, boardB)
+    const tagId = uuidv7()
+    committed('CreateTag', { tagId, name: 'ruins' })
+    for (const nodeId of [multi, single, unplaced])
+      committed('AssignTagToNode', { tagId, nodeId })
+
+    const view = query<{ nodes: TagViewNode[] } | null>('getTagView', { tagId })
+    const byId = new Map(view!.nodes.map((node) => [node.id, node]))
+
+    // Root canvas prints "Home" (the navigation stack's root label);
+    // board B prints its owning node's note title.
+    expect(byId.get(multi)!.placements).toEqual([
+      { placementId: multiRoot1, canvasId: handle.rootCanvasId, canvasLabel: 'Home' },
+      { placementId: multiRoot2, canvasId: handle.rootCanvasId, canvasLabel: 'Home' },
+      { placementId: multiB, canvasId: boardB, canvasLabel: 'Ruins Board' },
+    ])
+    expect(byId.get(single)!.placements).toEqual([
+      { placementId: singleB, canvasId: boardB, canvasLabel: 'Ruins Board' },
+    ])
+    // Unplaced carrier: a row with zero locations, not an omission.
+    expect(byId.get(unplaced)!.placements).toEqual([])
+    expect(byId.get(unplaced)!.placementCount).toBe(0)
+
+    // A trashed placement is not a location (§9.6 visibility rules).
+    handle.db.run("UPDATE placement SET lifecycle_state = 'trashed' WHERE id = ?", multiRoot2)
+    const after = query<{ nodes: TagViewNode[] } | null>('getTagView', { tagId })
+    const multiAfter = after!.nodes.find((node) => node.id === multi)!
+    expect(multiAfter.placements.map((p) => p.placementId)).toEqual([multiRoot1, multiB])
+    expect(multiAfter.placementCount).toBe(2)
+  })
+
+  it('exposes noteId and childCanvasId for row actions (AI-IMP-071)', () => {
+    const nodeId = createNode()
+    const noteId = insertNote('Watcher')
+    committed('AttachNoteToNode', { nodeId, noteId })
+    const childCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: childCanvasId, nodeId })
+    const tagId = uuidv7()
+    committed('CreateTag', { tagId, name: 'ruins' })
+    committed('AssignTagToNode', { tagId, nodeId })
+
+    const view = query<{ nodes: TagViewNode[] } | null>('getTagView', { tagId })
+    expect(view!.nodes[0]).toMatchObject({ id: nodeId, noteId, childCanvasId })
   })
 })
 
