@@ -28,6 +28,12 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Modal coverage** (AI-IMP-101, 2026-07-06): open the big
+  editor — the dock/rail/toasts now sit UNDER the backdrop (click
+  where the dock is: it closes the editor instead). Also: the
+  title-conflict dialog now centers over the whole canvas rather
+  than inside its panel — intended, but eyeball it.
+
 - [ ] **Grid crossfade** (AI-IMP-099, 2026-07-06): zoom continuously
   with the grid on, side-by-side with PureRef — subdivisions should
   fade in faint and stay subordinate, no popping. One deliberate

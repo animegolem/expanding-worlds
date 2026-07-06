@@ -5,12 +5,12 @@ tags:
   - Implementation
   - chrome
   - hardening
-kanban_status: backlog
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.85
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-101-trapped-modals
@@ -55,11 +55,11 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Root overlay host; big editor + conflict dialog portal into
+- [x] Root overlay host; big editor + conflict dialog portal into
       it; all existing panel/big-editor e2e stay green.
-- [ ] e2e: open big editor → a dock click lands on the backdrop
+- [x] e2e: open big editor → a dock click lands on the backdrop
       (closes the editor), not the dock.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -69,6 +69,17 @@ Before marking an item complete on the checklist MUST **stop** and
 no chrome renders above the scrim.
 
 ### Issues Encountered
+
+Opus-built, lead-transcribed. Portal-by-reference (appendChild
+action) — the same DOM-move property note-editor's reparent already
+relies on — so Escape/backdrop-Done/buffer-move semantics survived
+untouched; pointer-events re-opt-in handled on all three portaled
+surfaces (the silent-click-through trap). One visible change
+queued for the owner: TitleConflictDialog now centers canvas-wide
+instead of within its spawning panel (intended modal behavior).
+The new e2e clicks the dock's own center with the big editor open
+and proves the scrim eats it. Gates: 37 units, lint, 27 e2e on the
+branch + 35 combined post-merge.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

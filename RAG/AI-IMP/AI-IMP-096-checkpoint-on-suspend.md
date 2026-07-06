@@ -5,12 +5,12 @@ tags:
   - Implementation
   - persistence
   - electron
-kanban_status: backlog
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-010-hands-on-hardening]]
 confidence_score: 0.85
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-096-checkpoint-on-suspend
@@ -56,14 +56,14 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Checkpoint verb: service → PRAGMA wal_checkpoint(TRUNCATE);
+- [x] Checkpoint verb: service → PRAGMA wal_checkpoint(TRUNCATE);
       read-only services no-op; unit.
-- [ ] Main: suspend/lock-screen → flush + checkpoint; blur →
+- [x] Main: suspend/lock-screen → flush + checkpoint; blur →
       debounced same; never blocks quit or crashes on a dead
       utility.
-- [ ] e2e: verb round-trip shrinks/zeroes the -wal file after
+- [x] e2e: verb round-trip shrinks/zeroes the -wal file after
       writes.
-- [ ] Full gates.
+- [x] Full gates.
 
 ### Acceptance Criteria
 
@@ -73,6 +73,17 @@ Before marking an item complete on the checklist MUST **stop** and
 the db file is complete at rest without user action.
 
 ### Issues Encountered
+
+Opus-built, lead-transcribed. Blur debounce arms once and focus
+clears (no reset-thrash); suspend/lock bypass it. The e2e rides the
+EW_TEST_HOOKS seam end-to-end (burst of real edits → wal > 0 →
+verb → wal == 0 → data survived). Read-only services no-op; the
+writable library secondary checkpoints too. FOLLOW-UP flagged by
+the agent: readonly.test.ts fires a malformed CreatePin envelope it
+never asserts (commandId not UUIDv7) — its "owner has data"
+precondition may not hold; fix with the next persistence touch.
+Gates: 450 persistence (3 new) / 37 desktop units, lint, 8 e2e on
+the branch + 35 combined post-merge.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
