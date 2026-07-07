@@ -11,6 +11,7 @@
 <script lang="ts">
   import ConditionPanel from './ConditionPanel.svelte'
   import MenuPopover from './MenuPopover.svelte'
+  import TextInput from '../ui/TextInput.svelte'
   import { PERCH_PULSE_MS } from './feel'
   import { onSearchPanelChanged, toggleSearchPanel } from './search'
   import { openSourcePanel } from './source-slot'
@@ -145,10 +146,11 @@
             </button>
             <span class="row-label">Open as source…</span>
             <div class="source-prompt">
-              <input
-                type="text"
+              <TextInput
+                variant="standard"
                 data-testid="project-source-dir-input"
                 placeholder="/path/to/project"
+                style="width: 13rem; font-size: 0.72rem;"
                 bind:value={sourceDirInput}
                 onkeydown={(event) => {
                   if (event.key === 'Enter') confirmOpenSource()
@@ -312,18 +314,6 @@
     display: flex;
     gap: 0.25rem;
     padding: 0.1rem 0.35rem 0.2rem;
-  }
-
-  .source-prompt input {
-    width: 13rem;
-    box-sizing: border-box;
-    padding: 0.2rem 0.45rem;
-    background: var(--ew-surface-input);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 5px;
-    font: inherit;
-    font-size: 0.72rem;
   }
 
   .source-prompt .row {

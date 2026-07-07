@@ -60,22 +60,25 @@
     opacity: 0.5;
   }
 
-  /* Pill: TagPanel + SearchPanel search fields (font inherits the
-     panel's 0.78rem; no custom focus ring — browser default, as shipped). */
+  /* Pill: TagPanel + SearchPanel search fields — filter-in-place
+     grammar (font inherits the panel's 0.78rem). */
   .ew-text-input.pill {
     padding: 0.15rem 0.5rem;
     border-radius: 999px;
   }
 
-  /* Standard: SettingsView chrome field with the accent focus ring. */
+  /* Standard: SettingsView chrome field — configure grammar. */
   .ew-text-input.standard {
     padding: 0.25rem 0.45rem;
     border-radius: 5px;
     font-size: 0.8rem;
   }
 
-  .ew-text-input.standard:focus {
+  /* Focus is UNIFORM across both variants (kit 1.2 ruling): the shared
+     2px --ew-focus-ring outline at offset 1px — never the browser
+     default. */
+  .ew-text-input:focus {
     outline: 2px solid var(--ew-focus-ring);
-    outline-offset: 0;
+    outline-offset: 1px;
   }
 </style>

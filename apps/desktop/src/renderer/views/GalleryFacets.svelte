@@ -17,6 +17,8 @@
   than stale.
 -->
 <script lang="ts">
+  import TextInput from '../ui/TextInput.svelte'
+
   type GalleryKind = 'image' | 'note' | 'board'
   type GallerySort = 'date' | 'name' | 'size'
 
@@ -167,10 +169,11 @@
 
   <span class="field-wrap">
     <span class="hash">#</span>
-    <input
-      type="text"
+    <TextInput
+      variant="pill"
       data-testid="gallery-tag-input"
       placeholder="filter by tag…"
+      style="width: 9rem;"
       bind:value={search}
       onfocus={() => (searchFocus = true)}
       onblur={() => (searchFocus = false)}
@@ -307,17 +310,6 @@
   .hash {
     color: var(--ew-text-muted);
     font-weight: 600;
-  }
-
-  input {
-    width: 9rem;
-    box-sizing: border-box;
-    padding: 0.18rem 0.55rem;
-    background: var(--ew-surface-input);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    font: inherit;
   }
 
   .completions {

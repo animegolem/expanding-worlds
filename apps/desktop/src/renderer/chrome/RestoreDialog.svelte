@@ -167,7 +167,6 @@
       {#if phase.kind === 'confirm'}
         <Button
           variant="secondary"
-          size="dialog"
           data-testid="restore-confirm-cancel"
           onclick={() => (phase = { kind: 'list' })}
         >
@@ -175,7 +174,6 @@
         </Button>
         <Button
           variant="accent"
-          size="dialog"
           data-testid="restore-confirm-accept"
           onclick={() => {
             if (phase.kind === 'confirm') void confirmRestore(phase.entry)
@@ -184,12 +182,11 @@
           Create restored copy
         </Button>
       {:else if phase.kind === 'done'}
-        <Button variant="secondary" size="dialog" data-testid="restore-done" onclick={onclose}>
+        <Button variant="secondary" data-testid="restore-done" onclick={onclose}>
           Done
         </Button>
         <Button
           variant="accent"
-          size="dialog"
           data-testid="restore-open"
           onclick={() => {
             if (phase.kind === 'done') void window.ew.snapshot.open(phase.dir)
@@ -200,15 +197,14 @@
       {:else if phase.kind === 'failed'}
         <Button
           variant="secondary"
-          size="dialog"
           data-testid="restore-failed-back"
           onclick={() => (phase = { kind: 'list' })}
         >
           Back
         </Button>
-        <Button variant="accent" size="dialog" onclick={onclose}>Close</Button>
+        <Button variant="accent" onclick={onclose}>Close</Button>
       {:else}
-        <Button variant="secondary" size="dialog" data-testid="restore-close" onclick={onclose}>
+        <Button variant="secondary" data-testid="restore-close" onclick={onclose}>
           Close
         </Button>
       {/if}
@@ -315,10 +311,14 @@
     color: var(--ew-text-subtle);
   }
 
+  /* AI-IMP-153: a read-only path chip, not an input field — painted
+     from the raised surface (never the input-field token) so the
+     input-styling guard can go absolute (the field token marks fields
+     only). */
   .path {
     margin: 0;
     padding: 0.4rem 0.5rem;
-    background: var(--ew-surface-input);
+    background: var(--ew-surface-raised);
     border-radius: 4px;
     font-family: ui-monospace, monospace;
     font-size: 0.72rem;

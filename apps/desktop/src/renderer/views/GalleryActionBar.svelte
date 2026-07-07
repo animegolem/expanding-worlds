@@ -23,6 +23,8 @@
   import { nameKey, uuidv7 } from '@ew/domain'
   import type { CommandResult } from '@ew/commands'
   import { toast } from '../chrome/status'
+  import Button from '../ui/Button.svelte'
+  import TextInput from '../ui/TextInput.svelte'
 
   interface TagCount {
     id: string
@@ -203,25 +205,26 @@
          Ingests by copy (or recognizes an existing node) and hands off
          to the board's place cursor; the tag/place/trash below stay
          browse-only. -->
-    <button
-      type="button"
-      class="action pull"
+    <Button
+      variant="accent"
       data-testid="gallery-action-pull"
+      style="font-weight: 600;"
       disabled={busy || !canPull}
       title={canPull ? undefined : PULL_HINT}
       onclick={(event) => onPull?.(event)}
     >
       pull into this world
-    </button>
+    </Button>
   {/if}
 
   {#if tagOpen}
     <span class="field-wrap">
-      <input
-        type="text"
+      <TextInput
+        variant="pill"
         placeholder="tag…"
         data-testid="gallery-action-tag-input"
-        bind:this={tagInput}
+        style="width: 10rem;"
+        bind:ref={tagInput}
         bind:value={tagName}
         onfocus={() => (tagFocus = true)}
         onblur={() => (tagFocus = false)}
@@ -247,10 +250,8 @@
     </span>
   {/if}
 
-  <button
-    type="button"
-    class="action"
-    class:on={tagOpen}
+  <Button
+    variant={tagOpen ? 'accent' : 'default'}
     aria-pressed={tagOpen}
     data-testid="gallery-action-tag"
     disabled={busy || readOnly}
@@ -258,27 +259,25 @@
     onclick={() => (tagOpen = !tagOpen)}
   >
     tag
-  </button>
-  <button
-    type="button"
-    class="action"
+  </Button>
+  <Button
+    variant="default"
     data-testid="gallery-action-place"
     disabled={busy || readOnly}
     title={readOnly ? READ_ONLY_HINT : undefined}
     onclick={onPlace}
   >
     place
-  </button>
-  <button
-    type="button"
-    class="action"
+  </Button>
+  <Button
+    variant="default"
     data-testid="gallery-action-trash"
     disabled={busy || readOnly}
     title={readOnly ? READ_ONLY_HINT : undefined}
     onclick={() => void trashSelection()}
   >
     trash
-  </button>
+  </Button>
   <button
     type="button"
     class="clear"
@@ -319,45 +318,6 @@
     border-radius: 999px;
   }
 
-  .action {
-    padding: 0.2rem 0.65rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 6px;
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .action:hover:not(:disabled) {
-    background: var(--ew-surface-subtle);
-  }
-
-  .action.on {
-    background: var(--ew-accent);
-    border-color: var(--ew-accent);
-    color: var(--ew-on-accent);
-  }
-
-  /* 115: the one live everything-scope action reads as the primary
-     move — accent-filled while enabled, greyed by the shared rule. */
-  .action.pull:not(:disabled) {
-    background: var(--ew-accent);
-    border-color: var(--ew-accent);
-    color: var(--ew-on-accent);
-    font-weight: 600;
-  }
-
-  .action.pull:not(:disabled):hover {
-    background: var(--ew-accent);
-    filter: brightness(1.05);
-  }
-
-  .action:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
   .clear {
     padding: 0.15rem 0.4rem;
     background: transparent;
@@ -373,17 +333,6 @@
 
   .field-wrap {
     position: relative;
-  }
-
-  input {
-    width: 10rem;
-    box-sizing: border-box;
-    padding: 0.2rem 0.55rem;
-    background: var(--ew-surface-input);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    font: inherit;
   }
 
   /* The bar hugs the sheet's bottom edge — completions open UPWARD. */

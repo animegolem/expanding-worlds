@@ -70,6 +70,7 @@
   import { openCornerPanel } from '../note/panels'
   import GalleryActionBar from './GalleryActionBar.svelte'
   import GalleryFacets from './GalleryFacets.svelte'
+  import TextInput from '../ui/TextInput.svelte'
   import { bucketByDate, type GalleryBucket } from './gallery-buckets'
   import {
     bucketJumpTarget,
@@ -1100,10 +1101,11 @@
           gallery — point it at an existing project directory.
         </p>
         <div class="designate-row">
-          <input
-            type="text"
+          <TextInput
+            variant="standard"
             data-testid="gallery-designate-input"
             placeholder="/path/to/library-project"
+            style="flex: 1;"
             bind:value={libraryDirInput}
             onkeydown={(event) => {
               if (event.key === 'Enter') designateLibrary()
@@ -1335,23 +1337,12 @@
     gap: 0.45rem;
   }
 
-  .designate-row input {
-    flex: 1;
-    box-sizing: border-box;
-    padding: 0.3rem 0.6rem;
-    background: var(--ew-surface-input);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 6px;
-    font: inherit;
-  }
-
   .designate-row button {
     padding: 0.3rem 0.75rem;
     background: var(--ew-surface-raised);
     color: var(--ew-text);
     border: 1px solid var(--ew-border-strong);
-    border-radius: 6px;
+    border-radius: 5px;
     font: inherit;
     cursor: pointer;
   }
@@ -1378,7 +1369,7 @@
     background: var(--ew-surface-raised);
     color: var(--ew-text);
     border: 1px solid var(--ew-border-strong);
-    border-radius: 6px;
+    border-radius: 5px;
     font: inherit;
     cursor: pointer;
   }
