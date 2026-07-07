@@ -17,9 +17,14 @@ import {
   type SceneBackground,
   type ScenePlacement,
 } from '@ew/canvas-engine'
-import type { CommandResult } from '@ew/commands'
+import { uuidv7 } from '@ew/domain'
+import { FRAME_SORT_ON_DROP_PREFIX } from '@ew/protocol'
+import type { CommandResult, TransformContentPayload } from '@ew/commands'
 import type { Sprite } from 'pixi.js'
-import { takeoverActive } from '../chrome/takeover'
+import { openTakeover, takeoverActive } from '../chrome/takeover'
+import { runAsUndoGroup } from '../undo/undo-store'
+import { beginFrameLoad, onLoadIntoFrame } from './frame-load'
+import { scopedArrangePayload } from './frame-arrange'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -52,6 +57,15 @@ export interface BoardTooling {
   arrange(key: ArrangeSortKey): Promise<void>
   /** §6.9 normalize: equalize the selection's dimensions to the median. */
   normalize(mode: NormalizeMode): Promise<void>
+  /** §4.9 (AI-IMP-129): compact-pack a frame's direct members inside its
+   * drawn box on demand — the same scoped arrange sort-on-drop runs. */
+  sortFrame(framePlacementId: string): Promise<void>
+  /** §4.9 per-frame sort-on-drop flag (absent = ON). */
+  frameSortOnDrop(framePlacementId: string): Promise<boolean>
+  setFrameSortOnDrop(framePlacementId: string, on: boolean): Promise<void>
+  /** §4.9 load-from-library-into-frame: park this frame and open the
+   * existing gallery picker; the pick lands captured + arranged. */
+  loadIntoFrame(framePlacementId: string): void
   /** §6.8 z-order on the current selection (placements + decorations). */
   reorder(op: ReorderOp): Promise<void>
   zoomToFit(): void
@@ -186,6 +200,93 @@ export function attachBoardTooling(
     const payload = normalizeSelection(handle.canvasId, controller.selectedItems(), mode)
     if (payload) await run('TransformContent', payload)
   }
+
+  // ---- §4.9 frame actions (AI-IMP-129) ----
+
+  interface FrameNode {
+    placementId: string
+    members: FrameNode[]
+  }
+  function findFrameNode(nodes: FrameNode[], placementId: string): FrameNode | null {
+    for (const node of nodes) {
+      if (node.placementId === placementId) return node
+      const hit = findFrameNode(node.members, placementId)
+      if (hit) return hit
+    }
+    return null
+  }
+
+  /** The scoped-arrange payload for a frame's DIRECT members (read from
+   * getFrameTree so nested frames pack as one block, not scattered). */
+  async function arrangeFramePayload(
+    framePlacementId: string,
+  ): Promise<TransformContentPayload | null> {
+    const canvasId = handle.canvasId
+    const response = await window.ew.project.query('getFrameTree', { canvasId })
+    if (!response.ok) return null
+    const tree = response.result as { roots: FrameNode[] }
+    const node = findFrameNode(tree.roots, framePlacementId)
+    if (!node) return null
+    const memberIds = new Set(node.members.map((m) => m.placementId))
+    const frame = controller.items().find((item) => item.id === framePlacementId)
+    if (!frame || frame.itemKind !== 'placement') return null
+    const members = controller.items().filter((item) => memberIds.has(item.id))
+    return scopedArrangePayload(canvasId, frame, members)
+  }
+
+  async function sortFrame(framePlacementId: string): Promise<void> {
+    const payload = await arrangeFramePayload(framePlacementId)
+    if (payload) await run('TransformContent', payload)
+  }
+
+  async function frameSortOnDrop(framePlacementId: string): Promise<boolean> {
+    const response = await window.ew.project.query('getSettings')
+    if (!response.ok) return true
+    const settings = response.result as Record<string, unknown>
+    return settings[`${FRAME_SORT_ON_DROP_PREFIX}${framePlacementId}`] !== false
+  }
+
+  async function setFrameSortOnDrop(framePlacementId: string, on: boolean): Promise<void> {
+    await window.ew.settings.setProject(`${FRAME_SORT_ON_DROP_PREFIX}${framePlacementId}`, on)
+  }
+
+  function loadIntoFrame(framePlacementId: string): void {
+    // Reuse the §14.4 gallery picker: park the frame, open the takeover.
+    beginFrameLoad({ framePlacementId, canvasId: handle.canvasId })
+    openTakeover('gallery')
+  }
+
+  /** Gallery place with a parked frame target (frame-load.ts): place
+   * each picked node into the frame, capture, and arrange to the drawn
+   * size — one compound undo. Runs on THIS board only. */
+  const offLoadIntoFrame = onLoadIntoFrame(({ nodeIds, framePlacementId, canvasId }) => {
+    if (canvasId !== handle.canvasId) return
+    void runAsUndoGroup(async () => {
+      const frame = controller.items().find((item) => item.id === framePlacementId)
+      if (!frame || frame.itemKind !== 'placement') return
+      const placementIds: string[] = []
+      let step = 0
+      for (const nodeId of nodeIds) {
+        const placementId = uuidv7()
+        const result = await gateway.execute('CreatePlacement', {
+          placementId,
+          canvasId,
+          nodeId,
+          x: frame.x + step * 24,
+          y: frame.y + step * 24,
+        })
+        if (result.status === 'committed') {
+          placementIds.push(placementId)
+          step += 1
+        }
+      }
+      if (placementIds.length === 0) return
+      await handle.waitForItems(placementIds)
+      await gateway.execute('CaptureInFrame', { framePlacementId, memberPlacementIds: placementIds })
+      const payload = await arrangeFramePayload(framePlacementId)
+      if (payload) await gateway.execute('TransformContent', payload)
+    })
+  })
 
   async function reorder(op: ReorderOp): Promise<void> {
     const payloads = reorderPayloads(
@@ -465,6 +566,10 @@ export function attachBoardTooling(
     distribute,
     arrange,
     normalize,
+    sortFrame,
+    frameSortOnDrop,
+    setFrameSortOnDrop,
+    loadIntoFrame,
     reorder,
     zoomToFit,
     zoomToSelection,
@@ -486,6 +591,7 @@ export function attachBoardTooling(
     },
     destroy() {
       unsubscribeProject()
+      offLoadIntoFrame()
       canvas.removeEventListener('pointerdown', onPointerDownCapture, { capture: true })
       canvas.removeEventListener('pointermove', onPointerMoveCapture, { capture: true })
       canvas.removeEventListener('pointerup', onPointerUpCapture, { capture: true })

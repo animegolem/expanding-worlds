@@ -62,6 +62,8 @@ import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { themeTokenValue } from '../theme'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { attachGesturesUI } from './gestures-ui'
+import { scopedArrangePayload } from './frame-arrange'
+import { FRAME_SORT_ON_DROP_PREFIX } from '@ew/protocol'
 import type { Rect } from '@ew/canvas-engine'
 
 /**
@@ -129,6 +131,11 @@ export interface CanvasHostHandle {
    * selecting after a cross-canvas navigateTo (AI-IMP-113). Callers
    * degrade gracefully on false (fly to whatever is present). */
   waitForItems(ids: readonly string[], opts?: { timeoutMs?: number }): Promise<boolean>
+  /** §4.9 frame create composite (AI-IMP-127/129): create-node +
+   * frame-appearance + placement as one undo group; returns the new
+   * frame placement id (null on failure). A caller inside its own undo
+   * group (the multi-drop composite) gets the id to capture members. */
+  commitFrame(region: { x: number; y: number; width: number; height: number }): Promise<string | null>
   /** §12.2 single live canvas: swap the mounted canvas, releasing
    * the previous scene's textures. */
   openCanvas(canvasId: string): Promise<void>
@@ -637,6 +644,70 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     return { captures, releases }
   }
 
+  /** §4.9 sort-on-drop (AI-IMP-129): build a scoped-arrange
+   * TransformContent for each captured frame whose per-frame flag is ON
+   * (absent = ON), from the members' POST-MOVE geometry — this runs
+   * inside the drop's undo group, so the drop + the sort are one Mod+Z.
+   * Fires ONLY on a capture (never mid-drag, never a plain move / carry).
+   * Direct members only: nested frames arrange their own contents. */
+  function sortOnDropPayloads(
+    payload: TransformContentPayload,
+    captures: Map<string, string[]>,
+    settings: Record<string, unknown>,
+  ): TransformContentPayload[] {
+    const movedById = new Map(
+      payload.items
+        .filter(
+          (i): i is Extract<TransformContentPayload['items'][number], { kind: 'placement' }> =>
+            i.kind === 'placement',
+        )
+        .map((m) => [m.placementId, m]),
+    )
+    const geomOf = (id: string): SceneItem | null => {
+      const base = sync.item(id) ?? null
+      if (!base || base.itemKind !== 'placement') return base
+      const m = movedById.get(id)
+      if (!m) return base
+      return { ...base, x: m.x, y: m.y, width: m.width, height: m.height, scale: m.scale, rotation: m.rotation }
+    }
+    // Ids this move re-parented AWAY from a given frame (captured by
+    // another frame) — excluded so a stale index entry doesn't drag them
+    // back into the arrange.
+    const capturedElsewhere = (frameId: string, id: string): boolean => {
+      for (const [otherFrame, ids] of captures) {
+        if (otherFrame !== frameId && ids.includes(id)) return true
+      }
+      return false
+    }
+    const out: TransformContentPayload[] = []
+    for (const [frameId, capturedHere] of captures) {
+      // Sort-on-drop tidies the frame when a genuine multi-item drop
+      // lands (a Pinterest-board drop, §4.9) — a single item dragged in
+      // never reshuffles the existing arrangement. `arrangePayload` is
+      // itself a no-op below 2 members, so this also guards that.
+      if (capturedHere.length < 2) continue
+      if (settings[`${FRAME_SORT_ON_DROP_PREFIX}${frameId}`] === false) continue
+      const frame = geomOf(frameId)
+      if (!frame || frame.itemKind !== 'placement') continue
+      // Direct members post-drop: the newly captured ids plus the frame's
+      // existing direct members (stale index, minus anything leaving).
+      const memberIds = new Set<string>(capturedHere)
+      for (const item of controller.items()) {
+        if (frameIndex.parentOf(item.id) !== frameId) continue
+        if (capturedElsewhere(frameId, item.id)) continue
+        memberIds.add(item.id)
+      }
+      const members: SceneItem[] = []
+      for (const id of memberIds) {
+        const g = geomOf(id)
+        if (g) members.push(g)
+      }
+      const arrange = scopedArrangePayload(canvasId, frame, members)
+      if (arrange) out.push(arrange)
+    }
+    return out
+  }
+
   async function resolveMoveWithMembership(payload: TransformContentPayload): Promise<void> {
     const { captures, releases } = computeMembershipChanges(payload)
     if (captures.size === 0 && releases.length === 0) {
@@ -644,7 +715,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       clearHoverDim()
       return
     }
-    // One undo entry: the move and every capture/release commit together.
+    // §4.9 sort-on-drop reads the per-frame flags before mutating; the
+    // arrange payloads are computed from the move's post-move geometry
+    // (the scene has not re-applied yet) so they land in the same group.
+    let arranges: TransformContentPayload[] = []
+    if (captures.size > 0) {
+      const response = await window.ew.project.query('getSettings')
+      const settings = response.ok ? (response.result as Record<string, unknown>) : {}
+      arranges = sortOnDropPayloads(payload, captures, settings)
+    }
+    // One undo entry: the move, every capture/release, and the scoped
+    // arrange of each sort-on-drop frame all commit together.
     await runAsUndoGroup(async () => {
       await gateway.execute('TransformContent', payload)
       for (const [framePlacementId, memberPlacementIds] of captures) {
@@ -653,21 +734,28 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       if (releases.length > 0) {
         await gateway.execute('ReleaseFromFrame', { memberPlacementIds: releases })
       }
+      for (const arrange of arranges) {
+        await gateway.execute('TransformContent', arrange)
+      }
     })
     clearHoverDim()
   }
 
   /** §4.9 frame create composite (AI-IMP-127): create-node +
    * frame-appearance + placement as ONE undo entry. Region is the drawn
-   * rect (top-left + size); the placement (x,y) is its center. */
+   * rect (top-left + size); the placement (x,y) is its center. Returns
+   * the new frame placement id (or null on failure) so a caller inside
+   * its OWN undo group — the multi-drop group composite (AI-IMP-129) —
+   * can capture members into it; nested runAsUndoGroup runs inline. */
   async function commitFrame(region: {
     x: number
     y: number
     width: number
     height: number
-  }): Promise<void> {
+  }): Promise<string | null> {
     const nodeId = uuidv7()
     const placementId = uuidv7()
+    let ok = false
     await runAsUndoGroup(async () => {
       const created = await gateway.execute('CreateNode', { nodeId })
       if (created.status !== 'committed') return
@@ -676,7 +764,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         appearance: { kind: 'frame' },
       })
       if (appearance.status !== 'committed') return
-      await gateway.execute('CreatePlacement', {
+      const placed = await gateway.execute('CreatePlacement', {
         placementId,
         canvasId,
         nodeId,
@@ -685,7 +773,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         width: region.width,
         height: region.height,
       })
+      ok = placed.status === 'committed'
     })
+    return ok ? placementId : null
   }
 
   // §12.2: culling + lazy texture residency, coalesced to one pass
@@ -1323,6 +1413,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       }
     },
     contentStageExtent: () => (contentTarget ? { ...contentTarget } : null),
+    commitFrame,
     setLens: (ids: readonly string[]) => controller.lens.set(ids),
     clearLens: () => controller.lens.clear(),
     lens: () => controller.lens.ids(),

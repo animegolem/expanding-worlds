@@ -1,4 +1,5 @@
 import { uuidv7 } from '@ew/domain'
+import { arrangePayload, type SceneItem } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from './host'
 import {
@@ -8,8 +9,15 @@ import {
   type ImportOutcome,
 } from '../chrome/import-progress'
 import { queueMirrorForDrop } from '../chrome/mirror'
+import {
+  MULTI_DROP_MODAL_THRESHOLD,
+  requestDropBehavior,
+  type DropChoice,
+} from '../chrome/drop-behavior'
 import { sourceBorder } from '../chrome/source-slot'
 import { toast } from '../chrome/status'
+import { runAsUndoGroup } from '../undo/undo-store'
+import { frameRegionAround } from './frame-arrange'
 import { themeTokenValue } from '../theme'
 
 /**
@@ -96,12 +104,13 @@ async function createImagePin(
   assetId: string,
   world: Point,
   canvasId: string,
-): Promise<string | null> {
+): Promise<{ nodeId: string; placementId: string } | null> {
   const nodeId = uuidv7()
+  const placementId = uuidv7()
   const result = await host.gateway.execute('CreatePin', {
     nodeId,
     canvasId,
-    placementId: uuidv7(),
+    placementId,
     x: world.x,
     y: world.y,
     appearance: { kind: 'image', assetId, crop: null },
@@ -110,7 +119,7 @@ async function createImagePin(
     onError(describeFailure('CreatePin', result))
     return null
   }
-  return nodeId
+  return { nodeId, placementId }
 }
 
 /** One file through the staged pipeline, then its CreatePin. A
@@ -128,7 +137,7 @@ async function importOneFile(
   canvasId: string,
   mirror: { anchor: Point; bulk: boolean },
   sourceUrl?: string,
-): Promise<ImportOutcome> {
+): Promise<{ outcome: ImportOutcome; placementId: string | null }> {
   const bytes = new Uint8Array(await file.arrayBuffer())
   const input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string } = {
     bytes,
@@ -138,21 +147,21 @@ async function importOneFile(
   const imported = await window.ew.project.importAsset(input)
   if (!imported.ok) {
     onError(imported.message)
-    return 'failed'
+    return { outcome: 'failed', placementId: null }
   }
   // A committed asset with no pin is invisible (the gallery is
   // node-backed) — report it as the failure it is; the orphaned
   // bytes stay GC-eligible per §9.8 and hash dedupe re-finds them.
-  const nodeId = await createImagePin(host, onError, imported.assetId, world, canvasId)
-  if (nodeId === null) return 'failed'
+  const pin = await createImagePin(host, onError, imported.assetId, world, canvasId)
+  if (pin === null) return { outcome: 'failed', placementId: null }
   queueMirrorForDrop({
     assetId: imported.assetId,
-    nodeId,
+    nodeId: pin.nodeId,
     clientX: mirror.anchor.x,
     clientY: mirror.anchor.y,
     bulk: mirror.bulk,
   })
-  return imported.deduplicated ? 'deduped' : 'imported'
+  return { outcome: imported.deduplicated ? 'deduped' : 'imported', placementId: pin.placementId }
 }
 
 /** §6.1: import each file, then one CreatePin per success. Small
@@ -178,7 +187,7 @@ async function importFiles(
     const drop = { placed: 0 }
     enqueueImportBatch(
       files.map((file) => async () => {
-        const outcome = await importOneFile(
+        const { outcome } = await importOneFile(
           host,
           onError,
           file,
@@ -198,7 +207,7 @@ async function importFiles(
   }
   let placed = 0
   for (const file of files) {
-    const outcome = await importOneFile(
+    const { outcome } = await importOneFile(
       host,
       onError,
       file,
@@ -212,6 +221,102 @@ async function importFiles(
     )
     if (outcome !== 'failed') placed += 1
   }
+}
+
+/**
+ * §4.9 rev 0.38 multi-drop composition (AI-IMP-129). A drop/paste of
+ * N≥{@link MULTI_DROP_MODAL_THRESHOLD} images resolves a behavior
+ * (stored, or the once-per-drop ask) and lands the whole thing — import
+ * of every image PLUS the sort / frame / capture — as ONE compound undo,
+ * so a single Mod+Z returns the board to pre-drop. `separate` keeps the
+ * ordinary cascade (its own batch/progress path). A composite NEVER
+ * enters the library: every image stays its own asset + node (the frame
+ * is a note-node with no asset), so per-image tags and hash dedupe hold.
+ */
+function runMultiDrop(
+  host: CanvasHostHandle,
+  onError: (message: string) => void,
+  files: File[],
+  world: Point,
+  anchor: Point,
+  canvasId: string,
+  source: 'drop' | 'paste',
+  sourceUrl?: string,
+): void {
+  void requestDropBehavior({
+    anchor,
+    count: files.length,
+    source,
+    run: (choice) => void applyDropChoice(host, onError, choice, files, world, anchor, canvasId, sourceUrl),
+  })
+}
+
+async function applyDropChoice(
+  host: CanvasHostHandle,
+  onError: (message: string) => void,
+  choice: DropChoice,
+  files: File[],
+  world: Point,
+  anchor: Point,
+  canvasId: string,
+  sourceUrl?: string,
+): Promise<void> {
+  if (choice === 'separate') {
+    await importFiles(host, onError, files, world, anchor, canvasId, sourceUrl)
+    return
+  }
+  const wantSort = choice === 'sort' || choice === 'group-and-sort'
+  const wantFrame = choice === 'group' || choice === 'group-and-sort'
+  await runAsUndoGroup(async () => {
+    // Deferred import — every CreatePin lands INSIDE the group so undo
+    // removes the imports with the frame/sort. Cascade first; sort (if
+    // asked) repacks over the real committed sizes.
+    const placementIds: string[] = []
+    let placed = 0
+    for (const file of files) {
+      const { placementId } = await importOneFile(
+        host,
+        onError,
+        file,
+        { x: world.x + placed * MULTI_DROP_OFFSET, y: world.y + placed * MULTI_DROP_OFFSET },
+        canvasId,
+        { anchor, bulk: files.length > 1 },
+        sourceUrl,
+      )
+      if (placementId) {
+        placementIds.push(placementId)
+        placed += 1
+      }
+    }
+    if (placementIds.length === 0) return
+    const wanted = new Set(placementIds)
+    const readItems = async (): Promise<SceneItem[]> => {
+      await host.waitForItems(placementIds)
+      return host.controller.items().filter((item) => wanted.has(item.id))
+    }
+    let items = await readItems()
+    if (wantSort) {
+      const arrange = arrangePayload(canvasId, items, 'default', { origin: world })
+      if (arrange) {
+        await host.gateway.execute('TransformContent', arrange)
+        // Read the packed geometry so a frame wraps the tiled block.
+        await host.whenSceneApplied()
+        items = host.controller.items().filter((item) => wanted.has(item.id))
+      }
+    }
+    if (wantFrame) {
+      const region = frameRegionAround(items)
+      if (region) {
+        const framePlacementId = await host.commitFrame(region)
+        if (framePlacementId) {
+          await host.gateway.execute('CaptureInFrame', {
+            framePlacementId,
+            memberPlacementIds: placementIds,
+          })
+        }
+      }
+    }
+  })
 }
 
 /** AI-IMP-097: a note surface (panel or big editor) intercepted an
@@ -268,13 +373,13 @@ export function attachImportSurfaces(
       onError(imported.message)
       return
     }
-    const nodeId = await createImagePin(host, onError, imported.assetId, world, canvasId)
+    const pin = await createImagePin(host, onError, imported.assetId, world, canvasId)
     // A URL drop is a capture like any other (§14.4) — offer it to
     // the mirror; provenance rides the asset's source_url.
-    if (nodeId !== null) {
+    if (pin !== null) {
       queueMirrorForDrop({
         assetId: imported.assetId,
-        nodeId,
+        nodeId: pin.nodeId,
         clientX: anchor.x,
         clientY: anchor.y,
         bulk: false,
@@ -367,15 +472,15 @@ export function attachImportSurfaces(
     } else if (noteId.length > 0) {
       void placeZeroNodeNote(noteId, world)
     } else if (files.length > 0) {
-      void importFiles(
-        host,
-        onError,
-        files,
-        world,
-        { x: event.clientX, y: event.clientY },
-        host.canvasId, // gesture-time board (AI-IMP-085)
-        sourceUrlFrom(uriList, html),
-      )
+      const anchor = { x: event.clientX, y: event.clientY }
+      const sourceUrl = sourceUrlFrom(uriList, html)
+      // §4.9 (AI-IMP-129): a multi-image drop asks how to land; a single
+      // image keeps the unchanged ordinary import.
+      if (files.length >= MULTI_DROP_MODAL_THRESHOLD) {
+        runMultiDrop(host, onError, files, world, anchor, host.canvasId, 'drop', sourceUrl)
+      } else {
+        void importFiles(host, onError, files, world, anchor, host.canvasId, sourceUrl)
+      }
     } else {
       const url = firstUri(uriList)
       if (url) void importFromUrl(url, world, { x: event.clientX, y: event.clientY })
@@ -405,7 +510,14 @@ export function attachImportSurfaces(
     const anchor = lastCursor
       ? { x: bounds.left + lastCursor.x, y: bounds.top + lastCursor.y }
       : { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 }
-    void importFiles(host, onError, [...dt.files], world, anchor, host.canvasId)
+    const pasted = [...dt.files]
+    // §4.9 (AI-IMP-129): a multi-image paste asks "separate images or an
+    // arranged frame"; a single image keeps the ordinary paste.
+    if (pasted.length >= MULTI_DROP_MODAL_THRESHOLD) {
+      runMultiDrop(host, onError, pasted, world, anchor, host.canvasId, 'paste')
+    } else {
+      void importFiles(host, onError, pasted, world, anchor, host.canvasId)
+    }
   }
 
   element.addEventListener('dragover', onDragOver)

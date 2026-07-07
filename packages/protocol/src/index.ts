@@ -272,6 +272,37 @@ export type CheckpointWalResponse =
 export type SnapshotMode = 'off' | 'commit' | 'commit-push'
 export const SNAPSHOT_MODE_KEY = 'snapshot_mode'
 
+/** §4.9 rev 0.38 drop behavior (AI-IMP-129): what a multi-image
+ * drop/paste does, stored as an ordinary project-tier setting (key
+ * `drop_behavior`, no migration — the settings table like
+ * `snapshot_mode`). `ask` shows the once-per-drop modal (the §14.4
+ * first-drop ask idiom) and is the default; the three concrete values
+ * skip the modal and apply directly. `sort` compact-packs the set in
+ * place (§6.9 packer, default key); `group` draws a frame around the
+ * set and captures it; `group-and-sort` does both. `keep-separate`
+ * (dismiss/idle) is NOT a stored value — it is the transient fallback
+ * an unanswered ask lands on, matching the mirror ask's ignore-is-
+ * dismissal posture. */
+export type DropBehavior = 'ask' | 'sort' | 'group' | 'group-and-sort'
+export const DROP_BEHAVIOR_KEY = 'drop_behavior'
+/** The stored (non-`keep-separate`) values, in Settings-row order. */
+export const DROP_BEHAVIOR_VALUES: readonly DropBehavior[] = [
+  'ask',
+  'sort',
+  'group',
+  'group-and-sort',
+]
+/** §4.9 per-frame sort-on-drop flag (AI-IMP-129): keyed by the FRAME
+ * PLACEMENT id (`frame_sort_on_drop:<placementId>`), stored in the
+ * same settings table (no migration). Absent means ON — a freshly
+ * drawn frame arranges drops within itself with no write; the toggle
+ * only ever writes `false` to turn it off (and deletes back to ON is
+ * modelled as writing `true`). Keyed by placement, not node, because
+ * the behavior is a property of the on-canvas region a drop lands in
+ * (capture is per placement), and a frame node is reusable across
+ * canvases. */
+export const FRAME_SORT_ON_DROP_PREFIX = 'frame_sort_on_drop:'
+
 /** §16 readable notes tree write (AI-IMP-120): regenerate `notes/` on
  * the service's single writer and return counts for the commit message.
  * A separate verb from checkpoint-wal because a snapshot writes the
