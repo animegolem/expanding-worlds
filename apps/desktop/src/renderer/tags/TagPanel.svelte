@@ -15,6 +15,7 @@
 <script lang="ts">
   import { shortCode } from '@ew/domain'
   import NodeRow from '../rows/NodeRow.svelte'
+  import TextInput from '../ui/TextInput.svelte'
   import type { CanvasHostHandle } from '../canvas/host'
   import { navigateTo } from '../chrome/navigation'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
@@ -210,10 +211,11 @@
   <header>
     <span class="hash">#</span>
     <span class="field-wrap">
-      <input
-        type="text"
+      <TextInput
+        variant="pill"
         data-testid="tag-panel-input"
         placeholder="tag…"
+        style="width: 100%"
         bind:value={search}
         onfocus={() => (searchFocus = true)}
         onblur={() => (searchFocus = false)}
@@ -351,17 +353,6 @@
     position: relative;
     flex: 1;
     min-width: 0;
-  }
-
-  input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0.15rem 0.5rem;
-    background: var(--ew-surface-input);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    font: inherit;
   }
 
   .tag-completions {

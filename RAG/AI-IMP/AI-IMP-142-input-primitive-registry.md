@@ -62,11 +62,11 @@ Guard test sibling.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Primitives land, token-only, datalist-free by construction.
-- [ ] Four surfaces migrated pixel-equivalent (their existing e2e
+- [x] Primitives land, token-only, datalist-free by construction.
+- [x] Four surfaces migrated pixel-equivalent (their existing e2e
       untouched and green).
-- [ ] Guard flags a planted hand-rolled input (prove, remove).
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Guard flags a planted hand-rolled input (prove, remove).
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 
 ### Acceptance Criteria
@@ -83,3 +83,44 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **No single shipped button/input grammar.** The four surfaces had
+  genuinely divergent geometry, so the primitives are parameterised
+  rather than one-shape: `TextInput` variant `pill` (999px, TagPanel /
+  SearchPanel) vs `standard` (5px + accent focus ring, SettingsView);
+  `Button` orthogonal `variant` (default | accent | secondary |
+  danger) × `size` (`chrome` 5px/0.75rem = Settings text-button,
+  `dialog` 4px/0.8rem = RestoreDialog actions). Every consuming value
+  matches its pre-migration CSS exactly. Layout (width / flex:none /
+  max-width) stays a caller concern via `style=` — the primitives own
+  only the skin.
+- **Kit reference vs shipped look.** The kit's `TextInput.jsx` /
+  `Button.jsx` reference `var(--ew-font-ui)`, which is NOT defined in
+  theme.css (would fail the theme guard and fall back silently). The
+  shipped surfaces all use `font: inherit`; I followed the shipped
+  look, not the kit token, per "consolidation, not redesign".
+- **Deliberate non-uniformity preserved.** Pill inputs shipped with
+  NO custom focus ring (browser default); only the standard variant
+  has the accent outline. Kept as-is for pixel-equivalence rather than
+  unifying — a redesign call, out of scope.
+- **`danger` Button variant** is carried for grammar completeness
+  (tokens exist) but has no current consumer.
+- **Computed-style spot check is a Playwright spec, not vitest.**
+  Desktop vitest runs in the node env with no DOM / CSS cascade, so
+  `getComputedStyle` cannot resolve class styling there. Per the
+  ticket's "(vitest or a tiny e2e assertion)" allowance, the check is
+  `e2e/input-primitives.spec.ts`: it reads the computed radius + fill +
+  border of a migrated pill field (search) and standard field
+  (settings remote) and compares fill/border against a same-document
+  probe painted with `var(--ew-surface-input)` / `--ew-border-strong`
+  (no hardcoded hex). Minor fence note: this adds one e2e spec beyond
+  "four surfaces + ui/ + guard test" — it is the equivalence proof the
+  ticket itself mandates.
+- **Guard allowlist.** `input-styling-guard.test.ts` flags any renderer
+  `.svelte` outside `ui/` using `--ew-surface-input`. Pre-existing
+  surfaces not in this ticket's scope are allowlisted with reasons
+  (CharmRail, GalleryActionBar/View/Facets, and RestoreDialog's `.path`
+  code-display background). TagPanel / SearchPanel / SettingsView are
+  NOT allowlisted — they no longer reference the token, which is the
+  proof the duplication was removed. Plant proof: a throwaway
+  `note/_plant.svelte` was flagged, then deleted.

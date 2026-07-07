@@ -16,6 +16,8 @@
   } from '@ew/commands'
   import { DROP_BEHAVIOR_KEY, DROP_BEHAVIOR_VALUES, type DropBehavior } from '@ew/protocol'
   import { toast } from '../chrome/status'
+  import Button from '../ui/Button.svelte'
+  import TextInput from '../ui/TextInput.svelte'
   // §8.2 keymap registry (AI-IMP-117): the Keyboard section reads the
   // declared bindings. The side-effect import guarantees they are
   // registered even if this view somehow renders before main's import.
@@ -410,28 +412,29 @@
       <div class="row remote-row" data-testid="settings-row-snapshot-remote">
         <span class="row-label">Backup remote</span>
         <div class="remote-config">
-          <input
-            type="text"
-            class="text-input"
+          <TextInput
+            variant="standard"
             data-testid="settings-snapshot-remote-url"
             placeholder="git@… or https://… repository URL"
             spellcheck="false"
             autocomplete="off"
+            style="flex: 1; min-width: 0; max-width: 18rem"
             bind:value={remoteDraft}
             onblur={() => void saveRemote(remoteDraft)}
             disabled={snapshotStatus !== null && !snapshotStatus.gitAvailable}
           />
-          <button
-            type="button"
-            class="text-button"
+          <Button
+            variant="default"
+            size="chrome"
             data-testid="settings-snapshot-remote-test"
+            style="flex: none"
             onclick={() => void testRemote(remoteDraft)}
             disabled={remoteTest.state === 'testing' ||
               remoteDraft.trim().length === 0 ||
               (snapshotStatus !== null && !snapshotStatus.gitAvailable)}
           >
             {remoteTest.state === 'testing' ? 'Testing…' : 'Test connection'}
-          </button>
+          </Button>
         </div>
       </div>
       <p class="section-note remote-note" data-testid="settings-snapshot-remote-note">
@@ -750,50 +753,6 @@
     flex: 1;
     min-width: 0;
     justify-content: flex-end;
-  }
-
-  .text-input {
-    flex: 1;
-    min-width: 0;
-    max-width: 18rem;
-    font: inherit;
-    font-size: 0.8rem;
-    color: var(--ew-text);
-    background: var(--ew-surface-input);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 5px;
-    padding: 0.25rem 0.45rem;
-  }
-
-  .text-input:focus {
-    outline: 2px solid var(--ew-focus-ring);
-    outline-offset: 0;
-  }
-
-  .text-input:disabled {
-    opacity: 0.5;
-  }
-
-  .text-button {
-    flex: none;
-    font: inherit;
-    font-size: 0.75rem;
-    color: var(--ew-text);
-    background: var(--ew-surface-raised);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 5px;
-    padding: 0.25rem 0.6rem;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .text-button:hover:not(:disabled) {
-    background: var(--ew-surface-hover);
-  }
-
-  .text-button:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 
   .remote-note .ok {
