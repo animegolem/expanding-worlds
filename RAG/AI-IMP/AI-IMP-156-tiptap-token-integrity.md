@@ -5,13 +5,12 @@ tags:
   - Implementation
   - rich-text
   - correctness
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-146]
 parent_epic: [[AI-EPIC-018-rich-text-notes]]
 confidence_score: 0.7
 date_created: 2026-07-07
-date_completed:
----
+date_completed: 2026-07-07---
 
 
 # AI-IMP-156-tiptap-token-integrity

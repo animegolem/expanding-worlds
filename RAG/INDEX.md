@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 5 | 1 |
+| In Progress | 5 | 0 |
 | Planned | 5 | 6 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 139 |
+| Completed | 14 | 140 |
 | **Total** | **25** | **154** |
 
 ## In Progress
@@ -54,7 +54,7 @@
 - [[AI-IMP-148-heading-folding|IMP-148]] Heading folding — planned
 - [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — planned
 - [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — planned
-- [[AI-IMP-156-tiptap-token-integrity|IMP-156]] Tiptap token integrity — in-progress
+- [[AI-IMP-156-tiptap-token-integrity|IMP-156]] Tiptap token integrity — completed
 
 ---
 
@@ -147,7 +147,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (899 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (812 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (825 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (764 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
@@ -199,11 +199,11 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/notes.ts (434 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
+- apps/desktop/e2e/context-menus.spec.ts (399 LOC)
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - apps/desktop/e2e/shell.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/theme.css (381 LOC)
-- apps/desktop/e2e/context-menus.spec.ts (377 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (372 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
@@ -215,10 +215,10 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
 - RAG/HUMAN-TESTING.md (349 LOC)
+- apps/desktop/src/renderer/note/note-editor.ts (347 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
-- apps/desktop/src/renderer/note/note-editor.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
@@ -244,7 +244,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>14 EPICs, 126 IMPs completed</summary>
+<summary>14 EPICs, 127 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
