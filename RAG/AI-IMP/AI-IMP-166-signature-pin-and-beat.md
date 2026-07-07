@@ -70,12 +70,12 @@ E2E: bookmarks/navigation spec extension.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Canonical pin at the path tail, cap-height, the one colored
+- [x] Canonical pin at the path tail, cap-height, the one colored
       chrome element.
-- [ ] The four-phase beat, one-shot, named constants, reseats
+- [x] The four-phase beat, one-shot, named constants, reseats
       exactly; close is a plain fade.
-- [ ] Menu rows wear globes.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Menu rows wear globes.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -94,3 +94,51 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Silhouette iv is drawn straight from the kit master** (design
+  `Pin & Menu Motion Prototype.dc.html`): viewBox `100 20 312 440`, a
+  top-lit red gradient body (`M138 178 A118 …`), two meridian ellipses +
+  the equator carved into the head under a clip, one gloss. New component
+  `chrome/PinGlyph.svelte`; sized `height:1.25em; width:auto` so it tracks
+  the board name at cap-height.
+- **The red was already in the palette.** `--ew-obj-red-hi/-lo/-stroke`
+  and `--ew-obj-gloss` are byte-for-byte the design's pin colours (the pin
+  IS a red paper object). Per the ticket/RFC's "dedicated theme token", a
+  `--ew-pin-red-*` / `--ew-pin-gloss` family was added in theme.css
+  *aliasing* those — the doctrine ("the ONE colored element") reads where
+  it paints, single-sourced, NOT re-themed. Globes reuse the object palette
+  directly (`--ew-obj-blue-*` ocean, `--ew-obj-green-lo` land) — they are
+  little world-icons. No raw hex leaves theme.css; the raw-color guard and
+  the undefined-token guard both stay green.
+- **Beat = one keyframe + named constants.** `chrome/beats.ts` gains
+  `EW_PIN_WIGGLE_MS 220 · HOP 150 · PRESS 100 · SETTLE 230`, their sum
+  `EW_PIN_BEAT_MS`, and `EW_PIN_MENU_FADE_MS 120`. The keyframe
+  (`chrome/pin-beat.css`, imported in main.ts beside menu-cascade.css)
+  expresses each phase as a % of the ~700ms whole (wiggle→31.4%, hop→52.9%,
+  press→67.1%, settle→100%); PathBar stamps `EW_PIN_BEAT_MS` as the
+  animation-duration so the number lives once. `transform-origin:50% 100%`
+  is the pin TIP (bottom-centre), matching the ratified prototype; the
+  final identity frame reseats the glyph at its exact pre-beat box
+  (e2e polls `getBoundingClientRect` equality). `iteration-count:1` and a
+  seam comment mark it the SOLE sanctioned exception to chrome's
+  opacity-only rule.
+- **Cascade composition.** PathBar runs a phase machine
+  rest→beat→open→closing→rest. The menu mounts only at `open` (after the
+  pin's `animationend`), so it settles once *before* the menu sweeps in;
+  the sweep IS 167's cascade — `use:applyMenuCascade` on the row `<ul>`
+  (no open animation duplicated). A safety timeout (`EW_PIN_BEAT_MS+200`)
+  guards a missed animationend so the menu can never strand closed.
+- **Close is a plain 120ms opacity fade** (`.bookmark-menu.closing`, a
+  non-`--ew-` custom prop `--menu-fade` carries the constant past the
+  token guard). This is the only real friction: the fade keeps the menu
+  in the DOM at opacity 0 for ~120ms, and Playwright's `isVisible()`
+  ignores opacity, so the `openBookmarkMenu` idempotency check could catch
+  the "closing ghost" and skip a real re-open — this raced two existing
+  bookmark specs red on the first full run. Fixed deterministically:
+  BookmarkMenu exposes `data-closing`, and the helper waits a closing menu
+  out (`toBeHidden`) before reopening. All 8 navigation specs + the new
+  signature-pin spec pass.
+- **Gates:** `pnpm -r build` ✓ · `pnpm lint` ✓ · `pnpm -r test` ✓
+  (vitest guards incl. theme raw-color/undefined-token; **191 e2e passed**,
+  hidden windows). The two specs that raced on the first run pass green
+  after the `data-closing` fix.

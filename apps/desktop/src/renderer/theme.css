@@ -213,6 +213,18 @@
   --ew-obj-leaf-vein: #3c5c2e;
   /* The push pin's metal stem (Note Lifecycle beat 6) */
   --ew-pushpin-stem: #8a8f98;
+  /* The SIGNATURE PIN (RFC §8.2 rev 0.64, decisions 03/04; AI-IMP-166):
+     the canonical pin (silhouette iv) at the path-tail bookmark control is
+     the ONE colored element in the mono chrome and the one sanctioned
+     chrome→world crossover. Its carved red IS the app's signature, so it
+     gets its OWN named token family — the doctrine reads where it paints —
+     aliasing the ratified red-object palette it shares (the pin pins down
+     into a world of the same materials). Like the object palette it is NOT
+     re-themed: the signature red is constant across light/dark/glass. */
+  --ew-pin-red-hi: var(--ew-obj-red-hi);
+  --ew-pin-red-lo: var(--ew-obj-red-lo);
+  --ew-pin-red-stroke: var(--ew-obj-red-stroke);
+  --ew-pin-gloss: var(--ew-obj-gloss);
   /* The open book's binder rings (§8.5 rev 0.55, AI-IMP-134): brushed
      metal straddling the seam; the ring HOLE is punched to --ew-board-color
      so the board shows through. Survives light/dark/glass like the other

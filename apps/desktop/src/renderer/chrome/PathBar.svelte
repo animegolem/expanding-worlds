@@ -10,12 +10,23 @@
   anchors the one bookmark menu, plus the global Mod+1–9 jump
   bindings (resolved by current row order at press time; pins mean
   places).
+
+  AI-IMP-166 makes this the SIGNATURE SPOT (RFC §8.2 rev 0.64): the flat
+  teardrop becomes the canonical pin (silhouette iv, PinGlyph) — the ONE
+  colored element in the mono chrome — and clicking it plays the bookmark
+  BEAT, the one sanctioned chrome→world crossover. The pin phase machine
+  drives it: rest → beat (the pin wiggles/hops/presses/settles once) →
+  open (the menu sweeps in with the universal cascade) → closing (a plain
+  opacity fade — the ceremony is for arrival) → rest. The whole beat stays
+  inside the title-strip band.
 -->
 <script lang="ts">
   import type { CanvasHostHandle } from '../canvas/host'
   import { KEY } from '../keys/bindings'
   import { formatBinding, matches } from '../keys/registry'
+  import { EW_PIN_BEAT_MS, EW_PIN_MENU_FADE_MS } from './beats'
   import BookmarkMenu from './BookmarkMenu.svelte'
+  import PinGlyph from './PinGlyph.svelte'
   import { bookmarkCurrentBoard, jumpToBookmarkIndex } from './bookmarks'
   import {
     back,
@@ -36,7 +47,56 @@
   let crumbs = $state<ReadonlyArray<NavEntry>>(pathEntries())
   let backOk = $state(canGoBack())
   let forwardOk = $state(canGoForward())
-  let menuOpen = $state(false)
+
+  // The pin phase machine (RFC §8.2 rev 0.64, AI-IMP-166). The menu is
+  // visible only once the beat has PLAYED — the pin settles exactly once
+  // before the menu sweeps in (the ratified prototype's arrival ceremony).
+  type PinPhase = 'rest' | 'beat' | 'open' | 'closing'
+  let pinPhase = $state<PinPhase>('rest')
+  const menuVisible = $derived(pinPhase === 'open' || pinPhase === 'closing')
+  let beatTimer: ReturnType<typeof setTimeout> | undefined
+  let fadeTimer: ReturnType<typeof setTimeout> | undefined
+
+  function startBeat(): void {
+    pinPhase = 'beat'
+    // The menu opens on the pin's animationend (below). A safety net in
+    // case that event is ever missed (an interrupted animation) keeps the
+    // menu from stranding closed — it never fires under a normal beat.
+    clearTimeout(beatTimer)
+    beatTimer = setTimeout(() => {
+      if (pinPhase === 'beat') pinPhase = 'open'
+    }, EW_PIN_BEAT_MS + 200)
+  }
+
+  function onPinBeatEnd(): void {
+    if (pinPhase !== 'beat') return
+    clearTimeout(beatTimer)
+    // The beat ended at the identity frame (reseated exactly); the menu
+    // now sweeps in with the universal cascade.
+    pinPhase = 'open'
+  }
+
+  function closeMenu(): void {
+    // Close only from the open menu — clicking mid-beat lets the beat
+    // finish (the prototype's close() no-ops off 'open'). Unpin is a plain
+    // opacity fade in BookmarkMenu; we unmount when it lands.
+    if (pinPhase !== 'open') return
+    pinPhase = 'closing'
+    clearTimeout(fadeTimer)
+    fadeTimer = setTimeout(() => {
+      pinPhase = 'rest'
+    }, EW_PIN_MENU_FADE_MS)
+  }
+
+  function togglePin(): void {
+    if (pinPhase === 'rest') startBeat()
+    else closeMenu()
+  }
+
+  $effect(() => () => {
+    clearTimeout(beatTimer)
+    clearTimeout(fadeTimer)
+  })
 
   $effect(() =>
     onNavigationChanged(() => {
@@ -123,20 +183,34 @@
         {crumb.label}
       </button>
     {/each}
+    <!-- The signature spot: the canonical pin, bare at cap-height beside
+         the board name (§8.2 rev 0.64). no-drag carves it out of the
+         strip's drag region (AI-IMP-165), or the OS eats the click as a
+         window move. The beat animates the glyph (its transform-origin is
+         the tip); the button box is fixed by min-size, so the generous hit
+         target never shrinks and the pin reseats at its exact box. -->
     <button
       type="button"
-      class="pin"
-      class:open={menuOpen}
+      class="pin no-drag"
+      class:open={menuVisible}
       aria-label="Bookmarks"
       data-testid="bookmark-pin"
-      onclick={() => (menuOpen = !menuOpen)}
+      onclick={togglePin}
       use:tooltip={{ name: 'Bookmarks', shortcut: formatBinding(KEY.bookmarkJump) }}
     >
-      <span class="pin-shape" aria-hidden="true"></span>
+      <span
+        class="pin-glyph-wrap"
+        class:ew-pin-beat={pinPhase === 'beat'}
+        style={`animation-duration:${EW_PIN_BEAT_MS}ms`}
+        data-testid="bookmark-pin-glyph"
+        onanimationend={onPinBeatEnd}
+      >
+        <PinGlyph />
+      </span>
     </button>
   </nav>
-  {#if menuOpen}
-    <BookmarkMenu {handle} onClose={() => (menuOpen = false)} />
+  {#if menuVisible}
+    <BookmarkMenu {handle} closing={pinPhase === 'closing'} onClose={closeMenu} />
   {/if}
 </div>
 
@@ -207,32 +281,32 @@
     opacity: 0.4;
   }
 
-  /* §8.1: a small map pin with a generous hit target at the tail. */
+  /* §8.1/§8.2: the canonical pin at the tail, a generous hit target that
+     never shrinks (min-size fixes the box; the glyph animates within it). */
   .pin {
     display: inline-grid;
     place-items: center;
     min-width: 1.6rem;
     min-height: 1.3rem;
     margin-left: 0.15rem;
+    padding: 0;
   }
 
-  /* The pin body: a circle whose zeroed corner makes the teardrop
-     point. Closed it reads as an outline map pin; pressed it fills
-     and points at the menu it anchors. */
-  .pin-shape {
-    width: 9px;
-    height: 9px;
-    border: 1.5px solid var(--ew-text);
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg) translateY(-1px);
-    transition:
-      background 120ms ease-out,
-      transform 120ms ease-out;
+  .pin:hover {
+    background: transparent;
   }
 
-  .pin.open .pin-shape {
-    background: var(--ew-accent-soft);
-    border-color: var(--ew-accent-soft);
-    transform: rotate(-45deg) translateY(1px);
+  /* The glyph wrapper is what the BEAT animates (chrome/pin-beat.css adds
+     .ew-pin-beat with the tip transform-origin). Left bare here so its
+     resting box — and thus the reseat target — is the pin at identity. */
+  .pin-glyph-wrap {
+    display: block;
+    line-height: 0;
+  }
+
+  /* Open state: a whisper of settle into the board, opacity only (the pin
+     has entered the canvas and the menu it anchors is up). */
+  .pin.open .pin-glyph-wrap {
+    opacity: 0.9;
   }
 </style>

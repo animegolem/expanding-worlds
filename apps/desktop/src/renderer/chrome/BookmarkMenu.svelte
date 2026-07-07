@@ -14,10 +14,20 @@
   import type { CanvasHostHandle } from '../canvas/host'
   import { KEY } from '../keys/bindings'
   import { formatBinding } from '../keys/registry'
+  import { EW_PIN_MENU_FADE_MS } from './beats'
   import { bookmarkCurrentBoard, jumpToBookmark, listBookmarks, type BookmarkRow } from './bookmarks'
+  import GlobeGlyph from './GlobeGlyph.svelte'
+  import { applyMenuCascade } from './menu-cascade'
   import { tooltip } from './tooltip'
 
-  const { handle, onClose }: { handle: CanvasHostHandle; onClose: () => void } = $props()
+  // `closing` drives the unpin fade (RFC §8.2 rev 0.64, AI-IMP-166): the
+  // ceremony is for arrival, so close is a plain opacity fade over
+  // EW_PIN_MENU_FADE_MS — PathBar unmounts us when it lands.
+  const {
+    handle,
+    onClose,
+    closing = false,
+  }: { handle: CanvasHostHandle; onClose: () => void; closing?: boolean } = $props()
 
   let rows = $state<BookmarkRow[]>([])
   let listEl: HTMLUListElement | null = $state(null)
@@ -145,11 +155,21 @@
   }
 </script>
 
-<div class="bookmark-menu" data-testid="bookmark-menu">
+<!-- §8.2 rev 0.64: the unpin fade (`closing`) is opacity only; the OPEN
+     ceremony is the universal CASCADE — rows fade in staggered top to
+     bottom, stamped on the row list by the shared applicator (AI-IMP-167),
+     never duplicated here. -->
+<div
+  class="bookmark-menu"
+  class:closing
+  style={`--menu-fade:${EW_PIN_MENU_FADE_MS}ms`}
+  data-testid="bookmark-menu"
+  data-closing={closing ? 'true' : 'false'}
+>
   {#if displayRows.length === 0}
     <div class="empty" data-testid="bookmark-empty">No bookmarks yet</div>
   {:else}
-    <ul bind:this={listEl}>
+    <ul bind:this={listEl} use:applyMenuCascade>
       {#each displayRows as row, index (row.id)}
         <li
           data-bookmark-row
@@ -159,6 +179,11 @@
           class:degraded={row.targetState !== 'active'}
           class:dragging={dragId === row.id}
         >
+          <!-- §8.2 decision 07: every bookmark is a world — the row wears a
+               globe in place of a dot, the pin pinning down into it. -->
+          <span class="globe" data-testid={`bookmark-globe-${index}`} aria-hidden="true">
+            <GlobeGlyph />
+          </span>
           <span
             class="drag"
             role="button"
@@ -248,6 +273,22 @@
     color: var(--ew-text);
     pointer-events: auto;
     z-index: 20;
+    /* Unpin on close: a plain opacity fade (§8.2 rev 0.64) — opacity only,
+       ordinary chrome, never a reverse beat. --menu-fade is stamped from
+       EW_PIN_MENU_FADE_MS (a plain custom prop, not an --ew- token, so the
+       theme-token guard leaves it alone). */
+    transition: opacity var(--menu-fade, 120ms) ease-out;
+  }
+
+  .bookmark-menu.closing {
+    opacity: 0;
+  }
+
+  /* The row's leading world glyph — a place marker, not interactive. */
+  .globe {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
   }
 
   ul {

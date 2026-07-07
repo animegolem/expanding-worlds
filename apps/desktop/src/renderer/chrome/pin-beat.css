@@ -1,0 +1,73 @@
+/*
+ * The SIGNATURE PIN beat (RFC-0001 §8.2 rev 0.64, decisions 04/05,
+ * AI-IMP-166). The path-tail bookmark pin is the ONE object that bridges
+ * chrome into the world, so this is the SOLE sanctioned exception to
+ * chrome's opacity-only motion rule: on open the pin performs a real desk
+ * beat because it literally enters the canvas. One-shot, TRANSFORM-only,
+ * entirely inside the title-strip band. Close is a plain opacity fade
+ * (PathBar) — the ceremony is for arrival, never a reverse beat.
+ *
+ * The four phases map to the named chrome/beats.ts constants; their sum is
+ * EW_PIN_BEAT_MS (~700ms), which PathBar stamps as the animation-duration
+ * so the number lives in exactly one place. The keyframe percentages below
+ * are those constants expressed against that ~700ms whole:
+ *   WIGGLE  0 → 31.4%   (EW_PIN_WIGGLE_MS 220 — ±8° anticipation about the TIP)
+ *   HOP        → 52.9%  (EW_PIN_HOP_MS 150 — up 10px, stretch scaleY 1.06)
+ *   PRESS      → 67.1%  (EW_PIN_PRESS_MS 100 — dips 3px, squash scaleY .93)
+ *   SETTLE     → 100%   (EW_PIN_SETTLE_MS 230 — one gentle overshoot, reseats EXACTLY)
+ *
+ * transform-origin is the pin TIP (bottom-centre of the glyph, 50% 100%) so
+ * the wiggle pivots where the pin would enter the board, and because the
+ * final frame is the identity transform the pin reseats at its exact
+ * pre-beat box — no drift. Iteration count is 1: an ambient or looping
+ * chrome beat fails review (§8.2 motion budget). No app-wide
+ * prefers-reduced-motion query exists yet (noted, not invented); when one
+ * lands it belongs here beside the menu cascade's.
+ */
+@keyframes ew-pin-beat {
+  /* WIGGLE — ±8° anticipation about the tip, damping to rest by 31.4%. */
+  0% {
+    transform: translateY(0) rotate(0) scale(1);
+  }
+  8% {
+    transform: translateY(0) rotate(-8deg);
+  }
+  16% {
+    transform: translateY(0) rotate(7deg);
+  }
+  22% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  27% {
+    transform: translateY(0) rotate(2deg);
+  }
+  31.4% {
+    transform: translateY(0) rotate(0);
+  }
+  /* HOP — pops up ~10px with a whisper of stretch. */
+  44% {
+    transform: translateY(-9px) scaleY(1.06) scaleX(0.96);
+  }
+  52.9% {
+    transform: translateY(-10px) scaleY(1.02) scaleX(0.99);
+  }
+  /* PRESS — pushes DOWN into the canvas, dipping 3px with a squash. */
+  67.1% {
+    transform: translateY(3px) scaleY(0.93) scaleX(1.06);
+  }
+  /* SETTLE — one gentle overshoot, then reseat at the identity frame. */
+  80% {
+    transform: translateY(0) scaleY(1.01) scaleX(0.995);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ew-pin-beat {
+  transform-origin: 50% 100%; /* the pin TIP — bottom-centre of the glyph */
+  animation-name: ew-pin-beat;
+  animation-timing-function: cubic-bezier(0.5, 0.7, 0.45, 1);
+  animation-iteration-count: 1; /* one-shot; looping fails review (§8.2) */
+  animation-fill-mode: both;
+}
