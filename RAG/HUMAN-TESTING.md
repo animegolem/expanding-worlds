@@ -28,6 +28,14 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **The object icons** (AI-IMP-132, 2026-07-07): give six nodes
+  the six icon appearances (switcher popover now previews the real
+  objects) — THE question: over real art on a busy board, do they
+  read as designed objects on the desk, or as clip-art? Gloss level
+  (.42, normalized) is the dial the designer flagged. Zoom out past
+  ~8px: each degrades to its color dot — does the swap read as the
+  same thing getting small? Check both themes.
+
 - [ ] **Context menus** (AI-IMP-136, 2026-07-07): right-click an
   image and empty board — the ratified §8.4 menus are live. Feel
   calls: (1) verb ORDER within groups (frequency-first — is crop/

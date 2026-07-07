@@ -6,12 +6,12 @@ tags:
   - design-pass
   - canvas
   - icons
-kanban_status: in_progress
+kanban_status: completed
 depends_on: [AI-IMP-130]
 parent_epic:
 confidence_score: 0.65
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -84,7 +84,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Perf: §12.1 suite green locally (GPU gate).
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (do the
+- [x] HUMAN-TESTING entry appended at merge by the lead (do the
       objects read as designed art over real boards; gloss level).
 
 ### Acceptance Criteria
