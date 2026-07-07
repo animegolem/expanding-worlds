@@ -11,14 +11,20 @@
   import { itemWorldAABB } from '@ew/canvas-engine'
   import type { CanvasHostHandle } from '../canvas/host'
   import { importFilesAt } from '../canvas/import-surfaces'
+  import { EW_BEAT_TEAR_MS, EW_BEAT_UNTAPE_MS } from '../chrome/beats'
   import LocationChooser from './LocationChooser.svelte'
   import NotePanel from './NotePanel.svelte'
+  import PushPin from './paper/PushPin.svelte'
+  import TornEdge from './paper/TornEdge.svelte'
+  import { landmarkFacts, onLandmarksChanged, tornEdgeSide } from './paper/lifecycle'
   import {
+    bigEditorIsTorn,
     closeBigEditor,
     onBigEditorChanged,
     onChooserChanged,
     onPanelsChanged,
     overlayPortal,
+    pullLandmarkPin,
     type ChooserState,
     type PanelRecord,
   } from './panels'
@@ -34,8 +40,42 @@
   // §8.5 big editor (rev 0.31): at most ONE, tracked in the store.
   // This layer mounts the dimmed backdrop + centered container; the
   // owning NotePanel moves its live CM buffer in via `overlayHost`.
+  //
+  // §8.5 rev 0.55 (AI-IMP-135): the CENTERED TEAR variant wears the
+  // torn-page chrome and beats. Its close is a TUCK: the store clears
+  // its key immediately, but this layer keeps rendering for the
+  // ~200ms reverse beat before unmounting — the page visibly tucks
+  // home. Ordinary (untorn) big editors keep the instant close.
   let bigEditorKey = $state<number | null>(null)
-  $effect(() => onBigEditorChanged((next) => (bigEditorKey = next)))
+  let bigTorn = $state(false)
+  let bigTucking = $state(false)
+  let tuckTimer: ReturnType<typeof setTimeout> | null = null
+  $effect(() =>
+    onBigEditorChanged((next) => {
+      if (next !== null) {
+        if (tuckTimer !== null) clearTimeout(tuckTimer)
+        tuckTimer = null
+        bigEditorKey = next
+        bigTorn = bigEditorIsTorn()
+        bigTucking = false
+        return
+      }
+      if (bigEditorKey !== null && bigTorn && !bigTucking) {
+        bigTucking = true
+        tuckTimer = setTimeout(() => {
+          tuckTimer = null
+          bigEditorKey = null
+          bigTorn = false
+          bigTucking = false
+        }, EW_BEAT_UNTAPE_MS)
+        return
+      }
+      if (!bigTucking) bigEditorKey = null
+    }),
+  )
+  $effect(() => () => {
+    if (tuckTimer !== null) clearTimeout(tuckTimer)
+  })
   let bigEditorHost = $state<HTMLElement | null>(null)
 
   // §6.1 note-pane image drop (AI-IMP-097): the big editor is a note
@@ -109,7 +149,50 @@
 
   let indicators = $state<Indicator[]>([])
 
+  /** §8.5 rev 0.55 (AI-IMP-135): a LANDMARK — a torn page placed on
+   * the board — keeps its torn edge and wears the red push pin, both
+   * as world-tracked DOM hardware over the placement (the paper
+   * primitives are Svelte components; the Pixi body stays untouched).
+   * The pin is the pull-pin verb. */
+  interface LandmarkView {
+    placementId: string
+    x: number
+    y: number
+    width: number
+    height: number
+    scar: 'left' | 'right' | 'top'
+    pinSize: number
+  }
+
+  let landmarkViews = $state<LandmarkView[]>([])
+
+  function computeLandmarks(): void {
+    const camera = handle.controller.camera
+    const next: LandmarkView[] = []
+    for (const [placementId, fact] of landmarkFacts()) {
+      const item = handle.controller
+        .items()
+        .find((candidate) => candidate.itemKind === 'placement' && candidate.id === placementId)
+      const aabb = item ? itemWorldAABB(item) : null
+      if (!aabb) continue // a stale fact decorates nothing
+      const topLeft = camera.worldToScreen({ x: aabb.x, y: aabb.y })
+      next.push({
+        placementId,
+        x: topLeft.x,
+        y: topLeft.y,
+        width: aabb.width * camera.zoom,
+        height: aabb.height * camera.zoom,
+        scar: tornEdgeSide(fact.tornFrom),
+        // Hardware rides the world but stays legible: nominal 22px at
+        // zoom 1, clamped so deep zoom keeps a graspable pin.
+        pinSize: Math.max(12, Math.min(30, 22 * camera.zoom)),
+      })
+    }
+    landmarkViews = next
+  }
+
   function computeIndicators(): void {
+    computeLandmarks()
     const bounds = hostElement.getBoundingClientRect()
     const camera = handle.controller.camera
     const next: Indicator[] = []
@@ -178,11 +261,13 @@
     const offCamera = handle.controller.camera.onChanged(() => schedule())
     const offScene = handle.onSceneApplied(() => schedule())
     const offPanels = onPanelsChanged(() => schedule())
+    const offLandmarks = onLandmarksChanged(() => schedule())
     schedule()
     return () => {
       offCamera()
       offScene()
       offPanels()
+      offLandmarks()
       if (frame) cancelAnimationFrame(frame)
     }
   })
@@ -209,6 +294,31 @@
       </button>
     {/if}
   {/each}
+  {#each landmarkViews as view (view.placementId)}
+    <!-- §8.5 rev 0.55 (AI-IMP-135): the landmark's paper hardware —
+         torn scar on the old binding edge, the red glossy push pin ON
+         the paper (one of its three ratified appearances). FLAT: no
+         shadow, board content. The pin is the pull-pin verb. -->
+    <div
+      class="landmark-hardware"
+      data-testid={`landmark-hardware-${view.placementId}`}
+      style={`left:${view.x}px;top:${view.y}px;width:${view.width}px;height:${view.height}px`}
+    >
+      <div class={`landmark-scar scar-${view.scar}`} data-testid="landmark-torn-edge">
+        <TornEdge side={view.scar} />
+      </div>
+      <button
+        type="button"
+        class="landmark-pin"
+        data-testid={`landmark-pin-${view.placementId}`}
+        style={`width:${view.pinSize}px;height:${view.pinSize}px;margin-left:${-view.pinSize / 2}px;top:${-view.pinSize * 0.45}px`}
+        onclick={() => void pullLandmarkPin(view.placementId)}
+        aria-label="Pull the pin — lift this page back off the board"
+      >
+        <PushPin size={view.pinSize} />
+      </button>
+    </div>
+  {/each}
   {#each records as record (record.key)}
     <NotePanel
       {handle}
@@ -227,19 +337,31 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="big-editor-backdrop"
+      class:tucking={bigTucking}
       data-testid="big-editor-backdrop"
       onclick={() => closeBigEditor()}
       use:overlayPortal
     ></div>
     <section
       class="big-editor"
+      class:torn={bigTorn}
+      class:tucking={bigTucking}
+      style={`--big-tear-ms:${EW_BEAT_TEAR_MS}ms;--big-tuck-ms:${EW_BEAT_UNTAPE_MS}ms`}
       data-testid="big-editor"
+      data-torn={bigTorn ? 'true' : null}
       aria-modal="true"
       role="dialog"
       use:overlayPortal
       ondragovercapture={onBigEditorDragOver}
       ondropcapture={onBigEditorDrop}
     >
+      {#if bigTorn}
+        <!-- The centered page IS the torn-out page: the scar rides its
+             spine edge (§8.5 rev 0.55). -->
+        <div class="big-editor-scar" data-testid="big-editor-torn-edge">
+          <TornEdge side="left" teeth={18} />
+        </div>
+      {/if}
       <header class="big-editor-header">
         <button
           type="button"
@@ -336,6 +458,107 @@
 
   .big-editor-body :global(.cm-editor.cm-focused) {
     outline: none;
+  }
+
+  /* §8.5 rev 0.55 (AI-IMP-135): the CENTERED TEAR. The open beat rides
+     the independent translate/scale properties, composing with the
+     centering transform instead of stomping it; one-shot always. The
+     tuck reverses it (forwards-filled so the last frame holds while the
+     unmount timer lands). */
+  .big-editor.torn {
+    animation: big-tear-in var(--big-tear-ms) ease-out 1;
+  }
+
+  @keyframes big-tear-in {
+    0% {
+      translate: -18px -10px;
+      rotate: -1.5deg;
+      opacity: 0.6;
+    }
+    100% {
+      translate: 0 0;
+      rotate: 0deg;
+      opacity: 1;
+    }
+  }
+
+  .big-editor.torn.tucking {
+    animation: big-tuck-out var(--big-tuck-ms) ease-in 1 forwards;
+  }
+
+  @keyframes big-tuck-out {
+    0% {
+      translate: 0 0;
+      scale: 1;
+      opacity: 1;
+    }
+    100% {
+      translate: 10px 6px;
+      scale: 0.96;
+      opacity: 0;
+    }
+  }
+
+  .big-editor-backdrop.tucking {
+    opacity: 0;
+    transition: opacity var(--big-tuck-ms, 200ms) ease-in;
+  }
+
+  /* The centered page's spine scar: an interior band on the left edge. */
+  .big-editor-scar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* §8.5 rev 0.55 (AI-IMP-135): landmark hardware — world-tracked,
+     FLAT (no shadow: it is board content), inert except the pin. */
+  .landmark-hardware {
+    position: absolute;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .landmark-scar {
+    position: absolute;
+    overflow: hidden;
+  }
+
+  .landmark-scar.scar-left {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+  }
+
+  .landmark-scar.scar-right {
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+  }
+
+  .landmark-scar.scar-top {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 10px;
+  }
+
+  .landmark-pin {
+    position: absolute;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    pointer-events: auto;
+    cursor: pointer;
   }
 
   .halo {
