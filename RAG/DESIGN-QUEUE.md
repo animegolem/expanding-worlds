@@ -40,6 +40,15 @@ The Two Materials + kit 1.1's beat ledger, ratified at rev 0.56
 
 ## Tabled
 
+- **Foreign-Markdown canonicalization is lossy** (AI-IMP-150 finding,
+  2026-07-07): constructs outside the frozen dialect degrade SILENTLY
+  on first open. Rev 0.66's URL-cluster growth (links, images,
+  autolinks, highlight — AI-IMP-170) shrinks the loss to
+  tables/footnotes/task-lists. The residue decision belongs to the
+  vault-mirror return path's activation; the one rule proposed for
+  ratification there: foreign Markdown is never silently destroyed —
+  preserve-verbatim or convert-loudly, never quiet.
+
 - Text-drop special cases (code blocks, essay-length paste → note)
   (rev 0.36).
 - **Undo capture breadth** (from the 2026-07-06 Codex review;

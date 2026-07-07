@@ -58,7 +58,10 @@
     bottom: 0.75rem;
     /* Same tier as the chrome layer (z 10), which itself sits above
        the takeover cover (z 9) — imports keep reporting everywhere. */
-    z-index: 10;
+    /* rung: chrome (Z.chrome band — a fade-exempt sibling of the
+       chrome layer, same rank; ported with the AI-IMP-161 inversion
+       fix so a panel can't cover the cancel button). */
+    z-index: 400;
     display: flex;
     align-items: center;
     gap: 0.6rem;

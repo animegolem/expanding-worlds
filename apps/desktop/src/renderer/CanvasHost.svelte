@@ -176,11 +176,10 @@
   .overlay-host {
     position: absolute;
     inset: 0;
-    /* Clearly above every local surface (chrome sits at 10, source
-       panel at 11). A single ad-hoc top value until EPIC-016's named
-       z-ladder introduces the "modal" rung; stays below the tooltip
-       chip at body/1000 by design. */
-    z-index: 500;
+    /* rung: modal (Z.modal = 600) — the port this comment always
+       promised. Above chrome (400) and panels (200); still below the
+       tooltip chip at body/1000 by design. */
+    z-index: 600;
     pointer-events: none;
   }
 

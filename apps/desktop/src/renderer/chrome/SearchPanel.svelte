@@ -404,7 +404,9 @@
 <style>
   .search-panel {
     position: absolute;
-    z-index: 9;
+    /* rung: popover (Z.popover = 500). Was a pre-ladder 9; §8.3
+       quick-open floats over panels and chrome alike. */
+    z-index: 500;
     width: 340px;
     max-height: 320px;
     display: flex;

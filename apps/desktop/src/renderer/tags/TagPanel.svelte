@@ -323,7 +323,11 @@
 <style>
   .tag-panel {
     position: absolute;
-    z-index: 9;
+    /* rung: popover (Z.popover = 500). Was a pre-ladder 9; the §4.8
+       tag panel is an anchored floating surface that outranks the
+       note panels it is opened FROM (ported with the AI-IMP-161
+       inversion fix — the note editor was eating its clicks). */
+    z-index: 500;
     width: 320px;
     max-height: 290px;
     overflow: auto;

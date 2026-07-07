@@ -5,12 +5,12 @@ tags:
   - Implementation
   - shell
   - design-pass
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.65
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -78,7 +78,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       wired (win32 overlay / mac zoom / linux IPC toggle); live
       resize/zoom not manually driven off macOS.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint` all green.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 

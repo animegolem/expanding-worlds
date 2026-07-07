@@ -386,7 +386,12 @@
   .panels-layer {
     position: absolute;
     inset: 0;
-    z-index: 8;
+    /* rung: panel (Z.panel = 200). Was a pre-ladder 8, which sat the
+       panels BENEATH the charms layer (Z.affordance = 100) — §8.8
+       inversion: the charm bar intercepted clicks into panel content
+       the moment AI-IMP-161 moved it below the label. Panels beat
+       affordances; chrome still beats panels. */
+    z-index: 200;
     pointer-events: none;
     overflow: hidden;
   }

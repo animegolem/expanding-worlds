@@ -388,7 +388,10 @@
      and beside the rail's layer. */
   .source-panel {
     position: absolute;
-    z-index: 11;
+    /* rung: chrome (Z.chrome band; one above the chrome layer so the
+       source panel rides over the strip/dock it shares the band with —
+       ported with the AI-IMP-161 inversion fix). */
+    z-index: 401;
     display: flex;
     flex-direction: column;
     width: 360px;

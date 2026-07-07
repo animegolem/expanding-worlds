@@ -1825,7 +1825,10 @@
      <datalist> (burned in hidden-window Electron). */
   :global(.ew-suggestions) {
     position: fixed;
-    z-index: 40;
+    /* rung: popover (Z.popover = 500). Was a pre-ladder 40 that only
+       worked while panels sat at 8; an anchored completion list
+       outranks the panels it floats over. */
+    z-index: 500;
     margin: 0;
     padding: 4px 0;
     list-style: none;

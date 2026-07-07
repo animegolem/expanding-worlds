@@ -94,7 +94,10 @@
   .chrome-layer {
     position: absolute;
     inset: 0;
-    z-index: 10;
+    /* rung: chrome (Z.chrome = 400). Ported from the pre-ladder 10 in
+       the AI-IMP-161 inversion fix so chrome stays above panels after
+       panels rose to their rung. */
+    z-index: 400;
     pointer-events: none;
     opacity: 1;
     transition: opacity var(--chrome-fade-ms) ease-out;

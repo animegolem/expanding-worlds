@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.65         | 7 July 2026      |
+| Accepted for Phase 1 | 0.66         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -4604,6 +4604,19 @@ Accepted for the Phase 1 prototype:
   through the central directory before anything extracts; media
   entries are stored uncompressed so multi-GB roundtrips stream at
   constant memory (§16). Open question 11 closes.
+
+- The dialect grows by ruling, not drift (rev 0.66, owner): the
+  frozen §7.1 grammar gains inline links `[text](url)`, images
+  `![alt](url)`, CommonMark autolinks `<url>`, and the `==highlight==`
+  mark; raw HTML stays out; code blocks stay unhighlighted. Grammar
+  is not UI — the format bar exposes no new controls for these. The
+  freeze guard and corpus re-pin after the growth (AI-IMP-170).
+  Design note for the build: an image URL must never fetch ambiently
+  (§11.5 constitution) — v1 renders a non-fetching chip whose
+  activation routes through the universal viewer; `![[…]]` remains
+  the managed-asset embed. This shrinks the foreign-Markdown
+  canonicalization loss (AI-IMP-150 finding) to tables/footnotes
+  before the vault return path ever ships.
 
 - Cross-canvas undo ratified as the presence fence (rev 0.58, owner,
   EPIC-007 audit): a step whose effect lies on another board declines

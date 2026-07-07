@@ -89,7 +89,10 @@
   .takeover {
     position: absolute;
     inset: 0;
-    z-index: 9;
+    /* rung: takeover (Z.takeover = 300). Was a pre-ladder 9 (one above
+       the old panels-8); ported with the AI-IMP-161 inversion fix so
+       takeovers stay above panels on the named ladder. */
+    z-index: 300;
     display: flex;
     pointer-events: auto;
     background: var(--ew-scrim);

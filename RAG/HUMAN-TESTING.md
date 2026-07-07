@@ -489,3 +489,25 @@ The full walk, on a placed image's note:
   does it need a charm?
 - Rotate an image with its book open: the book drops to the
   tethered card until you square it. Fair behavior or jarring?
+
+## Wave 6 batch (2026-07-07): dialect freeze · charm bar · frameless · cascade · gallery
+
+- **AI-IMP-161**: select a titled image — the charm bar should sit
+  BELOW the title now, at any zoom; hide the label and the bar hugs
+  the image like before.
+- **AI-IMP-165 frameless**: no OS frame anywhere; traffic lights
+  in-board; drag the window by the top strip. The smoky gradient is
+  subtle on an empty board — judge it over real art. Fullscreen and
+  maximize must feel normal.
+- **AI-IMP-167 cascade**: open any menu — rows fade in top-to-bottom
+  inside ~190ms. Too slow? Too showy? It's the one grammar
+  everywhere.
+- **AI-IMP-168 gallery**: the size slider (does the range feel
+  right?); Space on a work = Quick Look, arrows walk neighbors, Esc
+  back. The caption shows title + dimensions (no filename — model
+  debt, flagged).
+- **AI-IMP-150**: nothing to feel — the dialect is frozen under
+  guard. Typing/saving must feel identical.
+- **z-ladder port** (rode the batch): panels now sit above the charm
+  layer, menus/popovers above panels, chrome above all. If any
+  overlay ever hides behind another, that's a bug — report the pair.
