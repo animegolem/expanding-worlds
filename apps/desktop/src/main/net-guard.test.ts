@@ -94,4 +94,18 @@ describe('isPrivateAddress sanity (hop guard building block)', () => {
     expect(isPrivateAddress('8.8.8.8')).toBe(false)
     expect(isPrivateAddress('2606:2800:220:1:248:1893:25c8:1946')).toBe(false)
   })
+
+  it('flags HEX-form v4-mapped literals (WHATWG URL normalization; review P1)', () => {
+    // new URL('http://[::ffff:127.0.0.1]/').hostname === '[::ffff:7f00:1]'
+    expect(isPrivateAddress('::ffff:7f00:1')).toBe(true) // 127.0.0.1
+    expect(isPrivateAddress('::ffff:a00:1')).toBe(true) // 10.0.0.1
+    expect(isPrivateAddress('::ffff:c0a8:101')).toBe(true) // 192.168.1.1
+    expect(isPrivateAddress('::ffff:a9fe:a9fe')).toBe(true) // 169.254.169.254
+    // Uncompressed resolver spelling of the same mapping.
+    expect(isPrivateAddress('0:0:0:0:0:ffff:7f00:1')).toBe(true)
+    // Public v4 stays public through the hex mapping (8.8.8.8).
+    expect(isPrivateAddress('::ffff:808:808')).toBe(false)
+    // An unrecognizable mapped tail fails closed.
+    expect(isPrivateAddress('::ffff:zz:1')).toBe(true)
+  })
 })

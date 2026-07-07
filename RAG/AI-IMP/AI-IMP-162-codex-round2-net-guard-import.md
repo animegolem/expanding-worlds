@@ -5,12 +5,12 @@ tags:
   - Implementation
   - security
   - review
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-158]
 parent_epic:
 confidence_score: 0.9
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -66,8 +66,8 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Import refuses a db failing quick_check / foreign_key_check /
       blob presence BEFORE the rename; crafted-archive test proves
       refusal with nothing left on disk (export suite 7/7).
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
-      e2e hidden.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+      e2e hidden (176/176).
 
 ### Acceptance Criteria
 

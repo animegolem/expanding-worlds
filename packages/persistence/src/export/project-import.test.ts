@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createWriteStream, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { uuidv7 } from '@ew/domain'
@@ -120,6 +120,83 @@ describe('importProject (§16 roundtrip, AI-IMP-158)', () => {
     await expect(importProject(archive, destDir)).rejects.toMatchObject({
       code: expect.stringMatching(/HASH_MISMATCH|BAD_ARCHIVE|BAD_DATABASE|BAD_MANIFEST/),
     })
+    expect(existsSync(destDir)).toBe(false)
+    expect(existsSync(`${destDir}.partial`)).toBe(false)
+  })
+
+  it('refuses a crafted archive whose db references media it does not carry', async () => {
+    // Codex review round 2 (P2): hash verification binds archive to
+    // manifest, but only the post-extraction db checks bind the
+    // database to its blobs. Rebuild a manifest-CONSISTENT archive
+    // that simply omits the asset — inventory checks pass; the
+    // database cross-check must refuse before the rename.
+    const bytes = Buffer.from('media-that-will-vanish')
+    const { createHash } = await import('node:crypto')
+    const hash = createHash('sha256').update(bytes).digest('hex')
+    const { mkdirSync } = await import('node:fs')
+    const { dirname } = await import('node:path')
+    const { blobRelativePath } = await import('../import/store')
+    const blob = join(dir, blobRelativePath(hash))
+    mkdirSync(dirname(blob), { recursive: true })
+    writeFileSync(blob, bytes)
+    const writer = Db.open(join(dir, 'project.sqlite'))
+    const projectId = (writer.get<{ id: string }>('SELECT id FROM project') ?? { id: '' }).id
+    const now = new Date().toISOString()
+    writer.run(
+      `INSERT INTO asset (id, project_id, kind, content_hash, original_filename,
+         mime_type, storage_path, created_at, updated_at)
+       VALUES (?, ?, 'image', ?, 'gone.png', 'image/png', ?, ?, ?)`,
+      uuidv7(),
+      projectId,
+      hash,
+      blobRelativePath(hash),
+      now,
+      now,
+    )
+    writer.close()
+
+    const honest = join(outDir, 'honest.ewproj')
+    await service.exportProject(honest, { activeOnly: false })
+
+    // Rebuild: same db + notes, manifest inventory filtered of the
+    // asset, asset entry omitted.
+    const yazlMod = await import('yazl')
+    const yauzlMod = (await import('yauzl')).default
+    const rebuilt = join(outDir, 'crafted.ewproj')
+    await new Promise<void>((resolve, reject) => {
+      yauzlMod.open(honest, { lazyEntries: true, autoClose: false }, (err, zipIn) => {
+        if (err || !zipIn) return reject(err)
+        const zipOut = new yazlMod.ZipFile()
+        const out = createWriteStream(rebuilt)
+        zipOut.outputStream.pipe(out).on('close', () => resolve())
+        zipIn.on('entry', (entry) => {
+          if (entry.fileName.startsWith('assets/')) return zipIn.readEntry()
+          zipIn.openReadStream(entry, (e2, stream) => {
+            if (e2 || !stream) return reject(e2)
+            const chunks: Buffer[] = []
+            stream.on('data', (c: Buffer) => chunks.push(c))
+            stream.on('end', () => {
+              let buf = Buffer.concat(chunks)
+              if (entry.fileName === 'manifest.json') {
+                const m = JSON.parse(buf.toString('utf8'))
+                m.inventory = m.inventory.filter((e: { path: string }) => !e.path.startsWith('assets/'))
+                buf = Buffer.from(JSON.stringify(m), 'utf8')
+              }
+              zipOut.addBuffer(buf, entry.fileName)
+              zipIn.readEntry()
+            })
+          })
+        })
+        zipIn.on('end', () => {
+          zipIn.close()
+          zipOut.end()
+        })
+        zipIn.readEntry()
+      })
+    })
+
+    const destDir = join(outDir, 'never-materializes')
+    await expect(importProject(rebuilt, destDir)).rejects.toMatchObject({ code: 'BAD_DATABASE' })
     expect(existsSync(destDir)).toBe(false)
     expect(existsSync(`${destDir}.partial`)).toBe(false)
   })

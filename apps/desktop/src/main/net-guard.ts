@@ -26,11 +26,29 @@ export function isPrivateAddress(ip: string): boolean {
     if (a === 192 && b === 168) return true
     return false
   }
-  const lower = ip.toLowerCase()
+  // Uncompressed v4-mapped spelling (a resolver may hand it back raw).
+  const lower = ip.toLowerCase().replace(/^0:0:0:0:0:ffff:/, '::ffff:')
   if (lower === '::' || lower === '::1') return true
   if (lower.startsWith('fc') || lower.startsWith('fd')) return true // fc00::/7 ULA
   if (/^fe[89ab]/.test(lower)) return true // fe80::/10 link-local
-  if (lower.startsWith('::ffff:')) return isPrivateAddress(lower.slice(7)) // v4-mapped
+  if (lower.startsWith('::ffff:')) {
+    // v4-mapped. WHATWG URL normalizes the dotted spelling to HEX
+    // groups ("[::ffff:127.0.0.1]" → hostname "[::ffff:7f00:1]"), so
+    // both must map back to the embedded IPv4 — the hex form
+    // previously fell through every range check as public (Codex
+    // review P1, reproduced).
+    const tail = lower.slice(7)
+    if (tail.includes('.')) return isPrivateAddress(tail)
+    const hex = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(tail)
+    if (hex) {
+      const hi = parseInt(hex[1]!, 16)
+      const lo = parseInt(hex[2]!, 16)
+      return isPrivateAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`)
+    }
+    // A mapped form we don't recognize never gets the benefit of the
+    // doubt.
+    return true
+  }
   return false
 }
 

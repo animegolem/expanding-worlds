@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
-import { createWriteStream, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { dirname, join, sep } from 'node:path'
 import yauzl from 'yauzl'
 import { Db } from '../db'
+import { blobRelativePath } from '../import/store'
 import { LATEST_SCHEMA_VERSION } from '../migrations/index'
 import { DB_ENTRY, MANIFEST_ENTRY, parseManifest, type ExportManifest } from './manifest'
 
@@ -163,15 +164,43 @@ export async function importProject(archivePath: string, destDir: string): Promi
       }
     }
 
-    // The database must be a working copy of the project the manifest
-    // claims, at the schema this build reads.
+    // The database must be a working, internally consistent copy of
+    // the project the manifest claims, at the schema this build reads
+    // — checked BEFORE the rename, so a crafted or damaged archive
+    // never becomes a directory that looks like a project (Codex
+    // review round 2: hash verification binds archive↔manifest, but
+    // only these checks bind manifest↔database↔blobs).
     const dbPath = join(partial, DB_ENTRY)
     let projectRow: { id: string; title: string; schema_version: number } | undefined
     try {
       const db = Db.open(dbPath, { readOnly: true })
-      projectRow = db.get('SELECT id, title, schema_version FROM project')
-      db.close()
-    } catch {
+      try {
+        projectRow = db.get('SELECT id, title, schema_version FROM project')
+        const quick = db.get<{ quick_check: string }>('PRAGMA quick_check(1)')
+        if (quick?.quick_check !== 'ok') {
+          throw refuse('BAD_DATABASE', 'the archived database fails its integrity check')
+        }
+        const fkViolations = db.all('PRAGMA foreign_key_check')
+        if (fkViolations.length > 0) {
+          throw refuse('BAD_DATABASE', 'the archived database has broken references')
+        }
+        // Every asset row must have its blob on disk in the partial —
+        // a database that references media the archive never carried
+        // would import as a project full of holes.
+        const hashes = db
+          .all<{ content_hash: string }>('SELECT DISTINCT content_hash FROM asset')
+          .map((r) => r.content_hash)
+        for (const hash of hashes) {
+          const blob = join(partial, blobRelativePath(hash))
+          if (!existsSync(blob)) {
+            throw refuse('BAD_DATABASE', `the archive is missing media the project references`)
+          }
+        }
+      } finally {
+        db.close()
+      }
+    } catch (err) {
+      if (err instanceof Error && 'code' in err) throw err
       throw refuse('BAD_DATABASE', 'the archived database does not open')
     }
     if (!projectRow) throw refuse('BAD_DATABASE', 'the archived database has no project row')
