@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.62         | 7 July 2026      |
+| Accepted for Phase 1 | 0.63         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -535,7 +535,15 @@ connector), or media pulled through a USER-INSTALLED tool such as
 yt-dlp that a connector may drive but the app never bundles
 (§11.5 constitution: deliberate opt-in, nothing ambient). Click-off
 or Esc always returns to the board. New content kinds add a
-renderer INSIDE this window, never a new overlay species. The
+renderer INSIDE this window, never a new overlay species.
+Connectors ADDRESS this surface, they never extend it: a connector
+hands content to one of the app's enumerated renderers (player,
+reader, sandboxed web view) and may never ship a renderer of its
+own — plugin code stays out of the presentation layer entirely
+(rev 0.63, owner; closes the isolation hole a plugin-supplied
+renderer would open). "Anything a browser can display" is the
+north star, not the contract: the window is universal, the
+renderer set is enumerated and grows one kind at a time. The
 window carries a fullscreen button that goes TRUE borderless
 fullscreen — the OS kind, not maximize-to-app-window — and Esc
 steps back down to the windowed overlay, then out to the board
@@ -4584,6 +4592,12 @@ Accepted for the Phase 1 prototype:
   viewer's fullscreen button is true borderless OS fullscreen, never
   maximize-to-app-window; Esc unwinds fullscreen → window → board
   (rev 0.61, §4.7).
+
+- Connectors address the universal viewer, never extend it (rev
+  0.63, owner): content routes to the app's enumerated renderers;
+  plugin code never enters the presentation layer. The RSS/feed
+  musing is blessed as an EPIC-020 citizen riding the viewer +
+  web-reference stack, not a priority driver (§4.7).
 
 - §17/§18 reconciled for the sign-off (rev 0.62, EPIC-008 FR-5
   prerequisite): item 24 narrows to the outline (the graph takeover
