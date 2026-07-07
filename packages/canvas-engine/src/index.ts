@@ -71,6 +71,20 @@ export {
   type GridLevel,
 } from './background-grid'
 export {
+  approachExtent,
+  computeContentBounds,
+  parseCssRgb,
+  ratchetExtent,
+  rectsEqual,
+  subtractRect,
+  voidTone,
+  STAGE_CONTENT_PADDING,
+  STAGE_EASE_EPSILON,
+  STAGE_EASE_TAU_MS,
+  STAGE_VOID_MIX,
+  STAGE_VOID_VEIL_ALPHA,
+} from './stage-extent'
+export {
   classifyCursorZone,
   CURSOR_ZONES,
   hitTest,
