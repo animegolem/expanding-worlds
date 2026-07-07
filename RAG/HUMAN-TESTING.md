@@ -28,6 +28,15 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Snapshot remote push** (AI-IMP-122, 2026-07-07): Settings →
+  snapshots → "Commit + push" reveals the remote URL field + Test
+  connection. Two checks: (1) does the opt-in read as deliberate —
+  nothing network-shaped should feel ambient; (2) point it at a slow
+  or dead remote and End Session — closing must stay INSTANT (the
+  push is background; a ⚠ perch carries the unpushed count and the
+  next snapshot retries). The failure toast should fire once, not
+  nag on every retry.
+
 - [ ] **Restore from backup** (AI-IMP-121, 2026-07-07): with
   snapshots on and some history, ☰ → Restore from backup… — the one
   question: does the confirm read as SAFE-COPY, never rollback? (It

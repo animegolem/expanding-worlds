@@ -128,6 +128,13 @@ mechanics, roughly ordered by how much build work they unblock.
     In exports it's plain markdown; the on-disk shape is fixed,
     the card is yours.
 
+A registry lead for the token/component work: TagPanel, SearchPanel,
+RestoreDialog, and SettingsView each hand-roll the same text-input
+and small-button look against the same `--ew-*` tokens
+(`--ew-surface-input`, `--ew-border-strong`, `--ew-focus-ring`).
+That is exactly the duplication a shared input-primitive registry
+should absorb — found while landing AI-IMP-121/122 (2026-07-07).
+
 ## Authority ladder (which document wins)
 
 When sources disagree, precedence runs:

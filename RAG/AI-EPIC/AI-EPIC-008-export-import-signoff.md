@@ -74,12 +74,12 @@ non-exported per §16.
 - [ ] FR-4: Active-content-only export variant.
 - [ ] FR-5: Slice walkthrough of §17 items 1–26 with evidence.
 - [ ] FR-6: §18 acceptance audit with pass/fail record.
-- [ ] FR-7: Git snapshot engine at checkpoint moments per rev 0.52
+- [x] FR-7: Git snapshot engine at checkpoint moments per rev 0.52
       §11.4 (end-session, quit, idle; readable notes tree; size
       readout) — AI-IMP-120.
-- [ ] FR-8: In-app Restore from backup… materializing a snapshot as
+- [x] FR-8: In-app Restore from backup… materializing a snapshot as
       a new project directory — AI-IMP-121.
-- [ ] FR-9: Remote push as an Advanced off-by-default setting —
+- [x] FR-9: Remote push as an Advanced off-by-default setting —
       AI-IMP-122.
 
 ### Non-Functional Requirements

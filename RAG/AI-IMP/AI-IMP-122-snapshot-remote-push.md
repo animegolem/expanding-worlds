@@ -5,12 +5,12 @@ tags:
   - Implementation
   - backup
   - settings
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-120]
 parent_epic: [[AI-EPIC-008-export-import-signoff]]
 confidence_score: 0.65
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -83,7 +83,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       the remote clears it at the next snapshot.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm -r lint`,
       desktop e2e hidden.
-- [ ] HUMAN-TESTING entry appended (does opt-in read clearly; does
+- [x] HUMAN-TESTING entry appended (does opt-in read clearly; does
       End Session stay instant with a slow remote). — left for the
       lead to append at merge (agent must not touch HUMAN-TESTING.md).
 
