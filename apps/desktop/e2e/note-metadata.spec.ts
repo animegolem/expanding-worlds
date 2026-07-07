@@ -73,7 +73,7 @@ test('multi-board placements card flies to boards and a rename persists the bloc
   const homeRow = boards.filter({ hasText: 'Home' })
   await expect(homeRow).toHaveCount(1)
   const otherRow = boards.filter({ hasNotText: 'Home' }).first()
-  await otherRow.click()
+  await otherRow.getByTestId('metadata-fly').click()
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(childCanvas)
 
   // A system touch (rename re-key) persists the block into the body.
@@ -104,11 +104,12 @@ test('per-note toggle off strips the block at the next system touch', async () =
     .poll(async () => (await noteBody(win, noteId)).includes('<!-- ew:metadata -->'))
     .toBe(true)
 
-  // Toggle the note off — the card body hides, but the persisted block
-  // is NOT stripped yet (only at the next system touch).
-  await expect(win.getByTestId('metadata-toggle')).toHaveText('On')
+  // Toggle the note off — the SYSTEM seam flips to the dashed off
+  // explainer and the card body hides, but the persisted block is NOT
+  // stripped yet (only at the next system touch).
+  await expect(win.getByTestId('metadata-off')).toHaveCount(0)
   await win.getByTestId('metadata-toggle').click()
-  await expect(win.getByTestId('metadata-toggle')).toHaveText('Off')
+  await expect(win.getByTestId('metadata-off')).toBeVisible()
   await expect(win.getByTestId('metadata-placements')).toHaveCount(0)
   expect(await noteBody(win, noteId)).toContain('<!-- ew:metadata -->')
 
@@ -118,6 +119,53 @@ test('per-note toggle off strips the block at the next system touch', async () =
     .poll(async () => (await noteBody(win, noteId)).includes('<!-- ew:metadata -->'))
     .toBe(false)
   expect(await noteBody(win, noteId)).toBe('body text')
+
+  await app.close()
+})
+
+test('folding a board hides its nested rows (AI-IMP-139)', async () => {
+  const { app, win } = await launchApp('ew-e2e-note-metadata-fold-')
+  const rootCanvas = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // The subject note on Home (depth 0) plus a nested board (depth 1):
+  // a board-owning node placed on Home, with the note also living on it.
+  const { nodeId } = await seedPlacedNote(win, 'Nest', 'prose', { x: 300, y: 240 })
+  const boardNode = crypto.randomUUID()
+  const childCanvas = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: boardNode })
+  await exec(win, 'CreateCanvas', { canvasId: childCanvas, nodeId: boardNode })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: rootCanvas,
+    nodeId: boardNode,
+    x: 700,
+    y: 240,
+  })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: childCanvas,
+    nodeId,
+    x: 40,
+    y: 40,
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements >= 2)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.getByTestId('note-metadata-card')).toBeVisible()
+
+  // Both rows show by default (top level open); Home carries the fold.
+  const boards = win.getByTestId('metadata-board')
+  await expect(boards).toHaveCount(2)
+
+  // Fold Home — its nested board collapses under it.
+  await win.getByTestId('metadata-fold').first().click()
+  await expect(boards).toHaveCount(1)
+  await expect(boards.first()).toContainText('Home')
+
+  // Unfold — the nested row returns; fly still works.
+  await win.getByTestId('metadata-fold').first().click()
+  await expect(boards).toHaveCount(2)
 
   await app.close()
 })
