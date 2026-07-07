@@ -84,3 +84,22 @@ export const EW_BEAT_MAKE_ROOM_PX = 6
 
 /** MAKE ROOM approach time-constant for the eased clearance in/out. */
 export const EW_BEAT_MAKE_ROOM_TAU_MS = 70
+
+/* ---- The menu CASCADE ledger (RFC §8.2 rev 0.64, decision 06,
+ * AI-IMP-167). The universal open grammar: every menu and popover fades
+ * its rows in staggered top-to-bottom, opacity only, inside the cascade
+ * envelope. The applicator (chrome/menu-cascade.ts) stamps each row's
+ * --row-index and reads the delay/duration straight from these; the
+ * keyframe lives in chrome/menu-cascade.css. Named here so the mechanism
+ * and its tests share ONE contract. */
+
+/** Per-row stagger: each row starts this long after the one above. */
+export const EW_MENU_STAGGER_MS = 30
+
+/** Cascade envelope: the whole open lands inside this budget. */
+export const EW_MENU_CASCADE_MS = 190
+
+/** Stagger cap (rows): the effective delay is min(index, cap) * stagger,
+ * so a 20-row menu still finishes in budget. Chosen so cap*stagger plus
+ * the per-row fade equals the envelope exactly (4*30 + 70 == 190). */
+export const EW_MENU_STAGGER_CAP = 4
