@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 5 | 0 |
+| In Progress | 5 | 1 |
 | Planned | 4 | 6 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 14 | 138 |
-| **Total** | **24** | **153** |
+| **Total** | **24** | **154** |
 
 ## In Progress
 
@@ -54,6 +54,7 @@
 - [[AI-IMP-148-heading-folding|IMP-148]] Heading folding — planned
 - [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — planned
 - [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — planned
+- [[AI-IMP-156-tiptap-token-integrity|IMP-156]] Tiptap token integrity — in-progress
 
 ---
 
