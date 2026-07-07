@@ -6,7 +6,7 @@ tags:
   - export
 kanban_status: deferred
 depends_on:
-parent_epic: [[AI-EPIC-015-library-and-cross-project-sourcing]]
+parent_epic: [[AI-EPIC-008-export-import-signoff]]
 confidence_score: 0.85
 date_created: 2026-07-06
 date_completed:

@@ -128,6 +128,21 @@ mechanics, roughly ordered by how much build work they unblock.
     In exports it's plain markdown; the on-disk shape is fixed,
     the card is yours.
 
+## Authority ladder (which document wins)
+
+When sources disagree, precedence runs:
+
+1. **The RFC** (RAG/RFC-0001-…, current revision) — product
+   semantics and every accepted decision. Always wins.
+2. **This letter** — the current design worklist and deltas.
+3. **The design-system package** (tokens, components, UI-kit
+   screens, brand rules) — authoritative for visual vocabulary,
+   but it snapshots an older RFC revision; where it contradicts
+   the RFC or this letter, it is the one that updates.
+4. **Design-Artifacts-v1.0.zip** (the narrative HTMLs) —
+   historical visual baseline only; consult for feel, never for
+   current behavior.
+
 ## Constraints the design must honor (load-bearing, not taste)
 
 - **Theme tokens only.** A guard test fails the build on raw

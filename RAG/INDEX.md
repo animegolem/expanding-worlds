@@ -11,7 +11,7 @@
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 115 |
-| **Total** | **22** | **120** |
+| **Total** | **22** | **121** |
 
 ## In Progress
 
@@ -19,6 +19,7 @@
 > RFC §16 requires portable export with lossless reimport, and §17–18
 
 **IMPs:**
+- [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
 - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — planned
 - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — planned
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — planned
@@ -89,8 +90,8 @@
 
 ## Anomalies
 
-### Status Mismatches
-- [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-015 is completed
+### Orphaned IMPs (no epic dependency)
+- [[AI-IMP-123-review-hygiene-registry-and-disposer|IMP-123]] — planned, no epic dependency found
 
 ---
 
@@ -301,7 +302,6 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-090-ingest-by-copy-and-tag-border|IMP-090]] Ingest by copy and tag border — completed
   - [[AI-IMP-091-open-as-source-panels|IMP-091]] Open as source panels — completed
   - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
-  - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
   - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
   - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — completed
 
