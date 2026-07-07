@@ -12,6 +12,8 @@ import {
   SELECTION_OUTLINE_PAD_PX,
   SELECTION_OUTLINE_STROKE_PX,
   cssColorToNumber,
+  cropFillMatrix,
+  parsePlacementCrop,
   placementRenderer,
   setPlacementTextureResident,
   syncPlacementLabelOffset,
@@ -342,6 +344,90 @@ describe('image body treatment (§8.5, AI-IMP-140)', () => {
     const resources = fakeResources()
     const object = placementRenderer.create(image(), resources)
     expect(object.getChildByLabel('image-shadow')).toBeFalsy()
+  })
+})
+
+describe('image appearance crop (§4.6, AI-IMP-159)', () => {
+  const HASH = 'e'.repeat(64)
+  const CROP = { x: 0.25, y: 0.25, width: 0.5, height: 0.5 }
+  const cropped = (crop: object | null = CROP) =>
+    makePlacement({
+      appearanceKind: 'image',
+      assetContentHash: HASH,
+      assetWidth: 200,
+      assetHeight: 100,
+      width: 200,
+      height: 100,
+      appearanceCrop: crop === null ? null : JSON.stringify(crop),
+    })
+
+  /** The fill style of the body Graphics' one fill instruction. */
+  function bodyFillStyle(object: Container): { matrix?: { a: number; d: number; tx: number; ty: number } | null } {
+    const body = object.getChildByLabel('image') as Graphics
+    const fill = body.context.instructions.find((i) => i.action === 'fill')!
+    return (fill.data as { style: { matrix?: { a: number; d: number; tx: number; ty: number } | null } }).style
+  }
+
+  it('parses the wire crop leniently', () => {
+    expect(parsePlacementCrop(null)).toBeNull()
+    expect(parsePlacementCrop('not json')).toBeNull()
+    expect(parsePlacementCrop(JSON.stringify({ x: 0, y: 0 }))).toBeNull()
+    expect(parsePlacementCrop(JSON.stringify({ x: 0, y: 0, width: 0, height: 1 }))).toBeNull()
+    // The full frame is the uncropped identity.
+    expect(parsePlacementCrop(JSON.stringify({ x: 0, y: 0, width: 1, height: 1 }))).toBeNull()
+    expect(parsePlacementCrop(JSON.stringify(CROP))).toEqual(CROP)
+  })
+
+  it('builds a UV matrix whose inverse maps the unit square onto the crop', () => {
+    const matrix = cropFillMatrix(CROP)
+    // style.matrix is INVERTED by generateTextureMatrix, so its inverse
+    // is the actual UV map: shape 0..1 → source crop region.
+    const inv = matrix.clone().invert()
+    expect(inv.apply({ x: 0, y: 0 })).toMatchObject({ x: 0.25, y: 0.25 })
+    expect(inv.apply({ x: 1, y: 1 })).toMatchObject({ x: 0.75, y: 0.75 })
+  })
+
+  it('a cropped body fills through the crop matrix; uncropped through none', async () => {
+    const resources = fakeBudget()
+    const item = cropped()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+    const style = bodyFillStyle(object)
+    expect(style.matrix).toBeTruthy()
+    expect(style.matrix!.a).toBeCloseTo(2)
+    expect(style.matrix!.d).toBeCloseTo(2)
+    expect(style.matrix!.tx).toBeCloseTo(-0.5)
+    expect(style.matrix!.ty).toBeCloseTo(-0.5)
+
+    const plain = cropped(null)
+    const plainObject = placementRenderer.create(plain, resources)
+    setPlacementTextureResident(plainObject, plain, resources, true)
+    resources.flush()
+    await settled()
+    expect(bodyFillStyle(plainObject).matrix ?? null).toBeNull()
+  })
+
+  it('a crop change rebuilds the body (identity) and an in-place resize keeps the crop', async () => {
+    const resources = fakeBudget()
+    const item = cropped()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+    // In-place resize: body survives, crop matrix still applied.
+    const resized = { ...item, width: 400, height: 300 }
+    placementRenderer.update(object, resized, item, resources)
+    expect(object.getChildByLabel('image')).toBeTruthy()
+    expect(bodyFillStyle(object).matrix!.a).toBeCloseTo(2)
+    // Crop cleared (Reset): identity changes → rebuild; after the
+    // texture re-lands the fill has no matrix.
+    const uncropped = { ...resized, appearanceCrop: null }
+    placementRenderer.update(object, uncropped, resized, resources)
+    resources.flush()
+    await settled()
+    expect(bodyFillStyle(object).matrix ?? null).toBeNull()
   })
 })
 

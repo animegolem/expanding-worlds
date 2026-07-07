@@ -17,6 +17,13 @@
  */
 import type { AlignOp, DistributeAxis, ReorderOp } from '@ew/canvas-engine'
 import { getBinding } from '../keys/registry'
+// AI-IMP-159: the Crop verb opens the crop-editor overlay through its
+// dependency-free request seam (a window event, the same indirection
+// ContextMenu itself uses for Appearance/Tags via requestCharmPopover).
+// ContextMenu.ts selects the hit item before building this menu, so the
+// live single selection IS the crop subject; no action-bag change and
+// no host/DOM import is needed here.
+import { requestCropEditor } from '../canvas/crop-request'
 
 /**
  * The verb families permitted to nest a submenu (RFC §8.4: "submenus
@@ -305,7 +312,15 @@ function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
     {
       id: 'edit',
       items: [
-        { id: 'crop', label: 'Crop', disabledReason: 'Crop — the crop editor arrives later' },
+        {
+          id: 'crop',
+          label: 'Crop',
+          // §4.6: crop is an image-appearance verb — a non-destructive
+          // display crop on the appearance, never the asset.
+          ...(subject.isImage
+            ? { run: () => requestCropEditor() }
+            : { disabledReason: 'Crop needs an image item' }),
+        },
         { id: 'flip-h', label: 'Flip horizontal', shortcutId: 'board-flip-h', run: () => a.flip('x') },
         { id: 'flip-v', label: 'Flip vertical', shortcutId: 'board-flip-v', run: () => a.flip('y') },
         { id: 'appearance', label: 'Appearance…', run: a.openAppearance },

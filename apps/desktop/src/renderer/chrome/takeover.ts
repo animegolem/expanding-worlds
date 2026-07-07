@@ -20,6 +20,22 @@ type Listener = (kind: TakeoverKind | null) => void
 let active: TakeoverKind | null = null
 const listeners = new Set<Listener>()
 
+/**
+ * Input blockers (AI-IMP-159/160): overlays that are NOT full-window
+ * takeover sheets but must still scope out board input while open — the
+ * crop editor is the first. Each registers a predicate; `takeoverActive`
+ * reports true whenever any predicate does, so every board seam that
+ * already guards on `takeoverActive()` (host keydown, gestures pointer,
+ * nav/bookmark keys, undo keys) goes inert underneath the overlay with
+ * no per-seam wiring. Registration returns an unsubscribe.
+ */
+const inputBlockers = new Set<() => boolean>()
+
+export function registerInputBlocker(predicate: () => boolean): () => void {
+  inputBlockers.add(predicate)
+  return () => inputBlockers.delete(predicate)
+}
+
 function notify(): void {
   for (const listener of listeners) listener(active)
 }
@@ -47,7 +63,9 @@ export function activeTakeover(): TakeoverKind | null {
 }
 
 export function takeoverActive(): boolean {
-  return active !== null
+  if (active !== null) return true
+  for (const predicate of inputBlockers) if (predicate()) return true
+  return false
 }
 
 /** Subscribe; fires immediately with the current state. */

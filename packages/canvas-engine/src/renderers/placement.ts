@@ -1,4 +1,4 @@
-import { Container, Graphics, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js'
+import { Container, Graphics, Matrix, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js'
 import { assetUrl, type ScenePlacement } from '../types'
 import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
 import type { ImageTreatment, ItemRenderer, RendererResources } from './registry'
@@ -110,6 +110,62 @@ interface PlacementObject extends Container {
   /** The resident image texture (§8.5): kept so an in-place resize can
    * redraw the rounded body Graphics without dropping to placeholder. */
   __imageTexture?: Texture
+  /** §4.6 parsed appearance crop (AI-IMP-159), stored at buildBody time
+   * so the async texture landing draws the same region without
+   * re-parsing wire JSON. Null = uncropped. */
+  __imageCrop?: PlacementCrop | null
+}
+
+/**
+ * §4.6 non-destructive display crop (AI-IMP-159): a normalized
+ * source-space rect (all fields 0..1 against the full image). The wire
+ * carries it as JSON in `appearanceCrop`; the asset itself is NEVER
+ * modified — the crop only remaps the fill's texture UVs.
+ */
+export interface PlacementCrop {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** Parse the wire crop JSON leniently: any malformed / non-finite /
+ * empty-region value renders as uncropped rather than taking down the
+ * scene (mirrors attachTexture's broken-blob tolerance). */
+export function parsePlacementCrop(raw: string | null): PlacementCrop | null {
+  if (!raw) return null
+  try {
+    const value = JSON.parse(raw) as Partial<PlacementCrop> | null
+    const rect = {
+      x: Number(value?.x),
+      y: Number(value?.y),
+      width: Number(value?.width),
+      height: Number(value?.height),
+    }
+    const finite = [rect.x, rect.y, rect.width, rect.height].every((v) => Number.isFinite(v))
+    if (!finite || rect.width <= 0 || rect.height <= 0) return null
+    // The full frame is the uncropped identity.
+    if (rect.x === 0 && rect.y === 0 && rect.width === 1 && rect.height === 1) return null
+    return rect
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The crop → UV fill matrix. Pixi's textureSpace 'local' maps the
+ * shape's bounds onto UV 0..1 of the WHOLE source and ignores
+ * texture.frame (generateTextureMatrix's local branch), so sub-frame
+ * textures cannot crop a local fill. `style.matrix` IS honored — it is
+ * inverted and composed with the local mapping, giving final
+ * UV = matrix⁻¹ · localNormalized. We want localNormalized u ∈ 0..1 to
+ * sample crop.x + u·crop.width, i.e. matrix⁻¹ = translate(crop)·scale
+ * (crop) — so the style matrix is its inverse. This keeps the ONE
+ * shared budget texture (same-source images stay in one batch) and
+ * never copies pixels: the crop is pure sampling.
+ */
+export function cropFillMatrix(crop: PlacementCrop): Matrix {
+  return new Matrix(1 / crop.width, 0, 0, 1 / crop.height, -crop.x / crop.width, -crop.y / crop.height)
 }
 
 /** §8.5 image body treatment (AI-IMP-140): host-injected radius + shadow,
@@ -124,7 +180,11 @@ function imageTreatment(resources: RendererResources): ImageTreatment | null {
  * (AI-IMP-140). No per-sprite Graphics mask and no custom shader — the
  * rounded quad keeps every same-texture image in the shared Graphics
  * batch, and the texture is SAMPLED, never modified, so exports/crops
- * read original pixels.
+ * read original pixels. A §4.6 crop (AI-IMP-159) remaps the fill's UVs
+ * through the style matrix so only the cropped source region stretches
+ * onto the rect — the radius/shadow treatment composes unchanged
+ * because the body GEOMETRY (rounded rect + 9-slice shadow) is
+ * untouched; only what the fill samples moves.
  */
 function drawImageBody(
   gfx: Graphics,
@@ -132,11 +192,13 @@ function drawImageBody(
   width: number,
   height: number,
   radius: number,
+  crop: PlacementCrop | null,
 ): void {
   gfx.clear()
   gfx.roundRect(-width / 2, -height / 2, width, height, radius).fill({
     texture,
     textureSpace: 'local',
+    ...(crop ? { matrix: cropFillMatrix(crop) } : {}),
   })
 }
 
@@ -241,6 +303,9 @@ function buildBody(
     const width = item.width ?? item.assetWidth ?? 128
     const height = item.height ?? item.assetHeight ?? 128
     container.__imageSize = { width, height }
+    // §4.6 crop: parsed once per rebuild — appearanceCrop sits in
+    // identitySignature, so a crop change always lands here.
+    container.__imageCrop = parsePlacementCrop(item.appearanceCrop)
     delete container.__imageTexture
     const radius = imageTreatment(resources)?.radius ?? 0
     const placeholder = new Graphics()
@@ -453,7 +518,14 @@ async function attachTexture(
     const radius = imageTreatment(resources)?.radius ?? 0
     const body = new Graphics()
     body.label = 'image'
-    drawImageBody(body, texture as Texture, size.width, size.height, radius)
+    drawImageBody(
+      body,
+      texture as Texture,
+      size.width,
+      size.height,
+      radius,
+      container.__imageCrop ?? null,
+    )
     container.__imageTexture = texture as Texture
     container.addChildAt(body, Math.min(insertIndex, container.children.length))
     if (resources.textures) container.__acquiredHash = contentHash
@@ -658,9 +730,11 @@ function resizeImageBody(
   const radius = imageTreatment(resources)?.radius ?? 0
   // Redraw the rounded body geometry in place (the texture, if resident,
   // is preserved so the image never blinks to placeholder mid-gesture).
+  // The crop rides along unchanged: a crop CHANGE goes through
+  // identitySignature → buildBody, never this resize path.
   const image = container.getChildByLabel('image') as Graphics | null
   if (image && container.__imageTexture) {
-    drawImageBody(image, container.__imageTexture, width, height, radius)
+    drawImageBody(image, container.__imageTexture, width, height, radius, container.__imageCrop ?? null)
   } else {
     const placeholder = container.getChildByLabel('image-placeholder') as Graphics | null
     if (placeholder) drawImagePlaceholder(placeholder, width, height, radius)

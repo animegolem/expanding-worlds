@@ -49,9 +49,12 @@ export {
   SELECTION_OUTLINE_PAD_PX,
   SELECTION_OUTLINE_STROKE_PX,
   cssColorToNumber,
+  cropFillMatrix,
+  parsePlacementCrop,
   placementRenderer,
   syncPlacementIconLod,
   syncPlacementLabelOffset,
+  type PlacementCrop,
 } from './renderers/placement'
 export { BackgroundSync } from './renderers/background'
 export {
