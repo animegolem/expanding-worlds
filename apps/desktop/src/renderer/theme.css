@@ -137,6 +137,71 @@
   --ew-canvas-flat-4: #2c2233;
   --ew-canvas-flat-5: #3a362f;
   --ew-canvas-flat-6: #e8e0cd;
+
+  /* ─── Design-pass additions (Style Guide v2 ■ TECH, 2026-07-07) ───
+     World-content materials — theme-independent like the dot palette,
+     defined once and never overridden per theme (glass excepted where
+     paper itself inverts). Values marked ~ in the guide are provisional.
+     Landed dormant by AI-IMP-130: downstream visual tickets wire them. */
+
+  /* The lit stage and the void (§6.7): the void derives from the
+     EFFECTIVE board color — never a second raw color. The engine sets
+     --ew-board-color to the effective background; void is OFF on glass
+     (the desktop is the stage there). The canvas engine draws the void
+     in WebGL (stage-extent.ts voidTone, oklab); this token mirrors the
+     same derivation for any CSS surface that needs it. */
+  --ew-board-color: var(--ew-surface-solid);
+  --ew-void-surface: color-mix(in oklab, var(--ew-board-color) 78%, black);
+  /* The void's dimmed grid = the stage grid-line alpha × ~0.4. */
+  --ew-void-grid-line: rgba(255, 255, 255, 0.022);
+
+  /* Floating things cast shadows (§8.5 extended): anything torn off or
+     riding a drag — mid-tear note, drag ghost, place cursor — picks up
+     this shadow exactly while it floats. On at drag/tear start, off on
+     settle. (~) Folded here from the kit's chrome.css so the raw-color
+     guard's allowlist stays exactly one file. */
+  --ew-drag-shadow: 0 12px 26px rgba(0, 0, 0, 0.5);
+
+  /* Paper materials (doctrine): the pinned state's permanent marks.
+     Tape + torn edge survive light/dark/glass. */
+  --ew-tape-surface: rgba(214, 205, 182, 0.6);
+  --ew-tape-border: rgba(160, 150, 125, 0.4);
+  --ew-paper-torn: #f7f3ea;
+
+  /* Object icon set (Icon Document 2b family): top-light gradient
+     pairs, stroke ≈ -lo darkened ~20%, restrained gloss. One color
+     token tints dot and icon alike; SVG masters in assets/icons/. */
+  --ew-obj-blue-hi: #a8cbe8;
+  --ew-obj-blue-lo: #6b9cc4;
+  --ew-obj-blue-stroke: #4a7096;
+  --ew-obj-gold-hi: #f2d878;
+  --ew-obj-gold-lo: #d9ab2e;
+  --ew-obj-gold-stroke: #a87f18;
+  --ew-obj-red-hi: #f0847c;
+  --ew-obj-red-lo: #c0392f;
+  --ew-obj-red-stroke: #8f2f27;
+  --ew-obj-pink-hi: #e8b0d4;
+  --ew-obj-pink-lo: #c46a9e;
+  --ew-obj-pink-stroke: #96487a;
+  --ew-obj-orange-hi: #eec08a;
+  --ew-obj-orange-lo: #c87d3e;
+  --ew-obj-orange-stroke: #9a5f2a;
+  --ew-obj-green-hi: #aad494;
+  --ew-obj-green-lo: #6f9e58;
+  --ew-obj-green-stroke: #4f7a3c;
+  --ew-obj-gloss: rgba(255, 255, 255, 0.42);
+  /* Fixed drawing constants from the ratified masters (assets/icons/) */
+  --ew-obj-pin-hole: #22303c;
+  --ew-obj-flag-pole: #8a7748;
+  --ew-obj-leaf-vein: #3c5c2e;
+  /* The push pin's metal stem (Note Lifecycle beat 6) */
+  --ew-pushpin-stem: #8a8f98;
+
+  /* Note heading colors (~): loud by default, riding theme tokens.
+     Notes are paper (light) on dark + light themes; glass overrides. */
+  --ew-note-h1: #2b6cb0;
+  --ew-note-h2: #3b8a7d;
+  --ew-note-h3: #9c7f2e;
 }
 
 :root[data-theme='light'] {
@@ -235,6 +300,11 @@
   --ew-link-unresolved-decoration: #6d48a880;
   --ew-link-broken: #a63430;
   --ew-link-broken-decoration: #a6343080;
+
+  /* Void's dimmed grid on light paper (design-pass). Note headings
+     deliberately INHERIT :root here — light and dark boards both carry
+     light paper, so the loud headings read the same on both. */
+  --ew-void-grid-line: rgba(0, 0, 0, 0.03);
 }
 
 :root[data-theme='glass'] {
@@ -301,4 +371,11 @@
   --ew-link-unresolved-decoration: #c5a3ff80;
   --ew-link-broken: #f3c9c9;
   --ew-link-broken-decoration: #f3c9c980;
+
+  /* Glass: paper is dark here, so the loud headings lighten (~). The
+     void does not render on glass (the desktop is the stage), so no
+     --ew-void-grid-line override is needed. */
+  --ew-note-h1: #8ec2f5;
+  --ew-note-h2: #7ec9b8;
+  --ew-note-h3: #d9bc6a;
 }

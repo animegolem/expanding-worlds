@@ -86,6 +86,7 @@ export {
   ratchetExtent,
   rectsEqual,
   subtractRect,
+  voidEnabledForTheme,
   voidTone,
   STAGE_CONTENT_PADDING,
   STAGE_EASE_EPSILON,

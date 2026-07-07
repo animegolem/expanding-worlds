@@ -26,9 +26,12 @@ import type { Rect } from './camera'
 export const STAGE_CONTENT_PADDING = 320
 
 /** Fraction the void tone is mixed toward black from the effective
- * background color (0 = identical to the lit stage, 1 = black). The
- * void is a DERIVED tone, not a second raw color. Placeholder. */
-export const STAGE_VOID_MIX = 0.55
+ * background color, IN OKLAB (0 = identical to the lit stage, 1 =
+ * black). The void is a DERIVED tone, not a second raw color. Ratified
+ * at ~22% toward black in oklab (design pass, RFC rev 0.55 §6.7) — a
+ * gentle, perceptually-even step down from the lit stage rather than
+ * the old blunt 0.55 sRGB fade toward black. */
+export const STAGE_VOID_MIX = 0.22
 
 /** Opacity of the void-tone veil painted over grid lines beyond the
  * extent — this is what "dims the grid in the void" (§6.7). The grid
@@ -194,19 +197,87 @@ export function parseCssRgb(color: string): { r: number; g: number; b: number } 
   return null
 }
 
+// ── OKLab (Björn Ottosson) ──────────────────────────────────────────
+// The void tone is a perceptual step toward black, mirroring the CSS
+// `color-mix(in oklab, [board] (1-mix)*100%, black)` the design kit uses
+// for --ew-void-surface. This is TRUE oklab (not an approximation), so
+// the engine tone and any CSS surface derive the void identically (ΔE 0
+// against a CSS oklab mix, modulo 8-bit rounding). Mixing toward black,
+// whose oklab is (0,0,0), reduces to scaling (L,a,b) by (1-mix).
+
+const srgbToLinear = (c: number): number =>
+  c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+const linearToSrgb = (c: number): number =>
+  c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055
+
+/** Linear sRGB (0–1) → OKLab (L, a, b). */
+export function linearRgbToOklab(
+  r: number,
+  g: number,
+  b: number,
+): [number, number, number] {
+  const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+  const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+  const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+  const l_ = Math.cbrt(l)
+  const m_ = Math.cbrt(m)
+  const s_ = Math.cbrt(s)
+  return [
+    0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
+    1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
+    0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_,
+  ]
+}
+
+/** OKLab (L, a, b) → linear sRGB (0–1, unclamped). */
+export function oklabToLinearRgb(
+  L: number,
+  a: number,
+  b: number,
+): [number, number, number] {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b
+  const l = l_ ** 3
+  const m = m_ ** 3
+  const s = s_ ** 3
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ]
+}
+
 /**
  * The void tone derived from the effective background color by mixing
- * it toward black by `mix` (a color-mix-in-srgb equivalent). Returns a
- * packed 0xRRGGBB number for the renderer. Never introduces a second
- * raw color — the tone always follows the chosen background, so both
- * light and dark boards get a readable void for free. Unparseable
- * input falls back to black (the darkest possible void).
+ * it toward black by `mix` IN OKLAB. Returns a packed 0xRRGGBB number
+ * for the renderer. Never introduces a second raw color — the tone
+ * always follows the chosen background, so both light and dark boards
+ * get a readable void for free. Unparseable input falls back to black
+ * (the darkest possible void).
  */
 export function voidTone(fill: string, mix: number = STAGE_VOID_MIX): number {
   const rgb = parseCssRgb(fill) ?? { r: 0, g: 0, b: 0 }
+  const [L, a, b] = linearRgbToOklab(
+    srgbToLinear(rgb.r / 255),
+    srgbToLinear(rgb.g / 255),
+    srgbToLinear(rgb.b / 255),
+  )
   const f = 1 - clamp01(mix)
-  const r = Math.round(rgb.r * f) & 255
-  const g = Math.round(rgb.g * f) & 255
-  const b = Math.round(rgb.b * f) & 255
-  return (r << 16) | (g << 8) | b
+  const lin = oklabToLinearRgb(L * f, a * f, b * f)
+  const to8 = (c: number): number =>
+    Math.min(255, Math.max(0, Math.round(linearToSrgb(clamp01(c)) * 255)))
+  return (to8(lin[0]) << 16) | (to8(lin[1]) << 8) | to8(lin[2])
+}
+
+/**
+ * Whether the void (the darker beyond-content veil and its dimmed grid)
+ * renders for the given effective theme. It renders on every theme
+ * EXCEPT glass: there the window is translucent and the desktop is the
+ * stage (§6.7), so painting a dark void over it would defeat the glass.
+ * The host reads the active theme (documentElement `data-theme`) and
+ * gates the veil + dimmed grid on this.
+ */
+export function voidEnabledForTheme(theme: string): boolean {
+  return theme !== 'glass'
 }

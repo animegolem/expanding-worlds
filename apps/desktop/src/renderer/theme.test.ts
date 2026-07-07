@@ -46,6 +46,67 @@ describe('renderer theme tokens', () => {
     expect(failures, failures.join('\n')).toEqual([])
   })
 
+  it('defines the design-pass material + void tokens (AI-IMP-130)', () => {
+    // The visual tickets downstream (icons 132, paper 134, sweep 141)
+    // build on these; they land dormant here, so nothing references them
+    // yet and the undefined-token guard above cannot catch a missing one.
+    const themeCss = readFileSync(resolve(rendererDir, 'theme.css'), 'utf8')
+    const defined = new Set(
+      [...themeCss.matchAll(/(--ew-[a-z0-9-]+)\s*:/g)].map((m) => m[1]!),
+    )
+    const required = [
+      '--ew-board-color',
+      '--ew-void-surface',
+      '--ew-void-grid-line',
+      '--ew-drag-shadow',
+      '--ew-tape-surface',
+      '--ew-tape-border',
+      '--ew-paper-torn',
+      '--ew-obj-blue-hi',
+      '--ew-obj-blue-lo',
+      '--ew-obj-blue-stroke',
+      '--ew-obj-gold-hi',
+      '--ew-obj-gold-lo',
+      '--ew-obj-gold-stroke',
+      '--ew-obj-red-hi',
+      '--ew-obj-red-lo',
+      '--ew-obj-red-stroke',
+      '--ew-obj-pink-hi',
+      '--ew-obj-pink-lo',
+      '--ew-obj-pink-stroke',
+      '--ew-obj-orange-hi',
+      '--ew-obj-orange-lo',
+      '--ew-obj-orange-stroke',
+      '--ew-obj-green-hi',
+      '--ew-obj-green-lo',
+      '--ew-obj-green-stroke',
+      '--ew-obj-gloss',
+      '--ew-obj-pin-hole',
+      '--ew-obj-flag-pole',
+      '--ew-obj-leaf-vein',
+      '--ew-pushpin-stem',
+      '--ew-note-h1',
+      '--ew-note-h2',
+      '--ew-note-h3',
+    ]
+    const missing = required.filter((t) => !defined.has(t))
+    expect(missing, `undefined: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('overrides the loud note headings on glass, not on light (AI-IMP-130)', () => {
+    // Deliberate call (RFC §6.7 design pass): light and dark boards both
+    // carry LIGHT paper, so light inherits :root's headings; only glass
+    // (dark paper) re-lightens them.
+    const themeCss = readFileSync(resolve(rendererDir, 'theme.css'), 'utf8')
+    const glass = themeCss.slice(themeCss.indexOf("[data-theme='glass']"))
+    expect(glass).toMatch(/--ew-note-h1:/)
+    const light = themeCss.slice(
+      themeCss.indexOf("[data-theme='light']"),
+      themeCss.indexOf("[data-theme='glass']"),
+    )
+    expect(light).not.toMatch(/--ew-note-h1:/)
+  })
+
   it('keeps raw chrome colors confined to theme.css', () => {
     const rawColor = /#[0-9a-fA-F]{3,8}\b|rgba\(/g
     const failures: string[] = []

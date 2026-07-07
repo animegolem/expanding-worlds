@@ -30,6 +30,7 @@ import {
   ratchetExtent,
   rectsEqual,
   subtractRect,
+  voidEnabledForTheme,
   voidTone,
   STAGE_CONTENT_PADDING,
   STAGE_VOID_VEIL_ALPHA,
@@ -842,6 +843,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   let contentDisplayed: Rect | null = null
   let stageSnap = true
   const effectiveFill = (): string => sceneBackground?.color ?? stageFallbackColor
+  // The active theme drives whether the void renders (§6.7): glass turns
+  // it off (the translucent desktop is the stage). applyTheme() stamps
+  // documentElement's data-theme; default to dark before it runs.
+  const currentTheme = (): string => document.documentElement.dataset['theme'] ?? 'dark'
   const visibleWorldRect = (): Rect => {
     const view = viewport()
     const tl = controller.camera.screenToWorld({ x: 0, y: 0 })
@@ -865,8 +870,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     // No background image → content-defined stage over void, or (no
     // content) all void. The grid runs across both; the veil dims it
     // beyond the lit extent. Void tone derives from the effective fill.
+    // On glass the void is OFF (§6.7): the desktop is the stage, so the
+    // beyond-content area stays the plain fill and the grid is undimmed.
     const fill = effectiveFill()
-    app.renderer.background.color = voidTone(fill)
+    const voidOn = voidEnabledForTheme(currentTheme())
+    app.renderer.background.color = voidOn ? voidTone(fill) : cssColorToNumber(fill)
     stageFillGfx.clear()
     if (contentDisplayed) {
       stageFillGfx
@@ -880,11 +888,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
     drawGrid(gridGfx, controller.camera.state(), viewport())
     voidVeilGfx.clear()
-    const bands = subtractRect(visibleWorldRect(), contentDisplayed)
-    for (const band of bands) {
-      voidVeilGfx
-        .rect(band.x, band.y, band.width, band.height)
-        .fill({ color: voidTone(fill), alpha: STAGE_VOID_VEIL_ALPHA })
+    if (voidOn) {
+      const bands = subtractRect(visibleWorldRect(), contentDisplayed)
+      for (const band of bands) {
+        voidVeilGfx
+          .rect(band.x, band.y, band.width, band.height)
+          .fill({ color: voidTone(fill), alpha: STAGE_VOID_VEIL_ALPHA })
+      }
     }
   }
   // Recompute the ratcheted target from the current items and drive the
@@ -920,10 +930,16 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     contentDisplayed = next
     drawStageOrGrid()
   })
+  // Repaint the stage when the flat-canvas color OR the theme flips. The
+  // theme matters even when the fallback color is unchanged (dark↔glass
+  // share --ew-surface-solid): glass toggles the void off/on (§6.7).
+  let stageTheme = currentTheme()
   const unsubscribeSettings = onAppSettingsChanged(() => {
-    const next = computeStageFallback()
-    if (next === stageFallbackColor) return
-    stageFallbackColor = next
+    const nextFill = computeStageFallback()
+    const nextTheme = currentTheme()
+    if (nextFill === stageFallbackColor && nextTheme === stageTheme) return
+    stageFallbackColor = nextFill
+    stageTheme = nextTheme
     drawStageOrGrid()
   })
 
