@@ -17,6 +17,7 @@
 -->
 <script lang="ts">
   import type { CanvasHostHandle } from '../canvas/host'
+  import TextInput from '../ui/TextInput.svelte'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
   import { openTagPanel } from '../tags/tag-panel'
   import { navigateTo } from './navigation'
@@ -341,11 +342,12 @@
 <div class="search-panel" data-testid="search-panel" data-mode={panel.mode} style={`left:${pos.x}px;top:${pos.y}px`}>
   <header>
     <span class="glyph">{panel.mode === 'quick' ? '»' : '⌕'}</span>
-    <input
-      type="text"
+    <TextInput
+      variant="pill"
       data-testid="search-input"
       placeholder={panel.mode === 'quick' ? 'open by title…' : 'search — # for tags…'}
-      bind:this={inputEl}
+      style="flex: 1; min-width: 0"
+      bind:ref={inputEl}
       bind:value={query}
       onkeydown={onInputKeydown}
     />
@@ -427,18 +429,6 @@
     flex: none;
     color: var(--ew-text-muted);
     font-weight: 600;
-  }
-
-  input {
-    flex: 1;
-    min-width: 0;
-    box-sizing: border-box;
-    padding: 0.15rem 0.5rem;
-    background: var(--ew-surface-input);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    font: inherit;
   }
 
   .close {

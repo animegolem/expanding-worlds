@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
   import type { RestoreResult, SnapshotEntry } from '@ew/protocol'
+  import Button from '../ui/Button.svelte'
   import { overlayPortal } from '../note/panels'
 
   const { onclose }: { onclose: () => void } = $props()
@@ -164,57 +165,52 @@
 
     <div class="actions">
       {#if phase.kind === 'confirm'}
-        <button
-          type="button"
-          class="secondary"
+        <Button
+          variant="secondary"
+          size="dialog"
           data-testid="restore-confirm-cancel"
           onclick={() => (phase = { kind: 'list' })}
         >
           Back
-        </button>
-        <button
-          type="button"
-          class="primary"
+        </Button>
+        <Button
+          variant="accent"
+          size="dialog"
           data-testid="restore-confirm-accept"
           onclick={() => {
             if (phase.kind === 'confirm') void confirmRestore(phase.entry)
           }}
         >
           Create restored copy
-        </button>
+        </Button>
       {:else if phase.kind === 'done'}
-        <button
-          type="button"
-          class="secondary"
-          data-testid="restore-done"
-          onclick={onclose}
-        >
+        <Button variant="secondary" size="dialog" data-testid="restore-done" onclick={onclose}>
           Done
-        </button>
-        <button
-          type="button"
-          class="primary"
+        </Button>
+        <Button
+          variant="accent"
+          size="dialog"
           data-testid="restore-open"
           onclick={() => {
             if (phase.kind === 'done') void window.ew.snapshot.open(phase.dir)
           }}
         >
           Open Restored Project
-        </button>
+        </Button>
       {:else if phase.kind === 'failed'}
-        <button
-          type="button"
-          class="secondary"
+        <Button
+          variant="secondary"
+          size="dialog"
           data-testid="restore-failed-back"
           onclick={() => (phase = { kind: 'list' })}
         >
           Back
-        </button>
-        <button type="button" class="primary" onclick={onclose}>Close</button>
+        </Button>
+        <Button variant="accent" size="dialog" onclick={onclose}>Close</Button>
       {:else}
-        <button type="button" class="secondary" data-testid="restore-close" onclick={onclose}>
+        <Button variant="secondary" size="dialog" data-testid="restore-close" onclick={onclose}>
           Close
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
@@ -334,25 +330,5 @@
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
-  }
-
-  .actions button {
-    padding: 0.3rem 0.7rem;
-    font: inherit;
-    font-size: 0.8rem;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .actions .primary {
-    background: var(--ew-accent);
-    color: var(--ew-on-accent);
-    border: 1px solid var(--ew-accent);
-  }
-
-  .actions .secondary {
-    background: transparent;
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-control);
   }
 </style>
