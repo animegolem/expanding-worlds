@@ -63,6 +63,21 @@ const CARD_TITLE_COLOR = 0xdde3ea
 const CARD_EXCERPT_COLOR = 0xa9b3bf
 const CARD_PHANTOM_BORDER = 0x8a94a0
 
+/**
+ * §4.9 frame appearance (AI-IMP-127): a drawn region other content
+ * sits inside — "furniture, not art", so the fill is a low-alpha wash
+ * and the border a thin subtle line. Colors come from theme tokens via
+ * resources.frameColors (no raw hex here); only the alpha/geometry
+ * feel constants live in code. The fallback is used only by minimal
+ * test hosts that inject no theme colors.
+ */
+export const DEFAULT_FRAME_SIZE = 200
+const FRAME_FILL_ALPHA = 0.16
+const FRAME_BORDER_ALPHA = 0.85
+const FRAME_BORDER_WIDTH = 2
+const FRAME_CORNER_RADIUS = 6
+const FRAME_FALLBACK = { fill: 0x20242b, border: 0x3a3e46, label: 0x79808a }
+
 export function cssColorToNumber(color: string | null, fallback = 0x4a90d9): number {
   if (!color) return fallback
   const hex = color.startsWith('#') ? color.slice(1) : color
@@ -151,6 +166,11 @@ function buildBody(
     return
   }
 
+  if (kind === 'frame') {
+    buildFrameBody(container, item, resources)
+    return
+  }
+
   if (kind === 'icon') {
     const size = item.width ?? DEFAULT_DOT_RADIUS * 2
     const half = size / 2
@@ -174,6 +194,31 @@ function buildBody(
   }
   dot.label = kind === 'dot' ? 'dot' : 'bare-node'
   container.addChild(dot)
+}
+
+/**
+ * §4.9 frame region: a rounded rect drawn centered on the body origin,
+ * sized straight from placement width/height (rev 0.54 — the drawn
+ * size rides placement geometry). Subordinate to content: a low-alpha
+ * fill and a thin border so images placed on top read first. Colors
+ * are theme-token numbers injected via resources.frameColors, so no
+ * literal color lives in this renderer.
+ */
+function buildFrameBody(
+  container: PlacementObject,
+  item: ScenePlacement,
+  resources: RendererResources,
+): void {
+  const w = item.width ?? DEFAULT_FRAME_SIZE
+  const h = item.height ?? DEFAULT_FRAME_SIZE
+  const colors = resources.frameColors?.() ?? FRAME_FALLBACK
+  const region = new Graphics()
+  region.label = 'frame'
+  region
+    .roundRect(-w / 2, -h / 2, w, h, FRAME_CORNER_RADIUS)
+    .fill({ color: colors.fill, alpha: FRAME_FILL_ALPHA })
+    .stroke({ width: FRAME_BORDER_WIDTH, color: colors.border, alpha: FRAME_BORDER_ALPHA })
+  container.addChild(region)
 }
 
 /**

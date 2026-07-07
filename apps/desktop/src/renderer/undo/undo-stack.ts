@@ -8,15 +8,23 @@ import type { CommandResult, InverseCommand } from '@ew/commands'
  * driven entirely by INVERSE COMMANDS re-executed through the same
  * pipeline (invariant 24) — it never pops raw database state.
  *
- * Model. Each captured forward command F carries an inverse I. We push
- * an UNDO action `{ command: I, fallback: F }`: undo executes I. After
- * executing an action A, the OPPOSITE action is derived uniformly:
- *   opposite.command  = result.inverse ?? A.fallback
- *   opposite.fallback = A.command
+ * Model. Each captured forward command F carries an inverse I. An
+ * action is an ordered list of MEMBERS `{ command, fallback }` executed
+ * in order; undo runs I, redo re-runs F. A single command is a
+ * one-member action; a GROUP (AI-IMP-127 — a §4.9 frame drag that moves
+ * position AND membership, or the create-node+appearance+placement
+ * composite) is many members that undo/redo as ONE Mod+Z. Group
+ * members are stored REVERSED (last-committed forward undone first —
+ * LIFO within the transaction). After executing a member, its OPPOSITE
+ * is derived uniformly:
+ *   opposite.command  = result.inverse ?? member.fallback
+ *   opposite.fallback = member.command
  * `result.inverse` is the committed inverse's own inverse; when it is
  * null (internal-composite inverses such as UnplaceCard/DeleteDraftPin
  * do not self-invert), redo re-issues the ORIGINAL forward command via
- * the fallback. This one rule makes undo→redo and redo→undo symmetric.
+ * the fallback. The opposite action reverses the collected opposites so
+ * the redo replays forwards in original order. This makes undo→redo and
+ * redo→undo symmetric for single commands and groups alike.
  *
  * Failure discipline (§10.2). Any non-committed inverse result
  * (UNDO_STALE, conflict, domain error) drops the entry and toasts
@@ -39,12 +47,16 @@ export interface StackCommand {
   payload: unknown
 }
 
-export interface StackAction {
-  /** Command executed to perform this action (an undo or a redo). */
+/** One executable step of an action: run `command`; when its result
+ * carries no inverse, the opposite step re-issues `fallback`. */
+export interface StackMember {
   command: StackCommand
-  /** Re-issued as the opposite action when `command`'s result has a
-   * null inverse (the opposite is re-applying the original forward). */
   fallback: StackCommand
+}
+
+export interface StackAction {
+  /** Executed in order; a single command is a one-member list. */
+  members: StackMember[]
   /** Board the originating command acted on (v1 same-canvas fence). */
   canvasId: string
 }
@@ -112,19 +124,25 @@ export class UndoStack {
    */
   record(command: CapturedCommand): void {
     if (command.inverse === null) return
-    this.#undo.push({
-      command: {
-        commandType: command.inverse.commandType,
-        commandVersion: command.inverse.commandVersion,
-        payload: command.inverse.payload,
-      },
-      fallback: {
-        commandType: command.commandType,
-        commandVersion: command.commandVersion,
-        payload: command.payload,
-      },
-      canvasId: command.canvasId,
-    })
+    this.#undo.push({ members: [memberFor(command)], canvasId: command.canvasId })
+    this.#redo = []
+    this.#deps.onChanged()
+  }
+
+  /**
+   * Record several committed forward commands as ONE undo entry
+   * (AI-IMP-127). The list is in FORWARD (commit) order; members with a
+   * null inverse are dropped (non-undoable by design). Undo runs the
+   * survivors' inverses in reverse order, redo replays the forwards.
+   * A group that reduces to a single member behaves exactly like
+   * `record`.
+   */
+  recordGroup(commands: CapturedCommand[]): void {
+    const undoable = commands.filter((c) => c.inverse !== null)
+    if (undoable.length === 0) return
+    // Reverse so undo executes the last forward's inverse first (LIFO).
+    const members = undoable.map(memberFor).reverse()
+    this.#undo.push({ members, canvasId: undoable[undoable.length - 1]!.canvasId })
     this.#redo = []
     this.#deps.onChanged()
   }
@@ -159,38 +177,61 @@ export class UndoStack {
     }
 
     from.pop()
-    let result: CommandResult
+    // Execute every member in order; each yields its opposite step. Any
+    // non-committed member drops the whole entry (§10.2) — a group that
+    // fails partway leaves earlier members applied (inverses are trusted
+    // LIFO against the state the forward produced, so this is rare).
+    const opposites: StackMember[] = []
     this.#applying = true
-    try {
-      result = await this.#deps.execute(action.command)
-    } catch {
-      // A thrown execute (IPC death) is treated like any failed inverse:
-      // the entry is already dropped; tell the user and carry on.
-      this.#applying = false
-      this.#deps.toast(UNDO_STALE_TOAST)
-      this.#deps.onChanged()
-      return
+    for (const member of action.members) {
+      let result: CommandResult
+      try {
+        result = await this.#deps.execute(member.command)
+      } catch {
+        this.#applying = false
+        this.#deps.toast(UNDO_STALE_TOAST)
+        this.#deps.onChanged()
+        return
+      }
+      if (result.status !== 'committed') {
+        this.#applying = false
+        this.#deps.toast(UNDO_STALE_TOAST)
+        this.#deps.onChanged()
+        return
+      }
+      opposites.push({
+        command:
+          result.inverse === null
+            ? member.fallback
+            : {
+                commandType: result.inverse.commandType,
+                commandVersion: result.inverse.commandVersion,
+                payload: result.inverse.payload,
+              },
+        fallback: member.command,
+      })
     }
     this.#applying = false
 
-    if (result.status !== 'committed') {
-      this.#deps.toast(UNDO_STALE_TOAST)
-      this.#deps.onChanged()
-      return
-    }
-
-    to.push({
-      command:
-        result.inverse === null
-          ? action.fallback
-          : {
-              commandType: result.inverse.commandType,
-              commandVersion: result.inverse.commandVersion,
-              payload: result.inverse.payload,
-            },
-      fallback: action.command,
-      canvasId: action.canvasId,
-    })
+    // Reverse so the opposite action replays its members in original
+    // forward order (undo of undo = redo runs forwards).
+    to.push({ members: opposites.reverse(), canvasId: action.canvasId })
     this.#deps.onChanged()
+  }
+}
+
+/** One member (inverse to run on undo, forward as its fallback). */
+function memberFor(command: CapturedCommand): StackMember {
+  return {
+    command: {
+      commandType: command.inverse!.commandType,
+      commandVersion: command.inverse!.commandVersion,
+      payload: command.inverse!.payload,
+    },
+    fallback: {
+      commandType: command.commandType,
+      commandVersion: command.commandVersion,
+      payload: command.payload,
+    },
   }
 }

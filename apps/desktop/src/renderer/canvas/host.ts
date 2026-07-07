@@ -8,9 +8,12 @@ import {
   CommandGateway,
   createDefaultRegistry,
   createScenePlanes,
+  cssColorToNumber,
   drawGrid,
   drawSnapGuides,
   hitTest,
+  indexFrameTree,
+  innermostFrameAt,
   lensAlpha,
   LENS_RING_COLOR,
   LENS_RING_OFFSET_PX,
@@ -37,6 +40,8 @@ import {
   ToolManager,
   ToolOverlay,
   type CanvasScene,
+  type FrameCandidate,
+  type FrameIndex,
   type TileAddress,
   type TileTextureSource,
   type ControllerHost,
@@ -46,13 +51,16 @@ import {
   type SceneBackground,
   type SceneDecoration,
   type SceneItem,
+  type ScenePlacement,
   type ScenePlanes,
   type SnapGuide,
 } from '@ew/canvas-engine'
+import type { TransformContentPayload } from '@ew/commands'
 import { Application, Graphics, Texture } from 'pixi.js'
 import { takeoverActive } from '../chrome/takeover'
 import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { themeTokenValue } from '../theme'
+import { runAsUndoGroup } from '../undo/undo-store'
 import { attachGesturesUI } from './gestures-ui'
 import type { Rect } from '@ew/canvas-engine'
 
@@ -182,6 +190,9 @@ declare global {
       lensAlpha: (id: string) => number | null
       /** Ids ringed by the last lens adornment pass. */
       lensRings: () => string[]
+      /** §4.9 (AI-IMP-127): live membership index, applied-scene fresh. */
+      frameMembers: (framePlacementId: string) => string[]
+      worldToScreen: (x: number, y: number) => { x: number; y: number }
       /** AI-IMP-098 zoom-feel dial: read current values with no
        * argument, set any subset live with a partial. Dev/test
        * surface ONLY — feel constants are not settings (§11.5); the
@@ -249,6 +260,10 @@ async function loadTileSource(url: string): Promise<TileTextureSource> {
 
 const CAMERA_PERSIST_DEBOUNCE_MS = 500
 const SELECTION_COLOR = 0x4a9df0
+/** §4.9 (AI-IMP-127): while an item drag hovers a frame the frame
+ * focuses and the rest of the board dims to this alpha — the "this will
+ * land inside" affordance. Instant (no fade), so no §8.2 clock. */
+const FRAME_HOVER_DIM_ALPHA = 0.32
 
 export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostHandle> {
   const app = new Application()
@@ -282,6 +297,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     // clearance) from the live zoom; safe because renderer calls only
     // happen after mount completes (controller exists by then).
     getZoom: () => controller.camera.zoom,
+    // §4.9 frame region colors, resolved from theme tokens so the
+    // renderer carries no raw hex and both themes restyle live.
+    frameColors: () => ({
+      fill: cssColorToNumber(themeTokenValue('--ew-frame-fill')),
+      border: cssColorToNumber(themeTokenValue('--ew-frame-border')),
+      label: cssColorToNumber(themeTokenValue('--ew-frame-label')),
+    }),
   }
   const sync: SceneSync = new SceneSync(planes.content, registry, resources)
   const maxTextureSize =
@@ -439,8 +461,15 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       drawSelection()
       drawLensRings()
     },
-    commitTransform(payload) {
-      void gateway.execute('TransformContent', payload)
+    commitTransform(payload, meta) {
+      // §4.9 (AI-IMP-127): a plain drag resolves frame membership from
+      // the drop point in the SAME batch as the move (one undo); resize/
+      // rotate never touch membership (geometry immunity).
+      if (!meta.isMove) {
+        void gateway.execute('TransformContent', payload)
+        return
+      }
+      void resolveMoveWithMembership(payload)
     },
     renderMarquee(rect: Rect | null) {
       marqueeGfx.clear()
@@ -454,6 +483,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     renderGuides(guides: SnapGuide[]) {
       lastGuides = guides
       drawSnapGuides(guidesGfx, guides, controller.camera)
+      // §4.9 hover dim: recompute the focused frame each move (this runs
+      // once per pointermove during a gesture); clears when not a move.
+      updateHoverDim()
     },
     cameraChanged() {
       controller.camera.applyTo(planes.world)
@@ -470,6 +502,191 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const controller = new CanvasController(controllerHost, canvasId)
   controller.selection.onChanged(() => drawSelection())
   controller.lens.onChanged(() => drawLens())
+
+  // ---- §4.9 frames (AI-IMP-127) ----
+  // Membership index, refreshed from getFrameTree after every applied
+  // scene. Drives: carry-on-move (a dragged frame moves its members),
+  // drag-end capture/release, and the hover dim. Membership is NEVER
+  // inferred from geometry — only a completed ITEM drag edits it.
+  let frameIndex: FrameIndex = indexFrameTree([])
+
+  /** Current frame geometry as containment candidates, taking each
+   * frame's live gesture value when it is mid-drag (`geomFor`). */
+  function frameCandidates(
+    geomFor: (frame: ScenePlacement) => ScenePlacement,
+    exclude?: (id: string) => boolean,
+  ): FrameCandidate[] {
+    const out: FrameCandidate[] = []
+    for (const item of controller.items()) {
+      if (item.itemKind !== 'placement' || !frameIndex.isFrame(item.id)) continue
+      if (exclude?.(item.id)) continue
+      out.push({ placement: geomFor(item), depth: frameIndex.depthOf(item.id) })
+    }
+    return out
+  }
+
+  // Hover dim: focused frame + its members + the dragged items stay lit;
+  // everything else drops to FRAME_HOVER_DIM_ALPHA. Instant; cleared on
+  // drop/cancel (renderGuides runs with an idle state) via applyLensDim.
+  let hoverFrameId: string | null = null
+  function applyHoverDim(dragIds: Set<string>): void {
+    if (hoverFrameId === null) return
+    const keep = new Set<string>([
+      hoverFrameId,
+      ...frameIndex.transitiveMembers(hoverFrameId),
+      ...dragIds,
+    ])
+    for (const item of controller.items()) {
+      const object = sync.get(item.id)
+      if (object) object.alpha = keep.has(item.id) ? 1 : FRAME_HOVER_DIM_ALPHA
+    }
+  }
+  function clearHoverDim(): void {
+    if (hoverFrameId === null) return
+    hoverFrameId = null
+    applyLensDim() // restores each object's lens-correct alpha (1 with no lens)
+  }
+  function updateHoverDim(): void {
+    if (controller.state !== 'gesture' || !controller.gestureIsMove) {
+      clearHoverDim()
+      return
+    }
+    const dragIds = new Set<string>(ephemeral.keys())
+    // Candidate frames use their live (possibly dragged) geometry, but a
+    // dragged frame is never itself a drop target.
+    const candidates = frameCandidates(
+      (frame) => (ephemeral.get(frame.id) as ScenePlacement | undefined) ?? frame,
+      (id) => dragIds.has(id),
+    )
+    let focus: string | null = null
+    let focusDepth = -1
+    for (const id of dragIds) {
+      const eff = ephemeral.get(id)
+      if (!eff || eff.itemKind !== 'placement' || frameIndex.isFrame(id)) continue
+      const parent = frameIndex.parentOf(id)
+      if (parent !== null && dragIds.has(parent)) continue // carried with its frame
+      const target = innermostFrameAt({ x: eff.x, y: eff.y }, candidates)
+      if (target === null) continue
+      const depth = frameIndex.depthOf(target)
+      if (depth > focusDepth) {
+        focus = target
+        focusDepth = depth
+      }
+    }
+    if (focus === null) {
+      clearHoverDim()
+      return
+    }
+    hoverFrameId = focus
+    applyHoverDim(dragIds)
+  }
+
+  // §4.9 carry-on-move: expand a plain-drag set with each selected
+  // frame's transitive members, so moving a frame moves its contents as
+  // one gesture / one TransformContent (one undo).
+  controller.registerMoveExpansion((items) => {
+    const result = new Map<string, SceneItem>()
+    for (const item of items) result.set(item.id, item)
+    for (const item of items) {
+      if (item.itemKind !== 'placement' || !frameIndex.isFrame(item.id)) continue
+      for (const memberId of frameIndex.transitiveMembers(item.id)) {
+        const member = sync.item(memberId)
+        if (member) result.set(memberId, member)
+      }
+    }
+    return [...result.values()]
+  })
+
+  interface MembershipChanges {
+    captures: Map<string, string[]>
+    releases: string[]
+  }
+  /** Resolve, from a completed MOVE payload, which items changed frame:
+   * an item captured by the innermost frame under its drop point, or
+   * released when it lands in none. Items carried inside a frame that
+   * moved with them keep their parent; frames never re-parent. */
+  function computeMembershipChanges(payload: TransformContentPayload): MembershipChanges {
+    const moved = payload.items.filter(
+      (i): i is Extract<TransformContentPayload['items'][number], { kind: 'placement' }> =>
+        i.kind === 'placement',
+    )
+    const movedIds = new Set(moved.map((m) => m.placementId))
+    const movedById = new Map(moved.map((m) => [m.placementId, m]))
+    // Candidate frames use their post-move geometry when they moved too.
+    const candidates = frameCandidates((frame) => {
+      const m = movedById.get(frame.id)
+      if (!m) return frame
+      return { ...frame, x: m.x, y: m.y, width: m.width, height: m.height, scale: m.scale, rotation: m.rotation }
+    })
+    const captures = new Map<string, string[]>()
+    const releases: string[] = []
+    for (const m of moved) {
+      if (frameIndex.isFrame(m.placementId)) continue // frames never re-parent
+      const currentParent = frameIndex.parentOf(m.placementId)
+      if (currentParent !== null && movedIds.has(currentParent)) continue // carried
+      const target = innermostFrameAt({ x: m.x, y: m.y }, candidates)
+      if (target === currentParent) continue
+      if (target !== null) {
+        const list = captures.get(target)
+        if (list) list.push(m.placementId)
+        else captures.set(target, [m.placementId])
+      } else if (currentParent !== null) {
+        releases.push(m.placementId)
+      }
+    }
+    return { captures, releases }
+  }
+
+  async function resolveMoveWithMembership(payload: TransformContentPayload): Promise<void> {
+    const { captures, releases } = computeMembershipChanges(payload)
+    if (captures.size === 0 && releases.length === 0) {
+      await gateway.execute('TransformContent', payload)
+      clearHoverDim()
+      return
+    }
+    // One undo entry: the move and every capture/release commit together.
+    await runAsUndoGroup(async () => {
+      await gateway.execute('TransformContent', payload)
+      for (const [framePlacementId, memberPlacementIds] of captures) {
+        await gateway.execute('CaptureInFrame', { framePlacementId, memberPlacementIds })
+      }
+      if (releases.length > 0) {
+        await gateway.execute('ReleaseFromFrame', { memberPlacementIds: releases })
+      }
+    })
+    clearHoverDim()
+  }
+
+  /** §4.9 frame create composite (AI-IMP-127): create-node +
+   * frame-appearance + placement as ONE undo entry. Region is the drawn
+   * rect (top-left + size); the placement (x,y) is its center. */
+  async function commitFrame(region: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }): Promise<void> {
+    const nodeId = uuidv7()
+    const placementId = uuidv7()
+    await runAsUndoGroup(async () => {
+      const created = await gateway.execute('CreateNode', { nodeId })
+      if (created.status !== 'committed') return
+      const appearance = await gateway.execute('SetNodeAppearance', {
+        nodeId,
+        appearance: { kind: 'frame' },
+      })
+      if (appearance.status !== 'committed') return
+      await gateway.execute('CreatePlacement', {
+        placementId,
+        canvasId,
+        nodeId,
+        x: region.x + region.width / 2,
+        y: region.y + region.height / 2,
+        width: region.width,
+        height: region.height,
+      })
+    })
+  }
 
   // §12.2: culling + lazy texture residency, coalesced to one pass
   // per rendered frame (camera events arrive per pointer move).
@@ -719,6 +936,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     renderPreview: (preview) => toolOverlay.renderPreview(preview),
     highlightPlacement: (id) => toolOverlay.highlightPlacement(id),
   })
+  // §4.9 frame tool: a drawn region commits the frame create composite.
+  tools.onDrawFrame = (region) => void commitFrame(region)
 
   const sceneAppliedListeners = new Set<() => void>()
   function notifySceneApplied(): void {
@@ -778,10 +997,20 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
     refreshing = true
     try {
-      const scene = await runQuery<CanvasScene | null>('getCanvasScene', { canvasId })
+      // §4.9 (AI-IMP-127): scene AND frame tree fetched TOGETHER — one
+      // suspension point, so the apply below stays synchronous. Adding a
+      // second await between setItems and scheduleCull opened a window
+      // where an openCanvas texture-release could interleave and the
+      // resuming refresh re-acquired the old scene's textures (perf
+      // memory-release regression).
+      const [scene, frameTree] = await Promise.all([
+        runQuery<CanvasScene | null>('getCanvasScene', { canvasId }),
+        runQuery<{ roots: Parameters<typeof indexFrameTree>[0] }>('getFrameTree', { canvasId }),
+      ])
       if (!scene) {
         sync.clear()
         controller.setItems([])
+        frameIndex = indexFrameTree([])
         sceneBackground = null
         updateContentStage()
         drawStageOrGrid()
@@ -792,6 +1021,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       sceneBackground = scene.background
       sync.apply(scene.items)
       controller.setItems(scene.items)
+      // Rebuild the membership index so carry-on-move, drag-end capture,
+      // and the hover dim read the current parents/depths.
+      frameIndex = indexFrameTree(frameTree.roots)
       // §6.7 rev 0.50: recompute the content-defined stage extent from
       // the fresh items (grow-only within a session; snug on open).
       updateContentStage()
@@ -1052,6 +1284,13 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     clearLens: () => controller.lens.clear(),
     lensAlpha: (id: string) => sync.get(id)?.alpha ?? null,
     lensRings: () => [...lensRingIds],
+    // §4.9 frames (AI-IMP-127): the host's live membership index —
+    // reflects the applied scene, so e2e gates carry/capture on it.
+    frameMembers: (framePlacementId: string) =>
+      frameIndex.transitiveMembers(framePlacementId).slice().sort(),
+    // World→canvas-local screen: e2e computes mouse coords through the
+    // live camera so panel insets/zoom never skew absolute positions.
+    worldToScreen: (x: number, y: number) => controller.camera.worldToScreen({ x, y }),
     zoomTuning: (partial?: { tau?: number; wheelSpeed?: number; pinchSpeed?: number }) => {
       if (partial?.tau !== undefined) zoomChase.tau = partial.tau
       if (partial?.wheelSpeed !== undefined) wheelZoomSpeed = partial.wheelSpeed

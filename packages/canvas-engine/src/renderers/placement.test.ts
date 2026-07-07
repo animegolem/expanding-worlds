@@ -386,6 +386,66 @@ describe('label / selection-outline clearance (AI-IMP-087)', () => {
   })
 })
 
+describe('frame appearance (§4.9, AI-IMP-127)', () => {
+  const THEME = { fill: 0x010203, border: 0x040506, label: 0x070809 }
+  function frameResources() {
+    let calls = 0
+    const resources: RendererResources & { calls: () => number } = {
+      ...fakeResources(),
+      calls: () => calls,
+      frameColors: () => {
+        calls += 1
+        return THEME
+      },
+    }
+    return resources
+  }
+  function styleColor(gfx: Graphics, action: 'fill' | 'stroke'): number | undefined {
+    const instruction = gfx.context.instructions.find((i) => i.action === action)
+    return instruction && 'style' in instruction.data
+      ? (instruction.data.style.color as number)
+      : undefined
+  }
+
+  it('draws the region centered, sized from placement geometry', () => {
+    const item = makePlacement({ appearanceKind: 'frame', width: 300, height: 200, x: 12, y: -4 })
+    const object = placementRenderer.create(item, frameResources())
+    expect(object.position).toMatchObject({ x: 12, y: -4 })
+    const region = object.children[0] as Graphics
+    expect(region.label).toBe('frame')
+    // Local body reaches half-width/height about the origin (stroke may
+    // add a hairline beyond the geometry edge).
+    const bounds = region.getLocalBounds()
+    expect(bounds.width).toBeGreaterThanOrEqual(300)
+    expect(bounds.width).toBeLessThan(305)
+    expect(bounds.height).toBeGreaterThanOrEqual(200)
+    expect(bounds.height).toBeLessThan(205)
+    expect(bounds.x).toBeLessThanOrEqual(-150)
+  })
+
+  it('sources fill + border from the theme channel — no baked hex (guard)', () => {
+    const resources = frameResources()
+    const item = makePlacement({ appearanceKind: 'frame', width: 120, height: 90 })
+    const region = placementRenderer.create(item, resources).children[0] as Graphics
+    expect(resources.calls()).toBeGreaterThan(0)
+    expect(styleColor(region, 'fill')).toBe(THEME.fill)
+    expect(styleColor(region, 'stroke')).toBe(THEME.border)
+  })
+
+  it('redraws at the new size through the update path', () => {
+    const resources = frameResources()
+    const item = makePlacement({ appearanceKind: 'frame', width: 120, height: 90 })
+    const object = placementRenderer.create(item, resources)
+    const resized = { ...item, width: 260, height: 40 }
+    placementRenderer.update(object, resized, item, resources)
+    const region = object.children[0] as Graphics
+    expect(region.getLocalBounds().width).toBeGreaterThanOrEqual(260)
+    expect(region.getLocalBounds().width).toBeLessThan(265)
+    expect(region.getLocalBounds().height).toBeGreaterThanOrEqual(40)
+    expect(region.getLocalBounds().height).toBeLessThan(45)
+  })
+})
+
 describe('card appearance (§4.6 rev 0.31, AI-IMP-084)', () => {
   function cardGroup(object: Container): Container {
     const group = object.children.find((child) => child.label === 'card') as Container

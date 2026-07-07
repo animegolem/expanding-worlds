@@ -1,7 +1,7 @@
 import { uuidv7 } from '@ew/domain'
 import { CommandGateway, onCommittedAnywhere } from '@ew/canvas-engine'
 import { toast } from '../chrome/status'
-import { UndoStack } from './undo-stack'
+import { UndoStack, type CapturedCommand } from './undo-stack'
 
 /**
  * Renderer singleton that wires the pure {@link UndoStack} to the app
@@ -28,6 +28,24 @@ const CAPTURED_COMMANDS = new Set<string>([
   'CreatePin', // §6.10 / §7.2 create-and-place materialization
   'PlaceAsCard', // §8.5 place-on-board
 ])
+
+/**
+ * §4.9 frame commands (AI-IMP-127) that are only ever issued INSIDE a
+ * runAsUndoGroup window — never standalone-undoable, so they stay out
+ * of CAPTURED_COMMANDS, but ARE captured while a group is open so the
+ * whole frame edit (create composite, or move + capture/release)
+ * collapses to one Mod+Z. Restricting the group to this set (plus the
+ * standing allowlist) keeps an interleaved autosave from being swept in.
+ */
+const GROUP_ONLY_COMMANDS = new Set<string>([
+  'CreateNode',
+  'SetNodeAppearance',
+  'CaptureInFrame',
+  'ReleaseFromFrame',
+])
+
+/** Commits accumulate here while a group window is open (see runAsUndoGroup). */
+let pendingGroup: CapturedCommand[] | null = null
 
 interface OutlineRow {
   canvasId: string
@@ -62,6 +80,30 @@ export function undo(): void {
 
 export function redo(): void {
   void stack?.redo()
+}
+
+/**
+ * Run `fn` (which issues several gateway commands) so every captured
+ * commit it produces lands as ONE undo entry (AI-IMP-127). Used for a
+ * §4.9 frame create composite and for a drag that moves an item AND
+ * changes its membership — one Mod+Z returns both. Nested calls run
+ * inline (the outer window owns the grouping). The gateway serializes
+ * executes, so commits from `fn` arrive in order within the window.
+ */
+export async function runAsUndoGroup(fn: () => Promise<void>): Promise<void> {
+  if (pendingGroup) {
+    await fn()
+    return
+  }
+  const group: CapturedCommand[] = []
+  pendingGroup = group
+  try {
+    await fn()
+  } finally {
+    pendingGroup = null
+    if (group.length === 1) stack?.record(group[0]!)
+    else if (group.length > 1) stack?.recordGroup(group)
+  }
 }
 
 /** The board currently mounted by the canvas host (debug seam, §13.1). */
@@ -123,19 +165,32 @@ export function attachUndo(): () => void {
     offCommitted = onCommittedAnywhere((notice) => {
       // Ignore commits produced by the stack's own inverse/redo runs.
       if (!stack || stack.applying) return
-      if (!CAPTURED_COMMANDS.has(notice.commandType)) return
       const payload = notice.payload as { canvasId?: unknown }
       const canvasId =
         typeof payload?.canvasId === 'string' && payload.canvasId.length > 0
           ? payload.canvasId
           : activeCanvasId()
-      stack.record({
+      const captured: CapturedCommand = {
         commandType: notice.commandType,
         commandVersion: notice.commandVersion,
         payload: notice.payload,
         inverse: notice.result.inverse,
         canvasId,
-      })
+      }
+      if (pendingGroup) {
+        // Inside a group window: collect the standing allowlist plus the
+        // group-only frame commands, provided the commit is invertible.
+        if (
+          notice.result.inverse !== null &&
+          (CAPTURED_COMMANDS.has(notice.commandType) ||
+            GROUP_ONLY_COMMANDS.has(notice.commandType))
+        ) {
+          pendingGroup.push(captured)
+        }
+        return
+      }
+      if (!CAPTURED_COMMANDS.has(notice.commandType)) return
+      stack.record(captured)
     })
 
     // e2e/debug seam, in the __ewNav/__ewDebug mold.

@@ -190,6 +190,55 @@ describe('UndoStack (RFC §10.2)', () => {
     expect(h.stack.canRedo()).toBe(false)
   })
 
+  it('undoes a group as ONE entry, inverses in reverse order (AI-IMP-127)', async () => {
+    // A frame create composite: CreateNode → SetAppearance → CreatePlacement.
+    // The internal inverses (inv-*) don't self-invert (like
+    // DeleteDraftNode/DeleteDraftPlacement), so redo re-issues the
+    // forwards via the fallback — exactly the real create case.
+    const inverseFor = (command: StackCommand): InverseCommand | null =>
+      command.commandType.startsWith('inv-')
+        ? null
+        : { commandType: `inv-${command.commandType}`, commandVersion: 1, payload: {} }
+    const h = harness(inverseFor)
+    const cap = (type: string) => ({
+      commandType: type,
+      commandVersion: 1,
+      payload: {},
+      inverse: { commandType: `inv-${type}`, commandVersion: 1, payload: {} },
+      canvasId: 'board-1',
+    })
+    h.stack.recordGroup([cap('CreateNode'), cap('SetAppearance'), cap('CreatePlacement')])
+    expect(h.stack.undoDepth()).toBe(1)
+
+    await h.stack.undo()
+    // One undo, inverses run last-forward-first (LIFO within the group).
+    expect(h.log).toEqual(['inv-CreatePlacement', 'inv-SetAppearance', 'inv-CreateNode'])
+    expect(h.stack.canUndo()).toBe(false)
+    expect(h.stack.canRedo()).toBe(true)
+
+    await h.stack.redo()
+    // Redo replays the forwards in ORIGINAL order, still one entry.
+    expect(h.log.slice(3)).toEqual(['CreateNode', 'SetAppearance', 'CreatePlacement'])
+    expect(h.stack.undoDepth()).toBe(1)
+    expect(h.stack.redoDepth()).toBe(0)
+  })
+
+  it('drops null-inverse members and records a one-member group like a single', async () => {
+    const h = harness(selfInverting)
+    h.stack.recordGroup([
+      { commandType: 'A', commandVersion: 1, payload: {}, inverse: null, canvasId: 'board-1' },
+      {
+        commandType: 'B',
+        commandVersion: 1,
+        payload: {},
+        inverse: { commandType: 'inv-B', commandVersion: 1, payload: {} },
+        canvasId: 'board-1',
+      },
+    ])
+    await h.stack.undo()
+    expect(h.log).toEqual(['inv-B'])
+  })
+
   it('recording a new command clears the redo stack (§10.2)', async () => {
     const h = harness(selfInverting)
     const rec = (type: string) =>
