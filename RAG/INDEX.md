@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 3 | 0 |
-| Planned | 6 | 6 |
+| Planned | 6 | 5 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 120 |
+| Completed | 13 | 121 |
 | **Total** | **22** | **127** |
 
 ## In Progress
@@ -32,7 +32,7 @@
 **IMPs:**
 - [[AI-IMP-126-frame-model-and-membership|IMP-126]] Frame model and membership — planned
 - [[AI-IMP-127-frame-renderer-and-interactions|IMP-127]] Frame renderer and interactions — planned
-- [[AI-IMP-128-arrange-and-normalize|IMP-128]] Arrange and normalize — planned
+- [[AI-IMP-128-arrange-and-normalize|IMP-128]] Arrange and normalize — completed
 - [[AI-IMP-129-drop-behavior-and-frame-sort|IMP-129]] Drop behavior and frame sort — planned
 
 ---
@@ -109,16 +109,16 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
+- apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
+- apps/desktop/src/renderer/chrome/Dock.svelte (760 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
-- apps/desktop/src/renderer/chrome/Dock.svelte (721 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (639 LOC)
-- apps/desktop/e2e/board-tooling.spec.ts (628 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 
 ### > 300 LOC
@@ -130,7 +130,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
-- apps/desktop/src/renderer/views/TrashView.svelte (533 LOC)
+- apps/desktop/src/renderer/views/TrashView.svelte (537 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (526 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
@@ -142,9 +142,9 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (501 LOC)
 - apps/desktop/src/utility/index.ts (499 LOC)
+- apps/desktop/src/renderer/canvas/board-tooling.ts (498 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (490 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
-- apps/desktop/src/renderer/canvas/board-tooling.ts (474 LOC)
 - packages/commands/src/payloads/structure.ts (471 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
@@ -170,10 +170,12 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
+- packages/canvas-engine/src/arrange.test.ts (338 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
+- packages/canvas-engine/src/arrange.ts (320 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (320 LOC)
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
@@ -189,7 +191,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 115 IMPs completed</summary>
+<summary>13 EPICs, 116 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

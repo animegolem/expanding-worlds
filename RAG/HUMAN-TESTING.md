@@ -28,6 +28,18 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Arrange + normalize** (AI-IMP-128, 2026-07-06): select a
+  messy handful of mixed-size images — the Dock's selection segment
+  now carries arrange (default reading order · name · import order ·
+  area) and normalize (height · width · size · area). Two feel
+  calls: (1) normalize matches everything to the selection MEDIAN —
+  on a real pinboard does that read as "tidied" or does it pick the
+  wrong reference? (2) arrange packs into a roughly-square block
+  anchored where the selection already sits — right, or should it
+  feel more like PureRef's? One Mod+Z must return the whole
+  invocation. Eight small Dock buttons is a stopgap until the
+  EPIC-016 menus — flag if they're too cryptic to find.
+
 - [ ] **Session snapshots** (AI-IMP-120, 2026-07-06): Settings →
   turn snapshots to "git commit" on a real project, work a while,
   then quit — does closing feel instant, or does the snapshot make

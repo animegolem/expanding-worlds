@@ -6,12 +6,12 @@ tags:
   - frames
   - canvas
   - board-tooling
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-017-frames]]
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 
@@ -93,7 +93,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden — all green (one unrelated trash.spec flake auto
       -passed on retry).
-- [ ] HUMAN-TESTING entry appended at merge by the lead (does
+- [x] HUMAN-TESTING entry appended at merge by the lead (does
       normalize-by-median feel right on a messy pinboard).
 
 ### Acceptance Criteria
