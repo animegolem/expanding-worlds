@@ -65,6 +65,12 @@ class SuggestionPopup {
   #active = 0
   #token: OpenToken | null = null
   #generation = 0
+  /** Set in destroy(). The editor view can be torn down WHILE an
+   * async suggestTitles query is in flight; its resolution path must not
+   * re-create the popup (an orphan appended to document.body) or call
+   * coordsAtPos on the destroyed view (an unhandled rejection). Checked
+   * after every await and at #render entry (AI-IMP-156). */
+  #destroyed = false
 
   constructor(view: EditorView, port: ProjectPort) {
     this.#view = view
@@ -76,6 +82,7 @@ class SuggestionPopup {
   }
 
   async refresh(): Promise<void> {
+    if (this.#destroyed) return
     const token = openTokenAt(this.#view)
     // Empty query needs no list (mirrors the shipped non-explicit rule).
     if (!token || token.query.length === 0) {
@@ -87,6 +94,9 @@ class SuggestionPopup {
     const suggestions = await this.#port.query<TitleSuggestion[]>('suggestTitles', {
       query: token.query,
     })
+    // The view may have been destroyed while the query was in flight —
+    // never touch it or re-render after that (AI-IMP-156).
+    if (this.#destroyed) return
     if (generation !== this.#generation) return // a newer keystroke won
     // The caret may have moved off the token while the query was in flight.
     const still = openTokenAt(this.#view)
@@ -140,6 +150,7 @@ class SuggestionPopup {
   }
 
   #render(): void {
+    if (this.#destroyed) return
     if (!this.#element) {
       this.#element = document.createElement('ul')
       this.#element.className = 'ew-suggestions'
@@ -180,6 +191,7 @@ class SuggestionPopup {
   }
 
   destroy(): void {
+    this.#destroyed = true
     this.close()
   }
 }

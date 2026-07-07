@@ -253,9 +253,21 @@ export function attachContextMenu(
 
   function wireSubmenu(anchor: HTMLButtonElement, item: MenuItem): void {
     let open: HTMLDivElement | null = null
+    // The shared `rows` length BEFORE this flyout's children were pushed.
+    // renderRow appends every flyout child to `rows` (keyboard nav over
+    // the OPEN flyout stays as-is), but closeSub removed only the panel —
+    // leaving the DETACHED child buttons in `rows`, so `rows` grew on each
+    // open and End/Enter could fire a stranded flyout verb after
+    // close-via-anchor. Truncate back on close (AI-IMP-156).
+    let rowsBase = -1
     const closeSub = (): void => {
       open?.remove()
       open = null
+      if (rowsBase >= 0) {
+        rows.length = rowsBase
+        if (focusIndex >= rows.length) focusIndex = -1
+        rowsBase = -1
+      }
     }
     anchor.addEventListener('click', (event) => {
       event.stopPropagation()
@@ -271,6 +283,7 @@ export function attachContextMenu(
         'position:absolute;z-index:' + (Z.popover + 1) + ';display:flex;flex-direction:column;gap:0.2rem;' +
         'min-width:170px;padding:0.35rem;background:var(--ew-surface-menu);' +
         'border:1px solid var(--ew-border);border-radius:7px;box-shadow:0 6px 18px var(--ew-menu-shadow);'
+      rowsBase = rows.length
       for (const child of item.submenu!) renderRow(panel, child)
       // The flyout lives INSIDE the menu shell: the outside-pointer
       // guard (`menu.contains`) then treats child hits as inside, and

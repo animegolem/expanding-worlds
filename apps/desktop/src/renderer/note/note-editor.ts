@@ -156,7 +156,14 @@ export class NoteEditorController {
     // §7.1 canonicalize-on-load: if the stored prose is not already in
     // the frozen dialect, the buffer now holds its canonical form — a
     // real (once-per-note) edit that commits through the ordinary save.
-    if (this.#editor && this.#editor.storage.markdown.getMarkdown() !== prose) {
+    // A TRASHED note is view-only (§7.1 In Trash): setEditable(false) gates
+    // TYPING but not this programmatic serialization, so never arm the
+    // autosave — a read-only view must issue no UpdateNote (AI-IMP-156).
+    if (
+      note.lifecycleState !== 'trashed' &&
+      this.#editor &&
+      this.#editor.storage.markdown.getMarkdown() !== prose
+    ) {
       this.#arm()
     }
     this.#hooks.onNoteChanged?.(note)
