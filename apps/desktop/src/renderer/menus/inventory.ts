@@ -15,7 +15,7 @@
  * exist yet ships as a disabled coming-soon row (tooltip grammar,
  * §8.2) — never a new domain command in this ticket.
  */
-import type { ReorderOp } from '@ew/canvas-engine'
+import type { AlignOp, DistributeAxis, ReorderOp } from '@ew/canvas-engine'
 import { getBinding } from '../keys/registry'
 
 /**
@@ -48,7 +48,9 @@ export const BOARD_COLOR_TOKENS = [
  *   as the row's inline reason — the §8.2 disabled-with-reason shape);
  * - family submenu: `submenu` + `family` set (nests child rows);
  * - color strip: `colorRow` set (the §6.7 swatch row, rendered
- *   specially and exempt from the verb-label rules).
+ *   specially and exempt from the verb-label rules);
+ * - header: `header` set (a non-interactive caption — the §8.4
+ *   multi-select count line — rendered muted and never focusable).
  * `validateMenu` enforces exactly-one-mode.
  */
 export interface MenuItem {
@@ -83,6 +85,11 @@ export interface MenuItem {
    * inline title prompt reuses the panel). The surface keeps the menu
    * mounted and lets `run` own the teardown. */
   keepOpen?: boolean
+  /** Non-interactive caption row (§8.4 multi-select count header):
+   * rendered muted, never focusable, dispatches nothing. Its own row
+   * mode — mutually exclusive with run / disabledReason / submenu /
+   * colorRow. */
+  header?: boolean
   /** Dynamic disabled state for an otherwise-actionable row is modeled
    * by choosing `run` vs `disabledReason` at build time; there is no
    * separate enabled flag — the mode says it all. */
@@ -93,7 +100,7 @@ export interface MenuGroup {
   items: MenuItem[]
 }
 
-export type MenuKind = 'item' | 'board'
+export type MenuKind = 'item' | 'board' | 'decoration' | 'multi' | 'frame'
 
 /** The item subject: the right-clicked placement's live state. */
 export interface ItemSubject {
@@ -112,7 +119,42 @@ export interface BoardSubject {
   hasColor: boolean
 }
 
-export type MenuSubject = ItemSubject | BoardSubject
+/** The decoration subject (§8.4): a drawn adornment. Its menu is
+ * STRICTLY style / z-order / lock / hide / Delete — never an item verb
+ * (no appearance, note, tags, backdrop, open-as-board). */
+export interface DecorationSubject {
+  kind: 'decoration'
+  locked: boolean
+}
+
+/** The multi-selection subject (§8.4): more than one item right-clicked
+ * inside the live selection. Counts drive the header and the
+ * "Delete N items" verb. */
+export interface MultiSubject {
+  kind: 'multi'
+  count: number
+  placementCount: number
+  decorationCount: number
+}
+
+/** The frame subject (§8.4): a placement wearing the frame appearance
+ * (§4.9). Its menu leads with the sort family (129's actions) and
+ * deletes the frame node while its members stay put (§9.6). */
+export interface FrameSubject {
+  kind: 'frame'
+  locked: boolean
+  hasNote: boolean
+  /** The per-frame sort-on-drop flag (§4.9), resolved before the build
+   * so the toggle row prints its live state. */
+  sortOnDrop: boolean
+}
+
+export type MenuSubject =
+  | ItemSubject
+  | BoardSubject
+  | DecorationSubject
+  | MultiSubject
+  | FrameSubject
 
 /**
  * Every operation a menu row can dispatch. ContextMenu.ts supplies the
@@ -147,6 +189,22 @@ export interface MenuActions {
   removeBackdrop(): void
   setBackdropColor(colorOrToken: string | null): void
   openBoardNote(): void
+  // ---- decoration ----
+  setDecorationLock(): void
+  hideDecoration(): void
+  deleteDecoration(): void
+  // ---- multi-select ----
+  align(op: AlignOp): void
+  distribute(axis: DistributeAxis): void
+  flipAll(axis: 'x' | 'y'): void
+  gatherIntoFrame(): void
+  lockAll(): void
+  deleteSelection(): void
+  // ---- frame ----
+  toggleFrameSortOnDrop(): void
+  sortFrameNow(): void
+  fillFrameFromLibrary(): void
+  deleteFrame(): void
 }
 
 const COMING_SOON = {
@@ -157,22 +215,43 @@ const COMING_SOON = {
   swapFor: 'Swap for… — arrives with the swap/replace pass',
   placeOnAnotherBoard: 'Place on another board… — arrives with the board picker',
   paste: 'Paste — press ⌘V to paste an image for now',
+  // §8.4 decoration / multi / frame verbs whose command does not exist
+  // yet — disabled-with-reason rows (§8.2), listed in Issues Encountered.
+  editStyle: 'Edit style — restyle from the toolbar while a decoration is selected',
+  multiTags: 'Tags… — batch tagging arrives with the tag pass',
+  renameFrame: 'Rename frame… — frame naming arrives with frame labels',
 } as const
 
 /** Build the ordered groups for a right-click on `subject`. Throws (via
  * validateMenu) if the result violates the grammar — a builder bug, not
  * a runtime condition. */
 export function menuFor(subject: MenuSubject, actions: MenuActions): MenuGroup[] {
-  const groups = subject.kind === 'item' ? itemMenu(subject, actions) : boardMenu(subject, actions)
+  let groups: MenuGroup[]
+  switch (subject.kind) {
+    case 'item':
+      groups = itemMenu(subject, actions)
+      break
+    case 'board':
+      groups = boardMenu(subject, actions)
+      break
+    case 'decoration':
+      groups = decorationMenu(subject, actions)
+      break
+    case 'multi':
+      groups = multiMenu(subject, actions)
+      break
+    case 'frame':
+      groups = frameMenu(subject, actions)
+      break
+  }
   validateMenu(groups)
   return groups
 }
 
-function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
-  // The §8.4 "note" verb surfaces the shipped note-lifecycle rows
-  // (open/attach/detach/rename/make-independent), reusing node-menu's
-  // testids so their e2e coverage rides along unchanged.
-  const noteRows: MenuItem[] = subject.hasNote
+/** The shipped note-lifecycle rows (§8.4 "note" verb), shared by the
+ * item and frame menus so their e2e coverage rides along unchanged. */
+function noteRows(hasNote: boolean, a: MenuActions): MenuItem[] {
+  return hasNote
     ? [
         { id: 'open-note', label: 'Open note', run: a.openNote, testid: 'node-menu-open-note' },
         {
@@ -206,7 +285,22 @@ function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
           testid: 'node-menu-attach-existing',
         },
       ]
+}
 
+/** The z-order verbs (§6.8), shared by the item and decoration menus. */
+function zOrderRows(a: MenuActions): MenuItem[] {
+  return [
+    { id: 'bring-to-front', label: 'Bring to front', shortcutId: 'board-send-front', run: () => a.reorder('front') },
+    { id: 'bring-forward', label: 'Bring forward', shortcutId: 'board-send-forward', run: () => a.reorder('forward') },
+    { id: 'send-backward', label: 'Send backward', shortcutId: 'board-send-backward', run: () => a.reorder('backward') },
+    { id: 'send-to-back', label: 'Send to back', shortcutId: 'board-send-back', run: () => a.reorder('back') },
+  ]
+}
+
+function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
+  // The §8.4 "note" verb surfaces the shipped note-lifecycle rows
+  // (open/attach/detach/rename/make-independent), reusing node-menu's
+  // testids so their e2e coverage rides along unchanged.
   return [
     {
       id: 'edit',
@@ -215,7 +309,7 @@ function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
         { id: 'flip-h', label: 'Flip horizontal', shortcutId: 'board-flip-h', run: () => a.flip('x') },
         { id: 'flip-v', label: 'Flip vertical', shortcutId: 'board-flip-v', run: () => a.flip('y') },
         { id: 'appearance', label: 'Appearance…', run: a.openAppearance },
-        ...noteRows,
+        ...noteRows(subject.hasNote, a),
         { id: 'tags', label: 'Tags…', run: a.openTags },
         {
           id: 'hide-label',
@@ -258,30 +352,7 @@ function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
             ? { run: a.setAsBackdrop }
             : { disabledReason: 'Set as backdrop needs an image item' }),
         },
-        {
-          id: 'bring-to-front',
-          label: 'Bring to front',
-          shortcutId: 'board-send-front',
-          run: () => a.reorder('front'),
-        },
-        {
-          id: 'bring-forward',
-          label: 'Bring forward',
-          shortcutId: 'board-send-forward',
-          run: () => a.reorder('forward'),
-        },
-        {
-          id: 'send-backward',
-          label: 'Send backward',
-          shortcutId: 'board-send-backward',
-          run: () => a.reorder('backward'),
-        },
-        {
-          id: 'send-to-back',
-          label: 'Send to back',
-          shortcutId: 'board-send-back',
-          run: () => a.reorder('back'),
-        },
+        ...zOrderRows(a),
       ],
     },
     {
@@ -365,6 +436,158 @@ function boardMenu(subject: BoardSubject, a: MenuActions): MenuGroup[] {
   ]
 }
 
+/**
+ * §8.4 decoration menu: edit style — z-order — lock, hide — Delete.
+ * NEVER an item verb (no appearance, note, tags, backdrop,
+ * open-as-board, flip, crop): a decoration is chrome the user drew,
+ * not a placed node, so those verbs are structurally absent — the e2e
+ * asserts it.
+ */
+function decorationMenu(subject: DecorationSubject, a: MenuActions): MenuGroup[] {
+  return [
+    {
+      id: 'style',
+      // "Edit style" has no open-command yet — the restyle controls live
+      // in the toolbar contextual row while the decoration is selected —
+      // so it ships as a disabled-with-reason row (§8.2).
+      items: [{ id: 'edit-style', label: 'Edit style', disabledReason: COMING_SOON.editStyle }],
+    },
+    { id: 'zorder', items: zOrderRows(a) },
+    {
+      id: 'state',
+      items: [
+        {
+          id: 'lock',
+          label: subject.locked ? 'Unlock' : 'Lock',
+          shortcutId: 'board-lock',
+          run: a.setDecorationLock,
+        },
+        { id: 'hide', label: 'Hide', run: a.hideDecoration },
+      ],
+    },
+    {
+      id: 'destructive',
+      items: [
+        {
+          id: 'delete',
+          label: 'Delete',
+          shortcutId: 'board-delete',
+          danger: true,
+          run: a.deleteDecoration,
+        },
+      ],
+    },
+  ]
+}
+
+/** The §8.4 Align family submenu (family 'align'): the six align verbs
+ * plus the two distribute verbs (distribute is not its own submenu
+ * family, so it nests inside Align). */
+function alignSubmenu(a: MenuActions): MenuItem[] {
+  return [
+    { id: 'align-left', label: 'Align left', run: () => a.align('left') },
+    { id: 'align-hcenter', label: 'Align centers', run: () => a.align('hcenter') },
+    { id: 'align-right', label: 'Align right', run: () => a.align('right') },
+    { id: 'align-top', label: 'Align top', run: () => a.align('top') },
+    { id: 'align-vmiddle', label: 'Align middles', run: () => a.align('vmiddle') },
+    { id: 'align-bottom', label: 'Align bottom', run: () => a.align('bottom') },
+    { id: 'distribute-h', label: 'Distribute horizontally', run: () => a.distribute('horizontal') },
+    { id: 'distribute-v', label: 'Distribute vertically', run: () => a.distribute('vertical') },
+  ]
+}
+
+/**
+ * §8.4 multi-select menu: count header — align/distribute/flips —
+ * Gather into a frame · tags · lock all — "Delete N items". Gather is
+ * ONE undo group (frame create + capture); tags has no batch command
+ * yet (disabled-with-reason).
+ */
+function multiMenu(subject: MultiSubject, a: MenuActions): MenuGroup[] {
+  const n = subject.count
+  return [
+    {
+      id: 'header',
+      items: [{ id: 'count', label: `${n} item${n === 1 ? '' : 's'} selected`, header: true }],
+    },
+    {
+      id: 'arrange',
+      items: [
+        { id: 'align', label: 'Align…', family: 'align', submenu: alignSubmenu(a) },
+        { id: 'flip-h', label: 'Flip horizontal', shortcutId: 'board-flip-h', run: () => a.flipAll('x') },
+        { id: 'flip-v', label: 'Flip vertical', shortcutId: 'board-flip-v', run: () => a.flipAll('y') },
+      ],
+    },
+    {
+      id: 'group',
+      items: [
+        { id: 'gather-into-frame', label: 'Gather into a frame', run: a.gatherIntoFrame },
+        { id: 'tags', label: 'Tags…', disabledReason: COMING_SOON.multiTags },
+        { id: 'lock-all', label: 'Lock all', shortcutId: 'board-lock', run: a.lockAll },
+      ],
+    },
+    {
+      id: 'destructive',
+      items: [
+        {
+          id: 'delete',
+          label: `Delete ${n} item${n === 1 ? '' : 's'}`,
+          shortcutId: 'board-delete',
+          danger: true,
+          run: a.deleteSelection,
+        },
+      ],
+    },
+  ]
+}
+
+/**
+ * §8.4 frame menu: the sort family (129's actions) — rename, note,
+ * tags, lock — "Delete frame — contents stay". Delete trashes the
+ * frame NODE; its members are independent and remain (§9.6), a fact
+ * the verb copy states outright.
+ */
+function frameMenu(subject: FrameSubject, a: MenuActions): MenuGroup[] {
+  return [
+    {
+      id: 'sort',
+      items: [
+        {
+          id: 'frame-sort-on-drop',
+          label: `Sort on drop: ${subject.sortOnDrop ? 'On' : 'Off'}`,
+          run: a.toggleFrameSortOnDrop,
+        },
+        { id: 'frame-sort-now', label: 'Sort in frame', run: a.sortFrameNow },
+        { id: 'frame-fill', label: 'Fill from library…', run: a.fillFrameFromLibrary },
+      ],
+    },
+    {
+      id: 'meta',
+      items: [
+        { id: 'rename-frame', label: 'Rename frame…', disabledReason: COMING_SOON.renameFrame },
+        ...noteRows(subject.hasNote, a),
+        { id: 'tags', label: 'Tags…', run: a.openTags },
+        {
+          id: 'lock',
+          label: subject.locked ? 'Unlock' : 'Lock',
+          shortcutId: 'board-lock',
+          run: a.toggleLock,
+        },
+      ],
+    },
+    {
+      id: 'destructive',
+      items: [
+        {
+          id: 'delete-frame',
+          label: 'Delete frame — contents stay',
+          danger: true,
+          run: a.deleteFrame,
+        },
+      ],
+    },
+  ]
+}
+
 /** A structural grammar error — a builder bug surfaced eagerly. */
 export class MenuGrammarError extends Error {}
 
@@ -414,10 +637,11 @@ function validateRow(item: MenuItem): void {
     item.disabledReason !== undefined,
     item.submenu !== undefined,
     item.colorRow !== undefined,
+    item.header === true,
   ].filter(Boolean).length
   if (modes !== 1) {
     throw new MenuGrammarError(
-      `row "${item.id}" must be in exactly one mode (run | disabledReason | submenu | colorRow), got ${modes}`,
+      `row "${item.id}" must be in exactly one mode (run | disabledReason | submenu | colorRow | header), got ${modes}`,
     )
   }
   if (item.submenu !== undefined) {

@@ -7,10 +7,13 @@ import {
   menuFor,
   validateMenu,
   type BoardSubject,
+  type DecorationSubject,
+  type FrameSubject,
   type ItemSubject,
   type MenuActions,
   type MenuGroup,
   type MenuItem,
+  type MultiSubject,
 } from './inventory'
 
 /** No-op actions: the grammar is a pure function of the subject, so the
@@ -122,6 +125,117 @@ describe('menuFor — board inventory (§8.4)', () => {
   })
 })
 
+describe('menuFor — decoration inventory (§8.4)', () => {
+  const DECO: DecorationSubject = { kind: 'decoration', locked: false }
+
+  it('offers ONLY style / z-order / lock / hide / Delete — never an item verb', () => {
+    const groups = menuFor(DECO, stubActions())
+    const ids = allItems(groups).map((i) => i.id)
+    // The style + state + z-order verbs are present.
+    expect(ids).toContain('edit-style')
+    expect(ids).toContain('bring-to-front')
+    expect(ids).toContain('lock')
+    expect(ids).toContain('hide')
+    expect(ids).toContain('delete')
+    // NEVER item verbs (§8.4: decoration menu carries none of these).
+    for (const forbidden of [
+      'appearance',
+      'flip-h',
+      'flip-v',
+      'crop',
+      'tags',
+      'set-as-backdrop',
+      'open-as-board',
+      'attach-new-note',
+      'open-note',
+      'hide-label',
+    ]) {
+      expect(ids).not.toContain(forbidden)
+    }
+  })
+
+  it('puts Delete last, alone, marked danger; edit-style is disabled', () => {
+    const groups = menuFor(DECO, stubActions())
+    const last = groups[groups.length - 1]!
+    expect(last.items.map((i) => i.id)).toEqual(['delete'])
+    expect(last.items[0]!.danger).toBe(true)
+    expect(byId(groups, 'edit-style')!.disabledReason).toBeTruthy()
+    expect(byId(groups, 'edit-style')!.run).toBeUndefined()
+  })
+
+  it('reflects the live lock label', () => {
+    expect(byId(menuFor(DECO, stubActions()), 'lock')!.label).toBe('Lock')
+    expect(byId(menuFor({ ...DECO, locked: true }, stubActions()), 'lock')!.label).toBe('Unlock')
+  })
+})
+
+describe('menuFor — multi-select inventory (§8.4)', () => {
+  const MULTI: MultiSubject = { kind: 'multi', count: 3, placementCount: 2, decorationCount: 1 }
+
+  it('leads with a count HEADER, then align/flips, gather/tags/lock, Delete N', () => {
+    const groups = menuFor(MULTI, stubActions())
+    expect(groups.map((g) => g.id)).toEqual(['header', 'arrange', 'group', 'destructive'])
+    const header = byId(groups, 'count')!
+    expect(header.header).toBe(true)
+    expect(header.label).toBe('3 items selected')
+    expect(header.run).toBeUndefined()
+    // Align is a family submenu; gather is actionable; tags is coming-soon.
+    expect(byId(groups, 'align')!.family).toBe('align')
+    expect(byId(groups, 'align')!.submenu!.map((r) => r.id)).toContain('distribute-h')
+    expect(byId(groups, 'gather-into-frame')!.run).toBeDefined()
+    expect(byId(groups, 'tags')!.disabledReason).toBeTruthy()
+    expect(byId(groups, 'lock-all')!.run).toBeDefined()
+  })
+
+  it('names the count in the Delete verb and marks it danger-last', () => {
+    const groups = menuFor(MULTI, stubActions())
+    const last = groups[groups.length - 1]!
+    expect(last.items.map((i) => i.id)).toEqual(['delete'])
+    expect(last.items[0]!.label).toBe('Delete 3 items')
+    expect(last.items[0]!.danger).toBe(true)
+    // Singular grammar.
+    const one = menuFor({ ...MULTI, count: 1 }, stubActions())
+    expect(byId(one, 'delete')!.label).toBe('Delete 1 item')
+    expect(byId(one, 'count')!.label).toBe('1 item selected')
+  })
+})
+
+describe('menuFor — frame inventory (§8.4)', () => {
+  const FRAME: FrameSubject = { kind: 'frame', locked: false, hasNote: false, sortOnDrop: true }
+
+  it('leads with sort family (129), then rename/note/tags/lock, then delete-stays', () => {
+    const groups = menuFor(FRAME, stubActions())
+    expect(groups.map((g) => g.id)).toEqual(['sort', 'meta', 'destructive'])
+    expect(byId(groups, 'frame-sort-on-drop')!.label).toBe('Sort on drop: On')
+    expect(byId(groups, 'frame-sort-now')!.run).toBeDefined()
+    expect(byId(groups, 'frame-fill')!.run).toBeDefined()
+    // rename has no command yet (coming-soon); tags/lock are live.
+    expect(byId(groups, 'rename-frame')!.disabledReason).toBeTruthy()
+    expect(byId(groups, 'tags')!.run).toBeDefined()
+    expect(byId(groups, 'lock')!.run).toBeDefined()
+    // The un-noted frame surfaces the attach rows.
+    expect(allItems(groups).map((i) => i.id)).toContain('attach-new-note')
+  })
+
+  it('states contents-stay in the delete verb, danger and alone', () => {
+    const groups = menuFor(FRAME, stubActions())
+    const last = groups[groups.length - 1]!
+    expect(last.items.map((i) => i.id)).toEqual(['delete-frame'])
+    expect(last.items[0]!.label).toBe('Delete frame — contents stay')
+    expect(last.items[0]!.danger).toBe(true)
+  })
+
+  it('reflects live sort-on-drop, lock, and note state', () => {
+    expect(
+      byId(menuFor({ ...FRAME, sortOnDrop: false }, stubActions()), 'frame-sort-on-drop')!.label,
+    ).toBe('Sort on drop: Off')
+    expect(byId(menuFor({ ...FRAME, locked: true }, stubActions()), 'lock')!.label).toBe('Unlock')
+    const noted = allItems(menuFor({ ...FRAME, hasNote: true }, stubActions())).map((i) => i.id)
+    expect(noted).toContain('open-note')
+    expect(noted).not.toContain('attach-new-note')
+  })
+})
+
 describe('validateMenu — grammar guards', () => {
   const ok = (item: Partial<MenuItem>): MenuItem => ({ id: 'x', label: 'X', run: () => {}, ...item })
 
@@ -181,6 +295,15 @@ describe('validateMenu — grammar guards', () => {
     expect(() => validateMenu([{ id: 'g', items: [{ id: 'x', label: 'X' }] }])).toThrow(
       MenuGrammarError,
     )
+  })
+
+  it('accepts a header row as its own mode, but not combined with run', () => {
+    expect(() =>
+      validateMenu([{ id: 'g', items: [{ id: 'h', label: '2 items', header: true }, ok({})] }]),
+    ).not.toThrow()
+    expect(() =>
+      validateMenu([{ id: 'g', items: [{ id: 'h', label: '2 items', header: true, run: () => {} }] }]),
+    ).toThrow(MenuGrammarError)
   })
 
   it('rejects an unregistered shortcut id', () => {

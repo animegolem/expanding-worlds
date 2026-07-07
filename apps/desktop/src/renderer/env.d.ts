@@ -15,6 +15,9 @@ declare global {
       current: () => ThemeName
     }
   }
+  /** The RFC revision, injected at build time from the RFC header
+   * (electron.vite.config.ts `define`). Help/About prints it. */
+  const __RFC_REV__: string
 }
 
 export {}

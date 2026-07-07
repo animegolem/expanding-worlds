@@ -18,12 +18,20 @@
  * its action (this ticket builds NO new domain commands); verbs whose
  * command does not exist yet render as disabled coming-soon rows.
  */
-import { hitTest, type ReorderOp, type ScenePlacement } from '@ew/canvas-engine'
+import {
+  hitTest,
+  unionBounds,
+  type ReorderOp,
+  type SceneDecoration,
+  type SceneItem,
+  type ScenePlacement,
+} from '@ew/canvas-engine'
 import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from '../canvas/host'
 import type { BoardTooling } from '../canvas/board-tooling'
 import { navigateTo } from '../chrome/navigation'
+import { runAsUndoGroup } from '../undo/undo-store'
 import { requestCharmPopover } from '../canvas/charms-ui'
 import {
   requestAttachNote,
@@ -36,10 +44,14 @@ import { themeTokenValue } from '../theme'
 import {
   menuFor,
   type BoardSubject,
+  type DecorationSubject,
+  type FrameSubject,
   type ItemSubject,
   type MenuActions,
   type MenuGroup,
   type MenuItem,
+  type MenuKind,
+  type MultiSubject,
 } from './inventory'
 
 export interface ContextMenuHandle {
@@ -138,7 +150,7 @@ export function attachContextMenu(
 
   // ---------------------------------------------------- rendering
 
-  function makeShell(kind: 'item' | 'board'): HTMLDivElement {
+  function makeShell(kind: MenuKind): HTMLDivElement {
     const root = document.createElement('div')
     root.dataset['testid'] = 'context-menu'
     root.dataset['kind'] = kind
@@ -161,6 +173,19 @@ export function attachContextMenu(
   function renderRow(parent: HTMLElement, item: MenuItem): void {
     if (item.colorRow) {
       renderColorRow(parent, item)
+      return
+    }
+    if (item.header) {
+      // §8.4 count header: a muted, non-interactive caption — never a
+      // menuitem, never focusable, dispatches nothing.
+      const caption = document.createElement('div')
+      caption.dataset['testid'] = item.testid ?? `ctx-${item.id}`
+      caption.setAttribute('role', 'presentation')
+      caption.textContent = item.label
+      caption.style.cssText =
+        'padding:0.25rem 0.6rem;font-size:0.72rem;letter-spacing:0.02em;opacity:0.6;' +
+        'text-transform:none;color:var(--ew-text-muted);'
+      parent.appendChild(caption)
       return
     }
     const button = document.createElement('button')
@@ -344,7 +369,7 @@ export function attachContextMenu(
     input.focus()
   }
 
-  function render(kind: 'item' | 'board', groups: MenuGroup[], at: { x: number; y: number }): void {
+  function render(kind: MenuKind, groups: MenuGroup[], at: { x: number; y: number }): void {
     close()
     menu = makeShell(kind)
     rows = []
@@ -383,12 +408,61 @@ export function attachContextMenu(
     return true
   }
 
-  function itemActions(p: ScenePlacement): MenuActions {
-    const stub = (): void => {}
+  /** Every MenuActions member as a no-op. Each per-subject factory
+   * spreads this and overrides only the verbs its menu actually
+   * offers, so the grammar's action bag stays type-complete without a
+   * wall of hand-written stubs. */
+  function baseStubActions(): MenuActions {
+    const noop = (): void => {}
     return {
-      flip: (axis) => void execute('FlipPlacement', { placementId: p.id, axis }),
-      openAppearance: () => requestCharmPopover(p.id, 'appearance'),
-      openTags: () => requestCharmPopover(p.id, 'tags'),
+      flip: noop,
+      openAppearance: noop,
+      openTags: noop,
+      openNote: noop,
+      attachNewNote: noop,
+      attachExistingNote: noop,
+      renameNote: noop,
+      detachNote: noop,
+      makeNoteIndependent: noop,
+      toggleHideLabel: noop,
+      toggleLock: noop,
+      setAsBackdrop: noop,
+      openAsBoard: noop,
+      reorder: noop,
+      deleteItem: noop,
+      selectAll: noop,
+      zoomToFit: noop,
+      setBackdropFromFile: noop,
+      editBackdropPosition: noop,
+      resetBackdrop: noop,
+      removeBackdrop: noop,
+      setBackdropColor: noop,
+      openBoardNote: noop,
+      setDecorationLock: noop,
+      hideDecoration: noop,
+      deleteDecoration: noop,
+      align: noop,
+      distribute: noop,
+      flipAll: noop,
+      gatherIntoFrame: noop,
+      lockAll: noop,
+      deleteSelection: noop,
+      toggleFrameSortOnDrop: noop,
+      sortFrameNow: noop,
+      fillFrameFromLibrary: noop,
+      deleteFrame: noop,
+    }
+  }
+
+  /** The shipped note-lifecycle wiring (§8.4 "note" verb), shared by
+   * the item and frame factories — both surface the same rows. */
+  function noteLifecycleActions(
+    p: ScenePlacement,
+  ): Pick<
+    MenuActions,
+    'openNote' | 'attachNewNote' | 'attachExistingNote' | 'renameNote' | 'detachNote' | 'makeNoteIndependent'
+  > {
+    return {
       openNote: () => {
         if (p.noteId) requestOpenNote(p.noteId)
       },
@@ -412,6 +486,16 @@ export function attachContextMenu(
             newTitle,
           }),
         ),
+    }
+  }
+
+  function itemActions(p: ScenePlacement): MenuActions {
+    return {
+      ...baseStubActions(),
+      ...noteLifecycleActions(p),
+      flip: (axis) => void execute('FlipPlacement', { placementId: p.id, axis }),
+      openAppearance: () => requestCharmPopover(p.id, 'appearance'),
+      openTags: () => requestCharmPopover(p.id, 'tags'),
       toggleHideLabel: () =>
         void execute('SetPlacementLabelVisibility', {
           placementId: p.id,
@@ -423,15 +507,6 @@ export function attachContextMenu(
       openAsBoard: () => void openAsBoard(p),
       reorder: (op: ReorderOp) => void tooling.reorder(op),
       deleteItem: () => void deleteItem(p),
-      // board-only members unused for an item subject.
-      selectAll: stub,
-      zoomToFit: stub,
-      setBackdropFromFile: stub,
-      editBackdropPosition: stub,
-      resetBackdrop: stub,
-      removeBackdrop: stub,
-      setBackdropColor: stub,
-      openBoardNote: stub,
     }
   }
 
@@ -457,23 +532,8 @@ export function attachContextMenu(
   }
 
   function boardActions(): MenuActions {
-    const stub = (): void => {}
     return {
-      flip: stub,
-      openAppearance: stub,
-      openTags: stub,
-      openNote: stub,
-      attachNewNote: stub,
-      attachExistingNote: stub,
-      renameNote: stub,
-      detachNote: stub,
-      makeNoteIndependent: stub,
-      toggleHideLabel: stub,
-      toggleLock: stub,
-      setAsBackdrop: stub,
-      openAsBoard: stub,
-      reorder: stub,
-      deleteItem: stub,
+      ...baseStubActions(),
       selectAll: () => selectAllBoard(),
       zoomToFit: () => tooling.zoomToFit(),
       setBackdropFromFile: () => fileInput.click(),
@@ -510,6 +570,135 @@ export function attachContextMenu(
     openCornerPanel(nodeId, noteId)
   }
 
+  // ------------------------------------------------ decoration actions
+
+  function decorationActions(d: SceneDecoration): MenuActions {
+    return {
+      ...baseStubActions(),
+      // Z-order runs over the current selection (the right-click just
+      // selected this decoration); ReorderContent handles decorations.
+      reorder: (op: ReorderOp) => void tooling.reorder(op),
+      setDecorationLock: () =>
+        void execute('UpdateDecoration', {
+          decorationId: d.id,
+          set: { locked: d.locked !== 1 },
+        }),
+      hideDecoration: () => void hideDecoration(d.id),
+      deleteDecoration: () => void deleteContent([], [d.id]),
+    }
+  }
+
+  async function hideDecoration(id: string): Promise<void> {
+    // Hidden decorations are unhittable (§6.8) — drop the selection.
+    if (await execute('UpdateDecoration', { decorationId: id, set: { hidden: true } })) {
+      host.controller.selection.clear()
+    }
+  }
+
+  async function deleteContent(placementIds: string[], decorationIds: string[]): Promise<void> {
+    if (
+      await execute('DeleteContent', { canvasId: host.canvasId, placementIds, decorationIds })
+    ) {
+      host.controller.selection.clear()
+    }
+  }
+
+  // ----------------------------------------------- multi-select actions
+
+  function multiActions(items: readonly SceneItem[]): MenuActions {
+    const placementIds = items
+      .filter((i): i is ScenePlacement => i.itemKind === 'placement')
+      .map((i) => i.id)
+    const decorationIds = items
+      .filter((i): i is SceneDecoration => i.itemKind === 'decoration')
+      .map((i) => i.id)
+    return {
+      ...baseStubActions(),
+      // align/distribute act on the live selection (unchanged here).
+      align: (op) => void tooling.align(op),
+      distribute: (axis) => void tooling.distribute(axis),
+      flipAll: (axis) => void flipAll(placementIds, axis),
+      gatherIntoFrame: () => void gatherIntoFrame(items, placementIds),
+      lockAll: () => void lockAll(placementIds),
+      deleteSelection: () => void deleteContent(placementIds, decorationIds),
+    }
+  }
+
+  async function flipAll(placementIds: string[], axis: 'x' | 'y'): Promise<void> {
+    if (placementIds.length === 0) return
+    await runAsUndoGroup(async () => {
+      for (const placementId of placementIds) {
+        await host.gateway.execute('FlipPlacement', { placementId, axis })
+      }
+    })
+  }
+
+  async function lockAll(placementIds: string[]): Promise<void> {
+    if (placementIds.length === 0) return
+    await runAsUndoGroup(async () => {
+      for (const placementId of placementIds) {
+        await host.gateway.execute('SetPlacementLock', { placementId, locked: true })
+      }
+    })
+  }
+
+  /** §8.4 Gather into a frame: create the frame around the selection's
+   * bbox and capture the placements as members — ONE undo group
+   * (commitFrame's nested group runs inline; AI-IMP-127/129 pattern). */
+  async function gatherIntoFrame(
+    items: readonly SceneItem[],
+    placementIds: string[],
+  ): Promise<void> {
+    if (placementIds.length === 0) return
+    const bounds = unionBounds(items)
+    if (!bounds) return
+    const pad = 24
+    const region = {
+      x: bounds.x - pad,
+      y: bounds.y - pad,
+      width: bounds.width + pad * 2,
+      height: bounds.height + pad * 2,
+    }
+    await runAsUndoGroup(async () => {
+      const framePlacementId = await host.commitFrame(region)
+      if (framePlacementId) {
+        await host.gateway.execute('CaptureInFrame', {
+          framePlacementId,
+          memberPlacementIds: placementIds,
+        })
+      }
+    })
+  }
+
+  // ---------------------------------------------------- frame actions
+
+  function frameActions(p: ScenePlacement): MenuActions {
+    return {
+      ...baseStubActions(),
+      ...noteLifecycleActions(p),
+      openTags: () => requestCharmPopover(p.id, 'tags'),
+      toggleLock: () =>
+        void execute('SetPlacementLock', { placementId: p.id, locked: p.locked !== 1 }),
+      toggleFrameSortOnDrop: () => void toggleFrameSortOnDrop(p.id),
+      sortFrameNow: () => void tooling.sortFrame(p.id),
+      fillFrameFromLibrary: () => tooling.loadIntoFrame(p.id),
+      deleteFrame: () => void deleteFrame(p),
+    }
+  }
+
+  async function toggleFrameSortOnDrop(frameId: string): Promise<void> {
+    const on = await tooling.frameSortOnDrop(frameId)
+    await tooling.setFrameSortOnDrop(frameId, !on)
+  }
+
+  /** §9.6: Delete frame trashes the frame NODE. Members are independent
+   * nodes — they stay on the board — which the verb copy states. */
+  async function deleteFrame(p: ScenePlacement): Promise<void> {
+    if (await execute('TrashNode', { nodeId: p.nodeId })) {
+      host.controller.selection.clear()
+    }
+  }
+
   // ---------------------------------------------------- routing
 
   const onContextMenu = (event: MouseEvent): void => {
@@ -518,19 +707,9 @@ export function attachContextMenu(
     const at = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
     const world = host.controller.camera.screenToWorld(at)
     const hit = hitTest(world, host.controller.items())
-    if (hit && hit.itemKind === 'placement') {
-      // Select the item so its charm popovers, z-order, and set-as-
-      // backdrop all act on it, then open the item menu.
-      host.controller.selection.set([hit.id])
-      const subject: ItemSubject = {
-        kind: 'item',
-        hasNote: hit.noteId !== null,
-        locked: hit.locked === 1,
-        labelVisible: hit.labelVisible === 1,
-        isImage: hit.appearanceKind === 'image',
-      }
-      render('item', menuFor(subject, itemActions(hit)), at)
-    } else {
+
+    // Empty board → the board menu.
+    if (!hit) {
       const bg = tooling.background()
       const subject: BoardSubject = {
         kind: 'board',
@@ -538,7 +717,61 @@ export function attachContextMenu(
         hasColor: bg?.color != null,
       }
       render('board', menuFor(subject, boardActions()), at)
+      return
     }
+
+    // A right-click INSIDE a live multi-selection acts on the whole set
+    // (§8.4) — do NOT collapse the selection to the hit.
+    const selectedIds = host.controller.selection.ids()
+    if (selectedIds.length > 1 && selectedIds.includes(hit.id)) {
+      const selected = host.controller.selectedItems()
+      const placementCount = selected.filter((i) => i.itemKind === 'placement').length
+      const subject: MultiSubject = {
+        kind: 'multi',
+        count: selected.length,
+        placementCount,
+        decorationCount: selected.length - placementCount,
+      }
+      render('multi', menuFor(subject, multiActions(selected)), at)
+      return
+    }
+
+    // Single target: select it, then open the kind-specific menu so its
+    // charm popovers, z-order, and backdrop verbs all act on it.
+    host.controller.selection.set([hit.id])
+    if (hit.itemKind === 'decoration') {
+      const subject: DecorationSubject = { kind: 'decoration', locked: hit.locked === 1 }
+      render('decoration', menuFor(subject, decorationActions(hit)), at)
+      return
+    }
+    if (hit.appearanceKind === 'frame') {
+      void openFrameMenu(hit, at)
+      return
+    }
+    const subject: ItemSubject = {
+      kind: 'item',
+      hasNote: hit.noteId !== null,
+      locked: hit.locked === 1,
+      labelVisible: hit.labelVisible === 1,
+      isImage: hit.appearanceKind === 'image',
+    }
+    render('item', menuFor(subject, itemActions(hit)), at)
+  }
+
+  /** The frame menu's sort-on-drop toggle prints live state, so resolve
+   * the per-frame flag (async settings read) before building. */
+  async function openFrameMenu(
+    p: ScenePlacement,
+    at: { x: number; y: number },
+  ): Promise<void> {
+    const sortOnDrop = await tooling.frameSortOnDrop(p.id)
+    const subject: FrameSubject = {
+      kind: 'frame',
+      locked: p.locked === 1,
+      hasNote: p.noteId !== null,
+      sortOnDrop,
+    }
+    render('frame', menuFor(subject, frameActions(p)), at)
   }
 
   // Suppress the OS menu everywhere the app owns the surface (§8.4);

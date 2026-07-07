@@ -316,6 +316,13 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
     await win.getByTestId('menu-help').click()
     await expect(win.getByTestId('help-about-dialog')).toBeVisible()
     await expect(win.getByTestId('help-about-version')).toContainText(/\d+\.\d+\.\d+/)
+    // AI-IMP-137 ratified copy: the RFC rev prints live beside the
+    // version (a build-time constant read from the RFC header, never
+    // hand-copied), the product sentence carries copies-never-touches,
+    // and the one shortcuts link is present.
+    await expect(win.getByTestId('help-about-version')).toContainText(/RFC \d+\.\d+/)
+    await expect(win.getByTestId('help-about-tagline')).toContainText('copied in, never touched')
+    await expect(win.getByTestId('help-about-shortcuts')).toBeVisible()
     await expect(win.getByTestId('help-about-repo')).toContainText('github.com/animegolem/expanding-worlds')
     await win.keyboard.press('Escape')
     await expect(win.getByTestId('help-about-dialog')).toHaveCount(0)

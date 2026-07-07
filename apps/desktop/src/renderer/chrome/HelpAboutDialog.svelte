@@ -1,17 +1,26 @@
 <!--
-  Help/About (RFC §8.2): the ☰ menu's one live self-teaching card —
-  app name, the REAL running version (main's app.getVersion via the
-  preload seam, never hardcoded), and the repo address as plain text.
-  Portals to the root overlay host (§8.8 law 2): the menu popover is
-  a small clipped box, so a backdropped dialog must escape it. Esc or
-  a click on the scrim closes.
+  Help/About (RFC §8.4 rev 0.55, AI-IMP-137): the ☰ menu's one live
+  self-teaching card, ratified copy. Plain type where a mark would go
+  (deliberately no logo); the version and RFC revision print in mono —
+  the version is main's real app.getVersion (never hardcoded) and the
+  RFC rev is injected at BUILD time from the RFC header (__RFC_REV__,
+  electron.vite.config.ts). A two-line product sentence carries the
+  copies-never-touches promise; one "all keyboard shortcuts" link opens
+  Settings → Keyboard; the repo address sits in micro mono.
+
+  Portals to the root overlay host (§8.8 law 2): the menu popover is a
+  small clipped box, so a backdropped dialog must escape it. Esc or a
+  click on the scrim closes.
 -->
 <script lang="ts">
   import { overlayPortal } from '../note/panels'
+  import { openTakeover } from './takeover'
 
   const { onclose }: { onclose: () => void } = $props()
 
   const REPO_URL = 'https://github.com/animegolem/expanding-worlds'
+  // Injected at build time from the RFC header (see env.d.ts).
+  const RFC_REV = __RFC_REV__
 
   let version = $state('')
 
@@ -39,6 +48,23 @@
     window.addEventListener('keydown', onKeydown, true)
     return () => window.removeEventListener('keydown', onKeydown, true)
   })
+
+  function openKeyboardShortcuts(): void {
+    onclose()
+    openTakeover('settings')
+    // Best-effort: bring the Keyboard section into view once the
+    // settings takeover has mounted. Retries briefly, then gives up.
+    let tries = 0
+    const scroll = (): void => {
+      const section = document.querySelector('[data-testid="settings-section-keyboard"]')
+      if (section) {
+        section.scrollIntoView({ block: 'start' })
+        return
+      }
+      if (tries++ < 20) requestAnimationFrame(scroll)
+    }
+    requestAnimationFrame(scroll)
+  }
 </script>
 
 <!-- Click-off closes; Esc closes via the window handler above, so the
@@ -63,11 +89,28 @@
     data-testid="help-about-dialog"
     onclick={(event) => event.stopPropagation()}
   >
-    <h2>Expanding Worlds</h2>
-    <p class="version" data-testid="help-about-version">
-      Version {version || '…'}
+    <h2 class="wordmark">Expanding Worlds</h2>
+
+    <p class="meta" data-testid="help-about-version">
+      Version {version || '…'} · RFC {RFC_REV}
     </p>
+
+    <p class="tagline" data-testid="help-about-tagline">
+      An art-first board where any picture can become a doorway.
+      Your pictures are copied in, never touched.
+    </p>
+
+    <button
+      type="button"
+      class="shortcuts"
+      data-testid="help-about-shortcuts"
+      onclick={openKeyboardShortcuts}
+    >
+      all keyboard shortcuts ▸
+    </button>
+
     <p class="repo" data-testid="help-about-repo">{REPO_URL}</p>
+
     <div class="actions">
       <button type="button" data-testid="help-about-close" onclick={onclose}>Close</button>
     </div>
@@ -90,8 +133,8 @@
 
   .dialog {
     max-width: 90%;
-    min-width: 15rem;
-    padding: 0.9rem 1.1rem;
+    min-width: 17rem;
+    padding: 1rem 1.15rem;
     background: var(--ew-paper-page);
     color: var(--ew-text);
     border: 1px solid var(--ew-paper-border-focus);
@@ -99,22 +142,49 @@
     box-shadow: 0 6px 18px var(--ew-dialog-scrim);
   }
 
-  h2 {
-    margin: 0 0 0.4rem;
-    font-size: 0.95rem;
+  /* Plain type where a mark would go — deliberately no logo. */
+  .wordmark {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
     font-weight: 600;
+    letter-spacing: 0.01em;
   }
 
-  .version {
-    margin: 0 0 0.3rem;
+  .meta {
+    margin: 0 0 0.7rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    opacity: 0.85;
+  }
+
+  .tagline {
+    margin: 0 0 0.8rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    max-width: 24rem;
+  }
+
+  .shortcuts {
+    display: inline-block;
+    margin: 0 0 0.9rem;
+    padding: 0;
+    font: inherit;
     font-size: 0.8rem;
+    color: var(--ew-accent);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .shortcuts:hover {
+    text-decoration: underline;
   }
 
   .repo {
-    margin: 0 0 0.7rem;
-    font-size: 0.75rem;
+    margin: 0 0 0.9rem;
+    font-size: 0.68rem;
     font-family: ui-monospace, monospace;
-    opacity: 0.75;
+    opacity: 0.6;
     word-break: break-all;
   }
 
