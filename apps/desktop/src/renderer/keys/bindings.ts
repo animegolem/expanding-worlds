@@ -57,6 +57,9 @@ export const KEY = {
   galleryOpen: 'gallery-open',
   galleryToggleSelect: 'gallery-toggle-select',
   galleryDelete: 'gallery-delete',
+  // --- editor (note rich text) ---
+  editorBold: 'editor-bold',
+  editorItalic: 'editor-italic',
 } as const
 
 // ---- global ----
@@ -248,4 +251,23 @@ declare(KEY.galleryDelete, {
   name: 'Move to Trash',
   scope: 'gallery',
   combo: { codes: ['Delete', 'Backspace'], glyph: 'Delete' },
+})
+
+// ---- editor (note rich text) ----
+// DECLARED for the Settings Keyboard list only (AI-IMP-149, like Undo/
+// Redo above). DISPATCH stays editor-local: TipTap's own mark keymaps
+// (StarterKit Bold/Italic) already handle Mod+B / Mod+I inside the
+// contenteditable per §10.2, so there is no renderer listener here —
+// this is display + the printed combo, nothing more.
+declare(KEY.editorBold, {
+  name: 'Bold',
+  scope: 'editor',
+  when: 'while editing a note',
+  combo: { mod: true, shift: false, alt: false, key: 'b' },
+})
+declare(KEY.editorItalic, {
+  name: 'Italic',
+  scope: 'editor',
+  when: 'while editing a note',
+  combo: { mod: true, shift: false, alt: false, key: 'i' },
 })

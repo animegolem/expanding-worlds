@@ -225,6 +225,12 @@
   --ew-note-fold-chevron-hover: #5a6572;
   --ew-note-fold-marker: #8a94a0;
 
+  /* §7.1 inline-code chip (AI-IMP-149): a tinted pill so `code` reads
+     as distinct as it is typed. Light paper (light + dark boards);
+     glass re-tints below. */
+  --ew-note-code-bg: rgba(43, 108, 176, 0.1);
+  --ew-note-code-text: #9c4221;
+
   /* The editor face + scale (RFC §7.1, STYLE-GUIDE v2 §3; AI-IMP-131).
      Maple Mono is the ONE typography carve-out — note TEXT only, never
      chrome (chrome keeps the platform stack). The face is bundled woff2
@@ -417,4 +423,8 @@
   --ew-note-fold-chevron: #6b7684;
   --ew-note-fold-chevron-hover: #aab3bf;
   --ew-note-fold-marker: #7e8894;
+
+  /* Glass: dark paper, so the code chip lightens to stay legible. */
+  --ew-note-code-bg: rgba(142, 194, 245, 0.14);
+  --ew-note-code-text: #e0a878;
 }

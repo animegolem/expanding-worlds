@@ -20,7 +20,7 @@
  * keys fire changed when the listeners migrated.
  */
 
-export type Scope = 'global' | 'board' | 'gallery' | 'menu'
+export type Scope = 'global' | 'board' | 'gallery' | 'menu' | 'editor'
 
 export type Platform = 'mac' | 'other'
 
