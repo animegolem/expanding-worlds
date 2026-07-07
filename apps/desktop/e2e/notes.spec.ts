@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { exec, launchApp, launchAppInDir, revision, runQuery, seedPlacedNote } from './helpers'
 
 /**
- * AI-IMP-044 acceptance: the CodeMirror note pane with §10.2 autosave
+ * AI-IMP-044 acceptance: the note pane (TipTap since AI-IMP-146) with §10.2 autosave
  * gestures — one UpdateNote per editing burst, note-switch and quit
  * flushes, editor-local undo staying out of the structural stack, and
  * the canvas entry points. Envelope plumbing lives in ./helpers
@@ -29,7 +29,7 @@ test('note pane opens on double-click and a typing burst commits one UpdateNote'
 
   // One burst of typing → exactly one UpdateNote (one revision step).
   const before = await revision(win)
-  await win.locator('.cm-content').click()
+  await win.locator('[data-testid="note-editor-content"]').click()
   await win.keyboard.press('End')
   await win.keyboard.type(' that hunts from a hover')
   await expect(win.getByTestId('note-pane-dirty')).toBeVisible()
@@ -40,9 +40,9 @@ test('note pane opens on double-click and a typing burst commits one UpdateNote'
   expect(await noteBody(win, noteId)).toBe('a small hawk that hunts from a hover')
 
   // Editor-local undo (invariant 30): Mod-z reverts the buffer via
-  // CodeMirror history without touching the structural stack.
+  // the editor's local history without touching the structural stack.
   const revBeforeUndo = await revision(win)
-  await win.locator('.cm-content').click()
+  await win.locator('[data-testid="note-editor-content"]').click()
   await win.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z')
   await expect(win.getByTestId('note-editor')).not.toContainText('hover')
   expect(await revision(win)).toBe(revBeforeUndo)
@@ -101,7 +101,7 @@ test('wiki-link states render live, sweep effects refresh, suggestions complete 
 
   // Four visually distinct states from one body (§7.1).
   const stateOf = (title: string) =>
-    win.locator(`.cm-content [data-link-title="${title}"]`).first()
+    win.locator(`[data-testid="note-editor-content"] [data-link-title="${title}"]`).first()
   await expect(stateOf('Harbor')).toHaveAttribute('data-link-state', 'bound')
   await expect(stateOf('Reef')).toHaveAttribute('data-link-state', 'bound-trashed')
   await expect(stateOf('Missing')).toHaveAttribute('data-link-state', 'unresolved')
@@ -118,11 +118,11 @@ test('wiki-link states render live, sweep effects refresh, suggestions complete 
   // Suggestions: phantom entries carry the indicator + reference
   // count; picking one completes a well-formed token that renders
   // bound live, before any save.
-  await win.locator('.cm-content').click()
+  await win.locator('[data-testid="note-editor-content"]').click()
   await win.keyboard.press('Control+End')
   await win.keyboard.press('Enter')
   await win.keyboard.type('[[Kra')
-  const tooltip = win.locator('.cm-tooltip-autocomplete')
+  const tooltip = win.locator('[data-testid="note-suggestions"]')
   await expect(tooltip).toBeVisible()
   await expect(tooltip).toContainText('Kraken')
   await expect(tooltip).toContainText('phantom · 1 ref')
@@ -130,7 +130,7 @@ test('wiki-link states render live, sweep effects refresh, suggestions complete 
   await win.keyboard.type('') // settle
   await win.keyboard.press('Escape')
   await win.keyboard.type('ken]]') // finish the token by hand: unresolved phantom
-  await expect(win.locator('.cm-content [data-link-title="Kraken"]')).toHaveCount(2)
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Kraken"]')).toHaveCount(2)
 
   // Pick from the list for a real note and verify live bound state.
   await win.keyboard.press('Enter')
@@ -138,9 +138,9 @@ test('wiki-link states render live, sweep effects refresh, suggestions complete 
   await expect(tooltip).toBeVisible()
   await tooltip.getByText('Harbor', { exact: true }).click()
   await expect(stateOf('Harbor')).toHaveAttribute('data-link-state', 'bound')
-  await expect(win.locator('.cm-content [data-link-title="Harbor"]')).toHaveCount(2)
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Harbor"]')).toHaveCount(2)
   const completed = await win.evaluate(() =>
-    document.querySelector('.cm-content')?.textContent?.includes('[[Harbor]]'),
+    document.querySelector('[data-testid="note-editor-content"]')?.textContent?.includes('[[Harbor]]'),
   )
   expect(completed).toBe(true)
 
@@ -164,7 +164,7 @@ test('phantom view aggregates references; Create and Place binds project-wide in
   await expect(win.getByTestId('note-editor')).toContainText('Kestrel')
 
   // Activate the unresolved token → one aggregated phantom view.
-  const token = win.locator('.cm-content [data-link-title="Kestrel"]')
+  const token = win.locator('[data-testid="note-editor-content"] [data-link-title="Kestrel"]')
   await token.click({ modifiers: ['ControlOrMeta'] })
   await expect(win.getByTestId('phantom-view')).toBeVisible()
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Kestrel/)
@@ -182,7 +182,7 @@ test('phantom view aggregates references; Create and Place binds project-wide in
   // Create and Place: one command commits note + node + appearance +
   // placement, and the sweep binds BOTH sources project-wide.
   await expect(win.getByTestId('note-editor')).toContainText('Kestrel')
-  await win.locator('.cm-content [data-link-title="Kestrel"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Kestrel"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('phantom-view')).toBeVisible()
@@ -211,7 +211,7 @@ test('typing into the phantom body materializes on the first committed burst (§
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
   await win.mouse.dblclick(box.x + 300, box.y + 240)
-  await win.locator('.cm-content [data-link-title="Wisp"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Wisp"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('phantom-view')).toBeVisible()
@@ -225,7 +225,7 @@ test('typing into the phantom body materializes on the first committed burst (§
 
   // The source token bound in the same command (sweep).
   await win.mouse.dblclick(box.x + 300, box.y + 240)
-  await expect(win.locator('.cm-content [data-link-title="Wisp"]')).toHaveAttribute(
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Wisp"]')).toHaveAttribute(
     'data-link-state',
     'bound',
   )
@@ -243,17 +243,17 @@ test('rename flushes dirty buffers, rewrites transactionally, folds into local u
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
   await win.mouse.dblclick(box.x + 300, box.y + 240)
-  await expect(win.locator('.cm-content [data-link-title="Old"]')).toHaveAttribute(
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Old"]')).toHaveAttribute(
     'data-link-state',
     'bound',
   )
-  await expect(win.locator('.cm-content [data-link-title="NewName"]')).toHaveAttribute(
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="NewName"]')).toHaveAttribute(
     'data-link-state',
     'unresolved',
   )
 
   // Dirty buffer inside its debounce window at rename time.
-  await win.locator('.cm-content').click()
+  await win.locator('[data-testid="note-editor-content"]').click()
   await win.keyboard.press('Control+End')
   await win.keyboard.type(' tail')
   await expect(win.getByTestId('note-pane-dirty')).toBeVisible()
@@ -271,11 +271,11 @@ test('rename flushes dirty buffers, rewrites transactionally, folds into local u
   // The rewrite + sweep land in the open editor as an external
   // change: rewritten token AND the pre-existing unresolved token
   // both read NewName and render bound; the typed text survived.
-  await expect(win.locator('.cm-content [data-link-title="NewName"]')).toHaveCount(2, {
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="NewName"]')).toHaveCount(2, {
     timeout: 10_000,
   })
   for (const token of await win
-    .locator('.cm-content [data-link-title="NewName"]')
+    .locator('[data-testid="note-editor-content"] [data-link-title="NewName"]')
     .all())
     await expect(token).toHaveAttribute('data-link-state', 'bound')
   await expect(win.getByTestId('note-editor')).toContainText('z tail')
@@ -289,15 +289,15 @@ test('rename flushes dirty buffers, rewrites transactionally, folds into local u
 
   // Folded into LOCAL undo: one undo steps back through the rewrite
   // (no wholesale document swap), redo reapplies it.
-  await win.locator('.cm-content').click()
+  await win.locator('[data-testid="note-editor-content"]').click()
   const undo = process.platform === 'darwin' ? 'Meta+z' : 'Control+z'
-  // CM's historyKeymap binds redo to Mod-Shift-z on mac but Ctrl-y
+  // The editor's history keymap binds redo to Mod-Shift-z on mac but Ctrl-y
   // elsewhere — Ctrl+Shift+z is a silent no-op on Linux runners.
   const redo = process.platform === 'darwin' ? 'Meta+Shift+z' : 'Control+y'
   await win.keyboard.press(undo)
-  await expect(win.locator('.cm-content [data-link-title="Old"]')).toHaveCount(1)
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Old"]')).toHaveCount(1)
   await win.keyboard.press(redo)
-  await expect(win.locator('.cm-content [data-link-title="NewName"]')).toHaveCount(2)
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="NewName"]')).toHaveCount(2)
 
   await app.close()
 })
@@ -374,7 +374,7 @@ test('bound activation loads the note and resolves space by location count (§17
     canvases: Array<{ nodes: Array<{ placements: Array<{ placementId: string }> }> }>
   }>(win, 'getNoteUses', { noteId: alphaId })
   const alphaPlacement = alphaUses.canvases[0]!.nodes[0]!.placements[0]!.placementId
-  await win.locator('.cm-content [data-link-title="Alpha"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Alpha"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Alpha/)
@@ -393,7 +393,7 @@ test('bound activation loads the note and resolves space by location count (§17
     window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
   }, sId)
   await expect(win.getByTestId('note-editor')).toContainText('NoWhere')
-  await win.locator('.cm-content [data-link-title="NoWhere"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="NoWhere"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('note-pane-title')).toHaveText(/NoWhere/)
@@ -426,7 +426,7 @@ test('bound activation loads the note and resolves space by location count (§17
     )
     .toBe(true)
   const cameraBefore = await win.evaluate(() => window.__ewDebug!.camera())
-  await win.locator('.cm-content [data-link-title="Alpha"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Alpha"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('location-chooser')).toBeVisible()
@@ -443,7 +443,7 @@ test('bound activation loads the note and resolves space by location count (§17
     window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
   }, sId)
   await expect(win.getByTestId('note-editor')).toContainText('NoWhere')
-  await win.locator('.cm-content [data-link-title="Alpha"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Alpha"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await win.locator('[data-testid="chooser-row"]').last().click()
@@ -493,16 +493,16 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
   await win.mouse.dblclick(box.x + 300, box.y + 240)
 
   // Broken with an active title_key match → Relink flips the records.
-  await expect(win.locator('.cm-content [data-link-title="Wraith"]')).toHaveAttribute(
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Wraith"]')).toHaveAttribute(
     'data-link-state',
     'broken',
   )
-  await win.locator('.cm-content [data-link-title="Wraith"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Wraith"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('broken-link-panel')).toBeVisible()
   await win.getByTestId('broken-relink').click()
-  await expect(win.locator('.cm-content [data-link-title="Wraith"]')).toHaveAttribute(
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Wraith"]')).toHaveAttribute(
     'data-link-state',
     'bound',
     { timeout: 10_000 },
@@ -510,7 +510,7 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
 
   // Broken with no match → Create Note from the display text; the
   // created note opens.
-  await win.locator('.cm-content [data-link-title="Ghost"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Ghost"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('broken-link-panel')).toBeVisible()
@@ -522,23 +522,23 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
   await win.evaluate((id) => {
     window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
   }, sId)
-  await expect(win.locator('.cm-content [data-link-title="Ghost"]')).toHaveAttribute(
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Ghost"]')).toHaveAttribute(
     'data-link-state',
     'bound',
   )
-  await expect(win.locator('.cm-content [data-link-title="Reef"]')).toHaveAttribute(
+  await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Reef"]')).toHaveAttribute(
     'data-link-state',
     'bound-trashed',
   )
-  await win.locator('.cm-content [data-link-title="Reef"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Reef"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Reef/)
   await expect(win.getByTestId('note-in-trash')).toBeVisible()
-  await expect(win.locator('.cm-content')).toHaveAttribute('contenteditable', 'false')
+  await expect(win.locator('[data-testid="note-editor-content"]')).toHaveAttribute('contenteditable', 'false')
   await win.getByTestId('note-restore').click()
   await expect(win.getByTestId('note-in-trash')).toBeHidden()
-  await expect(win.locator('.cm-content')).toHaveAttribute('contenteditable', 'true')
+  await expect(win.locator('[data-testid="note-editor-content"]')).toHaveAttribute('contenteditable', 'true')
 
   await app.close()
 })
@@ -689,7 +689,7 @@ test('an edit inside its debounce window survives quit (§10.2 quit flush)', asy
   const box = (await first.win.getByTestId('canvas-host').boundingBox())!
   await first.win.mouse.dblclick(box.x + 300, box.y + 240)
   await expect(first.win.getByTestId('note-editor')).toBeVisible()
-  await first.win.locator('.cm-content').click()
+  await first.win.locator('[data-testid="note-editor-content"]').click()
   await first.win.keyboard.type('coral heads at low tide')
   await expect(first.win.getByTestId('note-pane-dirty')).toBeVisible()
 

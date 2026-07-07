@@ -6,7 +6,7 @@ import { exec, launchApp, runQuery, seedPlacedNote } from './helpers'
  * undo/redo stack. Mod+Z reverts committed CANVAS commands one gesture
  * at a time and Shift+Mod+Z replays them; a batch delete is one entry;
  * a §7.2 materialization un-materializes in one step; note-body typing
- * never routes text history into the structural stack (CodeMirror owns
+ * never routes text history into the structural stack (the note editor owns
  * it); and the ☰ rows flip live with stack depth.
  */
 
@@ -165,7 +165,7 @@ test('materialization: one Mod+Z un-materializes note + node + placement (§7.2)
         if (!el) return false
         if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return true
         if (el.isContentEditable) return true
-        return el.closest('.cm-editor') !== null
+        return el.closest('[data-testid="note-editor-content"]') !== null
       }),
     )
     .toBe(false)
@@ -200,12 +200,12 @@ test('note-body typing never enters the structural stack; Mod+Z defers to the ed
   // Open the note and type — UpdateNote autosave must NOT be captured.
   await win.mouse.dblclick(box.x + before.x + 90, box.y + before.y)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Kestrel/)
-  await win.locator('.cm-content').click()
+  await win.locator('[data-testid="note-editor-content"]').click()
   await win.keyboard.type(' that hovers')
   await expect(win.getByTestId('note-pane-dirty')).toBeVisible()
   expect(await depth(win)).toBe(1)
 
-  // Mod+Z while the editor holds focus is CodeMirror's — the structural
+  // Mod+Z while the editor holds focus is the editor's — the structural
   // stack is untouched and the placement does not move.
   await win.keyboard.press('Meta+z')
   await expect(win.getByTestId('note-editor')).toBeVisible()

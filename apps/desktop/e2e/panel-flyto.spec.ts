@@ -25,7 +25,7 @@ test('wiki-link flight frames the target beside its tethered panel, never under 
   await win.mouse.dblclick(box.x + 250, box.y + 200)
   await expect(win.getByTestId('note-editor')).toContainText('Alpha')
 
-  await win.locator('.cm-content [data-link-title="Alpha"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Alpha"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Alpha/)

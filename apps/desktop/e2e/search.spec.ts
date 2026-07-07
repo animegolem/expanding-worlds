@@ -280,10 +280,10 @@ test('Mod+P quick-open: keyboard round trip to a note and to a canvas; takeover 
   await expect(win.getByTestId('note-pane-title')).toContainText('Watcher')
 
   // Round trip 2: from INSIDE the note editor (capture beats
-  // CodeMirror) → both "Ruins Board" entries (note first, canvas
+  // the editor) → both "Ruins Board" entries (note first, canvas
   // second by the stable sort) → ArrowDown → Enter navigates, a
   // history entry.
-  await win.locator('.cm-content').click()
+  await win.locator('[data-testid="note-editor-content"]').click()
   await win.keyboard.press('ControlOrMeta+p')
   await expect(panel).toBeVisible()
   await win.getByTestId('search-input').fill('ruins board')

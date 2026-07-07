@@ -10,6 +10,11 @@ export {
   type WikiLinkDisplayState,
   type WikiLinkToken,
 } from './wiki-links'
+export {
+  MARKDOWN_DIALECT,
+  MARKDOWN_ROUNDTRIP_CORPUS,
+  type MarkdownRoundTripCase,
+} from './markdown-dialect'
 export * from './records'
 export {
   METADATA_OPEN,
