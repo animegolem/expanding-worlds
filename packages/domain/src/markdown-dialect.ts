@@ -77,6 +77,23 @@ export const MARKDOWN_ROUNDTRIP_CORPUS: readonly MarkdownRoundTripCase[] = [
   stable('embed', 'Here is art: ![[hero.png]] and ![[map.png|the map]].'),
   stable('links-in-list', '- [[Alpha]]\n- [[Beta|second]]\n- plain item'),
   stable('wikilink-in-bold', 'A **bold [[Link]] inside** emphasis.'),
+  // AI-IMP-150: a wiki token in every mark/node context the shipped
+  // editor can produce (the 156 opacity rule keeps the token whole no
+  // matter which mark or block wraps it — bold was the only context the
+  // spike pinned). Each is byte-stable, so link identity survives
+  // canonicalize-on-load in every surface the format bar / typing yields.
+  stable('wikilink-in-italic', 'A *italic [[Link]] inside* run.'),
+  stable('wikilink-in-strike', 'A ~~struck [[Link]] here~~ okay.'),
+  stable('wikilink-in-heading', '# Heading with [[Link]] inside'),
+  stable('wikilink-in-ordered-list', '1. [[Alpha]]\n2. [[Beta|b]]\n3. plain'),
+  stable('wikilink-in-blockquote', '> quote with [[Link]] here'),
+  stable('embed-in-heading', '## Art ![[hero.png]] shown'),
+  // AI-IMP-150: combined bold+italic mark (`***`), producible by stacking
+  // the format bar's bold and italic verbs on one selection; and an
+  // ordered list whose `start` attr is not 1 (the orderedList node keeps
+  // the numbering). Both byte-stable, both in the frozen grammar.
+  stable('triple-emphasis', 'This is ***bold italic*** text.'),
+  stable('ordered-list-start', '3. three\n4. four'),
   stable('unicode', '# Café ☕ 日本語\n\nEmoji 🐉 and accents: naïve, résumé.'),
   stable('hr-in-prose', 'Above the line.\n\n---\n\nBelow the line.'),
   stable(
@@ -103,6 +120,11 @@ export const MARKDOWN_ROUNDTRIP_CORPUS: readonly MarkdownRoundTripCase[] = [
   // A valid token and an active-title token on ONE line: the second must
   // not be destroyed by emphasis parsing (regressed at HEAD before 156).
   stable('adv-link-md-mixed-line', '[[title]] and [[**b**]] mix'),
+  // AI-IMP-150: the 156 fear (an active-title token) INSIDE a mark
+  // context — code-vs-token precedence must hold even when an emphasis
+  // span wraps the token. The `[[**b**]]` token stays opaque; the outer
+  // `*…*` italic delimiters are the only emphasis parsed. Byte-stable.
+  stable('adv-active-title-in-italic', 'see *a [[**b**]] c* here'),
   {
     // Emphasis normalizes to the `*` family (single `*` for italic,
     // double `**` for bold).
