@@ -18,7 +18,8 @@ import {
 } from './placement'
 import { Rectangle, Texture } from 'pixi.js'
 import type { IconAtlasResource, RendererResources } from './registry'
-import { ICON_FURNITURE_MIN_PX, syncPlacementIconLod } from './placement'
+import { syncPlacementIconLod } from './placement'
+import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
 
 /** Recording texture budget: resolves acquires on demand. */
 function fakeBudget() {
@@ -608,12 +609,12 @@ describe('§8.2 object-icon atlas', () => {
     const resources = fakeIconAtlas()
     const item = makePlacement({ appearanceKind: 'icon', appearanceIcon: 'star', width: 24 })
     const object = placementRenderer.create(item, resources)
-    // 24 × 0.2 = 4.8 < ICON_FURNITURE_MIN_PX → dot only.
+    // 24 × 0.2 = 4.8 < EW_FURNITURE_MIN_PX → dot only.
     syncPlacementIconLod(object, item, 0.2, resources)
     expect((object.getChildByLabel('icon-object') as Sprite).visible).toBe(false)
     expect((object.getChildByLabel('icon-dot') as Graphics).visible).toBe(true)
     // Just above the threshold swaps back to the object.
-    syncPlacementIconLod(object, item, (ICON_FURNITURE_MIN_PX + 1) / 24, resources)
+    syncPlacementIconLod(object, item, (EW_FURNITURE_MIN_PX + 1) / 24, resources)
     expect((object.getChildByLabel('icon-object') as Sprite).visible).toBe(true)
     expect((object.getChildByLabel('icon-dot') as Graphics).visible).toBe(false)
   })

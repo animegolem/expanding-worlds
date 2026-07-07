@@ -3,6 +3,7 @@
  * model state — expressly not settings until the settings takeover
  * ships (EPIC-013), and tuned by hand until then.
  */
+import { EW_PAGE_FLOOR_PX } from '@ew/canvas-engine'
 
 /** Idle time with a still cursor before the chrome layer fades. */
 export const CHROME_FADE_DELAY_MS = 4000
@@ -19,9 +20,18 @@ export const TOOLTIP_DELAY_MS = 500
 /** Pointer band at the top edge that reveals the title strip. */
 export const TITLE_STRIP_REVEAL_PX = 10
 
-/** §8.4: node hint charms hide when the node's rendered screen size
- * drops below this — screen pixels, never zoom percentage. */
-export const CHARM_MIN_SCREEN_PX = 48
+/** §8.4/§8.2: node hint charms are FURNITURE and hide when the node's
+ * rendered screen size drops below this — screen pixels, never zoom
+ * percentage. Mapped to the shared shrink-ladder EW_PAGE_FLOOR_PX
+ * (AI-IMP-133): its 48 px is behaviour-identical to the historical
+ * literal, so the e2e suite stays green. NOTE the deliberate tension —
+ * §8.2 files hint charms under the FURNITURE floor (EW_FURNITURE_MIN_PX
+ * ~8), but the shipped gate has always hidden them at the higher page
+ * floor (~48). Reconciling the two (drop charms to the furniture floor,
+ * or keep them at the page floor) is a FEEL dial the owner owns, not a
+ * refactor; until that pass, this references the numerically-equal page
+ * floor to keep exactly one source of truth. */
+export const CHARM_MIN_SCREEN_PX = EW_PAGE_FLOOR_PX
 
 /** §8.4: hint charms rest as a glanceable census; hover lights the
  * hovered charm alone to full opacity. */
@@ -53,7 +63,15 @@ export const PANEL_TETHER_MAX_SCALE = 1
 /** Effective scale at/above which the tethered panel is fully opaque.
  * Below it, type is on its way to unreadable mush, so the panel fades
  * (the §8.4 charm screen-size rule) rather than shrinking into
- * confetti. */
+ * confetti.
+ *
+ * §8.2 PAGE-floor family (AI-IMP-133): the tethered note panel is the
+ * bound page made visible, so this is conceptually the page floor. It
+ * is deliberately NOT expressed against EW_PAGE_FLOOR_PX — it gates on
+ * effective SCALE (a fraction of the full-size card), not a measured
+ * rendered-px size, and there is no clean px equivalence to force. Left
+ * as a documented ratio per the ticket's "fraction-of-default-size →
+ * document, don't force" rule; the guard leaves scale gates alone. */
 export const PANEL_LEGIBILITY_FLOOR = 0.4
 
 /** Scale span of the fade: opacity ramps 1 → 0 across FADE below the

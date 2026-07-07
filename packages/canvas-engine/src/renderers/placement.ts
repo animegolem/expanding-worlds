@@ -1,5 +1,6 @@
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import { assetUrl, type ScenePlacement } from '../types'
+import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
 import type { ItemRenderer, RendererResources } from './registry'
 
 /**
@@ -14,14 +15,6 @@ import type { ItemRenderer, RendererResources } from './registry'
  */
 
 export const DEFAULT_DOT_RADIUS = 12
-
-/**
- * §8.2 shrink ladder (AI-IMP-132): below this RENDERED size (screen
- * px) an object icon degrades to its plain dot. A named local
- * stand-in flagged for AI-IMP-133 to absorb into the shared furniture
- * threshold (`EW_FURNITURE_MIN_PX`) — do not fork a second copy.
- */
-export const ICON_FURNITURE_MIN_PX = 8
 
 /** §4.5: label font size = body height × this single tuning ratio. */
 export const LABEL_HEIGHT_RATIO = 0.14
@@ -481,7 +474,8 @@ export function syncPlacementLabelOffset(
  * bodies — the atlas sprite and the plain dot — and this toggles
  * which is visible by the icon's RENDERED screen size (body world
  * size × zoom × container scale), degrading to the dot below
- * ICON_FURNITURE_MIN_PX. Above it, the crispest atlas tier ≥ the
+ * EW_FURNITURE_MIN_PX (the shared shrink-ladder furniture floor).
+ * Above it, the crispest atlas tier ≥ the
  * rendered size is selected; swapping tiers reassigns a frame of the
  * SAME base texture, so batching is preserved. Cheap and idempotent:
  * the host re-runs it every cull pass so camera motion needs no
@@ -502,7 +496,7 @@ export function syncPlacementIconLod(
   const size = item.width ?? DEFAULT_DOT_RADIUS * 2
   const safeZoom = zoom > 0 ? zoom : 1
   const rendered = size * safeZoom * (Math.abs(item.scale) || 1)
-  const belowFurniture = rendered < ICON_FURNITURE_MIN_PX
+  const belowFurniture = rendered < EW_FURNITURE_MIN_PX
   sprite.visible = !belowFurniture
   dot.visible = belowFurniture
   if (belowFurniture) return
