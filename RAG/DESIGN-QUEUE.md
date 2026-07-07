@@ -20,9 +20,11 @@ flush list — resolved items move into the RFC and leave.
 
 ## Blocking epic activation
 
-- **Frames design turn** (AI-EPIC-017): rev 0.38 shaped it; the
-  epic still wants a sit-down on membership edge cases and the
-  group-machinery subsumption question before cutting IMPs.
+- **Frames design turn** (AI-EPIC-017) — RATIFIED 2026-07-06 (rev
+  0.54): frames subsume group machinery entirely; nesting with
+  single-parent innermost membership; geometry immunity both ways
+  (only item drags edit membership). Epic unblocked; visual pass
+  (letter item 14) still applies to the look.
 - **Rich-text activation** (AI-EPIC-018): TipTap prototype
   go/no-go. (Embed syntax RATIFIED 2026-07-06, rev 0.53:
   Obsidian-style `![[...]]`.)

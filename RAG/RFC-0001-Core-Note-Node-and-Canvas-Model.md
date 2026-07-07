@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.53         | 6 July 2026      |
+| Accepted for Phase 1 | 0.54         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1321,6 +1321,24 @@ comes free. Decided shape from the session:
   clutter fires the brain; the balance is between doors/nesting
   and moodboard density — frames give overview without imposing a
   shape. Most things should have ~5 ways to do them.
+
+**Frames, ratified for activation (rev 0.54, owner) — the epic's
+open calls close:**
+
+- **Frames are THE grouping.** No separate group record kind ever
+  ships; multi-select remains a transient selection, never a
+  record. One durable membership model feeds the outline and data
+  views.
+- **Nesting, single-parent.** Frames may contain frames; an item
+  belongs to its INNERMOST capturing frame, and an inner frame is
+  itself a member of the outer — the data view reads as a tree,
+  never a graph.
+- **Geometry immunity, both directions.** Rev 0.38 forbids live
+  geometric inference on item nudges; symmetrically, moving or
+  resizing the FRAME never captures or releases anything — only
+  dragging an ITEM across the boundary edits membership. Accepted
+  corollary: a member may sit visually outside a shrunken frame
+  until dragged out; geometry never silently edits data.
 
 Connector endpoints MAY be free points or anchored to placements.
 Connector geometry remains visual decoration and does not create a
@@ -4183,3 +4201,10 @@ Accepted for the Phase 1 prototype:
   source field, never as tags (§6.1, superseding rev 0.35's
   default-tag direction): provenance (§7.8) surfaces the URL; web
   drops offer the DOMAIN as a dismissible tag chip instead.
+
+- Frames ratified for activation (rev 0.54, §6.8 area): frames are
+  THE grouping (no separate group record; multi-select stays
+  transient), nesting allowed with single-parent innermost-frame
+  membership (data view is a tree), and geometry immunity runs both
+  directions — frame moves/resizes never edit membership, only item
+  drags across the boundary do. EPIC-017 is unblocked to cut IMPs.
