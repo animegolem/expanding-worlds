@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 3 | 0 |
-| Planned | 6 | 1 |
+| In Progress | 2 | 0 |
+| Planned | 6 | 0 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 125 |
+| Completed | 14 | 126 |
 | **Total** | **22** | **127** |
 
 ## In Progress
@@ -23,17 +23,6 @@
 - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
 - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — completed
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
-
----
-
-### [[AI-EPIC-017-frames|EPIC-017: Frames]]
-> Groups are select-and-move aids; the artist's real workflow
-
-**IMPs:**
-- [[AI-IMP-126-frame-model-and-membership|IMP-126]] Frame model and membership — completed
-- [[AI-IMP-127-frame-renderer-and-interactions|IMP-127]] Frame renderer and interactions — completed
-- [[AI-IMP-128-arrange-and-normalize|IMP-128]] Arrange and normalize — completed
-- [[AI-IMP-129-drop-behavior-and-frame-sort|IMP-129]] Drop behavior and frame sort — planned
 
 ---
 
@@ -102,16 +91,16 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4210 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (1587 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (1353 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (1451 LOC)
 - apps/desktop/src/main/index.ts (983 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
+- apps/desktop/src/renderer/chrome/Dock.svelte (823 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (806 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (776 LOC)
-- apps/desktop/src/renderer/chrome/Dock.svelte (764 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
@@ -120,6 +109,7 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
+- apps/desktop/src/renderer/canvas/board-tooling.ts (604 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 
 ### > 300 LOC
@@ -132,6 +122,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
+- apps/desktop/src/renderer/canvas/import-surfaces.ts (538 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (537 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/nodes.ts (529 LOC)
@@ -144,19 +135,17 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (500 LOC)
 - apps/desktop/src/utility/index.ts (499 LOC)
-- apps/desktop/src/renderer/canvas/board-tooling.ts (498 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (490 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - packages/persistence/src/handlers/frames.test.ts (477 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
+- packages/protocol/src/index.ts (452 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - packages/persistence/src/handlers/notes.ts (434 LOC)
-- apps/desktop/src/renderer/canvas/import-surfaces.ts (426 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
-- packages/protocol/src/index.ts (421 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
@@ -170,6 +159,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.ts (356 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
+- apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
@@ -196,7 +186,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 120 IMPs completed</summary>
+<summary>14 EPICs, 121 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -311,5 +301,10 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
   - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
   - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — completed
+- [[AI-EPIC-017-frames|EPIC-017]] Frames — 2026-07-07
+  - [[AI-IMP-126-frame-model-and-membership|IMP-126]] Frame model and membership — completed
+  - [[AI-IMP-127-frame-renderer-and-interactions|IMP-127]] Frame renderer and interactions — completed
+  - [[AI-IMP-128-arrange-and-normalize|IMP-128]] Arrange and normalize — completed
+  - [[AI-IMP-129-drop-behavior-and-frame-sort|IMP-129]] Drop behavior and frame sort — completed
 
 </details>

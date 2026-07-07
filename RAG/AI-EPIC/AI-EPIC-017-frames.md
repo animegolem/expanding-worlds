@@ -6,8 +6,8 @@ tags:
   - canvas
   - frames
 date_created: 2026-07-06
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-07
+kanban_status: completed
 AI_IMP_spawned:
   - "[[AI-IMP-126-frame-model-and-membership]]"
   - "[[AI-IMP-127-frame-renderer-and-interactions]]"
@@ -68,18 +68,18 @@ grouped in the outline.
 Activated 2026-07-06 at rev 0.54 (frames are THE grouping;
 single-parent nesting; geometry immunity both directions — §4.9).
 
-- [ ] FR-1: Frame model — 'frame' appearance kind, recorded
+- [x] FR-1: Frame model — 'frame' appearance kind, recorded
       membership (migration 0007), capture/release commands with
       exact inverses, cycle rejection, frame-tree query, §9.6
       aggregate lifecycle. (AI-IMP-126)
-- [ ] FR-2: Board presence — frame tool, drawn-region rendering,
+- [x] FR-2: Board presence — frame tool, drawn-region rendering,
       drag-end capture to innermost frame, hover focus + canvas
       dim, frame move carries members (one undo), resize edits
       membership never. (AI-IMP-127)
-- [ ] FR-3: Vocabulary — §6.9 arrange gains sort keys; normalize
+- [x] FR-3: Vocabulary — §6.9 arrange gains sort keys; normalize
       equalizes height/width/size/area on any selection; one undo
       entry per invocation. (AI-IMP-128)
-- [ ] FR-4: The drop moment — multi-drop ask/sort/group/
+- [x] FR-4: The drop moment — multi-drop ask/sort/group/
       group-and-sort modal with remember-choice (§14.4 idiom),
       per-frame sort-on-drop default ON, auto-sort-in-frame,
       load-from-library-into-frame; composites never enter the
@@ -93,6 +93,12 @@ single-parent nesting; geometry immunity both directions — §4.9).
   in the normal content plane).
 - Frame chrome is placeholder-on-theme-tokens; the visual pass is
   Design-letter-3 item 14.
+
+Shipped in v0.9.0 (2026-07-07): AI-IMP-126 (model, migration 0007),
+127 (board presence + undo groups), 128 (arrange/normalize), 129
+(drop behavior + frame sort). Save-composite-from-frame rides
+EPIC-008's export half. The charm-bar member-drag intercept is a
+known edge awaiting the owner's feel pass.
 
 ## Implementation Breakdown
 

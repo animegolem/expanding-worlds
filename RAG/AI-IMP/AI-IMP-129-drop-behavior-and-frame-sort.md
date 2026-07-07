@@ -6,12 +6,12 @@ tags:
   - frames
   - import
   - canvas
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-126, AI-IMP-127, AI-IMP-128]
 parent_epic: [[AI-EPIC-017-frames]]
 confidence_score: 0.6
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -98,7 +98,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       asserted → undo whole; remembered choice path.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (the
+- [x] HUMAN-TESTING entry appended at merge by the lead (the
       Pinterest-drop moment, modal wording, threshold feel).
 
 ### Acceptance Criteria

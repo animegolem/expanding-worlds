@@ -28,6 +28,20 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **The drop moment** (AI-IMP-129, 2026-07-07): THE Pinterest
+  test — drag 5+ images from Finder at once. The ask should read
+  instantly ("N images dropped — how should they land?" · Keep
+  separate · Sort · Group · Group & sort · remember tick). Pick
+  Group & sort: one frame, tiled inside, ONE Mod+Z back to
+  pre-drop. Tick remember and drop again — no modal. Feel calls:
+  (1) modal wording right? (2) is the unanswered-ask fade to
+  keep-separate (~4s) surprising or forgiving? (3) drop 3 images
+  INTO a frame — they should self-arrange (sort-on-drop, Dock
+  toggle turns it off); single drags never reshuffle — right line?
+  (4) UNTESTED BY MACHINE: "Add from library" on a selected frame
+  (gallery takeover → pick → lands captured+arranged) — this path
+  has no automated e2e, so give it a real pass.
+
 - [ ] **Snapshot remote push** (AI-IMP-122, 2026-07-07): Settings →
   snapshots → "Commit + push" reveals the remote URL field + Test
   connection. Two checks: (1) does the opt-in read as deliberate —
