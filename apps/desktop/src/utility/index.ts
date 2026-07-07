@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { DB_FILENAME, openProjectService, type ProjectService } from '@ew/persistence'
+import { DB_FILENAME, importProject, openProjectService, type ProjectService } from '@ew/persistence'
 import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage } from '@ew/protocol'
 import { clearLibraryExample, seedLibrary } from './seed-library'
 
@@ -148,6 +148,28 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
           type: 'export-project',
           ok: false,
           code: 'EXPORT_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'import-project': {
+      // §16 import (AI-IMP-158): pure fs+zip+sqlite work against a
+      // NEW directory — the open primary (if any) is untouched, so no
+      // service guard. Typed refusal on any defect; the partial
+      // directory never survives a failure.
+      try {
+        const result = await importProject(request.archivePath, request.destDir)
+        return { type: 'import-project', ok: true, ...result }
+      } catch (err) {
+        const code =
+          err instanceof Error && 'code' in err && typeof err.code === 'string'
+            ? err.code
+            : 'IMPORT_FAILED'
+        return {
+          type: 'import-project',
+          ok: false,
+          code,
           message: err instanceof Error ? err.message : String(err),
         }
       }

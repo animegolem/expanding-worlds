@@ -68,6 +68,14 @@ export {
   type ExportManifest,
   type ManifestEntry,
 } from './export/manifest'
+// §16 project import (AI-IMP-158): the roundtrip's other half.
+// (ImportResult is the asset pipeline's name — this one is aliased.)
+export {
+  importProject,
+  readArchiveManifest,
+  type ImportResult as ProjectImportResult,
+  type ImportRefusal,
+} from './export/project-import'
 export { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 export { registerCanvasHandlers } from './handlers/canvases'
 export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'

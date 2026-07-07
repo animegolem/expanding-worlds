@@ -1,8 +1,8 @@
-import { mkdtempSync, statSync } from 'node:fs'
+import { existsSync, mkdtempSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
-import { launchApp, seedPlacedNote } from './helpers'
+import { launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * §16 portable export (AI-IMP-157; container rev 0.57): the renderer →
@@ -72,4 +72,36 @@ test('export streams a .ewproj with honest counts; the estimate footer is live',
   expect(statSync(activeDest).size).toBeGreaterThan(0)
 
   await app.close()
+})
+
+test('the roundtrip: import materializes a sibling project that opens with the content', async () => {
+  const { app, win } = await launchApp('ew-e2e-roundtrip-')
+  await seedPlacedNote(win, 'Survivor', 'the body that must come back', { x: 220, y: 180 })
+
+  const archive = join(mkdtempSync(join(tmpdir(), 'ew-e2e-roundtrip-out-')), 'travel.ewproj')
+  const exported = await win.evaluate((destPath) => window.ew.export.run(destPath, false), archive)
+  if (!exported.ok) throw new Error(`export failed: ${exported.message}`)
+
+  // Import through the real seam: main computes a collision-safe
+  // sibling directory, the utility materializes and verifies.
+  const imported = await win.evaluate(
+    (archivePath) => window.ew.export.import(archivePath),
+    archive,
+  )
+  if (!imported.ok) throw new Error(`import refused: ${imported.message}`)
+  expect(imported.notes).toBe(1)
+  expect(existsSync(join(imported.dir, 'project.sqlite'))).toBe(true)
+  expect(existsSync(`${imported.dir}.partial`)).toBe(false)
+  await app.close()
+
+  // The imported directory IS a working project: launch the app on it
+  // and find the note by identity-preserving content.
+  const second = await launchAppInDir(imported.dir)
+  const search = await runQuery<{ notes: Array<{ title: string }> }>(
+    second.win,
+    'searchProject',
+    { query: 'Survivor' },
+  )
+  expect(JSON.stringify(search)).toContain('Survivor')
+  await second.app.close()
 })

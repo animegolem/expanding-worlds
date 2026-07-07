@@ -415,3 +415,15 @@ Settings › Backups & export › Export project:
   lock" promise).
 - The size acknowledge line only appears past ~2 GB — if your
   project is bigger, confirm it shows once and never again.
+
+## AI-IMP-158 — project import / the roundtrip (2026-07-07)
+
+The artist's promise, round trip:
+- Export your real project, then import the .ewproj back — the copy
+  lands beside your project as <name>-imported-<date>. Open it via
+  the button: does everything look EXACTLY like the original (boards,
+  notes, links, tags, trash)?
+- Feed it garbage: rename a .zip of anything to .ewproj and import —
+  the refusal should be calm and total (no half-project left).
+- The import row's copy ("nothing merges... refused whole") — does it
+  read as reassuring or alarming?

@@ -418,6 +418,28 @@ export interface ExportProgressEvent {
   bytesTotal: number
 }
 
+/** §16 project import (AI-IMP-158): materialize a `.ewproj` into a
+ * NEW directory (never merges; coexists with the original). The
+ * archive validates manifest-first and hash-verifies while streaming;
+ * refusal is typed and leaves nothing on disk. */
+export interface ImportProjectRequest {
+  type: 'import-project'
+  archivePath: string
+  destDir: string
+}
+
+export type ImportProjectResponse =
+  | {
+      type: 'import-project'
+      ok: true
+      dir: string
+      projectId: string
+      title: string
+      notes: number
+      assets: number
+    }
+  | { type: 'import-project'; ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -439,6 +461,7 @@ export type ProjectRequest =
   | MirrorToLibraryRequest
   | ExportProjectRequest
   | ExportEstimateRequest
+  | ImportProjectRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -461,6 +484,7 @@ export type ProjectResponse =
   | MirrorToLibraryResponse
   | ExportProjectResponse
   | ExportEstimateResponse
+  | ImportProjectResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. A healthy

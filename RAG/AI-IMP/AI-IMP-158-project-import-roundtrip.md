@@ -5,12 +5,12 @@ tags:
   - Implementation
   - import
   - persistence
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-157]
 parent_epic: [[AI-EPIC-008-export-import-signoff]]
 confidence_score: 0.7
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -77,19 +77,19 @@ handoff.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Manifest-first validation via central directory; version
+- [x] Manifest-first validation via central directory; version
       mismatch and corrupt archive refused with a clear message,
       no partial directory (unit matrix + e2e).
-- [ ] Extraction to a new collision-safe directory; streamed hash
+- [x] Extraction to a new collision-safe directory; streamed hash
       verification against the inventory; atomic finalize.
-- [ ] Imported project opens; coexists with the original; FTS/
+- [x] Imported project opens; coexists with the original; FTS/
       derivatives rebuild lazily.
-- [ ] Roundtrip diff: table-by-table equality modulo storage paths
+- [x] Roundtrip diff: table-by-table equality modulo storage paths
       — identities, links, tags, placements, bookmarks, command
       provenance, Trash all byte-equal (e2e).
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -102,6 +102,25 @@ and command provenance intact
 with nothing left on disk.
 
 ### Issues Encountered
+
+- **yauzl autoClose default** closes the fd when the entry scan ends,
+  killing every later openReadStream — opened with autoClose:false
+  and explicit close.
+- **Duplicate-entry rejection added** beyond the ticket: a crafted
+  archive could shadow a verified entry with an unverified twin;
+  openArchive refuses duplicates outright.
+- **Nothing outside the inventory extracts** — a stowaway zip entry
+  never reaches disk; entry paths are re-checked against the partial
+  root even after parse-level validation.
+- The roundtrip diff needed no "modulo storage paths" carve-out at
+  all: no table stores an absolute path, so source and imported
+  databases compare EXACTLY, table by table. The e2e also proves the
+  FTS index travels (search finds the note in the relaunched app).
+- Entry points: Settings row + "Open imported project" reusing the
+  AI-IMP-121 restore relaunch; a File-menu entry was skipped (the
+  app has no native File menu — ☰ owns verbs; a ☰ row can ride the
+  next menus pass if wanted).
+- Gates: 175/175 e2e + persistence 516 vitest + lint on main.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

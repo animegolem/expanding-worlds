@@ -179,6 +179,31 @@
       exportProgress = null
     }
   }
+  // §16 import (AI-IMP-158): pick a .ewproj, land it as a sibling
+  // project, offer to open it (the restore relaunch path).
+  let importedDir = $state<string | null>(null)
+  let importing = $state(false)
+  async function runImport(): Promise<void> {
+    const archive = await window.ew.export.chooseArchive()
+    if (!archive) return
+    importing = true
+    importedDir = null
+    try {
+      const result = await window.ew.export.import(archive)
+      if (result.ok) {
+        importedDir = result.dir
+        toast(
+          `Imported "${result.title}" — ${result.notes} note${result.notes === 1 ? '' : 's'}, ${
+            result.assets
+          } image${result.assets === 1 ? '' : 's'}`,
+        )
+      } else {
+        toast(`Import refused: ${result.message}`, { kind: 'error' })
+      }
+    } finally {
+      importing = false
+    }
+  }
   function snapshotMode(): SnapshotMode {
     const raw = projectSettings['snapshot_mode']
     return raw === 'commit' || raw === 'commit-push' ? raw : 'off'
@@ -479,6 +504,39 @@
         it on any machine to get the project back exactly.
       {/if}
     </p>
+    <div class="row" data-testid="settings-row-import">
+      <span class="row-label">Import project</span>
+      <div class="remote-config">
+        <Button
+          variant="default"
+          data-testid="settings-import-run"
+          style="flex: none"
+          onclick={() => void runImport()}
+          disabled={importing}
+        >
+          {importing ? 'Importing…' : 'Import…'}
+        </Button>
+        {#if importedDir}
+          <Button
+            variant="default"
+            data-testid="settings-import-open"
+            style="flex: none"
+            onclick={() => void window.ew.snapshot.open(importedDir!)}
+          >
+            Open imported project
+          </Button>
+        {/if}
+      </div>
+    </div>
+    <p class="section-note" data-testid="settings-import-note">
+      {#if importedDir}
+        Imported beside your current project. Opening it relaunches the app there.
+      {:else}
+        Pick a .ewproj file and it becomes a new project next to this one — nothing merges, and
+        your current project is untouched. A damaged file is refused whole.
+      {/if}
+    </p>
+
     {#if exportNeedsAck}
       <p class="section-note" data-testid="settings-export-ack">
         This export is on the large side ({formatBackupSize(exportEstimate)}) — it may take a while

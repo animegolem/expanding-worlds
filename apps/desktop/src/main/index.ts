@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
@@ -819,6 +819,29 @@ void app.whenReady().then(() => {
     }),
   )
   ipcMain.handle('export:estimate', () => callUtility({ type: 'export-estimate' }))
+  // §16 import (AI-IMP-158): pick the archive, land the project as a
+  // collision-safe sibling of the current one, then offer the
+  // existing restore:open relaunch to enter it.
+  ipcMain.handle('import:choose-archive', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+    const picked = await dialog.showOpenDialog(win, {
+      title: 'Import project',
+      properties: ['openFile'],
+      filters: [{ name: 'Expanding Worlds project', extensions: ['ewproj'] }],
+    })
+    return picked.canceled || picked.filePaths.length === 0 ? null : picked.filePaths[0]
+  })
+  ipcMain.handle('import:run', (_event, archivePath: string) => {
+    const parent = dirname(projectDir())
+    const stem = basename(String(archivePath)).replace(/\.ewproj$/i, '') || 'project'
+    const date = new Date().toISOString().slice(0, 10)
+    let destDir = join(parent, `${stem}-imported-${date}`)
+    for (let n = 2; existsSync(destDir) || existsSync(`${destDir}.partial`); n += 1) {
+      destDir = join(parent, `${stem}-imported-${date} (${n})`)
+    }
+    return callUtility({ type: 'import-project', archivePath: String(archivePath), destDir })
+  })
   ipcMain.handle('app:get-version', () => app.getVersion())
 
   ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {

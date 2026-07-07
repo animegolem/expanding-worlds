@@ -11,6 +11,7 @@ import type {
   ExportProgressEvent,
   ExportProjectResponse,
   ImportAssetResponse,
+  ImportProjectResponse,
   IngestFromSecondaryResponse,
   MirrorToLibraryResponse,
   OpenSecondaryResponse,
@@ -219,6 +220,14 @@ const api = {
       ipcRenderer.on('export:progress', listener)
       return () => ipcRenderer.removeListener('export:progress', listener)
     },
+    /** §16 import (AI-IMP-158): pick a `.ewproj`; null on cancel. */
+    chooseArchive: (): Promise<string | null> =>
+      ipcRenderer.invoke('import:choose-archive') as Promise<string | null>,
+    /** Materialize the archive as a collision-safe sibling project.
+     * Typed refusal; a failed import leaves nothing on disk. Open the
+     * result through snapshot.open (the restore relaunch path). */
+    import: (archivePath: string): Promise<ImportProjectResponse> =>
+      ipcRenderer.invoke('import:run', archivePath) as Promise<ImportProjectResponse>,
   },
   /** §14.4 secondary project slots (AI-IMP-088): source = read-only
    * browse of another project, library = the writable mirror target.
