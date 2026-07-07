@@ -90,6 +90,7 @@ import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { themeTokenValue } from '../theme'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { attachGesturesUI } from './gestures-ui'
+import { buildImageTreatment } from './image-treatment'
 import { scopedArrangePayload } from './frame-arrange'
 import { FRAME_SORT_ON_DROP_PREFIX } from '@ew/protocol'
 import type { Rect } from '@ew/canvas-engine'
@@ -201,6 +202,11 @@ declare global {
       /** Body child label — 'image' vs 'image-placeholder' proves
        * texture state at the pixel-adjacent level (AI-IMP-025). */
       placementBody: (id: string) => string | null
+      /** §8.5 image body treatment as applied (AI-IMP-140): whether the
+       * shadow child is present, the radius, and the shadow alpha. */
+      placementTreatment: (
+        id: string,
+      ) => { hasShadow: boolean; radius: number; shadowAlpha: number } | null
       /** Stage/grid presentation state (AI-IMP-032, AI-IMP-118). */
       stage: () => {
         gridVisible: boolean
@@ -356,6 +362,15 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   } catch {
     iconAtlas = undefined
   }
+  // §8.5 image body treatment (AI-IMP-140): resolve the radius/shadow
+  // tokens and build the shared 9-slice shadow texture ONCE. A failure
+  // (missing tokens) must not sink the board — images render untreated.
+  let imageTreatment: ReturnType<typeof buildImageTreatment> = null
+  try {
+    imageTreatment = buildImageTreatment()
+  } catch {
+    imageTreatment = null
+  }
   const resources: RendererResources = {
     loadTexture,
     loadTileSource,
@@ -376,6 +391,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       border: cssColorToNumber(themeTokenValue('--ew-frame-border')),
       label: cssColorToNumber(themeTokenValue('--ew-frame-label')),
     }),
+    // §8.5 radius + shared-texture shadow for image bodies (AI-IMP-140).
+    imageTreatment: () => imageTreatment,
   }
   const sync: SceneSync = new SceneSync(planes.content, registry, resources)
   const maxTextureSize =
@@ -1805,6 +1822,16 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       )
       if (iconBody) return iconBody.label
       return object.children[0]?.label ?? null
+    },
+    placementTreatment: (id: string) => {
+      const object = sync.get(id)
+      if (!object) return null
+      const shadow = object.children.find((child) => child.label === 'image-shadow')
+      return {
+        hasShadow: Boolean(shadow),
+        radius: imageTreatment?.radius ?? 0,
+        shadowAlpha: (shadow?.alpha ?? 0),
+      }
     },
     stage: () => ({
       gridVisible: stageExtent(sceneBackground) === null,

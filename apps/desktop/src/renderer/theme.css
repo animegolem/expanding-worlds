@@ -162,6 +162,16 @@
      guard's allowlist stays exactly one file. */
   --ew-drag-shadow: 0 12px 26px rgba(0, 0, 0, 0.5);
 
+  /* §8.5 placed-image body treatment (AI-IMP-140): board presentation
+     only — a subtle rounded corner and a soft resting drop shadow so
+     images read as objects on the board. NEVER baked into the source
+     pixels (exports/crops read the untreated original). The canvas engine
+     reads no CSS: the host resolves these and builds one shared 9-slice
+     shadow texture. Radius is world units; shadow is a box-shadow whose
+     blur/offset/alpha the host parses. */
+  --ew-node-radius: 3px;
+  --ew-node-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+
   /* Paper materials (doctrine): the pinned state's permanent marks.
      Tape + torn edge survive light/dark/glass. */
   --ew-tape-surface: rgba(214, 205, 182, 0.6);

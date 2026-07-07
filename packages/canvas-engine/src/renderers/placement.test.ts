@@ -16,8 +16,8 @@ import {
   setPlacementTextureResident,
   syncPlacementLabelOffset,
 } from './placement'
-import { Rectangle, Texture } from 'pixi.js'
-import type { IconAtlasResource, RendererResources } from './registry'
+import { NineSliceSprite, Rectangle, Texture } from 'pixi.js'
+import type { IconAtlasResource, ImageTreatment, RendererResources } from './registry'
 import { syncPlacementIconLod } from './placement'
 import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
 
@@ -240,6 +240,108 @@ describe('texture residency across updates (AI-IMP-025)', () => {
     expect(placeholder).toBeTruthy()
     expect(placeholder.width).toBeCloseTo(400)
     expect(resources.acquired).toEqual([])
+  })
+})
+
+describe('image body treatment (§8.5, AI-IMP-140)', () => {
+  const HASH = 'f'.repeat(64)
+  const SHADOW_TEXTURE = new Texture()
+  const treatment: ImageTreatment = {
+    radius: 3,
+    shadow: { texture: SHADOW_TEXTURE, inset: 20, spread: 12, offsetY: 8, alpha: 0.3 },
+  }
+  /** Budget host that also injects the image treatment, and resolves the
+   * texture to a DISTINCT instance so identity (source pixels sampled,
+   * never baked) is provable. */
+  function treatedBudget() {
+    const source = new Texture()
+    const pending: Array<() => void> = []
+    const resources: RendererResources & { source: Texture; flush: () => void } = {
+      source,
+      flush: () => {
+        for (const resolve of pending.splice(0)) resolve()
+      },
+      loadTexture: () => Promise.resolve(source),
+      imageTreatment: () => treatment,
+      textures: {
+        acquire: () => new Promise((resolve) => pending.push(() => resolve(source))),
+        release: () => {},
+      },
+    }
+    return resources
+  }
+  const image = (overrides = {}) =>
+    makePlacement({
+      appearanceKind: 'image',
+      assetContentHash: HASH,
+      assetWidth: 200,
+      assetHeight: 100,
+      width: 200,
+      height: 100,
+      ...overrides,
+    })
+
+  it('rounds the body and lays a shared shadow texture under it', async () => {
+    const resources = treatedBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    // Shadow is present under the placeholder immediately (no pop-in).
+    const shadow = object.getChildByLabel('image-shadow') as NineSliceSprite
+    expect(shadow).toBeInstanceOf(NineSliceSprite)
+    expect(shadow.texture).toBe(SHADOW_TEXTURE)
+    expect(shadow.alpha).toBeCloseTo(0.3)
+    // 200×100 body + 12px spread each side.
+    expect(shadow.width).toBeCloseTo(224)
+    expect(shadow.height).toBeCloseTo(124)
+    // Shadow is the backmost child.
+    expect(object.getChildIndex(shadow)).toBe(0)
+
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+    const body = object.getChildByLabel('image') as Graphics
+    expect(body).toBeInstanceOf(Graphics)
+    // The rounded body paints OVER the shadow.
+    expect(object.getChildIndex(body)).toBeGreaterThan(object.getChildIndex(shadow))
+  })
+
+  it('samples the original texture — treatment never bakes source pixels', async () => {
+    const resources = treatedBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+    // The resident body samples the EXACT injected texture object (a
+    // rounded fill + a separate shadow object; nothing is composited into
+    // the source), so exports/crop previews read untreated pixels.
+    expect((object as { __imageTexture?: Texture }).__imageTexture).toBe(resources.source)
+    // The shadow uses the shared shadow texture, not the image texture.
+    const shadow = object.getChildByLabel('image-shadow') as NineSliceSprite
+    expect(shadow.texture).not.toBe(resources.source)
+  })
+
+  it('resizes the shadow with the body in place', async () => {
+    const resources = treatedBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+    const resized = { ...item, width: 400, height: 300 }
+    placementRenderer.update(object, resized, item, resources)
+    const shadow = object.getChildByLabel('image-shadow') as NineSliceSprite
+    expect(shadow.width).toBeCloseTo(424)
+    expect(shadow.height).toBeCloseTo(324)
+    // Body survived the resize (texture never dropped to placeholder).
+    expect(object.getChildByLabel('image')).toBeTruthy()
+    expect(object.getChildByLabel('image-placeholder')).toBeFalsy()
+  })
+
+  it('no treatment host renders a raw body with no shadow', () => {
+    const resources = fakeResources()
+    const object = placementRenderer.create(image(), resources)
+    expect(object.getChildByLabel('image-shadow')).toBeFalsy()
   })
 })
 

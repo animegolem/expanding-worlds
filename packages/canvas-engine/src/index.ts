@@ -22,6 +22,7 @@ export {
   fallbackRenderer,
   rendererKey,
   type IconAtlasResource,
+  type ImageTreatment,
   type ItemRenderer,
   type RendererResources,
 } from './renderers/registry'
