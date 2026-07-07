@@ -12,6 +12,7 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import CharmRail from './CharmRail.svelte'
   import Dock from './Dock.svelte'
+  import DropBehaviorAsk from './DropBehaviorAsk.svelte'
   import ImportProgressStrip from './ImportProgressStrip.svelte'
   import MirrorAsk from './MirrorAsk.svelte'
   import PathBar from './PathBar.svelte'
@@ -71,6 +72,9 @@
        dismissal, so they must share the layer's clock. -->
   <MirrorAsk />
   <RecognitionChip {handle} />
+  <!-- §4.9 multi-drop ask (AI-IMP-129): same fading root as the mirror
+       ask — ignoring it keeps the drop separate. -->
+  <DropBehaviorAsk />
 </div>
 
 <!-- §14.4 batch import strip (AI-IMP-081): a SIBLING of the fading

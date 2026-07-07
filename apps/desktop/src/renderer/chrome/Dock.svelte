@@ -119,6 +119,10 @@
 
   let selected = $state<SceneDecoration[]>([])
   let selectionCount = $state(handle.controller.selection.size)
+  // §4.9 frame actions (AI-IMP-129): the single selected frame (a
+  // placement with the 'frame' appearance), and its sort-on-drop flag.
+  let selectedFrameId = $state<string | null>(null)
+  let sortOnDrop = $state(true)
 
   // §4.9 rev 0.13: installed fonts, enumerated lazily on the picker's
   // first user gesture; curated stacks until then (and on failure).
@@ -130,9 +134,33 @@
     void loadFontOptions().then((options) => (fontOptions = options))
   }
 
+  function currentFrameId(): string | null {
+    const items = handle.controller.selectedItems()
+    if (items.length !== 1) return null
+    const item = items[0]!
+    return item.itemKind === 'placement' && item.appearanceKind === 'frame' ? item.id : null
+  }
+
   function refresh(): void {
     selected = ui.selectedDecorations()
     selectionCount = handle.controller.selection.size
+    const frameId = currentFrameId()
+    if (frameId !== selectedFrameId) {
+      selectedFrameId = frameId
+      if (frameId) {
+        void tooling.frameSortOnDrop(frameId).then((on) => {
+          if (selectedFrameId === frameId) sortOnDrop = on
+        })
+      }
+    }
+  }
+
+  function toggleSortOnDrop(): void {
+    const id = selectedFrameId
+    if (!id) return
+    const next = !sortOnDrop
+    sortOnDrop = next
+    void tooling.setFrameSortOnDrop(id, next)
   }
 
   $effect(() => {
@@ -566,6 +594,37 @@
           Hide
         </button>
       {/if}
+    </div>
+  {/if}
+
+  {#if selectedFrameId}
+    <div class="dock-row contextual" data-testid="frame-actions">
+      <button
+        type="button"
+        data-testid="frame-sort"
+        onclick={() => void tooling.sortFrame(selectedFrameId!)}
+        use:tooltip={{ name: 'Compact-pack this frame’s contents' }}
+      >
+        Sort in frame
+      </button>
+      <button
+        type="button"
+        class:active={sortOnDrop}
+        data-testid="frame-sort-on-drop"
+        aria-pressed={sortOnDrop}
+        onclick={toggleSortOnDrop}
+        use:tooltip={{ name: 'Arrange items dropped into this frame' }}
+      >
+        Sort on drop: {sortOnDrop ? 'On' : 'Off'}
+      </button>
+      <button
+        type="button"
+        data-testid="frame-load"
+        onclick={() => tooling.loadIntoFrame(selectedFrameId!)}
+        use:tooltip={{ name: 'Add items from the library into this frame' }}
+      >
+        Add from library
+      </button>
     </div>
   {/if}
 

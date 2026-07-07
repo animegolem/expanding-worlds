@@ -14,6 +14,7 @@
     type SetTrashRetentionPayload,
     type TrashRetention,
   } from '@ew/commands'
+  import { DROP_BEHAVIOR_KEY, DROP_BEHAVIOR_VALUES, type DropBehavior } from '@ew/protocol'
   import { toast } from '../chrome/status'
   // §8.2 keymap registry (AI-IMP-117): the Keyboard section reads the
   // declared bindings. The side-effect import guarantees they are
@@ -166,6 +167,25 @@
     remoteTest = { state: 'testing' }
     const result = await window.ew.snapshot.testConnection(url.trim())
     remoteTest = result.ok ? { state: 'ok' } : { state: 'fail', message: result.message }
+  }
+
+  // §4.9 rev 0.38 multi-drop behavior (AI-IMP-129): an ordinary
+  // project-tier setting (key drop_behavior). `ask` shows the once-per-
+  // drop modal; the concrete values skip it. Set by the modal's
+  // remember tick or changed back to Ask here.
+  const DROP_BEHAVIOR_LABELS: Record<DropBehavior, string> = {
+    ask: 'Ask',
+    sort: 'Sort',
+    group: 'Group',
+    'group-and-sort': 'Group & sort',
+  }
+  function dropBehavior(): DropBehavior {
+    const raw = projectSettings[DROP_BEHAVIOR_KEY]
+    return raw === 'sort' || raw === 'group' || raw === 'group-and-sort' ? raw : 'ask'
+  }
+  async function setDropBehavior(value: DropBehavior): Promise<void> {
+    projectSettings = { ...projectSettings, [DROP_BEHAVIOR_KEY]: value }
+    await window.ew.settings.setProject(DROP_BEHAVIOR_KEY, value)
   }
 
   const FLAT_SWATCHES = [1, 2, 3, 4, 5, 6].map((n) => `--ew-canvas-flat-${n}`)
@@ -441,6 +461,16 @@
         RETENTIONS.map((value) => ({ value, label: RETENTION_LABELS[value] })),
         retention,
         (value) => void setRetention(value as TrashRetention),
+      )}
+    </div>
+
+    <div class="row" data-testid="settings-row-drop-behavior">
+      <span class="row-label">Multi-image drop</span>
+      {@render segmented(
+        'settings-drop-behavior',
+        DROP_BEHAVIOR_VALUES.map((value) => ({ value, label: DROP_BEHAVIOR_LABELS[value] })),
+        dropBehavior(),
+        (value) => void setDropBehavior(value as DropBehavior),
       )}
     </div>
   </section>

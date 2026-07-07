@@ -54,9 +54,14 @@
   keep their own.
 -->
 <script lang="ts">
-  import { tick, untrack } from 'svelte'
+  import { onDestroy, tick, untrack } from 'svelte'
   import { NODE_DRAG_MIME } from '../canvas/import-surfaces'
   import { requestPlaceMode } from '../canvas/place-mode'
+  import {
+    clearFrameLoad,
+    pendingFrameLoad,
+    requestLoadIntoFrame,
+  } from '../canvas/frame-load'
   import { navigateTo } from '../chrome/navigation'
   import { acquireSourceSlot, releaseSourceSlot } from '../chrome/source-slot'
   import { toast } from '../chrome/status'
@@ -827,9 +832,22 @@
     if (scope !== 'this-world') return // 089: browse-only scope
     const ids = [...selected]
     if (ids.length === 0) return
+    // §4.9 (AI-IMP-129): a parked frame target redirects the place — the
+    // picked nodes land captured + arranged inside the frame, not free.
+    const frameTarget = pendingFrameLoad()
+    if (frameTarget) {
+      clearFrameLoad()
+      closeTakeover()
+      requestLoadIntoFrame({ nodeIds: ids, ...frameTarget })
+      return
+    }
     closeTakeover()
     for (const id of ids) requestPlaceNode(id)
   }
+
+  // Escaping the gallery without placing must not leave a frame target
+  // parked for a later ordinary place (frame-load.ts).
+  onDestroy(() => clearFrameLoad())
 
   // ------------------------------------------- 115 everything-scope pull
   /** The ONE live everything-scope action (§14.4): enabled for a single
