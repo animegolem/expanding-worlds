@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 15 | 149 |
-| **Total** | **25** | **158** |
+| **Total** | **25** | **162** |
 
 ## In Progress
 
@@ -110,6 +110,10 @@
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-154-decoration-verb-undo-capture|IMP-154]] — planned, no epic dependency found
 - [[AI-IMP-159-crop-editor-overlay|IMP-159]] — planned, no epic dependency found
+- [[AI-IMP-161-charm-bar-adorned-bounds|IMP-161]] — planned, no epic dependency found
+- [[AI-IMP-162-codex-round2-net-guard-import|IMP-162]] — in-progress, no epic dependency found
+- [[AI-IMP-163-owner-trashed-read-models|IMP-163]] — planned, no epic dependency found
+- [[AI-IMP-164-connector-anchor-undo-restore|IMP-164]] — planned, no epic dependency found
 
 ---
 
@@ -127,7 +131,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4565 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4606 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1965 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1753 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1590 LOC)
