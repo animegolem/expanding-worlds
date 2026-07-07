@@ -140,16 +140,29 @@ test('Keyboard section lists registered bindings by scope, read-only (§8.2, AI-
   // The head states the plan rather than reading finished-and-limited.
   await expect(win.getByTestId('settings-keyboard-note')).toContainText('Rebinding is coming soon')
 
-  // A binding from each scope renders with its platform-glyph combo
-  // (e2e runs on macOS → ⌘ glyphs). These come from formatCombo.
-  await expect(win.getByTestId('settings-key-combo-quick-open')).toHaveText('⌘P')
-  await expect(win.getByTestId('settings-key-combo-nav-back')).toHaveText('⌘[')
-  await expect(win.getByTestId('settings-key-combo-bookmark-jump')).toHaveText('⌘1–9')
+  // A binding from each scope renders with its platform-specific combo
+  // string. formatCombo keys off the renderer's navigator.platform: on
+  // macOS it stacks glyphs (⌘P, ⇧⌘]), elsewhere it spells modifiers and
+  // joins with '+' (Ctrl+P, Ctrl+Shift+]). The renderer shares this
+  // machine, so process.platform is the correct oracle — assert the
+  // EXACT string this platform must show (CI on Linux prints Ctrl form).
+  const mac = process.platform === 'darwin'
+  await expect(win.getByTestId('settings-key-combo-quick-open')).toHaveText(mac ? '⌘P' : 'Ctrl+P')
+  await expect(win.getByTestId('settings-key-combo-nav-back')).toHaveText(mac ? '⌘[' : 'Ctrl+[')
+  await expect(win.getByTestId('settings-key-combo-bookmark-jump')).toHaveText(
+    mac ? '⌘1–9' : 'Ctrl+1–9',
+  )
   // The new Mod+D binding is listed too (§8.1 rev 0.48).
-  await expect(win.getByTestId('settings-key-combo-bookmark-current')).toHaveText('⌘D')
-  await expect(win.getByTestId('settings-key-combo-board-send-front')).toHaveText('⇧⌘]')
+  await expect(win.getByTestId('settings-key-combo-bookmark-current')).toHaveText(
+    mac ? '⌘D' : 'Ctrl+D',
+  )
+  await expect(win.getByTestId('settings-key-combo-board-send-front')).toHaveText(
+    mac ? '⇧⌘]' : 'Ctrl+Shift+]',
+  )
   await expect(win.getByTestId('settings-key-combo-tool-select')).toHaveText('V')
-  await expect(win.getByTestId('settings-key-combo-gallery-bucket-jump')).toHaveText('⌘↑ ↓')
+  await expect(win.getByTestId('settings-key-combo-gallery-bucket-jump')).toHaveText(
+    mac ? '⌘↑ ↓' : 'Ctrl+↑ ↓',
+  )
 
   // Read-only: the section holds no interactive controls (no buttons,
   // inputs, or selects — unlike every other settings section).
