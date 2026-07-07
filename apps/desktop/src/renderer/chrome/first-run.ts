@@ -14,7 +14,7 @@
  * into the everything scope where that library lives (screen 20 —
  * "the library opens pre-arranged").
  */
-import { openTakeover } from './takeover'
+import { openTakeover, registerInputBlocker } from './takeover'
 
 /** App-tier setting keys (flat app-settings.json, no migration). */
 export const FIRST_RUN_SEEN_KEY = 'firstRunSeen'
@@ -24,6 +24,12 @@ type Listener = (visible: boolean) => void
 
 let visible = false
 const listeners = new Set<Listener>()
+
+// PR #14 review (P2): the guide is takeover-FAMILY — board input
+// (delete, undo, quick-open, tool keys) must not act underneath it.
+// Registering its visibility folds it into takeoverActive(), the one
+// predicate every board seam already guards on.
+registerInputBlocker(() => visible)
 
 function notify(): void {
   for (const listener of listeners) listener(visible)

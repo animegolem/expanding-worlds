@@ -10,8 +10,8 @@
 | Planned | 4 | 4 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 15 | 148 |
-| **Total** | **25** | **157** |
+| Completed | 15 | 149 |
+| **Total** | **25** | **158** |
 
 ## In Progress
 

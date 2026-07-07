@@ -46,8 +46,23 @@ export function activeTakeover(): TakeoverKind | null {
   return active
 }
 
+/** Takeover-FAMILY overlays that are not one of the named views (the
+ * first-run guide) register a visibility predicate here so every
+ * board-input guard inherits them through takeoverActive() — the
+ * PR #14 review found the guide's own overlay let board delete/undo/
+ * quick-open run underneath it. Registration is module-load cheap;
+ * the predicate is consulted at event time. */
+const inputBlockers = new Set<() => boolean>()
+
+export function registerInputBlocker(predicate: () => boolean): () => void {
+  inputBlockers.add(predicate)
+  return () => inputBlockers.delete(predicate)
+}
+
 export function takeoverActive(): boolean {
-  return active !== null
+  if (active !== null) return true
+  for (const blocks of inputBlockers) if (blocks()) return true
+  return false
 }
 
 /** Subscribe; fires immediately with the current state. */

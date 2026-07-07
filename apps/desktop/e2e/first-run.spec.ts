@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchApp, launchAppInDir } from './helpers'
+import { launchApp, launchAppInDir, seedPlacedNote } from './helpers'
 
 /**
  * §19 first-run walkthrough (AI-IMP-145): the guide shows EXACTLY ONCE
@@ -108,6 +108,33 @@ test('start walks the arc, stores the pick, and lands inside the seeded example'
 
   const settings = await win.evaluate(() => window.ew.settings.appAll())
   expect(settings['firstRunPick']).toBe('comic-bible')
+
+  await app.close()
+})
+
+test('a replayed guide blocks board input — Delete cannot reach a live selection (PR #14 P2)', async () => {
+  // Suppression stays ON here: replay calls showFirstRun() directly,
+  // which is exactly the risky path the review named — a guide shown
+  // over a board with selection and undo state.
+  const { app, win } = await launchApp('ew-e2e-firstrun-block-')
+  await seedPlacedNote(win, 'Guarded', 'must survive the guide', { x: 240, y: 200 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  // Select it on the live board, then replay the guide over it.
+  await win.keyboard.press(process.platform === 'darwin' ? 'Meta+a' : 'Control+a')
+  await win.getByTestId('charm-menu').click()
+  await win.getByTestId('menu-settings').click()
+  await win.getByTestId('settings-replay-guide').click()
+  await expect(win.getByTestId('first-run-guide')).toBeVisible()
+
+  // Board delete keys must not act underneath the takeover-family card.
+  await win.keyboard.press('Delete')
+  await win.keyboard.press('Backspace')
+  await win.getByTestId('first-run-skip').click()
+  await expect(win.getByTestId('first-run-guide')).toHaveCount(0)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(1)
 
   await app.close()
 })

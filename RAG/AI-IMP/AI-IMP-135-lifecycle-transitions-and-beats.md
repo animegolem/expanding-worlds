@@ -19,6 +19,13 @@ date_completed:
 
 ## Summary of Issue #1
 
+> SCOPE ADDITION (2026-07-07, PR #14 review P3, via AI-IMP-160): the
+> open book binds to a rotated image's AABB, not its rendered edge —
+> rings float beside rotated art. In this ticket, gate the `bound`
+> presentation on rotation === 0: rotated image anchors keep the
+> tethered card until a rotated-book design exists (flag the gap in
+> HUMAN-TESTING at merge). NotePanel.svelte:646/708 are the sites.
+
 EPIC-023 FR-2. Rev 0.55 §8.5: the lifecycle is freely reversible
 with one undoable command per transition, and the hardware +
 shadow tell the state. Done means: book —tear→ sticky (tape +
