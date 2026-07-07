@@ -9,9 +9,10 @@ function linkIdentity(body: string): string[] {
 }
 
 /**
- * The §7.1 dialect regression gate (AI-IMP-146): the spike's 25-case
- * corpus run through the REAL shipped editor factory. Two invariants per
- * case:
+ * The §7.1 dialect regression gate (AI-IMP-146, expanded and FROZEN by
+ * AI-IMP-150): the spike's corpus — grown to cover every mark/node
+ * context the shipped editor produces — run through the REAL shipped
+ * editor factory. Two invariants per case:
  *   1. serialize(parse(body)) === canonical — the one-time
  *      canonicalize-on-load result is exactly what the corpus pins.
  *   2. serialize(parse(canonical)) === canonical — the canonical form is
