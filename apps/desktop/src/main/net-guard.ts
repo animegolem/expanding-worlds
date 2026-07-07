@@ -6,7 +6,13 @@ import { isIP } from 'node:net'
  * link must not fetch loopback, private, link-local, or ULA targets
  * (router admin panels, the dev server, cloud metadata endpoints).
  * Threat level is desktop/user-initiated, so the residual
- * TOCTOU between this resolution and net.fetch's own is accepted.
+ * TOCTOU between this resolution and the fetch's own is accepted.
+ *
+ * AI-IMP-124: redirect hops are no longer a bypass. `fetchUrlForImport`
+ * follows redirects manually, one request per hop, re-running the
+ * protocol check and `assertPublicHost` on every target before any
+ * request is sent to it (see `resolveRedirectTarget`). Only the DNS
+ * TOCTOU remains accepted.
  */
 
 export function isPrivateAddress(ip: string): boolean {
@@ -26,6 +32,25 @@ export function isPrivateAddress(ip: string): boolean {
   if (/^fe[89ab]/.test(lower)) return true // fe80::/10 link-local
   if (lower.startsWith('::ffff:')) return isPrivateAddress(lower.slice(7)) // v4-mapped
   return false
+}
+
+/**
+ * Resolve a redirect's Location against the URL that issued it, so a
+ * hop can be re-guarded before it is followed. Returns null (fail
+ * closed) when the Location is missing, blank, or unparseable — the
+ * caller must refuse rather than follow. A relative Location resolves
+ * against `current`; an absolute one is returned as-is. Protocol and
+ * host policy are enforced by the caller, not here.
+ */
+export function resolveRedirectTarget(current: string | URL, location: string | null | undefined): URL | null {
+  if (typeof location !== 'string') return null
+  const trimmed = location.trim()
+  if (trimmed === '') return null
+  try {
+    return new URL(trimmed, current)
+  } catch {
+    return null
+  }
 }
 
 /** Null when the host is public; a user-facing refusal otherwise. */

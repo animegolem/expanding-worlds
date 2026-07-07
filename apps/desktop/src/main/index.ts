@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
-import { assertPublicHost } from './net-guard'
+import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import type {
   ProjectRequest,
   ProjectResponse,
@@ -316,6 +316,9 @@ function registerAssetProtocol(): void {
 
 const FETCH_URL_TIMEOUT_MS = 30_000
 const FETCH_URL_MAX_BYTES = 100 * 1024 * 1024
+// AI-IMP-124: cap the manual redirect chain. Every hop is re-guarded
+// before a request reaches it, so this only bounds redirect loops.
+const FETCH_URL_MAX_REDIRECTS = 5
 
 /** Minimal magic-byte check for the Phase 1 raster formats (§4.7).
  * Deliberately re-implemented here: main must not depend on
@@ -333,8 +336,7 @@ function looksLikeImage(bytes: Uint8Array): boolean {
   return false
 }
 
-function filenameForUrl(url: URL, response: Response): string {
-  const disposition = response.headers.get('content-disposition')
+function filenameForUrl(url: URL, disposition: string | null): string {
   const match = disposition ? /filename\*?=(?:utf-8'')?"?([^";]+)"?/i.exec(disposition) : null
   if (match?.[1]) {
     try {
@@ -356,6 +358,99 @@ export type FetchUrlForImportResult =
   | { ok: true; bytes: Uint8Array; filename: string }
   | { ok: false; message: string }
 
+/** Outcome of a single, non-redirect-following request (one hop). */
+type FetchHopResult =
+  | { kind: 'redirect'; location: string }
+  | {
+      kind: 'final'
+      statusCode: number
+      contentType: string
+      disposition: string | null
+      bytes: Uint8Array
+    }
+  | { kind: 'oversize' }
+  | { kind: 'aborted' }
+
+/**
+ * Issue exactly one request with redirects disabled. A redirect
+ * surfaces as `{ kind: 'redirect' }` carrying the target so the caller
+ * can re-guard it before following (AI-IMP-124); net.fetch cannot do
+ * this — its redirect:'manual' throws without exposing the Location,
+ * and followRedirect() must run synchronously, before an async
+ * assertPublicHost could clear the hop. The whole-chain AbortController
+ * aborts the in-flight request on timeout or oversize.
+ */
+function fetchOneHop(target: string, signal: AbortSignal): Promise<FetchHopResult> {
+  return new Promise((resolve, reject) => {
+    const request = net.request({ url: target, redirect: 'manual' })
+    let settled = false
+    const onAbort = () => request.abort()
+    signal.addEventListener('abort', onAbort, { once: true })
+    const done = (result: FetchHopResult): void => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', onAbort)
+      resolve(result)
+    }
+    const fail = (err: unknown): void => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', onAbort)
+      reject(err instanceof Error ? err : new Error(String(err)))
+    }
+    const headerValue = (headers: Record<string, string | string[]>, name: string): string | null => {
+      const value = headers[name]
+      if (value == null) return null
+      return Array.isArray(value) ? (value[0] ?? null) : value
+    }
+    request.on('redirect', (_statusCode, _method, redirectUrl) => {
+      // Stop before the socket follows; the caller re-guards the target.
+      request.abort()
+      done({ kind: 'redirect', location: redirectUrl })
+    })
+    request.on('response', (response) => {
+      const declared = Number(headerValue(response.headers, 'content-length') ?? '0')
+      if (declared > FETCH_URL_MAX_BYTES) {
+        request.abort()
+        done({ kind: 'oversize' })
+        return
+      }
+      const chunks: Uint8Array[] = []
+      let total = 0
+      response.on('data', (chunk: Buffer) => {
+        total += chunk.byteLength
+        if (total > FETCH_URL_MAX_BYTES) {
+          request.abort()
+          done({ kind: 'oversize' })
+          return
+        }
+        chunks.push(chunk)
+      })
+      response.on('end', () => {
+        const bytes = new Uint8Array(total)
+        let offset = 0
+        for (const chunk of chunks) {
+          bytes.set(chunk, offset)
+          offset += chunk.byteLength
+        }
+        done({
+          kind: 'final',
+          statusCode: response.statusCode,
+          contentType: headerValue(response.headers, 'content-type') ?? '',
+          disposition: headerValue(response.headers, 'content-disposition'),
+          bytes,
+        })
+      })
+      response.on('error', (err) => fail(err))
+    })
+    request.on('error', (err) => {
+      if (signal.aborted) done({ kind: 'aborted' })
+      else fail(err)
+    })
+    request.end()
+  })
+}
+
 async function fetchUrlForImport(rawUrl: string): Promise<FetchUrlForImportResult> {
   let url: URL
   try {
@@ -366,50 +461,53 @@ async function fetchUrlForImport(rawUrl: string): Promise<FetchUrlForImportResul
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return { ok: false, message: 'only http(s) URLs can be fetched for import' }
   }
-  // SSRF guard (AI-IMP-057): user-initiated, but a dropped link must
-  // not poke loopback/private targets. The env bypass exists solely
-  // for e2e fixtures that serve test images from 127.0.0.1.
-  if (process.env['EW_TEST_ALLOW_PRIVATE_FETCH'] !== '1') {
-    const refusal = await assertPublicHost(url)
-    if (refusal) return { ok: false, message: refusal }
-  }
+  // The env bypass exists solely for e2e fixtures that serve test
+  // images from 127.0.0.1; it must suppress the guard on every hop.
+  const bypassGuard = process.env['EW_TEST_ALLOW_PRIVATE_FETCH'] === '1'
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), FETCH_URL_TIMEOUT_MS)
   try {
-    const response = await net.fetch(url.toString(), { signal: abort.signal })
-    if (!response.ok) {
-      return { ok: false, message: `fetch failed: HTTP ${response.status} for ${url.toString()}` }
-    }
-    const declared = Number(response.headers.get('content-length') ?? '0')
-    if (declared > FETCH_URL_MAX_BYTES) {
-      return { ok: false, message: 'the response exceeds the 100 MB import limit' }
-    }
-    const chunks: Uint8Array[] = []
-    let total = 0
-    if (response.body) {
-      const reader = response.body.getReader()
-      for (;;) {
-        const { done, value } = await reader.read()
-        if (done) break
-        total += value.byteLength
-        if (total > FETCH_URL_MAX_BYTES) {
-          abort.abort()
-          return { ok: false, message: 'the response exceeds the 100 MB import limit' }
-        }
-        chunks.push(value)
+    let current = url
+    // Follow redirects by hand so the SSRF guard (AI-IMP-057/124) runs
+    // on the initial URL AND every redirect target before any request
+    // reaches it: a public URL that 302s to loopback/RFC1918/metadata
+    // is refused with the same message as a direct hit. Only the DNS
+    // TOCTOU stays accepted (documented in net-guard.ts).
+    for (let hopIndex = 0; ; hopIndex++) {
+      if (!bypassGuard) {
+        const refusal = await assertPublicHost(current)
+        if (refusal) return { ok: false, message: refusal }
       }
+      const hop = await fetchOneHop(current.toString(), abort.signal)
+      if (hop.kind === 'aborted') {
+        return { ok: false, message: `fetch timed out after ${FETCH_URL_TIMEOUT_MS / 1000} s` }
+      }
+      if (hop.kind === 'oversize') {
+        return { ok: false, message: 'the response exceeds the 100 MB import limit' }
+      }
+      if (hop.kind === 'redirect') {
+        if (hopIndex >= FETCH_URL_MAX_REDIRECTS) {
+          return { ok: false, message: `fetch failed: too many redirects for ${rawUrl}` }
+        }
+        const target = resolveRedirectTarget(current, hop.location)
+        if (!target) {
+          return { ok: false, message: `fetch failed: invalid redirect from ${current.toString()}` }
+        }
+        if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+          return { ok: false, message: 'only http(s) URLs can be fetched for import' }
+        }
+        current = target
+        continue
+      }
+      // hop.kind === 'final'
+      if (hop.statusCode < 200 || hop.statusCode >= 300) {
+        return { ok: false, message: `fetch failed: HTTP ${hop.statusCode} for ${current.toString()}` }
+      }
+      if (!hop.contentType.toLowerCase().startsWith('image/') && !looksLikeImage(hop.bytes)) {
+        return { ok: false, message: `the URL did not return an image: ${current.toString()}` }
+      }
+      return { ok: true, bytes: hop.bytes, filename: filenameForUrl(current, hop.disposition) }
     }
-    const bytes = new Uint8Array(total)
-    let offset = 0
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset)
-      offset += chunk.byteLength
-    }
-    const contentType = response.headers.get('content-type') ?? ''
-    if (!contentType.toLowerCase().startsWith('image/') && !looksLikeImage(bytes)) {
-      return { ok: false, message: `the URL did not return an image: ${url.toString()}` }
-    }
-    return { ok: true, bytes, filename: filenameForUrl(url, response) }
   } catch (err) {
     if (abort.signal.aborted) {
       return { ok: false, message: `fetch timed out after ${FETCH_URL_TIMEOUT_MS / 1000} s` }

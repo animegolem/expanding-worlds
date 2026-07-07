@@ -67,14 +67,14 @@ units for hop resolution and private-hop refusal.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Manual-redirect loop: Location parsed/resolved, protocol
+- [x] Manual-redirect loop: Location parsed/resolved, protocol
       re-checked, `assertPublicHost` re-run per hop, 5-hop cap,
       fail-closed on malformed Location.
-- [ ] `EW_TEST_ALLOW_PRIVATE_FETCH=1` still bypasses (e2e fixtures
+- [x] `EW_TEST_ALLOW_PRIVATE_FETCH=1` still bypasses (e2e fixtures
       unaffected — full desktop e2e proves it).
-- [ ] Units: public→private redirect refused with the standard
+- [x] Units: public→private redirect refused with the standard
       refusal message; relative Location resolution; hop-cap.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 
 ### Acceptance Criteria
@@ -97,3 +97,64 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Redirect mechanism — the ticket's Design section is not viable in
+Electron 39 (verified empirically).** `net.fetch(url, { redirect:
+'manual' })` does NOT return an opaqueredirect response with a hidden
+Location — it *throws* `Redirect was cancelled`, and `redirect:
+'error'` throws too. There is no way to read the Location off a
+net.fetch response. Switched to `net.request({ redirect: 'manual' })`,
+which emits a `'redirect'` event carrying a fully readable
+`redirectUrl`. Second empirical finding: `followRedirect()` must be
+called *synchronously* inside the event handler — deferring it (even
+50 ms, as an async `assertPublicHost` would) also throws `Redirect was
+cancelled`. So following-then-guarding is impossible. The shipped
+design is a **per-hop re-issue loop**: each hop is its own
+`net.request`; on the `'redirect'` event we `abort()` and capture the
+target, then re-run the protocol check + `assertPublicHost` on it and,
+only if it clears, issue a fresh request to it. Every hop (initial +
+each redirect target) is guarded *before* any request reaches it.
+Third finding: a 302 with a missing Location does not fire the
+`'redirect'` event at all — Electron delivers it as an ordinary 302
+response, which our `statusCode < 200 || >= 300` check refuses. All
+three behaviors were confirmed with throwaway Electron probes
+(scratchpad, not committed).
+
+**Test strategy.** Pure `resolveRedirectTarget(current, location)`
+extracted into net-guard.ts and unit-tested (relative, no-slash,
+absolute, protocol-change, URL base, missing/blank/unparseable →
+fail-closed). Private-hop refusal unit-tested through
+`resolveRedirectTarget` → `assertPublicHost` composition, asserting the
+exact `refusing to fetch a private or local address (host)` string for
+loopback/RFC1918/metadata/IPv6-loopback/localhost. 16 units, all
+green. The full redirect-following loop and the 5-hop cap use
+`net.request`, which cannot run under vitest's plain-node env, so they
+are validated by (a) Electron probes that drove a real local
+redirecting server — public→127.0.0.1 refused with the standard
+message; a 2-hop public chain succeeded; a self-redirect loop capped
+at 6 requests (initial + 5 follows) — and (b) the full desktop e2e
+suite for the `EW_TEST_ALLOW_PRIVATE_FETCH=1` bypass path (127.0.0.1
+image-import fixtures still pass unchanged). This matches the ticket's
+stated fallback ("helper + guard units if a live server proves flaky"):
+wiring a live server into the main-process vitest home was not viable
+because net.request only exists in the Electron runtime.
+
+**Cap semantics.** `FETCH_URL_MAX_REDIRECTS = 5` = five redirects
+followed; the sixth is refused (`too many redirects`). Timeout/abort
+`AbortController` now spans the whole chain (each hop's in-flight
+request subscribes to the shared signal). Oversize enforcement (both
+declared content-length and streamed bytes) preserved per hop.
+
+**Gate note — pre-existing trash flake (NOT this change).**
+`pnpm -r test` and the desktop e2e both fail *only* on
+`e2e/trash.spec.ts` — a strict-mode collision where a lingering toast
+with `data-testid="trash-empty"` (surface: 'trash-empty' in
+TrashView.svelte) coexists with the `<p data-testid="trash-empty">`.
+Proven pre-existing and independent: the spec passes on the stashed
+baseline in isolation, and with my changes it reports "1 flaky"
+(fails once, passes on retry) run alone. Zero code overlap — my diff
+touches only net-guard.ts + fetchUrlForImport. This is the
+freshly-ingested "trash-reachability" area (see HEAD commit); it wants
+its own ticket, not a fix here (renderer/e2e are fenced off from this
+ticket). `pnpm -r build` and `pnpm lint` are clean; desktop vitest
+(incl. the 16 new units) and the rest of the e2e suite pass.
