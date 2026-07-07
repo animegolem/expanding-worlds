@@ -64,6 +64,23 @@ export {
 } from './camera'
 export { CameraFlight, FLIGHT_DURATION_MS } from './camera-flight'
 export {
+  approachClearance,
+  awayDisplay,
+  awayFinished,
+  clamp01,
+  DragBeat,
+  easeOutCubic,
+  NEUTRAL_DISPLAY,
+  nudgeFinished,
+  nudgeOffset,
+  pressFinished,
+  pressScale,
+  strainFinished,
+  strainOffset,
+  type BeatDisplay,
+  type DragPhase,
+} from './interaction-beats'
+export {
   CameraZoomChase,
   ZOOM_CHASE_HEADSTART_MS,
   ZOOM_CHASE_SNAP_LOG_EPSILON,
