@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.57         | 7 July 2026      |
+| Accepted for Phase 1 | 0.58         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2581,10 +2581,12 @@ and diagnostics; it is not a replayable event source, and pruning it
 never affects domain records.
 
 When the effect of an undo or redo lies on a canvas other than the
-active one, the workspace navigates to that canvas and centers and
-highlights the affected content, entering navigation history like any
-other navigation. A setting MAY offer applying such undos in place
-with a non-blocking notice instead.
+active one, the step declines with a non-blocking notice naming that
+board; the entry stays on the stack and applies normally once that
+canvas is active (ratified rev 0.58 from the shipped fence: undo acts
+where your hands are, and a board you cannot see never changes under
+you). The earlier navigate-and-center direction and its apply-in-place
+setting are retired.
 
 Note-body edits do not enter the structural undo stack. Inside a
 focused editor, undo is CodeMirror's fine-grained local history, which
@@ -2754,8 +2756,8 @@ project-scoped. Project settings persist inside the project database,
 travel with export and import, and include Trash retention.
 Application settings persist in the application configuration
 directory outside any project and include theme, window and layout
-preferences, the cross-canvas undo behavior toggle, and future adapter
-configuration such as a media-backup endpoint.
+preferences, and future adapter configuration such as a media-backup
+endpoint.
 
 **The settings surface (rev 0.17).** Settings open as a takeover view
 like graph and outline (§8.2), entered from the ☰ charm — but the sheet
@@ -3573,8 +3575,8 @@ and a placement-anchored connector.
 
 19. Reorder, lock, hide, group, move, ungroup, and undo decorations;
 confirm connectors remain visual rather than semantic edges. Undo a
-move made on a different canvas and verify the workspace navigates to
-and highlights the affected content.
+move made on a different canvas and verify the step declines with a
+notice naming that board, then succeeds after navigating there.
 
 20. Delete a placement; move a canvas, node, and note to Trash; inspect
 impact summaries; restore the trashed records; and verify preserved
@@ -3748,8 +3750,8 @@ The model is successfully implemented when:
   session, is in-memory only, and clears redo on any new command;
   command metadata persists as a non-replayable log.
 
-- Undoing a change on an inactive canvas navigates to and highlights
-  the affected content.
+- Undoing a change on an inactive canvas declines with a notice naming
+  that board and succeeds once that canvas is active.
 
 - Canvas cycles, including self-reference, remain legal and bounded by
   visited-set traversal.
@@ -4074,8 +4076,9 @@ Accepted for the Phase 1 prototype:
   excluded from structural undo and owned by editor-local history.
 
 - Structural undo is project-global per session and in-memory, with a
-  persisted command metadata log; cross-canvas undo navigates to its
-  effect, with apply-in-place available as a setting.
+  persisted command metadata log; a cross-canvas step declines with a
+  notice naming its board and waits until that board is active (rev
+  0.58).
 
 - One project service holds the authoritative project write lock.
 
@@ -4492,3 +4495,9 @@ Accepted for the Phase 1 prototype:
   through the central directory before anything extracts; media
   entries are stored uncompressed so multi-GB roundtrips stream at
   constant memory (§16). Open question 11 closes.
+
+- Cross-canvas undo ratified as the presence fence (rev 0.58, owner,
+  EPIC-007 audit): a step whose effect lies on another board declines
+  with a notice naming it and waits on the stack until that board is
+  active — undo acts where your hands are. Navigate-and-center and
+  the apply-in-place toggle are retired (§10.2, §11.5).
