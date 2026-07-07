@@ -4,6 +4,7 @@ import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { EditorState, type Extension } from '@codemirror/state'
 import { EditorView, keymap, placeholder } from '@codemirror/view'
 import type { CommandResult } from '@ew/commands'
+import { stripMetadataBlock } from '@ew/domain'
 
 /**
  * Note editor controller (RFC-0001 §10.2, AI-IMP-044). The CodeMirror
@@ -51,6 +52,14 @@ export class NoteEditorController {
   #note: NoteRecord | null = null
   #dirty = false
   #lastSavedBody = ''
+  /** §7.8 (AI-IMP-119): the note's system metadata block is stripped
+   * before the editor ever sees it — the editing surface holds prose
+   * only. The raw tail is kept here verbatim and reattached on every
+   * save, so an ordinary prose edit never duplicates or destroys the
+   * block; the block regenerates only on a system touch (rename,
+   * export), which arrives through syncExternal. Empty when the note
+   * carries no block. */
+  #metadataBlock = ''
   #timer: ReturnType<typeof setTimeout> | null = null
   /** In-flight commit; flushPending chains on it so a burst typed
    * during a save still lands (as the next single command). */
@@ -114,16 +123,21 @@ export class NoteEditorController {
     }
     this.#note = note
     this.#lastSavedBody = note.body
+    // §7.8: the editor shows prose only; the system block is held aside
+    // and reattached on save.
+    const { prose, block } = stripMetadataBlock(note.body)
+    this.#metadataBlock = block
     this.#setDirty(false)
     // Fresh state = fresh local history: undo never crosses notes. A
     // trashed note opens read-only (§7.1 In Trash view).
-    this.#view?.setState(this.#stateFor(note.body, note.lifecycleState === 'trashed'))
+    this.#view?.setState(this.#stateFor(prose, note.lifecycleState === 'trashed'))
     this.#hooks.onNoteChanged?.(note)
   }
 
   async close(): Promise<void> {
     await this.flushPending()
     this.#note = null
+    this.#metadataBlock = ''
     this.#setDirty(false)
     this.#view?.setState(this.#stateFor(''))
     this.#hooks.onNoteChanged?.(null)
@@ -165,13 +179,16 @@ export class NoteEditorController {
       this.#hooks.onNoteChanged?.(this.#note)
     }
     if (this.#dirty) return
-    const current = this.#view.state.doc.toString()
-    if (fresh.body === current) {
-      this.#lastSavedBody = fresh.body
-      return
-    }
-    const change = minimalChange(current, fresh.body)
+    // §7.8: reconcile PROSE only. A system touch (rename re-key, block
+    // refresh) rewrites the durable body; strip its fresh block aside
+    // and diff the prose so a silent block regeneration never lands in
+    // the editing surface or in local undo.
+    const { prose: freshProse, block: freshBlock } = stripMetadataBlock(fresh.body)
+    this.#metadataBlock = freshBlock
     this.#lastSavedBody = fresh.body
+    const current = this.#view.state.doc.toString()
+    if (freshProse === current) return
+    const change = minimalChange(current, freshProse)
     // A user-event-tagged transaction enters CM history like typing,
     // so undo can travel back through the rewrite.
     this.#view.dispatch({ changes: change, userEvent: 'input.external' })
@@ -202,7 +219,9 @@ export class NoteEditorController {
       this.#timer = null
     }
     const note = this.#note
-    const body = this.#view.state.doc.toString()
+    // §7.8: the buffer is prose; reattach the system block verbatim so
+    // the durable body keeps it. A prose edit never regenerates it.
+    const body = this.#view.state.doc.toString() + this.#metadataBlock
     while (this.#inFlight) await this.#inFlight
     if (body === this.#lastSavedBody) {
       this.#setDirty(false)
@@ -216,7 +235,11 @@ export class NoteEditorController {
       .then((result: CommandResult) => {
         if (result.status === 'committed') {
           this.#lastSavedBody = body
-          if (this.#note?.id === note.id && this.#view?.state.doc.toString() === body) {
+          // The buffer holds prose; the durable body is prose + block.
+          if (
+            this.#note?.id === note.id &&
+            (this.#view?.state.doc.toString() ?? '') + this.#metadataBlock === body
+          ) {
             this.#setDirty(false)
           }
         } else {

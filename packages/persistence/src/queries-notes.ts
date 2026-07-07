@@ -1,4 +1,5 @@
 import { titleKey } from '@ew/domain'
+import { computeNoteMetadata, readMetadataConfig } from './note-metadata-db'
 import type { QueryRegistry } from './queries'
 
 /** Escape LIKE wildcards so user input matches literally. */
@@ -292,6 +293,20 @@ export function registerNoteQueries(registry: QueryRegistry): void {
       unplaced: [...nodes.values()].filter((n) => n.placements.length === 0),
       totalPlacements: placementRows.length,
     }
+  })
+
+  // §7.8 metadata card (AI-IMP-119): the live read model behind the
+  // MetadataCard below the editor — placements grouped by board with
+  // nesting depth and fly-to targets, provenance of image-backed
+  // nodes, timestamps — bundled with the effective config (per-note
+  // toggle + per-section global defaults) so the card knows which
+  // sections to draw. The in-app display is ALWAYS live; this query is
+  // never the persisted copy (that refreshes lazily on a system touch).
+  registry.register('getNoteMetadata', (ctx, args) => {
+    const { noteId } = args as { noteId: string }
+    const view = computeNoteMetadata(ctx, noteId)
+    if (!view) return null
+    return { ...view, config: readMetadataConfig(ctx.db, ctx.projectId, noteId) }
   })
 
   registry.register('getPhantom', (ctx, args): PhantomView | null => {

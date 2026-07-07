@@ -45,6 +45,7 @@
   import { themeTokenValue } from '../theme'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
   import UsesList, { type UsesData } from './UsesList.svelte'
+  import MetadataCard, { type MetadataCardData } from './MetadataCard.svelte'
 
   interface PhantomView {
     titleKey: string
@@ -90,6 +91,34 @@
     const response = await window.ew.project.query('getNoteUses', { noteId: current })
     if ((paneController?.note?.id ?? null) === current)
       uses = response.ok ? (response.result as UsesData) : null
+  }
+
+  // §7.8 metadata card (AI-IMP-119): the live read model below the
+  // editor. Always recomputed — the in-app display never reads the
+  // persisted (lazily-refreshed) block.
+  let metadata = $state<MetadataCardData | null>(null)
+
+  async function refreshMetadata(): Promise<void> {
+    const current = paneController?.note?.id ?? null
+    if (!current) {
+      metadata = null
+      return
+    }
+    const response = await window.ew.project.query('getNoteMetadata', { noteId: current })
+    if ((paneController?.note?.id ?? null) === current)
+      metadata = response.ok ? (response.result as MetadataCardData | null) : null
+  }
+
+  // The per-note toggle is presentation state (a project-tier setting,
+  // no migration): flip it, then refresh so the card reflects the new
+  // state. Toggling OFF stops future refreshes and strips the persisted
+  // block at the next system touch (§7.8) — it does not rewrite the
+  // body now.
+  async function toggleMetadata(enabled: boolean): Promise<void> {
+    const current = paneController?.note?.id ?? null
+    if (!current) return
+    await window.ew.settings.setProject(`note_metadata_note:${current}`, { enabled })
+    await refreshMetadata()
   }
 
   // §8.5 place-on-board (AI-IMP-084): the note's node, when one
@@ -785,6 +814,7 @@
           error = null
           void resolution.refresh(current?.id ?? null)
           void refreshUses()
+          void refreshMetadata()
           void refreshPlaceNode()
           schedule()
         },
@@ -810,6 +840,7 @@
         void controller?.syncExternal()
         void refreshTagChips()
         void refreshUses()
+        void refreshMetadata()
         void refreshPlaceNode()
         usesRefresh += 1
         const view = phantom
@@ -1113,6 +1144,9 @@
         Dismiss
       </button>
     </section>
+  {/if}
+  {#if note && !phantom && metadata}
+    <MetadataCard data={metadata} {activeCanvasId} onToggle={(value) => void toggleMetadata(value)} />
   {/if}
   {#if usesOpen && note && !phantom && uses}
     <UsesList

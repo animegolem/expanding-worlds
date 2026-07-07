@@ -75,6 +75,34 @@
     }
   }
 
+  // §7.8 metadata sections (AI-IMP-119): per-section global defaults,
+  // project-tier settings written through the non-undoable set-setting
+  // verb (no migration). Defaults: Placements ON, Provenance ON,
+  // Timestamps OFF.
+  type MetadataSection = 'placements' | 'provenance' | 'timestamps'
+  const METADATA_SECTION_DEFAULTS: Record<MetadataSection, boolean> = {
+    placements: true,
+    provenance: true,
+    timestamps: false,
+  }
+  function metadataDefault(key: MetadataSection): boolean {
+    const raw = projectSettings['note_metadata_defaults'] as
+      | Partial<Record<MetadataSection, unknown>>
+      | undefined
+    const value = raw?.[key]
+    return typeof value === 'boolean' ? value : METADATA_SECTION_DEFAULTS[key]
+  }
+  async function setMetadataDefault(key: MetadataSection, value: boolean): Promise<void> {
+    const next: Record<MetadataSection, boolean> = {
+      placements: metadataDefault('placements'),
+      provenance: metadataDefault('provenance'),
+      timestamps: metadataDefault('timestamps'),
+      [key]: value,
+    }
+    projectSettings = { ...projectSettings, note_metadata_defaults: next }
+    await window.ew.settings.setProject('note_metadata_defaults', next)
+  }
+
   const FLAT_SWATCHES = [1, 2, 3, 4, 5, 6].map((n) => `--ew-canvas-flat-${n}`)
   const isMac = navigator.platform.startsWith('Mac')
 
@@ -344,6 +372,50 @@
         'settings-row-menu-placement',
       )}
     {/if}
+  </section>
+
+  <section data-testid="settings-section-notes">
+    <h2>Note metadata</h2>
+    <p class="section-note" data-testid="settings-notes-note">
+      Which system sections a note's metadata block carries by default. Each note keeps its own
+      on/off toggle in its panel.
+    </p>
+    <div class="row" data-testid="settings-row-metadata-placements">
+      <span class="row-label">Placements</span>
+      {@render segmented(
+        'settings-metadata-placements',
+        [
+          { value: 'on', label: 'On' },
+          { value: 'off', label: 'Off' },
+        ],
+        metadataDefault('placements') ? 'on' : 'off',
+        (value) => void setMetadataDefault('placements', value === 'on'),
+      )}
+    </div>
+    <div class="row" data-testid="settings-row-metadata-provenance">
+      <span class="row-label">Provenance</span>
+      {@render segmented(
+        'settings-metadata-provenance',
+        [
+          { value: 'on', label: 'On' },
+          { value: 'off', label: 'Off' },
+        ],
+        metadataDefault('provenance') ? 'on' : 'off',
+        (value) => void setMetadataDefault('provenance', value === 'on'),
+      )}
+    </div>
+    <div class="row" data-testid="settings-row-metadata-timestamps">
+      <span class="row-label">Timestamps</span>
+      {@render segmented(
+        'settings-metadata-timestamps',
+        [
+          { value: 'on', label: 'On' },
+          { value: 'off', label: 'Off' },
+        ],
+        metadataDefault('timestamps') ? 'on' : 'off',
+        (value) => void setMetadataDefault('timestamps', value === 'on'),
+      )}
+    </div>
   </section>
 
   <section data-testid="settings-section-keyboard">

@@ -11,3 +11,13 @@ export {
   type WikiLinkToken,
 } from './wiki-links'
 export * from './records'
+export {
+  METADATA_OPEN,
+  METADATA_CLOSE,
+  stripMetadataBlock,
+  renderMetadataBlock,
+  composeNoteBody,
+  type MetadataBoard,
+  type MetadataProvenanceEntry,
+  type MetadataSectionsInput,
+} from './note-metadata'

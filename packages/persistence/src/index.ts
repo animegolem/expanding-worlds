@@ -29,6 +29,22 @@ export {
   type PhantomView,
   type TitleSuggestion,
 } from './queries-notes'
+// §7.8 metadata block (AI-IMP-119): the lazy-refresh entry point ships
+// here for EPIC-008's export/backup call sites; the live read model and
+// config reader are exported for reuse and tests.
+export {
+  computeNoteMetadata,
+  readMetadataConfig,
+  refreshNoteMetadataBlock,
+  sectionsFor,
+  metadataNoteKey,
+  METADATA_DEFAULTS_KEY,
+  type MetadataConfig,
+  type NoteMetadataBoard,
+  type NoteMetadataProvenance,
+  type NoteMetadataView,
+} from './note-metadata-db'
+export { getProjectSetting, setProjectSetting } from './settings'
 export { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 export { registerCanvasHandlers } from './handlers/canvases'
 export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'
