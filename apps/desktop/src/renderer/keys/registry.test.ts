@@ -133,4 +133,47 @@ describe('keymap registry', () => {
     expect(matchesCombo(ev({ key: 'a', metaKey: true }), { mod: true, key: 'a' })).toBe(true)
     expect(matchesCombo(ev({ key: 'a' }), { mod: true, key: 'a' })).toBe(false)
   })
+
+  // Regression guard for the CI red on Linux (settings.spec Keyboard
+  // section, undo.spec Mod+Z): the Keyboard settings chips and every
+  // Mod binding must behave correctly under BOTH platform resolutions
+  // of "Mod" — ⌘ on darwin, Ctrl elsewhere — not just the macOS box
+  // these were authored on. Pins the exact combos each platform shows.
+  describe('platform contract (darwin vs linux)', () => {
+    const cases: Array<{ id: string; combo: Combo; mac: string; linux: string }> = [
+      { id: 'quick-open', combo: { mod: true, key: 'p' }, mac: '⌘P', linux: 'Ctrl+P' },
+      { id: 'nav-back', combo: { mod: true, key: '[' }, mac: '⌘[', linux: 'Ctrl+[' },
+      { id: 'bookmark-jump', combo: { mod: true, glyph: '1–9' }, mac: '⌘1–9', linux: 'Ctrl+1–9' },
+      { id: 'bookmark-current', combo: { mod: true, key: 'd' }, mac: '⌘D', linux: 'Ctrl+D' },
+      {
+        id: 'board-send-front',
+        combo: { mod: true, shift: true, code: 'BracketRight' },
+        mac: '⇧⌘]',
+        linux: 'Ctrl+Shift+]',
+      },
+      { id: 'tool-select', combo: { mod: false, alt: false, key: 'v' }, mac: 'V', linux: 'V' },
+      {
+        id: 'gallery-bucket-jump',
+        combo: { mod: true, glyph: '↑ ↓' },
+        mac: '⌘↑ ↓',
+        linux: 'Ctrl+↑ ↓',
+      },
+    ]
+    it.each(cases)('formats $id for both platforms', ({ combo, mac, linux }) => {
+      expect(formatCombo(combo, 'mac')).toBe(mac)
+      expect(formatCombo(combo, 'other')).toBe(linux)
+    })
+
+    it('the matcher fires a Mod binding from EITHER ⌘ (mac) or Ctrl (linux)', () => {
+      declare('undo', { name: 'Undo', scope: 'global', combo: { mod: true, key: 'z' } })
+      // macOS: the physical key is ⌘ (metaKey).
+      expect(matches(ev({ key: 'z', metaKey: true }), 'undo')).toBe(true)
+      // Linux/Windows: the physical key is Ctrl (ctrlKey), no metaKey.
+      expect(matches(ev({ key: 'z', ctrlKey: true }), 'undo')).toBe(true)
+      // The Linux Super key (metaKey) is NOT Mod there, but matchesCombo
+      // is platform-neutral by design (§8.2: metaKey || ctrlKey), so a
+      // bare key with neither still misses.
+      expect(matches(ev({ key: 'z' }), 'undo')).toBe(false)
+    })
+  })
 })

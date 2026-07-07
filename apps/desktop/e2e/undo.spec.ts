@@ -133,7 +133,15 @@ test('materialization: one Mod+Z un-materializes note + node + placement (§7.2)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Undo Phantom/)
   await expect.poll(() => depth(win)).toBe(1)
 
-  // Blur the editor so Mod+Z is structural, not CodeMirror's history.
+  // Leave the pin tool first: it stays active for repeated placement
+  // (§6.2), so a bare board click here would drop ANOTHER provisional
+  // dot and open a fresh pin-phantom whose autofocusing <textarea>
+  // steals focus — on Linux that made the next Mod+Z defer to the
+  // editor (a text-history op), never reaching the structural stack
+  // (macOS' autofocus lost the race, so it passed there; CI caught the
+  // real platform-dependent flake). Switch to Select, THEN click the
+  // board so Mod+Z is unambiguously structural on every platform.
+  await win.keyboard.press('v')
   await win.mouse.click(box.x + 80, box.y + 80)
   await win.keyboard.press('Meta+z')
 
