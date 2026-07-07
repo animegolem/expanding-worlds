@@ -448,3 +448,10 @@ The artist's promise, round trip:
 - Inline code chips + true-italic em on the paper: legible at
   panel size? Mod+B / Mod+I are listed under "In a note" in
   Settings › Keyboard.
+
+## AI-IMP-164 — delete undo re-binds connectors (2026-07-07)
+
+Draw an arrow between two images, delete one image, Mod+Z: the
+image AND its arrow connection should both come back exactly.
+Redo should release the arrow again (it stays, free-floating,
+where the image was).
