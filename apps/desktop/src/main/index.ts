@@ -905,7 +905,19 @@ void app.whenReady().then(() => {
   ipcMain.handle('secondary:mirror', (_event, input: { contentHash: string }) =>
     callUtility({ type: 'mirror-to-library', contentHash: String(input.contentHash) }),
   )
-  ipcMain.handle('app-settings:get', () => loadAppSettings())
+  ipcMain.handle('app-settings:get', () => {
+    const settings = loadAppSettings()
+    // §19 first-run guide (AI-IMP-145): the e2e suite launches ~19 fresh
+    // app-config dirs, so without a suppressor the walkthrough takeover
+    // would block board interaction in every spec. playwright.config
+    // defaults EW_SUPPRESS_FIRST_RUN=1; the first-run spec opts back in
+    // with '0'. Injected on READ only — never persisted, so a real
+    // dismissal still writes the flag normally.
+    if (process.env['EW_SUPPRESS_FIRST_RUN'] === '1') {
+      return { ...settings, firstRunSeen: true }
+    }
+    return settings
+  })
   ipcMain.handle('app-settings:set', (_event, key: string, value: unknown) => {
     setAppSetting(String(key), value)
     return true

@@ -10,6 +10,15 @@ if (process.env['EW_TEST_HIDDEN_WINDOWS'] === undefined) {
   process.env['EW_TEST_HIDDEN_WINDOWS'] = '1'
 }
 
+// AI-IMP-145 first-run guide: suppress the once-on-first-open
+// walkthrough for the whole suite by default — every spec launches a
+// fresh app-config dir, so without this the takeover would block board
+// interaction everywhere. Specs spread process.env into electron.launch,
+// so this reaches all of them; first-run.spec sets '0' to see the guide.
+if (process.env['EW_SUPPRESS_FIRST_RUN'] === undefined) {
+  process.env['EW_SUPPRESS_FIRST_RUN'] = '1'
+}
+
 export default defineConfig({
   testDir: './e2e',
   // Self-heal the macOS+pnpm "husk electron" before any spec launches, so a

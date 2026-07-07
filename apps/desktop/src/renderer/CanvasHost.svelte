@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import ChromeLayer from './chrome/ChromeLayer.svelte'
+  import FirstRunGuide from './chrome/FirstRunGuide.svelte'
   import TakeoverLayer from './chrome/TakeoverLayer.svelte'
   import { toast } from './chrome/status'
   import { attachBoardTooling, type BoardTooling } from './canvas/board-tooling'
@@ -143,6 +144,12 @@
     eating canvas input; the modal children opt back into hit-testing.
   -->
   <div class="overlay-host" data-testid="overlay-host" bind:this={overlayHost}></div>
+  <!--
+    §19 first-run walkthrough (AI-IMP-145): an app-tier overlay that
+    self-gates on the true-first-open seen flag, so it renders
+    independent of the canvas handle and above every board surface.
+  -->
+  <FirstRunGuide />
 </div>
 
 <style>

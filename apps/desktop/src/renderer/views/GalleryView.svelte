@@ -54,7 +54,7 @@
   keep their own.
 -->
 <script lang="ts">
-  import { onDestroy, tick, untrack } from 'svelte'
+  import { onDestroy, onMount, tick, untrack } from 'svelte'
   import { NODE_DRAG_MIME } from '../canvas/import-surfaces'
   import { requestPlaceMode } from '../canvas/place-mode'
   import {
@@ -65,6 +65,7 @@
   import { navigateTo } from '../chrome/navigation'
   import { acquireSourceSlot, releaseSourceSlot } from '../chrome/source-slot'
   import { toast } from '../chrome/status'
+  import { consumeGalleryEverythingRequest } from '../chrome/first-run'
   import { closeTakeover } from '../chrome/takeover'
   import { requestOpenNote, requestPlaceNode } from '../note/open-note'
   import { openCornerPanel } from '../note/panels'
@@ -167,6 +168,14 @@
   // this view still holds, so another surface's slot is never stomped.
   let scopeEpoch = 0
   const SLOT_OWNER = 'gallery'
+
+  // §19 first-run landing (AI-IMP-145): `start ›` opens the gallery
+  // straight into the everything scope where the seeded example library
+  // lives (screen 20). The one-shot is consumed once on mount; ordinary
+  // opens keep the this-world default.
+  onMount(() => {
+    if (consumeGalleryEverythingRequest()) setScope('everything')
+  })
 
   const scopeReady = $derived(scope === 'this-world' || sourceOpen)
 

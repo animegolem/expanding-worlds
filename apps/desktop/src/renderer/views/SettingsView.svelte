@@ -15,7 +15,9 @@
     type TrashRetention,
   } from '@ew/commands'
   import { DROP_BEHAVIOR_KEY, DROP_BEHAVIOR_VALUES, type DropBehavior } from '@ew/protocol'
+  import { showFirstRun } from '../chrome/first-run'
   import { toast } from '../chrome/status'
+  import { closeTakeover } from '../chrome/takeover'
   import Button from '../ui/Button.svelte'
   import TextInput from '../ui/TextInput.svelte'
   // §8.2 keymap registry (AI-IMP-117): the Keyboard section reads the
@@ -474,6 +476,24 @@
         dropBehavior(),
         (value) => void setDropBehavior(value as DropBehavior),
       )}
+    </div>
+
+    <!-- §19 first-run guide (AI-IMP-145): replaying re-opens the
+         walkthrough over the live board. Closing this takeover first
+         lets the guide take the whole window, exactly as on first open;
+         the seen flag is untouched, so it never nags on its own. -->
+    <div class="row" data-testid="settings-row-first-run">
+      <span class="row-label">First-run guide</span>
+      <Button
+        variant="default"
+        data-testid="settings-replay-guide"
+        onclick={() => {
+          closeTakeover()
+          showFirstRun()
+        }}
+      >
+        Replay the guide
+      </Button>
     </div>
   </section>
 

@@ -66,14 +66,14 @@ pattern exists in e2e helpers).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Seven pages, ratified copy verbatim (unit), paper voice on
+- [x] Seven pages, ratified copy verbatim (unit), paper voice on
       tokens + Maple, dot progress.
-- [ ] Shows exactly once; skip everywhere; settings replay; e2e
+- [x] Shows exactly once; skip everywhere; settings replay; e2e
       covers all three.
-- [ ] "start" lands inside the seeded example (e2e asserts the
+- [x] "start" lands inside the seeded example (e2e asserts the
       example board is active).
-- [ ] Page-7 pick stored; no other effect yet (recorded).
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Page-7 pick stored; no other effect yet (recorded).
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead (does the
       arc teach without preaching; page-2 trust moment).
@@ -93,3 +93,45 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Suite-wide guide suppression.** Every e2e spec launches a fresh
+  `EW_APP_CONFIG_DIR`, so the once-on-first-open guide would otherwise
+  render its board-blocking takeover in all ~19 apps. Chose a
+  read-only injection in main's `app-settings:get` handler gated on
+  `EW_SUPPRESS_FIRST_RUN` (defaulted to `'1'` in playwright.config,
+  which all specs inherit via `...process.env`); the first-run spec
+  opts back in with `'0'`. Injected on read only — never persisted, so
+  a real dismissal still writes `firstRunSeen` normally. This is the
+  only main-side change (5 lines) plus one line in playwright.config.
+  Verified no regression across settings/gallery/gallery-scope/
+  library-seed/shell specs (17 passed).
+
+- **`start` landing seam.** The seeded example lives in the LIBRARY
+  slot, reachable only through the gallery's everything scope
+  (storyboard screen 20 — "the library opens pre-arranged"); the
+  primary project is never seeded, and switch-project is deferred. So
+  `start ›` (a) ensures the example library exists — reusing the
+  gallery's create-new IPC seam (`secondary.open` library
+  createIfMissing → close → designate), idempotent when a library is
+  already designated — then (b) opens the gallery takeover straight
+  into everything scope via a one-shot flag GalleryView consumes on
+  mount (`consumeGalleryEverythingRequest`). The e2e asserts the
+  example board is active by the 3 seed artist-board cells rendering.
+  The GalleryView change is 3 additive lines; ordinary gallery opens
+  keep the this-world default.
+
+- **skip vs. start semantics.** Implemented `skip` as a uniform bail
+  on every page (mark seen, dismiss, stay on the board) and `start ›`
+  (page 7 only) as the lander into the seeded example — matching the
+  ticket's explicit contract ("skip everywhere; never again" vs
+  "start lands inside the seeded example"). Storyboard screen 19's
+  softer note that page-7 skip could ALSO drop into the example was
+  not adopted, to keep skip's meaning consistent; flagged for the
+  owner's feel pass.
+
+- **Paper voice on tokens.** The card uses the existing `--ew-paper-*`
+  palette + `--ew-font-editor` (Maple) + `--ew-scrim`/`--ew-drag-
+  shadow`; the active dot and next/start link use `--ew-paper-info-
+  text` (the paper's accent, matching the mock's link colour). No raw
+  hex — the theme guard test scans the whole renderer tree and passes.
+  Theme-aware for free (paper tokens invert on glass).
