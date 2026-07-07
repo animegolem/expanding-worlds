@@ -1,14 +1,18 @@
 import {
   alignPayload,
+  arrangePayload,
   createSnapProvider,
   distributePayload,
+  normalizeSelection,
   placementSize,
   reorderPayloads,
   stageExtent,
   unionBounds,
   STAGE_WIDTH,
   type AlignOp,
+  type ArrangeSortKey,
   type DistributeAxis,
+  type NormalizeMode,
   type ReorderOp,
   type SceneBackground,
   type ScenePlacement,
@@ -44,6 +48,10 @@ const BG_SMALL_WIDTH_PX = 1024
 export interface BoardTooling {
   align(op: AlignOp): Promise<void>
   distribute(axis: DistributeAxis): Promise<void>
+  /** §6.9 auto-arrange: compact-pack the selection in `key` order. */
+  arrange(key: ArrangeSortKey): Promise<void>
+  /** §6.9 normalize: equalize the selection's dimensions to the median. */
+  normalize(mode: NormalizeMode): Promise<void>
   /** §6.8 z-order on the current selection (placements + decorations). */
   reorder(op: ReorderOp): Promise<void>
   zoomToFit(): void
@@ -162,6 +170,20 @@ export function attachBoardTooling(
 
   async function distribute(axis: DistributeAxis): Promise<void> {
     const payload = distributePayload(handle.canvasId, controller.selectedItems(), axis)
+    if (payload) await run('TransformContent', payload)
+  }
+
+  // §4.9 rev 0.38: arrange (compact-pack in a sort order) and normalize
+  // (equalize dimensions to the median) act on the current selection and
+  // commit through the same one-command batch path as align/distribute,
+  // so each invocation is a single undo entry.
+  async function arrange(key: ArrangeSortKey): Promise<void> {
+    const payload = arrangePayload(handle.canvasId, controller.selectedItems(), key)
+    if (payload) await run('TransformContent', payload)
+  }
+
+  async function normalize(mode: NormalizeMode): Promise<void> {
+    const payload = normalizeSelection(handle.canvasId, controller.selectedItems(), mode)
     if (payload) await run('TransformContent', payload)
   }
 
@@ -441,6 +463,8 @@ export function attachBoardTooling(
   return {
     align,
     distribute,
+    arrange,
+    normalize,
     reorder,
     zoomToFit,
     zoomToSelection,

@@ -97,6 +97,38 @@ async function scenePlacements(win: Page): Promise<Array<{ id: string; x: number
   })
 }
 
+/** Placement geometry with the scale folded into effective size. */
+async function placementGeom(
+  win: Page,
+): Promise<Array<{ id: string; x: number; y: number; w: number; h: number }>> {
+  return win.evaluate(async () => {
+    const scene = await window.ew.project.query('getCanvasScene', {
+      canvasId: window.__ewDebug!.canvasId(),
+    })
+    if (!scene.ok) throw new Error(scene.message)
+    const { items } = scene.result as {
+      items: Array<{
+        itemKind: string
+        id: string
+        x: number
+        y: number
+        width: number | null
+        height: number | null
+        scale: number
+      }>
+    }
+    return items
+      .filter((item) => item.itemKind === 'placement')
+      .map(({ id, x, y, width, height, scale }) => ({
+        id,
+        x,
+        y,
+        w: (width ?? 0) * scale,
+        h: (height ?? 0) * scale,
+      }))
+  })
+}
+
 interface BackgroundLite {
   color: string | null
   assetId: string | null
@@ -269,6 +301,123 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
     .not.toEqual(fitted)
+
+  await app.close()
+})
+
+test('arrange packs by import order and normalize equalizes height — one undo each (AI-IMP-128)', async () => {
+  const { app, win } = await launch('ew-e2e-arrange-')
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // Seed four 100×100 tiles in an order that DEFIES their reading order:
+  // the first created sits bottom-right, the last top-left. importDate
+  // (renderOrder) sort must therefore pack the FIRST-created tile into
+  // the top-left slot — the opposite of a position-based default sort.
+  const created: string[] = []
+  for (const [x, y] of [
+    [400, 400],
+    [150, 400],
+    [400, 150],
+    [150, 150],
+  ] as const) {
+    const nodeId = crypto.randomUUID()
+    const placementId = crypto.randomUUID()
+    await runCommand(win, 'CreateNode', { nodeId })
+    await runCommand(win, 'CreatePlacement', {
+      placementId,
+      canvasId,
+      nodeId,
+      x,
+      y,
+      width: 100,
+      height: 100,
+    })
+    created.push(placementId)
+  }
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 4)
+
+  await win.keyboard.press('Control+KeyA')
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 4)
+  const before = new Map((await scenePlacements(win)).map((p) => [p.id, { x: p.x, y: p.y }]))
+
+  // Arrange by import date: one command, a compact 2×2 grid.
+  const beforeArrange = await revision(win)
+  await win.getByTestId('arrange-importDate').click()
+  await expect
+    .poll(async () => {
+      const now = new Map((await scenePlacements(win)).map((p) => [p.id, `${p.x},${p.y}`]))
+      return now.get(created[3]!)
+    })
+    // Wait until positions have actually reflowed (the last-created tile
+    // — top-left at seed — moves to the grid's bottom-right slot).
+    .not.toBe(`${before.get(created[3]!)!.x},${before.get(created[3]!)!.y}`)
+  expect(await contentCommandsSince(win, beforeArrange)).toHaveLength(1)
+
+  const packed = await scenePlacements(win)
+  const minX = Math.min(...packed.map((p) => p.x))
+  const minY = Math.min(...packed.map((p) => p.y))
+  const maxX = Math.max(...packed.map((p) => p.x))
+  const maxY = Math.max(...packed.map((p) => p.y))
+  const byId = new Map(packed.map((p) => [p.id, p]))
+  // First-created (renderOrder 0) → top-left slot; last-created → bottom
+  // -right. That ordering only holds under an import-date sort.
+  expect(byId.get(created[0]!)).toMatchObject({ x: minX, y: minY })
+  expect(byId.get(created[3]!)).toMatchObject({ x: maxX, y: maxY })
+
+  // One undo restores every prior position.
+  await win.keyboard.press('Meta+z')
+  await expect
+    .poll(async () =>
+      (await scenePlacements(win)).every((p) => {
+        const b = before.get(p.id)!
+        return p.x === b.x && p.y === b.y
+      }),
+    )
+    .toBe(true)
+
+  await app.close()
+})
+
+test('normalize equalizes height to the median with one undo (AI-IMP-128)', async () => {
+  const { app, win } = await launch('ew-e2e-normalize-')
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // Five squares 100..500 → median height 300. Two grow, two shrink,
+  // one is already the median (a no-op member of the single command).
+  const sizes = [100, 200, 300, 400, 500]
+  for (let i = 0; i < sizes.length; i += 1) {
+    const nodeId = crypto.randomUUID()
+    await runCommand(win, 'CreateNode', { nodeId })
+    await runCommand(win, 'CreatePlacement', {
+      placementId: crypto.randomUUID(),
+      canvasId,
+      nodeId,
+      x: 200 + i * 700,
+      y: 300,
+      width: sizes[i]!,
+      height: sizes[i]!,
+    })
+  }
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 5)
+
+  await win.keyboard.press('Control+KeyA')
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 5)
+  const before = new Map((await placementGeom(win)).map((p) => [p.id, p.h]))
+
+  const beforeNorm = await revision(win)
+  await win.getByTestId('normalize-height').click()
+  await expect
+    .poll(async () => (await placementGeom(win)).every((p) => Math.abs(p.h - 300) < 1e-6))
+    .toBe(true)
+  expect(await contentCommandsSince(win, beforeNorm)).toHaveLength(1)
+
+  // One undo returns every tile to its original height.
+  await win.keyboard.press('Meta+z')
+  await expect
+    .poll(async () =>
+      (await placementGeom(win)).every((p) => Math.abs(p.h - before.get(p.id)!) < 1e-6),
+    )
+    .toBe(true)
 
   await app.close()
 })

@@ -197,7 +197,18 @@ export {
   SNAP_GUIDE_WIDTH_PX,
   type GuideSegment,
 } from './snap-guides'
-export { alignPayload, distributePayload, type AlignOp, type DistributeAxis } from './arrange'
+export {
+  alignPayload,
+  arrangePayload,
+  distributePayload,
+  normalizeSelection,
+  sortItemsForArrange,
+  type AlignOp,
+  type ArrangeOptions,
+  type ArrangeSortKey,
+  type DistributeAxis,
+  type NormalizeMode,
+} from './arrange'
 
 export { Culler, RENDER_PADDING, RESIDENCY_PADDING, type CullerHooks } from './culling'
 export { MIN_STROKE_SCREEN_PX, renderStrokeWidth } from './stroke-render'
