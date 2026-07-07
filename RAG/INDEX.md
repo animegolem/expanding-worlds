@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 5 | 1 |
-| Planned | 4 | 6 |
+| Planned | 5 | 6 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 138 |
-| **Total** | **24** | **154** |
+| Completed | 14 | 139 |
+| **Total** | **25** | **154** |
 
 ## In Progress
 
@@ -106,13 +106,17 @@
 
 ---
 
+### [[AI-EPIC-025-palette-picker|EPIC-025: Palette picker]]
+> The first tester's own ask (2026-07-07, verbatim intent): "the tool
+
+---
+
 ## Anomalies
 
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-131-maple-mono-editor-face|IMP-131]] — planned, no epic dependency found
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-140-image-body-treatment|IMP-140]] — planned, no epic dependency found
-- [[AI-IMP-141-chrome-cosmetic-sweep|IMP-141]] — planned, no epic dependency found
 - [[AI-IMP-151-interaction-physics-beats|IMP-151]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-154-decoration-verb-undo-capture|IMP-154]] — planned, no epic dependency found
@@ -137,11 +141,11 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4470 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1578 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1571 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (1492 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (1499 LOC)
 - apps/desktop/src/main/index.ts (983 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (846 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (899 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (812 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
@@ -210,9 +214,9 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
+- RAG/HUMAN-TESTING.md (349 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
-- RAG/HUMAN-TESTING.md (340 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
