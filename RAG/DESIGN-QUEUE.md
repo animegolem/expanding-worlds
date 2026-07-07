@@ -42,7 +42,15 @@ The Two Materials + kit 1.1's beat ledger, ratified at rev 0.56
   the target set — do renames, tag edits, appearance switches,
   bookmark edits, and trash/restore join board Mod+Z? All command
   inverses already exist; this is a product-feel call, not
-  plumbing.
+  plumbing. Sharpened by the 2026-07-07 Codex review of PR #9:
+  **Delete-frame** commits `TrashNode`, which Mod+Z cannot reach —
+  §8.4 says every menu verb is one undoable command, but §9.6/§9.7
+  route NODE recovery through Trash restore, and capturing
+  `TrashNode` would create dual recovery paths. Decide which
+  section bends (a reflexive Mod+Z after Delete-frame today
+  silently undoes the PREVIOUS action instead — that surprise is
+  the cost of waiting). The decoration-verb slice is already
+  fenced as AI-IMP-154 and does NOT wait on this.
 - **Dot-palette regularization** to `oklch(.76 .09 h)` (design
   pass, explicitly unratified): make the call with real art on the
   board — style-kit turn territory.

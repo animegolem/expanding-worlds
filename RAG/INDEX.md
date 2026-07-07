@@ -11,7 +11,7 @@
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 14 | 138 |
-| **Total** | **23** | **151** |
+| **Total** | **23** | **153** |
 
 ## In Progress
 
@@ -114,6 +114,8 @@
 - [[AI-IMP-141-chrome-cosmetic-sweep|IMP-141]] — planned, no epic dependency found
 - [[AI-IMP-151-interaction-physics-beats|IMP-151]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
+- [[AI-IMP-154-decoration-verb-undo-capture|IMP-154]] — planned, no epic dependency found
+- [[AI-IMP-155-menu-review-polish|IMP-155]] — planned, no epic dependency found
 
 ---
 
