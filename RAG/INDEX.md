@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 5 | 0 |
-| Planned | 4 | 4 |
+| Planned | 4 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 15 | 150 |
+| Completed | 15 | 152 |
 | **Total** | **25** | **162** |
 
 ## In Progress
@@ -63,7 +63,7 @@
 - [[AI-IMP-146-tiptap-editor-controller|IMP-146]] Tiptap editor controller — completed
 - [[AI-IMP-147-link-and-embed-atoms|IMP-147]] Link and embed atoms — completed
 - [[AI-IMP-148-heading-folding|IMP-148]] Heading folding — completed
-- [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — planned
+- [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — completed
 - [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — planned
 - [[AI-IMP-156-tiptap-token-integrity|IMP-156]] Tiptap token integrity — completed
 
@@ -108,7 +108,6 @@
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
-- [[AI-IMP-154-decoration-verb-undo-capture|IMP-154]] — planned, no epic dependency found
 - [[AI-IMP-159-crop-editor-overlay|IMP-159]] — planned, no epic dependency found
 - [[AI-IMP-161-charm-bar-adorned-bounds|IMP-161]] — planned, no epic dependency found
 - [[AI-IMP-163-owner-trashed-read-models|IMP-163]] — planned, no epic dependency found
@@ -187,11 +186,11 @@ Generated from tracked files; binary assets excluded.
 - packages/commands/src/payloads/structure.ts (476 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
+- RAG/HUMAN-TESTING.md (450 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - packages/persistence/src/handlers/notes.ts (434 LOC)
 - apps/desktop/src/renderer/theme.css (430 LOC)
-- RAG/HUMAN-TESTING.md (429 LOC)
 - apps/desktop/e2e/shell.spec.ts (426 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
@@ -238,7 +237,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>15 EPICs, 131 IMPs completed</summary>
+<summary>15 EPICs, 132 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

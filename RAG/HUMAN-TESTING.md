@@ -427,3 +427,24 @@ The artist's promise, round trip:
   the refusal should be calm and total (no half-project left).
 - The import row's copy ("nothing merges... refused whole") — does it
   read as reassuring or alarming?
+
+## AI-IMP-154 — decoration verbs join Mod+Z (2026-07-07)
+
+- Lock a drawn arrow via right-click, Mod+Z — does one undo free it?
+- Mixed selection (pins + a shape) → Lock all → one Mod+Z frees
+  everything at once. Does that read as one gesture?
+- Select only drawn shapes → the Gather row should be disabled with
+  "frames hold items, not decorations" — fair, or annoying?
+- Drag a stroke-width slider in the Dock, then Mod+Z: the slider
+  drag must NOT undo (your last board action should).
+
+## AI-IMP-149 — the format bar (2026-07-07)
+
+- Select text in a note: the bubble should appear beside the
+  selection, never clipped at editor edges. Bold/italic/code from
+  it, then check the raw Markdown carries **…**/*…*/`…`.
+- The link verb wraps the selection as [[Title]] — does that feel
+  right, or did you expect a URL prompt?
+- Inline code chips + true-italic em on the paper: legible at
+  panel size? Mod+B / Mod+I are listed under "In a note" in
+  Settings › Keyboard.
