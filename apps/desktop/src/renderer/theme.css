@@ -196,6 +196,11 @@
   --ew-obj-leaf-vein: #3c5c2e;
   /* The push pin's metal stem (Note Lifecycle beat 6) */
   --ew-pushpin-stem: #8a8f98;
+  /* The open book's binder rings (§8.5 rev 0.55, AI-IMP-134): brushed
+     metal straddling the seam; the ring HOLE is punched to --ew-board-color
+     so the board shows through. Survives light/dark/glass like the other
+     paper hardware. */
+  --ew-binder-ring: #9aa0aa;
 
   /* Note heading colors (~): loud by default, riding theme tokens.
      Notes are paper (light) on dark + light themes; glass overrides. */

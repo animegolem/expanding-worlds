@@ -23,6 +23,22 @@ import {
 import { createNoteProjectPort } from './project-port'
 import type { ProjectPort } from './note-editor'
 
+// §8.5 rev 0.55 (AI-IMP-134): the open book's geometry lives in a pure,
+// node-testable module under paper/; the store re-exports the side
+// chooser so the bound presentation's decision fn has one public home
+// alongside the panel lifecycle it belongs to.
+export {
+  chooseBindSide,
+  pageBaseSize,
+  boundEdgeLength,
+  ringCount,
+  ringOffsets,
+  WIDE_ASPECT,
+  RING_RADIUS,
+  DEFAULT_PAGE_EXTENT,
+  type BindSide,
+} from './paper/bound-geometry'
+
 export type PanelAnchor =
   | { kind: 'placement'; canvasId: string; placementId: string; label: string }
   | { kind: 'corner' }
