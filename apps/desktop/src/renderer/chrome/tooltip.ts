@@ -4,6 +4,7 @@
  * delay. Svelte action: `use:tooltip={{ name: 'Select', shortcut: 'V' }}`.
  */
 import { TOOLTIP_DELAY_MS } from './feel'
+import { Z } from '../z'
 
 export interface TooltipSpec {
   name: string
@@ -19,7 +20,7 @@ function ensureChip(): HTMLDivElement {
   chip.dataset['testid'] = 'tooltip-chip'
   chip.style.cssText = [
     'position: fixed',
-    'z-index: 1000',
+    `z-index: ${Z.tooltip}`,
     'display: none',
     'padding: 3px 8px',
     'background: var(--ew-tooltip-scrim)',
