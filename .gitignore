@@ -1,6 +1,8 @@
 .DS_Store
 RAG/.obsidian/workspace.json
 .claude/worktrees/
+# Codex watcher drop-box (hand-off to Claude's hook); never committed.
+.codex/
 
 # workspace
 node_modules/
