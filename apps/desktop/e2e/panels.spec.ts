@@ -153,7 +153,7 @@ test('closing a dirty panel inside the debounce window still commits (§7.1, AI-
 
   await win.mouse.dblclick(box.x + 400, box.y + 300)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/)
-  await win.locator('.note-panel .cm-content').click()
+  await win.locator('.note-panel [data-testid="note-editor-content"]').click()
   await win.keyboard.press('End')
   await win.keyboard.type(' and gull cries')
   await expect(win.getByTestId('note-pane-dirty')).toBeVisible()
@@ -195,8 +195,8 @@ test('panel sizing, pinned resize, and the big editor (§8.5 rev 0.31, AI-IMP-08
   await win.getByTestId('panel-expand').click()
   await expect(win.getByTestId('big-editor')).toBeVisible()
   await expect(win.getByTestId('big-editor-backdrop')).toBeVisible()
-  await expect(win.locator('[data-testid="big-editor"] .cm-content')).toContainText('stone quay')
-  await expect(win.locator('.note-panel .cm-editor')).toHaveCount(0) // one buffer, moved
+  await expect(win.locator('[data-testid="big-editor"] [data-testid="note-editor-content"]')).toContainText('stone quay')
+  await expect(win.locator('.note-panel [data-testid="note-editor-content"]')).toHaveCount(0) // one buffer, moved
   await win.keyboard.press('Escape')
   await expect(win.getByTestId('big-editor')).toHaveCount(0)
   await expect(win.getByTestId('note-editor')).toContainText('stone quay') // came home
@@ -251,7 +251,7 @@ test('panel sizing, pinned resize, and the big editor (§8.5 rev 0.31, AI-IMP-08
   // across the move.
   await win.getByTestId('panel-expand').click()
   await expect(win.getByTestId('big-editor')).toBeVisible()
-  await win.locator('[data-testid="big-editor"] .cm-content').click()
+  await win.locator('[data-testid="big-editor"] [data-testid="note-editor-content"]').click()
   await win.keyboard.press('ControlOrMeta+a')
   await win.keyboard.type('stone quay and tarred ropes')
   await expect(win.getByTestId('note-pane-dirty')).toBeVisible() // dirty intact mid-overlay
@@ -337,7 +337,7 @@ test('cross-canvas activation re-tethers at the destination; uses rows fly as hi
   // §8.1 history event AND the note opens tethered at the arrival.
   await win.mouse.dblclick(box.x + 300, box.y + 240)
   await expect(win.getByTestId('note-editor')).toContainText('Far')
-  await win.locator('.cm-content [data-link-title="Far"]').click({
+  await win.locator('[data-testid="note-editor-content"] [data-link-title="Far"]').click({
     modifiers: ['ControlOrMeta'],
   })
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
@@ -580,7 +580,7 @@ test('image dropped on a note panel lands on the board beside it (§6.1, AI-IMP-
   // A word about where it went.
   await expect(win.getByTestId('board-notice')).toContainText('Images live on the board')
 
-  // The note body is exactly as seeded — the drop never reached CM.
+  // The note body is exactly as seeded — the drop never reached the editor.
   const note = await runQuery<{ body: string }>(win, 'getNote', { noteId })
   expect(note.body).toBe('quiet body')
 

@@ -40,8 +40,8 @@
   import { tetheredPanelOpacity, tetheredPanelScale } from '../chrome/feel'
   import { openTagPanel } from '../tags/tag-panel'
   import TagAddField from '../tags/TagAddField.svelte'
-  import { wikiLinkCompletion } from './suggestions'
-  import { wikiLinkActivation, wikiLinkHighlighter } from './wiki-link-plugin'
+  import { wikiLinkSuggestions } from './suggestions'
+  import { wikiLinkActivation, wikiLinkDecorations } from './wiki-link-plugin'
   import { themeTokenValue } from '../theme'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
   import UsesList, { type UsesData } from './UsesList.svelte'
@@ -821,8 +821,8 @@
         onDirtyChanged: (value) => (dirty = value),
         onError: (message) => (error = message),
         extensions: [
-          wikiLinkHighlighter(resolution),
-          wikiLinkCompletion(port),
+          wikiLinkDecorations(resolution),
+          wikiLinkSuggestions(port),
           wikiLinkActivation((link) => {
             if (link.state === 'unresolved') requestOpenPhantom(link.title)
             else if (link.state === 'bound' || link.state === 'bound-trashed')
@@ -1345,15 +1345,80 @@
 
   /* A definite height, not content-sized: the writing surface is a
      real page (clicking the empty area below the last line lands the
-     cursor at document end, as in the docked pane). The panel now has
-     an explicit height, so the page fills whatever the size grants. */
-  .editor :global(.cm-editor) {
-    height: 100%;
+     cursor at document end, as in the docked pane). The ProseMirror
+     contenteditable (AI-IMP-146) fills whatever the size grants. */
+  .editor :global(.ew-note-prose) {
+    box-sizing: border-box;
+    min-height: 100%;
+    padding: 4px 8px;
     background: var(--ew-paper-page);
+    outline: none;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
   }
 
-  .editor :global(.cm-editor.cm-focused) {
-    outline: none;
+  .editor :global(.ew-note-prose p) {
+    margin: 0 0 0.5em;
+  }
+
+  /* §7.1 wiki-link states (rev 0.55): bound blue · unresolved purple ·
+     trashed grey · broken red STRIKETHROUGH (wavy retired). */
+  .editor :global(.ew-link) {
+    cursor: pointer;
+  }
+  .editor :global(.ew-link--bound) {
+    color: var(--ew-link-bound);
+    text-decoration: underline;
+    text-decoration-color: var(--ew-link-bound-decoration);
+  }
+  .editor :global(.ew-link--bound-trashed) {
+    color: var(--ew-link-muted);
+    text-decoration: underline dotted;
+  }
+  .editor :global(.ew-link--unresolved) {
+    color: var(--ew-link-unresolved);
+    text-decoration: underline dashed;
+    text-decoration-color: var(--ew-link-unresolved-decoration);
+  }
+  .editor :global(.ew-link--broken) {
+    color: var(--ew-link-broken);
+    text-decoration: line-through;
+    text-decoration-color: var(--ew-link-broken-decoration);
+  }
+
+  /* §7.2 `[[` completion popup (AI-IMP-147). Mounted on document.body so
+     it escapes panel overflow — hence unscoped :global. NEVER a
+     <datalist> (burned in hidden-window Electron). */
+  :global(.ew-suggestions) {
+    position: fixed;
+    z-index: 40;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    min-width: 160px;
+    max-width: 280px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--ew-paper-page);
+    border: 1px solid var(--ew-paper-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 16px var(--ew-menu-shadow);
+    font-size: 0.8rem;
+  }
+  :global(.ew-suggestion) {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  :global(.ew-suggestion--active) {
+    background: var(--ew-paper-hover);
+  }
+  :global(.ew-suggestion-detail) {
+    color: var(--ew-paper-text-subtle);
+    font-size: 0.72rem;
   }
 
   .canvas-phantom {
