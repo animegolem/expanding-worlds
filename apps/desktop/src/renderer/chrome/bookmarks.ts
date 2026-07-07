@@ -20,6 +20,12 @@ export interface BookmarkRow {
   viewport: { x: number; y: number; zoom: number } | null
   sortKey: number
   targetState: 'active' | 'trashed' | 'purged'
+  /** Which record Restore revives (§9.6/§9.7): 'canvas' for a
+   * directly-trashed board, 'node' when the owning node is the trashed
+   * record. null for active/purged rows. */
+  trashedKind: 'canvas' | 'node' | null
+  /** RestoreRecord target when `trashedKind === 'node'`. */
+  ownerNodeId: string
 }
 
 /** Every bookmark in menu order with joined target degradation state. */
