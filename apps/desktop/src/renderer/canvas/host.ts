@@ -270,7 +270,13 @@ async function loadTileSource(url: string): Promise<TileTextureSource> {
 }
 
 const CAMERA_PERSIST_DEBOUNCE_MS = 500
-const SELECTION_COLOR = 0x4a9df0
+// Selection outline/marquee color (AI-IMP-141): resolved LIVE from the
+// `--ew-accent` theme token, the same idiom as frameColors/dotColor —
+// the engine reads no CSS, so the host resolves the token at draw time
+// and both themes restyle without a hardcoded hex.
+function selectionColor(): number {
+  return cssColorToNumber(themeTokenValue('--ew-accent'))
+}
 /** §4.9 (AI-IMP-127): while an item drag hovers a frame the frame
  * focuses and the rest of the board dims to this alpha — the "this will
  * land inside" affordance. Instant (no fade), so no §8.2 clock. */
@@ -377,7 +383,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
           const pts = corners.map((c) => controller.camera.worldToScreen(c))
           selectionGfx
             .poly(pts.flatMap((p) => [p.x, p.y]))
-            .stroke({ width: SELECTION_OUTLINE_STROKE_PX, color: SELECTION_COLOR })
+            .stroke({ width: SELECTION_OUTLINE_STROKE_PX, color: selectionColor() })
           continue
         }
       }
@@ -394,7 +400,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const pad = SELECTION_OUTLINE_PAD_PX
       selectionGfx
         .rect(tl.x - pad, tl.y - pad, br.x - tl.x + pad * 2, br.y - tl.y + pad * 2)
-        .stroke({ width: SELECTION_OUTLINE_STROKE_PX, color: SELECTION_COLOR })
+        .stroke({ width: SELECTION_OUTLINE_STROKE_PX, color: selectionColor() })
     }
   }
 
@@ -495,10 +501,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     renderMarquee(rect: Rect | null) {
       marqueeGfx.clear()
       if (rect) {
+        const accent = selectionColor()
         marqueeGfx
           .rect(rect.x, rect.y, rect.width, rect.height)
-          .fill({ color: SELECTION_COLOR, alpha: 0.08 })
-          .stroke({ width: 1, color: SELECTION_COLOR })
+          .fill({ color: accent, alpha: 0.08 })
+          .stroke({ width: 1, color: accent })
       }
     },
     renderGuides(guides: SnapGuide[]) {

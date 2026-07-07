@@ -107,6 +107,12 @@ function injectStyles(): void {
   style.textContent = `
     .ew-charms { transition: opacity 240ms ease-out; opacity: 1; }
     .ew-charms.disengaged { opacity: 0; }
+    /* A faded layer must be pointer-transparent too (AI-IMP-141): the
+       bar/popovers carry inline pointer-events:auto, so an opacity-0
+       bar would still swallow clicks meant for what sits under it
+       (note-panel links, board objects). !important beats those
+       inline values while the layer is disengaged. */
+    .ew-charms.disengaged, .ew-charms.disengaged * { pointer-events: none !important; }
     .ew-charms .hint-group { opacity: ${HINT_CHARM_REST_OPACITY}; transition: opacity 120ms ease-out; }
     .ew-charms .hint-group:hover { opacity: 1; }
   `
@@ -127,10 +133,17 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   // ------------------------------------------------------- charm bar
   const bar = document.createElement('div')
   bar.dataset['testid'] = 'charm-bar'
+  // §8.4 bar restyle (AI-IMP-141): the kit CharmBar surface — menu
+  // ground, soft drop shadow, roomier radius; buttons below pick up
+  // the kit's 26px 7px-radius transparent style. Vertical padding is
+  // 2px (not the kit's 6px) so the OUTER height stays the pre-restyle
+  // 32px: the charms layer floats above note panels (their z port is
+  // pending), and a taller bar would cover the panel's first text
+  // line — clicks into it were intercepted (see ticket).
   bar.style.cssText =
-    'position:absolute;display:none;gap:2px;align-items:center;' +
-    'padding:3px 5px;background:var(--ew-surface);border:1px solid var(--ew-border);' +
-    'border-radius:7px;pointer-events:auto;font-size:13px;'
+    'position:absolute;display:none;gap:4px;align-items:center;' +
+    'padding:2px 8px;background:var(--ew-surface-menu);border:1px solid var(--ew-border);' +
+    'border-radius:10px;box-shadow:0 8px 22px var(--ew-shadow);pointer-events:auto;font-size:13px;'
   layer.appendChild(bar)
 
   // §4.8 rev 0.45: the `#` popover is a completing add-field ABOVE the
@@ -470,8 +483,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     button.dataset['testid'] = testId
     button.textContent = glyph
     button.style.cssText =
-      'min-width:24px;height:24px;padding:0 5px;background:var(--ew-surface-raised);color:var(--ew-text);' +
-      'border:1px solid var(--ew-border-strong);border-radius:5px;cursor:pointer;font-size:12px;'
+      'width:26px;height:26px;padding:0;display:flex;align-items:center;justify-content:center;' +
+      'background:transparent;color:var(--ew-text);border:none;border-radius:7px;cursor:pointer;font-size:13px;'
     button.addEventListener('click', (event) => {
       event.stopPropagation()
       onClick()
@@ -484,7 +497,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
 
   function divider(): void {
     const line = document.createElement('span')
-    line.style.cssText = 'width:1px;height:16px;background:var(--ew-border-strong);margin:0 3px;'
+    line.style.cssText = 'width:1px;height:16px;background:var(--ew-border);margin:0 3px;'
     bar.appendChild(line)
   }
 
@@ -638,15 +651,51 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   void refreshCorner()
 
   // ---------------------------------------------------- hint charms
-  function hintButton(testId: string, glyph: string, name: string): HTMLButtonElement {
+  // §8.4 hint glyphs, drawn (AI-IMP-141): the kit HintCharm bordered-div
+  // shapes replace the unicode ¶/⊡ — page = a small document with two
+  // rule lines; frame = a framed box with a dot and a triangle. The ink
+  // stays `--ew-text` (parity with the glyphs these replace) and the
+  // body is transparent so the button's own scrim chip shows through.
+  function hintShape(kind: 'page' | 'frame'): HTMLDivElement {
+    const shape = document.createElement('div')
+    if (kind === 'frame') {
+      shape.style.cssText =
+        'position:relative;box-sizing:border-box;width:14px;height:14px;overflow:hidden;' +
+        'border:1.5px solid var(--ew-text);border-radius:2.5px;'
+      const dot = document.createElement('div')
+      dot.style.cssText =
+        'position:absolute;left:2px;top:2px;width:3.5px;height:3.5px;box-sizing:border-box;' +
+        'border:1px solid var(--ew-text);border-radius:50%;'
+      const triangle = document.createElement('div')
+      triangle.style.cssText =
+        'position:absolute;left:3px;bottom:-1px;width:0;height:0;' +
+        'border-left:4px solid transparent;border-right:4px solid transparent;' +
+        'border-bottom:7px solid var(--ew-text);'
+      shape.append(dot, triangle)
+      return shape
+    }
+    shape.style.cssText =
+      'position:relative;box-sizing:border-box;width:12px;height:15px;' +
+      'border:1.5px solid var(--ew-text);border-radius:2.5px;'
+    const line1 = document.createElement('div')
+    line1.style.cssText =
+      'position:absolute;left:2.5px;right:2.5px;top:4px;border-top:1.5px solid var(--ew-text);'
+    const line2 = document.createElement('div')
+    line2.style.cssText =
+      'position:absolute;left:2.5px;right:3.5px;top:7.5px;border-top:1.5px solid var(--ew-text);'
+    shape.append(line1, line2)
+    return shape
+  }
+
+  function hintButton(testId: string, kind: 'page' | 'frame', name: string): HTMLButtonElement {
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset['testid'] = testId
-    button.textContent = glyph
     button.style.cssText =
       'width:18px;height:18px;display:grid;place-items:center;padding:0;' +
       'background:var(--ew-art-chip-scrim);color:var(--ew-text);border:none;border-radius:4px;' +
       'cursor:pointer;font-size:11px;pointer-events:auto;'
+    button.appendChild(hintShape(kind))
     const tip = tooltip(button, { name })
     disposers.push(tip.destroy)
     return button
@@ -672,7 +721,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       'background:var(--ew-art-chip-scrim-soft);pointer-events:none;'
     const created: CharmEntry = { group, page: null, frame: null, disposers: [] }
     if (wantsPage) {
-      const page = hintButton(`hint-page-${item.id}`, PAGE_GLYPH, 'Open note')
+      const page = hintButton(`hint-page-${item.id}`, 'page', 'Open note')
       page.addEventListener('click', (event) => {
         event.stopPropagation()
         const current = host.controller
@@ -691,7 +740,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       created.page = page
     }
     if (wantsFrame) {
-      const frame = hintButton(`hint-frame-${item.id}`, FRAME_GLYPH, 'Dive into canvas')
+      const frame = hintButton(`hint-frame-${item.id}`, 'frame', 'Dive into canvas')
       frame.addEventListener('click', (event) => {
         event.stopPropagation()
         const current = host.controller
@@ -771,6 +820,10 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       const barWidth = bar.offsetWidth || 200
       bar.style.left = `${bottomCenter.x - barWidth / 2}px`
       bar.style.top = `${bottomCenter.y + 10}px`
+      // Popovers hang below the bar with a 2px gap, derived from the
+      // LIVE bar height (AI-IMP-141) — the old fixed +44 encoded the
+      // pre-restyle 32px bar and would sit under the taller kit bar.
+      const popoverTop = bottomCenter.y + 10 + (bar.offsetHeight || 40) + 2
       lockButton.textContent = selected.locked === 1 ? '🔓' : '🔒'
       const tipSpec = selected.locked === 1 ? 'Unlock' : 'Lock'
       lockButton.setAttribute('aria-label', tipSpec)
@@ -778,14 +831,14 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       makeCanvasButton.style.opacity = selected.childCanvasId !== null ? '0.4' : '1'
       if (chipsFor === selected.id) {
         chips.style.left = `${bottomCenter.x - barWidth / 2}px`
-        chips.style.top = `${bottomCenter.y + 44}px`
+        chips.style.top = `${popoverTop}px`
       } else {
         chipsFor = null
         chips.style.display = 'none'
       }
       if (appearanceFor === selected.id) {
         appearance.style.left = `${bottomCenter.x - barWidth / 2}px`
-        appearance.style.top = `${bottomCenter.y + 44}px`
+        appearance.style.top = `${popoverTop}px`
         // Keep card's enabled state fresh if a note is attached/detached
         // while the popover is open.
         setCardEnabled(selected.noteId !== null)
