@@ -384,6 +384,71 @@ test('note panel add-field: complete existing, create-and-assign novel, one undo
   await app.close()
 })
 
+/**
+ * AI-IMP-169 (§17 item 8 "rename a tag"): RenameTag has no UI verb yet
+ * (AI-IMP-171) — this proves the command's rename flows into every live
+ * surface that re-queries: the charm chip row, the completion
+ * vocabulary, and the tag panel reached through the renamed chip. Tag
+ * identity is independent of name (§4.8), so the same tagId carries
+ * the assignment across the rename.
+ */
+test('RenameTag propagates: chip row, completion vocabulary, panel reopen (§17 item 8)', async () => {
+  const { app, win } = await launchApp('ew-e2e-tag-rename-')
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'CreatePlacement', {
+    placementId,
+    canvasId,
+    nodeId,
+    x: 200,
+    y: 200,
+    width: 60,
+    height: 60,
+  })
+  const tagId = crypto.randomUUID()
+  await exec(win, 'CreateTag', { tagId, name: 'ruins' })
+  await exec(win, 'AssignTagToNode', { tagId, nodeId })
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Before: the carrier's chip row reads #ruins.
+  await win.mouse.click(box.x + 200, box.y + 200)
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection())).toEqual([placementId])
+  await win.getByTestId('charm-tags').click()
+  await expect(win.getByTestId('charm-tag-chip-row')).toContainText('#ruins')
+
+  await exec(win, 'RenameTag', { tagId, name: 'wrecks' })
+
+  // The chip row re-queries on reopen: new name only, same chip id.
+  await win.getByTestId('charm-tags').click() // close
+  await win.getByTestId('charm-tags').click() // reopen → re-query
+  await expect(win.getByTestId('charm-tag-chip-row')).toContainText('#wrecks')
+  await expect(win.getByTestId('charm-tag-chip-row')).not.toContainText('#ruins')
+
+  // The completion vocabulary followed: the new name completes, the
+  // old name is nobody's prefix anymore.
+  const addInput = win.getByTestId('charm-tag-add-input')
+  await addInput.fill('wr')
+  await expect(win.getByTestId('charm-tag-add-option')).toHaveText('wrecks')
+  await addInput.fill('ru')
+  await expect(win.getByTestId('charm-tag-add-option')).toHaveCount(0)
+  await addInput.fill('')
+
+  // The panel reached through the SAME tag id opens under the new
+  // name with the assignment intact.
+  await win.getByTestId(`tag-chip-${tagId}`).click()
+  await expect(win.getByTestId('tag-panel')).toBeVisible()
+  await expect(win.getByTestId('tag-panel-input')).toHaveValue('wrecks')
+  await expect(win.getByTestId('tag-panel').getByTestId('tag-panel-row')).toHaveCount(1)
+
+  await app.close()
+})
+
 test('a phantom note panel carries no tag add-field (§4.8, AI-IMP-108)', async () => {
   const { app, win } = await launchApp('ew-e2e-tag-add-phantom-')
   // The board's own note draft is a phantom until the first edit.

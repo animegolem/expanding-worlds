@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 4 | 1 |
+| Planned | 4 | 2 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 18 | 161 |
-| **Total** | **25** | **167** |
+| Completed | 18 | 163 |
+| **Total** | **25** | **170** |
 
 ## In Progress
 
@@ -34,6 +34,9 @@
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
 - [[AI-IMP-157-project-export-pipeline|IMP-157]] Project export pipeline — completed
 - [[AI-IMP-158-project-import-roundtrip|IMP-158]] Project import roundtrip — completed
+- [[AI-IMP-169-signoff-gap-tests|IMP-169]] Signoff gap tests — completed
+- [[AI-IMP-171-tag-rename-affordance|IMP-171]] Tag rename affordance — planned
+- [[AI-IMP-172-decline-toast-board-name|IMP-172]] Decline toast board name — completed
 
 ---
 
@@ -116,9 +119,9 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
+- apps/desktop/e2e/context-menus.spec.ts (620 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (604 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
-- apps/desktop/e2e/context-menus.spec.ts (603 LOC)
 
 ### > 300 LOC
 
@@ -150,6 +153,7 @@ Generated from tracked files; binary assets excluded.
 - packages/commands/src/payloads/structure.ts (476 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
+- apps/desktop/e2e/tags.spec.ts (460 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/e2e/shell.spec.ts (439 LOC)
 - apps/desktop/src/renderer/theme.css (437 LOC)
@@ -160,10 +164,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (418 LOC)
 - packages/persistence/src/queries-search.test.ts (411 LOC)
 - apps/desktop/e2e/charms.spec.ts (400 LOC)
-- apps/desktop/e2e/tags.spec.ts (395 LOC)
+- apps/desktop/e2e/outline.spec.ts (397 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (372 LOC)
+- apps/desktop/e2e/undo.spec.ts (367 LOC)
 - packages/canvas-engine/src/hit-test.test.ts (363 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (362 LOC)
 - packages/persistence/src/queries-gallery.test.ts (361 LOC)
@@ -186,7 +191,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
-- apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
@@ -203,7 +207,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>18 EPICs, 134 IMPs completed</summary>
+<summary>18 EPICs, 136 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

@@ -316,3 +316,82 @@ test('outline placement flows: place, drag to board, dive, open note (§6.10)', 
 
   await app.close()
 })
+
+/**
+ * AI-IMP-169 (§17 item 24): the outline takeover excludes trashed
+ * records by default and drawn connectors appear nowhere as edges —
+ * connectors are §4.9 visual-layer items, and with the graph takeover
+ * deferred (rev 0.62) the outline is invariant 19's only Phase 1 view
+ * checkpoint. Query-level exclusion is unit-tested
+ * (queries-structure.test.ts); this walks the REAL Trash/Restore
+ * commands through the takeover view.
+ */
+test('outline: trashed excluded by default, connectors never rows, restore returns the row (§17 item 24)', async () => {
+  const { app, win } = await launchApp('ew-e2e-outline-trash-')
+  const rootCanvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // Two titled carriers on the root and a connector anchored between
+  // their placements.
+  const seed = async (title: string, x: number) => {
+    const nodeId = crypto.randomUUID()
+    const noteId = crypto.randomUUID()
+    const placementId = crypto.randomUUID()
+    await exec(win, 'CreateNote', { noteId, title, body: '' })
+    await exec(win, 'CreateNode', { nodeId })
+    await exec(win, 'AttachNoteToNode', { nodeId, noteId })
+    await exec(win, 'CreatePlacement', {
+      placementId,
+      canvasId: rootCanvasId,
+      nodeId,
+      x,
+      y: 200,
+      width: 44,
+      height: 44,
+    })
+    return { nodeId, placementId }
+  }
+  const keeper = await seed('Keeper', 150)
+  const doomed = await seed('Doomed', 400)
+  const connectorId = crypto.randomUUID()
+  await exec(win, 'CreateDecoration', {
+    decorationId: connectorId,
+    canvasId: rootCanvasId,
+    kind: 'connector',
+    data: { x1: 194, y1: 222, x2: 400, y2: 222, stroke: '#dde3ea', strokeWidth: 2 },
+    anchorStartPlacementId: keeper.placementId,
+    anchorEndPlacementId: doomed.placementId,
+  })
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().decorations))
+    .toBe(1)
+
+  // Both rows before the trash.
+  await win.getByTestId('charm-outline').click()
+  const rootSection = win.getByTestId(`outline-canvas-${rootCanvasId}`)
+  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(2)
+
+  // The connector is a decoration, not a child: it has no row and its
+  // id appears nowhere in the takeover's DOM.
+  const outlineHtml = await win.getByTestId('outline-view').innerHTML()
+  expect(outlineHtml).not.toContain(connectorId)
+
+  // Trash one carrier through the REAL command: its row is gone on
+  // reopen; the survivor and the connector-free shape remain.
+  await win.keyboard.press('Escape')
+  await exec(win, 'TrashNode', { nodeId: doomed.nodeId })
+  await win.getByTestId('charm-outline').click()
+  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(1)
+  await expect(rootSection.getByTestId('outline-child-row')).toContainText('Keeper')
+  await expect(rootSection.getByTestId('outline-child-row')).not.toContainText('Doomed')
+
+  // Restore brings the row back.
+  await win.keyboard.press('Escape')
+  await exec(win, 'RestoreRecord', { kind: 'node', id: doomed.nodeId })
+  await win.getByTestId('charm-outline').click()
+  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(2)
+  await expect(
+    rootSection.getByTestId('outline-child-row').filter({ hasText: 'Doomed' }),
+  ).toHaveCount(1)
+
+  await app.close()
+})

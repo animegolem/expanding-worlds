@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
-import { launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
+import { exec, launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * §16 portable export (AI-IMP-157; container rev 0.57): the renderer →
@@ -103,5 +103,93 @@ test('the roundtrip: import materializes a sibling project that opens with the c
     { query: 'Survivor' },
   )
   expect(JSON.stringify(search)).toContain('Survivor')
+  await second.app.close()
+})
+
+/**
+ * AI-IMP-169 (§17 item 11): a legal containment cycle (§4.4 — Board A
+ * on the root, B on A, A placed back on B) must not hang navigation,
+ * the outline projection, or the §16 export/import walkers. The
+ * outline's alias-row semantics live in outline.spec; THIS test walks
+ * the loop as a user would and roundtrips the archive.
+ */
+test('a containment cycle survives navigation, graph queries, and the roundtrip (§17 item 11)', async () => {
+  const { app, win } = await launchApp('ew-e2e-cycle-')
+  const rootCanvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  const nodeA = crypto.randomUUID()
+  const noteA = crypto.randomUUID()
+  const canvasA = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: noteA, title: 'Loop Board', body: '' })
+  await exec(win, 'CreateNode', { nodeId: nodeA })
+  await exec(win, 'AttachNoteToNode', { nodeId: nodeA, noteId: noteA })
+  await exec(win, 'CreateCanvas', { canvasId: canvasA, nodeId: nodeA })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: rootCanvasId,
+    nodeId: nodeA,
+  })
+  const nodeB = crypto.randomUUID()
+  const canvasB = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: nodeB })
+  await exec(win, 'CreateCanvas', { canvasId: canvasB, nodeId: nodeB })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: canvasA,
+    nodeId: nodeB,
+  })
+  // The cycle: A placed back on B.
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: canvasB,
+    nodeId: nodeA,
+  })
+
+  // Walk the loop twice — entry-route history, so entries grow
+  // linearly and every hop lands (no collapse, no hang).
+  for (const [id, label] of [
+    [canvasA, 'Loop Board'],
+    [canvasB, 'Inner'],
+    [canvasA, 'Loop Board'],
+    [canvasB, 'Inner'],
+  ] as const) {
+    await win.evaluate(
+      ({ id, label }) => window.__ewNav!.navigateTo(id, label),
+      { id, label },
+    )
+    await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(id)
+  }
+  const nav = await win.evaluate(() => ({
+    entries: window.__ewNav!.entries().length,
+    cursor: window.__ewNav!.cursor(),
+  }))
+  expect(nav).toEqual({ entries: 5, cursor: 4 })
+
+  // Graph projection terminates: three canvases, flat.
+  const outline = await runQuery<unknown[]>(win, 'getOutlineTree')
+  expect(outline).toHaveLength(3)
+
+  // The §16 walkers: export the cycle, import it back, and the copy
+  // opens with the loop intact and its projection still terminating.
+  const archive = join(mkdtempSync(join(tmpdir(), 'ew-e2e-cycle-out-')), 'loop.ewproj')
+  const exported = await win.evaluate((destPath) => window.ew.export.run(destPath, false), archive)
+  if (!exported.ok) throw new Error(`export failed: ${exported.message}`)
+  const imported = await win.evaluate(
+    (archivePath) => window.ew.export.import(archivePath),
+    archive,
+  )
+  if (!imported.ok) throw new Error(`import refused: ${imported.message}`)
+  await app.close()
+
+  const second = await launchAppInDir(imported.dir)
+  const importedOutline = await runQuery<unknown[]>(second.win, 'getOutlineTree')
+  expect(importedOutline).toHaveLength(3)
+  await second.win.evaluate(
+    ({ id, label }) => window.__ewNav!.navigateTo(id, label),
+    { id: canvasA, label: 'Loop Board' },
+  )
+  await expect
+    .poll(() => second.win.evaluate(() => window.__ewDebug!.canvasId()))
+    .toBe(canvasA)
   await second.app.close()
 })

@@ -250,6 +250,87 @@ test('place-on-board (§8.5) is captured across gateways and Mod+Z reverts it', 
   await app.close()
 })
 
+/**
+ * AI-IMP-169 (§17 item 19, rev 0.58): the same-canvas presence fence.
+ * A structural entry made on another board DECLINES from here — a
+ * toast names that board, the entry stays on the stack — and applies
+ * normally once the user stands on the board it belongs to. The
+ * mechanism is unit-tested (undo-stack.test.ts); this proves the
+ * keyboard route, the toast surface, and the walk end to end.
+ */
+test('cross-canvas undo declines with a board-naming toast, then applies on its board (§10.2 rev 0.58)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-crossboard-')
+  await readyUndo(win)
+  const rootCanvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+
+  // Board B, owned by a titled node so the decline can NAME it.
+  const boardNode = crypto.randomUUID()
+  const boardNote = crypto.randomUUID()
+  const canvasB = crypto.randomUUID()
+  await exec(win, 'CreateNote', { noteId: boardNote, title: 'Ruins Board', body: '' })
+  await exec(win, 'CreateNode', { nodeId: boardNode })
+  await exec(win, 'AttachNoteToNode', { nodeId: boardNode, noteId: boardNote })
+  await exec(win, 'CreateCanvas', { canvasId: canvasB, nodeId: boardNode })
+
+  // A placement ON B, then stand on B and move it — the structural
+  // entry records canvasB as its home.
+  const nodeOnB = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: nodeOnB })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId: canvasB,
+    nodeId: nodeOnB,
+    x: 200,
+    y: 200,
+    width: 44,
+    height: 44,
+  })
+  await win.evaluate(
+    ({ id }) => window.__ewNav!.navigateTo(id, 'Ruins Board'),
+    { id: canvasB },
+  )
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const before = (await placements(win))[0]!
+
+  await win.mouse.move(box.x + before.x + 12, box.y + before.y + 12)
+  await win.mouse.down()
+  await win.mouse.move(box.x + before.x + 132, box.y + before.y + 12, { steps: 6 })
+  await win.mouse.up()
+  await expect.poll(async () => Math.round((await placements(win))[0]!.x)).toBe(
+    Math.round(before.x + 120),
+  )
+  const depthAfterMove = await depth(win)
+
+  // Back home: Mod+Z declines — the toast names Ruins Board, the
+  // entry survives, and B's placement has NOT moved back.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Home'), { id: rootCanvasId })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(rootCanvasId)
+  await win.mouse.click(box.x + 40, box.y + 40)
+  await win.keyboard.press('Meta+z')
+  // The stack's toasts ride the single-slot 'undo' surface (its
+  // data-testid), replacing rather than stacking.
+  await expect(win.getByTestId('undo')).toContainText('Ruins Board')
+  await expect(win.getByTestId('undo')).toContainText('open that board')
+  expect(await depth(win)).toBe(depthAfterMove)
+
+  // Stand on B: the same Mod+Z applies and the move reverts.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Ruins Board'), { id: canvasB })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await win.mouse.click(box.x + 40, box.y + 40)
+  await win.keyboard.press('Meta+z')
+  await expect.poll(async () => Math.round((await placements(win))[0]!.x)).toBe(
+    Math.round(before.x),
+  )
+  expect(await depth(win)).toBe(depthAfterMove - 1)
+
+  await app.close()
+})
+
 test('the ☰ Undo/Redo rows flip live with stack depth', async () => {
   const { app, win } = await launchApp('ew-e2e-undo-menu-')
   await readyUndo(win)
