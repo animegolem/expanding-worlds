@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 4 | 0 |
-| Planned | 5 | 6 |
+| Planned | 5 | 8 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 15 | 143 |
-| **Total** | **25** | **154** |
+| **Total** | **25** | **157** |
 
 ## In Progress
 
@@ -23,6 +23,8 @@
 - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
 - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — completed
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
+- [[AI-IMP-157-project-export-pipeline|IMP-157]] Project export pipeline — planned
+- [[AI-IMP-158-project-import-roundtrip|IMP-158]] Project import roundtrip — planned
 
 ---
 
@@ -108,6 +110,7 @@
 - [[AI-IMP-140-image-body-treatment|IMP-140]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-154-decoration-verb-undo-capture|IMP-154]] — planned, no epic dependency found
+- [[AI-IMP-159-crop-editor-overlay|IMP-159]] — planned, no epic dependency found
 
 ---
 
@@ -125,7 +128,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5863 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4470 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4503 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1938 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1581 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1576 LOC)
