@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.61         | 7 July 2026      |
+| Accepted for Phase 1 | 0.62         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -3638,9 +3638,11 @@ and that purging it produces a broken link offering explicit recreate.
 23. Verify Trash retention defaults to Never and that permanent purge
 invalidates dependent undo and enables safe garbage collection.
 
-24. Open the outline and graph takeover views and confirm trashed
-records are excluded by default and drawn connectors appear as
-edges in neither.
+24. Open the outline takeover view and confirm trashed records are
+excluded by default and drawn connectors appear nowhere as edges.
+(The graph takeover is deferred to its own epic — rev 0.62; the
+connectors-are-not-edges invariant is checked in the outline and
+the data model until it lands.)
 
 25. Close and reopen the application without data loss, duplicate
 project writers, or unreconciled temporary imports, including a note
@@ -3649,6 +3651,25 @@ edit still inside its debounce window at quit.
 26. Export the project, import it into a fresh directory, and verify
 record identities, links, tags, placements, bookmarks, Trash, and
 original assets match the source project.
+
+Items 27–30 joined at rev 0.62: Phase 1 grew past the original
+slice, and the sign-off walks what ships.
+
+27. Open the gallery, browse the whole collection at two thumbnail
+sizes, Quick Look one work, filter within the gallery, and place a
+work from the gallery onto the active canvas.
+
+28. Open the library beside a project, ingest one asset with an
+explicit tag border, verify a project drop mirrors into the library,
+and clear the seeded example set.
+
+29. Draw a frame, drop an image so the frame captures and arranges
+it, retitle the frame, and verify frame membership survives moves.
+
+30. In a note, type Markdown that styles live per §7.1, fold a
+heading and verify the saved body is byte-identical, and verify a
+session snapshot moment produces a restorable backup (restore
+materializes a sibling copy that opens).
 
 # 18. Acceptance criteria
 
@@ -4563,3 +4584,9 @@ Accepted for the Phase 1 prototype:
   viewer's fullscreen button is true borderless OS fullscreen, never
   maximize-to-app-window; Esc unwinds fullscreen → window → board
   (rev 0.61, §4.7).
+
+- §17/§18 reconciled for the sign-off (rev 0.62, EPIC-008 FR-5
+  prerequisite): item 24 narrows to the outline (the graph takeover
+  is EPIC-021's, unshipped); items 27–30 join for the gallery,
+  library, frames, and rich-note/backup surfaces Phase 1 grew. No
+  criterion was weakened; the audit walks what ships.
