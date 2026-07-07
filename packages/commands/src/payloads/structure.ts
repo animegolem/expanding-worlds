@@ -86,6 +86,11 @@ export type NodeAppearance =
   /** rev 0.31: card chrome renders the attached note — no payload,
    * content comes from the note via the read model. */
   | { kind: 'card' }
+  /** §4.9 rev 0.54 (EPIC-017): a frame is an ordinary node whose
+   * board presence is a drawn region other content sits inside —
+   * payload-less like card; the drawn size rides placement geometry.
+   * Membership is recorded in frame_member, never in the appearance. */
+  | { kind: 'frame' }
 
 export interface SetNodeAppearancePayload {
   nodeId: string

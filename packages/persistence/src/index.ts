@@ -68,6 +68,13 @@ export {
   type OrderedItem,
 } from './render-order'
 export { registerStructureQueries, type CanvasContentItem } from './queries-structure'
+export { registerFrameHandlers } from './handlers/frames'
+export {
+  registerFrameQueries,
+  type FrameTransitiveMembers,
+  type FrameTree,
+  type FrameTreeNode,
+} from './queries-frames'
 export {
   registerGalleryQueries,
   type GalleryIndexEntry,

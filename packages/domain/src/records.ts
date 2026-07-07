@@ -38,7 +38,16 @@ export interface NoteRecord extends LifecycleFields, TimestampFields {
   body: string
 }
 
-export type AppearanceKind = 'dot' | 'icon' | 'image' | 'card'
+/**
+ * §4.6/§4.9. A growing domain (EPIC-022): appearance kinds are
+ * validated in command handlers, never a SQLite CHECK — migration
+ * 0007 dropped the node.appearance_kind CHECK so 'frame' and every
+ * future kind needs no schema change. 'frame' (EPIC-017) renders the
+ * node's board presence as a drawn region that other content sits
+ * inside; the region's size rides the placement geometry exactly as
+ * 'card' does — no new geometry storage.
+ */
+export type AppearanceKind = 'dot' | 'icon' | 'image' | 'card' | 'frame'
 
 /** §4.6: non-destructive crop/framing for image appearances. */
 export interface AppearanceCrop {

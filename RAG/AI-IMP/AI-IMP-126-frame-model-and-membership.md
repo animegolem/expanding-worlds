@@ -107,20 +107,20 @@ command constants.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] `'frame'` appearance kind accepted end-to-end (handler
+- [x] `'frame'` appearance kind accepted end-to-end (handler
       validation, no CHECK constraint); unit proves an existing
       switch doesn't silently drop it.
-- [ ] Migration 0007 applies clean on a v6 db; single-parent PK
+- [x] Migration 0007 applies clean on a v6 db; single-parent PK
       proven by test (second capture re-parents, never duplicates).
-- [ ] CaptureInFrame/ReleaseFromFrame: inverses exact (undo
+- [x] CaptureInFrame/ReleaseFromFrame: inverses exact (undo
       restores prior parent), same-canvas + frame-kind + cycle
       validation each covered by a failing-case unit.
-- [ ] getFrameTree: nesting renders as a tree (frame in frame),
+- [x] getFrameTree: nesting renders as a tree (frame in frame),
       transitive member listing for the move batch; unit with a
       3-level nest.
-- [ ] Lifecycle: frame trash preserves membership + members stay
+- [x] Lifecycle: frame trash preserves membership + members stay
       active; restore rejoins; purge cleans membership rows; units.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden (suite must stay green — no renderer work here).
 
 ### Acceptance Criteria
@@ -147,3 +147,61 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Node CHECK dropped, not widened (design decision inside 0007).**
+Migration 0007 does TWO things under one number: it creates
+`frame_member` AND rebuilds `node` to REMOVE the
+`appearance_kind` CHECK entirely (not widen it to include
+'frame'). The existing CHECK would have rejected `appearance_kind
+= 'frame'` at the SQLite level, so *something* had to change; the
+EPIC-022 growing-domain convention plus the checklist's "no CHECK
+constraint" wording both point to dropping it. This is the last
+node rebuild for an appearance kind — future kinds need no
+migration. The rebuild dance mirrors 0006 exactly (disableForeignKeys,
+root triggers + ix_node_note recreated).
+
+**0006 test updated (necessary, just outside the strict file
+list).** Because 0007 removes the appearance CHECK, two assertions
+in `0006-card-appearance.test.ts` — which run `createProject`
+(migrates to HEAD) — became false: "still rejects unknown kinds"
+(sticker now inserts) and `expect(ran).toEqual([6])` (a schema-5 db
+now applies [6, 7]). Updated both to reflect the CHECK's removal.
+This is a direct, unavoidable consequence of the schema change, not
+scope creep.
+
+**FK cascade over manual purge hooks.** Both `frame_member` FKs are
+`ON DELETE CASCADE`. This makes every hard-delete path
+(DeletePlacement, DeleteContent, canvas/node purge) drop membership
+rows automatically with zero edits to `lifecycle.ts` — the ticket's
+"purge cleans membership rows" falls out structurally. Trade-off: a
+DeletePlacement of a *member* (an undoable hard delete) drops its
+membership row, and its inverse RestorePlacement does NOT restore it
+(the row cascaded away). Not covered by acceptance (which scopes
+precise undo to Capture/Release inverses and frame-NODE trash/
+restore), and DeletePlacement is a different user action than
+Capture, so this is an acceptable, documented gap. 127/a later
+ticket can teach RestorePlacement to re-capture if the feel calls
+for it.
+
+**Scene payload `frameParent` deferred to 127.** The ticket made it
+optional ("if that is the cleanest engine feed"). `canvas-engine`
+(where the scene item type lives) is outside my file fence, and 127
+owns the render feed decision, so I shipped `getFrameTree` +
+`getFrameTransitiveMembers` as the read models and left
+`getCanvasScene` untouched. Protocol needed no edit — queries/
+commands flow through the generic run-query / execute-command verbs.
+
+**Pre-existing e2e flake (NOT a regression).** `apps/desktop`
+`trash.spec.ts` › "trash browser: list, restore + fly-to, empty
+trash" flakes on a duplicate `data-testid`: after Empty Trash,
+`TrashView.svelte` fires a toast with `surface: 'trash-empty'`
+(→ `data-testid="trash-empty"`, line 298) that collides with the
+empty-state `<p data-testid="trash-empty">` (line 312), so
+`getByTestId('trash-empty')` intermittently resolves to 2 elements
+(strict-mode violation) depending on toast-dismiss timing. My diff
+touches ZERO `apps/desktop` files (`git diff --stat` is packages-
+only); the spec passed on a full-suite run and on an isolated run
+with my changes reverted to base, and failed on other isolated runs
+— pure timing. Fix belongs in `TrashView.svelte` (give the toast a
+distinct surface id), which is fenced off from this ticket. Flagged
+for the lead. The known source-panel flake was NOT hit.
