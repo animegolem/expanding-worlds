@@ -1,5 +1,6 @@
 import { shortCode, titleKey } from '@ew/domain'
 import type { QueryRegistry } from './queries'
+import { usableCanvasOwnerJoin } from './queries-structure'
 import { ftsMatchExpression } from './search'
 
 /**
@@ -124,7 +125,7 @@ export function registerSearchQueries(registry: QueryRegistry): void {
                       AS isRoot
              FROM canvas c
              JOIN project pr ON pr.id = c.project_id
-             LEFT JOIN node cn ON cn.id = c.node_id
+             ${usableCanvasOwnerJoin('c', 'cn')}
              LEFT JOIN note cnote ON cnote.id = cn.note_id
                AND cnote.lifecycle_state = 'active'
              WHERE c.background_asset_id = ? AND c.lifecycle_state = 'active'

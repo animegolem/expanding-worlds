@@ -20,6 +20,7 @@ import {
   type CanvasContentItem,
   type CanvasScene,
   type NodeLocations,
+  type OutlineCanvasRow,
   type TagViewNode,
 } from './queries-structure'
 
@@ -900,5 +901,128 @@ describe('getNodeLocations (§8.3 asset-row expansion, AI-IMP-073)', () => {
     handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
     expect(query<NodeLocations | null>('getNodeLocations', { nodeId })).toBeNull()
     expect(query<NodeLocations | null>('getNodeLocations', { nodeId: uuidv7() })).toBeNull()
+  })
+})
+
+// §9.6 (AI-IMP-163): trashing a node flips the NODE ROW ALONE — its
+// owned canvas row stays 'active'. Every structural read model that
+// surfaces a board's content must re-check the owner (the load-bearing
+// join getCanvasScene already carries), so an owner-trashed board hides
+// exactly like a directly-trashed one, and RestoreRecord brings it back.
+// Seeded through real commands (CreateCanvas / CreatePlacement /
+// TrashNode / RestoreRecord) — never a direct lifecycle UPDATE.
+describe('owner-trashed boards hide their content (§9.6, AI-IMP-163)', () => {
+  function board(ownerNodeId: string): string {
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId: ownerNodeId })
+    return canvasId
+  }
+  function trashNode(nodeId: string): void {
+    committed('TrashNode', { nodeId })
+  }
+  function restoreNode(nodeId: string): void {
+    committed('RestoreRecord', { kind: 'node', id: nodeId })
+  }
+
+  it('getCanvasContents renders nothing for an owner-trashed board, restore revives it', () => {
+    const owner = createNode()
+    const boardCanvas = board(owner)
+    const content = createNode()
+    const placementId = createPlacement(content, boardCanvas)
+
+    const shown = () =>
+      query<CanvasContentItem[]>('getCanvasContents', { canvasId: boardCanvas }).map((i) => i.id)
+    expect(shown()).toEqual([placementId])
+    trashNode(owner)
+    expect(shown()).toEqual([])
+    restoreNode(owner)
+    expect(shown()).toEqual([placementId])
+  })
+
+  it('listNodeLibrary placement counts drop the owner-trashed board; unplaced filter picks it up', () => {
+    const owner = createNode()
+    const boardCanvas = board(owner)
+    const content = createNode()
+    createPlacement(content, boardCanvas)
+
+    const countOf = (nodeId: string) =>
+      (
+        query<Array<Record<string, unknown>>>('listNodeLibrary').find((r) => r.id === nodeId) as
+          | { placementCount: number }
+          | undefined
+      )?.placementCount
+    const unplacedIds = () =>
+      query<Array<Record<string, unknown>>>('listNodeLibrary', { filter: 'unplaced' }).map(
+        (r) => r.id,
+      )
+
+    expect(countOf(content)).toBe(1)
+    expect(unplacedIds()).not.toContain(content)
+    trashNode(owner)
+    expect(countOf(content)).toBe(0)
+    expect(unplacedIds()).toContain(content)
+    restoreNode(owner)
+    expect(countOf(content)).toBe(1)
+    expect(unplacedIds()).not.toContain(content)
+  })
+
+  it('getTagView drops placement locations and counts on an owner-trashed board', () => {
+    const owner = createNode()
+    const boardCanvas = board(owner)
+    const content = createNode()
+    createPlacement(content, boardCanvas)
+    const tagId = uuidv7()
+    committed('CreateTag', { tagId, name: 'scout' })
+    committed('AssignTagToNode', { tagId, nodeId: content })
+
+    const viewNode = () =>
+      (query<{ nodes: TagViewNode[] }>('getTagView', { tagId }).nodes.find(
+        (n) => n.id === content,
+      ) as TagViewNode)
+    expect(viewNode().placements.map((p) => p.canvasId)).toEqual([boardCanvas])
+    expect(viewNode().placementCount).toBe(1)
+    trashNode(owner)
+    expect(viewNode().placements).toEqual([])
+    expect(viewNode().placementCount).toBe(0)
+    restoreNode(owner)
+    expect(viewNode().placements.map((p) => p.canvasId)).toEqual([boardCanvas])
+    expect(viewNode().placementCount).toBe(1)
+  })
+
+  it('getNodeLocations omits the owner-trashed board location', () => {
+    const owner = createNode()
+    const boardCanvas = board(owner)
+    const content = createNode()
+    createPlacement(content, boardCanvas)
+
+    const canvasIds = () =>
+      query<NodeLocations | null>('getNodeLocations', { nodeId: content })!.placements.map(
+        (p) => p.canvasId,
+      )
+    expect(canvasIds()).toEqual([boardCanvas])
+    trashNode(owner)
+    expect(canvasIds()).toEqual([])
+    restoreNode(owner)
+    expect(canvasIds()).toEqual([boardCanvas])
+  })
+
+  it('getOutlineTree placement counts exclude placements on owner-trashed boards', () => {
+    const owner = createNode()
+    const boardCanvas = board(owner)
+    const content = createNode()
+    // content is a child of Home (visible outline row) AND placed on the
+    // board owned by `owner`; the outline count must follow the owner.
+    createPlacement(content, handle.rootCanvasId)
+    createPlacement(content, boardCanvas)
+
+    const homeCount = () => {
+      const home = query<OutlineCanvasRow[]>('getOutlineTree').find((c) => c.isRoot)!
+      return home.children.find((ch) => ch.nodeId === content)!.placementCount
+    }
+    expect(homeCount()).toBe(2)
+    trashNode(owner)
+    expect(homeCount()).toBe(1)
+    restoreNode(owner)
+    expect(homeCount()).toBe(2)
   })
 })

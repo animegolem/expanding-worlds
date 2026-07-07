@@ -1,6 +1,7 @@
 import { titleKey } from '@ew/domain'
 import { computeNoteMetadata, readMetadataConfig } from './note-metadata-db'
 import type { QueryRegistry } from './queries'
+import { usableCanvasOwnerJoin } from './queries-structure'
 
 /** Escape LIKE wildcards so user input matches literally. */
 function likePattern(key: string): string {
@@ -234,7 +235,7 @@ export function registerNoteQueries(registry: QueryRegistry): void {
        FROM node n
        JOIN placement p ON p.node_id = n.id AND p.lifecycle_state = 'active'
        JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
-       LEFT JOIN node owner ON owner.id = c.node_id
+       ${usableCanvasOwnerJoin('c', 'owner')}
        LEFT JOIN note cnote ON cnote.id = owner.note_id
        WHERE n.project_id = ? AND n.note_id = ? AND n.lifecycle_state = 'active'
        ORDER BY c.id, p.node_id, p.id`,

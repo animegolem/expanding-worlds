@@ -8,6 +8,7 @@ import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerAssetHandlers } from './handlers/assets'
 import { registerCanvasHandlers } from './handlers/canvases'
 import { registerDecorationHandlers } from './handlers/decorations'
+import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
 import { registerTagHandlers } from './handlers/tags'
@@ -35,6 +36,7 @@ beforeEach(() => {
   registerCanvasHandlers(registry)
   registerTagHandlers(registry)
   registerDecorationHandlers(registry)
+  registerLifecycleHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
   queries = new QueryRegistry()
   registerSearchQueries(queries)
@@ -364,5 +366,27 @@ describe('quickOpen', () => {
     expect(quickOpen('0% d')).toHaveLength(1)
     expect(quickOpen('%')).toHaveLength(1)
     expect(quickOpen('x%x')).toHaveLength(0)
+  })
+})
+
+// §9.6 (AI-IMP-163): a background-asset hit points at the board that
+// uses it. When the board's OWNER node is trashed the node row flips
+// alone (the canvas row stays 'active'), so the scene renderer refuses
+// the board — the search hit must stop offering it as a navigable row,
+// and RestoreRecord brings it back. Trash/restore via real commands.
+describe('background-asset hits follow owner-trashed boards (§9.6, AI-IMP-163)', () => {
+  it('omits an owner-trashed board from usingCanvases; restore revives it', () => {
+    const assetId = commitAsset('vista.png')
+    const owner = createNode()
+    const boardCanvas = createCanvas(owner)
+    committed('SetCanvasBackground', { canvasId: boardCanvas, assetId, settings: null })
+
+    const canvasIds = () =>
+      (search('vista').assets[0]?.usingCanvases ?? []).map((c) => c.canvasId)
+    expect(canvasIds()).toEqual([boardCanvas])
+    committed('TrashNode', { nodeId: owner })
+    expect(canvasIds()).toEqual([])
+    committed('RestoreRecord', { kind: 'node', id: owner })
+    expect(canvasIds()).toEqual([boardCanvas])
   })
 })

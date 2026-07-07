@@ -1,6 +1,7 @@
 import { shortCode } from '@ew/domain'
 import type { SqlValue } from './db'
 import type { QueryRegistry } from './queries'
+import { usableCanvasOwnerJoin } from './queries-structure'
 
 /**
  * Gallery read models (RFC-0001 §14.4, AI-IMP-077/078): the
@@ -87,10 +88,14 @@ const ACTIVE_TAG_EXISTS = `SELECT 1 FROM tag_assignment ta
   JOIN tag t ON t.id = ta.tag_id AND t.lifecycle_state = 'active'
   WHERE ta.node_id = n.id`
 
-/** Same clause listNodeLibrary counts: an active placement on an
- * active canvas. A placement whose canvas is trashed does not place. */
+/** Same clause listNodeLibrary counts: an active placement on a usable
+ * canvas. A placement whose canvas is trashed does not place; §9.6
+ * (AI-IMP-163): neither does one whose canvas is owner-trashed (the
+ * node row flips alone, the canvas row stays active), so the owner
+ * join re-checks it like every other placement-count site. */
 const ACTIVE_PLACEMENT_EXISTS = `SELECT 1 FROM placement p
   JOIN canvas pc ON pc.id = p.canvas_id AND pc.lifecycle_state = 'active'
+  ${usableCanvasOwnerJoin('pc', 'pco')}
   WHERE p.node_id = n.id AND p.lifecycle_state = 'active'`
 
 /**

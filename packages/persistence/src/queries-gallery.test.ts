@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerAssetHandlers } from './handlers/assets'
 import { registerCanvasHandlers } from './handlers/canvases'
+import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
 import { registerPlacementHandlers } from './handlers/placements'
@@ -36,6 +37,7 @@ beforeEach(() => {
   registerCanvasHandlers(registry)
   registerPlacementHandlers(registry)
   registerTagHandlers(registry)
+  registerLifecycleHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
   queries = new QueryRegistry()
   registerGalleryQueries(queries)
@@ -334,5 +336,26 @@ describe('gallery facets (§14.4, AI-IMP-078)', () => {
     handle.db.run(`UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?`, s.imageSmall)
     const after = query<GalleryTagCount[]>('galleryTagCounts')
     expect(after).toEqual([{ id: s.ruins, name: 'ruins', count: 2 }])
+  })
+})
+
+// §9.6 (AI-IMP-163): a placement onto a board whose OWNER node is
+// trashed no longer places — the node row flips alone while the canvas
+// row stays 'active', so the gallery's unplaced facet (listNodeLibrary's
+// clause) must treat the carrier as unplaced. Seeded through real
+// commands; RestoreRecord reverses it.
+describe('unplaced facet follows owner-trashed boards (§9.6, AI-IMP-163)', () => {
+  it('a node placed only on an owner-trashed board reads as unplaced, restore reverses it', () => {
+    const owner = createNode()
+    const boardCanvas = uuidv7()
+    committed('CreateCanvas', { canvasId: boardCanvas, nodeId: owner })
+    const content = createNode()
+    committed('CreatePlacement', { placementId: uuidv7(), canvasId: boardCanvas, nodeId: content })
+
+    expect(indexIds({ unplaced: true })).not.toContain(content)
+    committed('TrashNode', { nodeId: owner })
+    expect(indexIds({ unplaced: true })).toContain(content)
+    committed('RestoreRecord', { kind: 'node', id: owner })
+    expect(indexIds({ unplaced: true })).not.toContain(content)
   })
 })
