@@ -109,9 +109,23 @@ test('stale targets skip and collapse; history survives trash (§8.1)', async ()
  */
 
 async function openBookmarkMenu(win: import('@playwright/test').Page): Promise<void> {
-  if (await win.getByTestId('bookmark-menu').isVisible().catch(() => false)) return
+  const menu = win.getByTestId('bookmark-menu')
+  // isVisible() is non-waiting: it reports the current DOM immediately. A
+  // menu fading closed (the §8.2 rev 0.64 unpin fade, AI-IMP-166) lingers at
+  // opacity 0 for ~120ms and still counts as "visible" — so when the menu is
+  // present, distinguish a genuine open from that closing ghost and wait the
+  // ghost out before reopening cleanly.
+  if (await menu.isVisible().catch(() => false)) {
+    if ((await menu.getAttribute('data-closing')) === 'true') {
+      await expect(menu).toBeHidden()
+    } else {
+      return
+    }
+  }
+  // Clicking the pin plays the one-shot bookmark BEAT before the menu
+  // sweeps in; toBeVisible waits out the beat.
   await win.getByTestId('bookmark-pin').click()
-  await expect(win.getByTestId('bookmark-menu')).toBeVisible()
+  await expect(menu).toBeVisible()
 }
 
 test('bookmarks: add, jump with viewport, reorder rebinds Mod+n, order survives restart (§8.1)', async () => {
@@ -176,6 +190,57 @@ test('bookmarks: add, jump with viewport, reorder rebinds Mod+n, order survives 
   await win.keyboard.press('Escape')
   await win.keyboard.press('ControlOrMeta+Digit1')
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+
+  await app.close()
+})
+
+test('signature pin: beat plays once and reseats, menu cascades with globes, close is a plain fade (§8.2 rev 0.64, AI-IMP-166)', async () => {
+  const { app, win } = await launchApp('ew-e2e-pin-beat-')
+
+  const glyph = win.getByTestId('bookmark-pin-glyph')
+  // The pin's resting box BEFORE any beat — the reseat target.
+  const before = (await glyph.boundingBox())!
+
+  // Click the pin: the one-shot BEAT rides the glyph, then ENDS (the class
+  // is removed exactly once) — after which the menu sweeps in.
+  await win.getByTestId('bookmark-pin').click()
+  await expect
+    .poll(() => glyph.evaluate((el) => el.classList.contains('ew-pin-beat')))
+    .toBe(true)
+  await expect
+    .poll(() => glyph.evaluate((el) => el.classList.contains('ew-pin-beat')))
+    .toBe(false)
+  await expect(win.getByTestId('bookmark-menu')).toBeVisible()
+
+  // The pin reseats at its EXACT pre-beat box — no drift after the settle.
+  const round = (b: { x: number; y: number; width: number; height: number }) => ({
+    x: Math.round(b.x),
+    y: Math.round(b.y),
+    w: Math.round(b.width),
+    h: Math.round(b.height),
+  })
+  await expect
+    .poll(async () => round((await glyph.boundingBox())!))
+    .toEqual(round(before))
+
+  // Bookmark this board so a row exists; the row wears a GLOBE (decision 07).
+  await win.getByTestId('bookmark-add').click()
+  await expect(win.getByTestId('bookmark-globe-0')).toBeVisible()
+
+  // Close: a plain fade — the beat NEVER replays on close.
+  await win.keyboard.press('Escape')
+  expect(await glyph.evaluate((el) => el.classList.contains('ew-pin-beat'))).toBe(false)
+  await expect(win.getByTestId('bookmark-menu')).toBeHidden()
+
+  // Reopen: the beat REPLAYS (one-shot again) — ceremony is for arrival.
+  await win.getByTestId('bookmark-pin').click()
+  await expect
+    .poll(() => glyph.evaluate((el) => el.classList.contains('ew-pin-beat')))
+    .toBe(true)
+  await expect
+    .poll(() => glyph.evaluate((el) => el.classList.contains('ew-pin-beat')))
+    .toBe(false)
+  await expect(win.getByTestId('bookmark-menu')).toBeVisible()
 
   await app.close()
 })

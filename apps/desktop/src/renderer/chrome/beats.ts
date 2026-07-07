@@ -103,3 +103,37 @@ export const EW_MENU_CASCADE_MS = 190
  * so a 20-row menu still finishes in budget. Chosen so cap*stagger plus
  * the per-row fade equals the envelope exactly (4*30 + 70 == 190). */
 export const EW_MENU_STAGGER_CAP = 4
+
+/* ---- The SIGNATURE PIN beat (RFC §8.2 rev 0.64, decisions 04/05,
+ * AI-IMP-166). The path-tail bookmark pin is the ONE isomorphic object
+ * bridging chrome into the world, so it is the SOLE sanctioned exception
+ * to chrome's opacity-only rule (§8.2): on open it performs a real desk
+ * beat because it literally enters the canvas. One-shot, transform-only,
+ * entirely inside the title-strip band. The four phases below sum to the
+ * whole beat; the keyframe (chrome/pin-beat.css) expresses each as a
+ * percentage of that sum, and PathBar stamps EW_PIN_BEAT_MS as the
+ * animation-duration so the numbers live in exactly one place. All `~`
+ * provisional feel numbers, NOT settings until EPIC-013. */
+
+/** Phase 1 — WIGGLE: ±8° anticipation about the pin TIP (the dog
+ * readying its hop). */
+export const EW_PIN_WIGGLE_MS = 220
+
+/** Phase 2 — HOP: up 10px with a stretch (scaleY ~1.06). */
+export const EW_PIN_HOP_MS = 150
+
+/** Phase 3 — PRESS: dips 3px into the board with a squash (scaleY ~.93),
+ * reseating at its EXACT spot — no drift. */
+export const EW_PIN_PRESS_MS = 100
+
+/** Phase 4 — SETTLE: one gentle overshoot back to rest, no bounce loop. */
+export const EW_PIN_SETTLE_MS = 230
+
+/** The whole beat: the four phases end to end (~700ms). Stamped as the
+ * animation-duration so the keyframe percentages resolve against it. */
+export const EW_PIN_BEAT_MS =
+  EW_PIN_WIGGLE_MS + EW_PIN_HOP_MS + EW_PIN_PRESS_MS + EW_PIN_SETTLE_MS
+
+/** Unpin on CLOSE: a plain opacity fade — the ceremony is for arrival,
+ * so closing is ordinary chrome (opacity only), never a reverse beat. */
+export const EW_PIN_MENU_FADE_MS = 120

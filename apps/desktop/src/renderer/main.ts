@@ -8,6 +8,9 @@ import './editor-face.css'
 // one global home so both menu families (MenuPopover + the imperative
 // ContextMenu builder) share the identical open grammar.
 import './chrome/menu-cascade.css'
+// §8.2 decision 04/05 (AI-IMP-166): the signature-pin BEAT keyframe — the
+// one sanctioned chrome→world crossover, kept global beside the cascade.
+import './chrome/pin-beat.css'
 // §8.2 keymap registry (AI-IMP-117): declare every binding once at
 // boot, before any tooltip or the settings Keyboard section reads it.
 import './keys/bindings'
