@@ -1,72 +1,69 @@
 <!--
-  Shared chrome-button primitive (AI-IMP-142): the single home for the
-  text-button grammar that RestoreDialog and SettingsView had each
-  hand-rolled. Colour and geometry are orthogonal:
+  Shared chrome-button primitive (AI-IMP-142; ruled by AI-IMP-153).
 
-    variant  — colour grammar
-      default    raised surface, strong border, hover lightens a step
+  The kit 1.2 "One voice" ruling collapses buttons to ONE geometry —
+  5px radius · 1px --ew-border-control · raised surface · hover
+  lightens one step (--ew-surface-control-hover) · disabled .4 — with
+  the colour variants riding that single shape. The `size` axis (the
+  old 4px "dialog" / 5px "chrome" split) retires here.
+
+    variant  — colour grammar, ONE geometry underneath
+      default    raised surface, control border, hover lightens a step
       accent     accent fill / on-accent text (committed / primary act)
       secondary  transparent outline (control border) — dialog "Back/Close"
-      danger     danger fill / on-danger text (destructive; carried for
-                 completeness — no current consumer, tokens exist)
+      ghost      borderless quiet act; hover lifts to the raised surface
+      danger     danger fill / on-danger text (destructive; tokens exist)
 
-    size     — geometry, matching the two shipped shapes exactly
-      chrome     5px radius, 0.25/0.6 padding, 0.75rem  (SettingsView)
-      dialog     4px radius, 0.3/0.7  padding, 0.8rem   (RestoreDialog)
-
-  Layout (flex:none etc.) stays a caller concern, passed via `style`.
+  Focus is the shared 2px --ew-focus-ring outline (offset 1px) on
+  :focus-visible — never the browser default. Layout (flex:none etc.)
+  stays a caller concern, passed via `style`.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import type { HTMLButtonAttributes } from 'svelte/elements'
 
   type Props = Omit<HTMLButtonAttributes, 'type'> & {
-    variant?: 'default' | 'accent' | 'secondary' | 'danger'
-    size?: 'chrome' | 'dialog'
+    variant?: 'default' | 'accent' | 'secondary' | 'ghost' | 'danger'
     children: Snippet
   }
 
-  let { variant = 'default', size = 'chrome', children, ...rest }: Props = $props()
+  let { variant = 'default', children, ...rest }: Props = $props()
 </script>
 
-<button type="button" class="ew-button {variant} {size}" {...rest}>
+<button type="button" class="ew-button {variant}" {...rest}>
   {@render children()}
 </button>
 
 <style>
+  /* ---- the one geometry (kit 1.2 ruling) ---- */
   .ew-button {
+    padding: 0.25rem 0.7rem;
+    border-radius: 5px;
     font: inherit;
+    font-size: 0.8rem;
+    white-space: nowrap;
     cursor: pointer;
   }
 
   .ew-button:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: default;
   }
 
-  /* ---- geometry (size) ---- */
-  .ew-button.chrome {
-    padding: 0.25rem 0.6rem;
-    border-radius: 5px;
-    font-size: 0.75rem;
-    white-space: nowrap;
+  .ew-button:focus-visible {
+    outline: 2px solid var(--ew-focus-ring);
+    outline-offset: 1px;
   }
 
-  .ew-button.dialog {
-    padding: 0.3rem 0.7rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-  }
-
-  /* ---- colour (variant) ---- */
+  /* ---- colour (variant) rides the one shape ---- */
   .ew-button.default {
     background: var(--ew-surface-raised);
     color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
+    border: 1px solid var(--ew-border-control);
   }
 
   .ew-button.default:hover:not(:disabled) {
-    background: var(--ew-surface-hover);
+    background: var(--ew-surface-control-hover);
   }
 
   .ew-button.accent {
@@ -79,6 +76,20 @@
     background: transparent;
     color: var(--ew-text);
     border: 1px solid var(--ew-border-control);
+  }
+
+  .ew-button.secondary:hover:not(:disabled) {
+    background: var(--ew-surface-control-hover);
+  }
+
+  .ew-button.ghost {
+    background: transparent;
+    color: var(--ew-text);
+    border: none;
+  }
+
+  .ew-button.ghost:hover:not(:disabled) {
+    background: var(--ew-surface-raised);
   }
 
   .ew-button.danger {

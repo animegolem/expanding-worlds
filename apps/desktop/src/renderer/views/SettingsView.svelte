@@ -425,7 +425,6 @@
           />
           <Button
             variant="default"
-            size="chrome"
             data-testid="settings-snapshot-remote-test"
             style="flex: none"
             onclick={() => void testRemote(remoteDraft)}

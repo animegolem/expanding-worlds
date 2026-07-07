@@ -44,6 +44,38 @@ async function fieldStyle(win: Page, testid: string): Promise<FieldStyle> {
   }, testid)
 }
 
+interface FocusRing {
+  width: string
+  style: string
+  color: string
+  offset: string
+  tokenColor: string
+}
+
+// The uniform focus ring (kit 1.2 "One voice"): 2px solid
+// --ew-focus-ring outline at offset 1px on every field. Fields ring on
+// plain :focus, so a programmatic focus() is enough to paint it.
+async function focusRing(win: Page, testid: string): Promise<FocusRing> {
+  return win.evaluate((id): FocusRing => {
+    const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    if (!el) throw new Error(`no element for testid ${id}`)
+    el.focus()
+    const cs = getComputedStyle(el)
+    const probe = document.createElement('div')
+    probe.style.outline = '2px solid var(--ew-focus-ring)'
+    document.body.appendChild(probe)
+    const tokenColor = getComputedStyle(probe).outlineColor
+    probe.remove()
+    return {
+      width: cs.outlineWidth,
+      style: cs.outlineStyle,
+      color: cs.outlineColor,
+      offset: cs.outlineOffset,
+      tokenColor,
+    }
+  }, testid)
+}
+
 test('pill field (search) renders the shared skin at 999px', async () => {
   const { app, win } = await launchApp('ew-e2e-input-pill-')
   try {
@@ -72,6 +104,41 @@ test('standard field (settings remote) renders the shared skin at 5px', async ()
     expect(style.borderRadius).toBe('5px')
     expect(style.background).toBe(style.tokenBackground)
     expect(style.borderColor).toBe(style.tokenBorder)
+
+    // AI-IMP-153: the standard field carries the uniform focus ring.
+    const ring = await focusRing(win, 'settings-snapshot-remote-url')
+    expect(ring.width).toBe('2px')
+    expect(ring.style).toBe('solid')
+    expect(ring.offset).toBe('1px')
+    expect(ring.color).toBe(ring.tokenColor)
+
+    // AI-IMP-153: buttons collapse to the one 5px geometry.
+    const buttonRadius = await win.evaluate(() => {
+      const el = document.querySelector<HTMLElement>(
+        '[data-testid="settings-snapshot-remote-test"]',
+      )
+      if (!el) throw new Error('no settings-snapshot-remote-test button')
+      return getComputedStyle(el).borderTopLeftRadius
+    })
+    expect(buttonRadius).toBe('5px')
+  } finally {
+    await app.close()
+  }
+})
+
+test('pill field (search) carries the uniform focus ring', async () => {
+  const { app, win } = await launchApp('ew-e2e-input-pill-focus-')
+  try {
+    await win.getByTestId('charm-search').click()
+    await expect(win.getByTestId('search-input')).toBeVisible()
+
+    // AI-IMP-153: the ruling puts the SAME ring on the pill variant that
+    // the standard variant carries — never the browser default.
+    const ring = await focusRing(win, 'search-input')
+    expect(ring.width).toBe('2px')
+    expect(ring.style).toBe('solid')
+    expect(ring.offset).toBe('1px')
+    expect(ring.color).toBe(ring.tokenColor)
   } finally {
     await app.close()
   }

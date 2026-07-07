@@ -14,16 +14,11 @@ const rendererDir = fileURLToPath(new URL('..', import.meta.url))
 const INPUT_STYLE_TOKEN = '--ew-surface-input'
 
 // Relative paths (posix) exempt from the guard. `ui/` is where the
-// primitive legitimately declares the token; every other entry is a
-// surface that predates AI-IMP-142 and was left for a future pass —
-// each with the reason it still touches the token.
-const ALLOWLIST = new Map<string, string>([
-  ['chrome/RestoreDialog.svelte', '.path code display background, not an input field'],
-  ['chrome/CharmRail.svelte', 'pre-existing field; not in AI-142 migration scope'],
-  ['views/GalleryActionBar.svelte', 'pre-existing field; not in AI-142 migration scope'],
-  ['views/GalleryView.svelte', 'pre-existing field; not in AI-142 migration scope'],
-  ['views/GalleryFacets.svelte', 'pre-existing field; not in AI-142 migration scope'],
-])
+// primitive legitimately declares the token; the allowlist is now
+// EMPTY (AI-IMP-153, the "One voice" ruling): every straggler field
+// migrated onto ui/TextInput.svelte, so the guard is absolute — any
+// non-ui .svelte touching the field token is a regression.
+const ALLOWLIST = new Map<string, string>([])
 
 function svelteFilesUnder(dir: string): string[] {
   const files: string[] = []
@@ -59,14 +54,18 @@ describe('input styling guard (AI-IMP-142)', () => {
     expect(failures, failures.join('\n')).toEqual([])
   })
 
-  it('detects a planted hand-rolled field and honours the allowlist', () => {
+  it('detects a planted hand-rolled field with the guard now absolute', () => {
     // The detector proof (the plant, in-memory so it never touches the
-    // tree): a non-exempt file carrying the token is a violation; the
-    // primitive's own home and the allowlist are not.
+    // tree): a non-exempt file carrying the token is a violation; only
+    // the primitive's own home under ui/ is exempt. With the allowlist
+    // emptied (AI-IMP-153), previously-exempt surfaces are now caught —
+    // the guard is absolute.
     const planted = 'background: var(--ew-surface-input); border-radius: 999px;'
     expect(planted.includes(INPUT_STYLE_TOKEN)).toBe(true)
     expect(isExempt('chrome/PlantedField.svelte')).toBe(false)
     expect(isExempt('ui/TextInput.svelte')).toBe(true)
-    expect(isExempt('chrome/RestoreDialog.svelte')).toBe(true)
+    // Formerly allowlisted — now no longer exempt.
+    expect(isExempt('chrome/RestoreDialog.svelte')).toBe(false)
+    expect(isExempt('views/GalleryFacets.svelte')).toBe(false)
   })
 })
