@@ -19,6 +19,7 @@
  * command does not exist yet render as disabled coming-soon rows.
  */
 import { hitTest, type ReorderOp, type ScenePlacement } from '@ew/canvas-engine'
+import { Z } from '../z'
 import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from '../canvas/host'
@@ -144,7 +145,7 @@ export function attachContextMenu(
     root.dataset['kind'] = kind
     root.setAttribute('role', 'menu')
     root.style.cssText =
-      'position:absolute;z-index:520;display:flex;flex-direction:column;gap:0.2rem;' +
+      'position:absolute;z-index:' + Z.popover + ';display:flex;flex-direction:column;gap:0.2rem;' +
       'min-width:190px;padding:0.35rem;background:var(--ew-surface-menu);' +
       'border:1px solid var(--ew-border);border-radius:7px;white-space:nowrap;' +
       'box-shadow:0 6px 18px var(--ew-menu-shadow);pointer-events:auto;font-size:0.78rem;'
@@ -241,7 +242,8 @@ export function attachContextMenu(
       panel.dataset['testid'] = `ctx-submenu-${item.id}`
       panel.setAttribute('role', 'menu')
       panel.style.cssText =
-        'position:absolute;z-index:521;display:flex;flex-direction:column;gap:0.2rem;' +
+        // rung: popover +1 — submenu paints one above its parent shell
+        'position:absolute;z-index:' + (Z.popover + 1) + ';display:flex;flex-direction:column;gap:0.2rem;' +
         'min-width:170px;padding:0.35rem;background:var(--ew-surface-menu);' +
         'border:1px solid var(--ew-border);border-radius:7px;box-shadow:0 6px 18px var(--ew-menu-shadow);'
       for (const child of item.submenu!) renderRow(panel, child)
