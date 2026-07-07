@@ -10,7 +10,7 @@
 | Planned | 6 | 8 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 116 |
+| Completed | 13 | 118 |
 | **Total** | **22** | **127** |
 
 ## In Progress
@@ -94,14 +94,6 @@
 
 ---
 
-## Anomalies
-
-### Orphaned IMPs (no epic dependency)
-- [[AI-IMP-123-review-hygiene-registry-and-disposer|IMP-123]] — planned, no epic dependency found
-- [[AI-IMP-124-url-import-redirect-guard|IMP-124]] — planned, no epic dependency found
-
----
-
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -115,7 +107,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/host.ts (1114 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
-- apps/desktop/src/main/index.ts (793 LOC)
+- apps/desktop/src/main/index.ts (891 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
@@ -130,10 +122,10 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
+- apps/desktop/src/renderer/note/panels.ts (600 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (591 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
-- apps/desktop/src/renderer/note/panels.ts (581 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
