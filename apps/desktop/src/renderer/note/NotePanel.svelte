@@ -37,6 +37,7 @@
     type PanelRecord,
   } from './panels'
   import { createNoteProjectPort } from './project-port'
+  import { tetheredPanelOpacity, tetheredPanelScale } from '../chrome/feel'
   import { openTagPanel } from '../tags/tag-panel'
   import TagAddField from '../tags/TagAddField.svelte'
   import { wikiLinkCompletion } from './suggestions'
@@ -530,6 +531,14 @@
   /** Tail endpoints in host coordinates, tethered-with-anchor only. */
   let tail = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   let anchorGone = $state(false)
+  /** §8.5 rev 0.47: a TETHERED panel anchored to a placement is world
+   * content — it scales with the camera (transform-origin at the tether
+   * corner) so it stays glued to its node at every zoom, fading below
+   * the legibility floor. Pinned/corner/point/anchorless panels stay at
+   * scale 1 (screen-fixed). Opacity is 1 whenever scale is 1. */
+  let scale = $state(1)
+  const opacity = $derived(tetheredPanelOpacity(scale))
+  const faded = $derived(opacity === 0)
 
   function viewportSize(): { width: number; height: number } {
     const bounds = panelEl?.parentElement?.getBoundingClientRect()
@@ -541,6 +550,11 @@
     const view = viewportSize()
     const width = panelEl?.offsetWidth ?? 320
     const height = panelEl?.offsetHeight ?? 240
+    // Every branch below except the world-tethered placement one is
+    // screen-fixed; reset the scale so a panel that was scaled (e.g. a
+    // pin phantom that just became a placement, or the reverse) never
+    // keeps a stale factor.
+    scale = 1
     if (record.pinned) {
       if (record.screen) pos = record.screen
       tail = null
@@ -554,18 +568,25 @@
       if (aabb) {
         anchorGone = false
         const camera = handle.controller.camera
+        // §8.5 rev 0.47: scale with the world, glued at the tether
+        // corner (transform-origin 0 0). The gap stays a constant screen
+        // distance so the panel never crashes into the node, and the
+        // footprint used for the in-window clamp is the SCALED size.
+        scale = tetheredPanelScale(camera.zoom)
         const rightEdge = camera.worldToScreen({ x: aabb.x + aabb.width, y: aabb.y })
         let x = rightEdge.x + 24
         let y = rightEdge.y
         // Keep the panel inside the window; the tail stretches.
-        x = Math.min(Math.max(8, x), view.width - width - 8)
-        y = Math.min(Math.max(8, y), view.height - height - 8)
+        x = Math.min(Math.max(8, x), view.width - width * scale - 8)
+        y = Math.min(Math.max(8, y), view.height - height * scale - 8)
         pos = { x, y }
         const nodeEdge = camera.worldToScreen({
           x: aabb.x + aabb.width,
           y: aabb.y + aabb.height / 2,
         })
-        tail = { x1: x, y1: y + 18, x2: nodeEdge.x, y2: nodeEdge.y }
+        // The tail leaves the panel's tether corner; 18px down the
+        // header scales with the panel so it stays on the border.
+        tail = { x1: x, y1: y + 18 * scale, x2: nodeEdge.x, y2: nodeEdge.y }
         return
       }
       anchorGone = true
@@ -857,7 +878,7 @@
 </script>
 
 {#if tail}
-  <svg class="tail" aria-hidden="true">
+  <svg class="tail" aria-hidden="true" style={`opacity:${opacity}`}>
     <line x1={tail.x1} y1={tail.y1} x2={tail.x2} y2={tail.y2} />
   </svg>
 {/if}
@@ -866,9 +887,10 @@
   class="note-panel"
   class:pinned={record.pinned}
   class:pulse
-  style={`left:${pos.x}px;top:${pos.y}px;width:${size.width}px;height:${size.height}px`}
+  style={`left:${pos.x}px;top:${pos.y}px;width:${size.width}px;height:${size.height}px;transform:scale(${scale});transform-origin:0 0;opacity:${opacity};${faded ? 'pointer-events:none;' : ''}`}
   data-testid={record.pinned ? `note-panel-pinned-${record.key}` : 'note-pane'}
   data-panel-key={record.key}
+  data-tether-scale={scale}
   bind:this={panelEl}
   ondragovercapture={onSurfaceDragOver}
   ondropcapture={onSurfaceDrop}
