@@ -96,6 +96,34 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
+    case 'snapshot-write-notes': {
+      // §16/§11.4 session snapshot (AI-IMP-120): regenerate the
+      // readable notes/ tree on the PRIMARY's single writer (refreshing
+      // §7.8 blocks) and hand back counts for the commit message. Runs
+      // BEFORE the caller's checkpoint-wal, which then seals the block
+      // refresh into project.sqlite. Read-only/absent project reports
+      // typed failure — main falls back to a db-only commit.
+      if (!service || service.readOnly) {
+        return {
+          type: 'snapshot-write-notes',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no writable project is open',
+        }
+      }
+      try {
+        const { notes, assets } = service.writeNotesTree()
+        return { type: 'snapshot-write-notes', ok: true, notes, assets }
+      } catch (err) {
+        return {
+          type: 'snapshot-write-notes',
+          ok: false,
+          code: 'NOTES_TREE_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'close-project': {
       unsubscribe?.()
       unsubscribe = null

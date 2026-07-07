@@ -45,6 +45,13 @@ export {
   type NoteMetadataView,
 } from './note-metadata-db'
 export { getProjectSetting, setProjectSetting } from './settings'
+// §16/§11.4 readable notes tree for session snapshots (AI-IMP-120).
+export {
+  writeNotesTree,
+  safeNoteBaseName,
+  assignNoteFilename,
+  type NotesTreeResult,
+} from './notes-tree'
 export { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 export { registerCanvasHandlers } from './handlers/canvases'
 export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'

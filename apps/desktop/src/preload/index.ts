@@ -18,6 +18,7 @@ import type {
   SecondaryTarget,
   ServiceStatusEvent,
   SetSettingResponse,
+  SnapshotStatus,
   SubmitThumbnailResponse,
   ThumbnailReadyEvent,
 } from '@ew/protocol'
@@ -48,6 +49,11 @@ const api = {
      * solely under EW_TEST_HOOKS=1. */
     checkpointWal: (): Promise<CheckpointWalResponse> =>
       ipcRenderer.invoke('test:checkpoint-wal') as Promise<CheckpointWalResponse>,
+    /** AI-IMP-120 e2e only: drive one snapshot moment (flush → notes →
+     * checkpoint → commit) through the real main path. Gated under
+     * EW_TEST_HOOKS=1 main-side. */
+    snapshot: (trigger: 'idle' | 'rest' | 'end-session'): Promise<boolean> =>
+      ipcRenderer.invoke('test:snapshot', trigger) as Promise<boolean>,
   },
   window: {
     setVibrancy: (enabled: boolean): Promise<boolean> =>
@@ -148,6 +154,14 @@ const api = {
      * events fire before App mounts (AI-IMP-106). */
     serviceStatus: (): Promise<ServiceStatusEvent | null> =>
       ipcRenderer.invoke('project:service-current') as Promise<ServiceStatusEvent | null>,
+  },
+  /** §11.4 session snapshots (AI-IMP-120): the Settings readout — git
+   * presence and the backup's disk size. The mode enum itself is an
+   * ordinary project setting, read/written through the settings bridge
+   * (getSettings / setProject). */
+  snapshot: {
+    status: (): Promise<SnapshotStatus> =>
+      ipcRenderer.invoke('snapshot:status') as Promise<SnapshotStatus>,
   },
   /** §14.4 secondary project slots (AI-IMP-088): source = read-only
    * browse of another project, library = the writable mirror target.

@@ -103,6 +103,37 @@
     await window.ew.settings.setProject('note_metadata_defaults', next)
   }
 
+  // §11.4 session snapshots (AI-IMP-120): the per-project mode enum is
+  // an ordinary project setting (key snapshot_mode). Git presence and
+  // the backup disk size come from main lazily when this view opens.
+  type SnapshotMode = 'off' | 'commit' | 'commit-push'
+  let snapshotStatus = $state<{ gitAvailable: boolean; sizeBytes: number | null } | null>(null)
+  $effect(() => {
+    void (async () => {
+      try {
+        snapshotStatus = await window.ew.snapshot.status()
+      } catch {
+        snapshotStatus = null
+      }
+    })()
+  })
+  function snapshotMode(): SnapshotMode {
+    const raw = projectSettings['snapshot_mode']
+    return raw === 'commit' || raw === 'commit-push' ? raw : 'off'
+  }
+  async function setSnapshotMode(mode: SnapshotMode): Promise<void> {
+    projectSettings = { ...projectSettings, snapshot_mode: mode }
+    await window.ew.settings.setProject('snapshot_mode', mode)
+  }
+  function formatBackupSize(bytes: number | null): string {
+    if (bytes === null) return 'no snapshots yet'
+    const kb = bytes / 1024
+    if (kb < 1024) return `${Math.max(1, Math.round(kb))} KB`
+    const mb = kb / 1024
+    if (mb < 1024) return `${mb.toFixed(1)} MB`
+    return `${(mb / 1024).toFixed(2)} GB`
+  }
+
   const FLAT_SWATCHES = [1, 2, 3, 4, 5, 6].map((n) => `--ew-canvas-flat-${n}`)
   const isMac = navigator.platform.startsWith('Mac')
 
@@ -297,12 +328,29 @@
       'settings-row-vault',
     )}
 
-    {@render deferredRow(
-      'Session snapshots',
-      'off · git commit · commit + push',
-      'arrives with session snapshots (§11.4)',
-      'settings-row-snapshots',
-    )}
+    <div class="row" data-testid="settings-row-snapshots">
+      <span class="row-label">Session snapshots</span>
+      {@render segmented(
+        'settings-snapshots',
+        [
+          { value: 'off', label: 'Off' },
+          { value: 'commit', label: 'Git commit' },
+          { value: 'commit-push', label: 'Commit + push' },
+        ],
+        snapshotMode(),
+        (value) => void setSnapshotMode(value as SnapshotMode),
+      )}
+    </div>
+    <p class="section-note" data-testid="settings-snapshots-note">
+      {#if snapshotStatus && !snapshotStatus.gitAvailable}
+        Snapshots need git, and the app can't find it on this machine — install git to enable them.
+      {:else}
+        A checkpoint saves the project, its images, and a readable notes tree to git history at every
+        end session, quit, and idle pause. Backup size: {formatBackupSize(
+          snapshotStatus?.sizeBytes ?? null,
+        )}.
+      {/if}
+    </p>
 
     {@render deferredRow(
       'Mirror drops to library',
