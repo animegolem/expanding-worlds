@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 5 | 0 |
+| In Progress | 4 | 0 |
 | Planned | 5 | 6 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 143 |
+| Completed | 15 | 143 |
 | **Total** | **25** | **154** |
 
 ## In Progress
@@ -55,16 +55,6 @@
 - [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — planned
 - [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — planned
 - [[AI-IMP-156-tiptap-token-integrity|IMP-156]] Tiptap token integrity — completed
-
----
-
-### [[AI-EPIC-022-fleet-friction|EPIC-022: Fleet friction]]
-> (1) Electron's postinstall silently ships a husk `dist/` in every
-
-**IMPs:**
-- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
-- [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
-- [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — completed
 
 ---
 
@@ -241,7 +231,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>14 EPICs, 127 IMPs completed</summary>
+<summary>15 EPICs, 127 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -361,5 +351,9 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-127-frame-renderer-and-interactions|IMP-127]] Frame renderer and interactions — completed
   - [[AI-IMP-128-arrange-and-normalize|IMP-128]] Arrange and normalize — completed
   - [[AI-IMP-129-drop-behavior-and-frame-sort|IMP-129]] Drop behavior and frame sort — completed
+- [[AI-EPIC-022-fleet-friction|EPIC-022]] Fleet friction — 2026-07-07
+  - [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
+  - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
+  - [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — completed
 
 </details>

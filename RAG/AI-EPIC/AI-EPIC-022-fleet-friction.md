@@ -5,8 +5,8 @@ tags:
   - infrastructure
   - tooling
 date_created: 2026-07-06
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-07
+kanban_status: completed
 AI_IMP_spawned:
 ---
 
@@ -56,10 +56,10 @@ no renderer site reads `items()` synchronously after navigation.
 
 ### Functional Requirements
 
-- [ ] FR-1: scripts/repair-electron.sh (AI-IMP-111)
-- [ ] FR-2: gateway burst serialization (AI-IMP-112)
-- [ ] FR-3: scene-ready primitive (AI-IMP-113)
-- [ ] FR-4: conventions recorded in CLAUDE.md (with the epic cut)
+- [x] FR-1: scripts/repair-electron.sh (AI-IMP-111)
+- [x] FR-2: gateway burst serialization (AI-IMP-112)
+- [x] FR-3: scene-ready primitive (AI-IMP-113)
+- [x] FR-4: conventions recorded in CLAUDE.md (with the epic cut)
 
 ### Non-Functional Requirements
 
@@ -68,4 +68,12 @@ no renderer site reads `items()` synchronously after navigation.
 
 ## Implementation Breakdown
 
-AI-IMP-111 · AI-IMP-112 · AI-IMP-113.
+AI-IMP-111 · AI-IMP-112 · AI-IMP-113. All three closed by 2026-07-06;
+conventions (CHECK-enum ban, migration-number reservation, benchmark
+environment check) recorded in CLAUDE.md at the epic cut. Success
+metrics held in practice across the EPIC-016/018 waves: fresh agent
+worktrees ran e2e with zero electron surgery (playwright globalSetup
+auto-repairs), and no new navigate-then-read flake has appeared since
+the AI-IMP-113 call-site migration.
+
+Shipped in v0.10.0.
