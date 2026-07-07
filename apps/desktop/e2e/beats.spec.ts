@@ -191,6 +191,7 @@ test('drag over a frame → members MAKE ROOM (the one anticipatory motion)', as
     const scene = await window.ew.project.query('getCanvasScene', {
       canvasId: window.__ewDebug!.canvasId(),
     })
+    if (!scene.ok) throw new Error(scene.message)
     const items = (scene.result as { items: Array<Record<string, unknown>> }).items
     return items.find((i) => i['appearanceKind'] === 'frame')!['id'] as string
   })

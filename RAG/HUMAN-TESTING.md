@@ -356,3 +356,15 @@ record — history lives in the tickets.
   the same face), and a gallery text post. Chrome must look
   UNCHANGED everywhere — menus, dock, settings all stay system
   fonts; if any chrome went mono, that's a bug.
+- [ ] **The desk comes alive** (AI-IMP-151, 2026-07-07): the §8.2
+  physics ledger is playing. Drag things — grab should LIFT (+1%,
+  shadow), release should SETTLE with one soft landing, never a
+  bounce. Snap onto a guide: the last pixel should SEAT magnetically
+  instead of teleporting. Lock something and grab it: a ~2px STRAIN
+  under the refusal cursor — does it read as "held down," not
+  "broken"? Delete: the item LIFTS AWAY (up + fade) — nothing ever
+  crumples. Drag over a frame: members MAKE ROOM. Two gut calls:
+  (1) alive or busy? (2) five constants are provisional (press/
+  strain timing, away rise, make-room distance) — flag anything
+  that feels off; resize/rotate/marquee/draw/pan must stay
+  beat-free.
