@@ -6,10 +6,14 @@
  * ids from here and consult the registry — this file is the single
  * place a binding's combo and human name live.
  *
+ * Undo / Redo (Mod+Z, Shift+Mod+Z) are DECLARED here (AI-IMP-123) so
+ * the settings Keyboard section lists them, but their DISPATCH stays
+ * capture-phase in renderer/undo/undo-keys.ts (§10.2 editor boundary
+ * needs the capture listener; declaration-only is this ticket's bar).
+ * undo-keys.ts consults `matches(event, KEY.undo/redo)` so the printed
+ * combo and the handled combo cannot drift.
+ *
  * Deferred, intentionally NOT declared here:
- * - Undo / Redo (Mod+Z, Shift+Mod+Z): AI-IMP-114 owns renderer/undo/**
- *   in a parallel worktree; they join the registry as a follow-up once
- *   114 merges, so this ticket does not touch that dispatch.
  * - CodeMirror's editor-local keymap stays its own world (§8.2 /
  *   ticket out-of-scope); the settings page names it without listing it.
  */
@@ -23,6 +27,8 @@ export const KEY = {
   bookmarkJump: 'bookmark-jump',
   bookmarkCurrent: 'bookmark-current',
   // --- board ---
+  undo: 'undo',
+  redo: 'redo',
   boardSelectAll: 'board-select-all',
   boardSendForward: 'board-send-forward',
   boardSendFront: 'board-send-front',
@@ -79,6 +85,19 @@ declare(KEY.bookmarkCurrent, {
 })
 
 // ---- board ----
+// Dispatch lives in undo/undo-keys.ts (capture phase); these are the
+// display + match declarations only (AI-IMP-123). Alt disqualifies —
+// mirrors the handler's `if (event.altKey) return`.
+declare(KEY.undo, {
+  name: 'Undo',
+  scope: 'board',
+  combo: { mod: true, shift: false, alt: false, key: 'z' },
+})
+declare(KEY.redo, {
+  name: 'Redo',
+  scope: 'board',
+  combo: { mod: true, shift: true, alt: false, key: 'z' },
+})
 declare(KEY.boardSelectAll, {
   name: 'Select all',
   scope: 'board',

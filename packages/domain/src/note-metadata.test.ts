@@ -7,6 +7,7 @@ import {
   stripMetadataBlock,
   type MetadataSectionsInput,
 } from './note-metadata'
+import { extractWikiLinks } from './wiki-links'
 
 const SECTIONS: MetadataSectionsInput = {
   placements: [
@@ -42,6 +43,36 @@ describe('renderMetadataBlock', () => {
   it('collapses to empty when no section has content', () => {
     expect(renderMetadataBlock({})).toBe('')
     expect(renderMetadataBlock({ placements: [], provenance: [] })).toBe('')
+  })
+
+  // AI-IMP-123: filenames and source URLs are interpolated verbatim; a
+  // `[[...]]` in one would mint a wiki-link token the lexical extractor
+  // (§7.1) indexes straight out of this system-owned block. The render
+  // neutralizes `[[` so the generated block can never mint a token.
+  it('neutralizes [[ in a hostile filename so no wiki-link token is minted', () => {
+    const block = renderMetadataBlock({
+      provenance: [
+        {
+          originalFilename: '[[hostile]] note [[[triple.png',
+          importDate: '2026-07-06',
+          sourceUrl: 'https://ref.example/[[evil]]',
+        },
+      ],
+    })
+    expect(extractWikiLinks(block)).toEqual([])
+    // Still human-readable: the filename text survives, only the pair
+    // is broken (the odd `[[[` run leaves no surviving adjacency).
+    expect(block).not.toContain('[[')
+    expect(block).toContain('hostile')
+    expect(block).toContain('triple.png')
+  })
+
+  it('leaves a filename with a lone bracket byte-identical (no [[)', () => {
+    const block = renderMetadataBlock({
+      provenance: [{ originalFilename: 'photo[1].png', importDate: '2026-07-06', sourceUrl: null }],
+    })
+    expect(block).toContain('`photo[1].png` — imported 2026-07-06')
+    expect(extractWikiLinks(block)).toEqual([])
   })
 })
 

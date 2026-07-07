@@ -73,6 +73,24 @@ export function stripMetadataBlock(body: string): {
 }
 
 /**
+ * Neutralize wiki-link openers in system-interpolated text (original
+ * filenames, source URLs). A `[[` in a filename would otherwise mint a
+ * link token that the lexical extractor (§7.1 `extractWikiLinks`)
+ * indexes straight out of this system-owned block — the block is
+ * regenerated wholesale, so it must never introduce prose ranges the
+ * link layer treats as authored. We break every `[[` adjacency with a
+ * single space, chosen so the printed text stays human-readable in a
+ * plain reader and byte-identical for any input that never contained
+ * `[[`. The lookahead matches only a `[` immediately followed by
+ * another `[`, so a lone bracket (`photo[1].png`) is untouched;
+ * matching each `[` in a run means an odd run like `[[[` still leaves
+ * no surviving pair.
+ */
+function neutralizeWikiTokens(text: string): string {
+  return text.replace(/\[(?=\[)/g, '[ ')
+}
+
+/**
  * Render the tail for the given sections: a leading blank line, the
  * `---` rule (blank-line-separated so it is a horizontal rule, never a
  * setext heading), the open fence, each present section, and the close
@@ -91,8 +109,8 @@ export function renderMetadataBlock(sections: MetadataSectionsInput): string {
 
   if (sections.provenance && sections.provenance.length > 0) {
     const lines = sections.provenance.map((entry) => {
-      let line = `- \`${entry.originalFilename}\` — imported ${entry.importDate}`
-      if (entry.sourceUrl) line += ` — source: ${entry.sourceUrl}`
+      let line = `- \`${neutralizeWikiTokens(entry.originalFilename)}\` — imported ${entry.importDate}`
+      if (entry.sourceUrl) line += ` — source: ${neutralizeWikiTokens(entry.sourceUrl)}`
       return line
     })
     parts.push(`## Provenance\n\n${lines.join('\n')}`)
