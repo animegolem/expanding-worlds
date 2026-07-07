@@ -85,13 +85,13 @@ Lock all → one Mod+Z frees everything.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Explicit-capture path lands; menu + keyboard decoration
+- [x] Explicit-capture path lands; menu + keyboard decoration
       lock/hide enter undo as one entry per gesture; style-drag and
       text-commit `UpdateDecoration` traffic stays OUT (vitest).
-- [ ] Lock all covers decorations in the same undo group; row
+- [x] Lock all covers decorations in the same undo group; row
       disabled only when nothing lockable is selected.
-- [ ] e2e: decoration lock/hide/Lock-all round-trip through Mod+Z.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] e2e: decoration lock/hide/Lock-all round-trip through Mod+Z.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 
 ### Acceptance Criteria
@@ -115,3 +115,38 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Mechanism landed exactly as the ticket preferred: `UpdateDecoration`
+  joined `GROUP_ONLY_COMMANDS` (never `CAPTURED_COMMANDS`), and every
+  discrete verb handler — ContextMenu `setDecorationLock` /
+  `hideDecoration`, decorations-ui `setLockedOnSelection` /
+  `hideSelection` / `show` (keyboard + hidden-list parity) — wraps its
+  commit in `runAsUndoGroup`. A bare UpdateDecoration (Dock style
+  drag, text commit) has no open group and is filtered by the standing
+  allowlist, so it cannot enter the stack; no new seam was needed.
+- CaptureInFrame contract finding: frames capture PLACEMENTS only
+  (`memberPlacementIds`; `frame_member.member_placement_id` PK — no
+  decoration column). So Gather disables-with-reason on
+  decoration-only selections ("frames hold items, not decorations")
+  and on mixed selections both the frame's bounding box and the
+  capture now use the placement subset (previously the bbox spanned
+  decorations the frame could never hold).
+- Lock all now takes the whole selection: placements via
+  SetPlacementLock (unconditional — its inverse restores prior
+  state), decorations via UpdateDecoration{locked:true} skipping
+  already-locked ones (their reciprocal inverse would otherwise
+  re-lock on undo). One group = one Mod+Z. The row only disables when
+  nothing lockable is selected, which a multi-selection cannot reach
+  in practice.
+- theme.test.ts rejects raw hex literals outside theme.css; the
+  vitest's style-drag payload initially used a hex fill and was
+  switched to `strokeWidth` (same shape through the seam).
+- The undo-store vitest stubs `window` (no jsdom in the desktop
+  vitest config) and polls microtasks for `attachUndo`'s async
+  gateway bootstrap before emitting notices through a second real
+  CommandGateway — the same cross-gateway path production uses.
+- e2e additions live in context-menus.spec.ts (three tests): verb
+  lock/hide one-undo round-trips plus a real Dock `sel-stroke-width`
+  edit asserting depth stays flat; mixed-selection Lock all
+  (2 pins + 1 rect) → one undo frees all three; decoration-only multi
+  menu shows Gather aria-disabled and Lock all still works.

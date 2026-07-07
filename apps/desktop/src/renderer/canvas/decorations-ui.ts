@@ -1,6 +1,7 @@
 import { uuidv7 } from '@ew/domain'
 import { isHittable, type SceneDecoration } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from './host'
+import { runAsUndoGroup } from '../undo/undo-store'
 
 /**
  * Decoration selection controls (§6.8, AI-IMP-021): group/ungroup,
@@ -97,25 +98,36 @@ export function createDecorationsUi(handle: CanvasHostHandle): DecorationsUi {
       // selected; without groupIds the expansion listener is inert.
     },
 
+    // §8.4 keyboard/hidden-list parity with the context menu: each verb
+    // is ONE undo entry, captured at the gesture (runAsUndoGroup) — the
+    // bare UpdateDecoration type is never allowlisted, so Dock style
+    // drags and text commits stay out of undo (AI-IMP-154). A batch
+    // lock/hide over several selected decorations collapses to one entry.
     async setLockedOnSelection(locked: boolean) {
-      for (const d of selectedDecorations()) {
-        if ((d.locked === 1) === locked) continue
-        await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { locked } })
-      }
+      await runAsUndoGroup(async () => {
+        for (const d of selectedDecorations()) {
+          if ((d.locked === 1) === locked) continue
+          await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { locked } })
+        }
+      })
     },
 
     async hideSelection() {
       const targets = selectedDecorations().filter((d) => d.hidden === 0)
-      for (const d of targets) {
-        await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { hidden: true } })
-      }
+      await runAsUndoGroup(async () => {
+        for (const d of targets) {
+          await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { hidden: true } })
+        }
+      })
       // Hidden items are unhittable; drop them from the selection.
       const hiddenIds = new Set(targets.map((d) => d.id))
       controller.selection.set(controller.selection.ids().filter((id) => !hiddenIds.has(id)))
     },
 
     async show(decorationId: string) {
-      await gateway.execute('UpdateDecoration', { decorationId, set: { hidden: false } })
+      await runAsUndoGroup(async () => {
+        await gateway.execute('UpdateDecoration', { decorationId, set: { hidden: false } })
+      })
     },
 
     destroy() {

@@ -37,18 +37,30 @@ const CAPTURED_COMMANDS = new Set<string>([
 ])
 
 /**
- * §4.9 frame commands (AI-IMP-127) that are only ever issued INSIDE a
- * runAsUndoGroup window — never standalone-undoable, so they stay out
- * of CAPTURED_COMMANDS, but ARE captured while a group is open so the
- * whole frame edit (create composite, or move + capture/release)
- * collapses to one Mod+Z. Restricting the group to this set (plus the
- * standing allowlist) keeps an interleaved autosave from being swept in.
+ * Commands captured ONLY inside a runAsUndoGroup window — never
+ * standalone-undoable, so they stay out of CAPTURED_COMMANDS, but ARE
+ * captured while a group is open. Two reasons a command lands here:
+ *
+ *  - §4.9 frame commands (AI-IMP-127): only ever issued inside a group,
+ *    so the whole frame edit (create composite, or move + capture/
+ *    release) collapses to one Mod+Z.
+ *  - `UpdateDecoration` is POLYSEMOUS (AI-IMP-154): the §8.4 discrete
+ *    verbs (Lock/Unlock, Hide, Show) commit it, but so do live Dock
+ *    style drags and text commits. Allowlisting the bare type would put
+ *    one undo entry per intermediate style drag on the stack. Capturing
+ *    at the GESTURE instead (the verb handlers wrap their commit in
+ *    runAsUndoGroup — a group of one) enters exactly one entry per verb
+ *    and leaves the ungrouped Dock/text-entry traffic untouched.
+ *
+ * Restricting the group to this set (plus the standing allowlist) keeps
+ * an interleaved autosave from being swept in.
  */
 const GROUP_ONLY_COMMANDS = new Set<string>([
   'CreateNode',
   'SetNodeAppearance',
   'CaptureInFrame',
   'ReleaseFromFrame',
+  'UpdateDecoration',
 ])
 
 /** Commits accumulate here while a group window is open (see runAsUndoGroup). */

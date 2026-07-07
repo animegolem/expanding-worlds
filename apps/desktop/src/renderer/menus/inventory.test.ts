@@ -187,6 +187,16 @@ describe('menuFor — multi-select inventory (§8.4)', () => {
     expect(byId(groups, 'lock-all')!.run).toBeDefined()
   })
 
+  it('disables Gather (with reason) on a decoration-only selection, keeps Lock all (AI-IMP-154)', () => {
+    const decoOnly: MultiSubject = { kind: 'multi', count: 2, placementCount: 0, decorationCount: 2 }
+    const groups = menuFor(decoOnly, stubActions())
+    // Frames capture placements only — no empty frame from an enabled row.
+    expect(byId(groups, 'gather-into-frame')!.run).toBeUndefined()
+    expect(byId(groups, 'gather-into-frame')!.disabledReason).toBeTruthy()
+    // Decorations are lockable, so Lock all stays actionable.
+    expect(byId(groups, 'lock-all')!.run).toBeDefined()
+  })
+
   it('names the count in the Delete verb and marks it danger-last', () => {
     const groups = menuFor(MULTI, stubActions())
     const last = groups[groups.length - 1]!
