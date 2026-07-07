@@ -272,11 +272,17 @@ export function attachContextMenu(
         'min-width:170px;padding:0.35rem;background:var(--ew-surface-menu);' +
         'border:1px solid var(--ew-border);border-radius:7px;box-shadow:0 6px 18px var(--ew-menu-shadow);'
       for (const child of item.submenu!) renderRow(panel, child)
+      // The flyout lives INSIDE the menu shell: the outside-pointer
+      // guard (`menu.contains`) then treats child hits as inside, and
+      // `close()` removes the flyout with the menu — a sibling panel
+      // was orphaned and the parent closed on the first child press
+      // (Codex review, PR #9). The shell is position:absolute with no
+      // overflow clip, so it is the positioning box.
       const rect = anchor.getBoundingClientRect()
-      const hostRect = element.getBoundingClientRect()
-      panel.style.left = `${rect.right - hostRect.left}px`
-      panel.style.top = `${rect.top - hostRect.top}px`
-      element.appendChild(panel)
+      const menuRect = menu!.getBoundingClientRect()
+      panel.style.left = `${rect.right - menuRect.left}px`
+      panel.style.top = `${rect.top - menuRect.top}px`
+      menu!.appendChild(panel)
       open = panel
     })
   }

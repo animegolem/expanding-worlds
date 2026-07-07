@@ -276,7 +276,7 @@ test('multi-select menu: count header + Gather into a frame = ONE undo (§8.4)',
     await readyUndo(win)
     const box = (await win.getByTestId('canvas-host').boundingBox())!
     const a = await seedPin(win, 'One', { x: 400, y: 300 })
-    await seedPin(win, 'Two', { x: 800, y: 300 })
+    const b = await seedPin(win, 'Two', { x: 800, y: 300 })
     await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
 
     // Marquee both (start on empty canvas above the pins).
@@ -298,6 +298,32 @@ test('multi-select menu: count header + Gather into a frame = ONE undo (§8.4)',
     await expect(win.getByTestId('ctx-gather-into-frame')).toBeVisible()
     // (the row also carries its mono ⌫ shortcut chip, so match the label)
     await expect(win.getByTestId('ctx-delete')).toContainText('Delete 2 items')
+
+    // Align flyout: pressing a child must run the verb, close the WHOLE
+    // menu, and leave no orphaned flyout (Codex review, PR #9 — the
+    // sibling-parented flyout was "outside" the pointer guard and got
+    // stranded while the parent closed under it).
+    await win.getByTestId('ctx-align').click()
+    await expect(win.getByTestId('ctx-submenu-align')).toBeVisible()
+    await win.getByTestId('ctx-align-left').click()
+    await expect(win.getByTestId('context-menu')).toHaveCount(0)
+    await expect(win.getByTestId('ctx-submenu-align')).toHaveCount(0)
+    // The verb really ran: equal-sized pins align-left onto one center x.
+    await expect
+      .poll(async () => {
+        const [pa, pb] = [await placement(win, a.placementId), await placement(win, b.placementId)]
+        return pa && pb ? Math.abs(pa.x - pb.x) : Infinity
+      })
+      .toBeLessThan(0.5)
+
+    // Re-select and reopen the multi menu for the gather assertion.
+    await win.mouse.move(box.x + 300, box.y + 120)
+    await win.mouse.down()
+    await win.mouse.move(box.x + 950, box.y + 470, { steps: 5 })
+    await win.mouse.up()
+    await win.waitForFunction(() => window.__ewDebug!.selection().length === 2)
+    await win.mouse.click(box.x + 400, box.y + 300, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
 
     // Gather into a frame = one undo group: a frame placement is added
     // (2 → 3) and ONE Mod+Z reverses the whole gather.
