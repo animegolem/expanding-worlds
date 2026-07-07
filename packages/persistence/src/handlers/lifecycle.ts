@@ -28,7 +28,7 @@ import { extractWikiLinks } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching } from '../links'
 import { deleteDecorationRow, insertDecoration, requireDecoration } from './decorations'
-import { releaseConnectorAnchors } from './placements'
+import { releaseConnectorAnchors, releaseConnectorAnchorsCapturing } from './placements'
 
 const TRASH_RETENTION_KEY = 'trash_retention'
 const TRASH_RETENTIONS = new Set<TrashRetention>(['never', '30d', '60d', '90d'])
@@ -148,11 +148,11 @@ function deletePlacementRow(
     throw new DomainError('PLACEMENT_NOT_FOUND', `no active placement ${placementId}`)
   }
 
-  const freed = releaseConnectorAnchors(ctx, placementId)
+  const releasedAnchors = releaseConnectorAnchorsCapturing(ctx, placementId)
   ctx.db.run('DELETE FROM placement WHERE id = ?', placementId)
   affected.push(
     { kind: 'placement', id: placementId },
-    ...freed.map((id) => ({ kind: 'decoration' as const, id })),
+    ...releasedAnchors.map((a) => ({ kind: 'decoration' as const, id: a.decorationId })),
   )
 
   let restoreNodeId: string | null = null
@@ -182,6 +182,7 @@ function deletePlacementRow(
     labelVisible: prior.label_visible === 1,
     locked: prior.locked === 1,
     restoreNodeId,
+    releasedAnchors,
   }
 }
 
@@ -227,6 +228,51 @@ function restorePlacementRow(
     now,
   )
   affected.push({ kind: 'placement', id: payload.placementId })
+
+  // AI-IMP-164 (§6.8/§10.2): re-bind every connector endpoint the
+  // delete released, now that the placement row exists again. Optional
+  // for command-log records written before this field existed — those
+  // simply restore the placement alone, as they did before. Each freed
+  // side is inverted independently (only its own start/end key and
+  // anchor column), so when both endpoints of one connector were
+  // deleted+restored the two re-binds never clobber each other's blob
+  // regardless of order.
+  for (const anchor of payload.releasedAnchors ?? []) {
+    const current = ctx.db.get<{ data: string }>(
+      'SELECT data FROM decoration WHERE id = ?',
+      anchor.decorationId,
+    )
+    // A connector deleted alongside its anchor was recreated separately
+    // with its anchors intact and never entered releasedAnchors; if the
+    // row is somehow absent, there is nothing to re-bind.
+    if (!current) continue
+    const data = JSON.parse(current.data) as Record<string, unknown>
+    if (anchor.freedStart) {
+      if ('start' in anchor.priorData) data.start = anchor.priorData.start
+      else delete data.start
+    }
+    if (anchor.freedEnd) {
+      if ('end' in anchor.priorData) data.end = anchor.priorData.end
+      else delete data.end
+    }
+    ctx.db.run(
+      `UPDATE decoration SET
+         data = ?1,
+         anchor_start_placement_id = CASE WHEN ?2 THEN ?4
+                                          ELSE anchor_start_placement_id END,
+         anchor_end_placement_id = CASE WHEN ?3 THEN ?4
+                                        ELSE anchor_end_placement_id END,
+         updated_at = ?5
+       WHERE id = ?6`,
+      JSON.stringify(data),
+      anchor.freedStart ? 1 : 0,
+      anchor.freedEnd ? 1 : 0,
+      payload.placementId,
+      now,
+      anchor.decorationId,
+    )
+    affected.push({ kind: 'decoration', id: anchor.decorationId })
+  }
 }
 
 /**

@@ -22,6 +22,22 @@ export interface DeletePlacementPayload {
 }
 
 /**
+ * One connector endpoint freed when its anchor placement was deleted
+ * (§6.8/§4.9). `releaseConnectorAnchors` nulls the anchor column(s)
+ * and bakes the placement's last position into `data.start`/`data.end`;
+ * this tuple carries enough to invert both, per freed side. `priorData`
+ * is the decoration's `data` blob BEFORE the release baked coordinates,
+ * so restore can put the exact prior start/end value back (or drop the
+ * key if it was absent).
+ */
+export interface ReleasedConnectorAnchor {
+  decorationId: string
+  freedStart: boolean
+  freedEnd: boolean
+  priorData: Record<string, unknown>
+}
+
+/**
  * Internal inverse of DeletePlacement: recreates the exact prior
  * placement row (including render_order so it returns to its slot)
  * and, when the delete bare-trashed the node in the same command,
@@ -44,6 +60,14 @@ export interface RestorePlacementPayload {
   locked: boolean
   /** Set when DeletePlacement trashed the bare node (§9.2). */
   restoreNodeId?: string | null
+  /**
+   * Connector anchors the delete released (§6.8/§4.9), re-bound to
+   * this placement on restore. Optional: command-log records written
+   * before AI-IMP-164 omit it, and the handler tolerates its absence
+   * (those pre-existing undo steps simply restore the placement alone,
+   * exactly as they did before).
+   */
+  releasedAnchors?: ReleasedConnectorAnchor[]
 }
 
 /**
