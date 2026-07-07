@@ -152,10 +152,13 @@ test('Shift+arrows extend the anchor range (agrees with Shift+click); Mod+Space 
   await expect(cell(win, ids[0]!)).toHaveAttribute('data-selected', 'true')
   await expect(cell(win, ids[1]!)).toHaveAttribute('data-selected', 'true')
 
-  // Bare Space does NOTHING — reserved for preview: selection,
-  // cursor, and viewport all hold still.
+  // Bare Space on a NOTE cell is a no-op — Quick Look is image-only
+  // (AI-IMP-168); with no full-size asset the preview never opens, so
+  // selection, cursor, and viewport all hold still (the open/close
+  // and arrow-swap over image cells are gallery-quicklook.spec's).
   const beforeTop = await scrollTop(win)
   await win.keyboard.press('Space')
+  await expect(win.getByTestId('gallery-quicklook')).toHaveCount(0)
   await expect(selectedCells(win)).toHaveCount(2)
   await expect(cell(win, ids[1]!)).toHaveAttribute('data-cursor', 'true')
   expect(await scrollTop(win)).toBe(beforeTop)

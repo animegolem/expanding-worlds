@@ -71,6 +71,7 @@
   import { openCornerPanel } from '../note/panels'
   import GalleryActionBar from './GalleryActionBar.svelte'
   import GalleryFacets from './GalleryFacets.svelte'
+  import GalleryQuickLook from './GalleryQuickLook.svelte'
   import TextInput from '../ui/TextInput.svelte'
   import { bucketByDate, type GalleryBucket } from './gallery-buckets'
   import {
@@ -111,6 +112,40 @@
   const HEADER_H = 40
   const OVERSCAN = 400
 
+  // §14.4 thumbnail-size slider (rev 0.55): the cell edge is view
+  // state driving the bucketed layout live — columns, row tops, and
+  // the CSS cell box all read it, so a change re-buckets the
+  // virtualized grid on the next derivation. Persisted app-tier as
+  // `galleryThumbSize` (no migration); CELL is the default.
+  const THUMB_MIN = 112
+  const THUMB_MAX = 264
+  const THUMB_STEP = 8
+  let cellSize = $state(CELL)
+
+  function clampThumb(value: number): number {
+    if (!Number.isFinite(value)) return CELL
+    return Math.min(THUMB_MAX, Math.max(THUMB_MIN, Math.round(value)))
+  }
+
+  onMount(() => {
+    void window.ew.settings.appAll().then((settings) => {
+      const stored = settings['galleryThumbSize']
+      if (typeof stored === 'number') cellSize = clampThumb(stored)
+    })
+  })
+
+  /** Live rescale on drag; persist the committed value (change fires
+   * on release, so the app-settings file is written once, not per
+   * pixel). */
+  function onThumbInput(event: Event): void {
+    cellSize = clampThumb(Number((event.currentTarget as HTMLInputElement).value))
+  }
+  function onThumbCommit(event: Event): void {
+    const value = clampThumb(Number((event.currentTarget as HTMLInputElement).value))
+    cellSize = value
+    void window.ew.settings.setApp('galleryThumbSize', value)
+  }
+
   let index = $state<IndexEntry[]>([])
   let loaded = $state(false)
   let items = $state<Record<string, Item>>({})
@@ -140,6 +175,15 @@
   // back out in the column the run started in).
   let cursor = $state<string | null>(null)
   let preferredCol = $state(0)
+
+  // ------------------------------------------- 168 Space Quick Look
+  // The full-size preview (§14.4 rev 0.55, §8.8 modal family): a view-
+  // state flag over the CURSOR cell — never the selection (the preview
+  // reads and moves the cursor, it never mutates membership). The
+  // shown item derives from the cursor, so arrow navigation swaps the
+  // image for free as the cursor walks.
+  let previewOpen = $state(false)
+  const previewItem = $derived(previewOpen && cursor !== null ? (items[cursor] ?? null) : null)
 
   // ------------------------------------------------- 089 scope state
   // The primary toggle (§14.4): this-world is the default and the
@@ -468,7 +512,7 @@
   // render the flat grid — no headers, no period control.
   const buckets = $derived(sort === 'date' ? bucketByDate(index, new Date()) : [])
   const columns = $derived(
-    Math.max(2, Math.floor((viewportWidth - PAD * 2 + GAP) / (CELL + GAP))),
+    Math.max(2, Math.floor((viewportWidth - PAD * 2 + GAP) / (cellSize + GAP))),
   )
   // 080: the visual row structure as pure index math — the cursor's
   // Up/Down and the layout below MUST chunk identically.
@@ -488,14 +532,14 @@
         const end = bucket.startIndex + bucket.count
         for (let i = bucket.startIndex; i < end; i += columns) {
           rows.push({ kind: 'cells', entries: index.slice(i, Math.min(i + columns, end)), top })
-          top += CELL + GAP
+          top += cellSize + GAP
         }
       }
     } else {
       top = PAD
       for (let i = 0; i < index.length; i += columns) {
         rows.push({ kind: 'cells', entries: index.slice(i, i + columns), top })
-        top += CELL + GAP
+        top += cellSize + GAP
       }
     }
     return { rows, totalHeight: top + PAD }
@@ -503,7 +547,7 @@
 
   const visibleRows = $derived(
     layout.rows.filter((row) => {
-      const height = row.kind === 'header' ? HEADER_H : CELL + GAP
+      const height = row.kind === 'header' ? HEADER_H : cellSize + GAP
       return row.top + height >= scrollTop - OVERSCAN && row.top <= scrollTop + viewportHeight + OVERSCAN
     }),
   )
@@ -638,8 +682,8 @@
     const viewBottom = viewTop + scroller.clientHeight
     if (row.top < viewTop + margin) {
       scroller.scrollTop = Math.max(0, row.top - margin)
-    } else if (row.top + CELL > viewBottom) {
-      scroller.scrollTop = row.top + CELL - scroller.clientHeight
+    } else if (row.top + cellSize > viewBottom) {
+      scroller.scrollTop = row.top + cellSize - scroller.clientHeight
     }
     scrollTop = scroller.scrollTop
   }
@@ -688,6 +732,46 @@
     openCornerPanel(nodeId, null)
   }
 
+  /** Space Quick Look opens only over an IMAGE cursor cell (§14.4:
+   * images only — this overlay grows no renderers). Board and note
+   * cursors are a silent no-op: there is no larger rendition to
+   * reveal, and the cell already shows the note/board at full
+   * fidelity. The cursor cell is on-screen (hence hydrated) whenever a
+   * key or click could have parked the cursor, so items[cursor] is
+   * present by construction. */
+  function openPreview(): void {
+    if (cursor === null) return
+    const item = items[cursor]
+    if (!item || item.kind !== 'image' || item.contentHash === null) return
+    previewOpen = true
+  }
+
+  function closePreview(): void {
+    previewOpen = false
+  }
+
+  /** Arrow navigation WITH the preview open (the Quick Look idiom):
+   * walk the cursor one cell (Left/Right ±1, Up/Down by visual row),
+   * scrolling it into the render window so the swapped item hydrates.
+   * Selection is untouched — this reuses setCursorIndex, which moves
+   * only the cursor. Landing on a non-image cell shows the honest
+   * "no full-size image" line rather than closing. */
+  function movePreviewCursor(dir: -1 | 1, vertical: boolean): void {
+    const current = cursor === null ? -1 : indexOfNode(cursor)
+    if (current === -1) return
+    let next: number
+    if (vertical) {
+      const target = verticalTarget(keyRows, current, dir, preferredCol)
+      if (target === null) return
+      next = target
+    } else {
+      next = horizontalTarget(index.length, current, dir)
+      preferredCol = columnOf(keyRows, next)
+    }
+    if (next === current) return
+    void setCursorIndex(next)
+  }
+
   function onGridKeydown(event: KeyboardEvent): void {
     // The grid owns these keys only for its own cells: the facet
     // strip's tag input and the action bar's completion field are
@@ -702,6 +786,24 @@
     if (index.length === 0) return
     const mod = event.metaKey || event.ctrlKey
 
+    // Quick Look is modal within the grid (§8.8): while it is open it
+    // owns Space (toggle-close) and the arrows (cursor-only walk,
+    // selection untouched); every other grid key is inert under it.
+    // Esc rides the shared capture peel below, not this handler.
+    if (previewOpen) {
+      if (event.key === ' ') {
+        event.preventDefault()
+        closePreview()
+      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault()
+        movePreviewCursor(event.key === 'ArrowRight' ? 1 : -1, false)
+      } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        event.preventDefault()
+        movePreviewCursor(event.key === 'ArrowDown' ? 1 : -1, true)
+      }
+      return
+    }
+
     // Mod+A: the current filter scope — the user selects what they see.
     if (mod && event.key.toLowerCase() === 'a') {
       event.preventDefault()
@@ -712,10 +814,13 @@
 
     // Space is RESERVED for preview (rev 0.25) — swallowed even
     // bare, so it never page-scrolls; Mod+Space toggles the cursor
-    // cell's membership without disturbing the anchor.
+    // cell's membership without disturbing the anchor. Bare Space
+    // opens Quick Look over the cursor cell (168): the reserved seam
+    // finally spends its key.
     if (event.key === ' ') {
       event.preventDefault()
       if (mod && cursor !== null) toggleMembership(cursor)
+      else openPreview()
       return
     }
 
@@ -818,6 +923,15 @@
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
+      // Quick Look is the outermost peel: Esc closes the preview and
+      // STOPS here, so the takeover's own Esc-to-close never fires
+      // (§8.8 — closing the preview must not close the gallery).
+      if (previewOpen) {
+        event.preventDefault()
+        event.stopPropagation()
+        closePreview()
+        return
+      }
       if (tagOpen) {
         event.preventDefault()
         event.stopPropagation()
@@ -1019,6 +1133,23 @@
         everything
       </button>
     </span>
+    <!-- 168: thumbnail-size slider (§14.4 rev 0.55) — rescales the
+         bucketed grid live; the choice persists app-tier. -->
+    <label class="thumb-size" title="Thumbnail size">
+      <span class="thumb-glyph small" aria-hidden="true">▪</span>
+      <input
+        type="range"
+        data-testid="gallery-thumb-size"
+        aria-label="Thumbnail size"
+        min={THUMB_MIN}
+        max={THUMB_MAX}
+        step={THUMB_STEP}
+        value={cellSize}
+        oninput={onThumbInput}
+        onchange={onThumbCommit}
+      />
+      <span class="thumb-glyph large" aria-hidden="true">◼</span>
+    </label>
   </div>
   {#if scope === 'everything' && mirrorOff}
     <p class="mirror-notice" data-testid="gallery-mirror-notice">
@@ -1170,7 +1301,7 @@
         tabindex="-1"
         bind:this={gridEl}
         onkeydown={onGridKeydown}
-        style={`height: ${layout.totalHeight}px`}
+        style={`height: ${layout.totalHeight}px; --cell: ${cellSize}px`}
       >
         {#each visibleRows as row (row.kind === 'header' ? `h-${row.bucket.key}` : `r-${row.entries[0]?.nodeId}`)}
           {#if row.kind === 'header'}
@@ -1249,6 +1380,13 @@
       onPull={(event) => void pullSelection(event)}
     />
   {/if}
+
+  <!-- 168 Space Quick Look: the full-size preview over the cursor
+       cell. Keys live in the grid handler / the capture peel above;
+       this is presentation + backdrop dismissal only. -->
+  {#if previewOpen}
+    <GalleryQuickLook item={previewItem} {scope} onClose={closePreview} />
+  {/if}
 </div>
 
 <style>
@@ -1263,8 +1401,40 @@
      speaks — this is the PRIMARY toggle, so it sits above it. */
   .scope-bar {
     flex: none;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     padding: 0.45rem 1rem 0.1rem;
     font-size: 0.78rem;
+  }
+
+  /* 168 thumbnail-size slider: a small range control pushed to the
+     trailing edge of the scope bar; the glyphs read small→large. */
+  .thumb-size {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--ew-text-muted);
+  }
+
+  .thumb-size input[type='range'] {
+    width: 7rem;
+    accent-color: var(--ew-accent);
+    cursor: pointer;
+  }
+
+  .thumb-glyph {
+    color: var(--ew-text-subtle);
+    line-height: 1;
+  }
+
+  .thumb-glyph.small {
+    font-size: 0.6rem;
+  }
+
+  .thumb-glyph.large {
+    font-size: 0.85rem;
   }
 
   .segmented {
@@ -1489,8 +1659,11 @@
 
   .cell {
     position: relative;
-    width: 168px;
-    height: 168px;
+    /* 168: the cell edge is a CSS var set on the grid from cellSize,
+       so a slider move rescales every cell without a per-cell style.
+       CELL (168px) is the fallback when the var is absent. */
+    width: var(--cell, 168px);
+    height: var(--cell, 168px);
     flex: none;
     display: flex;
     align-items: center;
