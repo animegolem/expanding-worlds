@@ -28,6 +28,15 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Restore from backup** (AI-IMP-121, 2026-07-07): with
+  snapshots on and some history, ☰ → Restore from backup… — the one
+  question: does the confirm read as SAFE-COPY, never rollback? (It
+  promises "a new project folder next to your current one… nothing
+  is rolled back, moved, or overwritten.") Pick an old snapshot,
+  create the copy, Open Restored Project — the app relaunches into
+  the copy; your original must be exactly as you left it. Also
+  eyeball the ☰ row placement (after Trash…, before End Session).
+
 - [ ] **Frames** (AI-IMP-127, 2026-07-07): the Dock has a frame tool —
   draw a region (Shift = square), drop images inside, drag the frame:
   everything travels together, one Mod+Z per gesture. Feel calls:
