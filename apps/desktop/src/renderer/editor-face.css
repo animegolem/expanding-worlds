@@ -65,6 +65,38 @@
   color: var(--ew-note-h3);
 }
 
+/* §7.1 LOUD live marks (AI-IMP-149): typed emphasis renders visually
+   distinct AS IT IS TYPED. Bold pins the bundled 700 face, italic the
+   bundled true-cursive 400i face (the two non-regular Maple weights),
+   so the carve-out — not a synthesized slant — carries emphasis. */
+.ew-note-prose strong {
+  font-weight: 700;
+}
+
+.ew-note-prose em {
+  font-style: italic;
+}
+
+/* Inline code renders as a tinted chip (theme tokens); fenced code
+   blocks keep the plain Maple face with no chip so a whole block does
+   not become one giant pill. */
+.ew-note-prose code {
+  font-family: var(--ew-font-editor);
+  background: var(--ew-note-code-bg);
+  color: var(--ew-note-code-text);
+  padding: 0.05em 0.32em;
+  border-radius: 4px;
+  font-size: 0.92em;
+}
+
+.ew-note-prose pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
 /* §7.1 heading folding (AI-IMP-148). Decoration-only widgets: a gutter
    chevron that toggles the fold and a [...] marker on the folded line.
    View-only — never in the Markdown source. Colors ride theme tokens. */

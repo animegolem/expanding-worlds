@@ -4,6 +4,7 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import StarterKit from '@tiptap/starter-kit'
 import { MARKDOWN_DIALECT, extractWikiLinks, matchWikiLinkAt } from '@ew/domain'
 import { Markdown } from 'tiptap-markdown'
+import { FormatBar } from './format-bar'
 import { HeadingFold } from './folding'
 
 /**
@@ -170,6 +171,12 @@ export function baseNoteExtensions(): AnyExtension[] {
     // base set (both the panel and §8.5 big editor) and never touches
     // serialization (the round-trip corpus proves this).
     HeadingFold,
+    // §7.1/§8.8 selection format bar (AI-IMP-149) — a floating popover of
+    // rich-text verbs on selection only. Its verbs dispatch mark/node
+    // commands but the bar itself adds NO schema and no serializer, so
+    // the round-trip corpus exercises it in the base set unchanged; it
+    // rides the ONE buffer, so panel and big editor share one bar.
+    FormatBar,
   ]
 }
 

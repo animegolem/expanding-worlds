@@ -765,6 +765,68 @@ test('double-clicking the label renames the note in place (AI-IMP-056)', async (
   await app.close()
 })
 
+test('selection format bar: appears on selection, bold lands as **…**, gone on collapse (AI-IMP-149)', async () => {
+  const { app, win } = await launchApp('ew-e2e-format-bar-')
+  const { noteId } = await seedPlacedNote(win, 'Style', 'make this word loud', { x: 300, y: 240 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  const content = win.locator('[data-testid="note-editor-content"]')
+  await expect(content).toContainText('make this word loud')
+
+  // No standing chrome: nothing selected → no visible bar.
+  const bar = win.getByTestId('note-format-bar')
+  await expect(bar).toBeHidden()
+
+  // Select the word "word" deterministically through the DOM selection
+  // (ProseMirror mirrors it into its own state) after focusing the
+  // editor with a click.
+  await content.click()
+  await win.evaluate(() => {
+    const el = document.querySelector('[data-testid="note-editor-content"]')!
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    let textNode = walker.nextNode()
+    while (textNode && !(textNode.textContent ?? '').includes('word'))
+      textNode = walker.nextNode()
+    if (!textNode) throw new Error('text node not found')
+    const at = textNode.textContent!.indexOf('word')
+    const range = document.createRange()
+    range.setStart(textNode, at)
+    range.setEnd(textNode, at + 'word'.length)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })
+  await expect(bar).toBeVisible()
+
+  // §8.8: the bar sits fully inside the viewport (clamped, never
+  // spilling an edge).
+  const barBox = (await bar.boundingBox())!
+  const viewport = await win.evaluate(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }))
+  expect(barBox.x).toBeGreaterThanOrEqual(0)
+  expect(barBox.y).toBeGreaterThanOrEqual(0)
+  expect(barBox.x + barBox.width).toBeLessThanOrEqual(viewport.width)
+  expect(barBox.y + barBox.height).toBeLessThanOrEqual(viewport.height)
+
+  // Bold applies: live <strong> in the buffer AND **…** in the saved
+  // body (the §7.1 Markdown carrier). The idle debounce commits it.
+  await win.getByTestId('format-bold').click()
+  await expect(content.locator('strong')).toHaveText('word')
+  await expect(win.getByTestId('note-pane-dirty')).toBeHidden({ timeout: 10_000 })
+  expect(await noteBody(win, noteId)).toBe('make this **word** loud')
+
+  // Collapse the selection → the bar disappears (selection-only; the
+  // one-clock rule leaves no standing furniture).
+  await content.getByText('make this').click()
+  await expect(bar).toBeHidden()
+
+  await app.close()
+})
+
 test('§7.1 heading folding: decoration-only, [...] marker, caret never strands (AI-IMP-148)', async () => {
   const { app, win } = await launchApp('ew-e2e-fold-')
   const body = [

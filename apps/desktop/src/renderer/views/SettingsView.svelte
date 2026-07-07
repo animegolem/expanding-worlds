@@ -299,6 +299,7 @@
     { scope: 'global', label: 'Everywhere' },
     { scope: 'board', label: 'On a board' },
     { scope: 'gallery', label: 'In the gallery' },
+    { scope: 'editor', label: 'In a note' },
   ]
   const keyboardGroups = KEYBOARD_SCOPES.map(({ scope, label }) => ({
     label,
