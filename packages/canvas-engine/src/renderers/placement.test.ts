@@ -480,6 +480,9 @@ describe('card appearance (§4.6 rev 0.31, AI-IMP-084)', () => {
     // Whitespace collapses so a newline-heavy body cannot overflow
     // the fixed chrome (plain-text clamp).
     expect(excerpt.text).toBe('stone quay and gulls')
+    // §7.1 editor carve-out (AI-IMP-131): card note text bakes in Maple.
+    expect(String(title.style.fontFamily)).toContain('Maple Mono')
+    expect(String(excerpt.style.fontFamily)).toContain('Maple Mono')
     // The chrome's title line IS the label — no duplicate under-label.
     expect(object.children.find((child) => child.label === 'label')).toBeUndefined()
   })

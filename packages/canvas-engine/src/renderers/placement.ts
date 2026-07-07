@@ -56,6 +56,11 @@ const CARD_CORNER_RADIUS = 10
 const CARD_PADDING = 14
 const CARD_TITLE_SIZE = 16
 const CARD_EXCERPT_SIZE = 12
+/** §7.1 editor face (AI-IMP-131): the card title + excerpt are note
+ * TEXT, so they bake in Maple Mono (the ONE typography carve-out). The
+ * host warms these faces at boot (document.fonts.load) before the scene
+ * applies; ui-monospace is the graceful fallback until they land. */
+const CARD_FONT_FAMILY = "'Maple Mono', ui-monospace, Menlo, monospace"
 /** Deterministic single-line clamp — no canvas text measuring. */
 const CARD_TITLE_MAX_CHARS = 28
 const CARD_SURFACE = 0x2b323c
@@ -278,7 +283,12 @@ function buildCardBody(container: PlacementObject, item: ScenePlacement): void {
         : rawTitle
     const titleText = new Text({
       text: title,
-      style: { fontSize: CARD_TITLE_SIZE, fill: CARD_TITLE_COLOR, fontWeight: '600' },
+      style: {
+        fontFamily: CARD_FONT_FAMILY,
+        fontSize: CARD_TITLE_SIZE,
+        fill: CARD_TITLE_COLOR,
+        fontWeight: '600',
+      },
     })
     titleText.label = 'card-title'
     titleText.position.set(-w / 2 + CARD_PADDING, -h / 2 + CARD_PADDING)
@@ -291,6 +301,7 @@ function buildCardBody(container: PlacementObject, item: ScenePlacement): void {
       const excerptText = new Text({
         text: excerpt,
         style: {
+          fontFamily: CARD_FONT_FAMILY,
           fontSize: CARD_EXCERPT_SIZE,
           fill: CARD_EXCERPT_COLOR,
           wordWrap: true,
