@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 0 |
-| Planned | 7 | 4 |
+| In Progress | 3 | 0 |
+| Planned | 6 | 8 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 115 |
-| **Total** | **22** | **123** |
+| **Total** | **22** | **127** |
 
 ## In Progress
 
@@ -23,6 +23,17 @@
 - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — planned
 - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — planned
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — planned
+
+---
+
+### [[AI-EPIC-017-frames|EPIC-017: Frames]]
+> Groups are select-and-move aids; the artist's real workflow
+
+**IMPs:**
+- [[AI-IMP-126-frame-model-and-membership|IMP-126]] Frame model and membership — planned
+- [[AI-IMP-127-frame-renderer-and-interactions|IMP-127]] Frame renderer and interactions — planned
+- [[AI-IMP-128-arrange-and-normalize|IMP-128]] Arrange and normalize — planned
+- [[AI-IMP-129-drop-behavior-and-frame-sort|IMP-129]] Drop behavior and frame sort — planned
 
 ---
 
@@ -60,11 +71,6 @@
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — completed
 - [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — completed
-
----
-
-### [[AI-EPIC-017-frames|EPIC-017: Frames]]
-> Groups are select-and-move aids; the artist's real workflow
 
 ---
 
