@@ -1,7 +1,9 @@
+import type { SnapshotPushState } from '@ew/protocol'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TOAST_DURATION_MS } from './feel'
 import {
   __resetStatusForTests,
+  attachSnapshotPush,
   condition,
   dismissToast,
   onConditionsChanged,
@@ -125,5 +127,99 @@ describe('status store (RFC §8.6)', () => {
     unsub()
     condition('a').clear()
     expect(calls).toBe(1)
+  })
+})
+
+describe('snapshot push wiring (§11.4/§8.6, AI-IMP-122)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    __resetStatusForTests()
+  })
+
+  afterEach(() => {
+    __resetStatusForTests()
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  /** Stub the preload bridge and return the captured emit hook — the
+   * test drives push states exactly as main's broadcast would. The
+   * catch-up pull is left undefined (optional in the wiring), so
+   * every state transition here is explicit. */
+  function attachPush(): (state: SnapshotPushState) => void {
+    let emit: (state: SnapshotPushState) => void = () => {}
+    // A DEFINED window defeats engagement's node guard, so the stub must
+    // also satisfy the listener registrations wake()→attach() performs.
+    vi.stubGlobal('window', {
+      addEventListener: () => {},
+      ew: {
+        snapshot: {
+          onPushState: (cb: (state: SnapshotPushState) => void): (() => void) => {
+            emit = cb
+            return () => {}
+          },
+        },
+      },
+    })
+    vi.stubGlobal('document', { documentElement: { addEventListener: () => {} } })
+    attachSnapshotPush()
+    return (state) => emit(state)
+  }
+
+  function trackToasts(): { current: readonly ToastEntry[] } {
+    const box: { current: readonly ToastEntry[] } = { current: [] }
+    onToastsChanged((toasts) => (box.current = toasts))
+    return box
+  }
+
+  function trackConditions(): { current: readonly Condition[] } {
+    const box: { current: readonly Condition[] } = { current: [] }
+    onConditionsChanged((conditions) => (box.current = conditions))
+    return box
+  }
+
+  it('an in-flight push holds the perch and a reconciled push clears it', () => {
+    const emit = attachPush()
+    const conditions = trackConditions()
+    emit({ phase: 'pushing', unpushed: 2 })
+    expect(conditions.current).toHaveLength(1)
+    expect(conditions.current[0]?.detail).toContain('2 snapshots')
+    emit({ phase: 'idle', unpushed: 0 })
+    expect(conditions.current).toEqual([])
+  })
+
+  it('failure toasts ONCE per episode; retries only update the perch debt', () => {
+    const emit = attachPush()
+    const toasts = trackToasts()
+    const conditions = trackConditions()
+
+    // First failure: one toast, debt on the perch.
+    emit({ phase: 'error', unpushed: 1, message: 'could not read from remote' })
+    expect(toasts.current.map((t) => t.surface)).toEqual(['snapshot-push'])
+    expect(toasts.current[0]?.message).toContain('could not read from remote')
+    expect(conditions.current[0]?.detail).toContain('1 snapshot not backed up')
+
+    // The toast dissolves; a failing RETRY must not re-raise it, only
+    // grow the visible debt (§8.6: no repeated nagging).
+    vi.advanceTimersByTime(TOAST_DURATION_MS + 1)
+    expect(toasts.current).toEqual([])
+    emit({ phase: 'error', unpushed: 2, message: 'could not read from remote' })
+    expect(toasts.current).toEqual([])
+    expect(conditions.current[0]?.detail).toContain('2 snapshots not backed up')
+
+    // Recovery reconciles: perch clears, and the episode ENDS — a later
+    // failure is a new episode and earns a new toast.
+    emit({ phase: 'idle', unpushed: 0 })
+    expect(conditions.current).toEqual([])
+    emit({ phase: 'error', unpushed: 1, message: 'connection reset' })
+    expect(toasts.current.map((t) => t.message)).toEqual(['Backup push failed: connection reset'])
+  })
+
+  it('an idle state with residual debt keeps the perch rather than dropping it', () => {
+    const emit = attachPush()
+    const conditions = trackConditions()
+    emit({ phase: 'idle', unpushed: 3 })
+    expect(conditions.current).toHaveLength(1)
+    expect(conditions.current[0]?.detail).toContain('3 snapshots not backed up yet')
   })
 })
