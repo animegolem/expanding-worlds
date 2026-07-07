@@ -384,3 +384,23 @@ Blow away (or rename) the app-config dir to fake a first open, then:
   board? Also: page-7 skip bails to the empty board (uniform skip);
   the storyboard hinted it might land in the example instead — feel
   call flagged by the builder.
+
+## AI-IMP-148 — heading folding (2026-07-07)
+
+In a long structured note (h1/h2/h3 nesting):
+- Click a chevron: does the fold read as outline grammar, or as
+  content vanishing? Chevron weight and placement (it sits just
+  inside the content edge, not a true gutter — WebGL overlay forced
+  the compromise) are the open feel calls.
+- Fold an h2, type elsewhere, close and reopen — folds reset per
+  open by design. Does that feel right or should they stick?
+- Click into a folded [...] region: it should unfold under the caret.
+
+## AI-IMP-140 — image radius + shadow (2026-07-07)
+
+On a dense board of real art:
+- Do the 3px corners and soft shadow read as designed over many
+  images, or does the board look busy/heavy?
+- Crop previews and any export path must show the untreated pixels.
+- Watch pan/zoom feel at 100+ images — perf held in gates (9.2ms
+  p95) but your hands are the final gate.
