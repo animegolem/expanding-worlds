@@ -8,10 +8,10 @@
 |--------|-------|------|
 | In Progress | 5 | 0 |
 | Planned | 4 | 6 |
-| Deferred | 0 | 1 |
+| Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 14 | 138 |
-| **Total** | **23** | **153** |
+| **Total** | **24** | **153** |
 
 ## In Progress
 
@@ -116,6 +116,13 @@
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-154-decoration-verb-undo-capture|IMP-154]] — planned, no epic dependency found
 - [[AI-IMP-155-menu-review-polish|IMP-155]] — planned, no epic dependency found
+
+---
+
+## Cancelled / Deferred
+
+- [[AI-EPIC-024-color-analysis|EPIC-024]] Color analysis — deferred — "The first tester co-designed a sibling tool, Color Tool"
+  - (no IMPs)
 
 ---
 
