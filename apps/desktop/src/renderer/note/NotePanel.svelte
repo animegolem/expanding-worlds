@@ -815,6 +815,11 @@
       },
       { tornFrom: boundSide },
     )
+    // The rings/tail clear inside layout(); without an explicit
+    // reschedule the flip waits on the next camera/scene event —
+    // which on CI's still environment never comes (the rings sat
+    // for 15s and went red). untape() already did this.
+    schedule()
   }
 
   /** UNTAPE: the sticky returns to its book — the tear reversed. The
