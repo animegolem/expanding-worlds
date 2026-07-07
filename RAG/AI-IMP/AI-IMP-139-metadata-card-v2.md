@@ -58,12 +58,12 @@ token is missing (coordinate with 130).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] SYSTEM seam + mono micro-type + info surface per reference;
+- [x] SYSTEM seam + mono micro-type + info surface per reference;
       tokens only.
-- [ ] Foldable tree rows with ⌖ fly chips; behavior unchanged
+- [x] Foldable tree rows with ⌖ fly chips; behavior unchanged
       (fly e2e still green).
-- [ ] Off state renders the dashed explainer.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Off state renders the dashed explainer.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead (does
       SYSTEM read as system; 40-board scannability with folds).
@@ -83,3 +83,31 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- No theme.css change was needed: every surface/text/link token the
+  kit uses (`--ew-paper-info-panel/-border/-text`, `--ew-paper-text-soft`,
+  `--ew-paper-border`, `--ew-link-bound`) already exists across all
+  three palettes. The kit's `--ew-font-mono` has no app equivalent, so
+  the card uses the `ui-monospace, monospace` literal the file already
+  carried for `.filename` (a font stack, not a hex — allowed).
+- Fold-tree caveat (data shape): `getNoteMetadata` returns boards as a
+  BFS depth-level-sorted flat list (`sort: depth, then label, then id`)
+  with a `depth` but NO parent link. A faithful parent/child tree is
+  therefore not reconstructable from the read model. Folding is
+  implemented as an outline heuristic — a folded row hides the
+  contiguous run of deeper rows beneath it — which is exact for the
+  common case (a note on a board plus its sub-boards) and for the e2e,
+  but with several sibling top-level boards the BFS order can attribute
+  a deeper row to the wrong top-level parent. A fully faithful tree
+  would need a parent field on `NoteMetadataBoard` (persistence change,
+  out of scope by the fence). Noted for a future ticket if the artist
+  hits it.
+- Default fold matches the kit: top level open, everything deeper
+  folded, so 40-board notes stay scannable. Fold state is ephemeral
+  ($state), reset when the open note changes so folds never leak.
+- Fly is now the explicit `⌖ fly` chip (testid `metadata-fly`), not the
+  whole row (the row hosts fold + label + count + chip as siblings — no
+  nested buttons). The shipped fly e2e was updated to click the chip;
+  `metadata-board` stays on the row so its text/count assertions hold.
+  Added a fold e2e and switched the toggle-off assertion to the new
+  `metadata-off` dashed explainer (the old On/Off text button is gone).
