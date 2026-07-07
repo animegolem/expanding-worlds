@@ -28,6 +28,17 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Session snapshots** (AI-IMP-120, 2026-07-06): Settings →
+  turn snapshots to "git commit" on a real project, work a while,
+  then quit — does closing feel instant, or does the snapshot make
+  it drag? (Quit is time-bounded at 15s worst-case for a huge first
+  commit; normal checkpoints should be sub-second.) Leave it idle
+  ~10 min mid-session: the checkpoint should be imperceptible — no
+  hitch while you're staring at the board. Check the Settings
+  disk-size readout reads sane against the project's actual size,
+  and (if you're curious) `git log` in the project dir should read
+  as "Snapshot: idle checkpoint — 12 notes, 87 assets — <time>".
+
 - [ ] **Note metadata block** (AI-IMP-119, 2026-07-06): open a note
   whose node lives on several boards — the Placements card below the
   editor should read scannably (tree indentation, counts) and each

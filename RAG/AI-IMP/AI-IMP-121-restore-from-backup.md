@@ -28,6 +28,16 @@ creates a sibling project directory from that snapshot (db, assets,
 notes tree), then offers to open it; the original project is
 untouched throughout.
 
+Carried from the AI-IMP-120 review (lead, 2026-07-06): a quit that
+abandons an in-flight `git add`/`commit` (the ritual is time-bounded
+at 15 s; a first-ever multi-GB commit can exceed it) can orphan
+`.git/index.lock`, after which every later snapshot fails with only
+a logged error — the worst failure mode for a backup. This ticket
+adds a stale-lock sweep to `ensureGitReady`: an `index.lock` present
+at snapshot start is stale by construction (the engine serializes
+its own git ops and the project dir is app-managed) — remove it,
+with a unit covering the wedged-then-recovers path.
+
 ### Out of Scope
 
 - In-place rollback of any kind.
@@ -81,6 +91,9 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [ ] E2E: create snapshots, restore an older one, assert the new
       directory opens with that snapshot's content and the
       original is byte-untouched (mtime/hash spot check).
+- [ ] Stale `index.lock` sweep in the 120 engine's ensureGitReady
+      (see summary — carried from the 120 review); unit covers a
+      wedged repo recovering at the next snapshot.
 - [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm -r lint`,
       desktop e2e hidden.
 - [ ] HUMAN-TESTING entry appended (does the confirm read as

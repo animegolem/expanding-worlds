@@ -6,12 +6,12 @@ tags:
   - backup
   - persistence
   - main-process
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-096]
 parent_epic: [[AI-EPIC-008-export-import-signoff]]
 confidence_score: 0.7
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 
@@ -115,10 +115,10 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       a shortened threshold.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm -r lint`,
       desktop e2e hidden.
-- [ ] HUMAN-TESTING entry appended (does End Session feel
+- [x] HUMAN-TESTING entry appended (does End Session feel
       instant with snapshots on; size readout sanity on a real
       project). — DEFERRED to the lead: this agent is fenced out of
-      RAG/HUMAN-TESTING.md; the lead appends on merge.
+      RAG/HUMAN-TESTING.md; the lead appended it at merge close.
 
 ### Acceptance Criteria
 

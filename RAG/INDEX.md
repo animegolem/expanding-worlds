@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 3 | 0 |
-| Planned | 6 | 7 |
+| Planned | 6 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 119 |
+| Completed | 13 | 120 |
 | **Total** | **22** | **127** |
 
 ## In Progress
@@ -20,7 +20,7 @@
 
 **IMPs:**
 - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
-- [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — planned
+- [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
 - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — planned
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — planned
 
@@ -189,7 +189,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 114 IMPs completed</summary>
+<summary>13 EPICs, 115 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
