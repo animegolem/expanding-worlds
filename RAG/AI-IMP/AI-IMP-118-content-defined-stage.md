@@ -91,29 +91,32 @@ apply; reset ratchet on navigation; feed background color.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Add `stage-extent.ts`: `computeContentBounds(rects, padding)`,
+- [x] Add `stage-extent.ts`: `computeContentBounds(rects, padding)`,
       `ratchetExtent(prev, next)` (grow-only union), and an eased
       per-frame approach toward the target; unit tests cover empty
       input (null extent), single item, growth, no-shrink on inward
       move, and reset semantics.
-- [ ] Wire the host: recompute target extent on every scene apply
+- [x] Wire the host: recompute target extent on every scene apply
       from placement + decoration world rects; reset the ratchet
       when navigating to a different board (board open = snug).
-- [ ] Render: lit rect in canvas background color under the grid
+- [x] Render: lit rect in canvas background color under the grid
       when no background image is set and the extent is non-null;
-      void tone via derived theme token; grid alpha reduced outside
-      the extent (both stage kinds share the void convention).
-- [ ] Empty-board state: no lit rect; first placement blooms the
+      void tone via derived tone (color-mix equivalent, exported
+      constant); grid dimmed outside the extent via a void veil
+      (both stage kinds share the void convention).
+- [x] Empty-board state: no lit rect; first placement blooms the
       extent (eased, not popped).
-- [ ] Confirm zoom-to-fit (no selection) frames the padded extent
-      consistently with what is lit.
-- [ ] E2E: place an item → lit stage exists; drag it outward → the
+- [x] Confirm zoom-to-fit (no selection) frames the padded extent
+      consistently with what is lit (host exposes the lit target;
+      board-tooling frames it).
+- [x] E2E: place an item → lit stage exists; drag it outward → the
       extent target grows; drag it back inward → extent unchanged;
       navigate away and back → extent snug again.
-- [ ] Gates: `pnpm -r build`, canvas-engine vitest, lint, desktop
+- [x] Gates: `pnpm -r build`, canvas-engine vitest, lint, desktop
       e2e (hidden windows), theme guard tests pass.
 - [ ] Append a HUMAN-TESTING.md entry (feel of the bloom, void
-      darkness readability over both themes).
+      darkness readability over both themes). — deferred to the lead
+      per the agent brief fence (suggested text supplied in report).
 
 ### Acceptance Criteria
 
@@ -143,3 +146,44 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Void tone: runtime color-mix, not a static theme.css token.** The
+  brief listed a `theme.css` "void-step token." A static CSS token
+  derived from `--ew-surface-solid` cannot track the *effective* fill,
+  which may be a flat-canvas swatch (`--ew-canvas-flat-N`) or an
+  arbitrary per-canvas OS-picked color on the canvas record. The RFC's
+  stronger requirement — "the void tone derives from the *effective
+  background color*" — is met instead by `voidTone(fill)` in the pure
+  module: a `color-mix(in srgb, fill, black)` equivalent (channel
+  scale by `1 - STAGE_VOID_MIX`) returning a packed number. No raw
+  color literal anywhere (the theme guard passes; `theme.css` is
+  untouched), and the void adapts to any background in both themes for
+  free. `STAGE_VOID_MIX` is the exported placeholder the design pass
+  restyles.
+- **Grid dimming via a void veil, not per-line clipping.** "The grid
+  runs through both, dimmed in the void" is rendered by drawing the
+  full-strength grid across the viewport, then painting a
+  semi-transparent void-tone veil (`subtractRect` → ≤4 bands) over the
+  region *outside* the lit extent. This avoids Pixi masking/inverse
+  masks and keeps the lit-region grid identical to the pre-ticket
+  look. `STAGE_VOID_VEIL_ALPHA` is the placeholder.
+- **Growth is committed-drag-time, then eased — not live during the
+  drag.** The ratchet recomputes on every scene apply (the seam the
+  brief specified: `refresh()` → `updateContentStage()`), so an edge
+  grows when a move gesture *commits*, then glides to the new target
+  via the `app.ticker` ease. Feeding ephemeral gesture rects for
+  live-during-drag growth would reach outside the scene-apply/
+  background seam the fence restricts; deferred as a feel refinement.
+- **Renderer seam invented:** the single `stageGfx` became three
+  bottom-of-world graphics — `stage-fill` (idx 0), `stage-grid`
+  (idx 1), `stage-void` veil (idx 2) — all below the background-image
+  plane and content, so items on the lit stage (and legally in the
+  void) are never dimmed. Image-stage rendering is byte-for-byte
+  unchanged (same `VOID_COLOR`, same lit rect, empty grid/veil).
+- **Zoom-to-fit** frames `handle.contentStageExtent()` (the grow-only
+  lit target) so the framing matches exactly what is lit; the raw
+  `unionBounds` bbox is only a last-resort fallback.
+- Gates on this worktree: `pnpm -r build` OK; canvas-engine vitest
+  314 passed (22 new in `stage-extent.test.ts`); `pnpm -r test`
+  exit 0 including desktop 128 e2e; new `content-stage.spec.ts`
+  1 passed; `eslint .` clean; theme guard 4 passed.

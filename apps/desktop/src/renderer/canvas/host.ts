@@ -22,6 +22,14 @@ import {
   SELECTION_OUTLINE_PAD_PX,
   SELECTION_OUTLINE_STROKE_PX,
   stageExtent,
+  approachExtent,
+  computeContentBounds,
+  ratchetExtent,
+  rectsEqual,
+  subtractRect,
+  voidTone,
+  STAGE_CONTENT_PADDING,
+  STAGE_VOID_VEIL_ALPHA,
   SceneSync,
   setPlacementTextureResident,
   syncPlacementLabelOffset,
@@ -80,6 +88,11 @@ export interface CanvasHostHandle {
   /** Eased camera flight framing `bounds` (§6.9 rev 0.11); any user
    * camera input aborts it. */
   flyTo(bounds: Rect): void
+  /** §6.7 rev 0.50: the content-defined lit stage extent (grow-only
+   * target), or null when the board has a background image or no
+   * content. Zoom-to-fit frames this so the framing matches what is
+   * lit. */
+  contentStageExtent(): Rect | null
   /** §4.8/§7.5 lens: dim everything but `ids` to a fraction of full
    * strength and ring the members. A view state, not a selection —
    * survives pan/zoom/edit, drops on Escape or clearLens(). */
@@ -137,10 +150,13 @@ declare global {
       /** Body child label — 'image' vs 'image-placeholder' proves
        * texture state at the pixel-adjacent level (AI-IMP-025). */
       placementBody: (id: string) => string | null
-      /** Stage/grid presentation state (AI-IMP-032). */
+      /** Stage/grid presentation state (AI-IMP-032, AI-IMP-118). */
       stage: () => {
         gridVisible: boolean
         extent: { x: number; y: number; width: number; height: number } | null
+        contentExtent: { x: number; y: number; width: number; height: number } | null
+        contentTarget: { x: number; y: number; width: number; height: number } | null
+        voidColor: number
         flightActive: boolean
         fallbackColor: string
       }
@@ -496,23 +512,107 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     return themeTokenValue('--ew-surface-solid')
   }
   let stageFallbackColor = computeStageFallback()
-  const stageGfx = new Graphics()
-  stageGfx.label = 'stage'
-  planes.world.addChildAt(stageGfx, 0)
+  // §6.7 rev 0.50: three world-plane graphics beneath all content —
+  // the lit stage fill (both stage kinds), the grid, and the void veil
+  // that dims the grid beyond a content-defined extent. Kept at the
+  // bottom so content and the background image plane render above them.
+  const stageFillGfx = new Graphics()
+  stageFillGfx.label = 'stage-fill'
+  const gridGfx = new Graphics()
+  gridGfx.label = 'stage-grid'
+  const voidVeilGfx = new Graphics()
+  voidVeilGfx.label = 'stage-void'
+  planes.world.addChildAt(stageFillGfx, 0)
+  planes.world.addChildAt(gridGfx, 1)
+  planes.world.addChildAt(voidVeilGfx, 2)
   let sceneBackground: SceneBackground | null = null
+  // Content-defined stage ratchet (§6.7 rev 0.50). `contentTarget` is
+  // the grow-only lit extent; `contentDisplayed` eases toward it so
+  // growth glides and the first placement blooms. `stageSnap` makes
+  // the NEXT recompute land snug without animation (board open); a
+  // live edit eases. All ephemeral — nothing persisted.
+  let contentTarget: Rect | null = null
+  let contentDisplayed: Rect | null = null
+  let stageSnap = true
+  const effectiveFill = (): string => sceneBackground?.color ?? stageFallbackColor
+  const visibleWorldRect = (): Rect => {
+    const view = viewport()
+    const tl = controller.camera.screenToWorld({ x: 0, y: 0 })
+    const br = controller.camera.screenToWorld({ x: view.width, y: view.height })
+    return { x: tl.x, y: tl.y, width: br.x - tl.x, height: br.y - tl.y }
+  }
   function drawStageOrGrid(): void {
-    const extent = stageExtent(sceneBackground)
-    if (extent) {
+    const imageExtent = stageExtent(sceneBackground)
+    if (imageExtent) {
+      // Image stage (rev 0.11) — unchanged: lit rect, fixed void, no
+      // grid, no veil.
       app.renderer.background.color = VOID_COLOR
-      stageGfx.clear()
-      stageGfx
-        .rect(extent.x, extent.y, extent.width, extent.height)
-        .fill({ color: sceneBackground?.color ?? stageFallbackColor })
-    } else {
-      app.renderer.background.color = sceneBackground?.color ?? stageFallbackColor
-      drawGrid(stageGfx, controller.camera.state(), viewport())
+      stageFillGfx.clear()
+      stageFillGfx
+        .rect(imageExtent.x, imageExtent.y, imageExtent.width, imageExtent.height)
+        .fill({ color: effectiveFill() })
+      gridGfx.clear()
+      voidVeilGfx.clear()
+      return
+    }
+    // No background image → content-defined stage over void, or (no
+    // content) all void. The grid runs across both; the veil dims it
+    // beyond the lit extent. Void tone derives from the effective fill.
+    const fill = effectiveFill()
+    app.renderer.background.color = voidTone(fill)
+    stageFillGfx.clear()
+    if (contentDisplayed) {
+      stageFillGfx
+        .rect(
+          contentDisplayed.x,
+          contentDisplayed.y,
+          contentDisplayed.width,
+          contentDisplayed.height,
+        )
+        .fill({ color: fill })
+    }
+    drawGrid(gridGfx, controller.camera.state(), viewport())
+    voidVeilGfx.clear()
+    const bands = subtractRect(visibleWorldRect(), contentDisplayed)
+    for (const band of bands) {
+      voidVeilGfx
+        .rect(band.x, band.y, band.width, band.height)
+        .fill({ color: voidTone(fill), alpha: STAGE_VOID_VEIL_ALPHA })
     }
   }
+  // Recompute the ratcheted target from the current items and drive the
+  // eased displayed extent. Snaps snug on board open; eases on edits.
+  function updateContentStage(): void {
+    if (sceneBackground?.assetContentHash) {
+      // Image stage owns the extent; retire the content ratchet.
+      contentTarget = null
+      contentDisplayed = null
+      stageSnap = false
+      return
+    }
+    const rects: Rect[] = []
+    for (const item of controller.items()) {
+      const aabb = itemWorldAABB(item)
+      if (aabb) rects.push(aabb)
+    }
+    const bounds = computeContentBounds(rects, STAGE_CONTENT_PADDING)
+    if (stageSnap) {
+      contentTarget = bounds
+      contentDisplayed = bounds
+      stageSnap = false
+    } else {
+      contentTarget = ratchetExtent(contentTarget, bounds)
+    }
+  }
+  // Per-frame ease toward the target; redraw only when the displayed
+  // extent actually moved (the snap in approachExtent ends the loop).
+  app.ticker.add(() => {
+    if (rectsEqual(contentDisplayed, contentTarget)) return
+    const next = approachExtent(contentDisplayed, contentTarget, app.ticker.deltaMS)
+    if (rectsEqual(next, contentDisplayed)) return
+    contentDisplayed = next
+    drawStageOrGrid()
+  })
   const unsubscribeSettings = onAppSettingsChanged(() => {
     const next = computeStageFallback()
     if (next === stageFallbackColor) return
@@ -683,6 +783,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         sync.clear()
         controller.setItems([])
         sceneBackground = null
+        updateContentStage()
         drawStageOrGrid()
         notifySceneApplied()
         return
@@ -691,6 +792,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       sceneBackground = scene.background
       sync.apply(scene.items)
       controller.setItems(scene.items)
+      // §6.7 rev 0.50: recompute the content-defined stage extent from
+      // the fresh items (grow-only within a session; snug on open).
+      updateContentStage()
       // The canonical scene now reflects (or supersedes) any committed
       // gesture; ephemeral overlays would only go stale from here.
       ephemeral.clear()
@@ -860,6 +964,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
     canvasId = nextCanvasId
     controller.setCanvas(nextCanvasId)
+    // §6.7 rev 0.50: board open recomputes the stage snug — reset the
+    // ratchet so the incoming board's extent is not inherited/eased.
+    contentTarget = null
+    contentDisplayed = null
+    stageSnap = true
     // Memory release on swap (§12.2): an empty cull pass fires the
     // residency-leave hooks (each releases its budget ref) while the
     // display objects still exist; then the scene and the idle pool go.
@@ -910,6 +1019,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     stage: () => ({
       gridVisible: stageExtent(sceneBackground) === null,
       extent: stageExtent(sceneBackground),
+      // §6.7 rev 0.50 content-defined stage: the eased lit extent and
+      // its grow-only target (null when the board is empty / all void).
+      contentExtent: contentDisplayed ? { ...contentDisplayed } : null,
+      contentTarget: contentTarget ? { ...contentTarget } : null,
+      voidColor: voidTone(effectiveFill()),
       flightActive: flight.active,
       // §11.5 flat canvas color (074): what a background-less board
       // actually paints right now.
@@ -969,6 +1083,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         flight.flyTo(target)
       }
     },
+    contentStageExtent: () => (contentTarget ? { ...contentTarget } : null),
     setLens: (ids: readonly string[]) => controller.lens.set(ids),
     clearLens: () => controller.lens.clear(),
     lens: () => controller.lens.ids(),

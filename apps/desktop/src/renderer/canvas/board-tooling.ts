@@ -182,7 +182,11 @@ export function attachBoardTooling(
 
   function zoomToFit(): void {
     // §6.7 rev 0.11: a background stage is the canvas's home extent.
-    const bounds = stageExtent(background) ?? unionBounds(controller.items())
+    // rev 0.50: without an image, frame the content-defined lit extent
+    // (padded, grow-only) so the fit matches exactly what is lit — the
+    // raw item bbox is only a last-resort fallback.
+    const bounds =
+      stageExtent(background) ?? handle.contentStageExtent() ?? unionBounds(controller.items())
     if (bounds) handle.flyTo(bounds)
   }
 
