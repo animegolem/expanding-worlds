@@ -48,6 +48,13 @@ flush list — resolved items move into the RFC and leave.
   discussion): "design team pass" territory with the UI tie-down.
 - Text-drop special cases (code blocks, essay-length paste → note)
   (rev 0.36).
+- **Undo capture breadth** (from the 2026-07-06 Codex review;
+  AI-IMP-114 shipped a deliberate eight-command "gesture-shaped"
+  set, narrower than §10.2's all-durable-commands reading): decide
+  the target set — do renames, tag edits, appearance switches,
+  bookmark edits, and trash/restore join board Mod+Z? All command
+  inverses already exist; this is a product-feel call, not
+  plumbing.
 
 (URL-as-tag vs source field RESOLVED 2026-07-06, rev 0.53: source
 field + domain tag-offer chip.)

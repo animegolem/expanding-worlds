@@ -11,7 +11,7 @@
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 115 |
-| **Total** | **22** | **121** |
+| **Total** | **22** | **123** |
 
 ## In Progress
 
@@ -92,6 +92,8 @@
 
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-123-review-hygiene-registry-and-disposer|IMP-123]] — planned, no epic dependency found
+- [[AI-IMP-124-url-import-redirect-guard|IMP-124]] — planned, no epic dependency found
+- [[AI-IMP-125-trashed-owner-board-degradation|IMP-125]] — planned, no epic dependency found
 
 ---
 

@@ -19,27 +19,40 @@ date_completed:
 
 ## Summary of Issue #1
 
-Two confirmed findings from the 2026-07-06 Codex review. (1) Undo/
-Redo shipped (AI-IMP-114) with capture-phase key handling in
-`undo/undo-keys.ts` and printed shortcuts on the ☰ rows, but the
-bindings never joined the keymap registry (`keys/bindings.ts`) —
-this was a recorded debt, and Codex sharpened it: the Settings
-Keyboard section claims to list every shortcut, so the UI currently
-overclaims. (2) `attachPanels()` (`note/panels.ts:503`) discards
-the `dispose` returned by `createNoteProjectPort()`, so the
-project-changed subscription leaks past panel-system teardown. Done
-means: Mod+Z / Shift+Mod+Z appear in the registry and the Settings
-Keyboard section (dispatch stays in undo-keys — declaration-only
-registration is fine, matching how other capture-phase bindings are
-listed), and the panels disposer array includes the port's dispose.
+Four confirmed findings from the 2026-07-06 Codex reviews (rounds 1
+and 2). (1) Undo/Redo shipped (AI-IMP-114) with capture-phase key
+handling in `undo/undo-keys.ts` and printed shortcuts on the ☰ rows,
+but the bindings never joined the keymap registry
+(`keys/bindings.ts`) — this was a recorded debt, and Codex sharpened
+it: the Settings Keyboard section claims to list every shortcut, so
+the UI currently overclaims. (2) `attachPanels()`
+(`note/panels.ts:503`) discards the `dispose` returned by
+`createNoteProjectPort()`, so the project-changed subscription leaks
+past panel-system teardown. (3) `AppearanceKind` in
+`packages/domain/src/records.ts` is `'dot' | 'icon' | 'image'` while
+migration 0006, command payloads, and canvas-engine types all carry
+`'card'` — consumers typing persisted card nodes through domain
+records are wrong. (4) `renderMetadataBlock`
+(`packages/domain/src/note-metadata.ts`) interpolates original
+filenames and source URLs verbatim; a filename containing `[[...]]`
+would inject wiki-link tokens into the generated block, which the
+lexical link extractor then indexes (and rename-time refresh
+ordering assumes the block never changes prose ranges). Done means:
+registry + Settings list undo/redo, the panels disposer is retained,
+`'card'` joins `AppearanceKind` (and any switch over it compiles
+exhaustively), and metadata rendering neutralizes `[[` so generated
+blocks can never mint link tokens.
 
 ### Out of Scope
 
 - Rebinding support (still deferred, §8.2).
 - Moving undo dispatch INTO the registry's dispatcher (EPIC-007
   refactor territory; declaration-only is the ticket's bar).
-- Any other Codex finding (triaged separately: stale-dist P0 was
-  environmental; 116/118/119 findings predated their landings).
+- Widening the undo capture set (deliberate v1 narrowing per
+  AI-IMP-114 — a DESIGN-QUEUE conversation, not hygiene).
+- Any other Codex finding (triaged separately: the stale-dist P0/P1
+  claims were environmental both rounds; SSRF redirects are
+  AI-IMP-124; trashed-owner boards are AI-IMP-125).
 
 ### Files to Touch
 
@@ -51,6 +64,10 @@ registry declaration for combo matching or note the seam.
 undo/redo rows (platform-aware combo strings).
 `apps/desktop/src/renderer/note/panels.ts`: capture and register
 the port disposer.
+`packages/domain/src/records.ts`: add `'card'` to AppearanceKind;
+chase any newly-failing exhaustiveness.
+`packages/domain/src/note-metadata.ts` (+ test): neutralize `[[`
+in rendered filenames/URLs.
 Unit test if the panels store has one covering teardown.
 
 ### Implementation Checklist
@@ -67,6 +84,11 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       never drift from the handled one.
 - [ ] panels.ts retains the port dispose in `disposers`; teardown
       unsubscribes (test or targeted assertion).
+- [ ] `'card'` in AppearanceKind; `pnpm -r build` surfaces and
+      resolves any exhaustiveness fallout.
+- [ ] renderMetadataBlock neutralizes `[[` in filenames and source
+      URLs; unit proves a `[[hostile]]` filename mints no link token
+      (extractWikiLinks over the rendered block is empty).
 - [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`,
       desktop e2e hidden.
 
@@ -78,6 +100,12 @@ combos, and the "every shortcut" claim is accurate.
 **GIVEN** the panel system attaches and detaches
 **THEN** the project-changed subscription from the note project
 port is disposed at teardown.
+**GIVEN** a persisted card-appearance node typed through domain
+records
+**THEN** `AppearanceKind` admits `'card'`.
+**GIVEN** an asset whose original filename contains `[[...]]`
+**WHEN** its note's metadata block regenerates
+**THEN** the rendered block contains no extractable wiki-link token.
 
 ### Issues Encountered
 
