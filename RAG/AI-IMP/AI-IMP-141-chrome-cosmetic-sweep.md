@@ -63,12 +63,12 @@ Touched e2e assertions only where colors/glyphs were pinned.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Selection = accent token on both themes.
-- [ ] PathBar ▸; tooltip token trio; bar restyle with appearance
+- [x] Selection = accent token on both themes.
+- [x] PathBar ▸; tooltip token trio; bar restyle with appearance
       button intact.
-- [ ] Hint charms drawn shapes, cadence/scrim unchanged.
-- [ ] Full e2e green; no testid churn.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Hint charms drawn shapes, cadence/scrim unchanged.
+- [x] Full e2e green; no testid churn.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead (hint
       shapes read at a glance vs old glyphs).
@@ -87,3 +87,44 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Charm-bar interception regression, diagnosed and fixed.** The
+  straight kit geometry (26px buttons + 6px vertical padding + 4px
+  gap) grew the bar's outer height 32→40px, and five note/panel
+  specs went red deterministically: Playwright's actionability
+  hit-test found `charm-bar` covering the panel's first-line
+  wiki-link. Proven mine by stash-and-rerun on clean base (24/24
+  green without the diff). Two-part fix, no spec weakened:
+  (1) the disengaged charms layer is now pointer-transparent
+  (`pointer-events:none !important` on the layer and its subtree —
+  an opacity-0 bar was still swallowing clicks because its inline
+  `pointer-events:auto` survived the fade); (2) the bar keeps the
+  full kit visual language (menu surface, `0 8px 22px` shadow, 10px
+  radius, borderless 26px/7px-radius buttons) but holds vertical
+  padding at 2px so the OUTER height stays the pre-restyle 32px.
+- **Latent z-inversion found (for the lead, out of my fence):**
+  `note/NotePanel.svelte` and `note/NotePanels.svelte` still carry
+  literal `z-index: 8` while the charms layer sits at
+  `Z.affordance` (100) — panels render UNDER canvas affordances,
+  inverting the §8.8 ladder (panel=200 > affordance=100). That
+  inversion is why a taller bar could occlude panel text at all.
+  note/ was fenced to the TipTap agent, so it is flagged here, not
+  fixed.
+- Popover anchors (tag chips / appearance) were a fixed `+44`
+  encoding the old 32px bar; they now derive from the live bar
+  height (`top + offsetHeight + 2`), same resulting geometry today,
+  robust to future bar restyles.
+- No theme.css token additions were needed: `--ew-chip-text`,
+  `--ew-chip-border`, `--ew-surface-menu`, `--ew-shadow`, and
+  `--ew-accent` all pre-exist in both theme blocks. No raw hex
+  added anywhere.
+- No e2e assertion changes were needed: nothing pinned the old
+  selection hex (0x4a9df0 lived only in host.ts; dark
+  `--ew-accent` resolves to the same value), the `/` separator, or
+  the ¶/⊡ hint glyphs.
+- Local `main` advanced twice during the build (153 merge + a
+  ContextMenu z-port hotfix that itself fixed a z-guard unit
+  failure my first gate run hit); rebased the working set onto
+  2cbf4e82 before gating. `RAG/INDEX.md` was NOT regenerated here
+  (worktree fence: only this ticket file in RAG/) — lead
+  regenerates at merge.

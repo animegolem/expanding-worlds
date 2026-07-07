@@ -110,7 +110,7 @@
     </span>
     {#each crumbs as crumb, index (index)}
       {#if index > 0}
-        <span class="sep">/</span>
+        <span class="sep">▸</span>
       {/if}
       <button
         type="button"
