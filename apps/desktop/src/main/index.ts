@@ -563,6 +563,40 @@ function grantLocalFonts(): void {
 // running via backgroundThrottling: false.
 const hiddenTestWindows = process.env['EW_TEST_HIDDEN_WINDOWS'] === '1'
 
+// RFC §8.2 "the shell eats the window" (rev 0.64, signature-pin pass):
+// frameless on every platform so the board paints edge-to-edge and the
+// hover-revealed title strip is the only drag handle.
+//   - macOS: hide the titlebar but keep the traffic lights, dropped INTO
+//     the board over the strip band (trafficLightPosition).
+//   - Windows: titleBarStyle:'hidden' + titleBarOverlay gives a frameless
+//     look while the OS still draws reachable min/max/close (top-right).
+//     The overlay is transparent so the smoky strip shows through; the
+//     glyph colour is a light neutral for the near-black band.
+//   - Linux: titleBarOverlay is unsupported, so frame:false + the strip's
+//     own drawn min/max/close wired over window:* IPC (see below).
+// UNTESTED off macOS: only the darwin branch runs on this hardware; the
+// Windows/Linux branches follow documented Electron behaviour.
+//
+// E2E gate: the hidden-window suite (EW_TEST_HIDDEN_WINDOWS=1) launches
+// many sequential invisible windows. Frameless options were verified not
+// to perturb that suite on macOS, so they stay ON under test — a real
+// frameless window is what ships. If a future platform's frameless config
+// ever destabilises the suite, disable this for hiddenTestWindows and say
+// so loudly in the ticket rather than silently masking it.
+function framelessWindowOptions(): Electron.BrowserWindowConstructorOptions {
+  if (process.platform === 'darwin') {
+    return { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 13 } }
+  }
+  if (process.platform === 'win32') {
+    return {
+      titleBarStyle: 'hidden',
+      titleBarOverlay: { color: '#00000000', symbolColor: '#c8ccd2', height: 34 },
+    }
+  }
+  // linux and anything else: bare frameless; controls live in the strip.
+  return { frame: false }
+}
+
 function setWindowVibrancy(win: BrowserWindow, enabled: boolean): boolean {
   if (!enabled) {
     if (process.platform === 'darwin') win.setVibrancy(null)
@@ -668,6 +702,7 @@ async function createWindow(): Promise<void> {
     height: 800,
     title: 'Expanding Worlds',
     show: !hiddenTestWindows,
+    ...framelessWindowOptions(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
       sandbox: true,
@@ -847,6 +882,23 @@ void app.whenReady().then(() => {
   ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     return win ? setWindowVibrancy(win, Boolean(enabled)) : false
+  })
+
+  // §8.2 frameless shell: Linux has no OS-drawn window controls under
+  // frame:false, so the title strip draws its own min/max/close and
+  // routes the intent here. macOS (traffic lights) and Windows
+  // (titleBarOverlay) keep their native controls and never call these.
+  ipcMain.handle('window:minimize', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize()
+  })
+  ipcMain.handle('window:toggle-maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+  })
+  ipcMain.handle('window:close', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close()
   })
   ipcMain.handle('project:ping', () => callUtility({ type: 'ping' }))
   ipcMain.handle('project:execute', (_event, envelope: CommandEnvelope) =>
