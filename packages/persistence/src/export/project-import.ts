@@ -134,6 +134,12 @@ export async function readArchiveManifest(archivePath: string): Promise<ExportMa
  * place only after the last verification passes.
  */
 export async function importProject(archivePath: string, destDir: string): Promise<ImportResult> {
+  // Enforce our own contract (Codex round 3, P3): POSIX rename happily
+  // replaces an existing EMPTY directory, so the app caller's
+  // collision-safe naming must not be the only line of defense.
+  if (existsSync(destDir)) {
+    throw refuse('DEST_EXISTS', `the destination already exists: ${destDir}`)
+  }
   const manifest = await readArchiveManifest(archivePath)
   const partial = `${destDir}.partial`
   rmSync(partial, { recursive: true, force: true })
@@ -191,6 +197,11 @@ export async function importProject(archivePath: string, destDir: string): Promi
           .all<{ content_hash: string }>('SELECT DISTINCT content_hash FROM asset')
           .map((r) => r.content_hash)
         for (const hash of hashes) {
+          // A non-canonical hash could dereference outside the store
+          // or dodge the manifest's sha256===basename binding.
+          if (!/^[0-9a-f]{64}$/.test(hash)) {
+            throw refuse('BAD_DATABASE', 'the archived database has a malformed content hash')
+          }
           const blob = join(partial, blobRelativePath(hash))
           if (!existsSync(blob)) {
             throw refuse('BAD_DATABASE', `the archive is missing media the project references`)

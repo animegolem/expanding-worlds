@@ -60,8 +60,16 @@ export function filterActiveOnly(tempDbPath: string): void {
            OR tag_id IN (SELECT id FROM tag WHERE lifecycle_state = 'trashed');
       DELETE FROM tag WHERE lifecycle_state = 'trashed';
 
+      -- Bookmarks have no canvas FK by design (0005), so their delete
+      -- predicate must MATCH the canvas delete predicate below —
+      -- including owner-trashed boards — or the export ships bookmarks
+      -- to canvases it removed (Codex round 3).
       DELETE FROM bookmark
-        WHERE canvas_id IN (SELECT id FROM canvas WHERE lifecycle_state = 'trashed');
+        WHERE canvas_id IN (
+          SELECT c.id FROM canvas c
+          LEFT JOIN node owner ON owner.id = c.node_id
+          WHERE c.lifecycle_state = 'trashed'
+             OR owner.lifecycle_state = 'trashed');
 
       -- Links FROM a dropped note do not travel; links TO one break
       -- (§9.7 purge semantics: broken keeps its face, offers recreate).

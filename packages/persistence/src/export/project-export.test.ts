@@ -225,6 +225,48 @@ describe('exportProject (§16, container rev 0.57)', () => {
     copy.close()
   })
 
+  it('active-only drops bookmarks to owner-trashed boards (round 3 P3)', async () => {
+    // §9.6: TrashNode leaves the owned canvas row ACTIVE, and bookmarks
+    // have no canvas FK — the bookmark predicate must match the canvas
+    // predicate or the export ships a bookmark to a removed board.
+    const info = service.info()
+    const exec = (commandType: string, payload: unknown): void => {
+      const result = service.execute({
+        commandId: uuidv7(),
+        projectId: info.projectId,
+        commandType,
+        commandVersion: 1,
+        issuedAt: new Date().toISOString(),
+        payload,
+      } as never)
+      if (result.status !== 'committed') throw new Error(`${commandType} failed`)
+    }
+    const nodeId = uuidv7()
+    exec('CreatePin', {
+      nodeId,
+      canvasId: info.rootCanvasId,
+      placementId: uuidv7(),
+      x: 10,
+      y: 10,
+      appearance: { kind: 'dot', color: '#ff7700' },
+    })
+    exec('CreateCanvas', { nodeId, canvasId: uuidv7() })
+    const db0 = readDb()
+    const ownedCanvas = db0.get<{ id: string }>('SELECT id FROM canvas WHERE node_id = ?', nodeId)!
+    db0.close()
+    exec('CreateBookmark', { bookmarkId: uuidv7(), canvasId: ownedCanvas.id, label: 'doomed', viewport: null })
+    exec('TrashNode', { nodeId })
+
+    const dest = join(outDir, 'bookmark-filter.ewproj')
+    await service.exportProject(dest, { activeOnly: true })
+    const extracted = join(outDir, 'bookmark-filter.sqlite')
+    writeFileSync(extracted, await readZipEntry(dest, DB_ENTRY))
+    const copy = Db.open(extracted, { readOnly: true })
+    expect(copy.all('SELECT id FROM bookmark').length).toBe(0)
+    expect(copy.all('SELECT id FROM canvas WHERE node_id = ?', nodeId).length).toBe(0)
+    copy.close()
+  })
+
   it('estimates source size by stat and fails loudly on a missing blob', async () => {
     const hash = seedAsset(Buffer.from('here-then-gone'))
     const db = readDb()

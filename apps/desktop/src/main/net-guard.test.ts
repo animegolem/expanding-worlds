@@ -108,4 +108,17 @@ describe('isPrivateAddress sanity (hop guard building block)', () => {
     // An unrecognizable mapped tail fails closed.
     expect(isPrivateAddress('::ffff:zz:1')).toBe(true)
   })
+
+  it('flags IPv4-embedded translation prefixes (NAT64/6to4; review round 3)', () => {
+    expect(isPrivateAddress('64:ff9b::7f00:1')).toBe(true) // NAT64 WKP → 127.0.0.1
+    expect(isPrivateAddress('64:ff9b:1::a00:1')).toBe(true) // NAT64 local-use → 10.0.0.1
+    expect(isPrivateAddress('2002:7f00:1::')).toBe(true) // 6to4 → 127.0.0.1
+    expect(isPrivateAddress('2002:c0a8:101::')).toBe(true) // 6to4 → 192.168.1.1
+    // Public embeddings stay public…
+    expect(isPrivateAddress('64:ff9b::808:808')).toBe(false) // → 8.8.8.8
+    expect(isPrivateAddress('2002:808:808::')).toBe(false)
+    // …and undecodable spellings of the prefixes fail closed.
+    expect(isPrivateAddress('64:ff9b:0:1:2:3:4:5')).toBe(true)
+    expect(isPrivateAddress('2002::')).toBe(true)
+  })
 })

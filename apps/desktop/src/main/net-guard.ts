@@ -28,6 +28,21 @@ export function isPrivateAddress(ip: string): boolean {
   }
   // Uncompressed v4-mapped spelling (a resolver may hand it back raw).
   const lower = ip.toLowerCase().replace(/^0:0:0:0:0:ffff:/, '::ffff:')
+  // IPv4-embedded translation prefixes (Codex round 3, P2): NAT64
+  // well-known (64:ff9b::/96), NAT64 local-use (64:ff9b:1::/48), and
+  // 6to4 (2002::/16) all embed an IPv4 the OS may translate straight
+  // to a private target. Decode the embedded address and judge THAT;
+  // an embedding we can't decode fails closed.
+  const translated =
+    /^64:ff9b(?:|:1(?::[0-9a-f]{1,4})*)::(?:([0-9a-f]{1,4}):)?([0-9a-f]{1,4})$/.exec(lower) ??
+    /^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4})(?:::?|:)/.exec(lower)
+  if (translated) {
+    const hi = parseInt(translated[1] ?? '0', 16)
+    const lo = parseInt(translated[2]!, 16)
+    if (Number.isNaN(hi) || Number.isNaN(lo)) return true
+    return isPrivateAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`)
+  }
+  if (lower.startsWith('64:ff9b') || lower.startsWith('2002:')) return true
   if (lower === '::' || lower === '::1') return true
   if (lower.startsWith('fc') || lower.startsWith('fd')) return true // fc00::/7 ULA
   if (/^fe[89ab]/.test(lower)) return true // fe80::/10 link-local

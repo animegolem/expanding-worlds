@@ -10,7 +10,7 @@
 | Planned | 4 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 15 | 153 |
+| Completed | 15 | 154 |
 | **Total** | **25** | **162** |
 
 ## In Progress
@@ -108,7 +108,6 @@
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
-- [[AI-IMP-159-crop-editor-overlay|IMP-159]] — planned, no epic dependency found
 - [[AI-IMP-161-charm-bar-adorned-bounds|IMP-161]] — planned, no epic dependency found
 - [[AI-IMP-163-owner-trashed-read-models|IMP-163]] — planned, no epic dependency found
 
@@ -128,27 +127,28 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4606 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (1965 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4650 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (1995 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1753 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1590 LOC)
 - apps/desktop/src/main/index.ts (1054 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (951 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/e2e/notes.spec.ts (902 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (899 LOC)
+- RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (881 LOC)
+- packages/canvas-engine/src/renderers/placement.test.ts (838 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
+- packages/canvas-engine/src/renderers/placement.ts (781 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
-- packages/canvas-engine/src/renderers/placement.test.ts (752 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (711 LOC)
-- packages/canvas-engine/src/renderers/placement.ts (707 LOC)
-- apps/desktop/src/renderer/menus/inventory.ts (684 LOC)
+- apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -183,12 +183,13 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - packages/persistence/src/handlers/frames.test.ts (477 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
+- RAG/HUMAN-TESTING.md (469 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
-- RAG/HUMAN-TESTING.md (457 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - packages/persistence/src/handlers/notes.ts (434 LOC)
+- apps/desktop/src/renderer/canvas/crop-editor.ts (431 LOC)
 - apps/desktop/src/renderer/theme.css (430 LOC)
 - apps/desktop/e2e/shell.spec.ts (426 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
@@ -213,12 +214,12 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
+- apps/desktop/src/renderer/menus/inventory.test.ts (337 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
-- apps/desktop/src/renderer/menus/inventory.test.ts (328 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - apps/desktop/e2e/charms.spec.ts (323 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)

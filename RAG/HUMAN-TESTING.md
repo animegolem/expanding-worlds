@@ -455,3 +455,15 @@ Draw an arrow between two images, delete one image, Mod+Z: the
 image AND its arrow connection should both come back exactly.
 Redo should release the arrow again (it stays, free-floating,
 where the image was).
+
+## AI-IMP-159 — the crop editor (2026-07-07)
+
+Charm bar › Crop on a placed image:
+- Handle feel: corners scale the rect, edges stretch it, thirds
+  guides while dragging. Too fiddly? Too loose?
+- Commit, then re-enter: the FULL image should return with your
+  rect ready to adjust; Reset restores everything.
+- Non-proportional crops stretch to the placement's frame (v1
+  semantics — displayed aspect changes). Does that surprise you?
+- Mod+Z after a crop restores the full display; the file on disk
+  never changes.

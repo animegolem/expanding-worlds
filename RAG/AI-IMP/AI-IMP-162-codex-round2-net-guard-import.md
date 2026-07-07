@@ -83,3 +83,20 @@ The P1 reproduction was one node one-liner — WHATWG normalization
 is the entire bug. The crafted-archive fixture rebuilds a real
 export via yauzl→yazl with the asset entry and its inventory row
 removed, which is exactly the attack shape.
+
+**Round 3 addendum (same review thread, all four verified and
+fixed here):** (1) P1: the manifest hash was attacker-writable, so
+blob bytes never bound to the DB content_hash — fixed with THE
+BINDING INVARIANT: an assets/ inventory entry's sha256 must EQUAL
+its content-addressed basename, making extraction's stream-hash
+bind bytes→basename→DB; plus a DB-side canonical-hash format
+check; proven by a swap-bytes-and-correct-the-manifest fixture
+(refused at parse). (2) P2: NAT64 (64:ff9b::/96, 64:ff9b:1::/48)
+and 6to4 (2002::/16) embeddings now decode their inner IPv4 and
+judge that; undecodable spellings of those prefixes fail closed
+(net-guard 18/18). (3) P3: active-only's bookmark delete predicate
+now matches the canvas predicate including owner-trashed boards
+(test). (4) P3: importProject refuses an existing destination
+(DEST_EXISTS) before extraction — POSIX rename replaces an empty
+dir, so the app caller's collision-safe naming is no longer the
+only defense. Gates: 182/182.

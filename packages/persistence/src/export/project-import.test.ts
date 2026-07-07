@@ -201,6 +201,85 @@ describe('importProject (§16 roundtrip, AI-IMP-158)', () => {
     expect(existsSync(`${destDir}.partial`)).toBe(false)
   })
 
+  it('refuses swapped blob bytes even with a "corrected" manifest hash (round 3 P1)', async () => {
+    // The attack: replace assets/xx/H with bytes B and rewrite the
+    // manifest entry's sha256 to sha256(B). Extraction's hash check
+    // then passes — the binding invariant (asset sha256 === basename
+    // === DB content_hash) is what refuses it, at manifest parse.
+    const bytes = Buffer.from('the-original-media')
+    const { createHash } = await import('node:crypto')
+    const hash = createHash('sha256').update(bytes).digest('hex')
+    const { mkdirSync } = await import('node:fs')
+    const { dirname } = await import('node:path')
+    const { blobRelativePath } = await import('../import/store')
+    const blob = join(dir, blobRelativePath(hash))
+    mkdirSync(dirname(blob), { recursive: true })
+    writeFileSync(blob, bytes)
+    const writer = Db.open(join(dir, 'project.sqlite'))
+    const projectId = (writer.get<{ id: string }>('SELECT id FROM project') ?? { id: '' }).id
+    const now = new Date().toISOString()
+    writer.run(
+      `INSERT INTO asset (id, project_id, kind, content_hash, original_filename,
+         mime_type, storage_path, created_at, updated_at)
+       VALUES (?, ?, 'image', ?, 'swap.png', 'image/png', ?, ?, ?)`,
+      uuidv7(), projectId, hash, blobRelativePath(hash), now, now,
+    )
+    writer.close()
+    const honest = join(outDir, 'honest2.ewproj')
+    await service.exportProject(honest, { activeOnly: false })
+
+    const evil = Buffer.from('attacker-substituted-bytes')
+    const evilHash = createHash('sha256').update(evil).digest('hex')
+    const yazlMod = await import('yazl')
+    const yauzlMod = (await import('yauzl')).default
+    const rebuilt = join(outDir, 'swapped.ewproj')
+    await new Promise<void>((resolve, reject) => {
+      yauzlMod.open(honest, { lazyEntries: true, autoClose: false }, (err, zipIn) => {
+        if (err || !zipIn) return reject(err)
+        const zipOut = new yazlMod.ZipFile()
+        const out = createWriteStream(rebuilt)
+        zipOut.outputStream.pipe(out).on('close', () => resolve())
+        zipIn.on('entry', (entry) => {
+          zipIn.openReadStream(entry, (e2, stream) => {
+            if (e2 || !stream) return reject(e2)
+            const chunks: Buffer[] = []
+            stream.on('data', (c: Buffer) => chunks.push(c))
+            stream.on('end', () => {
+              let buf = Buffer.concat(chunks)
+              if (entry.fileName === `assets/${hash.slice(0, 2)}/${hash}`) buf = evil
+              if (entry.fileName === 'manifest.json') {
+                const m = JSON.parse(buf.toString('utf8'))
+                for (const e of m.inventory) if (e.sha256 === hash) e.sha256 = evilHash
+                buf = Buffer.from(JSON.stringify(m), 'utf8')
+              }
+              zipOut.addBuffer(buf, entry.fileName)
+              zipIn.readEntry()
+            })
+          })
+        })
+        zipIn.on('end', () => {
+          zipIn.close()
+          zipOut.end()
+        })
+        zipIn.readEntry()
+      })
+    })
+
+    const destDir = join(outDir, 'never-swapped')
+    await expect(importProject(rebuilt, destDir)).rejects.toMatchObject({ code: 'BAD_MANIFEST' })
+    expect(existsSync(destDir)).toBe(false)
+    expect(existsSync(`${destDir}.partial`)).toBe(false)
+  })
+
+  it('refuses an existing destination directory (round 3 P3)', async () => {
+    const archive = join(outDir, 'dest.ewproj')
+    await service.exportProject(archive, { activeOnly: false })
+    const destDir = join(outDir, 'already-there')
+    const { mkdirSync } = await import('node:fs')
+    mkdirSync(destDir)
+    await expect(importProject(archive, destDir)).rejects.toMatchObject({ code: 'DEST_EXISTS' })
+  })
+
   it('refuses a schema-version mismatch by manifest alone', async () => {
     const archive = join(outDir, 'mismatch.ewproj')
     await service.exportProject(archive, { activeOnly: false })

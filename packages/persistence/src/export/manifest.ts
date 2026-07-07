@@ -80,6 +80,19 @@ export function parseManifest(text: string): ExportManifest {
     if (e['path'].startsWith('/') || (e['path'] as string).split('/').includes('..')) {
       throw new Error(`manifest inventory path escapes the archive: ${String(e['path'])}`)
     }
+    // THE BINDING INVARIANT (Codex round 3, P1): an asset entry's
+    // manifest hash must EQUAL its content-addressed basename. The
+    // manifest is attacker-writable; the DB's content_hash is what the
+    // project will actually dereference — requiring sha256 === basename
+    // makes extraction's stream-hash bind bytes → basename → DB hash,
+    // so swapped blob bytes with a "corrected" manifest still refuse.
+    const path = e['path'] as string
+    if (path.startsWith('assets/')) {
+      const basename = path.split('/').pop() ?? ''
+      if (!/^[0-9a-f]{64}$/.test(basename) || e['sha256'] !== basename) {
+        throw new Error(`asset entry hash does not match its content address: ${path}`)
+      }
+    }
   }
   return raw as ExportManifest
 }

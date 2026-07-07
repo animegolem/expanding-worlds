@@ -5,12 +5,12 @@ tags:
   - Implementation
   - canvas
   - charms
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-140]
 parent_epic:
 confidence_score: 0.65
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -93,7 +93,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Charm + menu rows enabled; disabled stubs removed.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (handle
+- [x] HUMAN-TESTING entry appended at merge by the lead (handle
       feel, guide weight, commit grammar).
 
 ### Acceptance Criteria
