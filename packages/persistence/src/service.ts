@@ -11,6 +11,7 @@ import { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 import { registerBookmarkHandlers } from './handlers/bookmarks'
 import { registerCanvasHandlers } from './handlers/canvases'
 import { registerDecorationHandlers } from './handlers/decorations'
+import { registerFrameHandlers } from './handlers/frames'
 import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
@@ -36,6 +37,7 @@ import { registerGalleryQueries } from './queries-gallery'
 import { registerLifecycleQueries } from './queries-lifecycle'
 import { registerNoteQueries } from './queries-notes'
 import { registerSearchQueries } from './queries-search'
+import { registerFrameQueries } from './queries-frames'
 import { registerStructureQueries } from './queries-structure'
 import { runRecovery, type RecoveryReport } from './recovery'
 import { registerSettingsQueries, setProjectSetting } from './settings'
@@ -133,12 +135,14 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
   registerLifecycleHandlers(commands)
   registerPinHandlers(commands)
   registerBookmarkHandlers(commands)
+  registerFrameHandlers(commands)
 
   const queries = new QueryRegistry()
   registerCoreQueries(queries)
   registerNoteQueries(queries)
   registerAssetQueries(queries)
   registerStructureQueries(queries)
+  registerFrameQueries(queries)
   registerSearchQueries(queries)
   registerLifecycleQueries(queries)
   registerSettingsQueries(queries)

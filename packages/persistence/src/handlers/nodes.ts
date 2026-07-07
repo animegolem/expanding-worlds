@@ -463,12 +463,17 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
         assetId = next.assetId
         // Non-destructive crop/framing; the asset itself is untouched.
         crop = next.crop === null ? null : JSON.stringify(next.crop)
-      } else if (next.kind !== 'card') {
+      } else if (next.kind !== 'card' && next.kind !== 'frame') {
         // §4.6 rev 0.31: card is payload-less — content comes from
-        // the attached note through the read model.
+        // the attached note through the read model. §4.9 rev 0.54:
+        // frame is payload-less too — its drawn region rides the
+        // placement geometry and membership lives in frame_member.
+        // Validated here (not a SQLite CHECK) per the EPIC-022
+        // growing-domain convention; migration 0007 dropped the
+        // node.appearance_kind CHECK.
         throw new DomainError(
           'VALIDATION_FAILED',
-          'appearance kind must be dot, icon, image, or card',
+          'appearance kind must be dot, icon, image, card, or frame',
         )
       }
     }
@@ -490,6 +495,8 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
       priorAppearance = { kind: 'dot', color: prior.appearance_color }
     } else if (prior.appearance_kind === 'card') {
       priorAppearance = { kind: 'card' }
+    } else if (prior.appearance_kind === 'frame') {
+      priorAppearance = { kind: 'frame' }
     } else if (prior.appearance_kind === 'icon' && prior.appearance_icon !== null) {
       priorAppearance = { kind: 'icon', icon: prior.appearance_icon }
     } else if (prior.appearance_kind === 'image' && prior.appearance_asset_id !== null) {
