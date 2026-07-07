@@ -11,7 +11,7 @@
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 14 | 130 |
-| **Total** | **23** | **150** |
+| **Total** | **23** | **151** |
 
 ## In Progress
 
@@ -117,6 +117,7 @@
 - [[AI-IMP-143-named-z-ladder|IMP-143]] — planned, no epic dependency found
 - [[AI-IMP-151-interaction-physics-beats|IMP-151]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
+- [[AI-IMP-153-one-voice-sweep|IMP-153]] — planned, no epic dependency found
 
 ---
 
