@@ -1,0 +1,39 @@
+/*
+ * The universal menu CASCADE (RFC-0001 §8.2 rev 0.64, decision 06,
+ * AI-IMP-167). Every menu and popover opens the SAME way: rows fade in
+ * staggered top to bottom, OPACITY ONLY (the chrome motion rule), the
+ * whole cascade landing inside EW_MENU_CASCADE_MS. One shared home so
+ * both menu families play the identical grammar — chrome/MenuPopover.svelte
+ * and the imperative menus/ContextMenu.ts builder, plus its flyouts.
+ * Close stays instant (there is deliberately NO exit keyframe here).
+ *
+ * The keyframe is the one shared piece; the per-row TIMING (delay,
+ * duration) is stamped by chrome/menu-cascade.ts straight from the
+ * chrome/beats.ts constants, so the numbers live in exactly one place
+ * (EW_MENU_STAGGER_MS, EW_MENU_CASCADE_MS, EW_MENU_STAGGER_CAP) and this
+ * file never hardcodes them.
+ *
+ * Rows animate to var(--row-rest-opacity, 1): a disabled row (which
+ * rests dimmed at 0.45) fades to its own resting opacity, never to full.
+ * The fade touches OPACITY ONLY — never pointer-events / visibility /
+ * display — so every row stays hit-testable through the fade (an
+ * opacity:0 element still receives clicks; rows are interactive the
+ * instant the menu opens). No app-wide prefers-reduced-motion query
+ * exists yet (noted, not invented); when one lands it belongs here.
+ */
+@keyframes ew-menu-row-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--row-rest-opacity, 1);
+  }
+}
+
+.ew-menu-cascade-row {
+  animation-name: ew-menu-row-in;
+  animation-timing-function: ease-out;
+  /* backwards+forwards: hold opacity 0 through the stagger delay, then
+     hold the resting opacity after — the row is never briefly full. */
+  animation-fill-mode: both;
+}

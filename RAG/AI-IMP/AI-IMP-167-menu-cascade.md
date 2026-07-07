@@ -61,10 +61,10 @@ E2E: context-menus spec extension (opacity poll).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Cascade on MenuPopover + ContextMenu family, opacity-only,
+- [x] Cascade on MenuPopover + ContextMenu family, opacity-only,
       named constants, long-menu cap.
-- [ ] Close unchanged; one-shot per open.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Close unchanged; one-shot per open.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -83,3 +83,43 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **One mechanism, one home.** The keyframe (`ew-menu-row-in`, opacity
+  0 → `var(--row-rest-opacity, 1)`, ease-out) lives in
+  `chrome/menu-cascade.css`; a shared applicator `applyMenuCascade`
+  (`chrome/menu-cascade.ts`) stamps each row's `--row-index`, class,
+  and per-row `animation-delay`/`animation-duration`. MenuPopover uses
+  it via `use:applyMenuCascade`; ContextMenu.ts calls it in `render()`
+  and again on each flyout panel (submenus cascade too).
+- **Cap = 4 rows; budget math.** delay = `min(index, 4) * 30ms`,
+  per-row fade = `EW_MENU_CASCADE_MS - cap*stagger = 190 - 120 = 70ms`.
+  The last staggered row starts at 120ms and finishes at exactly 190ms;
+  a 20-row menu caps at the same 120ms delay, so it still lands in
+  budget. All three numbers are named in `chrome/beats.ts`
+  (`EW_MENU_STAGGER_MS` 30, `EW_MENU_CASCADE_MS` 190,
+  `EW_MENU_STAGGER_CAP` 4) and the applicator reads them, so the CSS
+  never hardcodes timing — no TS/CSS drift.
+- **Disabled rows fade to their resting dimness, not to full.** The
+  keyframe animates to `var(--row-rest-opacity, 1)`; disabled rows set
+  `--row-rest-opacity: 0.45` (MenuPopover `.deferred`, ContextMenu
+  disabled buttons) so `fill-mode: both` holds 0.45, never 1. Without
+  this, the animation's end value would override the 0.45 resting
+  opacity and light disabled rows up.
+- **`--ew-` prefix trap avoided (per brief).** All cascade custom
+  properties are unprefixed (`--row-index`, `--row-rest-opacity`); the
+  theme guard (`theme.test.ts`) only checks `var(--ew-…)` references
+  and raw colors, both clean here (opacity-only, no hex/rgba).
+- **Interactivity during the fade is preserved** because the motion is
+  opacity-only — never `pointer-events`, `visibility`, or `display`.
+  An `opacity:0` element still hit-tests, and Playwright treats it as
+  visible/clickable, so the existing specs that click rows the instant
+  a menu opens (shell.spec `menu-settings`, the context-menu round
+  trips) stayed green.
+- **Reduced motion:** no app-wide `prefers-reduced-motion` query exists
+  yet; noted in `menu-cascade.css` as the home for one when it lands
+  (not invented here).
+- **Validation:** `pnpm -r build` ✓, `pnpm lint` ✓, `pnpm -r test`
+  → 186 passed, 1 flaky (a pre-existing font-family load race in
+  `decorations.spec.ts`, unrelated to this change). Targeted
+  `playwright test context-menus` → **9 passed** (the 8 existing specs
+  + the new cascade spec).

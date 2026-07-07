@@ -11,6 +11,7 @@
 <script lang="ts">
   import HelpAboutDialog from './HelpAboutDialog.svelte'
   import RestoreDialog from './RestoreDialog.svelte'
+  import { applyMenuCascade } from './menu-cascade'
   import { openTakeover } from './takeover'
   import { tooltip } from './tooltip'
   import { canRedo, canUndo, onUndoChanged, redo, undo } from '../undo/undo-store'
@@ -93,7 +94,9 @@
   })
 </script>
 
-<div class="menu" data-testid="rail-menu" role="menu">
+<!-- §8.2 decision 06 (AI-IMP-167): the universal CASCADE — rows fade in
+     staggered top-to-bottom on open, stamped once here. -->
+<div class="menu" data-testid="rail-menu" role="menu" use:applyMenuCascade>
   <button
     type="button"
     role="menuitem"
@@ -267,6 +270,9 @@
 
   button.deferred {
     opacity: 0.45;
+    /* The cascade fades to this resting opacity, so a disabled row
+       lands dimmed, never at full (AI-IMP-167). */
+    --row-rest-opacity: 0.45;
     cursor: default;
   }
 

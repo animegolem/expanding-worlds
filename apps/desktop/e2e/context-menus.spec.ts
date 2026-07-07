@@ -543,3 +543,61 @@ test('frame menu: sort family + fill + Delete-frame-contents-stay (§8.4)', asyn
     await app.close()
   }
 })
+
+/**
+ * AI-IMP-167 (RFC §8.2 rev 0.64, decision 06): the universal menu
+ * CASCADE. On open, rows fade in staggered top-to-bottom — OPACITY ONLY
+ * (the chrome rule), inside the ≤190ms budget, and interactive
+ * throughout. A reopen replays a fresh animation (render mounts new DOM).
+ * Intermediate opacities are deliberately NOT asserted (flake bait); the
+ * budget-landing and the animation's presence are.
+ */
+test('menu cascade: rows fade in on open, opacity-only, replay on reopen (§8.2)', async () => {
+  const { app, win } = await launchApp('ew-e2e-ctxmenu-cascade-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    await seedPin(win, 'Cascade', { x: 400, y: 300 })
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+    // Open the item menu.
+    await win.mouse.click(box.x + 400, box.y + 300, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+
+    // The last row (enabled Delete) carries the shared cascade class and
+    // a staggered --row-index — the grammar is wired.
+    const del = win.getByTestId('ctx-delete')
+    await expect(del).toHaveClass(/ew-menu-cascade-row/)
+    expect(await del.evaluate((el) => el.style.getPropertyValue('--row-index'))).not.toBe('')
+
+    // Opacity ONLY: the fade never touches pointer-events or visibility,
+    // so the row is hit-testable the instant the menu opens.
+    expect(await del.evaluate((el) => getComputedStyle(el).pointerEvents)).not.toBe('none')
+    expect(await del.evaluate((el) => getComputedStyle(el).visibility)).not.toBe('hidden')
+
+    // The last row reaches full opacity within EW_MENU_CASCADE_MS (190ms)
+    // plus generous CI slack — proof the cascade lands, never stalls.
+    await expect
+      .poll(async () => Number(await del.evaluate((el) => getComputedStyle(el).opacity)), {
+        timeout: 1000,
+      })
+      .toBe(1)
+
+    // Close, reopen → a FRESH cascade runs again (render mounts new DOM
+    // each open, so the row re-animates from 0).
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('context-menu')).toHaveCount(0)
+    await win.mouse.click(box.x + 400, box.y + 300, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    const del2 = win.getByTestId('ctx-delete')
+    // An animation is applied to the fresh row (replayed open).
+    expect(await del2.evaluate((el) => el.getAnimations().length)).toBeGreaterThan(0)
+    await expect
+      .poll(async () => Number(await del2.evaluate((el) => getComputedStyle(el).opacity)), {
+        timeout: 1000,
+      })
+      .toBe(1)
+  } finally {
+    await app.close()
+  }
+})

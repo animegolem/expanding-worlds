@@ -4,6 +4,10 @@ import './theme.css'
 // §7.1 editor face (AI-IMP-131): bundled Maple Mono @font-face + the
 // note-text scale. Import order after theme.css so its tokens resolve.
 import './editor-face.css'
+// §8.2 decision 06 (AI-IMP-167): the universal menu CASCADE keyframe —
+// one global home so both menu families (MenuPopover + the imperative
+// ContextMenu builder) share the identical open grammar.
+import './chrome/menu-cascade.css'
 // §8.2 keymap registry (AI-IMP-117): declare every binding once at
 // boot, before any tooltip or the settings Keyboard section reads it.
 import './keys/bindings'

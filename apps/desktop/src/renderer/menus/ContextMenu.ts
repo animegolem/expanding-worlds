@@ -32,6 +32,7 @@ import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from '../canvas/host'
 import type { BoardTooling } from '../canvas/board-tooling'
 import { navigateTo } from '../chrome/navigation'
+import { applyMenuCascade } from '../chrome/menu-cascade'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { requestCharmPopover } from '../canvas/charms-ui'
 import {
@@ -215,6 +216,9 @@ export function attachContextMenu(
     // greyed and names its reason only to assistive tech (aria-label).
     if (disabled) {
       button.style.opacity = '0.45'
+      // The cascade fades to this resting opacity, so a disabled row
+      // lands dimmed, never at full (AI-IMP-167).
+      button.style.setProperty('--row-rest-opacity', '0.45')
       button.setAttribute('aria-disabled', 'true')
       button.setAttribute('aria-label', item.disabledReason!)
     }
@@ -305,6 +309,8 @@ export function attachContextMenu(
       panel.style.left = `${rect.right - menuRect.left}px`
       panel.style.top = `${rect.top - menuRect.top}px`
       menu!.appendChild(panel)
+      // A flyout is a menu too — it cascades on open (AI-IMP-167).
+      applyMenuCascade(panel)
       open = panel
     })
   }
@@ -409,6 +415,10 @@ export function attachContextMenu(
       for (const item of group.items) renderRow(menu!, item)
     })
     element.appendChild(menu)
+    // §8.2 decision 06 (AI-IMP-167): the universal CASCADE — rows fade
+    // in staggered top-to-bottom on open. One-shot per fresh render;
+    // opacity only, so every row stays clickable through the fade.
+    applyMenuCascade(menu)
     clampInto(menu, at)
     document.addEventListener('pointerdown', onOutsidePointer, true)
     document.addEventListener('keydown', onMenuKeyDown, true)
