@@ -338,3 +338,12 @@ record — history lives in the tickets.
   `*`→`-`, `__bold__`→`**bold**`) — the text must read identically;
   anything that LOOKS different is a bug. Mod+Z inside the editor
   must stay text-only, never the board.
+- [ ] **Chrome cosmetic sweep** (AI-IMP-141, 2026-07-07): select
+  things in BOTH themes — the selection outline/marquee now follows
+  the accent token (light theme finally gets its own blue; dark
+  should look unchanged). The charm bar took the design-kit surface
+  (menu ground, soft shadow, borderless buttons) — does it read as
+  one family with the context menus? The ¶/⊡ hint charms are now
+  little drawn shapes (document / framed box) — legible at a glance
+  on busy art? Path bar crumbs separate with ▸ now. Gut check the
+  whole pass against the kit HTML.
