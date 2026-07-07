@@ -10,7 +10,7 @@
 | Planned | 4 | 8 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 135 |
+| Completed | 14 | 136 |
 | **Total** | **23** | **151** |
 
 ## In Progress
@@ -109,7 +109,6 @@
 
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-131-maple-mono-editor-face|IMP-131]] — planned, no epic dependency found
-- [[AI-IMP-133-shrink-ladder-constants|IMP-133]] — planned, no epic dependency found
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-140-image-body-treatment|IMP-140]] — planned, no epic dependency found
 - [[AI-IMP-141-chrome-cosmetic-sweep|IMP-141]] — planned, no epic dependency found
@@ -147,7 +146,7 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
-- packages/canvas-engine/src/renderers/placement.test.ts (646 LOC)
+- packages/canvas-engine/src/renderers/placement.test.ts (647 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (604 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
@@ -155,8 +154,8 @@ Generated from tracked files; binary assets excluded.
 ### > 300 LOC
 
 - apps/desktop/src/renderer/note/panels.ts (600 LOC)
-- packages/canvas-engine/src/renderers/placement.ts (590 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
+- packages/canvas-engine/src/renderers/placement.ts (584 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
