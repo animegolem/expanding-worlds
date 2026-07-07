@@ -80,16 +80,16 @@ dead-target degradation path.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] `getCanvasScene` refuses boards whose owner node is trashed;
+- [x] `getCanvasScene` refuses boards whose owner node is trashed;
       root canvas unaffected; unit both ways.
-- [ ] `listBookmarks` targetState reflects owner-node trash; unit.
-- [ ] BookmarkMenu In Trash state restores the correct record kind
+- [x] `listBookmarks` targetState reflects owner-node trash; unit.
+- [x] BookmarkMenu In Trash state restores the correct record kind
       (node vs canvas); revalidated bookmark opens.
-- [ ] Navigation to a trashed-owner board degrades explicitly
+- [x] Navigation to a trashed-owner board degrades explicitly
       (§8.1 skip/toast), never opens, never throws.
-- [ ] E2E: bookmark → trash owner node → In Trash presentation →
+- [x] E2E: bookmark → trash owner node → In Trash presentation →
       Restore → opens.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 
 ### Acceptance Criteria
@@ -114,3 +114,45 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Schema evidence for the root-canvas safety.** `canvas.node_id` is
+  `TEXT NOT NULL UNIQUE REFERENCES node(id)` (migration 0001) — every
+  canvas always has an owner node, never null. The root node is
+  trigger-protected against trashing (`trg_root_node_no_trash`), so the
+  root canvas's owner is always active. I used the ticket's suggested
+  defensive form regardless — `LEFT JOIN node cn ON cn.id = c.node_id`
+  with `(cn.id IS NULL OR cn.lifecycle_state = 'active')` in
+  `getCanvasScene`. Given the NOT-NULL FK the `cn.id IS NULL` arm is
+  currently unreachable, but it keeps the query correct if node_id ever
+  became nullable and reads as obviously root-safe. A unit and the e2e
+  both assert the root canvas still projects while an ordinary
+  trashed-owner board is refused.
+- **`getCanvasByNode` left unchanged (verified).** Its only non-test
+  consumer is `host.ts` resolving the ROOT canvas by the root node id
+  at mount — the root node is trash-protected, so no owner-trash
+  predicate is needed there. It also returns `lifecycleState`
+  explicitly, so any future caller can decide. Navigation's
+  `targetAlive` feeds off `getCanvasScene` (now owner-aware), not
+  `getCanvasByNode`.
+- **Navigation needed no change.** `targetAlive` returns
+  `response.ok && result !== null`; `getCanvasScene` now returns null
+  for a trashed-owner board, so Back/Forward/crumb all skip-and-collapse
+  through the EXISTING §8.1 path. `openCanvas` guards `if (scene)` and
+  `refresh()` guards `if (!scene)`, so a direct open of a null-scene
+  board yields an empty board, never a throw.
+- **Restore record-kind distinction.** `listBookmarks` now carries
+  `trashedKind: 'canvas' | 'node' | null` and `ownerNodeId`. Precedence:
+  canvas-row missing → purged (kind null); canvas row trashed → 'canvas';
+  else owner node trashed → 'node'. `BookmarkMenu.restoreAndJump`
+  issues `RestoreRecord {kind:'node', id: ownerNodeId}` when
+  `trashedKind === 'node'`, else the original canvas restore. The row
+  shape lives in `queries-structure.ts` (mirrored in the renderer's
+  `bookmarks.ts`), NOT `protocol/index.ts`, so no protocol edit was
+  needed.
+- **No schema migration.** Pure read-model + renderer change, as scoped.
+- **Gates all green** (2026-07-06): `pnpm -r build` clean (only a
+  pre-existing NotePanel a11y warning, unrelated); `pnpm -r test`
+  all packages pass (persistence 474, canvas-engine 314, domain 48,
+  commands 18, desktop vitest 77 + e2e 133) including the new
+  navigation e2e (`navigation.spec.ts:269`) and the two new persistence
+  units; `pnpm lint` clean. No source-panel flake hit; no retries used.

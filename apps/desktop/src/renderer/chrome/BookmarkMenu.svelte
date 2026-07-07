@@ -61,11 +61,14 @@
 
   async function restoreAndJump(row: BookmarkRow): Promise<void> {
     // §8.1: Restore, then jump — stable ids revalidate the bookmark
-    // with no bookmark write at all.
-    const result = await handle.gateway.execute('RestoreRecord', {
-      kind: 'canvas',
-      id: row.canvasId,
-    })
+    // with no bookmark write at all. §9.6: when the OWNER node is the
+    // trashed record, restore the node (the aggregate root brings the
+    // board back); a directly-trashed board restores its canvas row.
+    const restore =
+      row.trashedKind === 'node'
+        ? ({ kind: 'node', id: row.ownerNodeId } as const)
+        : ({ kind: 'canvas', id: row.canvasId } as const)
+    const result = await handle.gateway.execute('RestoreRecord', restore)
     if (result.status !== 'committed') return
     await jumpToBookmark(handle, row)
     onClose()

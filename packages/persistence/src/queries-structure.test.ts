@@ -664,6 +664,31 @@ describe('getCanvasScene', () => {
     expect(query<CanvasScene | null>('getCanvasScene', { canvasId })).toBe(null)
   })
 
+  it('refuses a board whose OWNER node is trashed, restores with it (§9.6)', () => {
+    const ownerNode = createNode()
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId: ownerNode })
+    // Active owner: the board projects normally.
+    expect(query<CanvasScene | null>('getCanvasScene', { canvasId })).not.toBe(null)
+    // §9.6: trashing the owner node (canvas row stays active) excludes
+    // the owned board from ordinary rendering, exactly like a direct
+    // canvas trash.
+    committed('TrashNode', { nodeId: ownerNode })
+    expect(handle.db.get<{ lifecycle_state: string }>(
+      'SELECT lifecycle_state FROM canvas WHERE id = ?',
+      canvasId,
+    )!.lifecycle_state).toBe('active')
+    expect(query<CanvasScene | null>('getCanvasScene', { canvasId })).toBe(null)
+    // The root canvas (owned by the trigger-protected root node) is
+    // never refused by the owner-node predicate.
+    expect(query<CanvasScene | null>('getCanvasScene', { canvasId: handle.rootCanvasId })).not.toBe(
+      null,
+    )
+    // Restoring the aggregate root revives the board (§9.6).
+    committed('RestoreRecord', { kind: 'node', id: ownerNode })
+    expect(query<CanvasScene | null>('getCanvasScene', { canvasId })).not.toBe(null)
+  })
+
   it('exposes the background with color beneath and drops trashed background assets', () => {
     const assetId = insertAsset('b'.repeat(64))
     committed('SetCanvasBackgroundColor', {
@@ -780,6 +805,42 @@ describe('listBookmarks (§8.1)', () => {
     committed('RestoreRecord', { kind: 'canvas', id: doomedTrash })
     const after = query<BookmarkListRow[]>('listBookmarks')
     expect(after.find((r) => r.id === second)!.targetState).toBe('active')
+  })
+
+  it('degrades a bookmark whose OWNER node is trashed, restoring the node (§9.6)', () => {
+    const nodeId = createNode()
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId })
+    const bookmarkId = uuidv7()
+    committed('CreateBookmark', { bookmarkId, canvasId, label: 'Owned', viewport: null })
+
+    // Active owner: ordinary active row, nothing to restore.
+    let row = query<BookmarkListRow[]>('listBookmarks').find((r) => r.id === bookmarkId)!
+    expect(row).toMatchObject({ targetState: 'active', trashedKind: null, ownerNodeId: nodeId })
+
+    // §9.6: trashing the owner node degrades the bookmark to In Trash
+    // (canvas row still active) and names the NODE as the restore
+    // target — a canvas restore could not revive a trashed owner.
+    committed('TrashNode', { nodeId })
+    row = query<BookmarkListRow[]>('listBookmarks').find((r) => r.id === bookmarkId)!
+    expect(row).toMatchObject({ targetState: 'trashed', trashedKind: 'node', ownerNodeId: nodeId })
+
+    // Restoring the aggregate root revalidates the bookmark (§8.1
+    // stable ids — no bookmark write).
+    committed('RestoreRecord', { kind: 'node', id: nodeId })
+    row = query<BookmarkListRow[]>('listBookmarks').find((r) => r.id === bookmarkId)!
+    expect(row).toMatchObject({ targetState: 'active', trashedKind: null })
+  })
+
+  it('names the canvas as the restore target for a directly-trashed board', () => {
+    const nodeId = createNode()
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId })
+    const bookmarkId = uuidv7()
+    committed('CreateBookmark', { bookmarkId, canvasId, label: 'Direct', viewport: null })
+    committed('TrashCanvas', { canvasId })
+    const row = query<BookmarkListRow[]>('listBookmarks').find((r) => r.id === bookmarkId)!
+    expect(row).toMatchObject({ targetState: 'trashed', trashedKind: 'canvas' })
   })
 
   it('reflects reorder: row order (the Mod+1-n binding) follows sort keys', () => {

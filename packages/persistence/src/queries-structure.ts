@@ -41,8 +41,19 @@ export interface BookmarkListRow {
   label: string
   viewport: { x: number; y: number; zoom: number } | null
   sortKey: number
-  /** §8.1 degradation: trashed greys with Restore; purged is broken. */
+  /** §8.1 degradation: trashed greys with Restore; purged is broken.
+   * A board is trashed when EITHER its canvas row or its owning node
+   * is trashed (§9.6: trashing the node degrades the owned board the
+   * same way a direct canvas trash does). */
   targetState: 'active' | 'trashed' | 'purged'
+  /** Which record Restore must revive (§9.7). 'canvas' for a
+   * directly-trashed board; 'node' when the OWNER node is the trashed
+   * record — restoring the aggregate root brings the board back
+   * (§9.6). null for active/purged rows. */
+  trashedKind: 'canvas' | 'node' | null
+  /** The owning node id — the RestoreRecord target when
+   * `trashedKind === 'node'`. */
+  ownerNodeId: string
 }
 
 interface NodeAppearanceColumns {
@@ -225,10 +236,17 @@ export function registerStructureQueries(registry: QueryRegistry): void {
        FROM canvas c
        LEFT JOIN asset a ON a.id = c.background_asset_id
          AND a.lifecycle_state = 'active'
-       WHERE c.id = ? AND c.project_id = ? AND c.lifecycle_state = 'active'`,
+       LEFT JOIN node cn ON cn.id = c.node_id
+       WHERE c.id = ? AND c.project_id = ? AND c.lifecycle_state = 'active'
+         AND (cn.id IS NULL OR cn.lifecycle_state = 'active')`,
       canvasId,
       ctx.projectId,
     )
+    // §9.6: a board whose OWNER node is trashed is excluded from
+    // ordinary rendering exactly like a directly-trashed board — the
+    // owning node join above refuses it. canvas.node_id is NOT NULL
+    // and FK-backed, and the root node is trigger-protected against
+    // trashing (migration 0001), so the root canvas always passes.
     if (!canvas) return null
     const placements = ctx.db.all<Record<string, unknown>>(
       `SELECT p.id, p.node_id AS nodeId, p.x, p.y, p.width, p.height, p.scale,
@@ -544,18 +562,33 @@ export function registerStructureQueries(registry: QueryRegistry): void {
   // out and purged targets present broken WITHOUT an N+1 sweep.
   // LEFT JOIN because bookmarks have no FK: a missing canvas row IS
   // the purged state, never a silent vanish.
+  // §9.6: a bookmark to a board whose OWNER node is trashed degrades
+  // to In Trash just like a directly-trashed canvas — LEFT JOIN the
+  // owning node so a trashed owner flips targetState, and carry
+  // `trashedKind`/`ownerNodeId` so Restore targets the aggregate root
+  // (the node) rather than issuing a canvas restore that cannot revive
+  // a trashed owner.
   registry.register('listBookmarks', (ctx): BookmarkListRow[] =>
     ctx.db
       .all<Omit<BookmarkListRow, 'viewport'> & { viewport: string | null }>(
         `SELECT b.id, b.target_kind AS targetKind, b.canvas_id AS canvasId,
                 b.label, b.viewport, b.sort_key AS sortKey,
+                c.node_id AS ownerNodeId,
                 CASE
                   WHEN c.id IS NULL THEN 'purged'
                   WHEN c.lifecycle_state = 'trashed' THEN 'trashed'
+                  WHEN cn.lifecycle_state = 'trashed' THEN 'trashed'
                   ELSE 'active'
-                END AS targetState
+                END AS targetState,
+                CASE
+                  WHEN c.id IS NULL THEN NULL
+                  WHEN c.lifecycle_state = 'trashed' THEN 'canvas'
+                  WHEN cn.lifecycle_state = 'trashed' THEN 'node'
+                  ELSE NULL
+                END AS trashedKind
          FROM bookmark b
          LEFT JOIN canvas c ON c.id = b.canvas_id
+         LEFT JOIN node cn ON cn.id = c.node_id
          WHERE b.project_id = ?
          ORDER BY b.sort_key, b.id`,
         ctx.projectId,

@@ -265,3 +265,46 @@ test('bookmarks degrade explicitly: In Trash greys with Restore, purged offers r
 
   await app.close()
 })
+
+test('bookmark to a board whose OWNER node is trashed degrades and Restore revives the node (§9.6)', async () => {
+  const { app, win } = await launchApp('ew-e2e-bookmark-trashed-owner-')
+  const root = await win.evaluate(() => window.__ewDebug!.canvasId())
+  // A board B owned by an ordinary node — the node is the aggregate
+  // root Restore must revive (§9.6), not the canvas row.
+  const nodeB = crypto.randomUUID()
+  const canvasB = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: nodeB })
+  await exec(win, 'CreateCanvas', { canvasId: canvasB, nodeId: nodeB })
+
+  // Bookmark B from its own board, then return home.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Owned'), { id: canvasB })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await openBookmarkMenu(win)
+  await win.getByTestId('bookmark-add').click()
+  await win.keyboard.press('Escape')
+  await win.getByTestId('nav-home').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  // §9.6: trashing the OWNER node (the canvas row stays active)
+  // degrades the bookmark exactly like a directly-trashed board.
+  await exec(win, 'TrashNode', { nodeId: nodeB })
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-row-0')).toHaveAttribute('data-target-state', 'trashed')
+  await expect(win.getByTestId('bookmark-state-0')).toHaveText('In Trash')
+  await expect(win.getByTestId('bookmark-jump-0')).toBeDisabled()
+
+  // The trashed row's shortcut never opens the board.
+  await win.keyboard.press('ControlOrMeta+Digit1')
+  await win.waitForTimeout(150)
+  expect(await win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  // Restore revives the NODE aggregate (not a canvas restore, which
+  // could not un-trash the owner) and jumps; stable ids revalidate
+  // the bookmark with no bookmark write (§8.1).
+  await win.getByTestId('bookmark-restore-0').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-row-0')).toHaveAttribute('data-target-state', 'active')
+
+  await app.close()
+})
