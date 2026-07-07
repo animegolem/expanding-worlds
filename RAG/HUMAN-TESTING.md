@@ -28,6 +28,30 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Tethered panel world-scale** (AI-IMP-116, 2026-07-06): open
+  a note tethered beside its node, then zoom out — the card should
+  shrink in step with the board and stay glued to its node (no more
+  full-size card looming over a tiny image). Keep zooming — it
+  should fade away cleanly rather than becoming unreadable confetti.
+  Pin a panel and zoom around: the pinned sticky note stays
+  screen-fixed. Feel calls wanted: (1) zooming IN, the tethered card
+  caps at its default size rather than ballooning past it
+  (`PANEL_TETHER_MAX_SCALE` flips it if you want true both-ways
+  scaling); (2) is the fade floor at the right zoom — text still
+  legible just before it fades (`PANEL_LEGIBILITY_FLOOR` 0.4)?
+
+- [ ] **Content-defined stage** (AI-IMP-118, 2026-07-06): on a board
+  with no background image — an empty board should read as all-void
+  (dimmed grid, no lit rectangle); placing the first item should
+  BLOOM a lit stage (eased, not popped). Drag an item far past an
+  edge and release: the lit edge glides outward. Drag it back in:
+  the stage must NOT shrink. Zoom-to-fit (nothing selected) frames
+  the lit area; reopening the board snaps the extent snug. Feel
+  calls: bloom/growth speed (`STAGE_EASE_TAU_MS`), padding
+  (`STAGE_CONTENT_PADDING`), and void darkness readability in BOTH
+  themes + a flat-canvas swatch (`STAGE_VOID_MIX`) — all
+  placeholders for the design pass (letter item 15).
+
 - [ ] **Everything-scope pull → place cursor** (AI-IMP-115,
   2026-07-06): in the gallery, flip to *everything*, click a single
   image, hit **pull into this world** — the takeover should close and

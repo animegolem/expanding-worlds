@@ -6,12 +6,12 @@ tags:
   - renderer
   - canvas-engine
   - presentation
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 
@@ -114,7 +114,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       navigate away and back → extent snug again.
 - [x] Gates: `pnpm -r build`, canvas-engine vitest, lint, desktop
       e2e (hidden windows), theme guard tests pass.
-- [ ] Append a HUMAN-TESTING.md entry (feel of the bloom, void
+- [x] Append a HUMAN-TESTING.md entry (feel of the bloom, void
       darkness readability over both themes). — deferred to the lead
       per the agent brief fence (suggested text supplied in report).
 

@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 7 | 5 |
+| Planned | 7 | 4 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 112 |
+| Completed | 13 | 114 |
 | **Total** | **22** | **120** |
 
 ## In Progress
@@ -57,7 +57,7 @@
 - [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — planned
 - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — completed
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
-- [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — planned
+- [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — completed
 - [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — completed
 
 ---
@@ -90,7 +90,6 @@
 ## Anomalies
 
 ### Orphaned IMPs (no epic dependency)
-- [[AI-IMP-118-content-defined-stage|IMP-118]] — planned, no epic dependency found
 - [[AI-IMP-119-note-metadata-block|IMP-119]] — planned, no epic dependency found
 
 ### Status Mismatches
@@ -105,10 +104,10 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4167 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4185 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1450 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (999 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1472 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (1114 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
 - apps/desktop/src/main/index.ts (793 LOC)
@@ -126,13 +125,13 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
+- apps/desktop/e2e/panels.spec.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
+- apps/desktop/src/renderer/note/panels.ts (581 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/renderer/note/panels.ts (573 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
-- apps/desktop/e2e/panels.spec.ts (536 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (533 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (526 LOC)
@@ -147,9 +146,9 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/renderers/placement.test.ts (501 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (490 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
+- apps/desktop/src/renderer/canvas/board-tooling.ts (474 LOC)
 - packages/commands/src/payloads/structure.ts (471 LOC)
 - apps/desktop/src/utility/index.ts (471 LOC)
-- apps/desktop/src/renderer/canvas/board-tooling.ts (470 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (455 LOC)
@@ -191,7 +190,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 112 IMPs completed</summary>
+<summary>13 EPICs, 113 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

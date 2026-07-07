@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.52         | 6 July 2026      |
+| Accepted for Phase 1 | 0.53         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -310,7 +310,13 @@ parse the way wiki links do, producing indexed embed records that
 reference assets, so reference tracking flows through records rather
 than text scanning; pasting an image into a note would run the staged
 import pipeline and insert a reference; and the editor would render
-embeds as inline decorations over the Markdown source.
+embeds as inline decorations over the Markdown source. **The syntax
+is decided (rev 0.53, owner): Obsidian-style `![[...]]`,** matching
+wiki-link grammar and the §16 escape-hatch export, which already
+emits it — the vault mirror round-trips embeds with zero
+translation, and raw bodies stay human-readable. A custom-scheme
+form (`![](ew-asset://…)`) is rejected as a permanent translation
+layer at the export boundary.
 
 ## 4.3 Node
 
@@ -982,12 +988,15 @@ originating in a browser: a drop carrying image bytes imports them
 directly and records the source page URL as asset attribution when
 available. A URL-only drop SHOULD fetch the image over the network as
 a user-initiated act; a failed or unsupported fetch produces a clear
-error and creates no records. A URL drop's source also lands as a
-DEFAULT TAG on the created node (rev 0.35, agreed with the first
-tester) so sourced material is facetable at once — with one open
-wrinkle: unique URLs mean one tag per item, so whether the surface
-is a tag or a first-class source field deserves a beat when this
-activates.
+error and creates no records. **Resolved (rev 0.53, owner),
+superseding the rev 0.35 default-tag direction:** the full URL
+lives in the FIRST-CLASS source field (`source_url`, surfaced by
+the §7.8 provenance section and searchable), never as a tag —
+unique URLs as tags would stuff identity data into taxonomy, one
+junk tag per item. What web drops offer instead is the DOMAIN
+("artstation.com") as a dismissible tag-offer chip, the same
+grammar as the duplicate-drop tag offer: grouping value without
+taxonomy noise, fading on ignore with no debt.
 
 **Replace file (rev 0.35, from the first tester's quality-upgrade
 habit).** A node's image is replaceable in place — right-click →
@@ -1243,8 +1252,9 @@ image stage. Open design space: a shrink-on-demand affordance
 (naturally riding zoom-to-fit) and a persist-the-ratchet toggle if
 the across-sessions feel is wanted. Visual constants — void
 luminance step, padding size, corner treatment — are design-pass
-scope (Design-letter-3 item 15); the void tone derives from the
-chosen background color via a theme token, never a second raw
+scope (Design-letter-3 item 15); the void tone derives at runtime
+from the EFFECTIVE background color (a color-mix step, so
+arbitrary per-canvas colors track for free) — never a second raw
 color.
 
 ## 6.8 Draw, connect, order, and group
@@ -4165,3 +4175,11 @@ Accepted for the Phase 1 prototype:
   readout with keep-all retention. Remote push stays an Advanced
   off-by-default setting. Unblocks EPIC-008's backup half
   (AI-IMP-120/121/122).
+
+- Two quick calls (rev 0.53, owner): the future embed syntax is
+  Obsidian-style `![[...]]` (§4.2) — matches wiki-link grammar and
+  the §16 export already emits it, so the vault round-trips with
+  zero translation. And URL sources land in the first-class
+  source field, never as tags (§6.1, superseding rev 0.35's
+  default-tag direction): provenance (§7.8) surfaces the URL; web
+  drops offer the DOMAIN as a dismissible tag chip instead.

@@ -24,7 +24,8 @@ flush list — resolved items move into the RFC and leave.
   epic still wants a sit-down on membership edge cases and the
   group-machinery subsumption question before cutting IMPs.
 - **Rich-text activation** (AI-EPIC-018): TipTap prototype
-  go/no-go; embed syntax pick (`![[...]]` vs `![](ew-asset://)`).
+  go/no-go. (Embed syntax RATIFIED 2026-07-06, rev 0.53:
+  Obsidian-style `![[...]]`.)
 - **EPIC-008 backup shape** — RATIFIED 2026-07-06 (owner, RFC rev
   0.52 §11.4): end-session + quit + in-place idle checkpoint;
   snapshots always carry db + assets + readable notes tree;
@@ -43,7 +44,8 @@ flush list — resolved items move into the RFC and leave.
 
 - Panel chrome vs board-card visual identity (owner, rev 0.31
   discussion): "design team pass" territory with the UI tie-down.
-- URL-as-default-tag vs a first-class source field (rev 0.35
-  wrinkle): decide when text drops activate.
 - Text-drop special cases (code blocks, essay-length paste → note)
   (rev 0.36).
+
+(URL-as-tag vs source field RESOLVED 2026-07-06, rev 0.53: source
+field + domain tag-offer chip.)
