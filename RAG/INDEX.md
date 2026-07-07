@@ -10,7 +10,7 @@
 | Planned | 4 | 9 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 131 |
+| Completed | 14 | 132 |
 | **Total** | **23** | **151** |
 
 ## In Progress
@@ -114,7 +114,6 @@
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-140-image-body-treatment|IMP-140]] — planned, no epic dependency found
 - [[AI-IMP-141-chrome-cosmetic-sweep|IMP-141]] — planned, no epic dependency found
-- [[AI-IMP-143-named-z-ladder|IMP-143]] — planned, no epic dependency found
 - [[AI-IMP-151-interaction-physics-beats|IMP-151]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-153-one-voice-sweep|IMP-153]] — planned, no epic dependency found
@@ -127,7 +126,7 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (5860 LOC)
+- pnpm-lock.yaml (5048 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4470 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1587 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
@@ -135,7 +134,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/main/index.ts (983 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (833 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (835 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (765 LOC)
@@ -158,7 +157,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (571 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (573 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (561 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (559 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
@@ -202,7 +201,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.ts (356 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
-- apps/desktop/src/renderer/note/open-note.ts (352 LOC)
+- apps/desktop/src/renderer/note/open-note.ts (353 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
