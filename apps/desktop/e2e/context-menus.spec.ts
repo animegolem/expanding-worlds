@@ -179,12 +179,20 @@ test('board menu: offers paste / select-all / fit, backdrop family, color row (�
     // No destructive row on the board menu.
     expect(await rowOrder(win)).not.toContain('ctx-delete')
 
-    // The backdrop color swatch commits SetCanvasBackgroundColor.
+    // The backdrop color swatch commits SetCanvasBackgroundColor —
+    // and per §8.4 rev 0.55 ("every verb = one undoable command") it
+    // is undo-captured: one Mod+Z clears the paint (lead follow-up at
+    // the 136 merge; SetPlacementLock/LabelVisibility/SetCanvasBackground
+    // joined CAPTURED_COMMANDS alongside it).
     expect(await backgroundColor(win)).toBeNull()
     const before = await revision(win)
+    const depthBefore = await undoDepth(win)
     await win.getByTestId('ctx-backdrop-color-1').click()
     await expect.poll(() => backgroundColor(win)).not.toBeNull()
     expect(await revision(win)).toBe(before + 1)
+    expect(await undoDepth(win)).toBe(depthBefore + 1)
+    await undoOnce(win)
+    await expect.poll(() => backgroundColor(win)).toBeNull()
 
     // Select-all via the menu selects every item.
     await win.mouse.click(box.x + 950, box.y + 620, { button: 'right' })

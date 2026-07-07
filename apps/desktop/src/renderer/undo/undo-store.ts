@@ -27,6 +27,13 @@ const CAPTURED_COMMANDS = new Set<string>([
   'CreatePlacement', // place a node
   'CreatePin', // §6.10 / §7.2 create-and-place materialization
   'PlaceAsCard', // §8.5 place-on-board
+  // §8.4 rev 0.55: "every verb = one undoable command" — the menu
+  // grammar obligates these four the moment they became menu verbs
+  // (AI-IMP-136). All four handlers emit tested inverses.
+  'SetPlacementLock',
+  'SetPlacementLabelVisibility',
+  'SetCanvasBackground',
+  'SetCanvasBackgroundColor',
 ])
 
 /**
