@@ -66,9 +66,13 @@ const GROUP_ONLY_COMMANDS = new Set<string>([
 /** Commits accumulate here while a group window is open (see runAsUndoGroup). */
 let pendingGroup: CapturedCommand[] | null = null
 
+/** The slice of getOutlineTree's rows boardLabel reads — `label` is
+ * the projection's quick-open-convention name (title ?? short code),
+ * never null (AI-IMP-172: `noteTitle` was a cast-hidden field that
+ * never existed, so every decline said "another board"). */
 interface OutlineRow {
   canvasId: string
-  noteTitle: string | null
+  label: string
 }
 
 let stack: UndoStack | null = null
@@ -136,7 +140,7 @@ async function boardLabel(canvasId: string): Promise<string> {
     if (response.ok) {
       const rows = response.result as OutlineRow[]
       const row = rows.find((r) => r.canvasId === canvasId)
-      if (row?.noteTitle) return `“${row.noteTitle}”`
+      if (row?.label) return `“${row.label}”`
     }
   } catch {
     // Fall through to the generic phrasing.
