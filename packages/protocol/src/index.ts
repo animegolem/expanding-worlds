@@ -265,11 +265,42 @@ export type CheckpointWalResponse =
   | { type: 'checkpoint-wal'; ok: true }
   | { type: 'checkpoint-wal'; ok: false; code: string; message: string }
 
+/** §11.4 session snapshots (AI-IMP-120): the per-project setting enum,
+ * stored as an ordinary project-tier setting (key `snapshot_mode`) —
+ * `off`, `git commit`, or `commit + push`. The push variant stores the
+ * enum only in this ticket; push execution is AI-IMP-122. */
+export type SnapshotMode = 'off' | 'commit' | 'commit-push'
+export const SNAPSHOT_MODE_KEY = 'snapshot_mode'
+
+/** §16 readable notes tree write (AI-IMP-120): regenerate `notes/` on
+ * the service's single writer and return counts for the commit message.
+ * A separate verb from checkpoint-wal because a snapshot writes the
+ * tree (and refreshes §7.8 blocks) BEFORE the WAL truncate that seals
+ * project.sqlite. No args: acts on the open primary. */
+export interface SnapshotWriteNotesRequest {
+  type: 'snapshot-write-notes'
+}
+
+export type SnapshotWriteNotesResponse =
+  | { type: 'snapshot-write-notes'; ok: true; notes: number; assets: number }
+  | { type: 'snapshot-write-notes'; ok: false; code: string; message: string }
+
+/** §11.4 Settings readout (AI-IMP-120): whether system git is present
+ * (snapshots degrade to a visible note when absent) and the backup's
+ * on-disk size — du of `.git` plus the uncommitted working delta,
+ * computed lazily when Settings opens. `sizeBytes` is null before any
+ * repository exists. */
+export interface SnapshotStatus {
+  gitAvailable: boolean
+  sizeBytes: number | null
+}
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
   | CloseProjectRequest
   | CheckpointWalRequest
+  | SnapshotWriteNotesRequest
   | ExecuteCommandRequest
   | RunQueryRequest
   | ImportAssetRequest
@@ -289,6 +320,7 @@ export type ProjectResponse =
   | InitProjectResponse
   | CloseProjectResponse
   | CheckpointWalResponse
+  | SnapshotWriteNotesResponse
   | ExecuteCommandResponse
   | RunQueryResponse
   | ImportAssetResponse

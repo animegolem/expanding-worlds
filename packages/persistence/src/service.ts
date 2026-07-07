@@ -30,6 +30,7 @@ import {
   type IngestSource,
 } from './import/ingest'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
+import { writeNotesTree, type NotesTreeResult } from './notes-tree'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
 import { registerGalleryQueries } from './queries-gallery'
@@ -93,6 +94,12 @@ export interface ProjectService {
    * may sync at any moment). A read-only source no-ops — it holds no
    * lock and owns no WAL to flush. */
   checkpoint(): void
+  /** §16/§11.4 session snapshot (AI-IMP-120): regenerate the readable
+   * `notes/` tree beside project.sqlite — one title-named `.md` per
+   * active note, bodies carrying the refreshed §7.8 metadata block —
+   * and return note/asset counts for the commit message. Runs on the
+   * single writer connection; a read-only source refuses. */
+  writeNotesTree(): NotesTreeResult
   close(): void
 }
 
@@ -203,6 +210,18 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
       // driver refuses, so skip it outright.
       if (handle.readOnly) return
       handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+    },
+    writeNotesTree: () => {
+      if (handle.readOnly) throw readOnlyError()
+      return writeNotesTree(
+        {
+          db: handle.db,
+          projectId: handle.projectId,
+          rootNodeId: handle.rootNodeId,
+          rootCanvasId: handle.rootCanvasId,
+        },
+        handle.dir,
+      )
     },
     importAsset: (input) => {
       if (handle.readOnly) return Promise.reject(readOnlyError())

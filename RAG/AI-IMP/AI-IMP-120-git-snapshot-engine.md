@@ -86,38 +86,39 @@ size query.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Git-ready projects: gitignore seeded on project create AND
+- [x] Git-ready projects: gitignore seeded on project create AND
       on first snapshot enable for existing projects (lock,
       heartbeat, WAL/journal, cache/, derivatives/).
-- [ ] Git mechanics decision: benchmark system-git vs
+- [x] Git mechanics decision: benchmark system-git vs
       isomorphic-git on a project with a multi-hundred-MB assets
       dir; record numbers and the pick in Issues Encountered;
       feature-detect at runtime with a visible Settings note when
       degraded.
-- [ ] Snapshot engine: init-on-enable, commit (project.db after
+- [x] Snapshot engine: init-on-enable, commit (project.db after
       WAL checkpoint+truncate, assets/, notes/), generated
       message; unit/integration test against a temp project.
-- [ ] Notes-tree writer: title-named .md files with §16 collision
+- [x] Notes-tree writer: title-named .md files with §16 collision
       policy; includes §7.8 metadata blocks when the 119 refresh
       function exists; test covers collision and round-trip
       stability (unchanged notes produce no diff).
-- [ ] Cadence wiring: End Session and quit ride the existing
+- [x] Cadence wiring: End Session and quit ride the existing
       ritual; idle checkpoint (tunable ~10 min constant) flushes
       buffers, checkpoints WAL, commits WITHOUT closing the
       project or releasing the lock; no idle commit when nothing
       changed since the last snapshot (empty-diff guard).
-- [ ] Settings: off · commit · commit+push enum persisted
+- [x] Settings: off · commit · commit+push enum persisted
       per-project; disk-size readout computed lazily on Settings
       open.
-- [ ] E2E: enable → end session → repo exists with one commit
+- [x] E2E: enable → end session → repo exists with one commit
       containing db + notes; second end-session with no changes
       adds no commit; idle path covered at integration level with
       a shortened threshold.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm -r lint`,
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm -r lint`,
       desktop e2e hidden.
 - [ ] HUMAN-TESTING entry appended (does End Session feel
       instant with snapshots on; size readout sanity on a real
-      project).
+      project). — DEFERRED to the lead: this agent is fenced out of
+      RAG/HUMAN-TESTING.md; the lead appends on merge.
 
 ### Acceptance Criteria
 
@@ -148,3 +149,84 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+### Git engine benchmark (system git vs isomorphic-git)
+
+Synthetic project of random bytes (NOT a real project): one 30 MB
+`project.sqlite`-like binary, ~150 `assets/blobs/*.bin` of 1.3–4 MB,
+and 40 small `notes/*.md` — ~430 MB total per run. Two runs each,
+Node v26.4, git 2.55, isomorphic-git 1.38.6, M-series macOS.
+
+| engine        | init  | first add+commit | incremental (few files) | empty-diff check |
+|---------------|-------|------------------|-------------------------|------------------|
+| system git    | 0.02s | 11–12s           | ~0.9s                   | ~0.02s           |
+| isomorphic-git| 0.00s | 3.5–4.1s         | ~3.3–4.0s               | ~3.5s            |
+
+Both produce byte-equivalent `.git` sizes (~460 MB) — no data loss
+either way. isomorphic-git's *first* commit is faster only because
+git spends longer zlib-compressing incompressible RANDOM bytes; real
+assets (already-compressed PNG/JPG) commit fast on both, so that
+column is a benchmark artifact, not a real-world win.
+
+**The decisive metric is the common path, not the first commit.**
+Almost every snapshot is incremental (a few notes/db changed) or
+empty (an idle pause with nothing new → the empty-diff guard). There
+system git wins by ~4–170×: its index tracks mtime+size so it never
+re-hashes the unchanged 400 MB, and an empty-diff check is 20 ms.
+isomorphic-git re-hashes the ENTIRE working tree on every
+`add`/`status` — so its per-checkpoint cost scales with PROJECT size,
+not CHANGE size. For a multi-GB reference board an idle checkpoint
+that touched nothing would still stall for tens of seconds — exactly
+the invisible-background case that must stay cheap.
+
+**Decision: system git, feature-detected once at runtime.** When git
+is absent the setting degrades with a visible Settings note ("install
+git to enable snapshots") rather than shipping isomorphic-git as a
+fallback that becomes unusable at the scale backups matter — and it
+keeps the utility bundle lean (no extra dep). The engine boundary
+(`createSnapshotEngine`, `src/main/snapshot.ts`) isolates git mechanics
+so a JS fallback stays a drop-in if the lead revisits this for
+git-less machines. On the artist's macOS target git ships with the
+Xcode Command Line Tools, so absence is the rare case.
+
+### Notes / deviations
+
+- **Single-writer discipline honored.** Main owns only git (filesystem
+  + shell-out) and the idle timer; every DB touch — WAL checkpoint and
+  the notes-tree write (which refreshes §7.8 blocks) — is delegated
+  back to the utility's project service through `callUtility`. Main
+  never opens a second SQLite handle.
+- **Order within a snapshot:** flush editor buffers → (enabled)
+  `snapshot-write-notes` (regenerate `notes/`, refresh §7.8 blocks in
+  the DB) → `checkpoint-wal` (truncate WAL, sealing the block refresh
+  into `project.sqlite`) → `git add -A` → empty-diff guard → commit.
+  When the mode is `off` only the flush+checkpoint runs — the exact
+  AI-IMP-096 rest-point behavior is preserved unchanged.
+- **Cadence surfaces:** the AI-IMP-096 rest points (suspend,
+  lock-screen, sustained blur) now call `runSnapshot('rest')`; quit
+  (`window-all-closed`) takes `runSnapshot('end-session')` BEFORE
+  closing the project (the snapshot needs the live utility), bounded by
+  a 15 s race so a backup hiccup never traps quit; the idle timer
+  (`EW_SNAPSHOT_IDLE_MS`, default 10 min) rides the commit-event stream
+  and fires once per idle period without closing the project or
+  releasing the lock. The wired "End Session" ☰ menu item stays
+  deferred (RFC: "arrives with sync and the vault mirror"); quit is the
+  existing full ritual this ticket hooks.
+- **commit+push** stores the enum only; the engine treats it as
+  `commit` (no push) — push execution is AI-IMP-122, as scoped.
+- **§16 collision policy:** notes are title-named; `title_key`
+  uniqueness already forbids two active notes sharing a key, so
+  collisions arise only from filesystem sanitization (e.g. `A:B` and
+  `A/B` → `A B`). Resolved with a deterministic case-insensitive
+  ` (n)` suffix over a stable `title_key, id` ordering, so an unchanged
+  note keeps its filename and produces no git diff (round-trip stable,
+  tested). Orphan `.md` files (renamed/trashed notes) are swept.
+- **No schema migration.** The mode enum is an ordinary project-tier
+  setting (`snapshot_mode`) written through the existing non-undoable
+  `set-setting` verb — same pattern as `note_metadata_defaults`.
+- **HUMAN-TESTING** entry left for the lead (agent is fenced out of
+  that file). Suggested: does End Session feel instant with snapshots
+  on; size-readout sanity on a real multi-GB project.
+- **Protocol edits** kept minimal/additive (another agent appends to
+  the same file in parallel): one `SnapshotMode` type + key constant,
+  one `snapshot-write-notes` verb, one `SnapshotStatus` type.

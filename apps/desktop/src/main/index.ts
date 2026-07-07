@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
+import { createSnapshotEngine } from './snapshot'
 import type {
   ProjectRequest,
   ProjectResponse,
@@ -129,6 +130,9 @@ function startUtility(): void {
       }
       return
     }
+    // §11.4 idle cadence: a committed change is activity — it resets
+    // the idle-checkpoint timer (the command gateway's commit stream).
+    snapshots.noteActivity()
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send('project:event', message.event)
     }
@@ -593,10 +597,17 @@ function flushRenderers(): Promise<void> {
   })
 }
 
-async function flushAndCheckpoint(): Promise<void> {
-  await flushRenderers()
-  await callUtility({ type: 'checkpoint-wal' })
-}
+// §11.4 session snapshots (AI-IMP-120): the engine owns git mechanics
+// and the idle timer; it delegates every DB touch (WAL checkpoint,
+// notes-tree write) back through callUtility so the utility's project
+// service stays the single writer. A 'rest' snapshot preserves the
+// AI-IMP-096 flush+checkpoint behavior and adds a commit when the
+// per-project setting is on.
+const snapshots = createSnapshotEngine({
+  callUtility,
+  flushRenderers,
+  projectDir,
+})
 
 // Blur debounce: tabbing to a reference board must not thrash the
 // disk. A blur arms a single 30s timer; a focus before it fires
@@ -609,7 +620,7 @@ function scheduleBlurCheckpoint(): void {
   if (blurTimer) return
   blurTimer = setTimeout(() => {
     blurTimer = null
-    void flushAndCheckpoint()
+    void snapshots.runSnapshot('rest')
   }, BLUR_CHECKPOINT_DELAY_MS)
 }
 
@@ -695,6 +706,10 @@ void app.whenReady().then(() => {
       return
     }
     projectReady = true
+    // §11.4 git-ready projects: seed the ignore file so the directory
+    // is commit-safe regardless of the snapshot setting (idempotent —
+    // covers create and every subsequent open of a pre-snapshot project).
+    snapshots.seedGitignore(projectDir())
     // Windows racing a slow open need the same ready signal the
     // recovery path sends — the renderer's thumbnail drive (076)
     // re-kicks on it, and a window created after this broadcast
@@ -707,6 +722,12 @@ void app.whenReady().then(() => {
   })
 
   ipcMain.handle('project:service-current', () => lastServiceEvent)
+
+  // §11.4 Settings readout (AI-IMP-120): git presence + the backup's
+  // disk size, computed lazily when the Settings sheet opens. The mode
+  // enum itself rides the ordinary project-setting verbs (getSettings /
+  // set-setting), so no bespoke handler is needed for it.
+  ipcMain.handle('snapshot:status', () => snapshots.status())
 
   // §8.2 Help/About: the running app version, straight from the
   // packaged metadata — never a hardcoded renderer string.
@@ -856,13 +877,20 @@ void app.whenReady().then(() => {
     // checkpoint verb round-trip (the involuntary ritual's inner call,
     // minus the untestable-in-CI power event). Gated identically.
     ipcMain.handle('test:checkpoint-wal', () => callUtility({ type: 'checkpoint-wal' }))
+    // AI-IMP-120 e2e only: drive one snapshot moment directly, so the
+    // spec exercises the full flush→notes→checkpoint→commit path
+    // without waiting out a power event or the idle threshold. Gated
+    // identically — no production renderer surface triggers snapshots.
+    ipcMain.handle('test:snapshot', (_event, trigger: 'idle' | 'rest' | 'end-session') =>
+      snapshots.runSnapshot(trigger).then(() => true),
+    )
   }
 
   // §11.4 involuntary end-session (AI-IMP-096): the OS suspending or
   // the screen locking is an immediate rest point — flush + checkpoint
   // at once (no debounce; these are already deliberate).
-  powerMonitor.on('suspend', () => void flushAndCheckpoint())
-  powerMonitor.on('lock-screen', () => void flushAndCheckpoint())
+  powerMonitor.on('suspend', () => void snapshots.runSnapshot('rest'))
+  powerMonitor.on('lock-screen', () => void snapshots.runSnapshot('rest'))
 
   void createWindow()
 
@@ -875,8 +903,6 @@ let closingCleanly = false
 app.on('window-all-closed', () => {
   if (closingCleanly) return
   closingCleanly = true
-  // Close the project first so the writer lock releases promptly
-  // rather than waiting out the stale-heartbeat window (§11.1).
   const finish = (): void => {
     utility?.kill()
     app.quit()
@@ -884,8 +910,22 @@ app.on('window-all-closed', () => {
   // close-project closes the secondaries with it (utility side);
   // the store-root mirror follows.
   secondaryDirs.clear()
+  snapshots.dispose()
+  // §11.4 quit ritual (AI-IMP-120): take the end-session snapshot
+  // BEFORE closing the project — the snapshot needs the live utility
+  // for the WAL checkpoint and notes-tree write. runSnapshot resolves
+  // even on failure and is time-bounded so a backup hiccup never traps
+  // quit; then close the project so the writer lock releases promptly
+  // (§11.1) and kill the utility.
   void Promise.race([
-    callUtility({ type: 'close-project' }),
-    new Promise((resolve) => setTimeout(resolve, 1_000)),
-  ]).then(finish)
+    snapshots.runSnapshot('end-session'),
+    new Promise((resolve) => setTimeout(resolve, 15_000)),
+  ])
+    .then(() =>
+      Promise.race([
+        callUtility({ type: 'close-project' }),
+        new Promise((resolve) => setTimeout(resolve, 1_000)),
+      ]),
+    )
+    .then(finish)
 })
