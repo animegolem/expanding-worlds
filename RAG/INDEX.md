@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 4 | 0 |
+| In Progress | 2 | 0 |
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 16 | 161 |
+| Completed | 18 | 161 |
 | **Total** | **25** | **167** |
 
 ## In Progress
@@ -34,38 +34,6 @@
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
 - [[AI-IMP-157-project-export-pipeline|IMP-157]] Project export pipeline — completed
 - [[AI-IMP-158-project-import-roundtrip|IMP-158]] Project import roundtrip — completed
-
----
-
-### [[AI-EPIC-016-context-click-menus|EPIC-016: Context click menus]]
-> Right-click surfaces have accreted per-feature rather than by
-
-**IMPs:**
-- [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — completed
-- [[AI-IMP-105-tag-lifecycle-commands|IMP-105]] Tag lifecycle commands — completed
-- [[AI-IMP-106-small-state-batch|IMP-106]] Small state batch — completed
-- [[AI-IMP-107-design-session-one|IMP-107]] Design session one — completed
-- [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — completed
-- [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — completed
-- [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
-- [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — completed
-- [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — completed
-- [[AI-IMP-136-context-menu-core|IMP-136]] Context menu core — completed
-- [[AI-IMP-137-menus-second-wave-and-about|IMP-137]] Menus second wave and about — completed
-
----
-
-### [[AI-EPIC-018-rich-text-notes|EPIC-018: Rich text notes]]
-> Notes are raw Markdown in CodeMirror — right for Obsidian compat,
-
-**IMPs:**
-- [[AI-IMP-144-tiptap-prototype-verdict|IMP-144]] Tiptap prototype verdict — completed
-- [[AI-IMP-146-tiptap-editor-controller|IMP-146]] Tiptap editor controller — completed
-- [[AI-IMP-147-link-and-embed-atoms|IMP-147]] Link and embed atoms — completed
-- [[AI-IMP-148-heading-folding|IMP-148]] Heading folding — completed
-- [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — completed
-- [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — completed
-- [[AI-IMP-156-tiptap-token-integrity|IMP-156]] Tiptap token integrity — completed
 
 ---
 
@@ -235,7 +203,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>16 EPICs, 134 IMPs completed</summary>
+<summary>18 EPICs, 134 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -350,11 +318,31 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-092-inbox-mirror|IMP-092]] Inbox mirror — completed
   - [[AI-IMP-094-first-open-seed|IMP-094]] First open seed — completed
   - [[AI-IMP-115-everything-scope-pull|IMP-115]] Everything scope pull — completed
+- [[AI-EPIC-016-context-click-menus|EPIC-016]] Context click menus — 2026-07-07
+  - [[AI-IMP-097-note-pane-image-drop|IMP-097]] Note pane image drop — completed
+  - [[AI-IMP-105-tag-lifecycle-commands|IMP-105]] Tag lifecycle commands — completed
+  - [[AI-IMP-106-small-state-batch|IMP-106]] Small state batch — completed
+  - [[AI-IMP-107-design-session-one|IMP-107]] Design session one — completed
+  - [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — completed
+  - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — completed
+  - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
+  - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — completed
+  - [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — completed
+  - [[AI-IMP-136-context-menu-core|IMP-136]] Context menu core — completed
+  - [[AI-IMP-137-menus-second-wave-and-about|IMP-137]] Menus second wave and about — completed
 - [[AI-EPIC-017-frames|EPIC-017]] Frames — 2026-07-07
   - [[AI-IMP-126-frame-model-and-membership|IMP-126]] Frame model and membership — completed
   - [[AI-IMP-127-frame-renderer-and-interactions|IMP-127]] Frame renderer and interactions — completed
   - [[AI-IMP-128-arrange-and-normalize|IMP-128]] Arrange and normalize — completed
   - [[AI-IMP-129-drop-behavior-and-frame-sort|IMP-129]] Drop behavior and frame sort — completed
+- [[AI-EPIC-018-rich-text-notes|EPIC-018]] Rich text notes — 2026-07-07
+  - [[AI-IMP-144-tiptap-prototype-verdict|IMP-144]] Tiptap prototype verdict — completed
+  - [[AI-IMP-146-tiptap-editor-controller|IMP-146]] Tiptap editor controller — completed
+  - [[AI-IMP-147-link-and-embed-atoms|IMP-147]] Link and embed atoms — completed
+  - [[AI-IMP-148-heading-folding|IMP-148]] Heading folding — completed
+  - [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — completed
+  - [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — completed
+  - [[AI-IMP-156-tiptap-token-integrity|IMP-156]] Tiptap token integrity — completed
 - [[AI-EPIC-022-fleet-friction|EPIC-022]] Fleet friction — 2026-07-07
   - [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
   - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed

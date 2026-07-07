@@ -6,8 +6,8 @@ tags:
   - notes
   - editor
 date_created: 2026-07-06
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-07
+kanban_status: completed
 AI_IMP_spawned:
   - "[[AI-IMP-144-tiptap-prototype-verdict]]"
   - "[[AI-IMP-146-tiptap-editor-controller]]"
@@ -123,7 +123,7 @@ every text surface.
 
 ### Functional Requirements
 
-- [ ] To be cut at activation.
+- [x] Cut and closed: AI-IMP-144 (verdict), 146 (controller), 147 (link/embed atoms), 156 (token integrity), 148 (folding), 149 (presentation/format bar), 150 (dialect freeze). Rev 0.66 already schedules the first sanctioned growth (AI-IMP-170).
 
 ### Non-Functional Requirements
 
@@ -133,3 +133,6 @@ every text surface.
 ## Implementation Breakdown
 
 IMPs to be cut when this epic activates.
+
+
+Shipped in v0.12.0.

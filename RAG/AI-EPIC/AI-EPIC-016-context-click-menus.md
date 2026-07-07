@@ -6,8 +6,8 @@ tags:
   - chrome
   - polish
 date_created: 2026-07-06
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-07
+kanban_status: completed
 AI_IMP_spawned:
   - "[[AI-IMP-136-context-menu-core]]"
   - "[[AI-IMP-137-menus-second-wave-and-about]]"
@@ -114,3 +114,8 @@ the z-ladder is now AI-IMP-143's scope, not this epic's first IMP.
 
 136 (surface + grammar module, interface-defining) → 137 (the
 remaining inventories + chrome tone riders).
+
+
+Shipped in v0.13.0. Epilogue: AI-IMP-154 closed the §8.4 undo
+promise for decoration verbs; AI-IMP-167 gave every menu the one
+cascade grammar; the deferred z-band port landed with wave 6.
