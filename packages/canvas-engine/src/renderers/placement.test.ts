@@ -16,8 +16,9 @@ import {
   setPlacementTextureResident,
   syncPlacementLabelOffset,
 } from './placement'
-import { Texture } from 'pixi.js'
-import type { RendererResources } from './registry'
+import { Rectangle, Texture } from 'pixi.js'
+import type { IconAtlasResource, RendererResources } from './registry'
+import { ICON_FURNITURE_MIN_PX, syncPlacementIconLod } from './placement'
 
 /** Recording texture budget: resolves acquires on demand. */
 function fakeBudget() {
@@ -557,5 +558,89 @@ describe('card appearance (§4.6 rev 0.31, AI-IMP-084)', () => {
     expect(group.scale.y).toBeCloseTo(2)
     // Same display objects — no Text rebuild on resize.
     expect(group.getChildByLabel('card-title')).toBe(titleBefore)
+  })
+})
+
+/** Fake atlas: three distinct tier textures (sharing one source, like
+ * the real atlas) so tier selection is observable, plus a fixed dot
+ * colour per icon. */
+function fakeIconAtlas(): RendererResources & { atlas: IconAtlasResource } {
+  const tiers = [128, 64, 32]
+  const frames = new Map<string, Texture[]>([
+    [
+      'star',
+      tiers.map((t) => new Texture({ source: Texture.WHITE.source, frame: new Rectangle(0, 0, t, t) })),
+    ],
+  ])
+  const atlas: IconAtlasResource = {
+    tiers,
+    frames: (id) => frames.get(id) ?? null,
+    dotColor: () => 0xe8c450,
+  }
+  let zoom = 1
+  const resources: RendererResources & { atlas: IconAtlasResource; setZoom: (z: number) => void } = {
+    atlas,
+    setZoom: (z) => (zoom = z),
+    loadTexture: () => Promise.resolve(Texture.WHITE),
+    iconAtlas: atlas,
+    getZoom: () => zoom,
+  }
+  return resources
+}
+
+describe('§8.2 object-icon atlas', () => {
+  it('renders the atlas sprite + a hidden dot for an icon node, above the threshold', () => {
+    const resources = fakeIconAtlas()
+    const item = makePlacement({ appearanceKind: 'icon', appearanceIcon: 'star', width: 24 })
+    const object = placementRenderer.create(item, resources)
+    const sprite = object.getChildByLabel('icon-object') as Sprite
+    const dot = object.getChildByLabel('icon-dot') as Graphics
+    expect(sprite).toBeTruthy()
+    expect(dot).toBeTruthy()
+    // rendered = 24 × zoom 1 × scale 1 = 24 ≥ 8 → object shows, dot hides.
+    expect(sprite.visible).toBe(true)
+    expect(dot.visible).toBe(false)
+    // The sprite is pinned to the body world size, not the tier px.
+    expect(sprite.width).toBeCloseTo(24)
+  })
+
+  it('degrades to the dot below the furniture threshold, in the icon colour', () => {
+    const resources = fakeIconAtlas()
+    const item = makePlacement({ appearanceKind: 'icon', appearanceIcon: 'star', width: 24 })
+    const object = placementRenderer.create(item, resources)
+    // 24 × 0.2 = 4.8 < ICON_FURNITURE_MIN_PX → dot only.
+    syncPlacementIconLod(object, item, 0.2, resources)
+    expect((object.getChildByLabel('icon-object') as Sprite).visible).toBe(false)
+    expect((object.getChildByLabel('icon-dot') as Graphics).visible).toBe(true)
+    // Just above the threshold swaps back to the object.
+    syncPlacementIconLod(object, item, (ICON_FURNITURE_MIN_PX + 1) / 24, resources)
+    expect((object.getChildByLabel('icon-object') as Sprite).visible).toBe(true)
+    expect((object.getChildByLabel('icon-dot') as Graphics).visible).toBe(false)
+  })
+
+  it('picks the crispest tier ≥ the rendered size, sharing the base texture', () => {
+    const resources = fakeIconAtlas()
+    const tiers = resources.atlas.frames('star')!
+    const item = makePlacement({ appearanceKind: 'icon', appearanceIcon: 'star', width: 24 })
+    const object = placementRenderer.create(item, resources)
+    const sprite = object.getChildByLabel('icon-object') as Sprite
+    // rendered 24 → smallest tier ≥ 24 is 32 (index 2).
+    syncPlacementIconLod(object, item, 1, resources)
+    expect(sprite.texture).toBe(tiers[2])
+    // rendered 24×3 = 72 → smallest tier ≥ 72 is 128 (index 0).
+    syncPlacementIconLod(object, item, 3, resources)
+    expect(sprite.texture).toBe(tiers[0])
+    // All tier frames share one source → one draw batch.
+    expect(tiers[0]!.source).toBe(tiers[2]!.source)
+    // Sprite stays pinned to the body size after a tier swap.
+    expect(sprite.width).toBeCloseTo(24)
+  })
+
+  it('falls back to the generic glyph when no atlas is injected', () => {
+    const resources = fakeResources()
+    const item = makePlacement({ appearanceKind: 'icon', appearanceIcon: 'star' })
+    const object = placementRenderer.create(item, resources)
+    expect(object.getChildByLabel('icon')).toBeTruthy()
+    expect(object.getChildByLabel('icon-object')).toBeFalsy()
   })
 })

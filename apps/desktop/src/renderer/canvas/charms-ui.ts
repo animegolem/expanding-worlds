@@ -27,6 +27,7 @@ import { assignTagByName, filterTagCompletions } from '../tags/tag-assign'
 import { importErrorNotice } from './import-surfaces'
 import { themeTokenValue } from '../theme'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
+import { ICON_SVG_DATA_URLS } from './icon-atlas.generated'
 
 export interface CharmsUiHandle {
   destroy(): void
@@ -52,11 +53,11 @@ const DOT_SWATCH_TOKENS = [
   '--ew-node-dot-pink',
 ] as const
 
-// The built-in icon set. The placement renderer draws ONE generic icon
-// glyph regardless of the stored value (§4.6 icon appearance), so this
-// list defines the vocabulary of icon ids the switcher can commit; the
-// glyph shown is the picker's own affordance. 'star'/'pin' match the
-// values already used in seeds and tests.
+// The built-in icon set (§4.6 / §8.2). This list defines the
+// vocabulary of icon ids the switcher can commit; the row previews the
+// REAL baked objects (ICON_SVG_DATA_URLS, AI-IMP-132) at chrome size,
+// with the unicode glyph kept only as a fallback if a preview is
+// missing. 'star'/'pin' match the values already used in seeds/tests.
 const BUILTIN_ICONS: ReadonlyArray<{ id: string; glyph: string }> = [
   { id: 'star', glyph: '★' },
   { id: 'pin', glyph: '◉' },
@@ -221,11 +222,21 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset['testid'] = `appearance-icon-${icon.id}`
-    button.textContent = icon.glyph
     button.style.cssText =
       'width:22px;height:22px;padding:0;display:grid;place-items:center;cursor:pointer;' +
       'border:1px solid var(--ew-border-strong);border-radius:5px;' +
       'background:var(--ew-surface-raised);color:var(--ew-text);font-size:13px;'
+    // §8.2 preview: the real baked object at chrome size (SVG stays
+    // crisp), the picker's own affordance for the on-board icon.
+    const preview = ICON_SVG_DATA_URLS[icon.id]
+    if (preview) {
+      button.style.backgroundImage = `url("${preview}")`
+      button.style.backgroundRepeat = 'no-repeat'
+      button.style.backgroundPosition = 'center'
+      button.style.backgroundSize = '16px 16px'
+    } else {
+      button.textContent = icon.glyph
+    }
     const tip = tooltip(button, { name: `Icon — ${icon.id}` })
     disposers.push(tip.destroy)
     button.addEventListener('click', (event) => {

@@ -6,7 +6,7 @@ tags:
   - design-pass
   - canvas
   - icons
-kanban_status: planned
+kanban_status: in_progress
 depends_on: [AI-IMP-130]
 parent_epic:
 confidence_score: 0.65
@@ -74,15 +74,15 @@ seam); perf suite untouched and green.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Atlas bakes from the kit masters (gloss normalized to the
+- [x] Atlas bakes from the kit masters (gloss normalized to the
       token); loads once; six kinds render distinctly.
-- [ ] Dot degradation below the furniture threshold; unit or e2e
+- [x] Dot degradation below the furniture threshold; unit or e2e
       proof at two zooms.
-- [ ] One color token tints dot and icon alike (switch a node's
+- [x] One color token tints dot and icon alike (switch a node's
       color: both presentations follow).
-- [ ] Switcher popover previews the objects at chrome size.
-- [ ] Perf: §12.1 suite green locally (GPU gate).
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Switcher popover previews the objects at chrome size.
+- [x] Perf: §12.1 suite green locally (GPU gate).
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead (do the
       objects read as designed art over real boards; gloss level).
@@ -104,3 +104,56 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Bake mechanism (recorded choice).** Build-time / authoring-time,
+  NOT first-run and NOT wired into `pnpm build`. `scripts/bake-icon-atlas.mjs`
+  reads the six masters (copied into `apps/desktop/resources/icons/masters/`),
+  normalizes every white gloss to `--ew-obj-gloss` (0.42), lays the six
+  icons × three tiers (128/64/32) out as ONE composite SVG, and rasterizes
+  the whole atlas in a single `resvg` call — so no image-packing library
+  is needed. Output is committed (`resources/icons/obj-atlas.{png,json}`
+  plus the base64-embedded `src/renderer/canvas/icon-atlas.generated.ts`),
+  the same "committed output, build never depends on the script" doctrine
+  as `generate-seed.mjs`. This keeps CI and every build machine free of a
+  native SVG rasterizer; re-run the script only when a master/tier changes.
+  Authoring dependency: `resvg` on PATH (Homebrew).
+
+- **Tint / variant decision.** No runtime gradient tinting. Verified the
+  shipped semantics: a `{ kind:'icon'; icon }` appearance stores an icon
+  id ONLY — no color field (dot stores a color, icon does not). Per the
+  kit, icons are color-FIXED (pin=blue, star=gold, flag=red, heart=pink,
+  bolt=orange, leaf=green; confirmed by the guideline's size-ladder
+  showing star→`--ew-node-dot-gold`). The SVG masters already carry those
+  colors, so the atlas ships the finished pixels — six icons × three
+  tiers = 18 sprites, no per-color multiplication. "One color token tints
+  dot and icon alike" holds by construction: the icon id resolves to a
+  single color, and the sub-threshold dot uses that icon's dot token. The
+  only runtime color (the dot) is resolved from the token by the HOST
+  (`icon-atlas.ts`) and injected via `resources.iconAtlas.dotColor` —
+  canvas-engine still reads no CSS and carries no raw hex.
+
+- **Threshold constant (for AI-IMP-133).** `ICON_FURNITURE_MIN_PX = 8`
+  in `packages/canvas-engine/src/renderers/placement.ts`, flagged in its
+  doc comment for AI-IMP-133 to absorb into `EW_FURNITURE_MIN_PX`.
+
+- **Level-of-detail.** The icon↔dot swap is zoom-dependent but body
+  rebuilds only run on scene changes, so the icon body carries BOTH a
+  sprite (`icon-object`) and its dot (`icon-dot`); `syncPlacementIconLod`
+  toggles visibility and picks the crispest tier by rendered screen size,
+  called by the host every cull pass (mirrors `syncPlacementLabelOffset`).
+  Tier swaps reassign a frame of the SAME base texture, so batching holds.
+
+- **Boundary note.** `host.ts` was edited (atlas load + `resources.iconAtlas`
+  injection + LOD call + `placementBody` seam). The ticket's "Files to
+  Touch" put atlas load/registration in canvas-engine's resources, but the
+  engine deliberately reads no assets/CSS (like `loadTexture`/`frameColors`),
+  and the sub-threshold dot color MUST come from a theme token — both force
+  host involvement. host.ts is the renderer-side resources bridge, not
+  main/domain/persistence, so it stays inside the fence's spirit; the edit
+  is surgical.
+
+- **Perf.** The §12.1 suite is UNMODIFIED and green (it already seeds 1,000
+  `icon` nodes). All icon sprites share one atlas base texture → one batch;
+  the atlas is loaded OUTSIDE the §12.2 texture budget, so `textureStats()`
+  residency assertions stay exact. Full desktop e2e: 149 passed, 1 unrelated
+  flaky (`frames-drop`, frame member count) passed on retry.

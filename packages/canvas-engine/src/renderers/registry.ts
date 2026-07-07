@@ -1,5 +1,26 @@
 import { Container, Graphics } from 'pixi.js'
+import type { Texture } from 'pixi.js'
 import type { SceneItem } from '../types'
+
+/**
+ * §8.2 node object-icon atlas (AI-IMP-132). The six masters are baked
+ * to one shared texture at several tiers (batched: every icon sprite
+ * samples this base). Injected by the host, which owns texture
+ * decoding and CSS-token resolution — canvas-engine never reads
+ * assets or CSS, so both stay outside the renderer. Absent in minimal
+ * test hosts: the icon branch then falls back to a generic glyph.
+ */
+export interface IconAtlasResource {
+  /** Source raster tiers (px), in the atlas's own order (e.g. 128,64,32). */
+  readonly tiers: ReadonlyArray<number>
+  /** Frame textures for an icon id, index-aligned with `tiers`; null
+   * for an unknown id. All share one base texture, so a sprite that
+   * swaps tiers stays in the same draw batch. */
+  frames(iconId: string): ReadonlyArray<Texture> | null
+  /** §8.2 sub-threshold dot colour (Pixi number) for an icon id,
+   * resolved by the host from the icon's fixed colour token. */
+  dotColor(iconId: string): number
+}
 
 /**
  * Renderer seam (AI-IMP-017): scene-sync looks up one renderer per
@@ -47,6 +68,12 @@ export interface RendererResources {
    * colors. Absent means a neutral fallback for minimal test hosts.
    */
   frameColors?: () => { fill: number; border: number; label: number }
+  /**
+   * §8.2 object-icon atlas (AI-IMP-132): the shared icon texture set,
+   * loaded and token-resolved by the host. Absent means the icon
+   * branch renders the generic glyph fallback (minimal test hosts).
+   */
+  iconAtlas?: IconAtlasResource
 }
 
 export interface ItemRenderer<T extends SceneItem = SceneItem> {

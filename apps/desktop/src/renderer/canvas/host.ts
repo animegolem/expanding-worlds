@@ -36,6 +36,7 @@ import {
   STAGE_VOID_VEIL_ALPHA,
   SceneSync,
   setPlacementTextureResident,
+  syncPlacementIconLod,
   syncPlacementLabelOffset,
   TextureBudget,
   ToolManager,
@@ -55,9 +56,11 @@ import {
   type ScenePlacement,
   type ScenePlanes,
   type SnapGuide,
+  type IconAtlasResource,
 } from '@ew/canvas-engine'
 import type { TransformContentPayload } from '@ew/commands'
 import { Application, Graphics, Texture } from 'pixi.js'
+import { loadIconAtlas } from './icon-atlas'
 import { takeoverActive } from '../chrome/takeover'
 import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { themeTokenValue } from '../theme'
@@ -293,9 +296,19 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   app.stage.addChild(planes.world, planes.overlay)
   const registry = createDefaultRegistry()
   const textureBudget = new TextureBudget(loadTexture)
+  // §8.2 object-icon atlas (AI-IMP-132): loaded once, shared by every
+  // icon sprite. A failure must not sink the board — icons fall back
+  // to the engine's generic glyph if the atlas can't decode.
+  let iconAtlas: IconAtlasResource | undefined
+  try {
+    iconAtlas = await loadIconAtlas()
+  } catch {
+    iconAtlas = undefined
+  }
   const resources: RendererResources = {
     loadTexture,
     loadTileSource,
+    ...(iconAtlas ? { iconAtlas } : {}),
     textures: {
       acquire: (hash, url) => textureBudget.acquire(hash, url),
       release: (hash) => textureBudget.release(hash),
@@ -1003,6 +1016,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const item = ephemeral.get(canonical.id) ?? canonical
       if (item.itemKind !== 'placement') continue
       syncPlacementLabelOffset(object, item, zoom)
+      // §8.2 (AI-IMP-132): swap object icon ↔ dot and pick the crispest
+      // atlas tier for the current rendered size — camera motion never
+      // re-runs a renderer update, so the LOD is re-derived here.
+      syncPlacementIconLod(object, item, zoom, resources)
     }
   }
 
@@ -1359,7 +1376,15 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const body = object.children.find(
         (child) => child.label === 'image' || child.label === 'image-placeholder',
       )
-      return body?.label ?? object.children[0]?.label ?? null
+      if (body) return body.label
+      // §8.2 icon bodies carry both a sprite ('icon-object') and its
+      // dot ('icon-dot'); report whichever the LOD pass left visible so
+      // e2e can prove the shrink-ladder swap at two zooms.
+      const iconBody = object.children.find(
+        (child) => (child.label === 'icon-object' || child.label === 'icon-dot') && child.visible,
+      )
+      if (iconBody) return iconBody.label
+      return object.children[0]?.label ?? null
     },
     stage: () => ({
       gridVisible: stageExtent(sceneBackground) === null,
