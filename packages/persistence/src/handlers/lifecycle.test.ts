@@ -262,6 +262,53 @@ describe('DeletePlacement (§9.2, invariant 11)', () => {
     expect(del.affected).toContainEqual({ kind: 'decoration', id: decorationId })
   })
 
+  it('undo re-binds a released connector anchor; redo re-releases it (AI-IMP-164)', () => {
+    const nodeA = createNode()
+    const nodeB = createNode()
+    // Second placements keep both nodes non-bare so the round trip
+    // exercises the anchor re-bind, not the bare-node revive path.
+    place(handle.rootCanvasId, nodeA)
+    place(handle.rootCanvasId, nodeB)
+    const pA = place(handle.rootCanvasId, nodeA, { x: 10, y: 10 })
+    const pB = place(handle.rootCanvasId, nodeB, { x: 50, y: 50 })
+    const decorationId = uuidv7()
+    committed('CreateDecoration', {
+      decorationId,
+      canvasId: handle.rootCanvasId,
+      kind: 'connector',
+      data: { start: { x: 1, y: 2 }, end: { x: 3, y: 4 } },
+      anchorStartPlacementId: pA,
+      anchorEndPlacementId: pB,
+    })
+
+    // Delete pA: the start endpoint frees and bakes pA's position.
+    const del = committed('DeletePlacement', { placementId: pA })
+    const afterDelete = row('decoration', decorationId)!
+    expect(afterDelete.anchor_start_placement_id).toBeNull()
+    expect(afterDelete.anchor_end_placement_id).toBe(pB)
+    expect(JSON.parse(afterDelete.data as string).start).toEqual({ x: 10, y: 10 })
+
+    // Undo re-binds the start anchor to the restored placement and puts
+    // the prior start geometry back; the end side is untouched.
+    const restore = undo(del.inverse)
+    const afterUndo = row('decoration', decorationId)!
+    expect(afterUndo.anchor_start_placement_id).toBe(pA)
+    expect(afterUndo.anchor_end_placement_id).toBe(pB)
+    expect(JSON.parse(afterUndo.data as string)).toEqual({
+      start: { x: 1, y: 2 },
+      end: { x: 3, y: 4 },
+    })
+    // The re-bound connector is named in `affected` so surfaces re-query.
+    expect(restore.affected).toContainEqual({ kind: 'decoration', id: decorationId })
+
+    // Redo (DeletePlacement again) re-releases exactly as the first did.
+    const redo = committed(restore.inverse!.commandType, restore.inverse!.payload)
+    expect(redo.inverse!.commandType).toBe('RestorePlacement')
+    const afterRedo = row('decoration', decorationId)!
+    expect(afterRedo.anchor_start_placement_id).toBeNull()
+    expect(JSON.parse(afterRedo.data as string).start).toEqual({ x: 10, y: 10 })
+  })
+
   it('refuses unknown placements', () => {
     expect(exec('DeletePlacement', { placementId: uuidv7() })).toMatchObject({
       status: 'error',
@@ -786,6 +833,60 @@ describe('DeleteContent / RestoreContent (AI-IMP-028)', () => {
     expect(row('placement', pA)).toBeUndefined()
     expect(row('decoration', connector)).toBeUndefined()
     expect(redo.inverse!.commandType).toBe('RestoreContent')
+  })
+
+  it('re-binds both anchors of a surviving connector when the batch deletes both endpoints (AI-IMP-164)', () => {
+    const nodeA = createNode()
+    const nodeB = createNode()
+    // Keep both nodes non-bare so the placements alone drive the test.
+    place(handle.rootCanvasId, nodeA)
+    place(handle.rootCanvasId, nodeB)
+    const pA = place(handle.rootCanvasId, nodeA, { x: 10, y: 10 })
+    const pB = place(handle.rootCanvasId, nodeB, { x: 50, y: 50 })
+    const connector = uuidv7()
+    committed('CreateDecoration', {
+      decorationId: connector,
+      canvasId: handle.rootCanvasId,
+      kind: 'connector',
+      data: { start: { x: 1, y: 2 }, end: { x: 3, y: 4 } },
+      anchorStartPlacementId: pA,
+      anchorEndPlacementId: pB,
+    })
+
+    // Delete BOTH placements in one command; the connector itself
+    // survives (it is not in the selection), so both endpoints free.
+    const del = committed('DeleteContent', {
+      canvasId: handle.rootCanvasId,
+      placementIds: [pA, pB],
+      decorationIds: [],
+    })
+    const afterDelete = row('decoration', connector)!
+    expect(afterDelete.anchor_start_placement_id).toBeNull()
+    expect(afterDelete.anchor_end_placement_id).toBeNull()
+    expect(JSON.parse(afterDelete.data as string)).toEqual({
+      start: { x: 10, y: 10 },
+      end: { x: 50, y: 50 },
+    })
+
+    // RestoreContent recreates placements first, then re-binds each
+    // endpoint independently: order within the batch cannot clobber the
+    // other side's geometry.
+    const restore = undo(del.inverse)
+    expect(row('decoration', connector)).toMatchObject({
+      anchor_start_placement_id: pA,
+      anchor_end_placement_id: pB,
+    })
+    expect(JSON.parse(row('decoration', connector)!.data as string)).toEqual({
+      start: { x: 1, y: 2 },
+      end: { x: 3, y: 4 },
+    })
+
+    // Redo re-releases both endpoints.
+    expect(restore.inverse!.commandType).toBe('DeleteContent')
+    committed(restore.inverse!.commandType, restore.inverse!.payload)
+    const afterRedo = row('decoration', connector)!
+    expect(afterRedo.anchor_start_placement_id).toBeNull()
+    expect(afterRedo.anchor_end_placement_id).toBeNull()
   })
 
   it('leaves invested nodes active and reports outcomes in affected', () => {

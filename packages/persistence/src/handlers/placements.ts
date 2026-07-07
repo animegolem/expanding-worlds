@@ -13,6 +13,7 @@ import {
   type DeleteDraftPlacementPayload,
   type FlipPlacementPayload,
   type MovePlacementPayload,
+  type ReleasedConnectorAnchor,
   type ReorderContentPayload,
   type SetPlacementLabelVisibilityPayload,
   type SetPlacementLockPayload,
@@ -62,12 +63,19 @@ function requirePlacement(ctx: CommandContext, placementId: string): PlacementRo
  * §4.9: converts connector endpoints anchored to `placementId` into
  * free points at their last rendered position (the placement's
  * position, written into decoration.data as {x, y}), clearing the
- * anchor columns. Exposed for AI-IMP-013's DeletePlacement; returns
- * the ids of decorations that changed. Runs in the caller's
- * transaction and touches every lifecycle state so a hard delete
- * never leaves dangling anchor references.
+ * anchor columns. Runs in the caller's transaction and touches every
+ * lifecycle state so a hard delete never leaves dangling anchor
+ * references.
+ *
+ * Returns one `ReleasedConnectorAnchor` per affected decoration
+ * carrying the pre-release state (which side(s) were freed and the
+ * prior `data` blob) so the DeletePlacement inverse can re-bind the
+ * anchors on undo (AI-IMP-164 — gesture round-trip fidelity, §10.2).
  */
-export function releaseConnectorAnchors(ctx: CommandContext, placementId: string): string[] {
+export function releaseConnectorAnchorsCapturing(
+  ctx: CommandContext,
+  placementId: string,
+): ReleasedConnectorAnchor[] {
   const placement = ctx.db.get<{ x: number; y: number }>(
     'SELECT x, y FROM placement WHERE id = ?',
     placementId,
@@ -85,10 +93,14 @@ export function releaseConnectorAnchors(ctx: CommandContext, placementId: string
     placementId,
   )
   const now = ctx.now()
+  const released: ReleasedConnectorAnchor[] = []
   for (const row of anchored) {
-    const data = JSON.parse(row.data) as Record<string, unknown>
+    const priorData = JSON.parse(row.data) as Record<string, unknown>
     const freesStart = row.anchor_start_placement_id === placementId
     const freesEnd = row.anchor_end_placement_id === placementId
+    // Clone before baking coordinates so `priorData` preserves the
+    // exact prior start/end (the restore payload's source of truth).
+    const data = { ...priorData }
     if (freesStart) data.start = { x: placement.x, y: placement.y }
     if (freesEnd) data.end = { x: placement.x, y: placement.y }
     ctx.db.run(
@@ -105,8 +117,23 @@ export function releaseConnectorAnchors(ctx: CommandContext, placementId: string
       now,
       row.id,
     )
+    released.push({
+      decorationId: row.id,
+      freedStart: freesStart,
+      freedEnd: freesEnd,
+      priorData,
+    })
   }
-  return anchored.map((row) => row.id)
+  return released
+}
+
+/**
+ * Id-only wrapper over {@link releaseConnectorAnchorsCapturing} for
+ * hard-delete paths (§9.7 purge) that only need the changed decoration
+ * ids for the `affected` set, not an invertible payload.
+ */
+export function releaseConnectorAnchors(ctx: CommandContext, placementId: string): string[] {
+  return releaseConnectorAnchorsCapturing(ctx, placementId).map((a) => a.decorationId)
 }
 
 /**
