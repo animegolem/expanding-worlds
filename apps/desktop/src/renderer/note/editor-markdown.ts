@@ -4,6 +4,7 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import StarterKit from '@tiptap/starter-kit'
 import { MARKDOWN_DIALECT, extractWikiLinks, matchWikiLinkAt } from '@ew/domain'
 import { Markdown } from 'tiptap-markdown'
+import { HeadingFold } from './folding'
 
 /**
  * TipTap/Markdown editor wiring for the note editor (RFC-0001 §7.1,
@@ -165,6 +166,10 @@ export function baseNoteExtensions(): AnyExtension[] {
     StarterKit.configure({ text: false, heading: { levels: [1, 2, 3, 4, 5, 6] } }),
     WikiText,
     Markdown.configure(MARKDOWN_DIALECT),
+    // §7.1 org-style heading folding — decoration-only, so it rides the
+    // base set (both the panel and §8.5 big editor) and never touches
+    // serialization (the round-trip corpus proves this).
+    HeadingFold,
   ]
 }
 

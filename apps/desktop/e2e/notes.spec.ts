@@ -764,3 +764,77 @@ test('double-clicking the label renames the note in place (AI-IMP-056)', async (
 
   await app.close()
 })
+
+test('§7.1 heading folding: decoration-only, [...] marker, caret never strands (AI-IMP-148)', async () => {
+  const { app, win } = await launchApp('ew-e2e-fold-')
+  const body = [
+    '# Field Guide',
+    '',
+    'intro paragraph',
+    '',
+    '## Raptors',
+    '',
+    'alpha body about hawks',
+    '',
+    '## Waders',
+    '',
+    'beta body about herons',
+  ].join('\n')
+  const { noteId } = await seedPlacedNote(win, 'Guide', body, { x: 300, y: 240 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  const content = win.locator('[data-testid="note-editor-content"]')
+  await expect(content).toContainText('alpha body about hawks')
+  // Canonicalize-on-load (§7.1) may commit once; let it settle so the
+  // byte-comparison baseline below is stable.
+  await expect(win.getByTestId('note-pane-dirty')).toBeHidden({ timeout: 10_000 })
+  const baseline = await noteBody(win, noteId)
+  const revBaseline = await revision(win)
+
+  // Fold the "Raptors" h2 via its gutter chevron: its section hides down
+  // to the next h2 ("Waders"), the [...] marker shows on the folded line,
+  // and — folding is DECORATION-ONLY — the source is byte-unchanged and
+  // nothing commits.
+  const raptorsChevron = content
+    .locator('h2', { hasText: 'Raptors' })
+    .getByTestId('fold-chevron')
+  await raptorsChevron.click()
+  await expect(content.getByText('alpha body about hawks')).toBeHidden()
+  await expect(content.getByText('beta body about herons')).toBeVisible()
+  await expect(content.getByTestId('fold-marker')).toBeVisible()
+  expect(await noteBody(win, noteId)).toBe(baseline)
+  expect(await revision(win)).toBe(revBaseline)
+
+  // Type in the visible intro and let it save: the FOLDED section's bytes
+  // survive verbatim into the durable body, and Raptors stays folded
+  // through the unrelated edit.
+  await content.getByText('intro paragraph').click()
+  await win.keyboard.type(' edited')
+  await expect(win.getByTestId('note-pane-dirty')).toBeHidden({ timeout: 10_000 })
+  const saved = await noteBody(win, noteId)
+  expect(saved).toContain('alpha body about hawks')
+  expect(saved).toContain('beta body about herons')
+  expect(saved).toContain('intro paragraph edited')
+  await expect(content.getByText('alpha body about hawks')).toBeHidden()
+
+  // Chevron round-trip (acceptance): clicking the chevron restores it.
+  await raptorsChevron.click()
+  await expect(content.getByText('alpha body about hawks')).toBeVisible()
+
+  // The caret never strands inside a fold. Put the caret INSIDE the Raptors
+  // section, then fold: the caret is moved out (parked at the heading end),
+  // so an edit still lands visibly rather than in hidden text.
+  await content.getByText('alpha body about hawks').click()
+  await raptorsChevron.click()
+  await expect(content.getByText('alpha body about hawks')).toBeHidden()
+
+  // An edit at the parked caret that splits into the folded region unfolds
+  // it first — the caret is never trapped in hidden content.
+  await win.keyboard.press('Enter')
+  await expect(content.getByText('alpha body about hawks')).toBeVisible()
+  await expect(content.getByTestId('fold-marker')).toHaveCount(0)
+
+  await app.close()
+})
