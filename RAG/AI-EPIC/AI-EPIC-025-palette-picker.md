@@ -112,10 +112,20 @@ before finalizing the affordance.
   tokens, no raw hex); the node is world (lift/settle beats apply).
 - No SQLite CHECK for the appearance kind; content validated in
   command handlers.
-- Design inputs pending from the tester (recorded before FR-1
-  freezes): well count/growth and layout; swatch labels
-  ("skin shadow") yes/no; does the active palette drive draw-tool
-  color; .ase IMPORT in v1; how a palette enters CSP in practice.
+- Design inputs from the tester — ANSWERED 2026-07-07: well count
+  defaults to 6 ("graphic design people generally don't go over
+  ~5; six fits 3x2 and would look neat — could also just be a
+  single horizontal strip, didn't think it through" — default 6,
+  3x2 vs strip is a build-time feel call, adjustable count stays).
+  Swatch labels: NO for v1 — "better to keep the colors vague on
+  purpose… my process is more organic and messy, I can't say I
+  like locking things in that early"; naming wells (main/
+  secondary/accent) is a designer pattern, not his — if labels
+  ever land they are optional and default-off, never demanded by
+  the UI.
+- Design inputs still pending: does the active palette drive
+  draw-tool color; .ase IMPORT in v1; how a palette enters CSP in
+  practice (decides the Open-in affordance).
 
 ## Implementation Breakdown
 
