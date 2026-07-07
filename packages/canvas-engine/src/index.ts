@@ -34,9 +34,15 @@ export {
   type FrameTreeNodeLike,
 } from './frames'
 export {
+  EW_FURNITURE_MIN_PX,
+  EW_PAGE_FLOOR_PX,
+  isFurnitureVisible,
+  pageDegradeStage,
+  type PageDegradeStage,
+} from './shrink-ladder'
+export {
   DEFAULT_DOT_RADIUS,
   DEFAULT_FRAME_SIZE,
-  ICON_FURNITURE_MIN_PX,
   LABEL_CLEARANCE_PX,
   LABEL_OUTLINE_GAP_PX,
   SELECTION_OUTLINE_PAD_PX,
