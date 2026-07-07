@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.54         | 6 July 2026      |
+| Accepted for Phase 1 | 0.55         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1257,6 +1257,15 @@ from the EFFECTIVE background color (a color-mix step, so
 arbitrary per-canvas colors track for free) — never a second raw
 color.
 
+**Void refinements (rev 0.55, design pass + owner):** the designed
+tone mixes the board color ~22% toward black in oklab (the shipped
+45–55% sRGB placeholder was engineering scaffolding; the constant
+stays tunable and the feel pass adjudicates on real art). The void
+grid renders at ~0.4 of the grid-line alpha. On the GLASS theme
+the void does not apply at all — the desktop IS the stage there,
+and glass exists so you can draw on your own canvas; no settings
+toggle unless one is asked for.
+
 ## 6.8 Draw, connect, order, and group
 
 Creating canvas text, a shape, freehand path, line, arrow, or connector
@@ -1539,7 +1548,27 @@ when an active note matching that title_key exists, relinking this
 occurrence to it. Both are explicit per-user actions that produce or
 target a new note ID.
 
+**Broken-link rendering ratified (rev 0.55, owner — supersedes the
+red-wavy direction, which gut-checked as spell-check vocabulary):**
+a broken link renders red with a STRIKETHROUGH. Grey stays reserved
+for recoverable-trashed targets. Every link state additionally
+carries the §8.2 hover chip naming its state and offer, so state
+never relies on color alone. Registered future distinction (not a
+Phase 1 build item): if broken flavors ever split, strikethrough =
+purged-for-good, dashed = other severed states.
+
 Wiki links do not choose a node or placement at authoring time.
+
+**The editor face (rev 0.55, design pass, ratified — the one
+typography carve-out).** Note TEXT renders in Maple Mono (bundled
+woff2 400/400i/700, OFL license alongside; never fetched at
+runtime) — a kerned rounded mono with true cursive italics — with
+loud colored headings and an org-style folding PRESENTATION over
+the plain-Markdown carrier (headings fence the content below them
+and fold; levels 1–6 map to the nesting). This applies wherever
+note text renders: panels, the big editor, card excerpts, gallery
+text posts. Chrome everywhere else keeps the platform system
+stacks; the carve-out is note text alone.
 
 ## 7.2 Unresolved links, phantom notes, and materialization
 
@@ -1890,10 +1919,51 @@ control alone to full opacity. Charm visibility keys on the node's
 rendered screen size, never on zoom percentage. All cadence numbers
 are provisional feel constants, not model state.
 
+**The aesthetic doctrine (rev 0.55, owner + design pass, ratified).**
+**Chrome is a terminal; the world is a desk.** Chrome is flat,
+mono-flavored, translucent, self-effacing — unicode glyphs, flat
+chips, printed shortcuts, the one fade clock. World content carries
+gentle materiality: the six node icons are small objects (top-light
+gradients, restrained gloss), notes are taped-on paper with torn
+edges and binder rings, and the red glossy pin lives ON the paper —
+never in the rail, dock, or path, which keep the flat teardrop.
+Bigger elements are flashier; text stays focused and thin.
+AI-generated art never ships — this audience is artists.
+
+**Motion budgets (rev 0.55 — refines the fades-and-pulses rule).**
+CHROME keeps the strict rule: fades and single pulses only, one
+shared clock. WORLD content is allowed small ONE-SHOT physical
+beats — the note tear (~300ms), the first-placement bloom, eased
+stage growth, the camera chase — one beat per user act, never
+ambient, never looping. An owner audit of canvas pointer-down
+moments (pickup / set-down weight and similar micro-beats) is in
+flight and will extend this list; new beats route through the
+design queue and land here.
+
+**The shrink ladder (rev 0.55, design pass — one grammar for
+zoom).** World content shrinks honestly (never clamped); chrome
+holds screen size; FURNITURE — hint charms, frame titles and sort
+chips — exists only above a shared rendered-size threshold. Exactly
+two constants govern it: EW_FURNITURE_MIN_PX (~8, where object
+icons degrade to the plain dot and furniture vanishes) and
+EW_PAGE_FLOOR_PX (~48, where the bound page's rings degrade to a
+stroke and below it the page fades whole). Any rendered-size
+conditional not referencing them is a review failure; one zoom
+gesture reveals all furniture together, the way one clock fades all
+chrome together.
+
 **Tooltip rule.** Every hoverable control shows a tooltip naming the
 control and printing its keyboard shortcut, in one chip style
 app-wide, after a short delay. No control ships without one: the GUI
-is the tutorial for the keyboard-driven app.
+is the tutorial for the keyboard-driven app. **Five legal shapes
+only (rev 0.55):** name+shortcut · name-only · disabled-with-reason
+· state-with-exit ("Lens on · esc") · coming-soon naming for
+deferred controls. Never: prose beyond one line, interactive
+content, images, a second style, or tooltips on menu rows (menus
+print shortcuts inline). Placement clamps and flips inside the free
+region (§8.8), never covering the control it names. Wiki links get
+the chip in every state — bound, unresolved, trashed, broken — so
+state never relies on color alone.
 
 **The keymap registry (rev 0.48 — owner ask, shaped).** Keybindings
 today are per-module window listeners; every new binding deepens
@@ -1983,6 +2053,38 @@ hint charms. `#` pops the node's tag chips over a completing
 add-field (§4.8, rev 0.45); clicking a chip opens the tag panel.
 The appearance charm opens the §4.6 switcher popover (rev 0.45).
 
+**The context-menu grammar (rev 0.55, design pass, ratified —
+EPIC-016 unblocked; Menus Document is the design source).** The
+grammar: verbs only, never "file" (§6.5); frequency-first within
+meaning groups; destructive verbs LAST, alone behind a divider;
+shortcuts print in mono in the rows (so menu rows carry no
+tooltips); submenus only for families (Appearance · Tags · Align ·
+Sort); every verb is one undoable command. PureRef is adopted for
+verb breadth, never nesting depth. Per-kind inventories:
+
+- **Item**: crop, flips, appearance, note, tags, hide-label, lock —
+  Replace image… · Swap for… — place-on-another-board ·
+  open-as-board · set-as-backdrop · z-order — Delete.
+- **Board background**: paste, select-all, zoom-to-fit — the
+  backdrop family (including Replace backdrop… with its
+  fits-the-prior-extent semantics) — the color row (theme swatches
+  + OS picker) — note-for-this-board. Copy call: "backdrop" over
+  "background" — shorter, warmer.
+- **Decoration**: edit style — z-order, lock, hide — Delete; never
+  item verbs.
+- **Multi-select**: count header — align, distribute, flips —
+  **Gather into a frame** (the grouping verb) · tags · lock all —
+  "Delete N items."
+- **Frame**: sort segmented + sort-now + fill-from-library —
+  rename, note, tags, lock — "Delete frame — contents stay" (the
+  destroy-nothing fact stated in the verb itself).
+
+The §9 impact confirm (rev 0.49) is unchanged. Help/About renders
+plain type where a mark would go (deliberately no logo), version +
+RFC rev in mono, a two-line product sentence including the
+copies-never-touches line, one shortcuts link, and a repo pointer
+in micro mono.
+
 ## 8.5 Note panels
 
 Wherever this document says "note pane," the logical note surface is
@@ -2029,12 +2131,46 @@ floating window → a separate **place-on-board** control
 materializes board content. Place-on-board commits a placement of
 the note's node with the card appearance (§4.6) roughly where the
 panel sits over the board, and the panel closes — the world owns it
-now, with z-order, selection, and export like any placement. The
-materialization is one-way, like phantom → note (§7.2); closing or
-trashing the card never retracts a panel. Screen-space panels —
-tethered or pinned — carry a drop shadow; a board card renders
-flat. The shadow IS the depth cue: shadowed means floating above
-the world, flat means part of it.
+now, with z-order, selection, and export like any placement.
+
+**The note lifecycle, ratified (rev 0.55, owner + design pass —
+supersedes rev 0.31's one-way materialization and the shadow rule
+above; Note Lifecycle Document is the design source).** The note
+surface has THREE states whose hardware tells the story, and the
+lifecycle is FREELY REVERSIBLE — one undoable command per
+transition. The skeuomorphic hardware exists to make state changes
+obvious in a playful way; a freely manipulable lifecycle IS the
+design:
+
+- **The open book** (replaces "tethered"): the page binds directly
+  to its image's side, binder rings on the seam, and its size
+  matches the SHARED edge — image height when side-bound; a wide
+  image (≳1.4:1) opens BELOW like a calendar, page width = image
+  width, rings on top. The binding side is chosen at open by the
+  image's shape and free viewport, stable for the panel's life.
+  The bound page is world content: FLAT (no shadow), scales with
+  the world (rev 0.47 stands). Double-clicking the page tears it
+  to a centered editor over the dimmed board (the big-editor
+  moment); esc or click-off tucks the page back into its book.
+  Overflow scrolls INSIDE the page, never the board.
+- **The sticky** (replaces "pinned"): torn out and taped to the
+  glass — tape strip and a torn edge mark it, viewport-fixed,
+  resizable, and it carries a drop shadow. Untaping returns it to
+  its book.
+- **The landmark** (replaces the one-way card): place-on-board
+  materializes the card appearance wearing a push pin and KEEPING
+  the torn edge — the one scar that persists. It is world content:
+  FLAT, always at its spot, scaling honestly. Pulling the pin
+  returns it to a sticky; dismissing it returns the page to its
+  book. Closing or trashing the placement never destroys the note
+  (§9 semantics unchanged).
+
+**Depth cue, reallocated (rev 0.55):** shadow = VIEWPORT-FLOATING
+only. The sticky and anything mid-flight (a tearing note, a drag
+ghost, the place cursor) carry shadows exactly while they float;
+the bound page and the landmark are world content and render flat.
+Hardware — rings, tape, push pin — tells the state; the red glossy
+pin appears exactly three ways, all ON paper.
 
 **The indicator escalates with how broken the spatial link is:**
 
@@ -2617,6 +2753,28 @@ NOT settings. The Phase 1 inventory:
 - **Advanced:** AI features (master toggle, off) · then one toggle
   per AI feature, each off (rev 0.32).
 
+**Settings shape refinements (rev 0.55, design pass + owner,
+ratified — Settings Document is the design source).** The sheet
+keeps its rev 0.17 physics. Section headings gain trailing FOLD
+handles (the editor's outliner grammar extended to settings — every
+section folds). Rows whose data travels with the project wear a
+small "this world" chip: the two-tier rule made visible instead of
+documented. New tenants group as **Backups & export** (vault
+mirror · snapshots · restore · trash retention) and **Keyboard**
+(the §8.2 registry printed, view-only, with a filter field). The
+connector store lives IN settings as one list (**Connectors**).
+**Advanced collapses to ONE toggle**: switching it on reveals
+nested rows — "enable connector store," and under it "AI
+connectors in the store" — preserving two-deliberate-acts for AI
+(advanced → AI toggle → per-connector toggle). **Storage doctrine
+(owner):** git is NATIVE — session snapshots and remote push are
+built-in (§11.4) — and every other storage endpoint (cloud
+folders, anything else) is a connector-store citizen with a
+`storage` kind; the backups section links into the store filtered
+to storage. Void-on-glass appears as a disabled row explained by
+the disabled-with-reason tooltip ("the desktop is the stage on
+glass"; §6.7).
+
 **AI gating (rev 0.32, normative).** This is an artist-focused app
 and AI is charged ground in that community; this audience's
 relationship to it is complicated, not absent. AI features exist —
@@ -3115,6 +3273,34 @@ user into a real world (the empty-library moment should land
 somewhere useful, not nowhere); a settings action can RE-ADD the
 example later; and the create-new-project / switch moments MAY
 grow a small wizard where library designation naturally lives.
+
+**Gallery controls ratified (rev 0.55, design pass + owner —
+Gallery Document is the design source).** The audited inventory
+stands: mode switcher · scope toggle · sort/kind/tag facets (the
+tag list orderable by name or count) · untagged/unplaced/inbox
+facets · bucket headers as jump controls · the cursor-vs-selection
+keyboard model · the import strip stacked centered above the action
+bar · everything-scope action bar (pull only) · clear-example ·
+mirror-off notice. New with this rev: (1) a **thumbnail-size
+slider** at the facet row's end — grid zoom is view state (⌘− /
+⌘+); every reference tool has one. (2) **Space is Quick Look**: an
+image peeks full-size, a note peeks as its paper card, a board
+peeks as a zoom-to-fit render with ⏎ diving in; arrows walk the
+grid without closing. (3) **Curation is a fourth cleanup facet**
+("low quality") with per-row reasons — the Replace-image worklist.
+(4) An **in-gallery filter field** thins the current faceted pool
+(titles · original names · tags) and never navigates; it is also
+the multi-tag arrival door — when §4.8's multi-tag deferral lifts,
+typing #tag adds a facet chip, and tag search is BOORU-SHAPED: one
+field, space-separated tags, AND-only, plain text in the same
+field staying title/filename substring (recorded shape; the
+deferral itself stands). (5) **The search track**: one control,
+five states — rest ⌕ icon → click opens a bar → a committed term
+crystallizes into a pill (tag pills carry tag color, ✕ per pill) →
+the trailing ✕ clears all → clearing the last pill collapses back
+to the icon; double-click melts pills back into editable text; the
+grid thins live in every state. Transcode/size-limit rules are
+import-connector settings, never gallery chrome.
 
 The gallery depends on the thumbnail derivative pipeline —
 renderer-generated over Chromium codecs, service-owned files (rev
@@ -4208,3 +4394,29 @@ Accepted for the Phase 1 prototype:
   membership (data view is a tree), and geometry immunity runs both
   directions — frame moves/resizes never edit membership, only item
   drags across the boundary do. EPIC-017 is unblocked to cut IMPs.
+
+- The design pass ratified (rev 0.55, owner + design pass; Design
+  System 1.0 + Design-Artifacts-v2.0 are the design sources): the
+  aesthetic doctrine "chrome is a terminal; the world is a desk"
+  with split motion budgets — chrome keeps fades/single-pulses on
+  one clock, world content gets small one-shot beats (§8.2). The
+  note lifecycle goes three-state and FREELY REVERSIBLE — open
+  book (bound, flat, shared-edge sizing) ⇄ sticky (torn + taped,
+  shadow) ⇄ landmark (push-pinned placement, flat) — superseding
+  rev 0.31's one-way materialization; shadow reallocates to
+  viewport-floating only (§8.5). Note text gets the one typography
+  carve-out: bundled Maple Mono with colored headings and org-style
+  folding presentation (§7.1). Broken links render red
+  strikethrough (wavy retired as spell-check vocabulary); every
+  link state carries the hover chip (§7.1, §8.2). The shrink
+  ladder unifies zoom behavior under two constants (§8.2). The
+  context-menu grammar and per-kind verb inventories are ratified —
+  EPIC-016 unblocked (§8.4). Settings gains folds, "this world"
+  chips, Backups & export / Keyboard / Connectors tenants, the
+  one-toggle Advanced nest, and the git-native/connector storage
+  doctrine (§11.5). Gallery: thumbnail-size slider, Space Quick
+  Look, curation facet, in-gallery filter (booru AND-only recorded
+  for the deferred multi-tag door), the five-state search track
+  (§14.4). The void is designed at ~22%-toward-black oklab and is
+  OFF on glass (§6.7). First-run copy is final-candidate (EPIC-019
+  input). Tooltips have exactly five legal shapes (§8.2).

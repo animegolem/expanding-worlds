@@ -3,37 +3,32 @@
 Decisions that need a finalized design conversation (owner + lead,
 sometimes the first tester) before implementation proceeds.
 Compiled 2026-07-06 at the strategy review; keep it pruned like the
-flush list — resolved items move into the RFC and leave.
+flush list — resolved items move into the RFC and leave. The
+2026-07-07 design pass (rev 0.55) resolved the context-menu
+grammar, panel/card identity (the note lifecycle), broken-link
+style, tooltip shapes, gallery controls, and the settings shape —
+all moved into the RFC.
 
 ## Blocking planned work
 
-- **Context-menu grammar** (AI-EPIC-016): the per-kind verb
-  inventory and ordering; PureRef reference captured in the stub —
-  adopt selectively. (The §8.8 ladder IMP can proceed without
-  this; the menus themselves cannot.)
-- **Library door placement** — RATIFIED 2026-07-06 (owner): ONE
-  ⧉ menu, TWO sections — "Your library" pinned and visually
-  distinct above a divider, worlds below; library opens
-  gallery-first. Still gets bashed at the design pass (watch for
-  too-subtle section styling), but this is the working shape for
-  the switching ticket.
+- **Incoming: canvas pointer-down micro-beats** (owner audit in
+  flight, 2026-07-07): where the skeuomorphism gets sold with small
+  interactions — pickup/set-down weight and similar one-shot world
+  beats. Lands against the rev 0.55 motion-budget rule (§8.2); new
+  beats ratify here then join the beat-constant list.
+- **Frame sort-control location** (design pass, open): title-row
+  chip vs frame charm bar; nesting clutter probably zoom-gated.
+  Blocks the frame-furniture ticket's final form (region + label
+  ship regardless).
 
 ## Blocking epic activation
 
-- **Frames design turn** (AI-EPIC-017) — RATIFIED 2026-07-06 (rev
-  0.54): frames subsume group machinery entirely; nesting with
-  single-parent innermost membership; geometry immunity both ways
-  (only item drags edit membership). Epic unblocked; visual pass
-  (letter item 14) still applies to the look.
 - **Rich-text activation** (AI-EPIC-018): TipTap prototype
-  go/no-go. (Embed syntax RATIFIED 2026-07-06, rev 0.53:
-  Obsidian-style `![[...]]`.)
-- **EPIC-008 backup shape** — RATIFIED 2026-07-06 (owner, RFC rev
-  0.52 §11.4): end-session + quit + in-place idle checkpoint;
-  snapshots always carry db + assets + readable notes tree;
-  keep-all retention with Settings size readout; minimal in-app
-  restore-to-copy; remote push Advanced, off by default.
-  AI-IMP-120/121/122 cut.
+  go/no-go — the engineering call is still ours, but the design
+  pass now ASSUMES TipTap (Note Editor Wireframes) and specifies
+  the direction: floating bar on selection, typed Markdown styles
+  live, org-style outliner presentation, Maple Mono face (rev
+  0.55). The prototype validates feasibility, not direction.
 
 ## Standing feel decisions (owner's hands, see HUMAN-TESTING.md)
 
@@ -41,11 +36,11 @@ flush list — resolved items move into the RFC and leave.
 - Grid: major "breathes" at promotion vs minor sprint (AI-IMP-099).
 - Seed artist set: the first tester curates the real example
   (owner supplies the export); placeholder set is provisional.
+- Void tone: rev 0.55 adopts the designed ~22%-oklab mix as the
+  default; the feel pass on real art adjudicates.
 
 ## Tabled
 
-- Panel chrome vs board-card visual identity (owner, rev 0.31
-  discussion): "design team pass" territory with the UI tie-down.
 - Text-drop special cases (code blocks, essay-length paste → note)
   (rev 0.36).
 - **Undo capture breadth** (from the 2026-07-06 Codex review;
@@ -55,6 +50,24 @@ flush list — resolved items move into the RFC and leave.
   bookmark edits, and trash/restore join board Mod+Z? All command
   inverses already exist; this is a product-feel call, not
   plumbing.
+- **Dot-palette regularization** to `oklch(.76 .09 h)` (design
+  pass, explicitly unratified): make the call with real art on the
+  board — style-kit turn territory.
+- **Charm rail vertical position**: top-aligned below the path
+  track shipped in UI Vision v2; vertical centering considered and
+  left open. Trivial code change whenever decided.
+- **Manual note side-flip verb** ("open on the other side"):
+  deferred until asked for (Note Lifecycle Document).
+- **Object shapes** (owner musing, Icon Document t7): extruded
+  box/pyramid/cylinder decorations for lightly skeuomorphic maps —
+  awaits the decorations epic turn.
+- **Book-cover-opens beat** (~200ms, musing): a one-shot world
+  beat when a note first opens; feasibility at build.
+- **Painterly icon commission / pixel-glyph theme variant**: the
+  geometric SVG set ships; commissioned art is the upgrade path.
+- **Menus loose ends** (Menus Document): where reverse-image "find
+  info" slots when its connector attaches; whether the End Session
+  row prints what it does; the Empty-trash confirm shape.
 
 (URL-as-tag vs source field RESOLVED 2026-07-06, rev 0.53: source
 field + domain tag-offer chip.)
