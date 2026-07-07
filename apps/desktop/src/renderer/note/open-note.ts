@@ -6,6 +6,7 @@ import {
   type ScenePlacement,
 } from '@ew/canvas-engine'
 import { navigateTo } from '../chrome/navigation'
+import { Z } from '../z'
 import type { CanvasHostHandle } from '../canvas/host'
 
 /**
@@ -287,7 +288,7 @@ export function attachOpenNoteSurface(
     input.value = placement.noteTitle ?? ''
     input.dataset['testid'] = 'label-rename-input'
     input.style.cssText =
-      `position:absolute;left:${screen.x - 100}px;top:${screen.y}px;width:200px;z-index:25;` +
+      `position:absolute;left:${screen.x - 100}px;top:${screen.y}px;width:200px;z-index:${Z.panel};` +
       'padding:2px 6px;font:inherit;text-align:center;background:var(--ew-surface-solid);color:var(--ew-text-dialog);' +
       'border:1px solid var(--ew-border-control);border-radius:3px;'
     let done = false

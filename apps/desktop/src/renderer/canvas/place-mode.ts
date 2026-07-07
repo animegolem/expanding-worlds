@@ -1,6 +1,7 @@
 import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from './host'
+import { Z } from '../z'
 import { toast } from '../chrome/status'
 import { onTakeoverChanged } from '../chrome/takeover'
 
@@ -150,7 +151,8 @@ export function attachPlaceMode(host: CanvasHostHandle, element: HTMLElement): P
       img.src = `ew-asset://${detail.contentHash}`
     })
     img.style.cssText =
-      'position:absolute;z-index:480;width:120px;height:120px;object-fit:contain;' +
+      // rung: popover — the ghost rides above panels/chrome and below modals; §8.8's only band above chrome and under modal.
+      `position:absolute;z-index:${Z.popover};width:120px;height:120px;object-fit:contain;` +
       'transform:translate(-50%,-50%);pointer-events:none;opacity:0.7;' +
       'filter:drop-shadow(0 4px 12px var(--ew-shadow));'
     ghost = img

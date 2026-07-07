@@ -7,6 +7,7 @@
  * long as its phantom does: the panels store is the source of truth.
  */
 import type { CanvasHostHandle } from './host'
+import { Z } from '../z'
 import { onPanelsChanged, openPinPhantom, panelRecords } from '../note/panels'
 
 export interface PinToolHandle {
@@ -49,7 +50,7 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
     dot = document.createElement('div')
     dot.dataset['testid'] = 'pin-provisional-dot'
     dot.style.cssText =
-      'position:absolute;width:12px;height:12px;border-radius:50%;z-index:7;' +
+      `position:absolute;width:12px;height:12px;border-radius:50%;z-index:${Z.affordance};` +
       'background:var(--ew-node-dot-default);border:2px solid var(--ew-text);opacity:0.85;pointer-events:none;'
     element.appendChild(dot)
     dotWorld = { ...world, canvasId: host.canvasId }

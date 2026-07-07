@@ -16,6 +16,7 @@ import { itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
 import type { NodeAppearance } from '@ew/commands'
 import { uuidv7 } from '@ew/domain'
 import type { CanvasHostHandle } from './host'
+import { Z } from '../z'
 import { navigateTo } from '../chrome/navigation'
 import { onEngagementChanged } from '../chrome/engagement'
 import { tooltip } from '../chrome/tooltip'
@@ -94,7 +95,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   const layer = document.createElement('div')
   layer.dataset['testid'] = 'charms-layer'
   layer.className = 'ew-charms'
-  layer.style.cssText = 'position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden;'
+  layer.style.cssText = `position:absolute;inset:0;z-index:${Z.affordance};pointer-events:none;overflow:hidden;`
   element.appendChild(layer)
 
   const entries = new Map<string, CharmEntry>()
@@ -146,7 +147,8 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
   const addCompletions = document.createElement('div')
   addCompletions.dataset['testid'] = 'charm-tag-add-completions'
   addCompletions.style.cssText =
-    'position:absolute;top:calc(100% + 3px);left:0;z-index:1;display:none;flex-direction:column;' +
+    'position:absolute;top:calc(100% + 3px);left:0;z-index:1;' + // rung: popover — local stacking context WITHIN the tag popover, not the global ladder
+    'display:none;flex-direction:column;' +
     'min-width:8rem;background:var(--ew-surface-menu);border:1px solid var(--ew-border);' +
     'border-radius:6px;overflow:hidden;'
   addRow.appendChild(addCompletions)

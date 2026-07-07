@@ -2,6 +2,7 @@ import { uuidv7 } from '@ew/domain'
 import { hitTest, type CanvasScene, type SceneItem } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
 import { requestAttachNote, requestOpenNote, requestRenameNote } from '../note/open-note'
+import { Z } from '../z'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -114,7 +115,7 @@ export function attachNodeMenu(
     menu = document.createElement('div')
     menu.dataset['testid'] = 'node-menu'
     menu.style.cssText =
-      `position:absolute;left:${local.x}px;top:${local.y}px;z-index:30;min-width:180px;` +
+      `position:absolute;left:${local.x}px;top:${local.y}px;z-index:${Z.popover};min-width:180px;` +
       'padding:4px 0;background:var(--ew-surface-modal);border:1px solid var(--ew-border-control);border-radius:4px;' +
       'box-shadow:0 4px 12px var(--ew-menu-shadow);font-size:0.85rem;'
 
