@@ -36,6 +36,9 @@ export const KEY = {
   boardSendBack: 'board-send-back',
   boardFlipH: 'board-flip-h',
   boardFlipV: 'board-flip-v',
+  boardLock: 'board-lock',
+  boardOpenAsBoard: 'board-open-as-board',
+  boardZoomFit: 'board-zoom-fit',
   boardDelete: 'board-delete',
   toolSelect: 'tool-select',
   toolText: 'tool-text',
@@ -135,6 +138,29 @@ declare(KEY.boardFlipV, {
   name: 'Flip vertical',
   scope: 'board',
   combo: { mod: false, shift: true, code: 'KeyV' },
+})
+// EPIC-016 menu chords (AI-IMP-136): DECLARED here for the §8.4
+// context-menu rows to print and the Settings Keyboard list to show;
+// dispatch is wired where each verb's surface lives — lock and
+// open-as-board in gestures-ui (board keys), zoom-fit in the dock
+// (its ⤢ button). The rev 0.55 map assigns ⇧⌘L · ⏎ · ⇧1.
+declare(KEY.boardLock, {
+  name: 'Lock / unlock selection',
+  scope: 'board',
+  combo: { mod: true, shift: true, code: 'KeyL' },
+})
+declare(KEY.boardOpenAsBoard, {
+  name: 'Open as board',
+  scope: 'board',
+  // ↵ derives from the code glyph; shift left "don't care" so the
+  // gallery's own Enter never collides (gestures are dead in takeover).
+  combo: { mod: false, alt: false, codes: ['Enter', 'NumpadEnter'] },
+})
+declare(KEY.boardZoomFit, {
+  name: 'Zoom to fit',
+  scope: 'board',
+  // ⇧ prints from the shift flag; the printed key derives to "1".
+  combo: { mod: false, alt: false, shift: true, code: 'Digit1' },
 })
 declare(KEY.boardDelete, {
   name: 'Move selection to Trash',

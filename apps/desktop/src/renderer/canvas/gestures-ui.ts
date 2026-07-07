@@ -19,6 +19,7 @@ import {
 import { uuidv7 } from '@ew/domain'
 import { Graphics, type Text } from 'pixi.js'
 import { takeoverActive } from '../chrome/takeover'
+import { navigateTo } from '../chrome/navigation'
 import { KEY } from '../keys/bindings'
 import { matches } from '../keys/registry'
 import type { CanvasHostHandle } from './host'
@@ -256,6 +257,34 @@ export function attachGesturesUI(
     }
   }
 
+  /** ⇧⌘L: toggle the lock on every selected placement (§6.9, the
+   * charm-bar toggle in keyboard form, AI-IMP-136). Target the common
+   * state — if any is unlocked, lock all; else unlock all — so one
+   * chord is one predictable intent. */
+  async function lockSelection(): Promise<void> {
+    const placements = selectedPlacements()
+    if (placements.length === 0) return
+    const nextLocked = placements.some((p) => p.locked !== 1)
+    for (const p of placements) {
+      await gateway.execute('SetPlacementLock', { placementId: p.id, locked: nextLocked })
+    }
+  }
+
+  /** ⏎: dive into the single selected placement's board — its nested
+   * canvas, created on demand if it has none (§8.4 open-as-board). */
+  async function openAsBoard(): Promise<void> {
+    const placements = selectedPlacements()
+    if (placements.length !== 1) return
+    const p = placements[0]!
+    if (p.childCanvasId) {
+      await navigateTo(p.childCanvasId, p.noteTitle ?? 'Board')
+      return
+    }
+    const canvasId = uuidv7()
+    const result = await gateway.execute('CreateCanvas', { canvasId, nodeId: p.nodeId })
+    if (result.status === 'committed') await navigateTo(canvasId, p.noteTitle ?? 'Board')
+  }
+
   /** Cmd+A: every selectable item — locked or hidden decorations stay
    * out so a sweep-select can't move or delete them. Locked
    * placements stay in: they remain click-selectable and Delete is
@@ -449,6 +478,13 @@ export function attachGesturesUI(
     } else if (matches(event, KEY.boardSelectAll)) {
       event.preventDefault()
       selectAll()
+    } else if (matches(event, KEY.boardLock)) {
+      event.preventDefault()
+      void lockSelection()
+    } else if (matches(event, KEY.boardOpenAsBoard) && selectedPlacements().length === 1) {
+      // Guard the single-selection case so a stray ⏎ never fires it.
+      event.preventDefault()
+      void openAsBoard()
     }
   }
 

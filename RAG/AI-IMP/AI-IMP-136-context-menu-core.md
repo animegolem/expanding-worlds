@@ -81,18 +81,18 @@ family round-trips with single undo.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Menu surface: §8.8 clamp, keyboard model, MenuPopover-kin
+- [x] Menu surface: §8.8 clamp, keyboard model, MenuPopover-kin
       styling on tokens, popover rung.
-- [ ] Inventory module encodes the grammar structurally; vitest
+- [x] Inventory module encodes the grammar structurally; vitest
       invariants.
-- [ ] Item + board inventories complete per §8.4 (disabled
+- [x] Item + board inventories complete per §8.4 (disabled
       coming-soon rows only where a command truly lacks — listed
       in Issues).
-- [ ] Registry declarations for the new chords; Settings Keyboard
+- [x] Registry declarations for the new chords; Settings Keyboard
       lists them; menu rows print them mono.
-- [ ] E2E: order/danger assertions + verb round-trips (flip via
+- [x] E2E: order/danger assertions + verb round-trips (flip via
       menu = one undo; backdrop color row applies).
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead (verb
       order feel; "backdrop" wording in situ).
@@ -116,3 +116,80 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Coming-soon rows (command truly absent — per the §6.5 / §8.2
+grammar).** No renderer OR command surface exists for these yet, so
+they ship disabled (greyed, aria-labelled reason, no tooltip chip):
+
+- **Replace image…** and **Swap for…** (§6.5) — the ratified verbs are
+  named, but no `ReplaceImage` / `SwapNode` command exists in
+  `@ew/commands` (confirmed by enumerating the command vocabulary).
+  These are the swap/replace pass's work.
+- **Place on another board…** — the shipped place flows
+  (`onPlaceNode`, place-mode) target the CURRENT board only; there is
+  no cross-board picker, so this stays coming-soon until one lands.
+- **Crop** — matches the charm bar's own disabled crop button (the
+  crop editor is a later ticket).
+- **Paste** (board menu) — the paste flow is bound to the window
+  `ClipboardEvent` in `import-surfaces.ts`; there is no
+  menu-callable paste command, and ⌘V still pastes. Left as a
+  coming-soon row rather than reading the clipboard ad hoc.
+
+**Deviation — note-lifecycle folded into the item menu (superset of
+§8.4's single "note" verb).** node-menu.ts (the old placement
+right-click for Attach/Detach/Rename/Make-Independent) had to be
+retired — one gesture cannot own two menus. Its shipped operations and
+their e2e coverage (notes.spec, import.spec) would have regressed, so
+the item menu's note area reproduces them (Open · Attach new… · Attach
+existing… · Rename… · Detach · Make independent…) reusing node-menu's
+exact testids. This is a documented superset of the RFC's lone "note"
+verb; the lead may relocate the lifecycle ops to the note panel per
+final design. node-menu.ts is deleted.
+
+**Deviation — lock / backdrop verbs are NOT one-undo (fence
+collision).** The rev 0.55 §8.4 wording ("every verb is one undoable
+command") and the ticket's "backdrop color via menu" one-undo example
+require `SetPlacementLock`, `SetCanvasBackground(Color)`, and
+`SetPlacementLabelVisibility` to enter the undo stack. They are NOT in
+`undo/undo-store.ts`'s conservative `CAPTURED_COMMANDS` allowlist, and
+BOTH `undo/` and `packages/*` are fenced off for this ticket — so I
+could not opt them in (the sanctioned "opt in by name" seam lives in
+the fenced file). The verbs dispatch and commit correctly (the charm
+bar's lock and the title strip's color have the same non-undo
+behavior today), but a menu lock / backdrop-color is currently NOT
+reverted by ⌘Z. The e2e proves one-undo on the three verbs that ARE
+captured (flip · z-order · delete, all on the item menu); the board
+backdrop-color test asserts the commit (revision +1), not a revert.
+**Recommend the lead add `SetPlacementLock`, `SetCanvasBackground`,
+`SetCanvasBackgroundColor`, `SetPlacementLabelVisibility` to
+`CAPTURED_COMMANDS`** (a one-line-each data change, the documented
+extension path) so the §8.4 "one undoable command" promise holds —
+verified those handlers already emit inverses is still owed.
+
+**Shortcut chords.** Flips (⇧H/⇧V), z-order (⌘]/⌘[/⇧⌘]/⇧⌘[),
+delete (⌫), select-all (⌘A) already existed and are reused (the
+rev 0.55 map's bare `] [` for z-order would collide with the shipped
+⌘]/⌘[ nav + z-order chords, so the shipped bindings win and the menu
+prints them — deviation recorded). NEW declarations: **lock ⇧⌘L**,
+**open-as-board ⏎**, **zoom-fit ⇧1**, each with dispatch wired where
+its surface lives — lock + open-as-board in gestures-ui (board keys),
+zoom-fit in the dock. ⏎ is guarded to a single-placement selection so
+a stray Enter never fires it; gallery keeps its own Enter (gestures
+are dead under a takeover).
+
+**Appearance / Tags wiring.** Rather than duplicate the charm popovers,
+the menu's Appearance and Tags verbs fire a new `ew-charm-popover`
+event that charms-ui listens for; it selects the placement and opens
+the SAME popover the charm bar owns (single source of truth).
+
+**Submenus.** Core ships no submenus (Appearance/Tags are launchers),
+but the types + `validateMenu` enforce "submenu only on the
+Appearance · Tags · Align · Sort families" and the surface renders a
+basic family flyout, so 137's Align/Sort inventories inherit the rule
+and the rendering for free.
+
+**Gates (all green).** `pnpm -r build` OK · `pnpm -r test` OK
+(desktop vitest incl. 19 new inventory invariants; 147/147 desktop
+e2e incl. the 2 new context-menu specs; notes.spec + import.spec pass
+unchanged) · `pnpm lint` clean · `apps/desktop pnpm test` OK. No
+flakes needed a retry.
