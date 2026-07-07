@@ -28,6 +28,16 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Context menus** (AI-IMP-136, 2026-07-07): right-click an
+  image and empty board — the ratified §8.4 menus are live. Feel
+  calls: (1) verb ORDER within groups (frequency-first — is crop/
+  flips/appearance the right lead?); (2) "backdrop" wording in
+  situ (Replace backdrop… · backdrop color row); (3) coming-soon
+  rows (Replace image…, Swap for…, Paste) render disabled with
+  reasons — promise or clutter? (4) NEW: lock, hide-label, and
+  backdrop paints are now one Mod+Z each (the grammar demanded
+  it) — undo a backdrop color and gut-check it.
+
 - [ ] **The designed void** (AI-IMP-130, 2026-07-07): the void
   around the lit stage moved from the dark engineering placeholder
   to the design value — notably SUBTLER (~22% toward black, oklab).
