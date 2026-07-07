@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   extractWikiLinks,
+  matchWikiLinkAt,
   linkDisplayState,
   type LinkResolutionContext,
   type WikiLinkToken,
@@ -79,6 +80,42 @@ describe('extractWikiLinks (RFC-0001 §7.1)', () => {
     const tokens = extractWikiLinks(body)
     expect(tokens).toEqual([token(3, 8, 'A', null)])
     expect(body.slice(3, 8)).toBe('[[A]]')
+  })
+})
+
+describe('matchWikiLinkAt (§7.1 scan-at-position, AI-IMP-156)', () => {
+  it('matches a token that starts exactly at pos', () => {
+    const body = 'Fight the [[Dragon]] now.'
+    expect(matchWikiLinkAt(body, 10)).toEqual(token(10, 20, 'Dragon', null))
+  })
+
+  it('returns null when no token starts at pos (even if one exists later)', () => {
+    const body = 'Fight the [[Dragon]] now.'
+    expect(matchWikiLinkAt(body, 0)).toBeNull()
+    expect(matchWikiLinkAt(body, 9)).toBeNull() // one char before the `[[`
+  })
+
+  it('keeps Markdown-active title bytes whole (the opacity contract)', () => {
+    for (const title of ['my *starred* title', '**bold**', 'a`code`b', '~~struck~~']) {
+      const body = `x [[${title}]] y`
+      const match = matchWikiLinkAt(body, 2)
+      expect(match?.title, title).toBe(title)
+      expect(body.slice(match!.start, match!.end), title).toBe(`[[${title}]]`)
+    }
+  })
+
+  it('agrees with extractWikiLinks at every token start', () => {
+    const body = 'a [[One]] b [[Two|2]] c [[m *n* o]] d'
+    for (const wanted of extractWikiLinks(body)) {
+      expect(matchWikiLinkAt(body, wanted.start)).toEqual(wanted)
+    }
+  })
+
+  it('rejects malformed candidates at pos', () => {
+    expect(matchWikiLinkAt('[[   ]]', 0)).toBeNull()
+    expect(matchWikiLinkAt('[[|x]]', 0)).toBeNull()
+    expect(matchWikiLinkAt('[[x', 0)).toBeNull()
+    expect(matchWikiLinkAt('[[a\nb]]', 0)).toBeNull()
   })
 })
 

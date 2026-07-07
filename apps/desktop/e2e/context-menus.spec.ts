@@ -299,6 +299,28 @@ test('multi-select menu: count header + Gather into a frame = ONE undo (§8.4)',
     // (the row also carries its mono ⌫ shortcut chip, so match the label)
     await expect(win.getByTestId('ctx-delete')).toContainText('Delete 2 items')
 
+    // Toggle the align flyout OPEN then CLOSED via its anchor: closeSub
+    // must truncate the shared keyboard `rows` back to the shell so a
+    // stranded flyout verb can never be reached (AI-IMP-156). After the
+    // toggle, End focuses the LAST real row — never a detached
+    // `ctx-align-*` child that lingered in `rows`.
+    await win.getByTestId('ctx-align').click()
+    await expect(win.getByTestId('ctx-submenu-align')).toBeVisible()
+    await win.getByTestId('ctx-align').click()
+    await expect(win.getByTestId('ctx-submenu-align')).toHaveCount(0)
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    await win.keyboard.press('End')
+    const focused = await win.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null
+      const menu = document.querySelector('[data-testid="context-menu"]')
+      return {
+        testid: el?.dataset?.['testid'] ?? null,
+        inMenu: !!(menu && el && menu.contains(el)),
+      }
+    })
+    expect(focused.testid?.startsWith('ctx-align-')).toBe(false)
+    expect(focused.inMenu).toBe(true)
+
     // Align flyout: pressing a child must run the verb, close the WHOLE
     // menu, and leave no orphaned flyout (Codex review, PR #9 — the
     // sibling-parented flyout was "outside" the pointer guard and got

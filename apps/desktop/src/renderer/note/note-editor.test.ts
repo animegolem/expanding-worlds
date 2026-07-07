@@ -82,6 +82,30 @@ describe('NoteEditorController canonicalize-on-load (§7.1)', () => {
     controller.destroy()
   })
 
+  it('opening a TRASHED note whose body would canonicalize commits nothing', async () => {
+    const port = new FakePort()
+    // A non-canonical body (`*` bullets) that WOULD arm an autosave if the
+    // note were active — but a trashed note is view-only (§7.1 In Trash).
+    port.notes.set('t1', {
+      id: 't1',
+      title: 'T',
+      titleKey: 't',
+      body: '* star one\n* star two',
+      lifecycleState: 'trashed',
+    })
+    const controller = new NoteEditorController(port)
+    controller.mount(host)
+
+    await controller.open('t1')
+    // No dirty, no timer, no UpdateNote — a read-only view must not
+    // self-commit the canonicalization (AI-IMP-156).
+    expect(controller.dirty).toBe(false)
+    await controller.flushPending()
+    expect(port.updates).toHaveLength(0)
+
+    controller.destroy()
+  })
+
   it('leaves an already-canonical body untouched on open', async () => {
     const port = new FakePort()
     port.notes.set('n2', {

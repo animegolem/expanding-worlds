@@ -69,7 +69,12 @@ export function linkDisplayState(
   return 'unresolved'
 }
 
-const TOKEN_RE = /\[\[([^[\]|\r\n]+)(?:\|([^[\]\r\n]+))?\]\]/g
+/** The single grammar source. Both the whole-body scanner (global) and
+ * the scan-at-position helper (sticky) are built from it so the editor's
+ * parse-stage opacity rule and the extractor can NEVER diverge. */
+const TOKEN_PATTERN = /\[\[([^[\]|\r\n]+)(?:\|([^[\]\r\n]+))?\]\]/
+const TOKEN_RE = new RegExp(TOKEN_PATTERN, 'g')
+const ANCHORED_TOKEN_RE = new RegExp(TOKEN_PATTERN, 'y')
 
 /** Extract all wiki-link tokens from a Markdown body, in order. */
 export function extractWikiLinks(body: string): WikiLinkToken[] {
@@ -85,4 +90,27 @@ export function extractWikiLinks(body: string): WikiLinkToken[] {
     })
   }
   return tokens
+}
+
+/**
+ * Match a single grammar-valid wiki-link token that STARTS EXACTLY at
+ * `pos` (the first `[`). Returns the token or `null`. This is the same
+ * lexical grammar as {@link extractWikiLinks} (shared `TOKEN_PATTERN`),
+ * exposed for a scan-at-a-position caller — the editor's Markdown parse
+ * rule uses it to treat a token as opaque bytes so emphasis/code/
+ * strikethrough never split it across marks (AI-IMP-156). The embed `!`
+ * prefix is the caller's concern; this matches the `[[…]]` core only.
+ */
+export function matchWikiLinkAt(body: string, pos: number): WikiLinkToken | null {
+  ANCHORED_TOKEN_RE.lastIndex = pos
+  const match = ANCHORED_TOKEN_RE.exec(body)
+  if (!match) return null
+  const title = match[1]
+  if (title === undefined || title.trim().length === 0) return null
+  return {
+    start: pos,
+    end: pos + match[0].length,
+    title,
+    alias: match[2] ?? null,
+  }
 }

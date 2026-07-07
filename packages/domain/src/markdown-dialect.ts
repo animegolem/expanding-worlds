@@ -88,6 +88,21 @@ export const MARKDOWN_ROUNDTRIP_CORPUS: readonly MarkdownRoundTripCase[] = [
   // --- adversarial ---
   stable('adv-link-in-code-fence', '```\nnot a [[Link]] here\n```'),
   stable('adv-link-in-inline-code', 'Literal `[[NotALink]]` stays text.'),
+  // Markdown-active title bytes (§7.1 grammar is lexical: `*` `**` `` ` ``
+  // `~~` are legal title characters). markdown-it must NOT parse
+  // emphasis/code/strikethrough INSIDE a grammar-valid token — the token
+  // is opaque and its bytes round-trip verbatim (AI-IMP-156). Byte-stable,
+  // so link identity survives canonicalize-on-load.
+  stable('adv-link-md-italic-title', 'Fight the [[my *starred* title]] now.'),
+  stable('adv-link-md-bold-title', 'A [[**bold**]] title stays whole.'),
+  stable('adv-link-md-code-title', 'A [[a`code`b]] title stays whole.'),
+  stable('adv-link-md-strike-title', 'A [[~~struck~~]] title stays whole.'),
+  // Embed prefix `!` + an active-title token must round-trip byte-exact
+  // (the `!` may be consumed by markdown-it's image failure path).
+  stable('adv-embed-md-title', 'Art ![[a *b* c]] here.'),
+  // A valid token and an active-title token on ONE line: the second must
+  // not be destroyed by emphasis parsing (regressed at HEAD before 156).
+  stable('adv-link-md-mixed-line', '[[title]] and [[**b**]] mix'),
   {
     // Emphasis normalizes to the `*` family (single `*` for italic,
     // double `**` for bold).

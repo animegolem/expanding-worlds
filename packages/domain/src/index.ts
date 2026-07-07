@@ -5,6 +5,7 @@ export { uuidv7, shortCode } from './ids'
 export { titleKey, nameKey } from './title-key'
 export {
   extractWikiLinks,
+  matchWikiLinkAt,
   linkDisplayState,
   type LinkResolutionContext,
   type WikiLinkDisplayState,

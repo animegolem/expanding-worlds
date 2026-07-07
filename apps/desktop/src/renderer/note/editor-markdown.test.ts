@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
-import { MARKDOWN_ROUNDTRIP_CORPUS } from '@ew/domain'
+import { MARKDOWN_ROUNDTRIP_CORPUS, extractWikiLinks } from '@ew/domain'
 import { describe, expect, it } from 'vitest'
 import { roundTripMarkdown } from './editor-markdown'
+
+/** A token's identity as the lexical extractor sees it. */
+function linkIdentity(body: string): string[] {
+  return extractWikiLinks(body).map((t) => `${t.title}|${t.alias ?? ''}`)
+}
 
 /**
  * The §7.1 dialect regression gate (AI-IMP-146): the spike's 25-case
@@ -24,6 +29,17 @@ describe('frozen Markdown dialect round-trip (§7.1)', () => {
       expect(roundTripMarkdown(canonical)).toBe(canonical)
     })
   }
+
+  it('canonicalize-on-load preserves link identity through the real factory', () => {
+    // The load-bearing invariant (AI-IMP-156): the token bytes the lexical
+    // extractor sees BEFORE the editor touches the body must survive
+    // `serialize(parse(body))`. A parse-stage split of `[[my *starred*
+    // title]]` across emphasis marks drops the record silently on first
+    // open — the data-loss this ticket fixes.
+    for (const { name, body } of MARKDOWN_ROUNDTRIP_CORPUS) {
+      expect(linkIdentity(roundTripMarkdown(body)), name).toEqual(linkIdentity(body))
+    }
+  })
 
   it('every valid wiki-link/embed case is byte-stable (no bracket churn)', () => {
     const tokenCases = MARKDOWN_ROUNDTRIP_CORPUS.filter(
