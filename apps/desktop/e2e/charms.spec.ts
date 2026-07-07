@@ -218,10 +218,12 @@ test('appearance switcher: dot→icon renders + undo, dot→card, card gated by 
   await expect(win.getByTestId('charm-tag-chips')).toBeHidden()
 
   // dot→icon: pick a built-in icon; the board re-renders to the icon
-  // glyph WITHOUT reselection, and the popover folds after the pick.
+  // object WITHOUT reselection, and the popover folds after the pick.
+  // At this size/zoom the §8.2 object glyph shows (not its sub-
+  // threshold dot).
   await win.getByTestId('appearance-icon-star').click()
   await expect.poll(kind).toBe('icon')
-  await expect.poll(() => body(pin.placementId)).toBe('icon')
+  await expect.poll(() => body(pin.placementId)).toBe('icon-object')
   await expect(win.getByTestId('charm-appearance-popover')).toBeHidden()
 
   // One undo restores the prior appearance. No interactive undo surface

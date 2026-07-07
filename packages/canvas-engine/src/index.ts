@@ -21,6 +21,7 @@ export {
   RendererRegistry,
   fallbackRenderer,
   rendererKey,
+  type IconAtlasResource,
   type ItemRenderer,
   type RendererResources,
 } from './renderers/registry'
@@ -35,12 +36,14 @@ export {
 export {
   DEFAULT_DOT_RADIUS,
   DEFAULT_FRAME_SIZE,
+  ICON_FURNITURE_MIN_PX,
   LABEL_CLEARANCE_PX,
   LABEL_OUTLINE_GAP_PX,
   SELECTION_OUTLINE_PAD_PX,
   SELECTION_OUTLINE_STROKE_PX,
   cssColorToNumber,
   placementRenderer,
+  syncPlacementIconLod,
   syncPlacementLabelOffset,
 } from './renderers/placement'
 export { BackgroundSync } from './renderers/background'

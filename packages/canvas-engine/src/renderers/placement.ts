@@ -15,6 +15,14 @@ import type { ItemRenderer, RendererResources } from './registry'
 
 export const DEFAULT_DOT_RADIUS = 12
 
+/**
+ * §8.2 shrink ladder (AI-IMP-132): below this RENDERED size (screen
+ * px) an object icon degrades to its plain dot. A named local
+ * stand-in flagged for AI-IMP-133 to absorb into the shared furniture
+ * threshold (`EW_FURNITURE_MIN_PX`) — do not fork a second copy.
+ */
+export const ICON_FURNITURE_MIN_PX = 8
+
 /** §4.5: label font size = body height × this single tuning ratio. */
 export const LABEL_HEIGHT_RATIO = 0.14
 
@@ -173,6 +181,29 @@ function buildBody(
 
   if (kind === 'icon') {
     const size = item.width ?? DEFAULT_DOT_RADIUS * 2
+    const iconId = item.appearanceIcon
+    const frames = iconId ? (resources.iconAtlas?.frames(iconId) ?? null) : null
+    if (resources.iconAtlas && frames && frames.length > 0) {
+      // §8.2 object glyph: a sprite from the shared atlas, plus the
+      // dot it degrades to below the furniture threshold. Both are
+      // built once; the LOD pass toggles which one is visible (and
+      // picks the crispest tier) as zoom changes — no rebuild.
+      const dot = new Graphics()
+        .circle(0, 0, size / 2)
+        .fill({ color: resources.iconAtlas.dotColor(iconId!) })
+      dot.label = 'icon-dot'
+      dot.visible = false
+      container.addChild(dot)
+      const sprite = new Sprite(frames[0] as Texture)
+      sprite.label = 'icon-object'
+      sprite.anchor.set(0.5)
+      sprite.setSize(size)
+      container.addChild(sprite)
+      syncPlacementIconLod(container, item, resources.getZoom?.() ?? 1, resources)
+      return
+    }
+    // Fallback: no atlas injected (minimal test hosts) — the generic
+    // diamond glyph, so a bare renderer still shows an icon body.
     const half = size / 2
     const glyph = new Graphics()
       .roundRect(-half, -half, size, size, size / 5)
@@ -443,6 +474,65 @@ export function syncPlacementLabelOffset(
   // keeps the label below the body in world space (its own scale
   // sign, set in syncLabel, un-mirrors the glyphs).
   label.position.set(0, offset * (item.flipY === 1 ? -1 : 1))
+}
+
+/**
+ * §8.2 icon level-of-detail (AI-IMP-132). Object icons carry two
+ * bodies — the atlas sprite and the plain dot — and this toggles
+ * which is visible by the icon's RENDERED screen size (body world
+ * size × zoom × container scale), degrading to the dot below
+ * ICON_FURNITURE_MIN_PX. Above it, the crispest atlas tier ≥ the
+ * rendered size is selected; swapping tiers reassigns a frame of the
+ * SAME base texture, so batching is preserved. Cheap and idempotent:
+ * the host re-runs it every cull pass so camera motion needs no
+ * renderer update (mirrors syncPlacementLabelOffset). No-op for
+ * non-atlas icon bodies (the generic-glyph fallback).
+ */
+export function syncPlacementIconLod(
+  object: Container,
+  item: ScenePlacement,
+  zoom: number,
+  resources: RendererResources,
+): void {
+  const sprite = object.children.find((child) => child.label === 'icon-object') as
+    | Sprite
+    | undefined
+  const dot = object.children.find((child) => child.label === 'icon-dot')
+  if (!sprite || !dot) return
+  const size = item.width ?? DEFAULT_DOT_RADIUS * 2
+  const safeZoom = zoom > 0 ? zoom : 1
+  const rendered = size * safeZoom * (Math.abs(item.scale) || 1)
+  const belowFurniture = rendered < ICON_FURNITURE_MIN_PX
+  sprite.visible = !belowFurniture
+  dot.visible = belowFurniture
+  if (belowFurniture) return
+  const iconId = item.appearanceIcon
+  const atlas = resources.iconAtlas
+  const frames = iconId ? (atlas?.frames(iconId) ?? null) : null
+  if (!atlas || !frames || frames.length === 0) return
+  // Smallest tier ≥ rendered px (crisp minification), else the largest.
+  let chosenIndex = 0
+  let chosenTier = Infinity
+  let largestIndex = 0
+  let largestTier = -Infinity
+  atlas.tiers.forEach((tier, index) => {
+    if (tier > largestTier) {
+      largestTier = tier
+      largestIndex = index
+    }
+    if (tier >= rendered && tier < chosenTier) {
+      chosenTier = tier
+      chosenIndex = index
+    }
+  })
+  const index = Number.isFinite(chosenTier) ? chosenIndex : largestIndex
+  const texture = frames[index] as Texture
+  if (sprite.texture !== texture) {
+    sprite.texture = texture
+    // Reassigning the texture resets the sprite to the frame's natural
+    // size; re-pin it to the body's world size.
+    sprite.setSize(size)
+  }
 }
 
 /** In-place resize for image bodies: adjust the sprite (or its
