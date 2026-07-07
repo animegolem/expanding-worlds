@@ -207,6 +207,14 @@ declare global {
       placementTreatment: (
         id: string,
       ) => { hasShadow: boolean; radius: number; shadowAlpha: number } | null
+      /** §4.6 crop as RENDERED (AI-IMP-159): the UV fill matrix read
+       * back from the image body's actual fill instruction (null =
+       * uncropped fill), plus the wire crop string — proves the board
+       * draws the cropped region, not merely that the row updated. */
+      placementCrop: (id: string) => {
+        matrix: { a: number; d: number; tx: number; ty: number } | null
+        appearanceCrop: string | null
+      } | null
       /** Stage/grid presentation state (AI-IMP-032, AI-IMP-118). */
       stage: () => {
         gridVisible: boolean
@@ -1832,6 +1840,28 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         radius: imageTreatment?.radius ?? 0,
         shadowAlpha: (shadow?.alpha ?? 0),
       }
+    },
+    placementCrop: (id: string) => {
+      const item = controller
+        .items()
+        .find((candidate) => candidate.itemKind === 'placement' && candidate.id === id)
+      if (!item || item.itemKind !== 'placement') return null
+      const object = sync.get(id)
+      const body = object?.children.find((child) => child.label === 'image') as
+        | Graphics
+        | undefined
+      // Read the ACTUAL fill instruction: this is what the GPU samples,
+      // so a matrix here proves the cropped region renders (AI-IMP-159).
+      const fill = body?.context.instructions.find(
+        (instruction) => instruction.action === 'fill',
+      )
+      const style = fill
+        ? (fill.data as { style?: { matrix?: { a: number; d: number; tx: number; ty: number } | null } }).style
+        : undefined
+      const matrix = style?.matrix
+        ? { a: style.matrix.a, d: style.matrix.d, tx: style.matrix.tx, ty: style.matrix.ty }
+        : null
+      return { matrix, appearanceCrop: item.appearanceCrop }
     },
     stage: () => ({
       gridVisible: stageExtent(sceneBackground) === null,

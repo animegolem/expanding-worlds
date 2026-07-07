@@ -46,12 +46,14 @@ export function activeTakeover(): TakeoverKind | null {
   return active
 }
 
-/** Takeover-FAMILY overlays that are not one of the named views (the
- * first-run guide) register a visibility predicate here so every
- * board-input guard inherits them through takeoverActive() — the
- * PR #14 review found the guide's own overlay let board delete/undo/
- * quick-open run underneath it. Registration is module-load cheap;
- * the predicate is consulted at event time. */
+/** Takeover-FAMILY overlays that are not one of the named views
+ * register a visibility predicate here so every board-input guard
+ * (host keys, gesture keys, nav/bookmark digits, undo keys) inherits
+ * them through takeoverActive() with no per-seam wiring. First the
+ * first-run guide (AI-IMP-160 — the PR #14 review found its own
+ * overlay let board delete/undo/quick-open run underneath it), then
+ * the crop editor (AI-IMP-159). Registration is module-load cheap;
+ * predicates are consulted at event time. */
 const inputBlockers = new Set<() => boolean>()
 
 export function registerInputBlocker(predicate: () => boolean): () => void {

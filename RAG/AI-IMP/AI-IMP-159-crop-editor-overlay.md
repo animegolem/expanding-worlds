@@ -82,16 +82,16 @@ rect.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Overlay: full image, handles, thirds guides, reset, commit/
+- [x] Overlay: full image, handles, thirds guides, reset, commit/
       cancel grammar; engagement held; no beats.
-- [ ] Crop stores on the appearance as a normalized source rect;
+- [x] Crop stores on the appearance as a normalized source rect;
       one undoable UpdateAppearance commit.
-- [ ] Renderer shows the cropped region at the placement frame;
+- [x] Renderer shows the cropped region at the placement frame;
       radius/shadow (140) compose correctly.
-- [ ] Asset bytes and exports untouched (test); re-entry shows
+- [x] Asset bytes and exports untouched (test); re-entry shows
       full image + current rect.
-- [ ] Charm + menu rows enabled; disabled stubs removed.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Charm + menu rows enabled; disabled stubs removed.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead (handle
       feel, guide weight, commit grammar).
@@ -112,3 +112,50 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Undo capture (VERIFY item):** `SetNodeAppearance` is NOT in the
+  undo store's standing `CAPTURED_COMMANDS` — it sits in
+  `GROUP_ONLY_COMMANDS` (frame machinery). A bare gateway execute
+  would not be undoable, so the crop commit runs its ONE command
+  inside `runAsUndoGroup` (the ContextMenu gather/flipAll idiom) —
+  captured as one entry through existing machinery, no `undo/*` edit,
+  no capture-set widening. Needs reconciliation with AI-IMP-154's
+  gesture-capture seam at merge. Related observation, untouched: the
+  charm appearance switcher's own `SetNodeAppearance` commits (dot/
+  icon/image/card picks) are NOT undoable today for the same reason.
+- **Pixi crop rendering:** `textureSpace: 'local'` fills IGNORE
+  `texture.frame` (generateTextureMatrix's local branch), so a framed
+  sub-texture cannot crop the AI-IMP-140 rounded body. The crop is a
+  `style.matrix` UV remap instead (`cropFillMatrix`): the ONE shared
+  budget texture keeps batching, no pixels copied, radius + 9-slice
+  shadow compose unchanged because only what the fill samples moves.
+- **Crop vs placement geometry (record-the-finding item):** the crop
+  does not alter placement w/h anywhere in existing machinery — the
+  cropped region stretches onto the existing placement frame, so a
+  non-proportional rect changes the displayed aspect. Accepted for
+  v1 (matches "renders the cropped region at the placement frame");
+  aspect re-derivation can ride the §6.2 pin editor later.
+- **`registerInputBlocker` did not exist** in this worktree's base
+  `chrome/takeover.ts` (the brief described it as landed by
+  AI-IMP-160). Added it here as a predicate set folded into
+  `takeoverActive()`, so every existing board seam guard (host keys,
+  gesture keys, nav/undo keys) goes inert under the editor with no
+  per-seam wiring. Watch for overlap when the 160 branch merges.
+- **Charm-bar tooltip plumbing:** `barButton` attaches the single
+  shared tooltip chip; a second `tooltip()` on the same node would
+  race it. Added a WeakMap of tooltip handles inside charms-ui so the
+  crop button's enabled/disabled reason updates via `tip.update()`
+  (the card-button idiom, but reachable from outside `barButton`).
+- **Menu wiring under the fence:** `menus/ContextMenu.ts` is owned by
+  a parallel agent, so the inventory crop row cannot get a new
+  `MenuActions` member. It dispatches `requestCropEditor()` directly —
+  a dependency-free window-event seam (`canvas/crop-request.ts`)
+  mirroring `requestCharmPopover`; ContextMenu already selects the
+  hit placement before building, so the single selection is the
+  subject. `inventory.test.ts` updated (crop moved out of the
+  coming-soon list; new image-gate test).
+- **E2E drag determinism:** handle drags are pointer-position math
+  under fit-zoom; in a hidden window that is flake bait, so the spec
+  drives the SAME state via the `__ewCrop` debug seam (`setRect`) and
+  commits through the real Apply/Esc surfaces. Handle/drag math is
+  covered by the crop-rect vitest (10 cases) instead.

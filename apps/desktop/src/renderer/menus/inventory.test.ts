@@ -65,11 +65,20 @@ describe('menuFor — item inventory (§8.4)', () => {
 
   it('ships the not-yet-built verbs as disabled coming-soon rows', () => {
     const groups = menuFor(IMAGE_ITEM, stubActions())
-    for (const id of ['replace-image', 'swap-for', 'place-on-another-board', 'crop']) {
+    for (const id of ['replace-image', 'swap-for', 'place-on-another-board']) {
       const row = byId(groups, id)!
       expect(row.disabledReason).toBeTruthy()
       expect(row.run).toBeUndefined()
     }
+  })
+
+  it('enables Crop for an image item and gates it off otherwise (AI-IMP-159)', () => {
+    // Crop is a §4.6 image-appearance verb: live for images…
+    expect(byId(menuFor(IMAGE_ITEM, stubActions()), 'crop')!.run).toBeDefined()
+    // …and disabled-with-reason for every non-image item.
+    const nonImage = byId(menuFor({ ...IMAGE_ITEM, isImage: false }, stubActions()), 'crop')!
+    expect(nonImage.disabledReason).toBeTruthy()
+    expect(nonImage.run).toBeUndefined()
   })
 
   it('surfaces attach rows for an un-noted item and lifecycle rows once noted', () => {

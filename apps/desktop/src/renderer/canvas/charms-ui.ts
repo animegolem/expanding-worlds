@@ -26,6 +26,7 @@ import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { openTagPanel } from '../tags/tag-panel'
 import { assignTagByName, filterTagCompletions } from '../tags/tag-assign'
 import { importErrorNotice } from './import-surfaces'
+import { requestCropEditor } from './crop-request'
 import { themeTokenValue } from '../theme'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 import { ICON_SVG_DATA_URLS } from './icon-atlas.generated'
@@ -472,6 +473,15 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     }
   }
 
+  // Tooltip handles per bar button, for the buttons whose tip text
+  // follows live state (crop's enabled/disabled reason, AI-IMP-159).
+  // One tooltip per node — a second attachment would race the shared
+  // chip — so state changes go through update(), never re-attachment.
+  const barTips = new WeakMap<
+    HTMLButtonElement,
+    { update: (next: { name: string; shortcut?: string }) => void }
+  >()
+
   function barButton(
     testId: string,
     glyph: string,
@@ -491,6 +501,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     })
     const tip = tooltip(button, spec)
     disposers.push(tip.destroy)
+    barTips.set(button, tip)
     bar.appendChild(button)
     return button
   }
@@ -514,15 +525,24 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
 
   // §8.4 bar: crop · flip H · flip V · | · appearance · make-canvas ·
   // note · # · lock.
-  const cropButton = barButton(
-    'charm-crop',
-    '⬚',
-    { name: 'Crop — the crop editor arrives in a later ticket' },
-    () => {},
-  )
-  cropButton.disabled = true
-  cropButton.style.opacity = '0.4'
-  cropButton.style.cursor = 'default'
+  // Crop (AI-IMP-159): opens the crop-editor overlay for an image item —
+  // a §4.6 non-destructive DISPLAY crop on the appearance, never the
+  // asset. Non-image items keep the button visible but inert with a
+  // "why" tooltip (the card-button idiom: not native `disabled`, which
+  // would swallow the hover that explains itself).
+  const cropTipSpec = { name: 'Crop — trim what this image shows' }
+  const cropDisabledTipSpec = { name: 'Crop needs an image item' }
+  const cropButton = barButton('charm-crop', '⬚', cropTipSpec, () => {
+    const placement = selectedPlacement()
+    if (!placement || cropButton.dataset['disabled'] === 'true') return
+    requestCropEditor(placement.id)
+  })
+  function setCropEnabled(isImage: boolean): void {
+    cropButton.dataset['disabled'] = isImage ? 'false' : 'true'
+    cropButton.style.opacity = isImage ? '1' : '0.4'
+    cropButton.style.cursor = isImage ? 'pointer' : 'default'
+    barTips.get(cropButton)?.update(isImage ? cropTipSpec : cropDisabledTipSpec)
+  }
   barButton('charm-flip-h', '⇋', { name: 'Flip horizontal' }, () => {
     const placement = selectedPlacement()
     if (placement) void execute('FlipPlacement', { placementId: placement.id, axis: 'x' })
@@ -829,6 +849,9 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       lockButton.setAttribute('aria-label', tipSpec)
       makeCanvasButton.disabled = selected.childCanvasId !== null
       makeCanvasButton.style.opacity = selected.childCanvasId !== null ? '0.4' : '1'
+      // Crop is a §4.6 image-appearance verb: live only when the
+      // selection wears an image (AI-IMP-159).
+      setCropEnabled(selected.appearanceKind === 'image' && selected.assetContentHash !== null)
       if (chipsFor === selected.id) {
         chips.style.left = `${bottomCenter.x - barWidth / 2}px`
         chips.style.top = `${popoverTop}px`
