@@ -32,6 +32,28 @@ export interface CharmsUiHandle {
   destroy(): void
 }
 
+/**
+ * Imperative seam (AI-IMP-136): the §8.4 context menu's Appearance and
+ * Tags verbs open the SAME charm popovers this module owns, rather than
+ * duplicating their UI. The menu selects the placement and fires this;
+ * the charm layer opens the matching popover anchored to the charm bar.
+ */
+export const CHARM_POPOVER_EVENT = 'ew-charm-popover'
+export interface CharmPopoverRequest {
+  placementId: string
+  which: 'appearance' | 'tags'
+}
+export function requestCharmPopover(
+  placementId: string,
+  which: 'appearance' | 'tags',
+): void {
+  window.dispatchEvent(
+    new CustomEvent<CharmPopoverRequest>(CHARM_POPOVER_EVENT, {
+      detail: { placementId, which },
+    }),
+  )
+}
+
 const PAGE_GLYPH = '¶'
 const FRAME_GLYPH = '⊡'
 
@@ -484,6 +506,15 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     if (placement) void execute('FlipPlacement', { placementId: placement.id, axis: 'y' })
   })
   divider()
+  /** Open the appearance popover for a placement (shared by the charm
+   * button and the §8.4 context-menu seam). */
+  function openAppearanceFor(placement: ScenePlacement): void {
+    appearanceFor = placement.id
+    closeChips() // one charm popover at a time (§4.8 idiom)
+    setCardEnabled(placement.noteId !== null)
+    appearance.style.display = 'flex'
+    schedule()
+  }
   barButton(
     'charm-appearance',
     '◑',
@@ -495,11 +526,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
         closeAppearance()
         return
       }
-      appearanceFor = placement.id
-      closeChips() // one charm popover at a time (§4.8 idiom)
-      setCardEnabled(placement.noteId !== null)
-      appearance.style.display = 'flex'
-      schedule()
+      openAppearanceFor(placement)
     },
   )
   const makeCanvasButton = barButton('charm-make-canvas', FRAME_GLYPH, { name: 'Make canvas' }, () => {
@@ -513,14 +540,9 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     if (placement.noteId) requestOpenNote(placement.noteId)
     else requestAttachNote(placement.nodeId)
   })
-  barButton('charm-tags', '#', { name: 'Tags — add or open this node’s tags' }, () => {
-    const placement = selectedPlacement()
-    if (!placement) return
-    if (chipsFor === placement.id) {
-      chipsFor = null
-      chips.style.display = 'none'
-      return
-    }
+  /** Open the tag-chips popover for a placement (shared by the charm
+   * button and the §8.4 context-menu seam). */
+  function openTagsFor(placement: ScenePlacement): void {
     chipsFor = placement.id
     closeAppearance() // one charm popover at a time
     addInput.value = ''
@@ -533,6 +555,16 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       schedule()
       addInput.focus()
     })()
+  }
+  barButton('charm-tags', '#', { name: 'Tags — add or open this node’s tags' }, () => {
+    const placement = selectedPlacement()
+    if (!placement) return
+    if (chipsFor === placement.id) {
+      chipsFor = null
+      chips.style.display = 'none'
+      return
+    }
+    openTagsFor(placement)
   })
   const lockButton = barButton('charm-lock', '🔒', { name: 'Lock' }, () => {
     const placement = selectedPlacement()
@@ -766,6 +798,19 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
     }),
   )
   disposers.push(host.controller.selection.onChanged(() => schedule()))
+  // §8.4 context-menu seam: open the appearance/tags popover for the
+  // requested placement, selecting it first so the bar (and thus the
+  // popover anchor) lays out beneath it.
+  const onCharmPopover = (event: Event): void => {
+    const detail = (event as CustomEvent<CharmPopoverRequest>).detail
+    const item = host.controller.items().find((candidate) => candidate.id === detail.placementId)
+    if (!item || item.itemKind !== 'placement') return
+    host.controller.selection.set([detail.placementId])
+    if (detail.which === 'appearance') openAppearanceFor(item)
+    else openTagsFor(item)
+  }
+  window.addEventListener(CHARM_POPOVER_EVENT, onCharmPopover)
+  disposers.push(() => window.removeEventListener(CHARM_POPOVER_EVENT, onCharmPopover))
   // §11.5 charm corner applies to charms already on screen (074).
   disposers.push(onAppSettingsChanged(() => schedule()))
   // One shared fade clock: the layer fades with the chrome; per-group

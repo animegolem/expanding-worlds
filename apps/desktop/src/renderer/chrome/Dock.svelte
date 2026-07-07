@@ -27,7 +27,7 @@
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { BoardTooling } from '../canvas/board-tooling'
   import { KEY } from '../keys/bindings'
-  import { formatBinding, getBinding } from '../keys/registry'
+  import { formatBinding, getBinding, matches } from '../keys/registry'
   import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
 
@@ -176,7 +176,6 @@
     )
     const onKeydown = (event: KeyboardEvent): void => {
       if (takeoverActive()) return
-      if (event.metaKey || event.ctrlKey || event.altKey) return
       const target = event.target as HTMLElement | null
       if (
         target &&
@@ -186,6 +185,15 @@
           target.isContentEditable)
       )
         return
+      // §8.4 zoom-fit ⇧1 (AI-IMP-136): the ⤢ button's chord, dispatched
+      // where the fit action lives. Checked before the modifier guard
+      // since it carries Shift; the plain tool letters need none.
+      if (matches(event, KEY.boardZoomFit)) {
+        event.preventDefault()
+        tooling.zoomToFit()
+        return
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey) return
       const key = event.key.toLowerCase()
       if (key === 's') {
         handle.tools.setTool(lastShapeKind)

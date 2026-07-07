@@ -8,7 +8,7 @@
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
-  import { attachNodeMenu, type NodeMenuHandle } from './canvas/node-menu'
+  import { attachContextMenu, type ContextMenuHandle } from './menus/ContextMenu'
   import { attachPinTool, type PinToolHandle } from './canvas/pin-tool'
   import { attachPlaceMode, type PlaceModeHandle } from './canvas/place-mode'
   import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
@@ -49,7 +49,7 @@
   onMount(() => {
     let mounted: CanvasHostHandle | null = null
     let surfaces: ImportSurfacesHandle | null = null
-    let menu: NodeMenuHandle | null = null
+    let menu: ContextMenuHandle | null = null
     let textEntry: TextEntryController | null = null
     let openNote: OpenNoteSurfaceHandle | null = null
     let charms: CharmsUiHandle | null = null
@@ -78,9 +78,11 @@
           })
         }
         surfaces = attachImportSurfaces(h, element, notify)
-        menu = attachNodeMenu(h, element, notify)
         ui = createDecorationsUi(h)
         tooling = attachBoardTooling(h, element, notify)
+        // §8.4 context menu (AI-IMP-136): owns right-click, needs tooling
+        // for the backdrop family + zoom-fit, so it attaches after it.
+        menu = attachContextMenu(h, element, notify, tooling)
         textEntry = attachTextEntry(h, element)
         openNote = attachOpenNoteSurface(h, element)
         detachPanels = attachPanels(h)
