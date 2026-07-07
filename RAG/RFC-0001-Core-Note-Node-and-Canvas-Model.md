@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.59         | 7 July 2026      |
+| Accepted for Phase 1 | 0.60         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -539,6 +539,15 @@ renderer INSIDE this window, never a new overlay species. The play
 charm's centered-versus-charm-bar presentation on video bodies is
 an open feel call for the activation ticket.
 
+**Viewer state persists (rev 0.60 — owner, shaped).** The universal
+viewer SHOULD remember per-document reading state — PDF page and
+scroll, web-view scroll — keyed to the NODE identity in the project
+settings table (`viewer_state:<nodeId>`; settings rows need no
+migration), so reopening the comic you are reading resumes where you
+left it. Reading position is presentation state: it never enters
+command history, and it travels with export/import like every
+project setting.
+
 An image asset SHOULD record:
 
 - Content hash.
@@ -630,6 +639,20 @@ version is a Pinterest-review problem, not a technical one. All
 three are versioned adapters behind the connector store, and the
 ongoing-import mode obeys the same never-blocks rules as the §14.4
 mirror.
+
+**Feed subscriptions (rev 0.60 — owner musing, awaiting shape).** An
+RSS/Atom connector: a FEED SUBSCRIPTION is a record the user adds the
+way they add anything else — plausibly a library-tier record, taggable
+— and a board container (a frame, the ratified grouping) holds the
+link cards a feed produces as web-reference nodes, mixed multi-feed or
+single-feed per container. Refresh is a USER VERB on the container,
+never an ambient poller (§11.5 constitution). The target experience:
+a to-do/reading board where articles arrive as cards beside your
+notes, and the comic you are actively reading opens in the universal
+viewer and resumes at your place. No new node primitive — packaging
+over web-reference nodes, frames, and the connector grammar; only the
+subscription record is new surface. Early musing; needs the artist
+conversation before it hardens.
 
 **The inbox facet (rev 0.42 — owner user story: library
 management).** The mirror and the connectors fill the library;
@@ -4526,3 +4549,10 @@ Accepted for the Phase 1 prototype:
   archives; stills + play charm on the board, renderers added inside
   the one window, connectors may drive user-installed tools (yt-dlp)
   but the app bundles nothing (§4.7).
+
+- Viewer reading state shaped; feed subscriptions mused (rev 0.60,
+  owner): the universal viewer remembers per-document position via
+  `viewer_state:<nodeId>` settings rows (presentation state, never
+  command history, travels with export); an RSS connector decomposes
+  into web-reference cards in a frame plus a taggable subscription
+  record — refresh is a user verb, never a poller (§4.7).
