@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.58         | 7 July 2026      |
+| Accepted for Phase 1 | 0.59         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -520,6 +520,24 @@ happen to be supported) — anything outside refuses kindly at
 staged import with a clear notice, exactly like unsupported images
 today. No transcoding, no bundled ffmpeg: out-of-envelope formats
 are the user's to convert, stated plainly.
+
+**The windowed overlay is the universal viewer (rev 0.59 — owner,
+shaped).** The video player's windowed overlay is not a one-off: it
+is the app's single presentation surface for every non-image content
+kind. The board never renders live foreign content — a placement
+shows a STILL (poster frame, thumbnail, first page) with the play
+charm in the §8.4 grammar — and activation opens the same §8.8
+modal-family window over the darkened board: an HTML5 player for
+local video, a reader for a dropped PDF (read the whole document
+there), a web view for a web-reference, and whatever a connector
+fetches — an archived page snapshot (an archive.org-shaped
+connector), or media pulled through a USER-INSTALLED tool such as
+yt-dlp that a connector may drive but the app never bundles
+(§11.5 constitution: deliberate opt-in, nothing ambient). Click-off
+or Esc always returns to the board. New content kinds add a
+renderer INSIDE this window, never a new overlay species. The play
+charm's centered-versus-charm-bar presentation on video bodies is
+an open feel call for the activation ticket.
 
 An image asset SHOULD record:
 
@@ -4501,3 +4519,10 @@ Accepted for the Phase 1 prototype:
   with a notice naming it and waits on the stack until that board is
   active — undo acts where your hands are. Navigate-and-center and
   the apply-in-place toggle are retired (§10.2, §11.5).
+
+- The windowed overlay named the universal viewer (rev 0.59, owner):
+  one §8.8 modal-family window is the presentation surface for ALL
+  non-image content — video, PDF, web-references, connector-fetched
+  archives; stills + play charm on the board, renderers added inside
+  the one window, connectors may drive user-installed tools (yt-dlp)
+  but the app bundles nothing (§4.7).
