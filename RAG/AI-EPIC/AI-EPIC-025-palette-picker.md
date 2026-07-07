@@ -117,6 +117,11 @@ before finalizing the affordance.
   ~5; six fits 3x2 and would look neat — could also just be a
   single horizontal strip, didn't think it through" — default 6,
   3x2 vs strip is a build-time feel call, adjustable count stays).
+  Size control (owner, 2026-07-07): a drag-across-a-grid picker
+  (the Word/Notion table-insert idiom) — drag over a small grid to
+  set rows×columns, no number input. Lives under a settings fold
+  for the DEFAULT palette size; the picker reuses the same grid
+  widget to resize an individual palette.
   Swatch labels: NO for v1 — "better to keep the colors vague on
   purpose… my process is more organic and messy, I can't say I
   like locking things in that early"; naming wells (main/
