@@ -56,8 +56,19 @@ function attach(): void {
   // Deterministic cadence control for hidden-window e2e, where no OS
   // cursor ever enters or leaves the window.
   window.addEventListener('ew-test-set-engagement', ((event: Event) => {
-    const wanted = (event as CustomEvent<{ engaged: boolean }>).detail.engaged
-    if (wanted) poke()
+    const detail = (event as CustomEvent<{ engaged: boolean; hold?: boolean }>).detail
+    // hold:true pins engagement for the rest of the test (the
+    // holdEngagement mechanism takeovers use). Playwright's
+    // actionability hit-test fires no pointermove, so a mid-test idle
+    // fade would deadlock any click into the pointer-transparent
+    // disengaged charms layer (AI-IMP-141) — CI's slower frames hit
+    // this where a fast local run stays inside the fade delay.
+    // Only an explicit hold touches `held` — a plain engaged:true/false
+    // dispatch must never clobber a takeover's holdEngagement (shell
+    // e2e proves an explicit disengage cannot fade chrome under a
+    // takeover).
+    if (detail.hold !== undefined) held = detail.hold
+    if (detail.engaged) poke()
     else leave()
   }) as EventListener)
   poke()

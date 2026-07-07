@@ -16,6 +16,21 @@ interface Seeded {
   placementId: string
 }
 
+/** Pin the shared engagement clock ON for the whole test. Hidden-window
+ * e2e has no OS cursor, and Playwright's actionability hit-test fires
+ * no pointermove — so once the idle fade disengages the charms layer
+ * (pointer-transparent per §8.2/AI-IMP-141), a charm click deadlocks:
+ * the check sees the canvas intercepting and retries forever without
+ * ever poking engagement. CI's slower frames hit the fade window that
+ * fast local runs stay inside (the a740f96c CI red). */
+async function pinEngagement(win: Page): Promise<void> {
+  await win.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('ew-test-set-engagement', { detail: { engaged: true, hold: true } }),
+    )
+  })
+}
+
 async function seedPin(
   win: Page,
   title: string,
@@ -92,6 +107,7 @@ async function scenePlacement(
 
 test('hint charms and the click grammar (§8.4 table)', async () => {
   const { app, win } = await launchApp('ew-e2e-charms-')
+  await pinEngagement(win)
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
   const box = (await win.getByTestId('canvas-host').boundingBox())!
 
@@ -140,6 +156,7 @@ test('hint charms and the click grammar (§8.4 table)', async () => {
 
 test('the charm bar: flips, make-canvas, tags, lock (§8.4)', async () => {
   const { app, win } = await launchApp('ew-e2e-charmbar-')
+  await pinEngagement(win)
   const box = (await win.getByTestId('canvas-host').boundingBox())!
   const pin = await seedPin(win, 'Lighthouse', { x: 500, y: 350 })
 
@@ -189,6 +206,7 @@ test('the charm bar: flips, make-canvas, tags, lock (§8.4)', async () => {
 
 test('appearance switcher: dot→icon renders + undo, dot→card, card gated by note (§4.6)', async () => {
   const { app, win } = await launchApp('ew-e2e-appearance-')
+  await pinEngagement(win)
   const box = (await win.getByTestId('canvas-host').boundingBox())!
   // A dot node WITH a note (seedPin sets appearance dot #77aaff).
   const pin = await seedPin(win, 'Beacon', { x: 500, y: 350 })
@@ -280,6 +298,7 @@ test('appearance switcher: dot→icon renders + undo, dot→card, card gated by 
 
 test('appearance switcher: image… imports through the ordinary pipeline (§4.6/§6.1)', async () => {
   const { app, win } = await launchApp('ew-e2e-appearance-image-')
+  await pinEngagement(win)
   const box = (await win.getByTestId('canvas-host').boundingBox())!
   const pin = await seedPin(win, 'Portal', { x: 500, y: 350 })
 
