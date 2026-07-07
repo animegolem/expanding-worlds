@@ -9,6 +9,12 @@ record — history lives in the tickets.
 
 ## Owner actions (setup only you can do)
 
+- [ ] **Codex watcher not writing** (2026-07-07, you're on it): PRs
+  #5–#7 sat unreviewed and the drop-box hash never moved — suspect
+  the automation watches a COPIED folder, not the real repo. Real
+  paths: `.codex/triage-report.md` + `inbox/`; contract in
+  `.codex/PROTOCOL.md`.
+
 - [ ] **LOW PRIORITY — Codex GitHub auto-review stopped firing**
   (2026-07-06): PR #4 got no auto-review and `!codex review` didn't
   respond either (PR #1/#3 worked). Local Codex via the plugin
@@ -27,6 +33,13 @@ record — history lives in the tickets.
      response lands back on the failing commit; no PR needed).
 
 ## Awaiting validation
+
+- [ ] **One voice** (AI-IMP-153, 2026-07-07): every chrome button is
+  now ONE 5px geometry and every field rings 2px accent on focus
+  (browser default retired). Tab through settings, restore dialog,
+  gallery bars: does the uniform ring read as calm confidence or
+  too loud over art? The pill/standard input split is grammar now —
+  spot-check it never feels arbitrary.
 
 - [ ] **The object icons** (AI-IMP-132, 2026-07-07): give six nodes
   the six icon appearances (switcher popover now previews the real

@@ -6,7 +6,7 @@ tags:
   - design-pass
   - chrome
   - hygiene
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-142]
 parent_epic:
 confidence_score: 0.8
@@ -84,7 +84,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Full e2e green; any assertion updates listed with reasons.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (does the
+- [x] HUMAN-TESTING entry appended at merge by the lead (does the
       one voice read; focus ring weight over art).
 
 ### Acceptance Criteria
