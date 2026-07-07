@@ -26,6 +26,7 @@ export type ToolKind =
   | 'arrow'
   | 'connector'
   | 'pin'
+  | 'frame'
 
 export interface ToolStyle {
   stroke: string
@@ -78,6 +79,13 @@ export class ToolManager {
    * dot node with its phantom note focused; the desktop side owns
    * the provisional dot and the CreatePin transaction. */
   onPlacePin: ((world: Point) => void) | null = null
+  /** §4.9 frame tool (AI-IMP-127): a drag draws a region; on finish
+   * the desktop side commits create-node-with-frame-appearance +
+   * placement as ONE undo entry. The region is a world-space rect
+   * (top-left x/y + size); Shift constrains it square via the shared
+   * ShapeSession geometry. */
+  onDrawFrame: ((region: { x: number; y: number; width: number; height: number }) => void) | null =
+    null
 
   constructor(target: ToolTarget, host: ToolManagerHost) {
     this.#target = target
@@ -118,6 +126,16 @@ export class ToolManager {
       this.onPlacePin?.(world)
       return
     }
+    if (this.#active === 'frame') {
+      // A frame draws a rectangular region; reuse the shared rect
+      // ShapeSession for geometry (Shift → square) and route its result
+      // to the frame composite instead of CreateDecoration.
+      this.#session = beginDrawSession('rect', world, { ...this.style }, {
+        zoom: this.#target.camera.zoom,
+        items: () => this.#target.items(),
+      })
+      return
+    }
     this.#session = beginDrawSession(this.#active, world, { ...this.style }, {
       zoom: this.#target.camera.zoom,
       items: () => this.#target.items(),
@@ -141,13 +159,21 @@ export class ToolManager {
 
   pointerUp(screen: Point, modifiers: PointerModifiers = {}): void {
     if (this.#session) {
+      const wasFrame = this.#active === 'frame'
       const input = this.#session.finish(this.#target.camera.screenToWorld(screen), {
         shift: modifiers.shift ?? false,
       })
       this.#session = null
       this.#host.renderPreview(null)
       this.#host.highlightPlacement(null)
-      if (input) this.#host.create(input)
+      if (input) {
+        if (wasFrame) {
+          const d = input.data as { x: number; y: number; width: number; height: number }
+          this.onDrawFrame?.({ x: d.x, y: d.y, width: d.width, height: d.height })
+        } else {
+          this.#host.create(input)
+        }
+      }
       return
     }
     const passthrough = this.#passthrough || this.#active === 'select'

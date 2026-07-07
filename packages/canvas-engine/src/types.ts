@@ -39,7 +39,7 @@ export interface ScenePlacement {
   labelVisible: 0 | 1
   /** §6.9 rev 0.17: locked placements refuse move/resize/rotate. */
   locked: 0 | 1
-  appearanceKind: 'dot' | 'icon' | 'image' | 'card' | null
+  appearanceKind: 'dot' | 'icon' | 'image' | 'card' | 'frame' | null
   appearanceColor: string | null
   appearanceIcon: string | null
   appearanceAssetId: string | null

@@ -45,6 +45,7 @@ export const KEY = {
   toolArrow: 'tool-arrow',
   toolConnector: 'tool-connector',
   toolPin: 'tool-pin',
+  toolFrame: 'tool-frame',
   // --- gallery ---
   gallerySelectAll: 'gallery-select-all',
   galleryMove: 'gallery-move',
@@ -179,6 +180,11 @@ declare(KEY.toolPin, {
   name: 'Pin tool',
   scope: 'board',
   combo: { mod: false, alt: false, key: 'n' },
+})
+declare(KEY.toolFrame, {
+  name: 'Frame tool',
+  scope: 'board',
+  combo: { mod: false, alt: false, key: 'f' },
 })
 
 // ---- gallery ----

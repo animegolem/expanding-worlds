@@ -40,6 +40,13 @@ export interface RendererResources {
    * Optional: absent (tests, minimal hosts) means zoom 1.
    */
   getZoom?: () => number
+  /**
+   * §4.9 frame appearance (AI-IMP-127): the drawn region's colors,
+   * resolved from theme tokens by the host (canvas-engine never reads
+   * CSS, so no raw hex lives in the renderer). Numbers are Pixi
+   * colors. Absent means a neutral fallback for minimal test hosts.
+   */
+  frameColors?: () => { fill: number; border: number; label: number }
 }
 
 export interface ItemRenderer<T extends SceneItem = SceneItem> {

@@ -44,7 +44,10 @@ export interface PointerModifiers {
 export interface ControllerHost {
   applyEphemeral(id: string, update: GestureUpdate): void
   restoreItem(item: SceneItem): void
-  commitTransform(payload: TransformContentPayload): void
+  /** `meta.isMove` marks a plain drag (the move driver) versus a
+   * handle-driven resize/rotate — §4.9 frame membership resolves on
+   * moves only, never on resize (geometry immunity, AI-IMP-127). */
+  commitTransform(payload: TransformContentPayload, meta: { isMove: boolean }): void
   /** Screen-space rect, or null to clear. */
   renderMarquee(rect: Rect | null): void
   renderGuides(guides: SnapGuide[]): void
@@ -72,6 +75,11 @@ export class CanvasController {
   #canvasId: string
   #items: readonly SceneItem[] = []
   #state: State = { kind: 'idle' }
+  /** §4.9 frame carry (AI-IMP-127): expands the moved set for a plain
+   * drag so a dragged frame carries its members. Identity by default. */
+  #moveExpansion: (items: readonly SceneItem[]) => readonly SceneItem[] = (items) => items
+  /** True while the in-flight gesture is a plain move (not resize/rotate). */
+  #gestureIsMove = false
 
   constructor(host: ControllerHost, canvasId: string) {
     this.#host = host
@@ -118,8 +126,21 @@ export class CanvasController {
     this.#moveDriver = driver
   }
 
+  /** §4.9 frame carry (AI-IMP-127): the host injects an expander that
+   * adds a frame's transitive members to a plain-drag set, so moving a
+   * frame moves its contents as ONE gesture / one TransformContent. */
+  registerMoveExpansion(expand: (items: readonly SceneItem[]) => readonly SceneItem[]): void {
+    this.#moveExpansion = expand
+  }
+
   get state(): State['kind'] {
     return this.#state.kind
+  }
+
+  /** True while the in-flight gesture is a plain move (§4.9 membership
+   * and the hover dim key off this — resize/rotate are excluded). */
+  get gestureIsMove(): boolean {
+    return this.#gestureIsMove
   }
 
   selectedItems(): SceneItem[] {
@@ -171,8 +192,13 @@ export class CanvasController {
       case 'gesture-pending': {
         if (distance(screen, state.startScreen) < DRAG_THRESHOLD_PX) return
         if (!this.#moveDriver || this.selection.size === 0) return
-        const session = new GestureSession(this.#canvasId, this.selectedItems())
-        this.#snap.begin(this.#items.filter((item) => !this.selection.has(item.id)))
+        // §4.9: a dragged frame carries its members — expand the moved
+        // set before the session forms so they travel as one gesture.
+        const moved = this.#moveExpansion(this.selectedItems())
+        const session = new GestureSession(this.#canvasId, moved)
+        const sessionIds = new Set(session.ids())
+        this.#snap.begin(this.#items.filter((item) => !sessionIds.has(item.id)))
+        this.#gestureIsMove = true
         this.#state = {
           kind: 'gesture',
           startScreen: state.startScreen,
@@ -236,6 +262,8 @@ export class CanvasController {
     if (this.#state.kind !== 'idle') return
     const session = new GestureSession(this.#canvasId, items)
     this.#snap.begin(this.#items.filter((item) => !session.ids().includes(item.id)))
+    // Handle-driven gestures (resize/rotate) never resolve membership.
+    this.#gestureIsMove = false
     this.#state = { kind: 'gesture', startScreen, session, driver }
   }
 
@@ -265,10 +293,12 @@ export class CanvasController {
   #finishGesture(session: GestureSession, opts: { commit: boolean }): void {
     this.#snap.end()
     this.#host.renderGuides([])
+    const isMove = this.#gestureIsMove
+    this.#gestureIsMove = false
     if (opts.commit) {
       const payload = session.commitPayload()
       if (payload) {
-        this.#host.commitTransform(payload)
+        this.#host.commitTransform(payload, { isMove })
         return
       }
     }

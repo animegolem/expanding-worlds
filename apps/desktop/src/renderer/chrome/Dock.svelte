@@ -64,6 +64,8 @@
     // §6.2: pins mean places, everywhere — same glyph family as the
     // bookmark control (AI-IMP-067).
     { kind: 'pin', label: 'Pin', glyph: '◉', key: KEY.toolPin },
+    // §4.9 frame (AI-IMP-127): draw a region other content sits inside.
+    { kind: 'frame', label: 'Frame', glyph: '▢', key: KEY.toolFrame },
   ]
   // The plain-key → tool dispatch map, derived from each binding's
   // combo ('s' for shapes stays special, handled ahead of the map).
@@ -188,7 +190,9 @@
   )
   const hasGroup = $derived(selected.some((d) => d.groupId !== null))
   const allLocked = $derived(selected.length > 0 && selected.every((d) => d.locked === 1))
-  const toolOptionsVisible = $derived(activeTool !== 'select' && activeTool !== 'pin')
+  const toolOptionsVisible = $derived(
+    activeTool !== 'select' && activeTool !== 'pin' && activeTool !== 'frame',
+  )
 
   function setTool(kind: ToolKind): void {
     handle.tools.setTool(kind)

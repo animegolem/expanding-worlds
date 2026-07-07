@@ -25,7 +25,16 @@ export {
   type RendererResources,
 } from './renderers/registry'
 export {
+  indexFrameTree,
+  innermostFrameAt,
+  pointInFrameBody,
+  type FrameCandidate,
+  type FrameIndex,
+  type FrameTreeNodeLike,
+} from './frames'
+export {
   DEFAULT_DOT_RADIUS,
+  DEFAULT_FRAME_SIZE,
   LABEL_CLEARANCE_PX,
   LABEL_OUTLINE_GAP_PX,
   SELECTION_OUTLINE_PAD_PX,

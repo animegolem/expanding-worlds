@@ -24,6 +24,12 @@
   --ew-text-dialog: #dddddd;
   --ew-accent: #4a9df0;
   --ew-accent-soft: #8ec2f5;
+  /* §4.9 frame region (AI-IMP-127): furniture, not art — a low-alpha
+     fill wash + a subtle border, drawn by the canvas engine. Hex only
+     (the engine parses these to Pixi colors; no rgba). */
+  --ew-frame-fill: #20242b;
+  --ew-frame-border: #3a3e46;
+  --ew-frame-label: #79808a;
   --ew-on-accent: #10131a;
   --ew-danger: #b3403a;
   --ew-on-danger: #ffffff;
@@ -152,6 +158,9 @@
   --ew-border-panel: #b8c1cc;
   --ew-border-control: #aeb6c0;
   --ew-border-accent-subtle: #9fb9d4;
+  --ew-frame-fill: #d4dae2;
+  --ew-frame-border: #aeb6c0;
+  --ew-frame-label: #6b727c;
   --ew-text: #1d232b;
   --ew-text-soft: #2f3945;
   --ew-text-muted: #5a6572;
