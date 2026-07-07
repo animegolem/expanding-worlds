@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 16 | 156 |
-| **Total** | **25** | **162** |
+| **Total** | **25** | **165** |
 
 ## In Progress
 
@@ -100,6 +100,9 @@
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-161-charm-bar-adorned-bounds|IMP-161]] — planned, no epic dependency found
+- [[AI-IMP-165-frameless-shell|IMP-165]] — planned, no epic dependency found
+- [[AI-IMP-166-signature-pin-and-beat|IMP-166]] — planned, no epic dependency found
+- [[AI-IMP-167-menu-cascade|IMP-167]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] — open but parent epic AI-EPIC-023 is completed
