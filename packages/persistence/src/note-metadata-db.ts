@@ -5,6 +5,7 @@ import {
   type MetadataSectionsInput,
 } from '@ew/domain'
 import type { CommandContext } from './dispatcher'
+import { usableCanvasOwnerJoin } from './queries-structure'
 import { getProjectSetting } from './settings'
 
 /**
@@ -100,6 +101,7 @@ function boardDepths(ctx: ReadCtx): Map<string, number> {
      FROM placement p
      JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
      JOIN canvas pc ON pc.id = p.canvas_id AND pc.lifecycle_state = 'active'
+     ${usableCanvasOwnerJoin('pc', 'pco')}
      JOIN canvas child ON child.node_id = n.id AND child.lifecycle_state = 'active'
      WHERE p.project_id = ? AND p.lifecycle_state = 'active'`,
     ctx.projectId,
@@ -156,7 +158,7 @@ export function computeNoteMetadata(ctx: ReadCtx, noteId: string): NoteMetadataV
      FROM node n
      JOIN placement p ON p.node_id = n.id AND p.lifecycle_state = 'active'
      JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
-     LEFT JOIN node owner ON owner.id = c.node_id
+     ${usableCanvasOwnerJoin('c', 'owner')}
      LEFT JOIN note cnote ON cnote.id = owner.note_id AND cnote.lifecycle_state = 'active'
      WHERE n.project_id = ? AND n.note_id = ? AND n.lifecycle_state = 'active'
      ORDER BY p.canvas_id, p.id`,

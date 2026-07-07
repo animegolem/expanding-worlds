@@ -5,7 +5,11 @@ import { uuidv7 } from '@ew/domain'
 import { CommandRegistry, type CommandEnvelope } from '@ew/commands'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
+import { registerCanvasHandlers } from './handlers/canvases'
+import { registerLifecycleHandlers } from './handlers/lifecycle'
+import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
+import { registerPlacementHandlers } from './handlers/placements'
 import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry } from './queries'
 import {
@@ -26,6 +30,10 @@ beforeEach(() => {
   handle = createProject(dir, 'Note Queries Test')
   const registry = new CommandRegistry<CommandContext>()
   registerNoteHandlers(registry)
+  registerNodeHandlers(registry)
+  registerCanvasHandlers(registry)
+  registerPlacementHandlers(registry)
+  registerLifecycleHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
   queries = new QueryRegistry()
   registerNoteQueries(queries)
@@ -417,5 +425,54 @@ describe('listNotes nodeCount', () => {
     handle.db.run("UPDATE node SET lifecycle_state = 'trashed' WHERE id = ?", nodeId)
     notes = run<Array<{ id: string; nodeCount: number }>>('listNotes')
     expect(notes.find((n) => n.id === noteId)!.nodeCount).toBe(0)
+  })
+})
+
+// §7.4 / §9.6 (AI-IMP-163): a placement onto a board whose OWNER node
+// is trashed is ABSENT from the note's uses — activation can no longer
+// reach it (the node row flips alone; the canvas row stays 'active').
+// The carrier moves to Unplaced, and RestoreRecord restores the board
+// group. Seeded through real commands only.
+describe('getNoteUses hides owner-trashed board placements (§7.4/§9.6, AI-IMP-163)', () => {
+  function commit(commandType: string, payload: unknown): void {
+    const result = dispatcher.execute({
+      commandId: uuidv7(),
+      projectId: handle.projectId,
+      commandType,
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload,
+    } satisfies CommandEnvelope)
+    expect(result.status).toBe('committed')
+  }
+
+  it('an owner-trashed board removes the placement; the carrier reads unplaced; restore reverses it', () => {
+    const noteId = createNote('Kestrel')
+    const content = uuidv7()
+    commit('CreateNode', { nodeId: content })
+    commit('AttachNoteToNode', { nodeId: content, noteId })
+
+    const owner = uuidv7()
+    commit('CreateNode', { nodeId: owner })
+    const boardCanvas = uuidv7()
+    commit('CreateCanvas', { canvasId: boardCanvas, nodeId: owner })
+    commit('CreatePlacement', { placementId: uuidv7(), canvasId: boardCanvas, nodeId: content })
+
+    let uses = run<NoteUses>('getNoteUses', { noteId })
+    expect(uses.canvases.map((c) => c.canvasId)).toEqual([boardCanvas])
+    expect(uses.totalPlacements).toBe(1)
+    expect(uses.unplaced).toHaveLength(0)
+
+    commit('TrashNode', { nodeId: owner })
+    uses = run<NoteUses>('getNoteUses', { noteId })
+    expect(uses.canvases).toHaveLength(0)
+    expect(uses.totalPlacements).toBe(0)
+    expect(uses.unplaced.map((n) => n.nodeId)).toEqual([content])
+
+    commit('RestoreRecord', { kind: 'node', id: owner })
+    uses = run<NoteUses>('getNoteUses', { noteId })
+    expect(uses.canvases.map((c) => c.canvasId)).toEqual([boardCanvas])
+    expect(uses.totalPlacements).toBe(1)
+    expect(uses.unplaced).toHaveLength(0)
   })
 })

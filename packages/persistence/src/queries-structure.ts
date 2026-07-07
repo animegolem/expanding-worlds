@@ -150,18 +150,45 @@ const NODE_APPEARANCE_SELECT = `n.appearance_kind AS appearanceKind,
 const CARD_DEFAULT_WIDTH = 260
 const CARD_DEFAULT_HEIGHT = 160
 
+/**
+ * §9.6 "usable canvas" predicate (AI-IMP-163). Trashing a node flips
+ * the NODE ROW ALONE — one preserved aggregate — so its owned canvas
+ * row stays `active`. A board is therefore renderable / counted /
+ * reachable only when BOTH its own canvas row AND its owning node are
+ * active. Every read model that surfaces a board's content must
+ * re-check the owner, exactly the way `getCanvasScene`'s load-bearing
+ * owner join does (that query is the reference behavior). This helper
+ * emits the owner-node JOIN for a canvas already in scope; the caller
+ * still writes the canvas's own `<alias>.lifecycle_state = 'active'`
+ * filter. `canvas.node_id` is NOT NULL and FK-backed, and the root
+ * node is trigger-protected against trashing (migration 0001), so an
+ * inner join here never drops the root canvas.
+ *
+ * @param canvasAlias in-scope canvas alias (e.g. 'c', 'pc')
+ * @param ownerAlias  fresh alias to bind the owning node under
+ */
+export function usableCanvasOwnerJoin(canvasAlias: string, ownerAlias: string): string {
+  return `JOIN node ${ownerAlias} ON ${ownerAlias}.id = ${canvasAlias}.node_id
+      AND ${ownerAlias}.lifecycle_state = 'active'`
+}
+
 export function registerStructureQueries(registry: QueryRegistry): void {
   // §4.4: one render_order-sorted list across both content tables with
   // kind discriminators; UUID breaks ties deterministically.
   registry.register('getCanvasContents', (ctx, args) => {
     const { canvasId } = args as { canvasId: string }
     // §9.1/invariant 13: a trashed canvas renders nothing (its rows
-    // are preserved for restore, not for display).
-    const canvas = ctx.db.get<{ lifecycle_state: string }>(
-      'SELECT lifecycle_state FROM canvas WHERE id = ?',
+    // are preserved for restore, not for display). §9.6 (AI-IMP-163):
+    // a board whose OWNER node is trashed renders nothing either — the
+    // node row alone flips while the canvas row stays active, so the
+    // owner join is what refuses it, mirroring getCanvasScene.
+    const canvas = ctx.db.get<{ id: string }>(
+      `SELECT c.id FROM canvas c
+       ${usableCanvasOwnerJoin('c', 'owner')}
+       WHERE c.id = ? AND c.lifecycle_state = 'active'`,
       canvasId,
     )
-    if (!canvas || canvas.lifecycle_state !== 'active') return []
+    if (!canvas) return []
     // §9.6: a trashed node's placements are excluded from ordinary
     // rendering while the node is trashed.
     const placements = ctx.db.all<Record<string, unknown>>(
@@ -348,6 +375,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
               note.title AS noteTitle,
               (SELECT count(*) FROM placement p
                 JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
+                ${usableCanvasOwnerJoin('c', 'co')}
                 WHERE p.node_id = n.id AND p.lifecycle_state = 'active')
                 AS placementCount
        FROM node n
@@ -433,7 +461,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
        JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
        JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
        JOIN project pr ON pr.id = c.project_id
-       LEFT JOIN node cn ON cn.id = c.node_id
+       ${usableCanvasOwnerJoin('c', 'cn')}
        LEFT JOIN note cnote ON cnote.id = cn.note_id
          AND cnote.lifecycle_state = 'active'
        WHERE p.lifecycle_state = 'active'
@@ -468,6 +496,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
                 child.id AS childCanvasId,
                 (SELECT count(*) FROM placement p
                   JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
+                  ${usableCanvasOwnerJoin('c', 'co')}
                   WHERE p.node_id = n.id AND p.lifecycle_state = 'active')
                   AS placementCount
          FROM node n
@@ -532,7 +561,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
          FROM placement p
          JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
          JOIN project pr ON pr.id = c.project_id
-         LEFT JOIN node cn ON cn.id = c.node_id
+         ${usableCanvasOwnerJoin('c', 'cn')}
          LEFT JOIN note cnote ON cnote.id = cn.note_id
            AND cnote.lifecycle_state = 'active'
          WHERE p.node_id = ? AND p.lifecycle_state = 'active'
@@ -637,6 +666,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
               pr.root_node_id AS rootNodeId,
               (SELECT count(*) FROM placement p
                 JOIN canvas pc ON pc.id = p.canvas_id AND pc.lifecycle_state = 'active'
+                ${usableCanvasOwnerJoin('pc', 'pco')}
                 WHERE p.node_id = n.id AND p.lifecycle_state = 'active')
                 AS ownerPlacements
        FROM canvas c
@@ -664,6 +694,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
               child.id AS childCanvasId,
               (SELECT count(*) FROM placement p2
                 JOIN canvas pc ON pc.id = p2.canvas_id AND pc.lifecycle_state = 'active'
+                ${usableCanvasOwnerJoin('pc', 'pco')}
                 WHERE p2.node_id = n.id AND p2.lifecycle_state = 'active')
                 AS placementCount
        FROM placement p

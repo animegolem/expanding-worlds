@@ -6,6 +6,7 @@ import { CommandRegistry, type CommandEnvelope } from '@ew/commands'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerCanvasHandlers } from './handlers/canvases'
+import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
 import { registerPlacementHandlers } from './handlers/placements'
@@ -31,6 +32,7 @@ beforeEach(() => {
   registerNoteHandlers(registry)
   registerCanvasHandlers(registry)
   registerPlacementHandlers(registry)
+  registerLifecycleHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
   ctx = {
     db: handle.db,
@@ -234,5 +236,30 @@ describe('RenameNote lazy refresh (§7.8 system touch)', () => {
     expect(body).toContain('[[Renamed Target]]')
     expect(body).toContain('## Placements')
     expect(stripMetadataBlock(body).prose).toBe('see [[Renamed Target]] here')
+  })
+})
+
+// §7.8 / §9.6 (AI-IMP-163): the metadata card groups a note's
+// placements by board. A placement onto a board whose OWNER node is
+// trashed drops out — the node row flips alone while the canvas row
+// stays 'active' — and RestoreRecord brings the board back. Trash and
+// restore go through the real commands, never a direct lifecycle UPDATE.
+describe('computeNoteMetadata hides owner-trashed boards (§9.6, AI-IMP-163)', () => {
+  it('drops an owner-trashed board from the note metadata boards; restore revives it', () => {
+    const noteId = createNote('Subject')
+    const content = createAttachedNode(noteId)
+
+    const owner = uuidv7()
+    commit('CreateNode', { nodeId: owner })
+    const boardCanvas = uuidv7()
+    commit('CreateCanvas', { canvasId: boardCanvas, nodeId: owner })
+    place(content, boardCanvas)
+
+    const boardIds = () => computeNoteMetadata(ctx, noteId)!.boards.map((b) => b.canvasId)
+    expect(boardIds()).toEqual([boardCanvas])
+    commit('TrashNode', { nodeId: owner })
+    expect(boardIds()).toEqual([])
+    commit('RestoreRecord', { kind: 'node', id: owner })
+    expect(boardIds()).toEqual([boardCanvas])
   })
 })
