@@ -575,13 +575,24 @@ test('menu cascade: rows fade in on open, opacity-only, replay on reopen (§8.2)
     expect(await del.evaluate((el) => getComputedStyle(el).pointerEvents)).not.toBe('none')
     expect(await del.evaluate((el) => getComputedStyle(el).visibility)).not.toBe('hidden')
 
-    // The last row reaches full opacity within EW_MENU_CASCADE_MS (190ms)
-    // plus generous CI slack — proof the cascade lands, never stalls.
-    await expect
-      .poll(async () => Number(await del.evaluate((el) => getComputedStyle(el).opacity)), {
-        timeout: 1000,
-      })
-      .toBe(1)
+    // The cascade LANDS at full opacity. Asserted by driving the
+    // animation to its end state rather than waiting wall-clock:
+    // Linux CI runs the suite hidden under xvfb, where the never-shown
+    // window never composites and the CSS animation timeline does not
+    // advance — the row pins at its from-frame forever and a timed poll
+    // times out (first-ever CI run of this spec was red 3×/4 runs).
+    // finish() is a no-op when the timeline already ran (macOS local),
+    // so the same assertion attests real advancement there. Motion
+    // TIMING is a local hardware gate, like the perf suite.
+    await del.evaluate((el) =>
+      Promise.all(
+        el.getAnimations().map((a) => {
+          a.finish()
+          return a.finished
+        }),
+      ),
+    )
+    expect(Number(await del.evaluate((el) => getComputedStyle(el).opacity))).toBe(1)
 
     // Close, reopen → a FRESH cascade runs again (render mounts new DOM
     // each open, so the row re-animates from 0).
@@ -592,11 +603,17 @@ test('menu cascade: rows fade in on open, opacity-only, replay on reopen (§8.2)
     const del2 = win.getByTestId('ctx-delete')
     // An animation is applied to the fresh row (replayed open).
     expect(await del2.evaluate((el) => el.getAnimations().length)).toBeGreaterThan(0)
-    await expect
-      .poll(async () => Number(await del2.evaluate((el) => getComputedStyle(el).opacity)), {
-        timeout: 1000,
-      })
-      .toBe(1)
+    // Same landing-state assertion as above (CI's hidden xvfb windows
+    // never advance the animation timeline).
+    await del2.evaluate((el) =>
+      Promise.all(
+        el.getAnimations().map((a) => {
+          a.finish()
+          return a.finished
+        }),
+      ),
+    )
+    expect(Number(await del2.evaluate((el) => getComputedStyle(el).opacity))).toBe(1)
   } finally {
     await app.close()
   }
