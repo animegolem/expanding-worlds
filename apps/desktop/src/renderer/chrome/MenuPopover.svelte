@@ -209,7 +209,10 @@
 </div>
 
 {#if helpOpen}
-  <HelpAboutDialog onclose={() => (helpOpen = false)} />
+  <!-- onCloseRail threads the rail-close (this popover's `onclose`) so the
+       shortcuts link can dismiss the ☰ popover before the Settings
+       takeover opens. AI-IMP-155. -->
+  <HelpAboutDialog onclose={() => (helpOpen = false)} onCloseRail={onclose} />
 {/if}
 
 {#if restoreOpen}

@@ -16,7 +16,12 @@
   import { overlayPortal } from '../note/panels'
   import { openTakeover } from './takeover'
 
-  const { onclose }: { onclose: () => void } = $props()
+  // `onclose` dismisses this dialog; `onCloseRail` closes the ☰ popover
+  // that hosts it. The shortcuts link must close the rail before the
+  // Settings takeover opens — the dialog lives INSIDE MenuPopover's
+  // `{#if}`, so the rail's close unmounts it, and without it the popover
+  // (z 500) stays painted over the takeover (z 300). AI-IMP-155.
+  const { onclose, onCloseRail }: { onclose: () => void; onCloseRail: () => void } = $props()
 
   const REPO_URL = 'https://github.com/animegolem/expanding-worlds'
   // Injected at build time from the RFC header (see env.d.ts).
@@ -50,7 +55,11 @@
   })
 
   function openKeyboardShortcuts(): void {
-    onclose()
+    // Close the rail FIRST (unmounting this dialog with it), then open
+    // the takeover — mirroring the Settings row's ordering so the ☰
+    // popover never lingers above the takeover. openTakeover is module
+    // state, so it still runs after this component unmounts. AI-IMP-155.
+    onCloseRail()
     openTakeover('settings')
     // Best-effort: bring the Keyboard section into view once the
     // settings takeover has mounted. Retries briefly, then gives up.

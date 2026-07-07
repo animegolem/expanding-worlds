@@ -42,6 +42,7 @@ import {
 import { openCornerPanel } from '../note/panels'
 import { formatBinding } from '../keys/registry'
 import { themeTokenValue } from '../theme'
+import { createOpenGeneration } from './open-generation'
 import {
   menuFor,
   type BoardSubject,
@@ -75,6 +76,10 @@ export function attachContextMenu(
   /** Enabled, focusable rows in the currently open menu, in order. */
   let rows: HTMLButtonElement[] = []
   let focusIndex = -1
+  // §8.4 stale-open guard (AI-IMP-155): every render and close advances
+  // this generation; an async open (openFrameMenu) captures it before
+  // awaiting and bails if a newer open/close bumped it underneath.
+  const openGen = createOpenGeneration()
 
   // Hidden file input for "Set / Replace backdrop…" (§6.7). Kept in the
   // DOM (opacity 0) so e2e setInputFiles can reach it, mirroring the
@@ -92,6 +97,10 @@ export function attachContextMenu(
   element.appendChild(fileInput)
 
   function close(): void {
+    // Advance the open generation so any in-flight async open (which
+    // captured the prior value) sees itself as stale and bails. render()
+    // calls close() first, so a newer open advances it too. AI-IMP-155.
+    openGen.bump()
     menu?.remove()
     menu = null
     rows = []
@@ -683,7 +692,11 @@ export function attachContextMenu(
     await runAsUndoGroup(async () => {
       const framePlacementId = await host.commitFrame(region)
       if (framePlacementId) {
-        await host.gateway.execute('CaptureInFrame', {
+        // Surface a CaptureInFrame conflict/validation failure via
+        // onError (execute() does this). Do NOT auto-delete the frame:
+        // the undo group collapses to the lone create, so one Mod+Z
+        // removes the empty frame. AI-IMP-155.
+        await execute('CaptureInFrame', {
           framePlacementId,
           memberPlacementIds: placementIds,
         })
@@ -785,7 +798,12 @@ export function attachContextMenu(
     p: ScenePlacement,
     at: { x: number; y: number },
   ): Promise<void> {
+    // Capture the open generation BEFORE the async settings read; if a
+    // newer menu opened (or the menu closed) during the await, this
+    // resolution is stale and must not paint over it. AI-IMP-155.
+    const token = openGen.current()
     const sortOnDrop = await tooling.frameSortOnDrop(p.id)
+    if (openGen.isStale(token)) return
     const subject: FrameSubject = {
       kind: 'frame',
       locked: p.locked === 1,

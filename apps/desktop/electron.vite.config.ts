@@ -7,20 +7,39 @@ import { defineConfig } from 'electron-vite'
  * The RFC revision, read from the RFC header table AT BUILD TIME so
  * Help/About prints the live spec revision (RFC §8.4) without anyone
  * hand-copying the number. Parses the header row
- * `| Accepted for Phase 1 | 0.56 | 7 July 2026 |`; falls back to
- * 'unknown' if the file/shape ever moves rather than failing the build.
+ * `| Accepted for Phase 1 | 0.56 | 7 July 2026 |`.
+ *
+ * The About card exists to PROVE spec↔build alignment, so a missing
+ * file, moved header, or empty capture must FAIL THE BUILD LOUDLY rather
+ * than silently shipping a placeholder (PR #9 reviewer directions;
+ * AI-IMP-155). The thrown message names the path and the expected header
+ * shape so the fix is one obvious edit.
  */
+const RFC_PATH = '../../RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md'
+const RFC_HEADER_SHAPE = '| Accepted for Phase 1 | <rev> | <date> |'
+
 function rfcRevision(): string {
+  const path = fileURLToPath(new URL(RFC_PATH, import.meta.url))
+  let header: string
   try {
-    const path = fileURLToPath(
-      new URL('../../RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md', import.meta.url),
+    header = readFileSync(path, 'utf8').slice(0, 2000)
+  } catch (cause) {
+    throw new Error(
+      `rfcRevision: cannot read the RFC at ${path} for the Help/About build constant. ` +
+        `The About card must print the live spec revision (RFC §8.4). ` +
+        `Restore the file or fix the path in electron.vite.config.ts.`,
+      { cause },
     )
-    const header = readFileSync(path, 'utf8').slice(0, 2000)
-    const match = header.match(/\|\s*Accepted for Phase 1\s*\|\s*([0-9.]+)\s*\|/)
-    return match?.[1] ?? 'unknown'
-  } catch {
-    return 'unknown'
   }
+  const match = header.match(/\|\s*Accepted for Phase 1\s*\|\s*([0-9.]+)\s*\|/)
+  if (!match?.[1]) {
+    throw new Error(
+      `rfcRevision: no revision found in the header of ${path}. ` +
+        `Expected a header-table row shaped "${RFC_HEADER_SHAPE}" within the first 2000 chars. ` +
+        `Fix the RFC header or the regex in electron.vite.config.ts.`,
+    )
+  }
+  return match[1]
 }
 
 /**
