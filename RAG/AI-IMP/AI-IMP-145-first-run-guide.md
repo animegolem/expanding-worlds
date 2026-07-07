@@ -5,12 +5,12 @@ tags:
   - Implementation
   - design-pass
   - onboarding
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-131]
 parent_epic: [[AI-EPIC-019-public-face]]
 confidence_score: 0.7
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -75,7 +75,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Page-7 pick stored; no other effect yet (recorded).
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (does the
+- [x] HUMAN-TESTING entry appended at merge by the lead (does the
       arc teach without preaching; page-2 trust moment).
 
 ### Acceptance Criteria

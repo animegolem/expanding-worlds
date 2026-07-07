@@ -368,3 +368,19 @@ record — history lives in the tickets.
   strain timing, away rise, make-room distance) — flag anything
   that feels off; resize/rotate/marquee/draw/pan must stay
   beat-free.
+
+## AI-IMP-145 — the first-run walkthrough (2026-07-07)
+
+Blow away (or rename) the app-config dir to fake a first open, then:
+- Read all seven pages slowly. Does the arc teach without preaching?
+  Page 2 (your pictures are COPIED) is the trust moment — does it land?
+- `skip` from page 3 → relaunch → the guide must never reappear.
+- Settings › Behavior › Replay the guide → it shows again.
+- `start ›` after picking a workflow: you land in the gallery at
+  everything scope with the seeded artist boards visible. DESIGN NOTE:
+  "inside the seeded example" became "gallery at everything scope"
+  because the example lives in the library slot — is that landing
+  strong enough, or should start walk one more step into an example
+  board? Also: page-7 skip bails to the empty board (uniform skip);
+  the storyboard hinted it might land in the example instead — feel
+  call flagged by the builder.

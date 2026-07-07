@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 5 | 0 |
-| Planned | 4 | 8 |
+| Planned | 4 | 7 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 15 | 143 |
+| Completed | 15 | 144 |
 | **Total** | **25** | **157** |
 
 ## In Progress
@@ -84,7 +84,7 @@
 > The user base is deliberately NON-TECHNICAL (artists), but the
 
 **IMPs:**
-- [[AI-IMP-145-first-run-guide|IMP-145]] First run guide — planned
+- [[AI-IMP-145-first-run-guide|IMP-145]] First run guide — completed
 
 ---
 
@@ -127,20 +127,20 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (5863 LOC)
+- pnpm-lock.yaml (5910 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4503 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1938 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (1581 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (1590 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1576 LOC)
-- apps/desktop/src/main/index.ts (983 LOC)
+- apps/desktop/src/main/index.ts (995 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (899 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (843 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (784 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - apps/desktop/e2e/notes.spec.ts (766 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (764 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
@@ -194,9 +194,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - apps/desktop/src/renderer/theme.css (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
+- RAG/HUMAN-TESTING.md (386 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (372 LOC)
-- RAG/HUMAN-TESTING.md (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (362 LOC)
@@ -234,7 +234,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>15 EPICs, 127 IMPs completed</summary>
+<summary>15 EPICs, 128 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
