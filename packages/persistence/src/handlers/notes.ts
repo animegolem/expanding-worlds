@@ -20,6 +20,7 @@ import {
 import { extractWikiLinks, titleKey } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching, refreshNoteLinks } from '../links'
+import { refreshNoteMetadataBlock } from '../note-metadata-db'
 
 interface NoteRow {
   id: string
@@ -182,6 +183,12 @@ export function registerNoteHandlers(registry: CommandRegistry<CommandContext>):
       note.id,
     )
     const affected: AffectedRecord[] = [{ kind: 'note', id: note.id }]
+    // §7.8 lazy refresh: a rename is a system body touch, so the block
+    // regenerates for the renamed note and every source we rewrite
+    // below. Collect them and refresh once at the end — inside this
+    // transaction (no separate undo step), after §10.2's flush already
+    // committed any open editor's prose (so nothing is clobbered).
+    const metadataTouched = new Set<string>([note.id])
 
     // §7.1: rewrite inbound tokens in source bodies transactionally.
     // The token's title text follows the rename in BOTH forms — an
@@ -219,6 +226,7 @@ export function registerNoteHandlers(registry: CommandRegistry<CommandContext>):
           source_note_id,
         )
         affected.push({ kind: 'note', id: source_note_id })
+        metadataTouched.add(source_note_id)
       }
       // Rebuild ranges (and states) even when only offsets moved.
       affected.push(...refreshNoteLinks(ctx, source_note_id))
@@ -226,6 +234,12 @@ export function registerNoteHandlers(registry: CommandRegistry<CommandContext>):
 
     // Sweep for the NEW title (invariant 27).
     affected.push(...bindUnresolvedMatching(ctx, key, note.id))
+
+    // §7.8: regenerate/strip each touched note's block. Prose ranges
+    // are unchanged (the block only ever appends at the tail), so no
+    // further link refresh is needed. Each note is already in
+    // `affected` (the renamed note and every rewritten source).
+    for (const id of metadataTouched) refreshNoteMetadataBlock(ctx, id)
 
     return {
       affected,

@@ -90,30 +90,46 @@ global defaults.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Block module: marker grammar, `stripMetadataBlock`,
+- [x] Block module: marker grammar, `stripMetadataBlock`,
       `renderMetadataBlock`; units cover round-trip, wholesale
       replacement of hand-edited content, body-without-block,
       block-only body, and idempotent re-render.
-- [ ] Placements-by-board query: boards grouped respecting
+      (`packages/domain/src/note-metadata.ts` + `.test.ts`, 10 tests.)
+- [x] Placements-by-board query: boards grouped respecting
       nesting, per-board counts, placement ids for fly-to; unit
       coverage including a node placed on nested boards.
-- [ ] Editor seam: the editor NEVER shows the block — prose is
+      (`getNoteMetadata` in queries-notes; `computeNoteMetadata` in
+      `note-metadata-db.ts` + `.test.ts`.)
+- [x] Editor seam: the editor NEVER shows the block — prose is
       stripped on load, block reassembled on system-side save; a
       user save of prose does not duplicate or destroy the block.
-- [ ] Refresh discipline: block regenerates during rename-rewrite
+      (`note-editor.ts`; e2e asserts editor never contains
+      "Placements".)
+- [x] Refresh discipline: block regenerates during rename-rewrite
       body touches; no undo entry; deferred while the editor is
-      dirty (unit or integration proof).
-- [ ] MetadataCard below the editor: live-computed sections,
+      dirty (unit or integration proof). (`refreshNoteMetadataBlock`
+      folded into RenameNote — same transaction, no separate inverse,
+      does not bump updated_at; §10.2 flush-first keeps a dirty
+      editor from being clobbered. Persistence tests cover rename of
+      the note and of a re-keyed source.)
+- [x] MetadataCard below the editor: live-computed sections,
       fly-to entries navigate to the placement, per-note toggle;
-      toggle-off strips block on next system touch.
-- [ ] Settings: per-section global defaults (Placements ON,
-      Provenance ON, Timestamps OFF).
-- [ ] E2E: multi-board placements card + fly-to; persisted block
+      toggle-off strips block on next system touch. (`MetadataCard.svelte`
+      + NotePanel wiring; e2e drives fly-to + toggle-off strip.)
+- [x] Settings: per-section global defaults (Placements ON,
+      Provenance ON, Timestamps OFF). (SettingsView "Note metadata"
+      section → `note_metadata_defaults` project setting.)
+- [x] E2E: multi-board placements card + fly-to; persisted block
       appears in the body after a system touch; toggle-off strips.
-- [ ] Gates: `pnpm -r build`, vitest, lint, desktop e2e hidden;
-      pandoc untouched (doc-side landed in rev 0.51 commit).
+      (`e2e/note-metadata.spec.ts`, 2 tests.)
+- [x] Gates: `pnpm -r build`, vitest, lint, desktop e2e hidden;
+      pandoc untouched (doc-side landed in rev 0.51 commit). (Build
+      green; `pnpm lint` clean; packages vitest green; desktop e2e
+      132/132 including the flake source-panel:68 on first try.)
 - [ ] Append HUMAN-TESTING.md entry (card feel, tree scannability,
-      "does the export read right in Obsidian").
+      "does the export read right in Obsidian"). (Left for the lead
+      to append at merge — the agent must not touch HUMAN-TESTING.md;
+      suggested text is in the handoff report.)
 
 ### Acceptance Criteria
 
@@ -146,3 +162,54 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Pure grammar lives in `@ew/domain`, not `packages/persistence`.**
+  The ticket suggested `packages/persistence/src/note-metadata.ts`, but
+  the renderer's editor (`note-editor.ts`) needs `stripMetadataBlock`
+  to strip on load / reattach on save, and the renderer never imports
+  `@ew/persistence` values (its Node/SQLite deps). The marker grammar
+  is pure, so it belongs in `@ew/domain` (already a renderer dep). The
+  DB read model + lazy refresh stay in persistence
+  (`note-metadata-db.ts`).
+
+- **Placements "respecting nesting" is rendered as indent-by-depth,
+  not a full parent→child tree.** Each board carries its shortest
+  containment distance from the root canvas (BFS with a visited set,
+  invariant 19) and the markdown/card indents by that depth. Two
+  boards at the same depth under different parents are not visually
+  distinguished — a faithful V1 of "grouped by board respecting
+  nesting"; a true ancestry tree can come with the design pass if
+  wanted.
+
+- **Lazy refresh is wired to the RenameNote path only** (plus the
+  exported `refreshNoteMetadataBlock` for EPIC-008 export/backup). A
+  rename refreshes the renamed note's own block AND every source note
+  whose body it re-keys — both are "the system rewrites that note body"
+  moments (§7.8). Refresh runs inside the command transaction (no
+  separate undo step) and deliberately does NOT bump `updated_at` (the
+  derived block is a cache, not a user edit).
+
+- **Pre-existing test updated, not broken.** `notes.spec.ts:235`
+  asserted a placed source note's body equalled its prose exactly;
+  after this change that note correctly carries a metadata block at the
+  tail once its tokens are re-keyed. Updated the assertion to check the
+  re-keyed prose prefix + the presence of the block, and to assert the
+  editor still shows prose only. This is spec-correct behavior, not a
+  regression.
+
+- **Per-note toggle + per-section defaults ride the settings table**
+  (`note_metadata_note:<id>` and `note_metadata_defaults`) — existing
+  project-tier presentation storage, NO migration. Toggling a note off
+  hides the card live and strips the persisted block at the next system
+  touch (not immediately), per §7.8.
+
+- **Known cosmetic edge (not fixed, low priority):** a `card`-appearance
+  node's board excerpt is `substr(body, 1, 140)` server-side; for a very
+  short note whose prose is under ~140 chars, the excerpt could bleed
+  into the `---` rule / block. Out of scope here (card design is
+  Design-letter-3 item 16); flagged for the design pass.
+
+- All gates green from the worktree: `pnpm -r build`, `pnpm lint`,
+  package vitest (domain 10 + persistence 10 new, plus existing),
+  desktop e2e 132/132 (hidden windows; the source-panel:68 flake
+  passed on first try).

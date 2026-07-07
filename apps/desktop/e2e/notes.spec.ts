@@ -279,7 +279,13 @@ test('rename flushes dirty buffers, rewrites transactionally, folds into local u
     .all())
     await expect(token).toHaveAttribute('data-link-state', 'bound')
   await expect(win.getByTestId('note-editor')).toContainText('z tail')
-  expect(await noteBody(win, aId)).toBe('x [[NewName]] y [[NewName]] z tail')
+  // The rewrite is transactional; §7.8: the rename is also a system
+  // body touch, so this placed note now carries a metadata block at the
+  // tail. The prose is the re-keyed body; the editor shows prose only.
+  const aBody = await noteBody(win, aId)
+  expect(aBody).toMatch(/^x \[\[NewName\]\] y \[\[NewName\]\] z tail(\n\n---\n|$)/)
+  expect(aBody).toContain('## Placements')
+  await expect(win.getByTestId('note-editor')).not.toContainText('Placements')
 
   // Folded into LOCAL undo: one undo steps back through the rewrite
   // (no wholesale document swap), redo reapplies it.

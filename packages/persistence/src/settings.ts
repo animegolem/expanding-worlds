@@ -32,6 +32,24 @@ export function setProjectSetting(
   )
 }
 
+/** Read one project-tier setting, JSON-decoded, falling back per key
+ * (persisted values are user files — trust nothing). Used by system
+ * code that needs a single key inside a command transaction (§7.8
+ * metadata gating) rather than the whole getSettings map. */
+export function getProjectSetting<T>(db: Db, projectId: string, key: string, fallback: T): T {
+  const row = db.get<{ value: string }>(
+    'SELECT value FROM settings WHERE project_id = ? AND key = ?',
+    projectId,
+    key,
+  )
+  if (!row) return fallback
+  try {
+    return JSON.parse(row.value) as T
+  } catch {
+    return fallback
+  }
+}
+
 export function registerSettingsQueries(registry: QueryRegistry): void {
   /** Every project-tier setting, JSON-decoded, keyed by name. */
   registry.register('getSettings', (ctx) => {
