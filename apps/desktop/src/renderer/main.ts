@@ -1,6 +1,9 @@
 import { mount } from 'svelte'
 import App from './App.svelte'
 import './theme.css'
+// §7.1 editor face (AI-IMP-131): bundled Maple Mono @font-face + the
+// note-text scale. Import order after theme.css so its tokens resolve.
+import './editor-face.css'
 // §8.2 keymap registry (AI-IMP-117): declare every binding once at
 // boot, before any tooltip or the settings Keyboard section reads it.
 import './keys/bindings'
@@ -25,3 +28,15 @@ void initSettings().finally(() => mount(App, { target }))
 // derivative queue after boot and after every asset import; never
 // blocks anything above.
 initThumbnailPipeline()
+
+// §7.1 editor face for canvas-baked note text (AI-IMP-131): card
+// title/excerpt are Pixi Text, which bakes glyphs from whatever the
+// browser has loaded at bake time. @font-face alone loads lazily (on
+// first DOM use), so warm the three faces now — from the local bundle
+// this resolves well before the first scene applies (IPC project load
+// is slower), and any note edit re-bakes the card regardless.
+if (typeof document !== 'undefined' && document.fonts) {
+  void document.fonts.load("400 1rem 'Maple Mono'")
+  void document.fonts.load("italic 400 1rem 'Maple Mono'")
+  void document.fonts.load("700 1rem 'Maple Mono'")
+}

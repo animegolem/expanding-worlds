@@ -1,0 +1,66 @@
+/* The editor face — the ONE typography carve-out (RFC §7.1, rev 0.55;
+   ratified 2026-07-06). Note TEXT renders in Maple Mono — a kerned
+   rounded mono with true cursive italics, OFL-licensed, bundled woff2
+   (latin subset, 400/400i/700), NEVER fetched at runtime. Chrome
+   everywhere else keeps the platform system stacks: "chrome is a
+   terminal." Every selector below is editor-scoped (.ew-note-prose,
+   the TipTap/ProseMirror contenteditable, AI-IMP-146) so the carve-out
+   cannot leak into chrome; editor-face.test.ts enforces that.
+
+   Fonts live in apps/desktop/resources/fonts/ and are pulled into the
+   renderer bundle by Vite via these relative url()s (so packaged asar
+   builds carry them — no electron-builder extraResources needed, that
+   path is for the main/utility process, not renderer webfonts).
+   License: apps/desktop/resources/fonts/LICENSE-OFL.txt. */
+
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../resources/fonts/maple-mono-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../resources/fonts/maple-mono-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../resources/fonts/maple-mono-latin-700-normal.woff2') format('woff2');
+}
+
+/* The editing surface (panels AND the §8.5 big editor — the LIVE
+   ProseMirror DOM reparents into the overlay, so this ONE global rule
+   on .ew-note-prose covers both). Face + body scale come from theme
+   tokens; the panel container keeps its own layout. */
+.ew-note-prose {
+  font-family: var(--ew-font-editor);
+  font-size: var(--ew-editor-body);
+  line-height: var(--ew-editor-line);
+}
+
+/* Loud colored headings (§7.1): size AND color. h1/h2/h3 only — the
+   scale stops there per the STYLE-GUIDE; deeper levels inherit body.
+   Colors are the provisional --ew-note-h* tokens (AI-IMP-130). */
+.ew-note-prose h1 {
+  font-size: var(--ew-editor-h1);
+  color: var(--ew-note-h1);
+}
+
+.ew-note-prose h2 {
+  font-size: var(--ew-editor-h2);
+  color: var(--ew-note-h2);
+}
+
+.ew-note-prose h3 {
+  font-size: var(--ew-editor-h3);
+  color: var(--ew-note-h3);
+}

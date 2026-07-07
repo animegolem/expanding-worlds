@@ -1538,6 +1538,9 @@
   }
 
   .text-post {
+    /* §7.1 carve-out (AI-IMP-131): a text post is note TEXT, so it wears
+       the Maple Mono editor face; title + excerpt inherit it. */
+    font-family: var(--ew-font-editor);
     display: flex;
     flex-direction: column;
     gap: 0.3rem;

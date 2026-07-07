@@ -1355,7 +1355,12 @@
     outline: none;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    line-height: 1.5;
+    /* §7.1 editor scale (AI-IMP-131): the face + size + line-height ride
+       the global .ew-note-prose rule in editor-face.css (which also
+       reaches the big-editor overlay, where this .editor-scoped rule
+       does not). Line-height is pinned to the token here only so the
+       docked pane and the overlay read identically. */
+    line-height: var(--ew-editor-line);
   }
 
   .editor :global(.ew-note-prose p) {

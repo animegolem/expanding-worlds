@@ -202,6 +202,18 @@
   --ew-note-h1: #2b6cb0;
   --ew-note-h2: #3b8a7d;
   --ew-note-h3: #9c7f2e;
+
+  /* The editor face + scale (RFC §7.1, STYLE-GUIDE v2 §3; AI-IMP-131).
+     Maple Mono is the ONE typography carve-out — note TEXT only, never
+     chrome (chrome keeps the platform stack). The face is bundled woff2
+     declared in editor-face.css; this is just the family + scale. Body
+     .85rem/1.65; headings are LOUD (size here, color via --ew-note-h*). */
+  --ew-font-editor: 'Maple Mono', ui-monospace, Menlo, monospace;
+  --ew-editor-body: 0.85rem;
+  --ew-editor-line: 1.65;
+  --ew-editor-h1: 1.15rem;
+  --ew-editor-h2: 1rem;
+  --ew-editor-h3: 0.9rem;
 }
 
 :root[data-theme='light'] {

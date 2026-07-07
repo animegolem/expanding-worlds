@@ -27,6 +27,14 @@ test('note pane opens on double-click and a typing burst commits one UpdateNote'
   await expect(win.getByTestId('note-editor')).toBeVisible()
   await expect(win.getByTestId('note-editor')).toContainText('a small hawk')
 
+  // §7.1 editor carve-out (AI-IMP-131): note TEXT renders in the bundled
+  // Maple Mono face; chrome keeps the platform stack. Assert the editing
+  // surface resolves to the carve-out family.
+  const editorFont = await win
+    .locator('[data-testid="note-editor-content"]')
+    .evaluate((el) => getComputedStyle(el).fontFamily)
+  expect(editorFont).toContain('Maple Mono')
+
   // One burst of typing → exactly one UpdateNote (one revision step).
   const before = await revision(win)
   await win.locator('[data-testid="note-editor-content"]').click()
