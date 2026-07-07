@@ -12,7 +12,7 @@
  * hides when the node's RENDERED screen size drops below the
  * threshold — never zoom percentage.
  */
-import { itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
+import { adornedWorldAABB, itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
 import type { NodeAppearance } from '@ew/commands'
 import { uuidv7 } from '@ew/domain'
 import type { CanvasHostHandle } from './host'
@@ -828,9 +828,12 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       if (!seen.has(id)) removeEntry(id)
     }
 
-    // Charm bar beneath the single selected placement.
+    // Charm bar beneath the single selected placement. Anchors to the
+    // ADORNED bounds (body + the §4.5 label when one shows) so the bar
+    // clears the title instead of covering it; identical to the raw
+    // body AABB when no label shows (AI-IMP-161).
     const selected = selectedPlacement()
-    const aabb = selected ? itemWorldAABB(selected) : null
+    const aabb = selected ? adornedWorldAABB(selected, camera.zoom) : null
     if (selected && aabb) {
       const bottomCenter = camera.worldToScreen({
         x: aabb.x + aabb.width / 2,

@@ -597,6 +597,48 @@ function labelBasis(item: ScenePlacement): { height: number } {
 }
 
 /**
+ * §4.5 label metric: Pixi lays a single-line label out in the font's
+ * own line box, whose measured height is ~1.2×fontSize. This ratio
+ * slightly over-covers that so callers that must clear the label
+ * (the §8.4 charm bar, AI-IMP-161) never cut into a descender. The
+ * ONLY place the label's rendered height is named — derive it here,
+ * never re-derive text metrics in the desktop app.
+ */
+export const LABEL_TEXT_HEIGHT_RATIO = 1.3
+
+/** True when syncLabel would draw an under-body label for this item. */
+function hasUnderBodyLabel(item: ScenePlacement): boolean {
+  // Mirrors syncLabel's guard (title/visibility/§4.6 card) plus flipY:
+  // a y-flipped placement's label hangs ABOVE the body, so nothing
+  // reaches below the bottom edge.
+  return (
+    item.noteTitle !== null &&
+    item.labelVisible === 1 &&
+    item.appearanceKind !== 'card' &&
+    item.flipY !== 1
+  )
+}
+
+/**
+ * World-space Y of the visible label's bottom edge, matching
+ * syncLabel/syncPlacementLabelOffset exactly: the body's bottom edge,
+ * a fixed LABEL_CLEARANCE_PX screen gap (→ world via zoom), then the
+ * world-scaled glyph box. Null when no label reaches below the body
+ * (no note, label hidden, a §4.6 card whose chrome carries the title,
+ * or a y-flip that lifts the label above the body). Zoom enters only
+ * through the screen-space clearance term.
+ */
+export function placementLabelWorldBottom(item: ScenePlacement, zoom: number): number | null {
+  if (!hasUnderBodyLabel(item)) return null
+  const basis = labelBasis(item).height * (Math.abs(item.scale) || 1)
+  const safeZoom = zoom > 0 ? zoom : 1
+  const bodyBottom = item.y + basis / 2
+  const clearanceWorld = LABEL_CLEARANCE_PX / safeZoom
+  const glyphWorld = basis * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO
+  return bodyBottom + clearanceWorld + glyphWorld
+}
+
+/**
  * Creates, updates, or removes the label Text child. Called on every
  * update so renames (new noteTitle through the scene re-query),
  * visibility toggles, and resizes all reflow it. Flip is applied to

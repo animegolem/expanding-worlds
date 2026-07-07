@@ -1,6 +1,6 @@
 import { isLineData, isTextData } from './decoration-data'
 import { arrowPolygon } from './renderers/decorations/line'
-import { DEFAULT_DOT_RADIUS } from './renderers/placement'
+import { DEFAULT_DOT_RADIUS, placementLabelWorldBottom } from './renderers/placement'
 import type { Point, Rect } from './camera'
 import type { SceneDecoration, SceneItem, ScenePlacement } from './types'
 
@@ -176,6 +176,24 @@ export function itemWorldAABB(item: SceneItem): Rect | null {
   const w = width * cos + height * sin
   const h = width * sin + height * cos
   return { x: item.x - w / 2, y: item.y - h / 2, width: w, height: h }
+}
+
+/**
+ * itemWorldAABB extended DOWNWARD to enclose the §4.5 world-scale
+ * label when one is visible, so §8.4 chrome that floats beneath the
+ * body — the charm bar — clears the title instead of covering it
+ * (AI-IMP-161). BYTE-IDENTICAL to itemWorldAABB when no label reaches
+ * below the body (the owner chose the tighter unlabeled anchor over
+ * always-stable positioning). Zoom feeds the label's fixed
+ * screen-space clearance; pass the live camera zoom.
+ */
+export function adornedWorldAABB(item: SceneItem, zoom: number): Rect | null {
+  const aabb = itemWorldAABB(item)
+  if (!aabb || item.itemKind !== 'placement') return aabb
+  const labelBottom = placementLabelWorldBottom(item, zoom)
+  if (labelBottom === null) return aabb
+  const bottom = Math.max(aabb.y + aabb.height, labelBottom)
+  return { x: aabb.x, y: aabb.y, width: aabb.width, height: bottom - aabb.y }
 }
 
 function pointInPlacement(point: Point, item: ScenePlacement): boolean {
