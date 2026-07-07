@@ -1,13 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import Workspace from './Workspace.svelte'
-  import { attachServiceStatus } from './chrome/status'
+  import { attachServiceStatus, attachSnapshotPush } from './chrome/status'
   import { mountUndo } from './undo/undo-keys'
 
   // Service lifecycle → §8.6 toasts + perch (AI-IMP-066). Attached
   // here — before the canvas mounts — so an outage during startup
   // still raises its condition (§11.4: never a silent hang).
   attachServiceStatus()
+
+  // §11.4 remote push (AI-IMP-122): the background push's ongoing-perch
+  // and once-per-episode failure toast. Attached here so a push begun
+  // in a prior window (retained state) is caught on mount.
+  attachSnapshotPush()
 
   // §10.2 structural undo/redo stack + Mod+Z driver (AI-IMP-114).
   onMount(mountUndo)

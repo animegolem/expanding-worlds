@@ -21,9 +21,11 @@ import type {
   RestoreResult,
   SnapshotEntry,
   SnapshotMode,
+  SnapshotPushState,
   SnapshotStatus,
+  SnapshotTestConnectionResult,
 } from '@ew/protocol'
-import { SNAPSHOT_MODE_KEY } from '@ew/protocol'
+import { SNAPSHOT_MODE_KEY, SNAPSHOT_REMOTE_KEY } from '@ew/protocol'
 
 /**
  * Session snapshot engine (RFC-0001 §11.4, AI-IMP-120). Lives in the
@@ -84,6 +86,11 @@ export interface SnapshotDeps {
   flushRenderers: () => Promise<void>
   /** The active project directory (env-overridable in tests). */
   projectDir: () => string
+  /** §11.4/§8.6 remote push (AI-IMP-122): broadcast the background
+   * push's state to the renderers for the ongoing-push perch and the
+   * once-per-episode failure toast. Optional — absent in unit contexts
+   * that don't exercise push. */
+  onPushState?: (state: SnapshotPushState) => void
 }
 
 export type SnapshotTrigger = 'idle' | 'rest' | 'end-session'
@@ -106,10 +113,19 @@ export interface SnapshotEngine {
    * suffixed), never in-place, then validate the extracted db opens.
    * The source project directory is never written. */
   restore: (sha: string) => Promise<RestoreResult>
+  /** §11.4 remote push (AI-IMP-122): the deliberate Test connection
+   * action — `git ls-remote <url>` with the terminal prompt disabled so
+   * a missing credential fails fast instead of hanging on a hidden
+   * prompt. The ONLY network call the user triggers by hand; never runs
+   * ambiently. */
+  testConnection: (url: string) => Promise<SnapshotTestConnectionResult>
   /** Run one snapshot moment: flush buffers, (when enabled) regenerate
    * the notes tree, checkpoint the WAL, then commit. Always resolves;
    * a git or checkpoint failure is logged, never thrown — a backup
-   * hiccup must never trap quit or the user. */
+   * hiccup must never trap quit or the user. When mode is `commit-push`
+   * and a remote URL is set, a push is SCHEDULED (not awaited) after the
+   * commit — the returned promise resolves on local success so the
+   * session ritual never waits on the network. */
   runSnapshot: (trigger: SnapshotTrigger) => Promise<void>
   dispose: () => void
 }
@@ -119,6 +135,18 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   let idleTimer: ReturnType<typeof setTimeout> | null = null
   // Serialize snapshots: a quit snapshot must not race an idle one.
   let inFlight: Promise<void> = Promise.resolve()
+  // §11.4 push (AI-IMP-122): a SEPARATE chain from `inFlight`. Pushes
+  // serialize among themselves (two concurrent pushes to one remote can
+  // race), but the snapshot chain NEVER awaits this one — the session
+  // ritual finishes on local commit and the push rides the background.
+  let pushChain: Promise<void> = Promise.resolve()
+  // The dedicated remote name for the app's backup mirror — never
+  // `origin`, so a user's own remote in a project they also track by
+  // hand is left untouched.
+  const REMOTE_NAME = 'ew-snapshots'
+  // The tracking ref `git push` updates on success — the anchor the
+  // unpushed-debt count measures HEAD against.
+  const TRACKING_REF = `refs/remotes/${REMOTE_NAME}/main`
 
   function gitAvailable(): Promise<boolean> {
     if (process.env['EW_SNAPSHOT_NO_GIT'] === '1') return Promise.resolve(false)
@@ -130,13 +158,21 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     return gitProbe
   }
 
-  async function git(dir: string, args: string[]): Promise<string> {
+  async function git(dir: string, args: string[], env?: NodeJS.ProcessEnv): Promise<string> {
     const { stdout } = await execFileAsync('git', args, {
       cwd: dir,
       maxBuffer: 64 * 1024 * 1024,
+      ...(env ? { env: { ...process.env, ...env } } : {}),
     })
     return stdout
   }
+
+  /** GIT_TERMINAL_PROMPT=0 turns a missing credential into a fast
+   * failure instead of a hidden interactive prompt that would hang an
+   * unattended push/probe forever (the app has no terminal to answer
+   * it). Auth stays the system's — ssh agent / credential helper. We
+   * never store or pass a secret. */
+  const NO_PROMPT_ENV: NodeJS.ProcessEnv = { GIT_TERMINAL_PROMPT: '0' }
 
   function seedGitignore(dir: string): void {
     const path = join(dir, '.gitignore')
@@ -162,6 +198,17 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
       if (mode === 'commit' || mode === 'commit-push') return mode
     }
     return 'off'
+  }
+
+  /** The per-project remote URL, trimmed, or '' when unset (§11.5: the
+   * absent case means NOTHING network-shaped runs). */
+  async function readRemote(): Promise<string> {
+    const response = await deps.callUtility({ type: 'run-query', name: 'getSettings' })
+    if ('type' in response && response.type === 'run-query' && response.ok) {
+      const url = (response.result as Record<string, unknown>)[SNAPSHOT_REMOTE_KEY]
+      if (typeof url === 'string') return url.trim()
+    }
+    return ''
   }
 
   /** A quit that abandons an in-flight `git add`/`commit` (the ritual
@@ -229,6 +276,104 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     await git(dir, ['commit', '-q', '-m', commitMessage(trigger, notes, assets)])
   }
 
+  function emitPush(state: SnapshotPushState): void {
+    deps.onPushState?.(state)
+  }
+
+  function refExists(dir: string, ref: string): Promise<boolean> {
+    return git(dir, ['rev-parse', '--verify', '--quiet', ref])
+      .then(() => true)
+      .catch(() => false)
+  }
+
+  /** Backup debt: commits on HEAD not yet on the remote. Measured
+   * against the tracking ref `git push` last advanced; before the first
+   * successful push (no tracking ref) every commit on HEAD is unpushed.
+   * Best-effort — a git hiccup reports 0 rather than throwing. */
+  async function unpushedCount(dir: string): Promise<number> {
+    try {
+      if (!(await refExists(dir, 'HEAD'))) return 0
+      const range = (await refExists(dir, TRACKING_REF)) ? `${TRACKING_REF}..HEAD` : 'HEAD'
+      const out = await git(dir, ['rev-list', '--count', range])
+      const n = Number(out.trim())
+      return Number.isFinite(n) ? n : 0
+    } catch {
+      return 0
+    }
+  }
+
+  /** Point the dedicated backup remote at the configured URL, adding it
+   * on first use and re-pointing it when the setting changes. */
+  async function ensureRemote(dir: string, url: string): Promise<void> {
+    const existing = await git(dir, ['remote', 'get-url', REMOTE_NAME])
+      .then((s) => s.trim())
+      .catch(() => '')
+    if (existing === url) return
+    if (existing) await git(dir, ['remote', 'set-url', REMOTE_NAME, url])
+    else await git(dir, ['remote', 'add', REMOTE_NAME, url])
+  }
+
+  /** The short human tail of a git failure — the last non-empty stderr
+   * line (execFile hangs the whole stderr on the error), so a toast /
+   * Settings line can explain "Repository not found" rather than dump a
+   * stack. */
+  function gitErrorMessage(err: unknown): string {
+    const stderr = (err as { stderr?: unknown })?.stderr
+    if (typeof stderr === 'string' && stderr.trim().length > 0) {
+      const lines = stderr.trim().split('\n')
+      return lines[lines.length - 1]!.trim()
+    }
+    return err instanceof Error ? err.message : String(err)
+  }
+
+  /** One background push attempt. Runs on `pushChain`, so it is already
+   * off the snapshot ritual's critical path. Emits the ongoing-push
+   * perch state, then reconciles: success clears the debt (`idle`, 0),
+   * failure leaves the debt visible (`error`) with a one-shot message
+   * for the once-per-episode toast; the next snapshot retries. */
+  async function runPush(dir: string, url: string): Promise<void> {
+    try {
+      await ensureRemote(dir, url)
+    } catch (err) {
+      emitPush({ phase: 'error', unpushed: await unpushedCount(dir), message: gitErrorMessage(err) })
+      return
+    }
+    const ahead = await unpushedCount(dir)
+    if (ahead === 0) {
+      emitPush({ phase: 'idle', unpushed: 0 })
+      return
+    }
+    emitPush({ phase: 'pushing', unpushed: ahead })
+    try {
+      // Push HEAD to the remote's main; the tracking ref advances on
+      // success, which is what the next debt count measures against.
+      await git(dir, ['push', REMOTE_NAME, 'HEAD:refs/heads/main'], NO_PROMPT_ENV)
+      emitPush({ phase: 'idle', unpushed: await unpushedCount(dir) })
+    } catch (err) {
+      emitPush({ phase: 'error', unpushed: await unpushedCount(dir), message: gitErrorMessage(err) })
+    }
+  }
+
+  /** Schedule a push behind any in-flight one. Deliberately returns
+   * void: nothing in the snapshot ritual awaits this. */
+  function schedulePush(dir: string, url: string): void {
+    pushChain = pushChain.catch(() => undefined).then(() => runPush(dir, url))
+  }
+
+  async function testConnection(url: string): Promise<SnapshotTestConnectionResult> {
+    const trimmed = url.trim()
+    if (trimmed.length === 0) return { ok: false, message: 'Enter a remote URL first.' }
+    if (!(await gitAvailable())) {
+      return { ok: false, message: "git isn't available on this machine." }
+    }
+    try {
+      await git(deps.projectDir(), ['ls-remote', trimmed], NO_PROMPT_ENV)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, message: gitErrorMessage(err) }
+    }
+  }
+
   async function doSnapshot(trigger: SnapshotTrigger): Promise<void> {
     // Always flush editor buffers and checkpoint the WAL (the AI-IMP-096
     // rest-point behavior), whether or not snapshots are enabled.
@@ -254,6 +399,18 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     const dir = deps.projectDir()
     await ensureGitReady(dir)
     await commitIfChanged(dir, trigger, notes, assets)
+
+    // §11.4 remote push (AI-IMP-122): commit-push mode with a configured
+    // URL schedules a push AFTER the commit — and does NOT await it, so
+    // doSnapshot (and the session ritual behind it) resolves on local
+    // success and never waits on the network. A push is scheduled even
+    // when this snapshot made no new commit: an earlier failed episode
+    // left debt, and the next snapshot is where the retry rides. With no
+    // URL set nothing network-shaped runs (§11.5 deliberate opt-in).
+    if (mode === 'commit-push') {
+      const remote = await readRemote()
+      if (remote) schedulePush(dir, remote)
+    }
   }
 
   function runSnapshot(trigger: SnapshotTrigger): Promise<void> {
@@ -472,6 +629,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     noteActivity,
     listSnapshots,
     restore,
+    testConnection,
     runSnapshot,
     dispose,
   }
