@@ -100,10 +100,10 @@ inventories are ratified (§8.4; Menus Document is the design
 source). The §8.8 occlusion audit above predates AI-IMP-101/143;
 the z-ladder is now AI-IMP-143's scope, not this epic's first IMP.
 
-- [ ] FR-1: The context-menu surface + item and board inventories
+- [x] FR-1: The context-menu surface + item and board inventories
       per the ratified grammar; keyboard model; registry-printed
       shortcuts. (AI-IMP-136)
-- [ ] FR-2: Decoration, multi-select, and frame inventories;
+- [x] FR-2: Decoration, multi-select, and frame inventories;
       Help/About final copy; trash archive-tone pass. (AI-IMP-137)
 
 ### Non-Functional Requirements

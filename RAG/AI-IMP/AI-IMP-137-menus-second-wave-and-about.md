@@ -6,12 +6,12 @@ tags:
   - design-pass
   - menus
   - trash
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-136]
 parent_epic: [[AI-EPIC-016-context-click-menus]]
 confidence_score: 0.7
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -77,18 +77,18 @@ coordinate: this spec is flake-hardened; keep testids stable.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Decoration menu: style verbs only, never item verbs (test
+- [x] Decoration menu: style verbs only, never item verbs (test
       asserts absence).
-- [ ] Multi-select: count header; Gather into a frame = one undo
+- [x] Multi-select: count header; Gather into a frame = one undo
       group (e2e).
-- [ ] Frame menu rows wire 129's sort/fill actions; delete verb
+- [x] Frame menu rows wire 129's sort/fill actions; delete verb
       states contents-stay and does TrashNode.
-- [ ] Help/About final copy; version + RFC rev live values.
-- [ ] Trash archive tone per ratified copy; danger only on Empty
+- [x] Help/About final copy; version + RFC rev live values.
+- [x] Trash archive tone per ratified copy; danger only on Empty
       trash…; existing spec green with stable testids.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (does
+- [x] HUMAN-TESTING entry appended at merge by the lead (does
       trash read as archive; gather-into-frame moment).
 
 ### Acceptance Criteria
@@ -110,3 +110,38 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **File-name drift**: the ticket names `menus/inventories.ts`; the
+  landed 136 module is `menus/inventory.ts`. Extended the existing
+  module (no rename) so 136's grammar, tests, and imports stay put.
+- **Coming-soon rows (no command exists yet)**: decoration
+  `Edit style` (restyle lives only in the toolbar contextual row —
+  no popover/command to open); multi-select `Tags…` (no batch
+  tag-assign command); frame `Rename frame…` (a frame node has no
+  note/label naming command surfaced). All three ship as §8.2
+  disabled-with-reason rows.
+- **Multi-select flips**: the shipped path (gestures-ui
+  `flipSelection`) loops FlipPlacement WITHOUT grouping — N undo
+  entries. The menu verb wraps the same loop in `runAsUndoGroup`
+  (one undo) to honor §8.4's every-verb-is-one-undoable-command;
+  same for `Lock all`. The keyboard path was left untouched (out of
+  fence).
+- **Theme-token guard**: the trash pass initially used
+  `--ew-danger-soft` as a hover fallback; theme.test's token guard
+  rejects undefined tokens — switched to `--ew-surface-subtle`.
+- **Fence deviation (surgical)**: `e2e/shell.spec.ts` owns the
+  Help/About e2e block, so the ratified-copy assertions (RFC rev,
+  copies-never-touches line, shortcuts link) were added THERE — four
+  assertion lines inside the existing About block; the ticket's
+  files-to-touch listed only context-menus/trash specs. Also
+  `electron.vite.config.ts` + `env.d.ts` gained the `__RFC_REV__`
+  build constant (the design section requires a build-time read of
+  the RFC header, which can only live in the build config).
+- **trash.spec `Restore` toast**: unchanged; testids all stable —
+  only copy/tone assertions were added (holds-phrasing, "Empty
+  trash…" label, verbatim empty-state line).
+- Gates: `pnpm -r build` green; unit tests 1+338+510 (packages) +
+  142 (desktop vitest) green; `pnpm lint` green; desktop e2e hidden
+  **153 passed (3.8m)**, zero retries. A first background run of the
+  suite produced an empty output file (runner artifact, not a test
+  failure) — re-ran in the foreground for the recorded result.

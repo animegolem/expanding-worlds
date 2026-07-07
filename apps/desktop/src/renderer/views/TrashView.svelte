@@ -122,26 +122,29 @@
     return `${n} ${one}${n === 1 ? '' : 's'}`
   }
 
+  // Archive-tone impact: neutral, factual "holds …" phrasing — what the
+  // record carries and what restoring brings back, never an alarm.
   async function noteImpactText(id: string): Promise<string> {
     const impact = await query<NoteImpact>('getNoteImpact', { noteId: id })
     if (!impact) return ''
-    if (impact.textOnly) return 'text-only note'
-    return `used by ${plural(impact.referencingNodeIds.length, 'node')} · ${impact.inboundLinkCount}↓ ${impact.outboundLinkCount}↑ links`
+    if (impact.textOnly) return 'a text-only note'
+    return `read by ${plural(impact.referencingNodeIds.length, 'node')} · ${plural(impact.inboundLinkCount, 'link')} in, ${impact.outboundLinkCount} out`
   }
 
   async function nodeImpactText(id: string): Promise<string> {
     const impact = await query<NodeImpact>('getNodeImpact', { nodeId: id })
     if (!impact) return ''
-    const parts = [plural(impact.placementCount, 'placement')]
+    const parts = [`holds ${plural(impact.placementCount, 'placement')}`]
     if (impact.tagCount > 0) parts.push(plural(impact.tagCount, 'tag'))
     if (impact.ownedCanvasId) parts.push('owns a board')
+    parts.push('returns whole on restore')
     return parts.join(' · ')
   }
 
   async function canvasImpactText(id: string): Promise<string> {
     const impact = await query<CanvasImpact>('getCanvasImpact', { canvasId: id })
     if (!impact) return ''
-    return `${plural(impact.placementCount, 'placement')} · ${plural(impact.decorationCount, 'decoration')} · ${plural(impact.referencedNodeCount, 'node')}`
+    return `holds ${plural(impact.placementCount, 'placement')} · ${plural(impact.decorationCount, 'decoration')} · references ${plural(impact.referencedNodeCount, 'node')}`
   }
 
   async function load(): Promise<void> {
@@ -313,7 +316,9 @@
   {#if !loaded}
     <p class="quiet" data-testid="trash-loading">Loading Trash…</p>
   {:else if rows.length === 0}
-    <p class="quiet" data-testid="trash-empty">Trash is empty.</p>
+    <p class="quiet" data-testid="trash-empty">
+      nothing here — deleted things wait here, whole, until you say otherwise.
+    </p>
   {:else}
     <ul class="list" data-testid="trash-list">
       {#each rows as row (row.kind + row.id)}
@@ -375,7 +380,7 @@
           disabled={busy}
           onclick={() => void beginEmpty()}
         >
-          Empty Trash
+          Empty trash…
         </button>
       {/if}
     </div>
@@ -449,12 +454,14 @@
     text-overflow: ellipsis;
   }
 
+  /* Restore is the loud verb of the archive: it wears the accent, so
+     the eye lands on getting things back, not on destroying them. */
   .restore {
     flex: none;
-    padding: 0.2rem 0.7rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
+    padding: 0.2rem 0.8rem;
+    background: var(--ew-accent);
+    color: var(--ew-on-accent);
+    border: 1px solid var(--ew-accent);
     border-radius: 6px;
     font: inherit;
     font-size: 0.78rem;
@@ -462,7 +469,8 @@
   }
 
   .restore:hover:not(:disabled) {
-    background: var(--ew-surface-subtle);
+    background: var(--ew-accent-soft);
+    border-color: var(--ew-accent-soft);
   }
 
   .restore:disabled {
@@ -487,10 +495,13 @@
     cursor: pointer;
   }
 
+  /* The ONLY danger-toned control in the archive: a danger-bordered
+     button in the bottom-right corner. Purge is the one irreversible
+     act here, so it alone reads as a warning. */
   .empty-trash {
-    background: var(--ew-surface-raised);
+    background: transparent;
     color: var(--ew-danger);
-    border: 1px solid var(--ew-border-strong);
+    border: 1px solid var(--ew-danger);
   }
 
   .empty-trash:hover:not(:disabled) {

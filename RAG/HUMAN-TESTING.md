@@ -34,6 +34,16 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Menus, everything + About + trash tone** (AI-IMP-137,
+  2026-07-07): right-click a drawn shape (style verbs only), a
+  multi-selection (count header · align family · GATHER INTO A
+  FRAME — try it, one Mod+Z undoes the whole gather), and a frame
+  (sort rows · "Delete frame — contents stay"). ☰ → Help/About:
+  the plain-type card (version + RFC rev live, copies-never-touches
+  line) — does no-logo read as intended? Trash…: archive tone —
+  neutral rows, Restore in accent, only "Empty trash…" wearing
+  danger, the new empty-state line.
+
 - [ ] **One voice** (AI-IMP-153, 2026-07-07): every chrome button is
   now ONE 5px geometry and every field rings 2px accent on focus
   (browser default retired). Tab through settings, restore dialog,

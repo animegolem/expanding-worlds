@@ -48,9 +48,12 @@ async function seedPin(
 
 interface ScenePlacement {
   id: string
+  x: number
+  y: number
   flipX: number
   locked: number
   renderOrder: number
+  appearanceKind: string | null
 }
 
 async function placement(win: Page, id: string): Promise<ScenePlacement | undefined> {
@@ -58,6 +61,24 @@ async function placement(win: Page, id: string): Promise<ScenePlacement | undefi
     canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
   })
   return scene.items.find((i) => i.id === id)
+}
+
+/** A rect decoration at world (x,y); returns its id and screen center. */
+async function seedDecoration(
+  win: Page,
+  at: { x: number; y: number },
+): Promise<{ id: string; cx: number; cy: number }> {
+  const id = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const width = 120
+  const height = 90
+  await exec(win, 'CreateDecoration', {
+    decorationId: id,
+    canvasId,
+    kind: 'shape',
+    data: { shape: 'rect', x: at.x, y: at.y, width, height, stroke: '#dde3ea', strokeWidth: 2, fill: '#2b2f36' },
+  })
+  return { id, cx: at.x + width / 2, cy: at.y + height / 2 }
 }
 
 async function backgroundColor(win: Page): Promise<string | null> {
@@ -200,6 +221,130 @@ test('board menu: offers paste / select-all / fit, backdrop family, color row (�
     await win.mouse.click(box.x + 950, box.y + 620, { button: 'right' })
     await win.getByTestId('ctx-select-all').click()
     await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  } finally {
+    await app.close()
+  }
+})
+
+test('decoration menu: style / z-order / lock / hide / Delete — never item verbs (§8.4)', async () => {
+  const { app, win } = await launchApp('ew-e2e-ctxmenu-deco-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const deco = await seedDecoration(win, { x: 600, y: 380 })
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 1)
+
+    // Right-click the decoration opens the DECORATION menu.
+    await win.mouse.click(box.x + deco.cx, box.y + deco.cy, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('decoration')
+
+    // Style verbs present: edit-style (disabled), z-order, lock, hide.
+    await expect(win.getByTestId('ctx-edit-style')).toHaveAttribute('aria-disabled', 'true')
+    await expect(win.getByTestId('ctx-bring-to-front')).toBeVisible()
+    await expect(win.getByTestId('ctx-lock')).toBeVisible()
+    await expect(win.getByTestId('ctx-hide')).toBeVisible()
+
+    // NEVER item verbs — the grammar structurally omits them.
+    const order = await rowOrder(win)
+    for (const forbidden of [
+      'ctx-appearance',
+      'ctx-flip-h',
+      'ctx-flip-v',
+      'ctx-crop',
+      'ctx-tags',
+      'ctx-set-as-backdrop',
+      'ctx-open-as-board',
+      'ctx-hide-label',
+    ]) {
+      expect(order).not.toContain(forbidden)
+    }
+    // Delete is last, alone.
+    expect(order[order.length - 1]).toBe('ctx-delete')
+
+    // Delete removes the decoration (a shipped decoration command).
+    await win.getByTestId('ctx-delete').click()
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 0)
+  } finally {
+    await app.close()
+  }
+})
+
+test('multi-select menu: count header + Gather into a frame = ONE undo (§8.4)', async () => {
+  const { app, win } = await launchApp('ew-e2e-ctxmenu-multi-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const a = await seedPin(win, 'One', { x: 400, y: 300 })
+    await seedPin(win, 'Two', { x: 800, y: 300 })
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+
+    // Marquee both (start on empty canvas above the pins).
+    await win.mouse.move(box.x + 300, box.y + 120)
+    await win.mouse.down()
+    await win.mouse.move(box.x + 950, box.y + 470, { steps: 5 })
+    await win.mouse.up()
+    await win.waitForFunction(() => window.__ewDebug!.selection().length === 2)
+
+    // Right-click INSIDE the selection opens the MULTI menu (selection
+    // is not collapsed).
+    await win.mouse.click(box.x + 400, box.y + 300, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('multi')
+
+    // Count header leads; gather/align present; Delete names the count.
+    await expect(win.getByTestId('ctx-count')).toHaveText('2 items selected')
+    await expect(win.getByTestId('ctx-align')).toBeVisible()
+    await expect(win.getByTestId('ctx-gather-into-frame')).toBeVisible()
+    // (the row also carries its mono ⌫ shortcut chip, so match the label)
+    await expect(win.getByTestId('ctx-delete')).toContainText('Delete 2 items')
+
+    // Gather into a frame = one undo group: a frame placement is added
+    // (2 → 3) and ONE Mod+Z reverses the whole gather.
+    const depth = await undoDepth(win)
+    await win.getByTestId('ctx-gather-into-frame').click()
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 3)
+    expect(await undoDepth(win)).toBe(depth + 1)
+    await undoOnce(win)
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+    // The original members survive the round trip.
+    expect(await placement(win, a.placementId)).toBeDefined()
+  } finally {
+    await app.close()
+  }
+})
+
+test('frame menu: sort family + fill + Delete-frame-contents-stay (§8.4)', async () => {
+  const { app, win } = await launchApp('ew-e2e-ctxmenu-frame-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    // A frame placement: seed a pin, then switch its node to the frame
+    // appearance so the scene projects appearanceKind 'frame'.
+    const frame = await seedPin(win, 'Frame', { x: 500, y: 350 })
+    await exec(win, 'SetNodeAppearance', { nodeId: frame.nodeId, appearance: { kind: 'frame' } })
+    await expect
+      .poll(async () => (await placement(win, frame.placementId))?.appearanceKind)
+      .toBe('frame')
+
+    const p = (await placement(win, frame.placementId))!
+    await win.mouse.click(box.x + p.x, box.y + p.y, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('frame')
+
+    // The sort family (129's actions) + rename (coming-soon) + delete.
+    await expect(win.getByTestId('ctx-frame-sort-on-drop')).toContainText('Sort on drop:')
+    await expect(win.getByTestId('ctx-frame-sort-now')).toBeVisible()
+    await expect(win.getByTestId('ctx-frame-fill')).toBeVisible()
+    await expect(win.getByTestId('ctx-rename-frame')).toHaveAttribute('aria-disabled', 'true')
+    await expect(win.getByTestId('ctx-delete-frame')).toHaveText('Delete frame — contents stay')
+    // No item-only backdrop verb on the frame menu.
+    expect(await rowOrder(win)).not.toContain('ctx-set-as-backdrop')
+
+    // Delete frame trashes the frame node — the frame placement leaves
+    // the scene (its members, had it any, would stay).
+    await win.getByTestId('ctx-delete-frame').click()
+    await expect.poll(async () => await placement(win, frame.placementId)).toBeUndefined()
   } finally {
     await app.close()
   }

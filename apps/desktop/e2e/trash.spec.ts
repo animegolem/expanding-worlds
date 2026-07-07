@@ -68,6 +68,10 @@ test('trash browser: list, restore + fly-to, empty trash', async () => {
     await expect(win.locator('[data-testid="trash-row"][data-kind="note"]')).toHaveCount(1)
     await expect(win.locator('[data-testid="trash-row"][data-kind="node"]')).toHaveCount(1)
     await expect(win.locator('[data-testid="trash-row"][data-kind="canvas"]')).toHaveCount(1)
+    // Archive-tone impact (AI-IMP-137): neutral "holds N placements …".
+    await expect(
+      win.locator('[data-testid="trash-row"][data-kind="node"]').getByTestId('trash-row-impact'),
+    ).toContainText('holds')
     await expect(
       win.locator('[data-testid="trash-row"][data-kind="node"]').getByTestId('trash-row-impact'),
     ).toContainText('placement')
@@ -99,13 +103,19 @@ test('trash browser: list, restore + fly-to, empty trash', async () => {
     await win.getByTestId('menu-trash').click()
     await expect(win.getByTestId('trash-row')).toHaveCount(2)
 
+    // Archive tone (AI-IMP-137): "Empty trash…" is the only danger verb.
+    await expect(win.getByTestId('trash-empty-trash')).toHaveText('Empty trash…')
     await win.getByTestId('trash-empty-trash').click()
     await expect(win.getByTestId('trash-empty-confirm')).toBeVisible()
     await expect(win.getByTestId('trash-empty-summary')).toContainText('Permanently delete')
     await win.getByTestId('trash-empty-confirm-yes').click()
 
-    // The list empties and the records are purged from the model.
+    // The list empties and the records are purged from the model. The
+    // empty state carries the ratified archive line verbatim.
     await expect(win.getByTestId('trash-empty')).toBeVisible()
+    await expect(win.getByTestId('trash-empty')).toContainText(
+      'nothing here — deleted things wait here, whole, until you say otherwise.',
+    )
     const after = await runQuery<TrashView>(win, 'getTrashView')
     expect(after.notes.length + after.nodes.length + after.canvases.length).toBe(0)
     // Purge is permanent: the loose note is gone entirely.
