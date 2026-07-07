@@ -11,24 +11,21 @@ all moved into the RFC.
 
 ## Blocking planned work
 
-- **Incoming: canvas pointer-down micro-beats** (owner audit in
-  flight, 2026-07-07): where the skeuomorphism gets sold with small
-  interactions — pickup/set-down weight and similar one-shot world
-  beats. Lands against the rev 0.55 motion-budget rule (§8.2); new
-  beats ratify here then join the beat-constant list.
 - **Frame sort-control location** (design pass, open): title-row
   chip vs frame charm bar; nesting clutter probably zoom-gated.
   Blocks the frame-furniture ticket's final form (region + label
   ship regardless).
+- **Input-grammar unification** (found at AI-IMP-142): confirm the
+  two-input grammar (pill = filter-in-place, standard = form
+  fields), pick ONE button geometry (4px dialog vs 5px chrome), and
+  rule on uniform focus rings. Ten-minute kit-1.1 call; a
+  mechanical sweep then collapses the losing variants and shrinks
+  the guard allowlist to zero.
 
-## Blocking epic activation
-
-- **Rich-text activation** (AI-EPIC-018): TipTap prototype
-  go/no-go — the engineering call is still ours, but the design
-  pass now ASSUMES TipTap (Note Editor Wireframes) and specifies
-  the direction: floating bar on selection, typed Markdown styles
-  live, org-style outliner presentation, Maple Mono face (rev
-  0.55). The prototype validates feasibility, not direction.
+(Pointer-down micro-beats RESOLVED 2026-07-07: the audit landed as
+The Two Materials + kit 1.1's beat ledger, ratified at rev 0.56
+§8.2. TipTap RESOLVED 2026-07-07: GO on spike evidence, rev 0.56
+§7.1 — EPIC-018 active.)
 
 ## Standing feel decisions (owner's hands, see HUMAN-TESTING.md)
 

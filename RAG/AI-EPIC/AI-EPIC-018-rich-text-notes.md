@@ -7,9 +7,14 @@ tags:
   - editor
 date_created: 2026-07-06
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
   - "[[AI-IMP-144-tiptap-prototype-verdict]]"
+  - "[[AI-IMP-146-tiptap-editor-controller]]"
+  - "[[AI-IMP-147-link-and-embed-atoms]]"
+  - "[[AI-IMP-148-heading-folding]]"
+  - "[[AI-IMP-149-editor-presentation-and-format-bar]]"
+  - "[[AI-IMP-150-canonical-dialect-freeze]]"
 ---
 
 # AI-EPIC-018-rich-text-notes

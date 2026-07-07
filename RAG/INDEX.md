@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 4 | 0 |
-| Planned | 5 | 6 |
+| In Progress | 5 | 0 |
+| Planned | 4 | 10 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 128 |
-| **Total** | **23** | **143** |
+| Completed | 14 | 130 |
+| **Total** | **23** | **150** |
 
 ## In Progress
 
@@ -41,6 +41,19 @@
 - [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — completed
 - [[AI-IMP-136-context-menu-core|IMP-136]] Context menu core — planned
 - [[AI-IMP-137-menus-second-wave-and-about|IMP-137]] Menus second wave and about — planned
+
+---
+
+### [[AI-EPIC-018-rich-text-notes|EPIC-018: Rich text notes]]
+> Notes are raw Markdown in CodeMirror — right for Obsidian compat,
+
+**IMPs:**
+- [[AI-IMP-144-tiptap-prototype-verdict|IMP-144]] Tiptap prototype verdict — completed
+- [[AI-IMP-146-tiptap-editor-controller|IMP-146]] Tiptap editor controller — planned
+- [[AI-IMP-147-link-and-embed-atoms|IMP-147]] Link and embed atoms — planned
+- [[AI-IMP-148-heading-folding|IMP-148]] Heading folding — planned
+- [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — planned
+- [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — planned
 
 ---
 
@@ -74,14 +87,6 @@
 
 ---
 
-### [[AI-EPIC-018-rich-text-notes|EPIC-018: Rich text notes]]
-> Notes are raw Markdown in CodeMirror — right for Obsidian compat,
-
-**IMPs:**
-- [[AI-IMP-144-tiptap-prototype-verdict|IMP-144]] Tiptap prototype verdict — planned
-
----
-
 ### [[AI-EPIC-019-public-face|EPIC-019: Public face]]
 > The user base is deliberately NON-TECHNICAL (artists), but the
 
@@ -109,8 +114,9 @@
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-140-image-body-treatment|IMP-140]] — planned, no epic dependency found
 - [[AI-IMP-141-chrome-cosmetic-sweep|IMP-141]] — planned, no epic dependency found
-- [[AI-IMP-142-input-primitive-registry|IMP-142]] — planned, no epic dependency found
 - [[AI-IMP-143-named-z-ladder|IMP-143]] — planned, no epic dependency found
+- [[AI-IMP-151-interaction-physics-beats|IMP-151]] — planned, no epic dependency found
+- [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 
 ---
 
@@ -121,7 +127,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4422 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4470 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1587 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1467 LOC)
@@ -129,9 +135,9 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (823 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (806 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (765 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
@@ -157,11 +163,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (538 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (537 LOC)
-- apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/nodes.ts (529 LOC)
-- apps/desktop/src/renderer/tags/TagPanel.svelte (526 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
+- apps/desktop/src/renderer/chrome/SearchPanel.svelte (522 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
+- apps/desktop/src/renderer/tags/TagPanel.svelte (517 LOC)
 - packages/persistence/src/handlers/pin.ts (514 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
@@ -190,7 +196,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (362 LOC)
-- apps/desktop/src/renderer/chrome/RestoreDialog.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (356 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
@@ -200,6 +205,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
+- apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
@@ -214,6 +220,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/navigation.spec.ts (310 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
+- RAG/spike-reports/tiptap-verdict.md (309 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
 - apps/desktop/e2e/charms.spec.ts (302 LOC)
 
@@ -221,7 +228,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>14 EPICs, 121 IMPs completed</summary>
+<summary>14 EPICs, 122 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

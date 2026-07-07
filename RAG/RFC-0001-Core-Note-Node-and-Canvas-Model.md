@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.55         | 7 July 2026      |
+| Accepted for Phase 1 | 0.56         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1559,6 +1559,19 @@ purged-for-good, dashed = other severed states.
 
 Wiki links do not choose a node or placement at authoring time.
 
+**The editor engine (rev 0.56, owner — the EPIC-018 gate falls).**
+The rich-text presentation builds on TIPTAP, chosen by spike
+evidence (RAG/spike-reports/tiptap-verdict.md): link/embed atoms
+serialize byte-exact, folding is decoration-only, editor-local
+undo isolation holds (§10.2), and the bundle is net smaller than
+the CodeMirror set it replaces. The accepted condition: TipTap
+NORMALIZES Markdown dialect (render-identical, not byte-identical)
+— so note bodies are canonicalized ONCE on first open in the new
+editor and the editor's dialect is frozen as the project's
+canonical Markdown flavor, with the spike's round-trip corpus as a
+permanent regression gate. Markdown remains canonical on disk; the
+§7.8 strip seam carries the metadata tail untouched.
+
 **The editor face (rev 0.55, design pass, ratified — the one
 typography carve-out).** Note TEXT renders in Maple Mono (bundled
 woff2 400/400i/700, OFL license alongside; never fetched at
@@ -1932,13 +1945,34 @@ AI-generated art never ships — this audience is artists.
 
 **Motion budgets (rev 0.55 — refines the fades-and-pulses rule).**
 CHROME keeps the strict rule: fades and single pulses only, one
-shared clock. WORLD content is allowed small ONE-SHOT physical
-beats — the note tear (~300ms), the first-placement bloom, eased
-stage growth, the camera chase — one beat per user act, never
-ambient, never looping. An owner audit of canvas pointer-down
-moments (pickup / set-down weight and similar micro-beats) is in
-flight and will extend this list; new beats route through the
-design queue and land here.
+shared clock, and chrome animates exactly ONE property — opacity.
+WORLD content is allowed small ONE-SHOT physical beats — one beat
+per user act, never ambient, never looping.
+
+**The interaction-physics ledger (rev 0.56, owner — The Two
+Materials + kit 1.1 are the design sources; supersedes the
+in-flight-audit note).** Six verbs cover all world motion: **lift ·
+settle · nudge · press · tear · glide.** Every canvas mouse-down
+maps to its beat, and the constants are the contract (~ marks
+provisional): grab → lift (shadow on, +1% scale, ~120ms) · release
+→ settle (one ease-out ~150ms, never a bounce) · import lands →
+settle + bloom (~240ms) · snap engage → nudge (last-px magnetic
+seat ~40ms) · lock → press (−1% into the desk; a grab on locked
+STRAINS ~2px sideways and never lifts, under the refusal cursor) ·
+note gestures → the tear family (cover ~200 · tear 300, confirmed ·
+tuck ~200 · pin-through ⇄ pull) · delete → lift AWAY (up + fade
+~180ms) · pan flick → glide (real friction, ≤300ms, no rubber
+band) · double-click a picture → dive (eased flight into the child
+board) · drag over a frame → members MAKE ROOM (the one allowed
+anticipatory motion). Scale rides ±1% and no further. **No beat, on
+purpose:** resize · rotate · crop · marquee · draw · pan-grab.
+**The metaphor may never lie:** delete lifts away because the
+trash keeps things whole — a crumple, shatter, or burn outside
+Empty Trash misrepresents the system and is forbidden even on the
+desk. When choosing a material: does the user OWN it (desk) or
+does the app provide it (terminal); should the state change be a
+visible event (desk) or a color/fill change (terminal); and would
+the physical story lie (then it is forbidden).
 
 **The shrink ladder (rev 0.55, design pass — one grammar for
 zoom).** World content shrinks honestly (never clamped); chrome
@@ -4420,3 +4454,17 @@ Accepted for the Phase 1 prototype:
   (§14.4). The void is designed at ~22%-toward-black oklab and is
   OFF on glass (§6.7). First-run copy is final-candidate (EPIC-019
   input). Tooltips have exactly five legal shapes (§8.2).
+
+- The interaction-physics ledger ratified (rev 0.56, owner; The Two
+  Materials + kit 1.1): six world-motion verbs (lift · settle ·
+  nudge · press · tear · glide), a beat for every canvas mouse-down
+  with named constants, a deliberate no-beat list, ±1% scale caps,
+  and the honest-metaphor rule — delete lifts away, never a crumple
+  (§8.2). Chrome animates exactly one property: opacity. The hand
+  rules restated by the design pass (Option-duplicate, snap bypass,
+  Shift precedence, cardinal magnetize + 15° steps, refusal cursor)
+  were already ratified at revs 0.12–0.21 and stand unchanged.
+  TipTap is the EPIC-018 editor engine (owner, on spike evidence):
+  dialect canonicalized once on load and frozen as the project's
+  canonical Markdown flavor; round-trip corpus becomes a regression
+  gate (§7.1).
