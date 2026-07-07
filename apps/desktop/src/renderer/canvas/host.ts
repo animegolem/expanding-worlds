@@ -1093,10 +1093,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       // where an openCanvas texture-release could interleave and the
       // resuming refresh re-acquired the old scene's textures (perf
       // memory-release regression).
+      const forCanvas = canvasId
       const [scene, frameTree] = await Promise.all([
         runQuery<CanvasScene | null>('getCanvasScene', { canvasId }),
         runQuery<{ roots: Parameters<typeof indexFrameTree>[0] }>('getFrameTree', { canvasId }),
       ])
+      // An openCanvas swap while this query was in flight makes the
+      // result STALE: applying it would re-acquire the old scene's
+      // just-released textures into the idle pool, which nothing purges
+      // again until the next swap (§12.2 leak — the perf memory-release
+      // flake). The swap's own refresh owns the new canvas; drop ours.
+      if (forCanvas !== canvasId) return
       if (!scene) {
         sync.clear()
         controller.setItems([])
