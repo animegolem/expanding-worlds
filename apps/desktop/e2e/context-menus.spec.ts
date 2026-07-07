@@ -110,7 +110,9 @@ test('item menu: ratified grammar + flip / z-order / delete one-undo round-trips
 
     // A shipped verb prints its shortcut in a mono chip.
     const flipChip = win.getByTestId('ctx-flip-h').locator('span').last()
-    await expect(flipChip).toHaveText('⇧H')
+    // Platform-aware: formatBinding prints mac glyphs on darwin and
+    // spelled modifiers elsewhere (the settings.spec Linux lesson).
+    await expect(flipChip).toHaveText(process.platform === 'darwin' ? '⇧H' : 'Shift+H')
     const chipFont = await flipChip.evaluate((el) => getComputedStyle(el).fontFamily)
     expect(chipFont.toLowerCase()).toContain('monospace')
 
