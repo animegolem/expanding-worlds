@@ -6,14 +6,23 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 4 | 0 |
-| Planned | 5 | 8 |
+| In Progress | 5 | 0 |
+| Planned | 4 | 8 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 15 | 143 |
 | **Total** | **25** | **157** |
 
 ## In Progress
+
+### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
+> RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
+
+**IMPs:**
+- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
+- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
+
+---
 
 ### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
 > RFC §16 requires portable export with lossless reimport, and §17–18
@@ -70,15 +79,6 @@
 ---
 
 ## Planned
-
-### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
-> RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
-
-**IMPs:**
-- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
-- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
-
----
 
 ### [[AI-EPIC-019-public-face|EPIC-019: Public face]]
 > The user base is deliberately NON-TECHNICAL (artists), but the

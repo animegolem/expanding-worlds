@@ -7,7 +7,7 @@ tags:
   - undo
 date_created: 2026-07-03
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
 ---
 
@@ -52,14 +52,14 @@ no automatic retention enabled by default.
 
 ### Functional Requirements
 
-- [ ] FR-1: Trash lifecycle with trashed_at and trashed_by_command_id per §9.1.
-- [ ] FR-2: Delete flows with impact summaries and aggregate preservation per §9.2–9.6.
-- [ ] FR-3: Bare-node auto-trash with Keep in Project per §9.2.
-- [ ] FR-4: Trash view with retention setting (default Never) and Empty Trash per §9.1/§9.7.
-- [ ] FR-5: Purge with undo invalidation and GC eligibility per §9.7.
-- [ ] FR-6: Mark-and-sweep GC and derivative eviction per §9.8.
-- [ ] FR-7: Structural undo/redo with cross-canvas navigation per §10.2.
-- [ ] FR-8: Startup reconciliation of interrupted imports and orphans per §9.8/§11.4.
+- [x] FR-1: Trash lifecycle with trashed_at and trashed_by_command_id per §9.1. *(audit 2026-07-07: shipped — queries-lifecycle.ts + migrations)*
+- [x] FR-2: Delete flows with impact summaries and aggregate preservation per §9.2–9.6. *(audit: shipped across EPIC-016 menus + lifecycle handlers)*
+- [x] FR-3: Bare-node auto-trash with Keep in Project per §9.2. *(audit: shipped — gestures-ui/status/Toasts)*
+- [x] FR-4: Trash view with retention setting (default Never) and Empty Trash per §9.1/§9.7. *(audit: shipped — TrashView + settings, AI-IMP-102)*
+- [x] FR-5: Purge with undo invalidation and GC eligibility per §9.7. *(audit: satisfied by LAZY fail-safe invalidation — FKs ON, handlers refuse inverses onto missing records, stack drops entry with stale toast (unit-tested); live path exercised by §17 item 23 at EPIC-008 sign-off)*
+- [x] FR-6: Mark-and-sweep GC and derivative eviction per §9.8. *(audit: shipped — gc.ts with derivative-job + export-lease roots, tested)*
+- [ ] FR-7: Structural undo/redo per §10.2. *(audit: core shipped, AI-IMP-114; the cross-canvas fence RATIFIED into §10.2 at rev 0.58; REMAINS OPEN on the capture-breadth decision — the shipped eight-command gesture set vs §10.2's all-durable-commands reading, see DESIGN-QUEUE. The epic closes when breadth is decided and executed or ratified.)*
+- [x] FR-8: Startup reconciliation of interrupted imports and orphans per §9.8/§11.4. *(audit: shipped — recovery.ts reconcilePendingImports)*
 
 ### Non-Functional Requirements
 
