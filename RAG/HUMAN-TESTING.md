@@ -28,6 +28,19 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Frames** (AI-IMP-127, 2026-07-07): the Dock has a frame tool —
+  draw a region (Shift = square), drop images inside, drag the frame:
+  everything travels together, one Mod+Z per gesture. Feel calls:
+  (1) while dragging an item over a frame, the frame focuses and the
+  rest of the board dims — right affordance, right strength? (2) the
+  region chrome is placeholder (letter item 14) — is it furniture
+  under your art or does it shout? (3) shrink a frame smaller than a
+  member: the member stays put and stays IN (geometry never edits
+  membership) — does that read as correct or as a bug? KNOWN EDGE:
+  with a frame selected, its charm bar can overlay nearby members and
+  eat a drag that starts on one — Escape first. Flag how much that
+  bites; the fix is a charm-surface ticket.
+
 - [ ] **Arrange + normalize** (AI-IMP-128, 2026-07-06): select a
   messy handful of mixed-size images — the Dock's selection segment
   now carries arrange (default reading order · name · import order ·

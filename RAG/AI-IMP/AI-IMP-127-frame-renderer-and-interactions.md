@@ -6,12 +6,12 @@ tags:
   - frames
   - canvas
   - renderer
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-126]
 parent_epic: [[AI-EPIC-017-frames]]
 confidence_score: 0.65
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -105,7 +105,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden. (See Issues: perf.spec memory-release fails
       pre-existing on this hardware, unrelated to frames.)
-- [ ] HUMAN-TESTING entry appended at merge by the lead (dim feel,
+- [x] HUMAN-TESTING entry appended at merge by the lead (dim feel,
       region legibility both themes, carry weight).
 
 ### Acceptance Criteria
