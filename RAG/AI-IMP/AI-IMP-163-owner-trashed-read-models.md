@@ -5,12 +5,12 @@ tags:
   - Implementation
   - persistence
   - lifecycle
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -70,7 +70,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] getCanvasScene behavior unchanged (its test still green).
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -81,6 +81,12 @@ and canvas contents all stop surfacing that board's content, and
 restore brings every projection back.
 
 ### Issues Encountered
+
+Lead addendum at merge: the agent's two judgment calls both ruled
+correct — outline counts joined the sweep (same pattern/class), and
+its flagged ADJACENT leak (search canvasText hits) was closed in the
+merge window with a mirrored regression test rather than deferred:
+one line, exactly the class the finding named. Gates: 181/181.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

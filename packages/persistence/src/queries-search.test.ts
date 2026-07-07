@@ -389,4 +389,23 @@ describe('background-asset hits follow owner-trashed boards (§9.6, AI-IMP-163)'
     committed('RestoreRecord', { kind: 'node', id: owner })
     expect(canvasIds()).toEqual([boardCanvas])
   })
+
+  it('omits canvas-text hits on an owner-trashed board; restore revives them', () => {
+    // The adjacent leak the AI-IMP-163 sweep flagged: canvasText
+    // joined canvas.active but never the owner (same §9.6 class).
+    const owner = createNode()
+    const boardCanvas = createCanvas(owner)
+    committed('CreateDecoration', {
+      decorationId: uuidv7(),
+      canvasId: boardCanvas,
+      kind: 'text',
+      data: { text: 'signal lantern' },
+    })
+    const hits = () => search('lantern').canvasText.map((h) => h.canvasId)
+    expect(hits()).toEqual([boardCanvas])
+    committed('TrashNode', { nodeId: owner })
+    expect(hits()).toEqual([])
+    committed('RestoreRecord', { kind: 'node', id: owner })
+    expect(hits()).toEqual([boardCanvas])
+  })
 })

@@ -467,3 +467,11 @@ Charm bar › Crop on a placed image:
   semantics — displayed aspect changes). Does that surprise you?
 - Mod+Z after a crop restores the full display; the file on disk
   never changes.
+
+## AI-IMP-163 — owner-trashed boards stop leaking (2026-07-07)
+
+Trash a node that OWNS a board full of content, then check the
+board's ghosts are really gone: search (notes/tags/canvas text),
+tag panel locations, note Uses lists, the gallery, outline counts.
+Restore the node — everything returns. Before this fix those
+surfaces showed content the scene refused to open.

@@ -144,6 +144,7 @@ export function registerSearchQueries(registry: QueryRegistry): void {
        FROM canvas_text_fts
        JOIN decoration d ON d.rowid = canvas_text_fts.rowid
        JOIN canvas c ON c.id = d.canvas_id AND c.lifecycle_state = 'active'
+       ${usableCanvasOwnerJoin('c', 'cown')}
        WHERE canvas_text_fts MATCH ?
          AND d.project_id = ? AND d.lifecycle_state = 'active'
        ORDER BY rank`,

@@ -10,7 +10,7 @@
 | Planned | 4 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 15 | 154 |
+| Completed | 15 | 155 |
 | **Total** | **25** | **162** |
 
 ## In Progress
@@ -109,7 +109,6 @@
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-161-charm-bar-adorned-bounds|IMP-161]] — planned, no epic dependency found
-- [[AI-IMP-163-owner-trashed-read-models|IMP-163]] — planned, no epic dependency found
 
 ---
 
@@ -132,10 +131,10 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/NotePanel.svelte (1753 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1590 LOC)
 - apps/desktop/src/main/index.ts (1054 LOC)
+- packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (951 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (922 LOC)
-- packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/e2e/notes.spec.ts (902 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (881 LOC)
@@ -143,8 +142,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (781 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
+- packages/persistence/src/queries-structure.ts (773 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
-- packages/persistence/src/queries-structure.ts (742 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (711 LOC)
@@ -181,9 +180,10 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
+- packages/persistence/src/queries-notes.test.ts (478 LOC)
+- RAG/HUMAN-TESTING.md (477 LOC)
 - packages/persistence/src/handlers/frames.test.ts (477 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
-- RAG/HUMAN-TESTING.md (469 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
@@ -193,16 +193,16 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/theme.css (430 LOC)
 - apps/desktop/e2e/shell.spec.ts (426 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
-- packages/persistence/src/queries-notes.test.ts (421 LOC)
+- packages/persistence/src/queries-search.test.ts (411 LOC)
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (372 LOC)
-- packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (362 LOC)
+- packages/persistence/src/queries-gallery.test.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (360 LOC)
-- packages/persistence/src/queries-notes.ts (356 LOC)
+- packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
@@ -212,7 +212,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
-- packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
 - apps/desktop/src/renderer/menus/inventory.test.ts (337 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
