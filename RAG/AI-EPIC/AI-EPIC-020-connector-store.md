@@ -25,6 +25,17 @@ Revs 0.33–0.44 shaped six connector citizens (booru drops,
 Pinterest, external-library browse, the page picker, reverse image
 search, AI text verbs) plus the link router and the AI-connectors
 gate — all musings with no load-bearing registry to plug into.
+
+> Tester validation (2026-07-07, Discord): comparing against
+> Milanote, the first tester named video/file embeds as "the only
+> thing they have that I like that I'm not sure we have," and
+> accepted the owner's model — canvas never renders video; poster
+> still + play affordance; activation opens a floating window over
+> a darkened board hosting the HTML5 player (local files) or the
+> web view (YouTube/webpage); click-out returns. Local-file-first
+> is fine by him. This matches RFC §4.7's shaped video kind (rev
+> 0.47) and the web-reference kind verbatim, and raises this
+> epic's demand signal.
 This epic builds: the connector MANIFEST shape (id, version, URL
 patterns for the router, declared capabilities incl. the AI flag,
 network endpoints); the ATTACH/DETACH surface in settings (§11.5 —
