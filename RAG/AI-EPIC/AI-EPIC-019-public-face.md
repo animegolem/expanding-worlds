@@ -9,6 +9,7 @@ date_created: 2026-07-06
 date_completed:
 kanban_status: backlog
 AI_IMP_spawned:
+  - "[[AI-IMP-145-first-run-guide]]"
 ---
 
 # AI-EPIC-019-public-face

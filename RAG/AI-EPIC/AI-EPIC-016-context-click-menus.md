@@ -7,8 +7,10 @@ tags:
   - polish
 date_created: 2026-07-06
 date_completed:
-kanban_status: backlog
+kanban_status: in-progress
 AI_IMP_spawned:
+  - "[[AI-IMP-136-context-menu-core]]"
+  - "[[AI-IMP-137-menus-second-wave-and-about]]"
 ---
 
 # AI-EPIC-016-context-click-menus
@@ -93,7 +95,16 @@ menu).
 
 ### Functional Requirements
 
-- [ ] To be cut after the design discussion.
+Activated 2026-07-07 at rev 0.55 — the grammar and per-kind verb
+inventories are ratified (§8.4; Menus Document is the design
+source). The §8.8 occlusion audit above predates AI-IMP-101/143;
+the z-ladder is now AI-IMP-143's scope, not this epic's first IMP.
+
+- [ ] FR-1: The context-menu surface + item and board inventories
+      per the ratified grammar; keyboard model; registry-printed
+      shortcuts. (AI-IMP-136)
+- [ ] FR-2: Decoration, multi-select, and frame inventories;
+      Help/About final copy; trash archive-tone pass. (AI-IMP-137)
 
 ### Non-Functional Requirements
 
@@ -101,4 +112,5 @@ menu).
 
 ## Implementation Breakdown
 
-IMPs to be cut when this epic activates.
+136 (surface + grammar module, interface-defining) → 137 (the
+remaining inventories + chrome tone riders).

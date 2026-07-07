@@ -9,6 +9,7 @@ date_created: 2026-07-06
 date_completed:
 kanban_status: backlog
 AI_IMP_spawned:
+  - "[[AI-IMP-144-tiptap-prototype-verdict]]"
 ---
 
 # AI-EPIC-018-rich-text-notes

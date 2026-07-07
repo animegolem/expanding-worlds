@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 0 |
-| Planned | 6 | 0 |
+| In Progress | 4 | 0 |
+| Planned | 5 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 14 | 126 |
-| **Total** | **22** | **127** |
+| **Total** | **23** | **143** |
 
 ## In Progress
 
@@ -23,27 +23,6 @@
 - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
 - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — completed
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
-
----
-
-### [[AI-EPIC-022-fleet-friction|EPIC-022: Fleet friction]]
-> (1) Electron's postinstall silently ships a husk `dist/` in every
-
-**IMPs:**
-- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
-- [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
-- [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — completed
-
----
-
-## Planned
-
-### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
-> RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
-
-**IMPs:**
-- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
-- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
 
 ---
 
@@ -60,16 +39,54 @@
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — completed
 - [[AI-IMP-117-keymap-registry|IMP-117]] Keymap registry — completed
+- [[AI-IMP-136-context-menu-core|IMP-136]] Context menu core — planned
+- [[AI-IMP-137-menus-second-wave-and-about|IMP-137]] Menus second wave and about — planned
+
+---
+
+### [[AI-EPIC-022-fleet-friction|EPIC-022: Fleet friction]]
+> (1) Electron's postinstall silently ships a husk `dist/` in every
+
+**IMPs:**
+- [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
+- [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
+- [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — completed
+
+---
+
+### [[AI-EPIC-023-paper-note-lifecycle|EPIC-023: Paper note lifecycle]]
+> The shipped note surface has two presentations (tethered panel with
+
+**IMPs:**
+- [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — planned
+- [[AI-IMP-135-lifecycle-transitions-and-beats|IMP-135]] Lifecycle transitions and beats — planned
+
+---
+
+## Planned
+
+### [[AI-EPIC-007-lifecycle-trash-undo|EPIC-007: Lifecycle trash undo]]
+> RFC §9 and §10.2 define recoverable deletion, restore, purge, garbage
+
+**IMPs:**
+- [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
+- [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
 
 ---
 
 ### [[AI-EPIC-018-rich-text-notes|EPIC-018: Rich text notes]]
 > Notes are raw Markdown in CodeMirror — right for Obsidian compat,
 
+**IMPs:**
+- [[AI-IMP-144-tiptap-prototype-verdict|IMP-144]] Tiptap prototype verdict — planned
+
 ---
 
 ### [[AI-EPIC-019-public-face|EPIC-019: Public face]]
 > The user base is deliberately NON-TECHNICAL (artists), but the
+
+**IMPs:**
+- [[AI-IMP-145-first-run-guide|IMP-145]] First run guide — planned
 
 ---
 
@@ -83,6 +100,22 @@
 
 ---
 
+## Anomalies
+
+### Orphaned IMPs (no epic dependency)
+- [[AI-IMP-130-design-tokens-and-materials-landing|IMP-130]] — planned, no epic dependency found
+- [[AI-IMP-131-maple-mono-editor-face|IMP-131]] — planned, no epic dependency found
+- [[AI-IMP-132-object-icons-and-the-atlas|IMP-132]] — planned, no epic dependency found
+- [[AI-IMP-133-shrink-ladder-constants|IMP-133]] — planned, no epic dependency found
+- [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
+- [[AI-IMP-139-metadata-card-v2|IMP-139]] — planned, no epic dependency found
+- [[AI-IMP-140-image-body-treatment|IMP-140]] — planned, no epic dependency found
+- [[AI-IMP-141-chrome-cosmetic-sweep|IMP-141]] — planned, no epic dependency found
+- [[AI-IMP-142-input-primitive-registry|IMP-142]] — planned, no epic dependency found
+- [[AI-IMP-143-named-z-ladder|IMP-143]] — planned, no epic dependency found
+
+---
+
 ## Size Watch
 
 Generated from tracked files; binary assets excluded.
@@ -90,7 +123,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4210 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4422 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1587 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1451 LOC)
@@ -143,6 +176,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/protocol/src/index.ts (452 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
+- RAG/design/Design-Team-Letter-1.md (435 LOC)
 - packages/persistence/src/handlers/notes.ts (434 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
