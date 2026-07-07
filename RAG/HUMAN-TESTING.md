@@ -328,3 +328,13 @@ record — history lives in the tickets.
 - [ ] **Gallery cell sizing and feel** (AI-IMP-077, carried): grid
   density, thumbnail crop behavior, and scroll feel with real art
   at volume.
+- [ ] **TipTap note editor** (AI-IMP-146/147, 2026-07-07): the note
+  editor engine changed under the hood. Type a while — does the feel
+  match or beat the old editor (cursor, selection, IME, scroll)?
+  Wiki links: bound/unresolved render live as you type, broken shows
+  red strikethrough, Mod+Click still follows. Type `[[` and a few
+  letters — does the suggestion popup feel right (arrow keys, Enter,
+  click)? Open your OLDEST notes: they may normalize once (bullets
+  `*`→`-`, `__bold__`→`**bold**`) — the text must read identically;
+  anything that LOOKS different is a bug. Mod+Z inside the editor
+  must stay text-only, never the board.

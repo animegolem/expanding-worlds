@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 5 | 0 |
-| Planned | 4 | 8 |
+| Planned | 4 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 136 |
+| Completed | 14 | 138 |
 | **Total** | **23** | **151** |
 
 ## In Progress
@@ -49,8 +49,8 @@
 
 **IMPs:**
 - [[AI-IMP-144-tiptap-prototype-verdict|IMP-144]] Tiptap prototype verdict — completed
-- [[AI-IMP-146-tiptap-editor-controller|IMP-146]] Tiptap editor controller — planned
-- [[AI-IMP-147-link-and-embed-atoms|IMP-147]] Link and embed atoms — planned
+- [[AI-IMP-146-tiptap-editor-controller|IMP-146]] Tiptap editor controller — completed
+- [[AI-IMP-147-link-and-embed-atoms|IMP-147]] Link and embed atoms — completed
 - [[AI-IMP-148-heading-folding|IMP-148]] Heading folding — planned
 - [[AI-IMP-149-editor-presentation-and-format-bar|IMP-149]] Editor presentation and format bar — planned
 - [[AI-IMP-150-canonical-dialect-freeze|IMP-150]] Canonical dialect freeze — planned
@@ -123,17 +123,17 @@ Generated from tracked files; binary assets excluded.
 
 ### > 600 LOC
 
-- pnpm-lock.yaml (5048 LOC)
+- pnpm-lock.yaml (5863 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4470 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1578 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1571 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1492 LOC)
 - apps/desktop/src/main/index.ts (983 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (846 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (806 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (812 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (764 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
@@ -189,6 +189,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/shell.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/theme.css (381 LOC)
+- apps/desktop/e2e/context-menus.spec.ts (377 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (372 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
@@ -199,22 +200,21 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
-- apps/desktop/e2e/context-menus.spec.ts (351 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
+- RAG/HUMAN-TESTING.md (340 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
+- apps/desktop/src/renderer/note/note-editor.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
-- RAG/HUMAN-TESTING.md (330 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
-- apps/desktop/src/renderer/note/note-editor.ts (320 LOC)
 - apps/desktop/src/renderer/menus/inventory.test.ts (318 LOC)
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
@@ -230,7 +230,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>14 EPICs, 124 IMPs completed</summary>
+<summary>14 EPICs, 126 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
