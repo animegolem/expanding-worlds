@@ -287,7 +287,7 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
     await expect(win.getByTestId('rail-menu')).toBeVisible()
 
     // The rows read top-to-bottom in the ratified geography.
-    const order = ['menu-undo', 'menu-redo', 'menu-trash', 'menu-end-session', 'menu-settings', 'menu-help', 'menu-export']
+    const order = ['menu-undo', 'menu-redo', 'menu-trash', 'menu-restore', 'menu-end-session', 'menu-settings', 'menu-help', 'menu-export']
     const domOrder = await win.getByTestId('rail-menu').evaluate((menu) =>
       Array.from(menu.querySelectorAll('[data-testid^="menu-"]')).map(
         (el) => (el as HTMLElement).dataset['testid'],

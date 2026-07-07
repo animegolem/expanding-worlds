@@ -295,6 +295,29 @@ export interface SnapshotStatus {
   sizeBytes: number | null
 }
 
+/** §11.4 restore-from-backup (AI-IMP-121): one row of the dated
+ * snapshot picker — the commit's short SHA (the restore handle), its
+ * committer ISO timestamp, and the generated message. Produced by
+ * `git log` over the project's snapshot history in the main process,
+ * so this is an IPC-shared shape, not a `ProjectRequest` variant. */
+export interface SnapshotEntry {
+  /** Full commit SHA — the restore handle. */
+  sha: string
+  /** Committer date, ISO-8601. */
+  isoDate: string
+  /** The generated snapshot message (subject line). */
+  message: string
+}
+
+/** §11.4 restore-from-backup (AI-IMP-121): the outcome of materializing
+ * a chosen snapshot into a NEW sibling directory — never in-place. On
+ * success `dir` is the absolute path of the created project directory
+ * (offered to Open Restored Project); on failure a typed code/message
+ * surfaces in the picker. Restore never touches the source project. */
+export type RestoreResult =
+  | { ok: true; dir: string }
+  | { ok: false; code: string; message: string }
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest

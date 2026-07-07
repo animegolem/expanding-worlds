@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import HelpAboutDialog from './HelpAboutDialog.svelte'
+  import RestoreDialog from './RestoreDialog.svelte'
   import { openTakeover } from './takeover'
   import { tooltip } from './tooltip'
   import { canRedo, canUndo, onUndoChanged, redo, undo } from '../undo/undo-store'
@@ -34,11 +35,58 @@
   )
 
   let helpOpen = $state(false)
+  let restoreOpen = $state(false)
+
+  // §11.4 restore (AI-IMP-121): the row is live only when there is a
+  // backup to restore FROM — snapshots turned on AND at least one commit
+  // in history. Otherwise it stays visible but disabled, naming what
+  // would enable it (§8.2 disabled-rows convention: visible, named,
+  // explained). Resolved once when the menu opens.
+  let restoreEnabled = $state(false)
+  let restoreReason = $state('Restore from backup — checking for snapshots…')
+
+  $effect(() => {
+    let live = true
+    void (async () => {
+      try {
+        const settings = await window.ew.project.query('getSettings')
+        const mode =
+          settings.ok && typeof settings.result === 'object' && settings.result !== null
+            ? (settings.result as Record<string, unknown>)['snapshot_mode']
+            : 'off'
+        if (mode !== 'commit' && mode !== 'commit-push') {
+          if (live) {
+            restoreEnabled = false
+            restoreReason =
+              'Restore from backup — turn on Session snapshots in Settings to start recording backups'
+          }
+          return
+        }
+        const list = await window.ew.snapshot.list()
+        if (!live) return
+        if (list.length === 0) {
+          restoreEnabled = false
+          restoreReason = 'Restore from backup — no snapshots have been recorded yet'
+        } else {
+          restoreEnabled = true
+          restoreReason = 'Restore a snapshot as a new project — your current project is untouched'
+        }
+      } catch {
+        if (live) {
+          restoreEnabled = false
+          restoreReason = 'Restore from backup — snapshot history is unavailable'
+        }
+      }
+    })()
+    return () => {
+      live = false
+    }
+  })
 
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
-      // Help/About owns Esc while it is open (capture-phase handler).
-      if (event.key === 'Escape' && !helpOpen) onclose()
+      // Help/About and Restore own Esc while open (capture-phase handlers).
+      if (event.key === 'Escape' && !helpOpen && !restoreOpen) onclose()
     }
     window.addEventListener('keydown', onKeydown)
     return () => window.removeEventListener('keydown', onKeydown)
@@ -102,6 +150,20 @@
   <button
     type="button"
     role="menuitem"
+    class:deferred={!restoreEnabled}
+    aria-disabled={!restoreEnabled}
+    data-testid="menu-restore"
+    use:tooltip={{ name: restoreReason }}
+    onclick={() => {
+      if (!restoreEnabled) return
+      restoreOpen = true
+    }}
+  >
+    <span class="label">Restore from backup…</span>
+  </button>
+  <button
+    type="button"
+    role="menuitem"
     class="deferred"
     aria-disabled="true"
     data-testid="menu-end-session"
@@ -148,6 +210,10 @@
 
 {#if helpOpen}
   <HelpAboutDialog onclose={() => (helpOpen = false)} />
+{/if}
+
+{#if restoreOpen}
+  <RestoreDialog onclose={() => (restoreOpen = false)} />
 {/if}
 
 <style>
