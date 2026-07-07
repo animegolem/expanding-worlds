@@ -5,12 +5,12 @@ tags:
   - Implementation
   - tags
   - chrome
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-016-context-click-menus]]
 confidence_score: 0.85
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 # AI-IMP-108-tag-add-surface
@@ -154,3 +154,10 @@ so phantom/canvas-phantom drafts never show the field.
 - `pnpm lint`: clean.
 - `npx playwright test panels.spec.ts notes.spec.ts tags.spec.ts`:
   27 passed (3 new tags cases + the updated panels assertion).
+
+- **Closed retroactively by the lead (2026-07-06 review):** the
+  implementation landed in commit 8103b17 with the checklist fully
+  checked, but the frontmatter was never flipped — surfaced by an
+  agent's kanban sweep, validated against the passing tags.spec e2e
+  (board `#` popover, note-panel add-field, phantom exclusion) before
+  closing.

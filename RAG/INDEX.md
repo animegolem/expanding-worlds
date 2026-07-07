@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 3 | 0 |
-| Planned | 6 | 8 |
+| Planned | 6 | 7 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 118 |
+| Completed | 13 | 119 |
 | **Total** | **22** | **127** |
 
 ## In Progress
@@ -66,7 +66,7 @@
 - [[AI-IMP-105-tag-lifecycle-commands|IMP-105]] Tag lifecycle commands — completed
 - [[AI-IMP-106-small-state-batch|IMP-106]] Small state batch — completed
 - [[AI-IMP-107-design-session-one|IMP-107]] Design session one — completed
-- [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — planned
+- [[AI-IMP-108-tag-add-surface|IMP-108]] Tag add surface — completed
 - [[AI-IMP-109-appearance-switcher|IMP-109]] Appearance switcher — completed
 - [[AI-IMP-110-menu-shell|IMP-110]] Menu shell — completed
 - [[AI-IMP-116-tethered-panel-world-scale|IMP-116]] Tethered panel world scale — completed
@@ -105,9 +105,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1114 LOC)
+- apps/desktop/src/main/index.ts (931 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
-- apps/desktop/src/main/index.ts (891 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
@@ -117,13 +117,13 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (639 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (628 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 
 ### > 300 LOC
 
 - apps/desktop/src/renderer/note/panels.ts (600 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (591 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
@@ -141,11 +141,11 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/placements.ts (508 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (501 LOC)
+- apps/desktop/src/utility/index.ts (499 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (490 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (474 LOC)
 - packages/commands/src/payloads/structure.ts (471 LOC)
-- apps/desktop/src/utility/index.ts (471 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (455 LOC)
@@ -162,6 +162,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
+- packages/protocol/src/index.ts (366 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (362 LOC)
 - packages/persistence/src/queries-notes.ts (356 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
@@ -169,7 +170,6 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
-- packages/protocol/src/index.ts (334 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
@@ -189,7 +189,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>13 EPICs, 113 IMPs completed</summary>
+<summary>13 EPICs, 114 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
