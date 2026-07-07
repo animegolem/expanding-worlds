@@ -162,6 +162,19 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   await expect(win.getByTestId('title-strip')).toHaveCount(0)
   await revealTitleStrip(win)
 
+  // §8.2 frameless shell: the revealed strip IS the window drag handle.
+  await expect(win.getByTestId('title-strip')).toHaveAttribute('data-drag-region', 'drag')
+  await expect
+    .poll(() =>
+      win.evaluate(
+        () =>
+          getComputedStyle(
+            document.querySelector('[data-testid="title-strip"]')!,
+          ).getPropertyValue('-webkit-app-region'),
+      ),
+    )
+    .toBe('drag')
+
   // Engagement cadence: one shared clock fades the WHOLE layer; the
   // canvas never reflows. Driven via the deterministic test event —
   // hidden windows have no OS cursor to enter or leave.

@@ -22,6 +22,15 @@
     ui,
   }: { handle: CanvasHostHandle; tooling: BoardTooling; ui: DecorationsUi } = $props()
 
+  // §8.2 frameless shell: the strip's dress depends on where the OS
+  // window controls sit. macOS gets in-board traffic lights (pad the
+  // strip's left edge to clear them); Windows gets the top-right
+  // titleBarOverlay; Linux has neither, so the strip draws its own
+  // min/max/close wired over window:* IPC.
+  const platform = window.ew?.window?.platform ?? 'darwin'
+  const isMac = platform === 'darwin'
+  const isLinux = platform !== 'darwin' && platform !== 'win32'
+
   let revealed = $state(false)
   let boardMenuOpen = $state(false)
   // §11.5 title-strip mode: hover-reveal (default) · always · never.
@@ -99,9 +108,24 @@
 {/if}
 
 {#if stripVisible}
-  <div class="title-strip" data-testid="title-strip" role="toolbar" tabindex="-1" onpointerleave={hide}>
+  <!-- §8.2 "the shell eats the window": the strip root IS the window
+       drag handle (-webkit-app-region: drag). Every interactive child
+       carves itself back out with no-drag, or the OS would swallow the
+       click as a window move. data-drag-region mirrors the CSS so e2e
+       can assert the handle without depending on -webkit-app-region
+       surfacing through getComputedStyle. -->
+  <div
+    class="title-strip"
+    class:mac={isMac}
+    data-testid="title-strip"
+    data-drag-region="drag"
+    role="toolbar"
+    tabindex="-1"
+    onpointerleave={hide}
+  >
     <button
       type="button"
+      class="no-drag"
       data-testid="board-menu-button"
       class:active={boardMenuOpen}
       onclick={() => (boardMenuOpen = !boardMenuOpen)}
@@ -109,6 +133,33 @@
     >
       Board
     </button>
+    {#if isLinux}
+      <!-- §8.2: Linux frame:false has no OS controls; draw them here,
+           pushed to the right, wired over IPC. Untested off macOS. -->
+      <div class="window-controls no-drag" data-testid="window-controls">
+        <button
+          type="button"
+          class="no-drag"
+          data-testid="window-minimize"
+          aria-label="Minimize"
+          onclick={() => void window.ew.window.minimize()}>–</button
+        >
+        <button
+          type="button"
+          class="no-drag"
+          data-testid="window-maximize"
+          aria-label="Maximize"
+          onclick={() => void window.ew.window.toggleMaximize()}>▢</button
+        >
+        <button
+          type="button"
+          class="no-drag close"
+          data-testid="window-close"
+          aria-label="Close"
+          onclick={() => void window.ew.window.close()}>✕</button
+        >
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -225,7 +276,9 @@
   }
 
   /* The strip and its sheets are a temporary top-edge layer and must
-     paint over the path bar (which occupies the same corner). */
+     paint over the path bar (which occupies the same corner). §8.2:
+     a smoky near-black gradient (never a bar) that dissolves downward
+     into the board, and the window drag handle. */
   .title-strip {
     position: absolute;
     top: 0;
@@ -235,12 +288,47 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.3rem 0.6rem;
-    background: var(--ew-surface);
-    border-bottom: 1px solid var(--ew-border);
+    padding: 0.32rem 0.6rem 0.7rem;
+    background: linear-gradient(
+      to bottom,
+      var(--ew-strip-scrim) 0%,
+      var(--ew-strip-scrim) 55%,
+      var(--ew-strip-scrim-fade) 100%
+    );
     font-size: 0.75rem;
-    color: var(--ew-text);
+    color: var(--ew-strip-text);
     pointer-events: auto;
+    -webkit-app-region: drag;
+  }
+
+  /* macOS traffic lights sit in-board over the strip's left edge
+     (trafficLightPosition x:14); clear them so strip content never
+     collides with or hides behind the lights. */
+  .title-strip.mac {
+    padding-left: 5rem;
+  }
+
+  /* Every interactive child must opt back out of the drag region, or
+     the OS eats the click as a window move. */
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  .window-controls {
+    margin-left: auto;
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .window-controls button {
+    min-width: 1.5rem;
+    line-height: 1;
+  }
+
+  .window-controls .close:hover {
+    background: var(--ew-danger);
+    border-color: var(--ew-danger);
+    color: var(--ew-on-accent);
   }
 
   .board-menu {

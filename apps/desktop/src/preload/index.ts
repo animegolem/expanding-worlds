@@ -64,10 +64,21 @@ const api = {
       ipcRenderer.invoke('test:snapshot', trigger) as Promise<boolean>,
   },
   window: {
+    /** §8.2 frameless shell: the renderer draws Linux window controls
+     * and pads the strip to clear macOS traffic lights, so it needs the
+     * host platform. 'darwin' | 'win32' | 'linux' | … */
+    platform: process.platform,
     setVibrancy: (enabled: boolean): Promise<boolean> =>
       ipcRenderer.invoke('window:set-vibrancy', enabled) as Promise<boolean>,
     setOpacity: (value: number): Promise<boolean> =>
       ipcRenderer.invoke('window:set-opacity', value) as Promise<boolean>,
+    /** §8.2 Linux drawn window controls (no-op'd by the main handlers on
+     * platforms with native controls, but only wired into the strip on
+     * Linux). */
+    minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize') as Promise<void>,
+    toggleMaximize: (): Promise<void> =>
+      ipcRenderer.invoke('window:toggle-maximize') as Promise<void>,
+    close: (): Promise<void> => ipcRenderer.invoke('window:close') as Promise<void>,
   },
   /** §11.5 settings, both tiers (AI-IMP-074). App-tier lives with
    * main (app-settings.json); project-tier writes go through the
