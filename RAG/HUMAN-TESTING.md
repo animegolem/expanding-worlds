@@ -28,6 +28,26 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **The designed void** (AI-IMP-130, 2026-07-07): the void
+  around the lit stage moved from the dark engineering placeholder
+  to the design value — notably SUBTLER (~22% toward black, oklab).
+  Look at a content board in dark AND light themes plus a flat
+  canvas color: does the lit/unlit boundary still read, or is it
+  too quiet now? On GLASS the void is gone entirely (the desktop is
+  the stage) — flip to glass and confirm that feels right, not
+  broken. Constant stays tunable if the subtle mix loses the plot.
+
+- [ ] **Metadata card v2** (AI-IMP-139, 2026-07-07): open a note on
+  a multi-board node — the card now reads as SYSTEM (mono seam,
+  "kept fresh by the app — edits here don't stick"). Gut checks:
+  (1) does it read as the app's furniture vs your prose at a
+  glance? (2) placements are a foldable outline (top level open,
+  deeper folded) with ⌖ fly chips — scannable on your biggest
+  board tree? KNOWN LIMIT: with several sibling top-level boards
+  the fold can group a deep row under the wrong parent (read model
+  has depth, not parentage) — if you hit it in practice, say so
+  and the read-model field gets a ticket.
+
 - [ ] **The drop moment** (AI-IMP-129, 2026-07-07): THE Pinterest
   test — drag 5+ images from Finder at once. The ask should read
   instantly ("N images dropped — how should they land?" · Keep
