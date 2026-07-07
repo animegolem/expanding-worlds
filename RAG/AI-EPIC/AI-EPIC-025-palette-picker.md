@@ -89,8 +89,16 @@ before finalizing the affordance.
       grid/strip, legible across the shrink ladder (consumes
       EW_FURNITURE_MIN_PX / page-floor semantics).
 - [ ] FR-3: Picker chrome on the dock: wells (adjustable count),
-      color control, eyedropper (EyeDropper API), Save-as-node,
-      load-from-placed-palette.
+      color control, eyedropper (EyeDropper API), Save-as-node.
+      The picker always has an ACTIVE palette (owner-ratified
+      2026-07-07): opened from a placed palette, that node is the
+      target and every pick drops in additively; opened fresh from
+      the dock, the target is a new unsaved palette until Save
+      flushes it to the canvas.
+- [ ] FR-3b: Placed-palette controls (owner-ratified 2026-07-07),
+      charm-style like note/frame hints: an export/open-out charm
+      (FR-4's trio) and an edit-in-picker charm that loads the
+      palette as the picker's active target.
 - [ ] FR-4: .ase export (vendored encoder) + "Open in…" charm:
       configured app / OS default / reveal; ATTRIBUTIONS entry for
       vendored code.
