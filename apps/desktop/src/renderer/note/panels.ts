@@ -500,9 +500,28 @@ async function revealNote(detail: {
 
 export function attachPanels(handle: CanvasHostHandle): () => void {
   host = handle
-  void createNoteProjectPort().then(({ port }) => (storePort = port))
+  // The port is created async; capture its dispose so teardown
+  // unsubscribes the project-changed listener even if attachPanels
+  // detaches before/after the promise settles (AI-IMP-123). A
+  // detach that lands first flags disposal so the late port is torn
+  // down on arrival rather than leaking past the panel system.
+  let portDispose: (() => void) | null = null
+  let detached = false
+  void createNoteProjectPort().then(({ port, dispose }) => {
+    if (detached) {
+      dispose()
+      return
+    }
+    storePort = port
+    portDispose = dispose
+  })
 
   const disposers = [
+    () => {
+      detached = true
+      portDispose?.()
+      portDispose = null
+    },
     onOpenNote((noteId, anchor) => openNotePanel(noteId, anchor)),
     onOpenPhantom((title) => openPhantomPanel(title)),
     onRevealNote((detail) => void revealNote(detail)),

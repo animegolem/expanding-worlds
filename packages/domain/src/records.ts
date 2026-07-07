@@ -38,7 +38,7 @@ export interface NoteRecord extends LifecycleFields, TimestampFields {
   body: string
 }
 
-export type AppearanceKind = 'dot' | 'icon' | 'image'
+export type AppearanceKind = 'dot' | 'icon' | 'image' | 'card'
 
 /** §4.6: non-destructive crop/framing for image appearances. */
 export interface AppearanceCrop {

@@ -159,6 +159,12 @@ test('Keyboard section lists registered bindings by scope, read-only (§8.2, AI-
   await expect(win.getByTestId('settings-key-combo-board-send-front')).toHaveText(
     mac ? '⇧⌘]' : 'Ctrl+Shift+]',
   )
+  // Undo/Redo are declared (AI-IMP-123) so the "every shortcut" claim
+  // is accurate; dispatch stays capture-phase in undo-keys.ts.
+  await expect(win.getByTestId('settings-key-combo-undo')).toHaveText(mac ? '⌘Z' : 'Ctrl+Z')
+  await expect(win.getByTestId('settings-key-combo-redo')).toHaveText(
+    mac ? '⇧⌘Z' : 'Ctrl+Shift+Z',
+  )
   await expect(win.getByTestId('settings-key-combo-tool-select')).toHaveText('V')
   await expect(win.getByTestId('settings-key-combo-gallery-bucket-jump')).toHaveText(
     mac ? '⌘↑ ↓' : 'Ctrl+↑ ↓',
