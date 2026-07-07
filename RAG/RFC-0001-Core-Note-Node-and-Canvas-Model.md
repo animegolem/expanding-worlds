@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.56         | 7 July 2026      |
+| Accepted for Phase 1 | 0.57         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -3398,6 +3398,21 @@ A project export SHOULD include:
 Caches, search indexes, thumbnails, and map tiles are regenerable and
 need not be canonical export content.
 
+**Container format (rev 0.57 — closes open question 11).** A project
+export is one ZIP archive with the `.ewproj` extension: `manifest.json`
+(export version, schema version, project ID, root node ID, creation
+time, active-only flag, and a content inventory with hashes), the
+checkpointed `project.sqlite`, the readable `notes/` tree, and the
+original assets under their content-addressed paths — the same layout
+the §11.4 snapshot repository already writes. ZIP is chosen for its
+central directory: import reads and validates the manifest before
+extracting anything and fails cleanly on a schema-version mismatch.
+Already-compressed media enters STORED rather than deflated, so export
+and import stream at constant memory on multi-GB projects; the
+database and notes tree deflate normally. A user who wants a bare
+directory unzips the file with any standard tool — the container is
+ordinary tooling, never a lock.
+
 A complete project backup SHOULD preserve Trash unless the user
 explicitly requests an active-content-only export. Purged records and
 evictable derivatives are not export requirements.
@@ -3799,7 +3814,9 @@ not a growth path.
 10. Whether a project-wide archive or hide lifecycle is needed beyond
 canvas-local visibility and view filters.
 
-11. Exact project export container format.
+11. (Resolved, rev 0.57.) The export container is a single
+`.ewproj` ZIP per §16 — manifest-first validation through the central
+directory, stored media entries for constant-memory streaming.
 
 12. Whether nodes may own more than one canvas in a future release.
 
@@ -4468,3 +4485,10 @@ Accepted for the Phase 1 prototype:
   dialect canonicalized once on load and frozen as the project's
   canonical Markdown flavor; round-trip corpus becomes a regression
   gate (§7.1).
+
+- The export container decided (rev 0.57, owner): one `.ewproj` ZIP —
+  manifest.json + checkpointed database + notes tree + original
+  assets, mirroring the §11.4 snapshot layout; the manifest validates
+  through the central directory before anything extracts; media
+  entries are stored uncompressed so multi-GB roundtrips stream at
+  constant memory (§16). Open question 11 closes.
