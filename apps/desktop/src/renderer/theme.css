@@ -203,6 +203,13 @@
   --ew-note-h2: #3b8a7d;
   --ew-note-h3: #9c7f2e;
 
+  /* §7.1 heading-fold affordances (AI-IMP-148): the gutter chevron and
+     the [...] folded-line marker. Quiet by default, louder on hover —
+     paper (light) on light + dark boards, glass overrides below. */
+  --ew-note-fold-chevron: #9aa3ad;
+  --ew-note-fold-chevron-hover: #5a6572;
+  --ew-note-fold-marker: #8a94a0;
+
   /* The editor face + scale (RFC §7.1, STYLE-GUIDE v2 §3; AI-IMP-131).
      Maple Mono is the ONE typography carve-out — note TEXT only, never
      chrome (chrome keeps the platform stack). The face is bundled woff2
@@ -390,4 +397,9 @@
   --ew-note-h1: #8ec2f5;
   --ew-note-h2: #7ec9b8;
   --ew-note-h3: #d9bc6a;
+
+  /* Glass: dark paper, so the fold affordances lighten to stay quiet. */
+  --ew-note-fold-chevron: #6b7684;
+  --ew-note-fold-chevron-hover: #aab3bf;
+  --ew-note-fold-marker: #7e8894;
 }

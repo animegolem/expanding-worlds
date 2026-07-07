@@ -64,3 +64,33 @@
   font-size: var(--ew-editor-h3);
   color: var(--ew-note-h3);
 }
+
+/* §7.1 heading folding (AI-IMP-148). Decoration-only widgets: a gutter
+   chevron that toggles the fold and a [...] marker on the folded line.
+   View-only — never in the Markdown source. Colors ride theme tokens. */
+.ew-note-prose .ew-fold-chevron {
+  display: inline-block;
+  width: 0.9em;
+  margin-right: 0.3em;
+  color: var(--ew-note-fold-chevron);
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  font-size: 0.85em;
+  line-height: 1;
+  vertical-align: baseline;
+  transition: color 0.12s ease;
+}
+
+.ew-note-prose .ew-fold-chevron:hover {
+  color: var(--ew-note-fold-chevron-hover);
+}
+
+.ew-note-prose .ew-fold-marker {
+  margin-left: 0.5em;
+  color: var(--ew-note-fold-marker);
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.85em;
+  letter-spacing: 0.05em;
+}
