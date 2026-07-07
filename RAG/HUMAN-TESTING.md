@@ -347,3 +347,12 @@ record — history lives in the tickets.
   little drawn shapes (document / framed box) — legible at a glance
   on busy art? Path bar crumbs separate with ▸ now. Gut check the
   whole pass against the kit HTML.
+- [ ] **Maple Mono in the editor** (AI-IMP-131, 2026-07-07): open
+  some notes and WRITE — body text, *italics* (Maple's true
+  cursive is the reason it won), **bold**, and h1/h2/h3 headings
+  (now sized AND colored). Does the mono face read as "your
+  writing desk" or as "a code editor"? Check the panel, the big
+  editor, a card-appearance placement (its title/excerpt bake in
+  the same face), and a gallery text post. Chrome must look
+  UNCHANGED everywhere — menus, dock, settings all stay system
+  fonts; if any chrome went mono, that's a bug.
