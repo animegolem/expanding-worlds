@@ -404,3 +404,14 @@ On a dense board of real art:
 - Crop previews and any export path must show the untreated pixels.
 - Watch pan/zoom feel at 100+ images — perf held in gates (9.2ms
   p95) but your hands are the final gate.
+
+## AI-IMP-157 — project export (2026-07-07)
+
+Settings › Backups & export › Export project:
+- Export your real project both ways (Everything / Skip trash); does
+  the estimate footer read honestly against the produced file size?
+- Unzip the .ewproj with the Finder — manifest.json + project.sqlite
+  + notes/ + assets/ should be legible, ordinary files (the "never a
+  lock" promise).
+- The size acknowledge line only appears past ~2 GB — if your
+  project is bigger, confirm it shows once and never again.

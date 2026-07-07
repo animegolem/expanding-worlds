@@ -381,6 +381,43 @@ export type RestoreResult =
   | { ok: true; dir: string }
   | { ok: false; code: string; message: string }
 
+/** §16 portable export (AI-IMP-157; container rev 0.57): stream the
+ * `.ewproj` archive to a main-chosen destination. Progress rides the
+ * uncorrelated event channel as `export-progress`. */
+export interface ExportProjectRequest {
+  type: 'export-project'
+  destPath: string
+  activeOnly: boolean
+}
+
+export type ExportProjectResponse =
+  | {
+      type: 'export-project'
+      ok: true
+      bytesWritten: number
+      entries: number
+      notes: number
+      assets: number
+    }
+  | { type: 'export-project'; ok: false; code: string; message: string }
+
+/** §16 rev-0.18 live size footer: stat-walk estimate, no archive work. */
+export interface ExportEstimateRequest {
+  type: 'export-estimate'
+}
+
+export type ExportEstimateResponse =
+  | { type: 'export-estimate'; ok: true; bytes: number }
+  | { type: 'export-estimate'; ok: false; code: string; message: string }
+
+/** Export progress broadcast shape (utility → main → renderer). Media
+ * dominates and enters STORED, so written bytes track source bytes —
+ * the denominator is the planned source total. */
+export interface ExportProgressEvent {
+  bytesWritten: number
+  bytesTotal: number
+}
+
 export type ProjectRequest =
   | PingRequest
   | InitProjectRequest
@@ -400,6 +437,8 @@ export type ProjectRequest =
   | IngestFromSecondaryRequest
   | ClearLibraryExampleRequest
   | MirrorToLibraryRequest
+  | ExportProjectRequest
+  | ExportEstimateRequest
 
 export type ProjectResponse =
   | PingResponse
@@ -420,6 +459,8 @@ export type ProjectResponse =
   | IngestFromSecondaryResponse
   | ClearLibraryExampleResponse
   | MirrorToLibraryResponse
+  | ExportProjectResponse
+  | ExportEstimateResponse
 
 /** Main → renderer service health (AI-IMP-053): broadcast when the
  * utility process dies, restarts, or fails to come back. A healthy
@@ -442,6 +483,7 @@ export type UtilityMessage =
   | { kind: 'response'; id: number; payload: ProjectResponse }
   | { kind: 'event'; event: ProjectChangedEvent }
   | { kind: 'thumbnail-ready'; assetId: string; contentHash: string }
+  | { kind: 'export-progress'; progress: ExportProgressEvent }
 
 /** Main → renderer broadcast when a thumbnail derivative lands. */
 export interface ThumbnailReadyEvent {

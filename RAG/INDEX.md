@@ -7,10 +7,10 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 5 | 0 |
-| Planned | 4 | 6 |
+| Planned | 4 | 5 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 15 | 146 |
+| Completed | 15 | 147 |
 | **Total** | **25** | **157** |
 
 ## In Progress
@@ -32,7 +32,7 @@
 - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
 - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — completed
 - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
-- [[AI-IMP-157-project-export-pipeline|IMP-157]] Project export pipeline — planned
+- [[AI-IMP-157-project-export-pipeline|IMP-157]] Project export pipeline — completed
 - [[AI-IMP-158-project-import-roundtrip|IMP-158]] Project import roundtrip — planned
 
 ---
@@ -127,7 +127,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4503 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4558 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1965 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1753 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1590 LOC)
@@ -190,7 +190,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
 - apps/desktop/src/renderer/theme.css (420 LOC)
-- RAG/HUMAN-TESTING.md (406 LOC)
+- RAG/HUMAN-TESTING.md (417 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (399 LOC)
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
@@ -233,7 +233,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>15 EPICs, 129 IMPs completed</summary>
+<summary>15 EPICs, 130 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

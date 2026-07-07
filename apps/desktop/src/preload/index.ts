@@ -7,6 +7,9 @@ import type {
   ClearLibraryExampleResponse,
   CloseSecondaryResponse,
   ExecuteCommandResponse,
+  ExportEstimateResponse,
+  ExportProgressEvent,
+  ExportProjectResponse,
   ImportAssetResponse,
   IngestFromSecondaryResponse,
   MirrorToLibraryResponse,
@@ -196,6 +199,26 @@ const api = {
      * before a new window mounts is not lost to the race. */
     pushState: (): Promise<SnapshotPushState | null> =>
       ipcRenderer.invoke('snapshot:push-state-current') as Promise<SnapshotPushState | null>,
+  },
+  /** §16 portable export (AI-IMP-157; container rev 0.57): the
+   * `.ewproj` roundtrip archive. Main owns the save dialog; the
+   * utility streams the archive; progress broadcasts ride
+   * export:progress. */
+  export: {
+    /** Save dialog; resolves the chosen path or null on cancel. */
+    chooseDest: (): Promise<string | null> =>
+      ipcRenderer.invoke('export:choose-dest') as Promise<string | null>,
+    run: (destPath: string, activeOnly: boolean): Promise<ExportProjectResponse> =>
+      ipcRenderer.invoke('export:run', destPath, activeOnly) as Promise<ExportProjectResponse>,
+    /** §16 rev-0.18 live size footer: stat-walk source-byte estimate. */
+    estimate: (): Promise<ExportEstimateResponse> =>
+      ipcRenderer.invoke('export:estimate') as Promise<ExportEstimateResponse>,
+    onProgress: (callback: (progress: ExportProgressEvent) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, progress: ExportProgressEvent): void =>
+        callback(progress)
+      ipcRenderer.on('export:progress', listener)
+      return () => ipcRenderer.removeListener('export:progress', listener)
+    },
   },
   /** §14.4 secondary project slots (AI-IMP-088): source = read-only
    * browse of another project, library = the writable mirror target.

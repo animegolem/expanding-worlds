@@ -122,6 +122,63 @@
       }
     })()
   })
+  // §16 portable export (AI-IMP-157; container rev 0.57): the .ewproj
+  // roundtrip archive. The rev-0.18 doctrine: the estimated size is a
+  // LIVE FOOTER FACT; past the warn threshold the FIRST export adds
+  // one acknowledge line — confirmed once per project, never repeated,
+  // never a gate. The threshold is an application preference.
+  const EXPORT_WARN_DEFAULT_BYTES = 2 * 1024 * 1024 * 1024
+  let exportEstimate = $state<number | null>(null)
+  let exportWarnBytes = $state(EXPORT_WARN_DEFAULT_BYTES)
+  let exportActiveOnly = $state(false)
+  let exportNeedsAck = $state(false)
+  let exportProgress = $state<{ bytesWritten: number; bytesTotal: number } | null>(null)
+  $effect(() => {
+    void (async () => {
+      try {
+        const estimate = await window.ew.export.estimate()
+        exportEstimate = estimate.ok ? estimate.bytes : null
+        const app = await window.ew.settings.appAll()
+        const warn = app['exportWarnBytes']
+        if (typeof warn === 'number' && warn > 0) exportWarnBytes = warn
+      } catch {
+        exportEstimate = null
+      }
+    })()
+    return window.ew.export.onProgress((progress) => {
+      exportProgress = progress
+    })
+  })
+  async function runExport(acknowledged: boolean): Promise<void> {
+    const oversize = exportEstimate !== null && exportEstimate > exportWarnBytes
+    const acked = projectSettings['export_size_acknowledged'] === true
+    if (oversize && !acked && !acknowledged) {
+      exportNeedsAck = true
+      return
+    }
+    if (exportNeedsAck) {
+      exportNeedsAck = false
+      projectSettings = { ...projectSettings, export_size_acknowledged: true }
+      await window.ew.settings.setProject('export_size_acknowledged', true)
+    }
+    const dest = await window.ew.export.chooseDest()
+    if (!dest) return
+    exportProgress = { bytesWritten: 0, bytesTotal: exportEstimate ?? 0 }
+    try {
+      const result = await window.ew.export.run(dest, exportActiveOnly)
+      if (result.ok) {
+        toast(
+          `Exported ${result.notes} note${result.notes === 1 ? '' : 's'} and ${result.assets} image${
+            result.assets === 1 ? '' : 's'
+          } (${formatBackupSize(result.bytesWritten)})`,
+        )
+      } else {
+        toast(`Export failed: ${result.message}`, { kind: 'error' })
+      }
+    } finally {
+      exportProgress = null
+    }
+  }
   function snapshotMode(): SnapshotMode {
     const raw = projectSettings['snapshot_mode']
     return raw === 'commit' || raw === 'commit-push' ? raw : 'off'
@@ -385,6 +442,57 @@
       'arrives with the vault mirror (§16)',
       'settings-row-vault',
     )}
+
+    <div class="row" data-testid="settings-row-export">
+      <span class="row-label">Export project</span>
+      <div class="remote-config">
+        {@render segmented(
+          'settings-export-scope',
+          [
+            { value: 'all', label: 'Everything' },
+            { value: 'active', label: 'Skip trash' },
+          ],
+          exportActiveOnly ? 'active' : 'all',
+          (value) => {
+            exportActiveOnly = value === 'active'
+          },
+        )}
+        <Button
+          variant="default"
+          data-testid="settings-export-run"
+          style="flex: none"
+          onclick={() => void runExport(false)}
+          disabled={exportProgress !== null}
+        >
+          {exportProgress ? 'Exporting…' : 'Export…'}
+        </Button>
+      </div>
+    </div>
+    <p class="section-note" data-testid="settings-export-note">
+      {#if exportProgress && exportProgress.bytesTotal > 0}
+        Writing the archive — {formatBackupSize(exportProgress.bytesWritten)} of about {formatBackupSize(
+          exportProgress.bytesTotal,
+        )}.
+      {:else}
+        One .ewproj file holds the whole project — pictures, notes, boards, and trash ({#if exportActiveOnly}trash
+          skipped{:else}everything{/if}). Estimated size: {formatBackupSize(exportEstimate)}. Import
+        it on any machine to get the project back exactly.
+      {/if}
+    </p>
+    {#if exportNeedsAck}
+      <p class="section-note" data-testid="settings-export-ack">
+        This export is on the large side ({formatBackupSize(exportEstimate)}) — it may take a while
+        and needs that much free space.
+        <Button
+          variant="default"
+          data-testid="settings-export-ack-run"
+          style="flex: none"
+          onclick={() => void runExport(true)}
+        >
+          Export anyway
+        </Button>
+      </p>
+    {/if}
 
     <div class="row" data-testid="settings-row-snapshots">
       <span class="row-label">Session snapshots</span>

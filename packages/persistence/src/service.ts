@@ -31,6 +31,12 @@ import {
   type IngestSource,
 } from './import/ingest'
 import { importAsset, type ImportInput, type ImportResult } from './import/pipeline'
+import {
+  estimateExportSize,
+  exportProject,
+  type ExportOptions,
+  type ExportResult,
+} from './export/project-export'
 import { writeNotesTree, type NotesTreeResult } from './notes-tree'
 import { createProject, DB_FILENAME, openProject, type OpenOptions } from './project'
 import { QueryRegistry, registerCoreQueries, type QueryResult } from './queries'
@@ -102,6 +108,14 @@ export interface ProjectService {
    * and return note/asset counts for the commit message. Runs on the
    * single writer connection; a read-only source refuses. */
   writeNotesTree(): NotesTreeResult
+  /** §16 portable export (AI-IMP-157; container rev 0.57): refresh the
+   * readable notes tree, checkpoint the WAL, then stream the `.ewproj`
+   * archive to `destPath`. Refuses on a read-only source — export
+   * belongs to the project's owner session. */
+  exportProject(destPath: string, options: ExportOptions): Promise<ExportResult>
+  /** §16 rev-0.18 live size footer: stat-walk estimate of the export's
+   * source bytes; no archive work, safe on any open. */
+  estimateExportSize(): Promise<number>
   close(): void
 }
 
@@ -255,6 +269,25 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
       )
     },
     ingestSource: () => ({ db: handle.db, dir: handle.dir }),
+    exportProject: async (destPath, exportOptions) => {
+      if (handle.readOnly) throw readOnlyError()
+      // Order matters (mirrors the §11.4 snapshot moment): the notes
+      // tree regenerates FIRST (refreshing §7.8 blocks), then the WAL
+      // truncates so project.sqlite is complete at rest, then the
+      // consistent copy streams into the archive.
+      writeNotesTree(
+        {
+          db: handle.db,
+          projectId: handle.projectId,
+          rootNodeId: handle.rootNodeId,
+          rootCanvasId: handle.rootCanvasId,
+        },
+        handle.dir,
+      )
+      handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+      return exportProject({ db: handle.db, dir: handle.dir }, destPath, exportOptions)
+    },
+    estimateExportSize: () => estimateExportSize({ db: handle.db, dir: handle.dir }),
     // Claiming mutates the queue: a read-only source reports drained
     // and lands nothing — it serves the derivatives it already has.
     claimThumbnailJob: () => (handle.readOnly ? null : claimNextThumbnailJob(derivCtx, handle.dir)),

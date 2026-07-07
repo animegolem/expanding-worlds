@@ -5,12 +5,12 @@ tags:
   - Implementation
   - export
   - persistence
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-120]
 parent_epic: [[AI-EPIC-008-export-import-signoff]]
 confidence_score: 0.75
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -85,21 +85,21 @@ excludes a trashed record.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Utility export job: checkpointed db + notes tree + assets +
+- [x] Utility export job: checkpointed db + notes tree + assets +
       manifest streamed into `.ewproj`; STORE/DEFLATE policy per
       rev 0.57; constant-memory (no whole-file buffering).
-- [ ] Manifest carries export version, schema version, project ID,
+- [x] Manifest carries export version, schema version, project ID,
       root node ID, created_at, active_only, inventory with hashes;
       unit-tested shape.
-- [ ] Active-only variant: filtered temp db, recomputed asset set;
+- [x] Active-only variant: filtered temp db, recomputed asset set;
       live db never touched; unit + e2e coverage.
-- [ ] Progress events over the utility channel; Settings surface
+- [x] Progress events over the utility channel; Settings surface
       shows live size footer + one-time warn acknowledge.
-- [ ] E2E: export → manifest inventory verifies against archive
+- [x] E2E: export → manifest inventory verifies against archive
       contents; hashes match source assets.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -112,6 +112,25 @@ loading whole assets into memory
 trash-only assets.
 
 ### Issues Encountered
+
+- **yazl (CJS) broke the process-spec fixture bundles**: esbuild's
+  ESM output can't satisfy bundled CJS `require()` of bare builtins;
+  fixed with the standard createRequire banner in the fixture build.
+- **fd-exhaustion redesign**: the first cut opened a read stream per
+  entry up front; switched to yazl `addFile` (lazy, one fd at a time)
+  with progress from output-stream bytes — honest because STORED
+  media dominates, so written ≈ source bytes.
+- **Manifest reads from the temp copy**, not the live db, so the
+  manifest can never disagree with the database it ships beside
+  (matters for active-only, whose asset set shrinks after filtering).
+- **Active-only link semantics mirror §9.7 purge**: links FROM a
+  dropped note don't travel; links TO one flip to broken (keeping
+  display text). An active node whose note drops detaches. The pass
+  ends with PRAGMA foreign_key_check — violations fail the export
+  loudly instead of shipping an archive that can't reimport.
+- `VACUUM INTO ?` binds cleanly under node:sqlite (no string
+  interpolation needed).
+- Gates: 174/174 e2e + vitest (persistence 513) + lint on main.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

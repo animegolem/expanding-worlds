@@ -124,6 +124,56 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
+    case 'export-project': {
+      // §16 portable export (AI-IMP-157): the service refreshes the
+      // notes tree, checkpoints the WAL, and streams the .ewproj to
+      // the main-chosen destination. Progress rides the uncorrelated
+      // event channel; failure is typed, never a dead utility.
+      if (!service || service.readOnly) {
+        return {
+          type: 'export-project',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no writable project is open',
+        }
+      }
+      try {
+        const result = await service.exportProject(request.destPath, {
+          activeOnly: request.activeOnly,
+          onProgress: (progress) => post({ kind: 'export-progress', progress }),
+        })
+        return { type: 'export-project', ok: true, ...result }
+      } catch (err) {
+        return {
+          type: 'export-project',
+          ok: false,
+          code: 'EXPORT_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'export-estimate': {
+      if (!service) {
+        return {
+          type: 'export-estimate',
+          ok: false,
+          code: 'NO_PROJECT',
+          message: 'no project is open',
+        }
+      }
+      try {
+        return { type: 'export-estimate', ok: true, bytes: await service.estimateExportSize() }
+      } catch (err) {
+        return {
+          type: 'export-estimate',
+          ok: false,
+          code: 'ESTIMATE_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'close-project': {
       unsubscribe?.()
       unsubscribe = null

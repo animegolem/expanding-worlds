@@ -11,12 +11,16 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
     "esbuild": "^0.28.1",
     "typescript": "^5.5.4",
     "vitest": "^4.1.9"
   },
   "dependencies": {
     "@ew/commands": "workspace:*",
-    "@ew/domain": "workspace:*"
+    "@ew/domain": "workspace:*",
+    "yauzl": "^3.4.0",
+    "yazl": "^3.3.1"
   }
 }

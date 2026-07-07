@@ -33,6 +33,12 @@ beforeAll(async () => {
       format: 'esm',
       outfile,
       external: ['node:*'],
+      // Bundled CommonJS deps (yazl since AI-IMP-157) require() bare
+      // node builtins, which esbuild's ESM output cannot satisfy
+      // without a createRequire shim — the standard banner fix.
+      banner: {
+        js: "import { createRequire as __ewCreateRequire } from 'node:module'; const require = __ewCreateRequire(import.meta.url);",
+      },
     })
     bundled.set(script, outfile)
   }

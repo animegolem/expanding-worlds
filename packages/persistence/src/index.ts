@@ -52,6 +52,22 @@ export {
   assignNoteFilename,
   type NotesTreeResult,
 } from './notes-tree'
+// §16 portable export (AI-IMP-157; container rev 0.57).
+export {
+  exportProject,
+  estimateExportSize,
+  type ExportOptions,
+  type ExportProgress,
+  type ExportResult,
+} from './export/project-export'
+export {
+  parseManifest,
+  EXPORT_VERSION,
+  MANIFEST_ENTRY,
+  DB_ENTRY,
+  type ExportManifest,
+  type ManifestEntry,
+} from './export/manifest'
 export { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 export { registerCanvasHandlers } from './handlers/canvases'
 export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'

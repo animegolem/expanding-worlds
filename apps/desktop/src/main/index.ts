@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -128,6 +128,14 @@ function startUtility(): void {
           assetId: message.assetId,
           contentHash: message.contentHash,
         })
+      }
+      return
+    }
+    if (message.kind === 'export-progress') {
+      // §16 export progress (AI-IMP-157): fan out to the Settings
+      // surface; an export is not project activity for the idle clock.
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('export:progress', message.progress)
       }
       return
     }
@@ -783,6 +791,34 @@ void app.whenReady().then(() => {
 
   // §8.2 Help/About: the running app version, straight from the
   // packaged metadata — never a hardcoded renderer string.
+  // §16 portable export (AI-IMP-157): main owns the save dialog (the
+  // utility knows no windows); the archive streams in the utility.
+  ipcMain.handle('export:choose-dest', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+    const title = (await callUtility({ type: 'run-query', name: 'getProject' })) as {
+      ok?: boolean
+      result?: { title?: string }
+    }
+    const suggested =
+      typeof title?.result?.title === 'string' && title.result.title.length > 0
+        ? title.result.title.replaceAll('/', '-')
+        : 'project'
+    const picked = await dialog.showSaveDialog(win, {
+      title: 'Export project',
+      defaultPath: `${suggested}.ewproj`,
+      filters: [{ name: 'Expanding Worlds project', extensions: ['ewproj'] }],
+    })
+    return picked.canceled || !picked.filePath ? null : picked.filePath
+  })
+  ipcMain.handle('export:run', (_event, destPath: string, activeOnly: boolean) =>
+    callUtility({
+      type: 'export-project',
+      destPath: String(destPath),
+      activeOnly: activeOnly === true,
+    }),
+  )
+  ipcMain.handle('export:estimate', () => callUtility({ type: 'export-estimate' }))
   ipcMain.handle('app:get-version', () => app.getVersion())
 
   ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {
