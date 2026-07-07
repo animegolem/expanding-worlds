@@ -133,16 +133,43 @@ test('materialization: one Mod+Z un-materializes note + node + placement (§7.2)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Undo Phantom/)
   await expect.poll(() => depth(win)).toBe(1)
 
-  // Leave the pin tool first: it stays active for repeated placement
-  // (§6.2), so a bare board click here would drop ANOTHER provisional
-  // dot and open a fresh pin-phantom whose autofocusing <textarea>
-  // steals focus — on Linux that made the next Mod+Z defer to the
-  // editor (a text-history op), never reaching the structural stack
-  // (macOS' autofocus lost the race, so it passed there; CI caught the
-  // real platform-dependent flake). Switch to Select, THEN click the
-  // board so Mod+Z is unambiguously structural on every platform.
-  await win.keyboard.press('v')
-  await win.mouse.click(box.x + 80, box.y + 80)
+  // Make the next Mod+Z unambiguously structural, BY CONSTRUCTION.
+  // The pin tool stays active for repeated placement (§6.2), and the
+  // phantom's autofocusing <textarea> (NotePanel) can still own focus
+  // here: its DOM removal lags the CreatePin commit we polled on
+  // above. Two things then break the keyboard route — and did so only
+  // on Linux, where the autofocus won the race (macOS lost it, so it
+  // passed there and the CI flake looked mysterious):
+  //   1. The `v` tool shortcut is a no-op while a text field has focus
+  //      (the Dock shortcut handler defers to typing targets), so the
+  //      tool never left Pin.
+  //   2. With Pin still active, a bare board click drops ANOTHER
+  //      provisional dot + phantom whose <textarea> steals focus, so
+  //      Mod+Z defers to the editor (a text-history op) and never
+  //      reaches the structural stack.
+  // Click the Dock's Select button instead: setTool runs regardless of
+  // focus AND the click moves focus onto the button, off every text
+  // field. (Keyboard Mod+Z dispatch stays covered by the other undo
+  // specs, which pass on Linux.)
+  await win.getByTestId('tool-select').click()
+
+  // PROVE the preconditions so any platform divergence fails LOUD
+  // right here, not silently at the postcondition: the active tool is
+  // Select, and focus sits on no typing target — the exact predicate
+  // undo-keys.ts uses to decide Mod+Z is structural, not the editor's.
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.activeTool())).toBe('select')
+  await expect
+    .poll(() =>
+      win.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null
+        if (!el) return false
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return true
+        if (el.isContentEditable) return true
+        return el.closest('.cm-editor') !== null
+      }),
+    )
+    .toBe(false)
+
   await win.keyboard.press('Meta+z')
 
   // The record un-exists in one step: node + placement gone.
