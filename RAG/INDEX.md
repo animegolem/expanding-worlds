@@ -10,7 +10,7 @@
 | Planned | 6 | 8 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 115 |
+| Completed | 13 | 116 |
 | **Total** | **22** | **127** |
 
 ## In Progress
@@ -99,7 +99,6 @@
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-123-review-hygiene-registry-and-disposer|IMP-123]] — planned, no epic dependency found
 - [[AI-IMP-124-url-import-redirect-guard|IMP-124]] — planned, no epic dependency found
-- [[AI-IMP-125-trashed-owner-board-degradation|IMP-125]] — planned, no epic dependency found
 
 ---
 
@@ -115,14 +114,14 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1114 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
-- packages/persistence/src/queries-structure.test.ts (843 LOC)
+- packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/src/main/index.ts (793 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
+- packages/persistence/src/queries-structure.ts (742 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (721 LOC)
-- packages/persistence/src/queries-structure.ts (709 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -171,7 +170,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
-- apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (359 LOC)
+- apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (362 LOC)
 - packages/persistence/src/queries-notes.ts (356 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
@@ -188,6 +187,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
+- apps/desktop/e2e/navigation.spec.ts (310 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
 - packages/canvas-engine/src/controller.ts (302 LOC)
