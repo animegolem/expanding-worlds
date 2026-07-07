@@ -38,6 +38,17 @@
   } from './panels'
   import { createNoteProjectPort } from './project-port'
   import { tetheredPanelOpacity, tetheredPanelScale } from '../chrome/feel'
+  import { pageDegradeStage, type PageDegradeStage } from '@ew/canvas-engine'
+  import BinderRings from './paper/BinderRings.svelte'
+  import {
+    boundEdgeLength,
+    chooseBindSide,
+    pageBaseSize,
+    ringCount,
+    ringOffsets,
+    RING_RADIUS,
+    type BindSide,
+  } from './paper/bound-geometry'
   import { openTagPanel } from '../tags/tag-panel'
   import TagAddField from '../tags/TagAddField.svelte'
   import { wikiLinkSuggestions } from './suggestions'
@@ -566,8 +577,44 @@
    * the legibility floor. Pinned/corner/point/anchorless panels stay at
    * scale 1 (screen-fixed). Opacity is 1 whenever scale is 1. */
   let scale = $state(1)
-  const opacity = $derived(tetheredPanelOpacity(scale))
+
+  // §8.5 rev 0.55 (AI-IMP-134): an image-anchored tethered panel is THE
+  // OPEN BOOK — the page binds to the image's side, sized to the shared
+  // edge, flat, scaling with the world (scale = raw zoom, uncapped, so
+  // the locked edge tracks the image at every zoom). `bound` gates the
+  // whole presentation; non-image placements and anchorless notes keep
+  // the tethered card above.
+  let bound = $state(false)
+  let boundSide = $state<BindSide>('right')
+  /** The page's base (world-unit) size: the shared edge locked to the
+   * image, the free axis at the default extent. */
+  let pageBase = $state<PanelSize>({ ...DEFAULT_PANEL_SIZE })
+  /** Shrink-ladder stage of the bound page, keyed on its rendered edge
+   * (§8.2): full → rings, degraded → bound-edge stroke, hidden → fade. */
+  let pageStage = $state<PageDegradeStage>('full')
+  /** Binder-ring hardware straddling the seam, in screen space + world
+   * units; null when the page is faded whole or not a book. */
+  let ringMount = $state<{
+    x: number
+    y: number
+    scale: number
+    orientation: 'vertical' | 'horizontal'
+    offsets: number[]
+    edgeLength: number
+    stage: PageDegradeStage
+  } | null>(null)
+  /** The side choice is made once per anchored image and held for the
+   * panel's life on that image (§8.5); this caches which placement it
+   * was made for so a re-anchor recomputes it. */
+  let boundForPlacement = ''
+
+  const opacity = $derived(bound ? (pageStage === 'hidden' ? 0 : 1) : tetheredPanelOpacity(scale))
   const faded = $derived(opacity === 0)
+  const renderWidth = $derived(bound ? pageBase.width : size.width)
+  const renderHeight = $derived(bound ? pageBase.height : size.height)
+  /** Scale about the binding corner so the page stays glued to the
+   * seam: top-left for a right/below binding, top-right for a left one. */
+  const transformOrigin = $derived(bound && boundSide === 'left' ? '100% 0' : '0 0')
 
   function viewportSize(): { width: number; height: number } {
     const bounds = panelEl?.parentElement?.getBoundingClientRect()
@@ -582,8 +629,11 @@
     // Every branch below except the world-tethered placement one is
     // screen-fixed; reset the scale so a panel that was scaled (e.g. a
     // pin phantom that just became a placement, or the reverse) never
-    // keeps a stale factor.
+    // keeps a stale factor. `bound` resets too, so a swap away from an
+    // image clears the open-book presentation.
     scale = 1
+    bound = false
+    ringMount = null
     if (record.pinned) {
       if (record.screen) pos = record.screen
       tail = null
@@ -597,6 +647,15 @@
       if (aabb) {
         anchorGone = false
         const camera = handle.controller.camera
+        // §8.5 rev 0.55: an IMAGE placement's note is the OPEN BOOK —
+        // the page binds to the image's side, sized to the shared edge.
+        // Other placement kinds (dot, card, icon) keep the tethered
+        // card below (their look already represents them; a bound page
+        // to a dot's height would be absurd).
+        if (item && item.appearanceKind === 'image') {
+          layoutBoundPage(aabb, camera)
+          return
+        }
         // §8.5 rev 0.47: scale with the world, glued at the tether
         // corner (transform-origin 0 0). The gap stays a constant screen
         // distance so the panel never crashes into the node, and the
@@ -637,6 +696,65 @@
     // Anchorless (zero placements / stale anchor): a calm default.
     pos = { x: view.width - width - 16, y: 56 }
     tail = null
+  }
+
+  /** §8.5 rev 0.55 (AI-IMP-134): position the OPEN BOOK. The page binds
+   * to the image's side (chosen once, stable), locks its shared edge to
+   * the image's rendered edge through the world-scale transform (scale =
+   * raw zoom, so the edge tracks the image at every zoom), and mounts
+   * the binder rings straddling the seam. Degrades per the shrink ladder
+   * (rings → bound-edge stroke → whole-page fade). No tail — the binding
+   * is the attribution. */
+  function layoutBoundPage(aabb: { x: number; y: number; width: number; height: number }): void {
+    const camera = handle.controller.camera
+    const view = viewportSize()
+    const image = { width: aabb.width, height: aabb.height }
+    const topLeft = camera.worldToScreen({ x: aabb.x, y: aabb.y })
+    const bottomRight = camera.worldToScreen({ x: aabb.x + aabb.width, y: aabb.y + aabb.height })
+    const imageLeft = topLeft.x
+    const imageTop = topLeft.y
+    const imageRight = bottomRight.x
+    const imageBottom = bottomRight.y
+    const zoom = camera.zoom
+
+    // The side is chosen once per anchored image and held (§8.8 region
+    // math); a re-anchor to a different placement recomputes it.
+    const placementId = (record.anchor as { placementId: string }).placementId
+    if (boundForPlacement !== placementId) {
+      boundSide = chooseBindSide({
+        aspect: image.height > 0 ? image.width / image.height : 1,
+        imageLeft,
+        imageRight,
+        viewportWidth: view.width,
+      })
+      boundForPlacement = placementId
+    }
+
+    pageBase = pageBaseSize(boundSide, image)
+    scale = zoom
+
+    const edgeLength = boundEdgeLength(boundSide, image)
+    // The page's rendered shared edge drives the shrink ladder.
+    const pageEdgePx = edgeLength * zoom
+    pageStage = pageDegradeStage(pageEdgePx)
+
+    if (boundSide === 'right') pos = { x: imageRight, y: imageTop }
+    else if (boundSide === 'left') pos = { x: imageLeft - pageBase.width, y: imageTop }
+    else pos = { x: imageLeft, y: imageBottom }
+
+    if (pageStage === 'hidden') {
+      ringMount = null
+    } else {
+      const offsets = ringOffsets(edgeLength, ringCount(edgeLength))
+      const orientation = boundSide === 'below' ? 'horizontal' : 'vertical'
+      const mountX = boundSide === 'left' ? imageLeft : boundSide === 'right' ? imageRight : imageLeft
+      const mountY = boundSide === 'below' ? imageBottom : imageTop
+      ringMount = { x: mountX, y: mountY, scale: zoom, orientation, offsets, edgeLength, stage: pageStage }
+    }
+
+    bound = true
+    tail = null
+    anchorGone = false
   }
 
   let frame = 0
@@ -917,11 +1035,16 @@
 <section
   class="note-panel"
   class:pinned={record.pinned}
+  class:bound
+  class:bound-left={bound && boundSide === 'left'}
+  class:bound-below={bound && boundSide === 'below'}
   class:pulse
-  style={`left:${pos.x}px;top:${pos.y}px;width:${size.width}px;height:${size.height}px;transform:scale(${scale});transform-origin:0 0;opacity:${opacity};${faded ? 'pointer-events:none;' : ''}`}
+  style={`left:${pos.x}px;top:${pos.y}px;width:${renderWidth}px;height:${renderHeight}px;transform:scale(${scale});transform-origin:${transformOrigin};opacity:${opacity};${faded ? 'pointer-events:none;' : ''}`}
   data-testid={record.pinned ? `note-panel-pinned-${record.key}` : 'note-pane'}
   data-panel-key={record.key}
   data-tether-scale={scale}
+  data-bound-side={bound ? boundSide : null}
+  data-page-stage={bound ? pageStage : null}
   bind:this={panelEl}
   ondragovercapture={onSurfaceDragOver}
   ondropcapture={onSurfaceDrop}
@@ -1184,6 +1307,27 @@
   {/if}
 </section>
 
+{#if ringMount}
+  <!-- §8.5 rev 0.55 (AI-IMP-134): the binder rings straddle the seam.
+       A sibling of the page (not a child) so the page's overflow clip
+       never eats the half that overlaps the image; mounted at the seam
+       and scaled by zoom so the hardware rides the world with the page. -->
+  <div
+    class="binder-mount"
+    style={`left:${ringMount.x}px;top:${ringMount.y}px;transform:scale(${ringMount.scale});transform-origin:0 0;opacity:${opacity}`}
+    data-testid="binder-rings"
+    aria-hidden="true"
+  >
+    <BinderRings
+      orientation={ringMount.orientation}
+      offsets={ringMount.offsets}
+      radius={RING_RADIUS}
+      edgeLength={ringMount.edgeLength}
+      stage={ringMount.stage}
+    />
+  </div>
+{/if}
+
 <style>
   .tail {
     position: absolute;
@@ -1223,6 +1367,39 @@
   .note-panel.pinned {
     border-color: var(--ew-paper-pinned-border);
     box-shadow: 0 10px 30px var(--ew-shadow);
+  }
+
+  /* §8.5 rev 0.55 (AI-IMP-134): the OPEN BOOK. World content — FLAT (no
+     shadow; a shadow is the §8.5 depth cue, reserved for viewport-
+     floating things). A square corner on the BINDING edge, rounded on
+     the free edges; mirrored per side. The whole-page fade rides an
+     opacity transition so it dissolves rather than pops. */
+  .note-panel.bound {
+    box-shadow: none;
+    /* Bound RIGHT: square left (binding) edge, rounded right. */
+    border-radius: 0 9px 9px 0;
+    transition: opacity 200ms ease;
+  }
+
+  .note-panel.bound.bound-left {
+    /* Square right (binding) edge, rounded left. */
+    border-radius: 9px 0 0 9px;
+  }
+
+  .note-panel.bound.bound-below {
+    /* Square top (binding) edge, rounded bottom. */
+    border-radius: 0 0 9px 9px;
+  }
+
+  /* The binder-ring mount: an unclipped seam-anchored layer above the
+     page and image; scaled by zoom via inline transform. */
+  .binder-mount {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 9;
   }
 
   .note-panel.pulse {

@@ -80,16 +80,16 @@ zoom → page scales with image, rings degrade.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Primitives on tokens only (guard green); reusable, no
+- [x] Primitives on tokens only (guard green); reusable, no
       NotePanel-specific leakage.
-- [ ] Side-choice pure fn: aspect ≳1.4 → below; else freer
+- [x] Side-choice pure fn: aspect ≳1.4 → below; else freer
       viewport side; unit matrix.
-- [ ] Shared-edge sizing holds through zoom (e2e asserts page
+- [x] Shared-edge sizing holds through zoom (e2e asserts page
       rect tracks image rect at two zooms).
-- [ ] Flat (no shadow) bound page; pinned state unchanged this
+- [x] Flat (no shadow) bound page; pinned state unchanged this
       ticket.
-- [ ] Ring degradation per ladder; whole-page fade at the floor.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] Ring degradation per ladder; whole-page fade at the floor.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 - [ ] HUMAN-TESTING entry appended at merge by the lead (does the
       book read instantly; ring weight; wide-image calendar feel).
@@ -112,3 +112,52 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Pure geometry lives in `paper/bound-geometry.ts`, re-exported from
+  `panels.ts`.** The ticket named `panels.ts` as the home of the
+  side-choice fn, but panels.ts imports browser/host modules the node
+  vitest env can't load; putting `chooseBindSide` / `pageBaseSize` /
+  `ringCount` / `ringOffsets` in a dependency-free module keeps them
+  unit-testable, and `panels.ts` re-exports the whole set so the public
+  home is still the store. NotePanel.svelte imports the module directly.
+
+- **Bound presentation gates on `appearanceKind === 'image'`.** The RFC
+  rev 0.55 replaced "tethered" wholesale, but the open-book mechanism is
+  image-specific ("binds to its IMAGE's side"; shared-edge = image
+  height/width). A page bound to a dot's or a card's height would be
+  absurd, so dot/card/icon placement anchors KEEP the rev-0.47 tethered
+  card (tail, scale-capped) and only image anchors become the book.
+  Anchorless notes unchanged, per scope. Flag for the lead: if the owner
+  wants non-image placements to bind too, that's a follow-up feel call.
+
+- **§8.5 indicator-table inconsistency (flag, RFC NOT edited).** The
+  §8.5 indicator table's first row still reads: "Tethered, node
+  on-screen: nothing — the tail is the attribution." For an
+  image-anchored panel the tail no longer exists (the binding IS the
+  attribution), so that row is stale for the open-book state. The
+  on-screen row needs updating in 135's RFC-consistency pass — suggested
+  wording: "Open book, image on-screen: nothing — the binding is the
+  attribution." (Pinned/off-screen/other-canvas rows are unaffected.)
+
+- **Degradation is driven by `pageDegradeStage(pageEdgePx)`, not a 40%
+  literal.** The ticket's "~40% page render scale" is design gloss; the
+  shrink-ladder guard forbids ad-hoc rendered-size gates, so the
+  ring→stroke→fade boundaries are the shared `EW_PAGE_FLOOR_PX` (48) and
+  `EW_FURNITURE_MIN_PX` (8) via `pageDegradeStage` on the page's rendered
+  shared edge. `full` → rings, `degraded` → bound-edge stroke, `hidden` →
+  whole-page fade (opacity 0, an opacity transition so it dissolves).
+
+- **Rings render as a SIBLING of the page, not a child.** The page keeps
+  `overflow: hidden` (editor/rounded corners), which would clip the half
+  of each ring that straddles onto the image. The `.binder-mount` is a
+  seam-anchored, zoom-scaled sibling (like the dashed tail was), so the
+  hardware straddles freely and still rides the world with the page.
+
+- **One new token added:** `--ew-binder-ring` (brushed metal) in
+  theme.css; the ring HOLE punches to the existing `--ew-board-color`.
+  All primitives token-only; the raw-hex guard stays green.
+
+- **Full suite:** `pnpm -r build && pnpm -r test && pnpm lint` all
+  green. Desktop e2e `166 passed` with 1 pre-existing flake
+  (`frames.spec.ts` hover-dim timing, unrelated) that auto-retried
+  green. New `note-lifecycle.spec.ts`: 3 passed.
