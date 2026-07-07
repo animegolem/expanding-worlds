@@ -349,6 +349,39 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
 })
 
 /**
+ * AI-IMP-155 fix 1: the Help/About "keyboard shortcuts" link opens the
+ * Settings takeover AND dismisses the ☰ popover. Before the fix the
+ * popover (z 500) stayed painted over the takeover (z 300) because the
+ * link closed only its own dialog, never the rail. The link now threads
+ * the rail-close (MenuPopover.onclose → HelpAboutDialog.onCloseRail) and
+ * calls it before openTakeover, so both the dialog and the popover leave
+ * the DOM.
+ */
+test('☰ Help/About shortcuts link opens Settings and dismisses the ☰ popover', async () => {
+  const { app, win } = await launchApp('ew-e2e-menu-shortcuts-')
+
+  try {
+    await win.getByTestId('charm-menu').click()
+    await expect(win.getByTestId('rail-menu')).toBeVisible()
+    await win.getByTestId('menu-help').click()
+    await expect(win.getByTestId('help-about-dialog')).toBeVisible()
+
+    // The one shortcuts link → Settings takeover opens, and BOTH the
+    // dialog and the ☰ popover are gone from the DOM (no lingering
+    // popover over the takeover).
+    await win.getByTestId('help-about-shortcuts').click()
+    await expect(win.getByTestId('takeover-settings')).toBeVisible()
+    await expect(win.getByTestId('rail-menu')).toHaveCount(0)
+    await expect(win.getByTestId('help-about-dialog')).toHaveCount(0)
+
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
+  } finally {
+    await app.close()
+  }
+})
+
+/**
  * AI-IMP-075 acceptance: theme tokens repaint chrome live, and glass
  * reports the applied theme or the dark fallback from main.
  */

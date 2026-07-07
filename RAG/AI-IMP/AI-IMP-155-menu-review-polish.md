@@ -31,6 +31,17 @@ then renders unconditionally, so a stale resolution can replace a
 newer menu opened during the await. Done means: all three paths
 behave, with the cheapest honest test each.
 
+## Summary of Issue #4
+
+(Lead scope addition, 2026-07-07.) `electron.vite.config.ts`'s
+`rfcRevision()` fell back to `'unknown'` on a missing file, an
+unmatched header regex, or an empty capture. PR #9's reviewer
+directions promised this "should fail the build loudly": the
+About card exists to PROVE spec↔build alignment, so shipping
+`'unknown'` silently defeats it. `rfcRevision()` now THROWS during
+config evaluation — naming the RFC path and the expected header
+shape — on any of those three conditions. Happy path unchanged.
+
 ### Out of Scope
 
 - Decoration undo capture and Lock-all breadth (AI-IMP-154).
@@ -69,13 +80,16 @@ sleep-based race tests).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Shortcuts link closes the ☰ popover before the Settings
+- [x] Shortcuts link closes the ☰ popover before the Settings
       takeover opens; e2e asserts the popover is unmounted.
-- [ ] Gather surfaces `CaptureInFrame` failure via `onError`;
+- [x] Gather surfaces `CaptureInFrame` failure via `onError`;
       behavior on success unchanged (existing e2e green).
-- [ ] Frame-menu open token: stale async resolution never replaces
+- [x] Frame-menu open token: stale async resolution never replaces
       a newer menu (unit-test the token logic).
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+- [x] `rfcRevision()` throws loudly (missing file / unmatched regex /
+      empty capture) instead of falling back to `'unknown'`; loud
+      failure recorded in Issues, then restored green.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
 
 ### Acceptance Criteria
@@ -101,3 +115,59 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Fix 1 (unmount ordering).** The Help/About dialog renders INSIDE
+`MenuPopover`'s `{#if helpOpen}`, so closing the rail unmounts the
+dialog with it. Solved by threading the rail-close as a distinct
+prop: `MenuPopover.onclose` (which sets CharmRail's `menuOpen=false`)
+is passed to `HelpAboutDialog` as `onCloseRail`. `openKeyboardShortcuts`
+calls `onCloseRail()` then `openTakeover('settings')`, mirroring the
+Settings row's ordering. No deferral needed: `openTakeover` is
+module-level store state, so it runs in the same synchronous call
+frame even though the assignment schedules this component's unmount —
+the JS stack is not aborted by the unmount, and nothing throws (the
+dialog's `$effect` cleanup just removes its keydown listener). The
+dialog's own `onclose` (helpOpen=false) is now moot on this path
+since the whole subtree unmounts; left in place for the Esc/Close
+paths.
+
+**Fix 2.** Swapped the discarded `host.gateway.execute('CaptureInFrame',
+…)` for the existing `execute(…)` helper, which routes a non-committed
+`CommandResult` through `onError(describeFailure('CaptureInFrame', …))`.
+Success path is behaviourally identical (commits, returns true, does
+nothing else). No auto-delete — the undo group already collapses to
+the lone frame create, so one Mod+Z removes the empty frame.
+
+**Fix 3 (token shape).** Extracted a `createOpenGeneration()` gate
+(`menus/open-generation.ts`): a monotonic counter with `bump()`,
+`current()`, `isStale(captured)`. `close()` bumps it; since `render()`
+calls `close()` first, every menu open bumps too — so ANY newer open
+or explicit close advances the generation. `openFrameMenu` captures
+`openGen.current()` BEFORE `await tooling.frameSortOnDrop(...)` and
+bails on `openGen.isStale(token)` after, so a stale frame resolution
+never paints over a newer menu. Unit-tested the gate directly
+(`open-generation.test.ts`, 5 cases incl. the modelled race) rather
+than the DOM-heavy ContextMenu — the gate carries the exact logic
+openFrameMenu uses, and vitest runs in node (no jsdom). e2e was NOT
+used for the race (it cannot interleave the real IPC await without a
+sleep, which the brief forbids).
+
+**Fix 4 loud-fail proof.** Temporarily repointed `RFC_PATH` at
+`RAG/RFC-0001-DOES-NOT-EXIST.md` and ran `pnpm build`: it failed with
+exit code 1 and
+`Error: rfcRevision: cannot read the RFC at …/RFC-0001-DOES-NOT-EXIST.md
+for the Help/About build constant. … Restore the file or fix the path
+in electron.vite.config.ts.` Restored the path; `pnpm -r build` green
+again. The unmatched-regex / empty-capture branch throws the sibling
+message naming the expected header shape
+`| Accepted for Phase 1 | <rev> | <date> |`.
+
+**Gates (from worktree root).**
+- `pnpm -r build`: green (pre-existing a11y warnings in
+  `SourcePanel.svelte`/`RightPanel.svelte`, not touched here).
+- `pnpm lint`: clean.
+- `pnpm -r test`: desktop chain = vitest (22 files, 194 tests) +
+  electron build + Playwright **159 passed** (hidden windows),
+  including the new `☰ Help/About shortcuts link …` spec. The
+  `fatal: ambiguous argument 'main'` line under snapshot-push is a
+  pre-existing benign git probe, not a failure.
