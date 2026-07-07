@@ -55,6 +55,7 @@ export const KEY = {
   galleryBucketJump: 'gallery-bucket-jump',
   galleryPage: 'gallery-page',
   galleryOpen: 'gallery-open',
+  galleryQuickLook: 'gallery-quick-look',
   galleryToggleSelect: 'gallery-toggle-select',
   galleryDelete: 'gallery-delete',
   // --- editor (note rich text) ---
@@ -242,10 +243,18 @@ declare(KEY.galleryOpen, {
   scope: 'gallery',
   combo: { key: 'Enter' },
 })
+// Bare Space opens Quick Look over the cursor cell (AI-IMP-168); the
+// selection toggle moved to Mod+Space so the reserved key can finally
+// spend itself on the preview it was held for (rev 0.25 → 0.55).
+declare(KEY.galleryQuickLook, {
+  name: 'Quick Look',
+  scope: 'gallery',
+  combo: { key: ' ', glyph: 'Space' },
+})
 declare(KEY.galleryToggleSelect, {
   name: 'Toggle selection',
   scope: 'gallery',
-  combo: { key: ' ', glyph: 'Space' },
+  combo: { mod: true, key: ' ', glyph: 'Space' },
 })
 declare(KEY.galleryDelete, {
   name: 'Move to Trash',
