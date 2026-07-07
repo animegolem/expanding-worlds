@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.51         | 6 July 2026      |
+| Accepted for Phase 1 | 0.52         | 6 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2519,6 +2519,27 @@ end-session discipline. Assets are content-addressed and
 immutable, so git stores each image once and never rewrites it;
 git-lfs is a user choice outside app scope.
 
+**Backup shape ratified (rev 0.52, owner).** Session snapshots
+graduate from deferred to the accepted backup mechanism, with four
+amendments. (1) Cadence adds an idle checkpoint: after a tunable
+idle threshold (~10 minutes without commands) the ritual's data
+half runs in place — flush editor buffers, checkpoint and truncate
+the WAL — and commits, WITHOUT closing the project or releasing
+the lock; End Session and quit remain the full ritual. (2) A
+snapshot ALWAYS includes a readable notes tree: the vault mirror
+serves when enabled, otherwise a minimal regenerated Markdown
+notes export — either way `git log -p` reads as the poor-man's
+event log, and §7.8 metadata blocks make each note
+self-documenting in history. (3) Restore gains a minimal in-app
+surface: Restore from backup… lists snapshots by date and
+materializes the chosen one as a NEW project directory — never
+in-place; destroy-nothing applies to time travel. The project
+remaining an ordinary git repository stays the external escape
+hatch. (4) Settings shows the backup's disk size beside the
+snapshot setting; retention is git history itself — keep-all, no
+compaction UI in Phase 1. The commit + push variant is an Advanced
+setting, off by default.
+
 The single-writer lock records holder pid and hostname with a
 heartbeat. A lock whose recorded holder is on the same host and whose
 pid provably no longer exists is reclaimable immediately, without
@@ -4133,3 +4154,14 @@ Accepted for the Phase 1 prototype:
   rename-rewrite discipline (no undo entry, never clobbers a dirty
   editor). Per-note toggle + Settings global defaults; card styling
   is Design-letter-3 item 16.
+
+- Backup shape ratified (rev 0.52, §11.4): rev 0.24 session
+  snapshots become the accepted backup mechanism with four
+  amendments — an in-place idle checkpoint (~10 min without
+  commands; no close, no lock release), snapshots always carry a
+  readable notes tree (vault mirror or minimal export), a minimal
+  in-app Restore from backup… that materializes a snapshot as a
+  NEW project directory (never in-place), and a Settings disk-size
+  readout with keep-all retention. Remote push stays an Advanced
+  off-by-default setting. Unblocks EPIC-008's backup half
+  (AI-IMP-120/121/122).

@@ -7,8 +7,8 @@ tags:
   - acceptance
 date_created: 2026-07-03
 date_completed:
-kanban_status: backlog
-AI_IMP_spawned:
+kanban_status: in-progress
+AI_IMP_spawned: [AI-IMP-120, AI-IMP-121, AI-IMP-122]
 ---
 
 # AI-EPIC-008-export-import-signoff
@@ -74,12 +74,32 @@ non-exported per §16.
 - [ ] FR-4: Active-content-only export variant.
 - [ ] FR-5: Slice walkthrough of §17 items 1–26 with evidence.
 - [ ] FR-6: §18 acceptance audit with pass/fail record.
+- [ ] FR-7: Git snapshot engine at checkpoint moments per rev 0.52
+      §11.4 (end-session, quit, idle; readable notes tree; size
+      readout) — AI-IMP-120.
+- [ ] FR-8: In-app Restore from backup… materializing a snapshot as
+      a new project directory — AI-IMP-121.
+- [ ] FR-9: Remote push as an Advanced off-by-default setting —
+      AI-IMP-122.
 
 ### Non-Functional Requirements
 
 - Export of a multi-GB project streams without exhausting memory.
 - Import validates schema version and fails cleanly on mismatch.
 
+> Backup half RATIFIED and activated 2026-07-06 (RFC rev 0.52,
+> §11.4): design-queue item resolved — cadence is end-session +
+> quit + in-place idle checkpoint; snapshots always carry a
+> readable notes tree; minimal in-app restore-to-copy; keep-all
+> retention with a Settings size readout; remote push Advanced,
+> off by default. AI-IMP-120/121/122 cut. The export/import
+> sign-off half (FR-1–6) still re-cuts against current §16 at its
+> activation.
+
 ## Implementation Breakdown
 
-IMPs to be cut when this epic activates.
+- AI-IMP-120: git snapshot engine + cadence (FR-7).
+- AI-IMP-121: Restore from backup… restore-to-copy surface (FR-8).
+- AI-IMP-122: remote push Advanced setting (FR-9).
+- Export/import sign-off IMPs cut at that half's activation
+  (FR-1–6).

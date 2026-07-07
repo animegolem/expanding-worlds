@@ -25,11 +25,12 @@ flush list — resolved items move into the RFC and leave.
   group-machinery subsumption question before cutting IMPs.
 - **Rich-text activation** (AI-EPIC-018): TipTap prototype
   go/no-go; embed syntax pick (`![[...]]` vs `![](ew-asset://)`).
-- **EPIC-008 backup shape**: owner direction is a local git store
-  snapshotting the db at checkpoint/sleep moments (a poor-man's
-  event log) + an Advanced connect/upload-remote setting — needs a
-  design pass on cadence, retention, and repo layout before
-  cutting.
+- **EPIC-008 backup shape** — RATIFIED 2026-07-06 (owner, RFC rev
+  0.52 §11.4): end-session + quit + in-place idle checkpoint;
+  snapshots always carry db + assets + readable notes tree;
+  keep-all retention with Settings size readout; minimal in-app
+  restore-to-copy; remote push Advanced, off by default.
+  AI-IMP-120/121/122 cut.
 
 ## Standing feel decisions (owner's hands, see HUMAN-TESTING.md)
 

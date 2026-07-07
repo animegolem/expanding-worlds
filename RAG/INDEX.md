@@ -6,14 +6,24 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 8 | 2 |
+| In Progress | 2 | 0 |
+| Planned | 7 | 5 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 13 | 112 |
-| **Total** | **22** | **117** |
+| **Total** | **22** | **120** |
 
 ## In Progress
+
+### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
+> RFC §16 requires portable export with lossless reimport, and §17–18
+
+**IMPs:**
+- [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — planned
+- [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — planned
+- [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — planned
+
+---
 
 ### [[AI-EPIC-022-fleet-friction|EPIC-022: Fleet friction]]
 > (1) Electron's postinstall silently ships a husk `dist/` in every
@@ -33,11 +43,6 @@
 **IMPs:**
 - [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
 - [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
-
----
-
-### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
-> RFC §16 requires portable export with lossless reimport, and §17–18
 
 ---
 
@@ -100,7 +105,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4135 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4167 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1450 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (999 LOC)
