@@ -295,7 +295,11 @@
         failed > 0
           ? `Emptied Trash — ${purged} purged, ${failed} failed`
           : `Emptied Trash — ${plural(purged, 'item')} purged`,
-        { kind: failed > 0 ? 'error' : 'info', surface: 'trash-empty' },
+        // Surface must NOT be 'trash-empty': Toasts stamps the surface
+        // as data-testid, and the empty-state <p> below already owns
+        // that id — a lingering toast made the pair a strict-mode
+        // violation (flaked twice on 2026-07-06).
+        { kind: failed > 0 ? 'error' : 'info', surface: 'trash-emptied' },
       )
       confirmingEmpty = false
       await load()
