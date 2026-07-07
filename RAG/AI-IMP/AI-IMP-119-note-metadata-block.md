@@ -6,12 +6,12 @@ tags:
   - notes
   - persistence
   - note-panel
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.7
 date_created: 2026-07-06
-date_completed:
+date_completed: 2026-07-06
 ---
 
 
@@ -126,10 +126,9 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       pandoc untouched (doc-side landed in rev 0.51 commit). (Build
       green; `pnpm lint` clean; packages vitest green; desktop e2e
       132/132 including the flake source-panel:68 on first try.)
-- [ ] Append HUMAN-TESTING.md entry (card feel, tree scannability,
-      "does the export read right in Obsidian"). (Left for the lead
-      to append at merge — the agent must not touch HUMAN-TESTING.md;
-      suggested text is in the handoff report.)
+- [x] Append HUMAN-TESTING.md entry (card feel, tree scannability,
+      "does the export read right in Obsidian"). (Appended by the
+      lead at merge, per the agent-fence protocol.)
 
 ### Acceptance Criteria
 

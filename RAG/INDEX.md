@@ -10,7 +10,7 @@
 | Planned | 7 | 4 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 13 | 114 |
+| Completed | 13 | 115 |
 | **Total** | **22** | **120** |
 
 ## In Progress
@@ -89,9 +89,6 @@
 
 ## Anomalies
 
-### Orphaned IMPs (no epic dependency)
-- [[AI-IMP-119-note-metadata-block|IMP-119]] — planned, no epic dependency found
-
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-015 is completed
 
@@ -104,15 +101,15 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5048 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4185 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4210 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1569 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1472 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (1114 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (843 LOC)
 - apps/desktop/src/main/index.ts (793 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
-- apps/desktop/e2e/notes.spec.ts (752 LOC)
+- apps/desktop/e2e/notes.spec.ts (758 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (721 LOC)
@@ -125,6 +122,7 @@ Generated from tracked files; binary assets excluded.
 
 ### > 300 LOC
 
+- apps/desktop/src/renderer/views/SettingsView.svelte (591 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - apps/desktop/src/renderer/note/panels.ts (581 LOC)
@@ -138,7 +136,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
 - packages/persistence/src/handlers/nodes.ts (522 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (519 LOC)
 - packages/persistence/src/handlers/pin.ts (514 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.ts (508 LOC)
@@ -153,11 +150,11 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (455 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
+- packages/persistence/src/handlers/notes.ts (434 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (426 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
-- packages/persistence/src/handlers/notes.ts (420 LOC)
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/e2e/shell.spec.ts (386 LOC)
@@ -166,10 +163,10 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-search.test.ts (368 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (359 LOC)
+- packages/persistence/src/queries-notes.ts (356 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
-- packages/persistence/src/queries-notes.ts (341 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/persistence/src/queries-gallery.test.ts (338 LOC)
 - packages/protocol/src/index.ts (334 LOC)
@@ -177,6 +174,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (330 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (325 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
+- apps/desktop/src/renderer/note/note-editor.ts (320 LOC)
 - apps/desktop/e2e/outline.spec.ts (318 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)

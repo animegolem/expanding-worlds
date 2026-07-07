@@ -28,6 +28,15 @@ record — history lives in the tickets.
 
 ## Awaiting validation
 
+- [ ] **Note metadata block** (AI-IMP-119, 2026-07-06): open a note
+  whose node lives on several boards — the Placements card below the
+  editor should read scannably (tree indentation, counts) and each
+  entry should fly to the right board. Toggle the card off and on.
+  Import an image with a source URL and check its Provenance line.
+  Then rename the note and open its .md in Obsidian: the block
+  should read as plain markdown (rule + headings + lists) while the
+  in-app editor keeps showing prose only.
+
 - [ ] **Tethered panel world-scale** (AI-IMP-116, 2026-07-06): open
   a note tethered beside its node, then zoom out — the card should
   shrink in step with the board and stay glued to its node (no more
