@@ -12,7 +12,9 @@
   import {
     isTextData,
     type AlignOp,
+    type ArrangeSortKey,
     type DistributeAxis,
+    type NormalizeMode,
     type ReorderOp,
     type TextData,
     type ToolKind,
@@ -86,6 +88,21 @@
     { op: 'backward', label: 'Backward' },
     { op: 'front', label: 'To front' },
     { op: 'back', label: 'To back' },
+  ]
+  // §4.9 rev 0.38: compact-pack sort keys and normalize modes. No chord
+  // is assigned (the family is broad and grows with EPIC-016 menus);
+  // they ship reachable from this dock surface per the ticket allowance.
+  const arrangeOps: Array<{ key: ArrangeSortKey; label: string; tip: string }> = [
+    { key: 'default', label: 'Arrange', tip: 'Compact-pack (current order)' },
+    { key: 'name', label: 'By name', tip: 'Compact-pack by name' },
+    { key: 'importDate', label: 'By date', tip: 'Compact-pack by import order' },
+    { key: 'area', label: 'By size', tip: 'Compact-pack largest first' },
+  ]
+  const normalizeOps: Array<{ mode: NormalizeMode; label: string; tip: string }> = [
+    { mode: 'height', label: 'Eq. H', tip: 'Equalize height (median)' },
+    { mode: 'width', label: 'Eq. W', tip: 'Equalize width (median)' },
+    { mode: 'size', label: 'Eq. size', tip: 'Equalize size (median)' },
+    { mode: 'area', label: 'Eq. area', tip: 'Equalize area (median)' },
   ]
 
   let activeTool = $state<ToolKind>(handle.tools.active)
@@ -474,6 +491,28 @@
           disabled={selectionCount < 3}
           onclick={() => void tooling.distribute(entry.axis)}
           use:tooltip={{ name: entry.label }}
+        >
+          {entry.label}
+        </button>
+      {/each}
+      {#each arrangeOps as entry (entry.key)}
+        <button
+          type="button"
+          data-testid={`arrange-${entry.key}`}
+          disabled={selectionCount < 2}
+          onclick={() => void tooling.arrange(entry.key)}
+          use:tooltip={{ name: entry.tip }}
+        >
+          {entry.label}
+        </button>
+      {/each}
+      {#each normalizeOps as entry (entry.mode)}
+        <button
+          type="button"
+          data-testid={`normalize-${entry.mode}`}
+          disabled={selectionCount < 2}
+          onclick={() => void tooling.normalize(entry.mode)}
+          use:tooltip={{ name: entry.tip }}
         >
           {entry.label}
         </button>

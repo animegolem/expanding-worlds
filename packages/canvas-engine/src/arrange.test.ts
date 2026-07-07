@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { alignPayload, distributePayload } from './arrange'
-import { itemWorldAABB } from './hit-test'
+import { alignPayload, arrangePayload, distributePayload, normalizeSelection } from './arrange'
+import { itemWorldAABB, placementSize } from './hit-test'
 import { makeDecoration, makePlacement } from './test-helpers'
 import type { TransformContentPayload } from '@ew/commands'
 import type { SceneItem } from './types'
@@ -143,5 +143,196 @@ describe('distributePayload', () => {
     ]
     const next = apply(items, distributePayload('c1', items, 'horizontal'))
     expect(distributePayload('c1', next, 'horizontal')).toBeNull()
+  })
+})
+
+/** Every placement's world center; sorted by id for stable comparison. */
+function centers(items: readonly SceneItem[]): Array<{ id: string; x: number; y: number }> {
+  return items
+    .filter((item) => item.itemKind === 'placement')
+    .map((item) => ({ id: item.id, x: (item as { x: number }).x, y: (item as { y: number }).y }))
+}
+
+function overlaps(a: SceneItem, b: SceneItem): boolean {
+  const ra = itemWorldAABB(a)!
+  const rb = itemWorldAABB(b)!
+  const gx = Math.max(ra.x, rb.x) < Math.min(ra.x + ra.width, rb.x + rb.width)
+  const gy = Math.max(ra.y, rb.y) < Math.min(ra.y + ra.height, rb.y + rb.height)
+  return gx && gy
+}
+
+describe('arrangePayload', () => {
+  // Four 100×100 tiles: gap = 8, so the √(padded area) row width settles
+  // them into a 2×2 grid whose top-left slot lands on the union top-left.
+  const scattered = (): SceneItem[] => [
+    makePlacement({ id: 'A', renderOrder: 4, x: 500, y: 500, width: 100, height: 100 }),
+    makePlacement({ id: 'B', renderOrder: 1, x: 0, y: 0, width: 100, height: 100 }),
+    makePlacement({ id: 'C', renderOrder: 3, x: 900, y: 100, width: 100, height: 100 }),
+    makePlacement({ id: 'D', renderOrder: 2, x: 200, y: 700, width: 100, height: 100 }),
+  ]
+
+  it('packs by import date (renderOrder) into a compact non-overlapping grid', () => {
+    const items = scattered()
+    const next = apply(items, arrangePayload('c1', items, 'importDate'))
+    // Union top-left of the scatter is (-50, -50); the grid anchors there
+    // so slot centers are (0,0) (108,0) (0,108) (108,108) in date order.
+    const byId = new Map(centers(next).map((c) => [c.id, c]))
+    expect(byId.get('B')).toMatchObject({ x: 0, y: 0 }) // renderOrder 1
+    expect(byId.get('D')).toMatchObject({ x: 108, y: 0 }) // 2
+    expect(byId.get('C')).toMatchObject({ x: 0, y: 108 }) // 3
+    expect(byId.get('A')).toMatchObject({ x: 108, y: 108 }) // 4
+    // No two tiles overlap after packing.
+    for (let i = 0; i < next.length; i += 1)
+      for (let j = i + 1; j < next.length; j += 1)
+        expect(overlaps(next[i]!, next[j]!)).toBe(false)
+  })
+
+  it('orders by name (title), then by area descending', () => {
+    const named: SceneItem[] = [
+      makePlacement({ id: 'a', x: 0, y: 0, width: 100, height: 100, noteTitle: 'Zephyr' }),
+      makePlacement({ id: 'b', x: 300, y: 0, width: 100, height: 100, noteTitle: 'Apple' }),
+      makePlacement({ id: 'c', x: 600, y: 0, width: 100, height: 100, noteTitle: 'Mango' }),
+      makePlacement({ id: 'd', x: 900, y: 0, width: 100, height: 100, noteTitle: 'apricot' }),
+    ]
+    const byName = new Map(centers(apply(named, arrangePayload('c1', named, 'name'))).map((c) => [c.id, c]))
+    // Apple < apricot < Mango < Zephyr (case-insensitive) → grid slots.
+    expect(byName.get('b')).toMatchObject({ x: 0, y: 0 })
+    expect(byName.get('d')).toMatchObject({ x: 108, y: 0 })
+    expect(byName.get('c')).toMatchObject({ x: 0, y: 108 })
+    expect(byName.get('a')).toMatchObject({ x: 108, y: 108 })
+
+    const sizes: SceneItem[] = [
+      makePlacement({ id: 'small', x: 0, y: 0, width: 40, height: 40 }),
+      makePlacement({ id: 'big', x: 400, y: 0, width: 200, height: 200 }),
+      makePlacement({ id: 'mid', x: 800, y: 0, width: 100, height: 100 }),
+    ]
+    const areaOrder = arrangePayload('c1', sizes, 'area')!
+    // First slot (union top-left) is the largest by area.
+    const bigAabb = itemWorldAABB(apply(sizes, areaOrder).find((i) => i.id === 'big')!)!
+    const originX = Math.min(...sizes.map((i) => itemWorldAABB(i)!.x))
+    const originY = Math.min(...sizes.map((i) => itemWorldAABB(i)!.y))
+    expect(bigAabb.x).toBeCloseTo(originX, 6)
+    expect(bigAabb.y).toBeCloseTo(originY, 6)
+  })
+
+  it('keeps default reading order (row-major over the current layout)', () => {
+    const items: SceneItem[] = [
+      makePlacement({ id: 'tl', x: 0, y: 0, width: 100, height: 100 }),
+      makePlacement({ id: 'tr', x: 300, y: 0, width: 100, height: 100 }),
+      makePlacement({ id: 'bl', x: 0, y: 400, width: 100, height: 100 }),
+    ]
+    const next = apply(items, arrangePayload('c1', items, 'default'))
+    const byId = new Map(centers(next).map((c) => [c.id, c]))
+    // Reading order tl, tr, bl → first row then wrap.
+    expect(byId.get('tl')!.y).toBeLessThanOrEqual(byId.get('bl')!.y)
+    expect(byId.get('tl')!.x).toBeLessThan(byId.get('tr')!.x)
+  })
+
+  it('translates decorations alongside placements', () => {
+    const items: SceneItem[] = [
+      makePlacement({ id: 'p', x: 0, y: 0, width: 100, height: 100 }),
+      makeDecoration({ id: 'd', kind: 'line', data: { x1: 400, y1: 400, x2: 460, y2: 440 } }),
+    ]
+    const payload = arrangePayload('c1', items, 'default')!
+    // The decoration reflows into the block (the placement already sits
+    // at the union top-left, so only the decoration actually moves).
+    const touched = payload.items.map((i) => (i.kind === 'placement' ? i.placementId : i.decorationId))
+    expect(touched).toContain('d')
+    const next = apply(items, payload)
+    expect(overlaps(next[0]!, next[1]!)).toBe(false)
+  })
+
+  it('is idempotent and a single-item no-op', () => {
+    const items = scattered()
+    const packed = apply(items, arrangePayload('c1', items, 'importDate'))
+    expect(arrangePayload('c1', packed, 'importDate')).toBeNull()
+    expect(arrangePayload('c1', [makePlacement({ width: 100, height: 100 })], 'default')).toBeNull()
+  })
+
+  it('honors an explicit origin and row width (frame-scoped, AI-IMP-129)', () => {
+    const items: SceneItem[] = [
+      makePlacement({ id: 'x', x: 0, y: 0, width: 100, height: 100 }),
+      makePlacement({ id: 'y', x: 300, y: 0, width: 100, height: 100 }),
+    ]
+    const next = apply(
+      items,
+      arrangePayload('c1', items, 'default', { origin: { x: 1000, y: 2000 }, rowWidth: 500, gap: 10 }),
+    )
+    const byId = new Map(centers(next).map((c) => [c.id, c]))
+    // Both fit one 500-wide row anchored at the given origin (AABB
+    // top-left 1000,2000 → center +50; second tile +110 in x).
+    expect(byId.get('x')).toMatchObject({ x: 1050, y: 2050 })
+    expect(byId.get('y')).toMatchObject({ x: 1160, y: 2050 })
+  })
+})
+
+describe('normalizeSelection', () => {
+  it('equalizes height to the median with aspect preserved and center fixed', () => {
+    const items: SceneItem[] = [
+      makePlacement({ id: 'tall', x: 10, y: 20, width: 100, height: 200 }), // aspect 1:2
+      makePlacement({ id: 'wide', x: 50, y: 60, width: 200, height: 100 }), // aspect 2:1
+      makePlacement({ id: 'sq', x: 90, y: 90, width: 100, height: 100 }),
+    ]
+    // heights [200,100,100] → median 100.
+    const next = apply(items, normalizeSelection('c1', items, 'height'))
+    for (const item of next) expect(placementSize(item as never).height).toBeCloseTo(100, 6)
+    const tall = next.find((i) => i.id === 'tall')!
+    expect(placementSize(tall as never)).toMatchObject({ width: 50, height: 100 }) // 1:2 kept
+    // Centers never move.
+    expect(tall).toMatchObject({ x: 10, y: 20 })
+  })
+
+  it('equalizes width, longest-edge size, and area each about the median', () => {
+    const mk = (): SceneItem[] => [
+      makePlacement({ id: 'p1', x: 0, y: 0, width: 100, height: 100 }),
+      makePlacement({ id: 'p2', x: 0, y: 0, width: 200, height: 200 }),
+      makePlacement({ id: 'p3', x: 0, y: 0, width: 400, height: 100 }),
+    ]
+    // width: widths [100,200,400] median 200.
+    for (const item of apply(mk(), normalizeSelection('c1', mk(), 'width')))
+      expect(placementSize(item as never).width).toBeCloseTo(200, 6)
+    // size: longest edges [100,200,400] median 200.
+    for (const item of apply(mk(), normalizeSelection('c1', mk(), 'size')))
+      expect(Math.max(placementSize(item as never).width, placementSize(item as never).height)).toBeCloseTo(200, 6)
+    // area: areas [10000,40000,40000] median 40000.
+    for (const item of apply(mk(), normalizeSelection('c1', mk(), 'area')))
+      expect(placementSize(item as never).width * placementSize(item as never).height).toBeCloseTo(40000, 3)
+  })
+
+  it('uses the median so one outlier does not explode the rest', () => {
+    const items: SceneItem[] = [
+      makePlacement({ id: 'a', width: 100, height: 100 }),
+      makePlacement({ id: 'b', width: 100, height: 100 }),
+      makePlacement({ id: 'c', width: 100, height: 100 }),
+      makePlacement({ id: 'd', width: 100, height: 100 }),
+      makePlacement({ id: 'huge', width: 5000, height: 5000 }),
+    ]
+    const payload = normalizeSelection('c1', items, 'height')!
+    // Median height is 100 → the four normal tiles are untouched; only
+    // the outlier is rescaled down into the payload.
+    expect(payload.items).toHaveLength(1)
+    expect(payload.items[0]).toMatchObject({ kind: 'placement', placementId: 'huge' })
+  })
+
+  it('excludes locked placements and ignores decorations', () => {
+    const items: SceneItem[] = [
+      makePlacement({ id: 'a', width: 100, height: 100 }),
+      makePlacement({ id: 'b', width: 300, height: 300 }),
+      makePlacement({ id: 'locked', width: 900, height: 900, locked: 1 }),
+      makeDecoration({ id: 'deco', kind: 'shape', data: { x: 0, y: 0, width: 10, height: 10 } }),
+    ]
+    const payload = normalizeSelection('c1', items, 'height')!
+    const touched = payload.items.map((i) => (i.kind === 'placement' ? i.placementId : i.decorationId))
+    expect(touched).not.toContain('locked')
+    expect(touched).not.toContain('deco')
+  })
+
+  it('is a no-op below two normalizable placements and when already even', () => {
+    expect(normalizeSelection('c1', [makePlacement({ width: 100, height: 100 })], 'height')).toBeNull()
+    const even: SceneItem[] = [
+      makePlacement({ id: 'a', width: 100, height: 100 }),
+      makePlacement({ id: 'b', width: 100, height: 100 }),
+    ]
+    expect(normalizeSelection('c1', even, 'height')).toBeNull()
   })
 })

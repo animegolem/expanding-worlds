@@ -77,17 +77,22 @@ mode round-trip with single-undo assertion.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Sort keys feed the existing packer (name, import date,
-      size/area + current default preserved); pure units per key.
-- [ ] Normalize modes: equalize height / width / size / area,
+- [x] Sort keys feed the packer (name, import date, size/area +
+      current default preserved); pure units per key. NB: no packer
+      existed (§6.9 auto-arrange was deferred) — a minimal shelf
+      packer was built as the substrate. See Issues.
+- [x] Normalize modes: equalize height / width / size / area,
       median reference; pure units incl. mixed aspects and
       single-item no-op.
-- [ ] Renderer verbs commit ONE undo entry per invocation; undo
-      restores all prior geometry (e2e asserts).
-- [ ] Any shortcuts declared in the registry; Settings Keyboard
-      lists them.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
-      e2e hidden.
+- [x] Renderer verbs commit ONE undo entry per invocation; undo
+      restores all prior geometry (e2e asserts, both verbs).
+- [x] No shortcut chord assigned (allowed): the arrange×4 /
+      normalize×4 family is broad and grows with EPIC-016 menus, so
+      the verbs ship on the §8.2 Dock selection surface. Nothing to
+      declare in the registry.
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+      e2e hidden — all green (one unrelated trash.spec flake auto
+      -passed on retry).
 - [ ] HUMAN-TESTING entry appended at merge by the lead (does
       normalize-by-median feel right on a messy pinboard).
 
@@ -109,3 +114,49 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **No packer existed.** The ticket ("sort keys feed the existing
+  packer") and §6.9 both assumed an auto-arrange packer was already
+  in place, but §6.9 lists auto-arrange (pack) as *deferred with
+  scope* — nothing implemented it. The acceptance criterion ("they
+  pack compactly in date order") is unsatisfiable without one, so a
+  minimal shelf/next-fit packer was built in `arrange.ts`
+  (`arrangePayload`) as the substrate the sort keys feed. It is
+  deliberately simple (compact non-overlapping shelves anchored at
+  the selection's union top-left, roughly-square row width) — no new
+  packing *algorithm* research, matching the out-of-scope note. This
+  is the one deviation from the brief's literal wording; flagged for
+  lead review.
+
+- **`importDate` sorts on `renderOrder`, not a timestamp.** The
+  scene wire (§11.1 `getCanvasScene`) carries no import/created
+  timestamp, and this ticket is fenced out of persistence /
+  protocol / commands / main — so no timestamp could be surfaced.
+  `renderOrder` (assigned incrementally at placement creation) is
+  the available creation-order proxy and is what the `importDate`
+  key sorts on. Documented in `arrange.ts`. If a true import
+  timestamp is ever wanted on the board, it must be added to the
+  projection in a persistence-owning ticket first; the enum stays
+  additive so swapping the key's source is cheap.
+
+- **Normalize is placements-only.** Decorations carry no
+  uniform-scale verb (geometry lives in per-kind data JSON with no
+  scale helper), so normalize excludes them and locked placements
+  (§6.9 rev 0.17 refuses resize) from both the median and the move.
+  Arrange, by contrast, packs decorations too (translation only,
+  like align/distribute).
+
+- **Signatures for AI-IMP-129 (frame-scoped).** `arrangePayload`
+  takes an optional `ArrangeOptions { gap, origin, rowWidth }` and
+  `sortItemsForArrange(entries, key)` is exported, so 129 can drive
+  the same pack into a frame's inner box without reimplementing.
+  Covered by the "honors an explicit origin and row width" unit
+  test.
+
+- **No shortcut chord.** Deliberately none assigned (ticket
+  allowance) — recorded above; `bindings.ts` untouched.
+
+- Gates all green. `pnpm -r test` runs the full desktop e2e; one
+  `trash.spec.ts` flake (toast/strict-mode, unrelated to this work)
+  auto-passed on retry. The two new AI-IMP-128 e2e tests were also
+  run in isolation and passed (2/2).
