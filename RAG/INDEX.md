@@ -10,7 +10,7 @@
 | Planned | 5 | 6 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 140 |
+| Completed | 14 | 141 |
 | **Total** | **25** | **154** |
 
 ## In Progress
@@ -120,7 +120,6 @@
 - [[AI-IMP-151-interaction-physics-beats|IMP-151]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-154-decoration-verb-undo-capture|IMP-154]] — planned, no epic dependency found
-- [[AI-IMP-155-menu-review-polish|IMP-155]] — planned, no epic dependency found
 
 ---
 
@@ -146,8 +145,8 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (899 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (843 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (825 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (764 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
@@ -197,11 +196,11 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - packages/persistence/src/handlers/notes.ts (434 LOC)
+- apps/desktop/e2e/shell.spec.ts (426 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - packages/persistence/src/queries-notes.test.ts (421 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (399 LOC)
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
-- apps/desktop/e2e/shell.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/theme.css (381 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
