@@ -5,12 +5,12 @@ tags:
   - Implementation
   - rich-text
   - typography
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-146, AI-IMP-131]
 parent_epic: [[AI-EPIC-018-rich-text-notes]]
 confidence_score: 0.65
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -65,7 +65,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Editor-scope shortcut declarations listed in Settings.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (LOUD
+- [x] HUMAN-TESTING entry appended at merge by the lead (LOUD
       headings feel; bar timing on selection).
 
 ### Acceptance Criteria
