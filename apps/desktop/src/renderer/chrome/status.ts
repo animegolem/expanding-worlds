@@ -12,6 +12,7 @@
  * logic unit-tests without a DOM; Svelte chrome subscribes via the
  * onXChanged hooks.
  */
+import type { SnapshotPushState } from '@ew/protocol'
 import { wake } from './engagement'
 import { TOAST_DURATION_MS } from './feel'
 
@@ -232,6 +233,64 @@ export function attachServiceStatus(): void {
   }) as EventListener)
 }
 
+let snapshotPushAttached = false
+
+/**
+ * §11.4/§8.6 remote push (AI-IMP-122): wire the background push's state
+ * into the §8.6 grammar. An in-flight push and unpushed backup debt are
+ * ONGOING conditions — they hold the ⚠ perch for exactly as long as the
+ * state does; a reconciled push clears it. A failure toasts ONCE per
+ * episode (not per retry): the flag arms on the first error and only
+ * disarms when a push reconciles, so repeated failing retries stay
+ * silent while the perch keeps the debt visible.
+ */
+export function attachSnapshotPush(): void {
+  if (snapshotPushAttached) return
+  snapshotPushAttached = true
+  const cond = condition('snapshot-push')
+  let inFailureEpisode = false
+  const plural = (n: number): string => (n === 1 ? '' : 's')
+  const apply = (state: SnapshotPushState): void => {
+    if (state.phase === 'pushing') {
+      cond.raise(
+        state.unpushed > 0
+          ? `Backing up ${state.unpushed} snapshot${plural(state.unpushed)} to the remote…`
+          : 'Backing up to the remote…',
+      )
+    } else if (state.phase === 'error') {
+      const n = state.unpushed
+      cond.raise(
+        `${n} snapshot${plural(n)} not backed up — couldn't reach the remote; the next snapshot retries`,
+      )
+      if (!inFailureEpisode) {
+        inFailureEpisode = true
+        toast(state.message ? `Backup push failed: ${state.message}` : 'Backup push failed', {
+          kind: 'error',
+          surface: 'snapshot-push',
+        })
+      }
+    } else {
+      // idle: reconciled. A stray unpushed>0 keeps the debt visible
+      // rather than silently dropping it; 0 ends the episode and clears.
+      if (state.unpushed > 0) {
+        cond.raise(`${state.unpushed} snapshot${plural(state.unpushed)} not backed up yet`)
+      } else {
+        inFailureEpisode = false
+        cond.clear()
+      }
+    }
+  }
+  window.ew.snapshot.onPushState(apply)
+  // Attach-time catch-up: a push begun before this window mounted is
+  // pulled from the retained state (same race the service event has).
+  const pull = window.ew.snapshot.pushState
+  if (pull) {
+    void pull().then((state) => {
+      if (state) apply(state)
+    })
+  }
+}
+
 let noticesAttached = false
 let restoreKeep: (nodeIds: string[]) => void = () => {}
 
@@ -268,4 +327,5 @@ export function __resetStatusForTests(): void {
   conditions = []
   toastListeners.clear()
   conditionListeners.clear()
+  snapshotPushAttached = false
 }

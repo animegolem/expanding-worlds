@@ -10,6 +10,7 @@ import type {
   ProjectRequest,
   ProjectResponse,
   ServiceStatusEvent,
+  SnapshotPushState,
   UtilityEnvelope,
   UtilityMessage,
 } from '@ew/protocol'
@@ -616,7 +617,21 @@ const snapshots = createSnapshotEngine({
   callUtility,
   flushRenderers,
   projectDir,
+  // §11.4/§8.6 remote push (AI-IMP-122): the background push's state
+  // reaches the renderers here — the ongoing-push perch and the
+  // once-per-episode failure toast live renderer-side (chrome/status).
+  onPushState: (state) => broadcastPushState(state),
 })
+
+// Last push state, retained so a window created after a push began can
+// catch up on attach (the same cold-boot race the service event has).
+let lastPushState: SnapshotPushState | null = null
+function broadcastPushState(state: SnapshotPushState): void {
+  lastPushState = state
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('snapshot:push-state', state)
+  }
+}
 
 // Blur debounce: tabbing to a reference board must not thrash the
 // disk. A blur arms a single 30s timer; a focus before it fires
@@ -737,6 +752,14 @@ void app.whenReady().then(() => {
   // enum itself rides the ordinary project-setting verbs (getSettings /
   // set-setting), so no bespoke handler is needed for it.
   ipcMain.handle('snapshot:status', () => snapshots.status())
+  // §11.4 remote push (AI-IMP-122): the deliberate Test connection
+  // action (git ls-remote) and the retained push state for attach-time
+  // catch-up. Test connection is the ONLY network call the user
+  // triggers by hand; the push itself rides the snapshot ritual.
+  ipcMain.handle('snapshot:test-connection', (_event, url: string) =>
+    snapshots.testConnection(String(url)),
+  )
+  ipcMain.handle('snapshot:push-state-current', () => lastPushState)
 
   // §11.4 restore-from-backup (AI-IMP-121): the dated snapshot list and
   // the materialize-to-sibling action ride the engine's git mechanics.

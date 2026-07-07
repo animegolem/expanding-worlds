@@ -20,7 +20,9 @@ import type {
   ServiceStatusEvent,
   SetSettingResponse,
   SnapshotEntry,
+  SnapshotPushState,
   SnapshotStatus,
+  SnapshotTestConnectionResult,
   SubmitThumbnailResponse,
   ThumbnailReadyEvent,
 } from '@ew/protocol'
@@ -178,6 +180,22 @@ const api = {
      * directory (the standard cold-boot open path). */
     open: (dir: string): Promise<boolean> =>
       ipcRenderer.invoke('restore:open', dir) as Promise<boolean>,
+    /** §11.4 remote push (AI-IMP-122): the deliberate Test connection
+     * action (git ls-remote) behind the Advanced remote-URL row. The
+     * ONLY network call the user triggers by hand. */
+    testConnection: (url: string): Promise<SnapshotTestConnectionResult> =>
+      ipcRenderer.invoke('snapshot:test-connection', url) as Promise<SnapshotTestConnectionResult>,
+    /** §8.6 ongoing-push perch + once-per-episode failure toast: the
+     * background push's state, pushed from main as it advances. */
+    onPushState: (callback: (state: SnapshotPushState) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, state: SnapshotPushState): void => callback(state)
+      ipcRenderer.on('snapshot:push-state', listener)
+      return () => ipcRenderer.removeListener('snapshot:push-state', listener)
+    },
+    /** The latest push state, for attach-time catch-up — a push begun
+     * before a new window mounts is not lost to the race. */
+    pushState: (): Promise<SnapshotPushState | null> =>
+      ipcRenderer.invoke('snapshot:push-state-current') as Promise<SnapshotPushState | null>,
   },
   /** §14.4 secondary project slots (AI-IMP-088): source = read-only
    * browse of another project, library = the writable mirror target.

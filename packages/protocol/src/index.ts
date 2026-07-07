@@ -295,6 +295,38 @@ export interface SnapshotStatus {
   sizeBytes: number | null
 }
 
+/** §11.4 remote push (AI-IMP-122): the per-project remote URL for the
+ * `commit-push` variant, stored as an ordinary project-tier setting
+ * (key `snapshot_remote`) — no migration, travels with export/import.
+ * Empty/unset means no remote, and NOTHING network-shaped runs unless
+ * mode is `commit-push` AND this is a non-empty URL (§11.5 constitution:
+ * deliberate opt-in, never ambient). Credentials are never stored — auth
+ * is the system's (ssh agent / git credential helper). */
+export const SNAPSHOT_REMOTE_KEY = 'snapshot_remote'
+
+/** §11.4 Test connection (AI-IMP-122): the deliberate `git ls-remote`
+ * probe behind the Advanced "Test connection" action. Never runs
+ * ambiently — only on the button. Failure carries a short human message
+ * (the git stderr tail) so the Settings copy can explain the problem. */
+export type SnapshotTestConnectionResult = { ok: true } | { ok: false; message: string }
+
+/** §11.4/§8.6 remote push state (AI-IMP-122): main → renderer broadcast
+ * for the ongoing-push perch and the single-per-episode failure toast.
+ * `unpushed` is commits ahead of the remote tracking ref (`git rev-list
+ * --count`), the backup debt. `phase`:
+ *  - `pushing` — a background push is in flight (perch shows it, §8.6);
+ *  - `idle`    — reconciled (`unpushed` 0 clears the perch), or nothing
+ *                to push;
+ *  - `error`   — the last push failed; the perch shows the debt and the
+ *                next snapshot retries. `message` carries the failure
+ *                detail ONLY on the transition into error, so the
+ *                renderer toasts once per episode, not per retry. */
+export interface SnapshotPushState {
+  phase: 'pushing' | 'idle' | 'error'
+  unpushed: number
+  message?: string
+}
+
 /** §11.4 restore-from-backup (AI-IMP-121): one row of the dated
  * snapshot picker — the commit's short SHA (the restore handle), its
  * committer ISO timestamp, and the generated message. Produced by

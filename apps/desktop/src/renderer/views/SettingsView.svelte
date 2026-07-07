@@ -134,6 +134,40 @@
     return `${(mb / 1024).toFixed(2)} GB`
   }
 
+  // §11.4 remote push (AI-IMP-122): the commit-push variant is the
+  // Advanced backup mode — its remote URL surfaces only once commit-push
+  // is chosen (two deliberate acts, §11.5 constitution: nothing
+  // network-shaped is ambient). The URL is an ordinary project setting
+  // (key snapshot_remote, no migration). Never a <datalist> — a plain
+  // text field, so no history of private repo URLs is ever offered.
+  let remoteDraft = $state('')
+  let remoteTest = $state<{ state: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }>({
+    state: 'idle',
+  })
+  function storedRemote(): string {
+    const raw = projectSettings['snapshot_remote']
+    return typeof raw === 'string' ? raw : ''
+  }
+  // Seed the draft from the stored URL and re-seed whenever settings
+  // change externally (mode flips, saves). Typing never re-triggers this
+  // — it depends on projectSettings, not the draft — so the field is not
+  // clobbered mid-edit.
+  $effect(() => {
+    remoteDraft = storedRemote()
+  })
+  async function saveRemote(url: string): Promise<void> {
+    const trimmed = url.trim()
+    if (trimmed === storedRemote()) return
+    projectSettings = { ...projectSettings, snapshot_remote: trimmed }
+    remoteTest = { state: 'idle' } // the target changed; a prior result is stale
+    await window.ew.settings.setProject('snapshot_remote', trimmed)
+  }
+  async function testRemote(url: string): Promise<void> {
+    remoteTest = { state: 'testing' }
+    const result = await window.ew.snapshot.testConnection(url.trim())
+    remoteTest = result.ok ? { state: 'ok' } : { state: 'fail', message: result.message }
+  }
+
   const FLAT_SWATCHES = [1, 2, 3, 4, 5, 6].map((n) => `--ew-canvas-flat-${n}`)
   const isMac = navigator.platform.startsWith('Mac')
 
@@ -351,6 +385,47 @@
         )}.
       {/if}
     </p>
+
+    {#if snapshotMode() === 'commit-push'}
+      <div class="row remote-row" data-testid="settings-row-snapshot-remote">
+        <span class="row-label">Backup remote</span>
+        <div class="remote-config">
+          <input
+            type="text"
+            class="text-input"
+            data-testid="settings-snapshot-remote-url"
+            placeholder="git@… or https://… repository URL"
+            spellcheck="false"
+            autocomplete="off"
+            bind:value={remoteDraft}
+            onblur={() => void saveRemote(remoteDraft)}
+            disabled={snapshotStatus !== null && !snapshotStatus.gitAvailable}
+          />
+          <button
+            type="button"
+            class="text-button"
+            data-testid="settings-snapshot-remote-test"
+            onclick={() => void testRemote(remoteDraft)}
+            disabled={remoteTest.state === 'testing' ||
+              remoteDraft.trim().length === 0 ||
+              (snapshotStatus !== null && !snapshotStatus.gitAvailable)}
+          >
+            {remoteTest.state === 'testing' ? 'Testing…' : 'Test connection'}
+          </button>
+        </div>
+      </div>
+      <p class="section-note remote-note" data-testid="settings-snapshot-remote-note">
+        {#if remoteTest.state === 'ok'}
+          <span class="ok">Connected — the remote is reachable.</span>
+        {:else if remoteTest.state === 'fail'}
+          <span class="fail">Couldn't reach the remote: {remoteTest.message}</span>
+        {:else}
+          Each snapshot commits locally, then pushes to this remote in the background — End Session
+          never waits on the network. Nothing is sent until a URL is set here. Authentication uses
+          your system's git credentials (ssh agent or credential helper); no secrets are stored.
+        {/if}
+      </p>
+    {/if}
 
     {@render deferredRow(
       'Mirror drops to library',
@@ -635,5 +710,67 @@
 
   input[type='range'] {
     accent-color: var(--ew-accent);
+  }
+
+  /* §11.4 remote push (AI-IMP-122): the Advanced backup-remote row. */
+  .remote-config {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .text-input {
+    flex: 1;
+    min-width: 0;
+    max-width: 18rem;
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--ew-text);
+    background: var(--ew-surface-input);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 5px;
+    padding: 0.25rem 0.45rem;
+  }
+
+  .text-input:focus {
+    outline: 2px solid var(--ew-focus-ring);
+    outline-offset: 0;
+  }
+
+  .text-input:disabled {
+    opacity: 0.5;
+  }
+
+  .text-button {
+    flex: none;
+    font: inherit;
+    font-size: 0.75rem;
+    color: var(--ew-text);
+    background: var(--ew-surface-raised);
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 5px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .text-button:hover:not(:disabled) {
+    background: var(--ew-surface-hover);
+  }
+
+  .text-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .remote-note .ok {
+    color: var(--ew-accent);
+  }
+
+  .remote-note .fail {
+    color: var(--ew-danger);
   }
 </style>
