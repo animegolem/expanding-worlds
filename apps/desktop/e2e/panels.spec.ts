@@ -93,6 +93,58 @@ test('pin accumulation and the escalation ladder (§8.5)', async () => {
   await app.close()
 })
 
+test('tethered panels scale WITH the world; pinned stay screen-fixed; the floor fades (§8.5 rev 0.47, AI-IMP-116)', async () => {
+  const { app, win } = await launchApp('ew-e2e-panel-scale-')
+  await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const paneWidth = async (): Promise<number> =>
+    Math.round((await win.getByTestId('note-pane').boundingBox())!.width)
+  const paneOpacity = async (): Promise<number> =>
+    win.getByTestId('note-pane').evaluate((el) => Number(getComputedStyle(el).opacity))
+
+  // Open tethered at 100%: the full-size default card (scale 1).
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  const pane = win.getByTestId('note-pane')
+  await expect(pane.getByTestId('note-pane-title')).toHaveText(/Harbor/)
+  expect(await paneWidth()).toBe(320)
+
+  // Zoom the world to 50%: the tethered panel's rendered box shrinks in
+  // proportion (it is world content now) and stays glued right of its
+  // node, still fully opaque above the legibility floor.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.5 }))
+  await expect.poll(paneWidth).toBe(160)
+  expect(await paneOpacity()).toBeCloseTo(1, 1)
+  const nodeScreenX = await win.evaluate(() => {
+    const cam = window.__ewDebug!.camera()
+    return (400 - cam.x) * cam.zoom
+  })
+  const at50 = (await pane.boundingBox())!
+  expect(at50.x - box.x).toBeGreaterThan(nodeScreenX) // panel is right of the node
+
+  // Zoom far out, below the floor: the panel FADES rather than shrinking
+  // into unreadable confetti (charm screen-size rule).
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.12 }))
+  await expect.poll(paneOpacity).toBeLessThan(0.05)
+
+  // Back to 100% and PIN: a pinned panel is a sticky note on the glass —
+  // full default size and opacity, unaffected by the camera.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await expect.poll(paneWidth).toBe(320)
+  await win.getByTestId('panel-pin').click()
+  const pinned = win.locator('.note-panel.pinned')
+  await expect(pinned).toHaveCount(1)
+  expect(Math.round((await pinned.boundingBox())!.width)).toBe(320)
+
+  // Zoom out hard: the pinned panel does NOT scale and does NOT fade.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.25 }))
+  expect(Math.round((await pinned.boundingBox())!.width)).toBe(320)
+  expect(await pinned.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeCloseTo(1, 1)
+
+  await app.close()
+})
+
 test('closing a dirty panel inside the debounce window still commits (§7.1, AI-IMP-085)', async () => {
   const { app, win } = await launchApp('ew-e2e-panelflush-')
   const { noteId } = await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })

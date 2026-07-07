@@ -109,7 +109,15 @@ const PANEL_EDGE_MARGIN = 24
  * to the RIGHT of its node, so the reservation lands on the right edge;
  * with no tethered panel there is nothing to reserve. Effective size is
  * the record's own size when pinned-into-a-window, else the tethered
- * default. Kept as ONE helper shared by every activation fly. */
+ * default. Kept as ONE helper shared by every activation fly.
+ *
+ * §8.5 rev 0.47: a tethered panel now scales WITH the camera, so its
+ * screen footprint after the flight is size.width × the post-flight
+ * zoom. That zoom is capped at 1 (feel.PANEL_TETHER_MAX_SCALE), so the
+ * unscaled size.width reserved here is the panel's MAXIMUM footprint at
+ * any resulting zoom — a safe superset that never lets the panel land
+ * over its node. (Below zoom 1 it over-reserves harmlessly, leaving a
+ * little extra gap between the framed node and the shrunk panel.) */
 function tetheredPanelInset(): ScreenInset {
   const panel = tethered()
   if (!panel) return { top: 0, right: 0, bottom: 0, left: 0 }
