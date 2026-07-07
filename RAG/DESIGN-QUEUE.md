@@ -11,6 +11,12 @@ all moved into the RFC.
 
 ## Blocking planned work
 
+- **macOS move/resize chord** (Signature Pin pass, rev 0.64): the
+  frameless shell needs a held chord that moves/resizes the window
+  from anywhere; the exact macOS binding is an open feel call.
+  Blocks only that half of the frameless-shell ticket (frameless +
+  strip-as-drag-handle ship regardless).
+
 - **Frame sort-control location** (design pass, open): title-row
   chip vs frame charm bar; nesting clutter probably zoom-gated.
   Blocks the frame-furniture ticket's final form (region + label

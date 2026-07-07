@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.63         | 7 July 2026      |
+| Accepted for Phase 1 | 0.64         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1970,7 +1970,12 @@ them — one physics rule everywhere.
 
 - A hover-revealed title strip at the top edge carries file and view
   functions (and system menus on Windows and Linux); it is hidden
-  otherwise.
+  otherwise. **The shell eats the window (rev 0.64, signature-pin
+  pass).** The app is frameless on every platform: the board paints
+  edge-to-edge, traffic lights draw into the board, and the strip —
+  a smoky near-black gradient, never a bar — IS the drag handle. A
+  held chord moves/resizes the window from anywhere (the macOS
+  binding is an open feel call, DESIGN-QUEUE).
 
 - Errors surface as transient toasts; ongoing conditions use the
   §8.6 perch. Nothing docks and nothing reflows the canvas.
@@ -1991,8 +1996,10 @@ mono-flavored, translucent, self-effacing — unicode glyphs, flat
 chips, printed shortcuts, the one fade clock. World content carries
 gentle materiality: the six node icons are small objects (top-light
 gradients, restrained gloss), notes are taped-on paper with torn
-edges and binder rings, and the red glossy pin lives ON the paper —
-never in the rail, dock, or path, which keep the flat teardrop.
+edges and binder rings, and the red glossy pin lives ON the paper.
+Rail and dock keep the flat teardrop; the PATH TAIL is the one
+exception — the signature spot wears the canonical red pin (rev
+0.64, superseding rev 0.55's never-in-the-path rule).
 Bigger elements are flashier; text stays focused and thin.
 AI-generated art never ships — this audience is artists.
 
@@ -2001,6 +2008,31 @@ CHROME keeps the strict rule: fades and single pulses only, one
 shared clock, and chrome animates exactly ONE property — opacity.
 WORLD content is allowed small ONE-SHOT physical beats — one beat
 per user act, never ambient, never looping.
+
+**The signature pin (rev 0.64, owner — the Signature Pin pass; the
+Pin & Menu Motion Prototype and App Icon Document are the design
+sources).** The red pin becomes the app's signature, and the
+canonical silhouette is **iv** — sweeping concave sides, soft
+rounded tip, carved-red meridian head — replacing the flat teardrop
+wherever pins mean places. Its one home in chrome is the SIGNATURE
+SPOT: the path-tail bookmark control, where it sits bare at
+cap-height beside the board name as the ONE colored element in the
+mono chrome. It is likewise the one sanctioned exception to the
+opacity rule — the single isomorphic object bridging the two
+materials, performing a desk beat because it literally enters the
+canvas. **The bookmark beat** (one-shot, ~700ms, entirely inside
+the title-strip band): anticipation wiggle ~220ms (±8° about the
+tip) → hop ~150ms (up 10px, stretch scaleY ~1.06) → press ~100ms
+(dips 3px, squash scaleY ~.93, reseats at its EXACT spot — no
+drift) → settle ~230ms with one gentle overshoot, no bounce loop;
+the bookmarks menu sweeps in +190ms from the anchor; unpin on
+close is a plain ~120ms fade — the ceremony is for arrival. **The
+menu grammar is the cascade (ratified):** every menu and popover
+opens the same way — rows fade in staggered ~30ms top to bottom,
+opacity only, ≤190ms ease-out, anchored to its opener. Bookmark
+menu rows wear small GLOBES in place of dots — the pin pins down
+into a world, echoing the app icon (the world-photo reference
+card, cross-angled, pinned by the red pin — App Icon Document 5a).
 
 **The interaction-physics ledger (rev 0.56, owner — The Two
 Materials + kit 1.1 are the design sources; supersedes the
@@ -4598,6 +4630,18 @@ Accepted for the Phase 1 prototype:
   plugin code never enters the presentation layer. The RSS/feed
   musing is blessed as an EPIC-020 citizen riding the viewer +
   web-reference stack, not a priority driver (§4.7).
+
+- The Signature Pin pass ratified (rev 0.64, owner; App Icon
+  Document + Pin & Menu Motion Prototype + Signature Pin Changes
+  are the design sources): frameless shell on every platform (strip
+  = drag handle, traffic lights in-board; macOS move/resize chord
+  open); app icon = the world-photo card pinned by the red pin
+  (5a); canonical pin silhouette iv replaces the flat teardrop
+  wherever pins mean places; the path-tail bookmark is the
+  signature spot — the one colored element in chrome and the one
+  sanctioned chrome→world crossover, with its ~700ms arrival beat;
+  the cascade is the universal menu grammar (staggered row fades,
+  ≤190ms, opacity only); bookmark rows wear globes (§8.2).
 
 - §17/§18 reconciled for the sign-off (rev 0.62, EPIC-008 FR-5
   prerequisite): item 24 narrows to the outline (the graph takeover
