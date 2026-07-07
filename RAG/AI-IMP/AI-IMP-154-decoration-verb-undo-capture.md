@@ -26,7 +26,11 @@ verbs change the board without entering Mod+Z, a direct break of the
 §8.4 line "every verb is one undoable command." The same review
 found the multi-menu "Lock all" only operates on placement ids: on a
 mixed selection it silently leaves decorations unlocked, and on a
-decoration-only selection an enabled row no-ops. Done means: menu
+decoration-only selection an enabled row no-ops. Codex's own triage
+of the same round adds the sibling case: "Gather into a frame" is
+also always enabled while its handler gathers placements only — a
+decoration-only selection gets an actionable row that creates an
+EMPTY frame. Done means: menu
 (and keyboard) lock/hide of decorations round-trips through Mod+Z as
 one entry per gesture, Lock all covers the whole selection it
 advertises, and e2e proves both.
@@ -56,7 +60,12 @@ untouched. Verify the inverse round-trips (the handler already
 returns a reciprocal `UpdateDecoration{ set: priorSet }`). For Lock
 all: include `decorationIds` via `UpdateDecoration{locked}` inside
 the same undo group as the placements' `SetPlacementLock`; disable
-the row only when the selection is empty of lockable items.
+the row only when the selection is empty of lockable items. For
+Gather: decide at build whether frames can capture decorations
+(check CaptureInFrame's contract) — if yes, include them; if no,
+the row disables with a reason on decoration-only selections
+(§8.4 disabled-with-reason grammar) and gathers the placements
+alone on mixed ones.
 
 ### Files to Touch
 
