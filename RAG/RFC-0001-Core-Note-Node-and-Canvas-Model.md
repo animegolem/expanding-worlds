@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.60         | 7 July 2026      |
+| Accepted for Phase 1 | 0.61         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -535,7 +535,11 @@ connector), or media pulled through a USER-INSTALLED tool such as
 yt-dlp that a connector may drive but the app never bundles
 (§11.5 constitution: deliberate opt-in, nothing ambient). Click-off
 or Esc always returns to the board. New content kinds add a
-renderer INSIDE this window, never a new overlay species. The play
+renderer INSIDE this window, never a new overlay species. The
+window carries a fullscreen button that goes TRUE borderless
+fullscreen — the OS kind, not maximize-to-app-window — and Esc
+steps back down to the windowed overlay, then out to the board
+(rev 0.61). The play
 charm's centered-versus-charm-bar presentation on video bodies is
 an open feel call for the activation ticket.
 
@@ -4555,4 +4559,7 @@ Accepted for the Phase 1 prototype:
   `viewer_state:<nodeId>` settings rows (presentation state, never
   command history, travels with export); an RSS connector decomposes
   into web-reference cards in a frame plus a taggable subscription
-  record — refresh is a user verb, never a poller (§4.7).
+  record — refresh is a user verb, never a poller (§4.7). The
+  viewer's fullscreen button is true borderless OS fullscreen, never
+  maximize-to-app-window; Esc unwinds fullscreen → window → board
+  (rev 0.61, §4.7).
