@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 5 | 0 |
-| Planned | 4 | 3 |
+| In Progress | 4 | 0 |
+| Planned | 4 | 2 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 15 | 155 |
+| Completed | 16 | 156 |
 | **Total** | **25** | **162** |
 
 ## In Progress
@@ -69,15 +69,6 @@
 
 ---
 
-### [[AI-EPIC-023-paper-note-lifecycle|EPIC-023: Paper note lifecycle]]
-> The shipped note surface has two presentations (tethered panel with
-
-**IMPs:**
-- [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — planned
-- [[AI-IMP-135-lifecycle-transitions-and-beats|IMP-135]] Lifecycle transitions and beats — planned
-
----
-
 ## Planned
 
 ### [[AI-EPIC-019-public-face|EPIC-019: Public face]]
@@ -110,6 +101,9 @@
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-161-charm-bar-adorned-bounds|IMP-161]] — planned, no epic dependency found
 
+### Status Mismatches
+- [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] — open but parent epic AI-EPIC-023 is completed
+
 ---
 
 ## Cancelled / Deferred
@@ -126,9 +120,9 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4650 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (1995 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (1753 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4658 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (2019 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (1999 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1590 LOC)
 - apps/desktop/src/main/index.ts (1054 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
@@ -143,6 +137,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/renderers/placement.ts (781 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
+- apps/desktop/src/renderer/note/panels.ts (769 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
@@ -152,12 +147,12 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
-- apps/desktop/src/renderer/note/panels.ts (616 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (604 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 
 ### > 300 LOC
 
+- apps/desktop/src/renderer/note/NotePanels.svelte (590 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
@@ -179,9 +174,9 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.ts (514 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
+- RAG/HUMAN-TESTING.md (491 LOC)
 - apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
-- RAG/HUMAN-TESTING.md (477 LOC)
 - packages/persistence/src/handlers/frames.test.ts (477 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
@@ -198,7 +193,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (372 LOC)
-- apps/desktop/src/renderer/note/NotePanels.svelte (367 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (362 LOC)
 - packages/persistence/src/queries-gallery.test.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (360 LOC)
@@ -226,9 +220,11 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
+- apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/e2e/navigation.spec.ts (310 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)
+- apps/desktop/e2e/note-lifecycle.spec.ts (306 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
 - apps/desktop/src/preload/index.ts (301 LOC)
 
@@ -236,7 +232,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>15 EPICs, 132 IMPs completed</summary>
+<summary>16 EPICs, 133 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -360,5 +356,8 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-111-repair-electron-script|IMP-111]] Repair electron script — completed
   - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
   - [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — completed
+- [[AI-EPIC-023-paper-note-lifecycle|EPIC-023]] Paper note lifecycle — 2026-07-07
+  - [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — planned
+  - [[AI-IMP-135-lifecycle-transitions-and-beats|IMP-135]] Lifecycle transitions and beats — completed
 
 </details>

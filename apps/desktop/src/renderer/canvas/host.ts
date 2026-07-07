@@ -462,11 +462,28 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   >()
   interface AwayGhost {
     object: Container
+    /** The item at detach time — the texture-release handle. */
+    item: SceneItem | undefined
     baseX: number
     baseY: number
     elapsed: number
   }
   let awayGhosts: AwayGhost[] = []
+  /** Destroy an away ghost AND release its texture budget ref. The
+   * culler's onLeaveResidency fires after detach, when sync.get() is
+   * already undefined — so without this, every deleted image pinned
+   * its texture as resident forever (Codex finding, verified: the
+   * refcount never dropped and the texture never entered the idle
+   * LRU until a canvas swap). Release-then-destroy; the placeholder
+   * swap inside the release is invisible because the object dies on
+   * the next line. */
+  function destroyGhost(g: AwayGhost): void {
+    if (g.object.destroyed) return
+    if (g.item?.itemKind === 'placement') {
+      setPlacementTextureResident(g.object, g.item, resources, false)
+    }
+    g.object.destroy({ children: true })
+  }
   // Locked-state memory: a PRESS beat fires only on a genuine 0→1 lock.
   const lockedWas = new Map<string, boolean>()
 
@@ -627,7 +644,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
           g.object.alpha = d.alpha
         }
         if (awayFinished(g.elapsed, EW_BEAT_AWAY_MS) || g.object.destroyed) {
-          if (!g.object.destroyed) g.object.destroy({ children: true })
+          destroyGhost(g)
         } else {
           kept.push(g)
         }
@@ -696,9 +713,16 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
    * NEVER a crumple (§8.2 — the trash keeps things whole). */
   function liftAway(ids: readonly string[]): void {
     for (const id of ids) {
+      const item = sync.item(id) // before detach — the release handle
       const object = sync.detach(id)
       if (!object || object.destroyed) continue
-      awayGhosts.push({ object, baseX: object.position.x, baseY: object.position.y, elapsed: 0 })
+      awayGhosts.push({
+        object,
+        item,
+        baseX: object.position.x,
+        baseY: object.position.y,
+        elapsed: 0,
+      })
     }
   }
 
@@ -720,7 +744,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     makeRoom.clear()
     roomActive.clear()
     lockedWas.clear()
-    for (const g of awayGhosts) if (!g.object.destroyed) g.object.destroy({ children: true })
+    for (const g of awayGhosts) destroyGhost(g)
     awayGhosts = []
     dragShadowGfx.clear()
     shadowDrawn = false

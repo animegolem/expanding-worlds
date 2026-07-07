@@ -253,3 +253,62 @@ test('delete lifts the body AWAY (up + fade) before the scene removes it', async
   void id
   await app.close()
 })
+
+test('lift-away releases the deleted image texture (no resident leak)', async () => {
+  // Codex finding, verified: detach() removes the entry before the
+  // culler's onLeaveResidency can find it (sync.get is undefined), so
+  // the ghost must release the budget ref itself at destroy time —
+  // otherwise every deleted image stays resident until a canvas swap.
+  const { app, win } = await launch('ew-e2e-beats-leak-')
+  await win.evaluate(async () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 96
+    canvas.height = 96
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#2e6ac0'
+    ctx.fillRect(0, 0, 96, 96)
+    const blob = await new Promise<Blob>((r) => canvas.toBlob((b) => r(b!), 'image/png'))
+    const bytes = new Uint8Array(await blob.arrayBuffer())
+    const imported = await window.ew.project.importAsset({ bytes, originalFilename: 'leak.png' })
+    if (!('assetId' in imported) || !imported.assetId) throw new Error('import failed')
+    const project = await window.ew.project.query('getProject')
+    if (!project.ok) throw new Error(project.message)
+    const { id: projectId } = project.result as { id: string }
+    const result = await window.ew.project.execute({
+      commandId: window.ew.util.newId(),
+      projectId,
+      commandType: 'CreatePin',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: {
+        nodeId: window.ew.util.newId(),
+        canvasId: window.__ewDebug!.canvasId(),
+        placementId: window.ew.util.newId(),
+        x: 200,
+        y: 200,
+        appearance: { kind: 'image', assetId: imported.assetId, crop: null },
+      },
+    })
+    if (result.status !== 'committed') throw new Error('pin failed')
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  // Texture becomes resident (bytes counted against live refs).
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.textureStats().residentBytes))
+    .toBeGreaterThan(0)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.click(box.x + 200, box.y + 200)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await win.keyboard.press('Delete')
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 0)
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.beat.awayGhosts())).toBe(0)
+  // The ref dropped with the ghost: nothing resident, bytes idle-pooled.
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.textureStats().residentBytes))
+    .toBe(0)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.textureStats().idleBytes))
+    .toBeGreaterThan(0)
+  await app.close()
+})

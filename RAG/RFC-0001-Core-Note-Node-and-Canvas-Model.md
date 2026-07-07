@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.64         | 7 July 2026      |
+| Accepted for Phase 1 | 0.65         | 7 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2293,7 +2293,10 @@ pin appears exactly three ways, all ON paper.
 
 **The indicator escalates with how broken the spatial link is:**
 
-- Tethered, node on-screen: nothing — the tail is the attribution.
+- Open book / tethered, node on-screen: nothing — the binding (or
+  tail, for non-image anchors) is the attribution (rev 0.65,
+  reconciling the AI-IMP-134 open book: image-anchored panels bind
+  with rings, no tail).
 
 - Pinned, node on-screen: the source node wears an accent halo,
   visually distinct from selection.
@@ -4630,6 +4633,11 @@ Accepted for the Phase 1 prototype:
   plugin code never enters the presentation layer. The RSS/feed
   musing is blessed as an EPIC-020 citizen riding the viewer +
   web-reference stack, not a priority driver (§4.7).
+
+- §8.5's indicator table reconciled with the open book (rev 0.65):
+  the on-screen row's attribution is the BINDING for image-anchored
+  panels — the dashed tail survives only on non-image anchors
+  (flagged by AI-IMP-134/135 at build).
 
 - The Signature Pin pass ratified (rev 0.64, owner; App Icon
   Document + Pin & Menu Motion Prototype + Signature Pin Changes

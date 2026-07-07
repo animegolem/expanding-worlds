@@ -7,8 +7,8 @@ tags:
   - panels
   - design-pass
 date_created: 2026-07-07
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-07
+kanban_status: completed
 AI_IMP_spawned:
   - "[[AI-IMP-134-paper-hardware-and-the-bound-page]]"
   - "[[AI-IMP-135-lifecycle-transitions-and-beats]]"
@@ -66,10 +66,10 @@ pages world-scaling; the artist calls the tear "playful" not
 
 ### Functional Requirements
 
-- [ ] FR-1: Paper primitives + bound page — materials on theme
+- [x] FR-1: Paper primitives + bound page — materials on theme
       tokens, ring seam, shared-edge sizing, binding-side choice,
       flat world-scaling render. (AI-IMP-134)
-- [ ] FR-2: Reversible transitions with beats — tear/tape/untape/
+- [x] FR-2: Reversible transitions with beats — tear/tape/untape/
       pin/pull-pin/tear-to-center, one command + one undo each,
       shadow only while floating. (AI-IMP-135)
 
@@ -83,3 +83,6 @@ pages world-scaling; the artist calls the tear "playful" not
 
 134 (primitives + bound presentation, interface-defining) → 135
 (transitions + beats). 134 depends on AI-IMP-130 (tokens).
+
+
+Shipped in v0.11.0.

@@ -475,3 +475,17 @@ board's ghosts are really gone: search (notes/tags/canvas text),
 tag panel locations, note Uses lists, the gallery, outline counts.
 Restore the node — everything returns. Before this fix those
 surfaces showed content the scene refused to open.
+
+## AI-IMP-135 — the note lifecycle transitions (2026-07-07)
+
+The full walk, on a placed image's note:
+- Tear the bound page off (panel-tear): does the 300ms tear read
+  as paper leaving a binder? The sticky wears tape + a torn scar.
+- Untape (the reverse): 200ms provisional — too fast/slow?
+- Place the sticky on the board, then pull its pin: one Mod+Z per
+  persisted step. Is pull-pin discoverable enough?
+- Double-click the bound page's CHROME (not text) → the centered
+  tear into the big editor; esc tucks it home. Discoverable, or
+  does it need a charm?
+- Rotate an image with its book open: the book drops to the
+  tethered card until you square it. Fair behavior or jarring?

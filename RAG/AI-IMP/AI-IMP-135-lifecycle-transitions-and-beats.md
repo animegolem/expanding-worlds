@@ -6,12 +6,12 @@ tags:
   - design-pass
   - notes
   - undo
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-134]
 parent_epic: [[AI-EPIC-023-paper-note-lifecycle]]
 confidence_score: 0.55
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -112,7 +112,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       e2e 178 passed, 1 pre-existing source-panel flake green on
       retry, exit 0. card-appearance.spec's image place-as-is test
       updated to the new `panel-tear` verb — see Issues.)
-- [ ] HUMAN-TESTING entry appended at merge by the lead (playful
+- [x] HUMAN-TESTING entry appended at merge by the lead (playful
       vs twee; tear timing; pull-pin discoverability).
 
 ### Acceptance Criteria
