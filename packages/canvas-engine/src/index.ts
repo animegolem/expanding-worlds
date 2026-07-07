@@ -125,6 +125,7 @@ export {
   STAGE_VOID_VEIL_ALPHA,
 } from './stage-extent'
 export {
+  adornedWorldAABB,
   classifyCursorZone,
   CURSOR_ZONES,
   hitTest,

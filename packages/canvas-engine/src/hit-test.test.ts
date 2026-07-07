@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  adornedWorldAABB,
   classifyCursorZone,
   hitTest,
   itemWorldAABB,
@@ -7,6 +8,7 @@ import {
   orientedCorners,
   unionBounds,
 } from './hit-test'
+import { LABEL_CLEARANCE_PX, LABEL_HEIGHT_RATIO, LABEL_TEXT_HEIGHT_RATIO } from './renderers/placement'
 import { makeDecoration, makePlacement } from './test-helpers'
 
 describe('hitTest', () => {
@@ -108,6 +110,86 @@ describe('visual bounds include stroke extents (AI-IMP-029)', () => {
   it('data without strokeWidth keeps raw geometry bounds', () => {
     const shape = makeDecoration({ data: { x: 0, y: 0, width: 50, height: 50 } })
     expect(itemWorldAABB(shape)).toEqual({ x: 0, y: 0, width: 50, height: 50 })
+  })
+})
+
+describe('adornedWorldAABB — charm-bar bounds (AI-IMP-161)', () => {
+  const ZOOM = 1
+
+  it('is byte-identical to itemWorldAABB when no label shows', () => {
+    // Label hidden, no note, and a §4.6 card whose chrome carries the
+    // title all fall back to the raw body AABB (the tighter unlabeled
+    // anchor the owner chose).
+    const hidden = makePlacement({ width: 100, height: 60, noteTitle: 'Harbor', labelVisible: 0 })
+    const noNote = makePlacement({ width: 100, height: 60, noteTitle: null })
+    const card = makePlacement({
+      width: 100,
+      height: 60,
+      noteTitle: 'Harbor',
+      labelVisible: 1,
+      appearanceKind: 'card',
+    })
+    for (const item of [hidden, noNote, card]) {
+      expect(adornedWorldAABB(item, ZOOM)).toEqual(itemWorldAABB(item))
+    }
+  })
+
+  it('extends downward by clearance + world-scaled glyph when a label shows', () => {
+    const item = makePlacement({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 60,
+      noteTitle: 'Harbor',
+      labelVisible: 1,
+    })
+    const base = itemWorldAABB(item)!
+    const adorned = adornedWorldAABB(item, ZOOM)!
+    // x/width/top are untouched — only the bottom grows.
+    expect(adorned.x).toBe(base.x)
+    expect(adorned.width).toBe(base.width)
+    expect(adorned.y).toBe(base.y)
+    const glyph = 60 * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO
+    const expectedBottom = 30 + LABEL_CLEARANCE_PX / ZOOM + glyph
+    expect(adorned.y + adorned.height).toBeCloseTo(expectedBottom)
+    expect(adorned.height).toBeGreaterThan(base.height)
+  })
+
+  it('scales the label reach with placement scale (world units)', () => {
+    const item = makePlacement({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 60,
+      scale: 2,
+      noteTitle: 'Harbor',
+      labelVisible: 1,
+    })
+    const basis = 60 * 2
+    const glyph = basis * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO
+    const expectedBottom = basis / 2 + LABEL_CLEARANCE_PX / ZOOM + glyph
+    expect(adornedWorldAABB(item, ZOOM)!.y + adornedWorldAABB(item, ZOOM)!.height).toBeCloseTo(
+      expectedBottom,
+    )
+  })
+
+  it('shrinks the screen-space clearance in world units as zoom rises', () => {
+    const item = makePlacement({ x: 0, y: 0, width: 100, height: 60, noteTitle: 'Harbor' })
+    const near = adornedWorldAABB(item, 4)!
+    const far = adornedWorldAABB(item, 1)!
+    // Same glyph reach; only the fixed screen clearance differs (÷zoom).
+    expect(far.height - near.height).toBeCloseTo(LABEL_CLEARANCE_PX / 1 - LABEL_CLEARANCE_PX / 4)
+  })
+
+  it('does not extend below a y-flipped placement (label sits above)', () => {
+    const item = makePlacement({
+      width: 100,
+      height: 60,
+      noteTitle: 'Harbor',
+      labelVisible: 1,
+      flipY: 1,
+    })
+    expect(adornedWorldAABB(item, ZOOM)).toEqual(itemWorldAABB(item))
   })
 })
 

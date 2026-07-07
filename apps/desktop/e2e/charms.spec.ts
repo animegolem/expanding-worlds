@@ -204,6 +204,83 @@ test('the charm bar: flips, make-canvas, tags, lock (§8.4)', async () => {
   await app.close()
 })
 
+test('the charm bar clears the §4.5 label, and hugs the body when the label hides (AI-IMP-161)', async () => {
+  const { app, win } = await launchApp('ew-e2e-charmbar-adorned-')
+  await pinEngagement(win)
+  const pin = await seedPin(win, 'Harborlight', { x: 400, y: 300 }, { size: 200 })
+
+  // Center the 200×200 body at screen (400, 300) — world = screen at
+  // zoom 1 — then select it (selection is model state and survives the
+  // camera moves that follow).
+  const place = (zoom: number): Promise<void> =>
+    win.evaluate(
+      (z) => window.__ewDebug!.setCamera({ x: 400 - 400 / z, y: 300 - 300 / z, zoom: z }),
+      zoom,
+    )
+  await place(1)
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.labelBounds(id), pin.placementId))
+    .not.toBeNull()
+  const host = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.click(host.x + 400, host.y + 300)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  const bar = win.getByTestId('charm-bar')
+  await expect(bar).toBeVisible()
+
+  // Labeled: the bar's top must sit at or below the label's RENDERED
+  // bottom (labelBounds is the Text object's real on-screen box), so
+  // the title is never covered — at two zooms. Both the label reflow
+  // and the bar layout run on rAF, so poll the pair together.
+  for (const zoom of [1, 2]) {
+    await place(zoom)
+    await expect
+      .poll(
+        async () => {
+          const label = await win.evaluate(
+            (id) => window.__ewDebug!.labelBounds(id),
+            pin.placementId,
+          )
+          const barBox = await bar.boundingBox()
+          const hostBox = await win.getByTestId('canvas-host').boundingBox()
+          if (!label || !barBox || !hostBox || label.height <= 0) return Number.NEGATIVE_INFINITY
+          const barTopLocal = barBox.y - hostBox.y
+          const labelBottomLocal = label.y + label.height
+          return barTopLocal - labelBottomLocal
+        },
+        { message: `bar top clears the label bottom at zoom ${zoom}` },
+      )
+      .toBeGreaterThanOrEqual(-1) // 1px raster tolerance on boundingBox
+  }
+
+  // Hidden label: the anchor returns to the unlabeled baseline — body
+  // bottom → screen, + 10 — the byte-identical pre-AI-IMP-161 position
+  // (adornedWorldAABB falls back to itemWorldAABB; the unit test proves
+  // the math, this proves the wiring).
+  await place(1)
+  await exec(win, 'SetPlacementLabelVisibility', {
+    placementId: pin.placementId,
+    visible: false,
+  })
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.labelBounds(id), pin.placementId))
+    .toBeNull()
+  // Body bottom world = center.y (300) + height/2 (100) = 400.
+  const baselineTop = await win.evaluate(() => window.__ewDebug!.worldToScreen(400, 400).y + 10)
+  await expect
+    .poll(
+      async () => {
+        const barBox = await bar.boundingBox()
+        const hostBox = await win.getByTestId('canvas-host').boundingBox()
+        if (!barBox || !hostBox) return Number.POSITIVE_INFINITY
+        return Math.abs(barBox.y - hostBox.y - baselineTop)
+      },
+      { message: 'bar hugs the body at the unlabeled baseline' },
+    )
+    .toBeLessThanOrEqual(1)
+
+  await app.close()
+})
+
 test('appearance switcher: dot→icon renders + undo, dot→card, card gated by note (§4.6)', async () => {
   const { app, win } = await launchApp('ew-e2e-appearance-')
   await pinEngagement(win)
