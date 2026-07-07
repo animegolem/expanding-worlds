@@ -6,12 +6,12 @@ tags:
   - design-pass
   - tokens
   - theme
-kanban_status: in_progress
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.85
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -91,7 +91,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       colors; void off on glass (e2e or unit at the host seam).
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (the new
+- [x] HUMAN-TESTING entry appended at merge by the lead (the new
       void subtlety on real art, both themes).
 
 ### Acceptance Criteria

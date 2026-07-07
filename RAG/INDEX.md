@@ -10,7 +10,7 @@
 | Planned | 5 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 127 |
+| Completed | 14 | 128 |
 | **Total** | **23** | **143** |
 
 ## In Progress
@@ -103,7 +103,6 @@
 ## Anomalies
 
 ### Orphaned IMPs (no epic dependency)
-- [[AI-IMP-130-design-tokens-and-materials-landing|IMP-130]] — planned, no epic dependency found
 - [[AI-IMP-131-maple-mono-editor-face|IMP-131]] — planned, no epic dependency found
 - [[AI-IMP-132-object-icons-and-the-atlas|IMP-132]] — planned, no epic dependency found
 - [[AI-IMP-133-shrink-ladder-constants|IMP-133]] — planned, no epic dependency found
@@ -125,7 +124,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4422 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1587 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (1506 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (1451 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (1467 LOC)
 - apps/desktop/src/main/index.ts (983 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (922 LOC)
 - packages/persistence/src/queries-structure.test.ts (904 LOC)
@@ -185,6 +184,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/tags.spec.ts (395 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/e2e/shell.spec.ts (386 LOC)
+- apps/desktop/src/renderer/theme.css (381 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (380 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (370 LOC)
 - packages/persistence/src/queries-search.test.ts (368 LOC)
@@ -215,7 +215,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/navigation.spec.ts (310 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
-- apps/desktop/src/renderer/theme.css (304 LOC)
 - apps/desktop/e2e/charms.spec.ts (302 LOC)
 
 ---
