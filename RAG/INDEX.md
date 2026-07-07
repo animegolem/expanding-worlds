@@ -10,7 +10,7 @@
 | Planned | 5 | 6 |
 | Deferred | 0 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 14 | 126 |
+| Completed | 14 | 127 |
 | **Total** | **23** | **143** |
 
 ## In Progress
@@ -108,7 +108,6 @@
 - [[AI-IMP-132-object-icons-and-the-atlas|IMP-132]] — planned, no epic dependency found
 - [[AI-IMP-133-shrink-ladder-constants|IMP-133]] — planned, no epic dependency found
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
-- [[AI-IMP-139-metadata-card-v2|IMP-139]] — planned, no epic dependency found
 - [[AI-IMP-140-image-body-treatment|IMP-140]] — planned, no epic dependency found
 - [[AI-IMP-141-chrome-cosmetic-sweep|IMP-141]] — planned, no epic dependency found
 - [[AI-IMP-142-input-primitive-registry|IMP-142]] — planned, no epic dependency found
@@ -135,9 +134,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/charms-ui.ts (788 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - apps/desktop/e2e/notes.spec.ts (758 LOC)
+- RAG/design/Usage Storyboard.dc.html (751 LOC)
 - packages/persistence/src/queries-structure.ts (742 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
+- RAG/design/UI Vision v2.dc.html (675 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (665 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
@@ -176,7 +177,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/protocol/src/index.ts (452 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
-- RAG/design/Design-Team-Letter-1.md (435 LOC)
+- RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - packages/persistence/src/handlers/notes.ts (434 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
@@ -192,6 +193,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (356 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
+- apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (352 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/canvas-engine/src/hit-test.ts (343 LOC)
