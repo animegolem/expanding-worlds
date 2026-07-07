@@ -157,7 +157,16 @@ function callUtility(payload: ProjectRequest): Promise<ProjectResponse> {
   })
 }
 
+/** §11.4 restore (AI-IMP-121): Open Restored Project relaunches the app
+ * pointed at the materialized sibling directory by appending a
+ * `--ew-open-dir=` arg; it wins over everything so the reboot lands on
+ * the restored project. Otherwise the env override (e2e) or the fixed
+ * default apply. */
+const OPEN_DIR_ARG = '--ew-open-dir='
+
 function projectDir(): string {
+  const arg = process.argv.find((a) => a.startsWith(OPEN_DIR_ARG))
+  if (arg) return arg.slice(OPEN_DIR_ARG.length)
   return process.env['EW_PROJECT_DIR'] ?? join(app.getPath('userData'), 'projects', 'default')
 }
 
@@ -728,6 +737,26 @@ void app.whenReady().then(() => {
   // enum itself rides the ordinary project-setting verbs (getSettings /
   // set-setting), so no bespoke handler is needed for it.
   ipcMain.handle('snapshot:status', () => snapshots.status())
+
+  // §11.4 restore-from-backup (AI-IMP-121): the dated snapshot list and
+  // the materialize-to-sibling action ride the engine's git mechanics.
+  // Restore NEVER writes inside the source project (destroy-nothing
+  // applies to time travel); it returns the NEW directory's path.
+  ipcMain.handle('snapshot:list', () => snapshots.listSnapshots())
+  ipcMain.handle('snapshot:restore', (_event, sha: string) => snapshots.restore(String(sha)))
+  // Open Restored Project: relaunch on the restored directory (the
+  // standard cold-boot open path — §11.2 recovery rebuilds derivatives
+  // lazily). app.quit runs the clean-close ritual first so the current
+  // project's writer lock releases (§11.1) before the reboot lands.
+  ipcMain.handle('restore:open', (_event, dir: string) => {
+    const args = process.argv
+      .slice(1)
+      .filter((a) => !a.startsWith(OPEN_DIR_ARG))
+      .concat([`${OPEN_DIR_ARG}${String(dir)}`])
+    app.relaunch({ args })
+    app.quit()
+    return true
+  })
 
   // §8.2 Help/About: the running app version, straight from the
   // packaged metadata — never a hardcoded renderer string.

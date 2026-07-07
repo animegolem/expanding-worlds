@@ -1,8 +1,28 @@
 import { execFile } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readSync,
+  closeSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { basename, dirname, join } from 'node:path'
 import { promisify } from 'node:util'
-import type { ProjectRequest, ProjectResponse, SnapshotMode, SnapshotStatus } from '@ew/protocol'
+import type {
+  ProjectRequest,
+  ProjectResponse,
+  RestoreResult,
+  SnapshotEntry,
+  SnapshotMode,
+  SnapshotStatus,
+} from '@ew/protocol'
 import { SNAPSHOT_MODE_KEY } from '@ew/protocol'
 
 /**
@@ -77,6 +97,15 @@ export interface SnapshotEngine {
   status: () => Promise<SnapshotStatus>
   /** Reset the idle timer — called on every committed change. */
   noteActivity: () => void
+  /** §11.4 restore (AI-IMP-121): the dated snapshot list, newest first,
+   * over `git log` — empty when snapshots are off / no repo / no
+   * commits yet. Read-only: never writes, never touches the index. */
+  listSnapshots: () => Promise<SnapshotEntry[]>
+  /** §11.4 restore (AI-IMP-121): materialize the chosen commit into a
+   * NEW sibling directory `<project>-restored-<date>` (collision-
+   * suffixed), never in-place, then validate the extracted db opens.
+   * The source project directory is never written. */
+  restore: (sha: string) => Promise<RestoreResult>
   /** Run one snapshot moment: flush buffers, (when enabled) regenerate
    * the notes tree, checkpoint the WAL, then commit. Always resolves;
    * a git or checkpoint failure is logged, never thrown — a backup
@@ -135,8 +164,27 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     return 'off'
   }
 
+  /** A quit that abandons an in-flight `git add`/`commit` (the ritual
+   * is time-bounded; a first-ever multi-GB commit can exceed it) orphans
+   * `.git/index.lock`, after which every later snapshot fails with only a
+   * logged error — the worst failure mode for a backup. The engine
+   * serializes its OWN git ops and the project dir is app-managed, so a
+   * lock present at snapshot start is stale by construction: sweep it
+   * (carried from the AI-IMP-120 review). */
+  function sweepStaleIndexLock(dir: string): void {
+    const lock = join(dir, '.git', 'index.lock')
+    if (!existsSync(lock)) return
+    try {
+      rmSync(lock)
+      console.warn('[snapshot] removed a stale .git/index.lock before committing')
+    } catch (err) {
+      console.error('[snapshot] failed to remove stale index.lock:', err)
+    }
+  }
+
   async function ensureGitReady(dir: string): Promise<void> {
     seedGitignore(dir)
+    if (existsSync(join(dir, '.git'))) sweepStaleIndexLock(dir)
     if (!existsSync(join(dir, '.git'))) {
       await git(dir, ['init', '-q'])
       // A stable default branch name regardless of the machine's
@@ -280,6 +328,136 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     return { gitAvailable: hasGit, sizeBytes: size }
   }
 
+  // Field separator: %x1f is ASCII Unit Separator — it cannot occur in
+  // a commit SHA, ISO date, or our generated subject line, so a plain
+  // split is unambiguous (a subject could contain any other char).
+  const LOG_FORMAT = '%H%x1f%cI%x1f%s'
+
+  async function listSnapshots(): Promise<SnapshotEntry[]> {
+    const dir = deps.projectDir()
+    if (!existsSync(join(dir, '.git'))) return []
+    let out: string
+    try {
+      out = await git(dir, ['log', `--pretty=format:${LOG_FORMAT}`])
+    } catch {
+      // No commits yet (git log exits non-zero on an unborn HEAD) or a
+      // git error — either way there is no history to list.
+      return []
+    }
+    const entries: SnapshotEntry[] = []
+    for (const line of out.split('\n')) {
+      if (line.length === 0) continue
+      const parts = line.split('\u001f')
+      if (parts.length < 3) continue
+      entries.push({ sha: parts[0]!, isoDate: parts[1]!, message: parts[2]! })
+    }
+    return entries
+  }
+
+  /** `<project>-restored-<date>` beside the original, suffixed ` (2)`,
+   * ` (3)`… on collision (RFC-0001 §11.4 — destroy-nothing: a second
+   * restore of the same day never overwrites the first). */
+  function pickDestDir(sourceDir: string): string {
+    const parent = dirname(sourceDir)
+    const date = new Date().toISOString().slice(0, 10)
+    const base = `${basename(sourceDir)}-restored-${date}`
+    let candidate = join(parent, base)
+    let n = 2
+    while (existsSync(candidate)) {
+      candidate = join(parent, `${base} (${n})`)
+      n += 1
+    }
+    return candidate
+  }
+
+  /** The extracted directory must contain a real SQLite database, not a
+   * truncated/empty file — the header magic is the cheapest proof the
+   * archive materialized a project. The full schema-ahead guard runs for
+   * real when the restored project is opened (§11.2 standard open path);
+   * this is the pre-open sanity check the picker reports against. */
+  function extractedDbOpens(dir: string): boolean {
+    const dbPath = join(dir, 'project.sqlite')
+    if (!existsSync(dbPath)) return false
+    const MAGIC = 'SQLite format 3\u0000'
+    let fd: number | null = null
+    try {
+      fd = openSync(dbPath, 'r')
+      const buf = Buffer.alloc(16)
+      const read = readSync(fd, buf, 0, 16, 0)
+      return read === 16 && buf.toString('latin1') === MAGIC
+    } catch {
+      return false
+    } finally {
+      if (fd !== null) closeSync(fd)
+    }
+  }
+
+  async function restore(sha: string): Promise<RestoreResult> {
+    const sourceDir = deps.projectDir()
+    if (!existsSync(join(sourceDir, '.git'))) {
+      return { ok: false, code: 'NO_HISTORY', message: 'this project has no snapshot history' }
+    }
+    const dest = pickDestDir(sourceDir)
+    // Extraction mechanism (recorded, AI-IMP-121): pure git plumbing —
+    // read-tree the chosen commit into a THROWAWAY index (GIT_INDEX_FILE
+    // in the OS temp dir, so the source's own index is never touched),
+    // then checkout-index --all --prefix=<dest>/ writes exactly that
+    // tree into the new directory. No `git archive | tar` (no tar
+    // dependency), no `git worktree` (no shared .git, nothing to detach),
+    // and HEAD/the working tree of the source are untouched. Only tracked
+    // files land — the gitignored lock, WAL, derivatives/ and cache/
+    // stay out, so the restored project is clean and rebuilds derivatives
+    // lazily on open.
+    const gitDir = join(sourceDir, '.git')
+    const indexHome = mkdtempSync(join(tmpdir(), 'ew-restore-idx-'))
+    const indexFile = join(indexHome, 'index')
+    try {
+      mkdirSync(dest, { recursive: true })
+      const env = { ...process.env, GIT_INDEX_FILE: indexFile }
+      await execFileAsync('git', [`--git-dir=${gitDir}`, 'read-tree', sha], {
+        env,
+        maxBuffer: 64 * 1024 * 1024,
+      })
+      await execFileAsync(
+        'git',
+        [`--git-dir=${gitDir}`, 'checkout-index', '--all', '--force', `--prefix=${dest}/`],
+        { env, maxBuffer: 64 * 1024 * 1024 },
+      )
+    } catch (err) {
+      // Roll back a partial extraction so a failed restore leaves no
+      // half-materialized directory behind.
+      try {
+        rmSync(dest, { recursive: true, force: true })
+      } catch {
+        // best-effort cleanup
+      }
+      return {
+        ok: false,
+        code: 'EXTRACT_FAILED',
+        message: err instanceof Error ? err.message : String(err),
+      }
+    } finally {
+      try {
+        rmSync(indexHome, { recursive: true, force: true })
+      } catch {
+        // the throwaway index is in the OS temp dir; leaking it is benign
+      }
+    }
+    if (!extractedDbOpens(dest)) {
+      try {
+        rmSync(dest, { recursive: true, force: true })
+      } catch {
+        // best-effort cleanup
+      }
+      return {
+        ok: false,
+        code: 'INVALID_DB',
+        message: 'the restored snapshot did not contain a readable project database',
+      }
+    }
+    return { ok: true, dir: dest }
+  }
+
   function dispose(): void {
     if (idleTimer) {
       clearTimeout(idleTimer)
@@ -287,5 +465,14 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     }
   }
 
-  return { gitAvailable, seedGitignore, status, noteActivity, runSnapshot, dispose }
+  return {
+    gitAvailable,
+    seedGitignore,
+    status,
+    noteActivity,
+    listSnapshots,
+    restore,
+    runSnapshot,
+    dispose,
+  }
 }

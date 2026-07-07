@@ -12,12 +12,14 @@ import type {
   MirrorToLibraryResponse,
   OpenSecondaryResponse,
   PingResponse,
+  RestoreResult,
   RunQueryResponse,
   SecondaryImportResponse,
   SecondaryQueryResponse,
   SecondaryTarget,
   ServiceStatusEvent,
   SetSettingResponse,
+  SnapshotEntry,
   SnapshotStatus,
   SubmitThumbnailResponse,
   ThumbnailReadyEvent,
@@ -162,6 +164,20 @@ const api = {
   snapshot: {
     status: (): Promise<SnapshotStatus> =>
       ipcRenderer.invoke('snapshot:status') as Promise<SnapshotStatus>,
+    /** §11.4 restore (AI-IMP-121): the dated snapshot list (newest
+     * first) for the Restore from backup… picker. Empty when snapshots
+     * are off / there is no history yet. */
+    list: (): Promise<SnapshotEntry[]> =>
+      ipcRenderer.invoke('snapshot:list') as Promise<SnapshotEntry[]>,
+    /** Materialize the chosen snapshot into a NEW sibling directory —
+     * never in-place. Resolves with the created directory or a typed
+     * failure. */
+    restore: (sha: string): Promise<RestoreResult> =>
+      ipcRenderer.invoke('snapshot:restore', sha) as Promise<RestoreResult>,
+    /** Open Restored Project: relaunch the app on the restored
+     * directory (the standard cold-boot open path). */
+    open: (dir: string): Promise<boolean> =>
+      ipcRenderer.invoke('restore:open', dir) as Promise<boolean>,
   },
   /** §14.4 secondary project slots (AI-IMP-088): source = read-only
    * browse of another project, library = the writable mirror target.
