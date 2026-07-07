@@ -237,6 +237,10 @@ export function attachGesturesUI(
       decorationIds: items.filter((i) => i.itemKind === 'decoration').map((i) => i.id),
     })
     if (result.status !== 'committed') return
+    // §8.2 LIFT AWAY: animate the deleted bodies up + fade before the
+    // scene-apply removes them (detaches them first — race-safe). Fired
+    // synchronously off the committed result, ahead of the async refresh.
+    handle.beats.away(items.map((i) => i.id))
     controller.selection.clear()
     const trashedNodes = result.affected
       .filter((record) => record.kind === 'node')
@@ -338,6 +342,8 @@ export function attachGesturesUI(
         event.stopImmediatePropagation()
         controller.selection.click(hit.id, { shift: event.shiftKey })
         canvas.style.cursor = 'not-allowed'
+        // §8.2 STRAIN: a 2px sideways refusal, once per grab — never lifts.
+        handle.beats.strain([hit.id])
       }
       return
     }
@@ -346,6 +352,10 @@ export function attachGesturesUI(
       event.preventDefault()
       event.stopImmediatePropagation()
       canvas.style.cursor = 'not-allowed'
+      // §8.2 STRAIN: the locked selection resists — never lifts.
+      handle.beats.strain(
+        items.filter((i) => i.itemKind === 'placement' && i.locked === 1).map((i) => i.id),
+      )
       return
     }
     if (zone === 'move') {

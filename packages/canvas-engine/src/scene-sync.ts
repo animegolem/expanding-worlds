@@ -63,6 +63,21 @@ export class SceneSync {
     return this.#entries.get(id)?.object
   }
 
+  /**
+   * Hand ownership of an item's display object to the caller WITHOUT
+   * destroying it (AI-IMP-151 lift-away): the entry is dropped so the
+   * next apply() no longer tracks or destroys it, and the object is left
+   * attached to the plane for the caller to animate and destroy itself.
+   * Race-safe by construction — once detached, a delete's scene-apply
+   * cannot double-handle it. Returns undefined if the id is unknown.
+   */
+  detach(id: string): Container | undefined {
+    const entry = this.#entries.get(id)
+    if (!entry) return undefined
+    this.#entries.delete(id)
+    return entry.object
+  }
+
   item(id: string): SceneItem | undefined {
     return this.#entries.get(id)?.item
   }

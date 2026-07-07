@@ -9,6 +9,16 @@ import {
   createDefaultRegistry,
   createScenePlanes,
   cssColorToNumber,
+  DragBeat,
+  approachClearance,
+  awayDisplay,
+  awayFinished,
+  nudgeFinished,
+  nudgeOffset,
+  pressFinished,
+  pressScale,
+  strainFinished,
+  strainOffset,
   drawGrid,
   drawSnapGuides,
   hitTest,
@@ -59,7 +69,21 @@ import {
   type IconAtlasResource,
 } from '@ew/canvas-engine'
 import type { TransformContentPayload } from '@ew/commands'
-import { Application, Graphics, Texture } from 'pixi.js'
+import { Application, Container, Graphics, Texture } from 'pixi.js'
+import {
+  EW_BEAT_AWAY_MS,
+  EW_BEAT_AWAY_RISE_PX,
+  EW_BEAT_LIFT_MS,
+  EW_BEAT_LIFT_SCALE,
+  EW_BEAT_MAKE_ROOM_PX,
+  EW_BEAT_MAKE_ROOM_TAU_MS,
+  EW_BEAT_NUDGE_MS,
+  EW_BEAT_PRESS_MS,
+  EW_BEAT_PRESS_SCALE,
+  EW_BEAT_SETTLE_MS,
+  EW_BEAT_STRAIN_MS,
+  EW_BEAT_STRAIN_PX,
+} from '../chrome/beats'
 import { loadIconAtlas } from './icon-atlas'
 import { takeoverActive } from '../chrome/takeover'
 import { appSettings, onAppSettingsChanged } from '../settings/settings'
@@ -143,6 +167,14 @@ export interface CanvasHostHandle {
   /** §12.2 single live canvas: swap the mounted canvas, releasing
    * the previous scene's textures. */
   openCanvas(canvasId: string): Promise<void>
+  /** §8.2 interaction-physics beats (AI-IMP-151): display-only seams for
+   * feature modules. `strain` plays the once-per-grab sideways refusal on
+   * locked bodies; `away` lifts deleted bodies up + fade before the
+   * scene-apply removes them (race-safe: it detaches them first). */
+  beats: {
+    strain(ids: readonly string[]): void
+    away(ids: readonly string[]): void
+  }
   destroy(): void
 }
 
@@ -216,6 +248,19 @@ declare global {
       /** Live chase state: is a wheel/pinch glide in flight, and
        * toward what resting zoom. */
       zoomChase: () => { active: boolean; targetZoom: number | null }
+      /** §8.2 interaction-physics beats (AI-IMP-151): sleep-free readouts
+       * for the beat e2e — the composited scale over the model transform,
+       * the drag phase, and which beats are in flight. */
+      beat: {
+        scale: (id: string) => number | null
+        phase: (id: string) => string | null
+        dragging: (id: string) => boolean
+        shadow: (id: string) => number | null
+        strain: (id: string) => boolean
+        nudge: (id: string) => boolean
+        makeRoom: (id: string) => { x: number; y: number; tx: number; ty: number } | null
+        awayGhosts: () => number
+      }
     }
   }
 }
@@ -370,6 +415,292 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // during drags (AI-IMP-025). Cleared when a fresh scene lands.
   const ephemeral = new Map<string, SceneItem>()
 
+  // ---- Interaction-physics beats (AI-IMP-151, §8.2 ledger) ------------
+  // Display-layer motion laid OVER the renderer's transform. The renderer
+  // re-writes each object's position/scale from the model on every
+  // applyEphemeral and scene-apply, so beats recompose on top with
+  // ABSOLUTE writes (never accumulating) — calling applyBeatTransform
+  // twice in a frame is idempotent. Committed geometry is never touched:
+  // lift/settle/press ride scale (±1% only), nudge/strain/make-room ride a
+  // display offset, away animates detached objects the model already
+  // dropped. ONE shared ticker advances every active beat and self-idles
+  // when the maps are empty — no per-beat loop (the §8.2 one-shot guard).
+  const dragBeats = new Map<string, DragBeat>()
+  const nudgeBeats = new Map<string, { seed: { x: number; y: number }; elapsed: number }>()
+  const strainBeats = new Map<string, { elapsed: number }>()
+  const pressBeats = new Map<string, { elapsed: number }>()
+  // Make-room: eased clearance (screen px) per frame member while a drag
+  // hovers its frame — the one allowed anticipatory motion.
+  const makeRoom = new Map<
+    string,
+    { cur: { x: number; y: number }; target: { x: number; y: number } }
+  >()
+  interface AwayGhost {
+    object: Container
+    baseX: number
+    baseY: number
+    elapsed: number
+  }
+  let awayGhosts: AwayGhost[] = []
+  // Locked-state memory: a PRESS beat fires only on a genuine 0→1 lock.
+  const lockedWas = new Map<string, boolean>()
+
+  // Cheap engine-drawn drag shadow (the AI-IMP-140 image-body shadow
+  // sprite is unmerged; this is the ticket's fallback). One Graphics at
+  // the bottom of the content plane, world-space, under the lifted body.
+  const DRAG_SHADOW_ALPHA = 0.22
+  const DRAG_SHADOW_OFFSET_PX = 6
+  const DRAG_SHADOW_PAD_PX = 3
+  const dragShadowGfx = new Graphics()
+  dragShadowGfx.label = 'drag-shadow'
+  dragShadowGfx.eventMode = 'none'
+  let shadowDrawn = false
+
+  function placementFlip(item: SceneItem): { fx: number; fy: number } {
+    if (item.itemKind !== 'placement') return { fx: 1, fy: 1 }
+    return { fx: item.flipX ? -1 : 1, fy: item.flipY ? -1 : 1 }
+  }
+
+  /** Compose every active beat for one PLACEMENT onto its display object.
+   * Placements have a clean center origin (container at item.x/y, scale =
+   * item.scale·flip), so a scale multiply reads as a grow/shrink in place
+   * and an offset is a clean nudge. Decorations are left to drag
+   * unbeated (their local origins vary; out of the ledger's body scope). */
+  function applyBeatTransform(id: string): void {
+    const object = sync.get(id)
+    const item = ephemeral.get(id) ?? sync.item(id)
+    if (!object || !item || item.itemKind !== 'placement') return
+    const zoom = controller.camera.zoom || 1
+    const { fx, fy } = placementFlip(item)
+    let scaleMul = 1
+    const drag = dragBeats.get(id)
+    if (drag) scaleMul *= drag.display().scale
+    if (item.locked === 1) {
+      const press = pressBeats.get(id)
+      scaleMul *= press
+        ? pressScale(press.elapsed, EW_BEAT_PRESS_MS, EW_BEAT_PRESS_SCALE)
+        : 1 - EW_BEAT_PRESS_SCALE
+    }
+    // Nudge seed is WORLD units (snap adjust); strain/make-room are SCREEN
+    // px (÷ zoom → world), so the feel holds at any magnification.
+    let worldX = 0
+    let worldY = 0
+    const nudge = nudgeBeats.get(id)
+    if (nudge) {
+      const o = nudgeOffset(nudge.elapsed, nudge.seed, EW_BEAT_NUDGE_MS)
+      worldX += o.x
+      worldY += o.y
+    }
+    let pxX = 0
+    let pxY = 0
+    const strain = strainBeats.get(id)
+    if (strain) pxX += strainOffset(strain.elapsed, EW_BEAT_STRAIN_MS, EW_BEAT_STRAIN_PX)
+    const room = makeRoom.get(id)
+    if (room) {
+      pxX += room.cur.x
+      pxY += room.cur.y
+    }
+    object.scale.set(item.scale * fx * scaleMul, item.scale * fy * scaleMul)
+    object.position.set(item.x + worldX + pxX / zoom, item.y + worldY + pxY / zoom)
+  }
+
+  function redrawDragShadow(): void {
+    dragShadowGfx.clear()
+    if (dragBeats.size === 0) {
+      shadowDrawn = false
+      return
+    }
+    const zoom = controller.camera.zoom || 1
+    const off = DRAG_SHADOW_OFFSET_PX / zoom
+    const pad = DRAG_SHADOW_PAD_PX / zoom
+    for (const [id, beat] of dragBeats) {
+      const shadow = beat.shadow()
+      if (shadow <= 0) continue
+      const item = ephemeral.get(id) ?? sync.item(id)
+      if (!item) continue
+      const aabb = itemWorldAABB(item)
+      if (!aabb) continue
+      dragShadowGfx
+        .roundRect(aabb.x - pad + off, aabb.y - pad + off, aabb.width + pad * 2, aabb.height + pad * 2, pad * 2)
+        .fill({ color: 0x000000, alpha: DRAG_SHADOW_ALPHA * shadow })
+    }
+    // Keep it at the bottom of content, under every body (sync.apply only
+    // reorders on scene changes, so this is a no-op during a drag).
+    planes.content.addChildAt(dragShadowGfx, 0)
+    shadowDrawn = true
+  }
+
+  function beatsIdle(): boolean {
+    return (
+      dragBeats.size === 0 &&
+      nudgeBeats.size === 0 &&
+      strainBeats.size === 0 &&
+      pressBeats.size === 0 &&
+      makeRoom.size === 0 &&
+      awayGhosts.length === 0
+    )
+  }
+
+  function beatTick(): void {
+    if (beatsIdle()) {
+      if (shadowDrawn) {
+        dragShadowGfx.clear()
+        shadowDrawn = false
+      }
+      return
+    }
+    const dt = app.ticker.deltaMS
+    for (const [id, beat] of dragBeats) {
+      beat.advance(dt)
+      if (beat.finished) {
+        dragBeats.delete(id)
+        applyBeatTransform(id) // land at exact geometry
+        continue
+      }
+      applyBeatTransform(id)
+    }
+    for (const [id, n] of nudgeBeats) {
+      n.elapsed += dt
+      applyBeatTransform(id)
+      if (nudgeFinished(n.elapsed, EW_BEAT_NUDGE_MS)) {
+        nudgeBeats.delete(id)
+        applyBeatTransform(id)
+      }
+    }
+    for (const [id, s] of strainBeats) {
+      s.elapsed += dt
+      applyBeatTransform(id)
+      if (strainFinished(s.elapsed, EW_BEAT_STRAIN_MS)) {
+        strainBeats.delete(id)
+        applyBeatTransform(id)
+      }
+    }
+    for (const [id, p] of pressBeats) {
+      p.elapsed += dt
+      applyBeatTransform(id)
+      if (pressFinished(p.elapsed, EW_BEAT_PRESS_MS)) {
+        pressBeats.delete(id)
+        applyBeatTransform(id) // hold the steady −1%
+      }
+    }
+    for (const [id, room] of makeRoom) {
+      room.cur.x = approachClearance(room.cur.x, room.target.x, dt, EW_BEAT_MAKE_ROOM_TAU_MS)
+      room.cur.y = approachClearance(room.cur.y, room.target.y, dt, EW_BEAT_MAKE_ROOM_TAU_MS)
+      applyBeatTransform(id)
+      if (room.target.x === 0 && room.target.y === 0 && room.cur.x === 0 && room.cur.y === 0) {
+        makeRoom.delete(id)
+      }
+    }
+    if (awayGhosts.length > 0) {
+      const zoom = controller.camera.zoom || 1
+      const kept: AwayGhost[] = []
+      for (const g of awayGhosts) {
+        g.elapsed += dt
+        const d = awayDisplay(g.elapsed, EW_BEAT_AWAY_MS, EW_BEAT_AWAY_RISE_PX)
+        if (!g.object.destroyed) {
+          g.object.position.set(g.baseX, g.baseY + d.offsetY / zoom)
+          g.object.alpha = d.alpha
+        }
+        if (awayFinished(g.elapsed, EW_BEAT_AWAY_MS) || g.object.destroyed) {
+          if (!g.object.destroyed) g.object.destroy({ children: true })
+        } else {
+          kept.push(g)
+        }
+      }
+      awayGhosts = kept
+    }
+    redrawDragShadow()
+  }
+
+  /** Re-stamp beats (locked steady −1% and any in-flight beat) after a
+   * scene apply, which rebuilds/updates objects at model transform. */
+  function reapplyBeats(items: readonly SceneItem[]): void {
+    for (const item of items) {
+      if (item.itemKind !== 'placement') continue
+      if (
+        item.locked === 1 ||
+        dragBeats.has(item.id) ||
+        nudgeBeats.has(item.id) ||
+        strainBeats.has(item.id) ||
+        pressBeats.has(item.id) ||
+        makeRoom.has(item.id)
+      ) {
+        applyBeatTransform(item.id)
+      }
+    }
+  }
+
+  /** grab → LIFT: begin a lift+shadow the first time a moved placement is
+   * touched this gesture. Move-only (resize/rotate/pan are NO-BEAT), and
+   * never for a locked body (which refuses the drag entirely). */
+  function startLiftIfNew(id: string, item: SceneItem): void {
+    if (!controller.gestureIsMove) return
+    if (item.itemKind !== 'placement' || item.locked === 1) return
+    if (dragBeats.has(id)) return
+    dragBeats.set(id, new DragBeat({ liftMs: EW_BEAT_LIFT_MS, settleMs: EW_BEAT_SETTLE_MS }, EW_BEAT_LIFT_SCALE))
+  }
+
+  /** release/cancel → SETTLE: ease every lifted body back to rest. */
+  function settleDrag(ids: Iterable<string>): void {
+    for (const id of ids) dragBeats.get(id)?.release()
+  }
+
+  /** snap engage → NUDGE: seed the display glide from the fresh-engage
+   * adjust (world units) reported on the guide; seed is negated so the
+   * body starts at its pre-snap spot and eases into the seat. */
+  function seedNudge(guides: SnapGuide[]): void {
+    let sx = 0
+    let sy = 0
+    let seeded = false
+    for (const g of guides) {
+      if (g.engagedDelta === undefined) continue
+      seeded = true
+      if (g.axis === 'x') sx += -g.engagedDelta
+      else sy += -g.engagedDelta
+    }
+    if (!seeded) return
+    for (const id of ephemeral.keys()) {
+      const item = ephemeral.get(id)
+      if (item?.itemKind !== 'placement') continue
+      nudgeBeats.set(id, { seed: { x: sx, y: sy }, elapsed: 0 })
+    }
+  }
+
+  /** delete → LIFT AWAY: detach the deleted bodies (race-safe: the imminent
+   * scene-apply no longer tracks them) and animate up+fade, then destroy.
+   * NEVER a crumple (§8.2 — the trash keeps things whole). */
+  function liftAway(ids: readonly string[]): void {
+    for (const id of ids) {
+      const object = sync.detach(id)
+      if (!object || object.destroyed) continue
+      awayGhosts.push({ object, baseX: object.position.x, baseY: object.position.y, elapsed: 0 })
+    }
+  }
+
+  /** locked-grab → STRAIN: a single 2px sideways refusal, once per grab. */
+  function strainItems(ids: readonly string[]): void {
+    for (const id of ids) {
+      const item = sync.item(id)
+      if (item?.itemKind !== 'placement') continue
+      strainBeats.set(id, { elapsed: 0 })
+      applyBeatTransform(id)
+    }
+  }
+
+  function resetBeats(): void {
+    dragBeats.clear()
+    nudgeBeats.clear()
+    strainBeats.clear()
+    pressBeats.clear()
+    makeRoom.clear()
+    roomActive.clear()
+    lockedWas.clear()
+    for (const g of awayGhosts) if (!g.object.destroyed) g.object.destroy({ children: true })
+    awayGhosts = []
+    dragShadowGfx.clear()
+    shadowDrawn = false
+  }
+
   function drawSelection(): void {
     selectionGfx.clear()
     const selected = controller.selectedItems()
@@ -475,8 +806,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         effective = { ...item, data: update.data } as SceneItem
       }
       if (effective) {
+        // §8.2 LIFT: begin the beat before the ephemeral set, so the
+        // first-touch check reads the pre-gesture state.
+        startLiftIfNew(id, effective)
         ephemeral.set(id, effective)
         registry.resolve(item).update(object, effective, item, resources)
+        applyBeatTransform(id) // recompose the beat over the fresh transform
       }
       drawSelection()
       drawLensRings()
@@ -485,10 +820,19 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       ephemeral.delete(item.id)
       const object = sync.get(item.id)
       if (object) registry.resolve(item).update(object, item, item, resources)
+      // §8.2 SETTLE on cancel (Escape / no-change): ease the body back.
+      settleDrag([item.id])
+      applyBeatTransform(item.id)
       drawSelection()
       drawLensRings()
     },
     commitTransform(payload, meta) {
+      // §8.2 SETTLE on release: ease every lifted body back to rest. The
+      // objects keep their ephemeral transform until refresh re-queries,
+      // so the settle plays over that window (and continues on the
+      // canonical geometry via reapplyBeats after the apply). Settle the
+      // whole lifted set — every lift from this move belongs to it.
+      settleDrag([...dragBeats.keys()])
       // §4.9 (AI-IMP-127): a plain drag resolves frame membership from
       // the drop point in the SAME batch as the move (one undo); resize/
       // rotate never touch membership (geometry immunity).
@@ -511,6 +855,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     renderGuides(guides: SnapGuide[]) {
       lastGuides = guides
       drawSnapGuides(guidesGfx, guides, controller.camera)
+      // §8.2 NUDGE: a fresh snap engagement seeds the last-px seat glide.
+      seedNudge(guides)
       // §4.9 hover dim: recompute the focused frame each move (this runs
       // once per pointermove during a gesture); clears when not a move.
       updateHoverDim()
@@ -557,19 +903,66 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // everything else drops to FRAME_HOVER_DIM_ALPHA. Instant; cleared on
   // drop/cancel (renderGuides runs with an idle state) via applyLensDim.
   let hoverFrameId: string | null = null
+  // §8.2 MAKE ROOM: which members currently carry a non-zero clearance
+  // target, so a change of hovered frame eases the stragglers back.
+  const roomActive = new Set<string>()
   function applyHoverDim(dragIds: Set<string>): void {
     if (hoverFrameId === null) return
-    const keep = new Set<string>([
-      hoverFrameId,
-      ...frameIndex.transitiveMembers(hoverFrameId),
-      ...dragIds,
-    ])
+    const members = frameIndex.transitiveMembers(hoverFrameId)
+    const keep = new Set<string>([hoverFrameId, ...members, ...dragIds])
     for (const item of controller.items()) {
       const object = sync.get(item.id)
       if (object) object.alpha = keep.has(item.id) ? 1 : FRAME_HOVER_DIM_ALPHA
     }
+    setMakeRoom(hoverFrameId, members, dragIds)
+  }
+  /** Members of the hovered frame ease a small clearance OUTWARD from the
+   * frame center — the one allowed anticipatory motion (§8.2). Targets
+   * are stored in screen px; the beat ticker eases cur→target and back. */
+  function setMakeRoom(frameId: string, members: readonly string[], dragIds: Set<string>): void {
+    const frame = ephemeral.get(frameId) ?? sync.item(frameId)
+    const frameBox = frame ? itemWorldAABB(frame) : null
+    const next = new Set<string>()
+    if (frameBox) {
+      const fcx = frameBox.x + frameBox.width / 2
+      const fcy = frameBox.y + frameBox.height / 2
+      for (const id of members) {
+        if (dragIds.has(id)) continue
+        const item = ephemeral.get(id) ?? sync.item(id)
+        if (item?.itemKind !== 'placement' || frameIndex.isFrame(id)) continue
+        const box = itemWorldAABB(item)
+        if (!box) continue
+        const dx = box.x + box.width / 2 - fcx
+        const dy = box.y + box.height / 2 - fcy
+        const len = Math.hypot(dx, dy) || 1
+        const target = {
+          x: (dx / len) * EW_BEAT_MAKE_ROOM_PX,
+          y: (dy / len) * EW_BEAT_MAKE_ROOM_PX,
+        }
+        const entry = makeRoom.get(id)
+        if (entry) entry.target = target
+        else makeRoom.set(id, { cur: { x: 0, y: 0 }, target })
+        next.add(id)
+      }
+    }
+    // Members that left the hovered set ease their clearance back to 0.
+    for (const id of roomActive) {
+      if (next.has(id)) continue
+      const entry = makeRoom.get(id)
+      if (entry) entry.target = { x: 0, y: 0 }
+    }
+    roomActive.clear()
+    for (const id of next) roomActive.add(id)
+  }
+  function clearMakeRoom(): void {
+    for (const id of roomActive) {
+      const entry = makeRoom.get(id)
+      if (entry) entry.target = { x: 0, y: 0 }
+    }
+    roomActive.clear()
   }
   function clearHoverDim(): void {
+    clearMakeRoom()
     if (hoverFrameId === null) return
     hoverFrameId = null
     applyLensDim() // restores each object's lens-correct alpha (1 with no lens)
@@ -970,6 +1363,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   controller.camera.onChanged(() => flight.cancelOnExternalChange())
   app.ticker.add(() => flight.step(app.ticker.deltaMS))
 
+  // §8.2 interaction-physics beats: the ONE shared clock for every
+  // world-content beat (lift/settle/nudge/press/strain/make-room/away).
+  // It self-idles when no beat is active — one registration, never a
+  // per-beat loop (AI-IMP-151 one-shot guard).
+  app.ticker.add(beatTick)
+
   // AI-IMP-098: wheel/pinch zoom chases a cursor-anchored target
   // instead of jumping per event. Same cancel discipline as the
   // flight — any external camera write (a pan, a restore, a flight
@@ -1146,6 +1545,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       if (forCanvas !== canvasId) return
       if (!scene) {
         sync.clear()
+        resetBeats()
         controller.setItems([])
         frameIndex = indexFrameTree([])
         sceneBackground = null
@@ -1167,6 +1567,18 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       // The canonical scene now reflects (or supersedes) any committed
       // gesture; ephemeral overlays would only go stale from here.
       ephemeral.clear()
+      // §8.2 PRESS: a genuine 0→1 lock plays a one-shot press into the
+      // desk; then re-stamp the locked steady −1% (and any in-flight
+      // beat) over the freshly-updated objects.
+      for (const item of scene.items) {
+        if (item.itemKind !== 'placement') continue
+        const nowLocked = item.locked === 1
+        if (nowLocked && lockedWas.get(item.id) === false) pressBeats.set(item.id, { elapsed: 0 })
+        lockedWas.set(item.id, nowLocked)
+      }
+      const liveIds = new Set(scene.items.map((i) => i.id))
+      for (const id of [...lockedWas.keys()]) if (!liveIds.has(id)) lockedWas.delete(id)
+      reapplyBeats(scene.items)
       drawSelection()
       // Re-stamp the dim (created objects default to alpha 1) and the
       // rings; setItems already intersected the lens with survivors.
@@ -1343,6 +1755,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     // display objects still exist; then the scene and the idle pool go.
     culler.apply([], viewport())
     sync.clear()
+    resetBeats()
     textureBudget.releaseAll()
     const scene = await runQuery<CanvasScene | null>('getCanvasScene', { canvasId })
     if (scene) controller.camera.set(scene.camera)
@@ -1443,6 +1856,28 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       return { tau: zoomChase.tau, wheelSpeed: wheelZoomSpeed, pinchSpeed: pinchZoomSpeed }
     },
     zoomChase: () => ({ active: zoomChase.active, targetZoom: zoomChase.targetZoom }),
+    beat: {
+      // Composited scale multiplier laid over the model transform: >1
+      // during LIFT, 1 at rest, <1 for a locked/pressed body. Honest,
+      // sleep-free readout for the beat e2e (no pixel diffing needed).
+      scale: (id: string): number | null => {
+        const object = sync.get(id)
+        const item = ephemeral.get(id) ?? sync.item(id)
+        if (!object || !item || item.itemKind !== 'placement') return null
+        const base = item.scale * (item.flipX ? -1 : 1)
+        return base === 0 ? null : object.scale.x / base
+      },
+      phase: (id: string): string | null => dragBeats.get(id)?.phase ?? null,
+      dragging: (id: string): boolean => dragBeats.has(id),
+      shadow: (id: string): number | null => dragBeats.get(id)?.shadow() ?? null,
+      strain: (id: string): boolean => strainBeats.has(id),
+      nudge: (id: string): boolean => nudgeBeats.has(id),
+      makeRoom: (id: string): { x: number; y: number; tx: number; ty: number } | null => {
+        const r = makeRoom.get(id)
+        return r ? { x: r.cur.x, y: r.cur.y, tx: r.target.x, ty: r.target.y } : null
+      },
+      awayGhosts: (): number => awayGhosts.length,
+    },
   }
 
   let detachGestures: () => void = () => {}
@@ -1477,6 +1912,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     whenSceneApplied,
     waitForItems,
     openCanvas,
+    beats: {
+      strain: strainItems,
+      away: liftAway,
+    },
     destroy() {
       textureBudget.releaseAll()
       detachGestures()

@@ -16,6 +16,15 @@ export interface SnapGuide {
   position: number
   from: number
   to: number
+  /**
+   * Display-only nudge seed (AI-IMP-151, §8.2): the snap adjust (world
+   * units, signed) applied on the FRAME this axis freshly engaged — the
+   * last-px magnetic pull. Present only on that first engaged frame,
+   * absent while the axis stays engaged. The host eases this to zero so
+   * the body glides into the seat; it never touches committed geometry
+   * (the gesture already holds the true snapped position).
+   */
+  engagedDelta?: number
 }
 
 export interface SnapQuery {

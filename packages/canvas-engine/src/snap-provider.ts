@@ -170,6 +170,11 @@ export function createSnapProvider(engagePx = SNAP_ENGAGE_PX, releasePx = SNAP_R
         engageThreshold,
         releaseThreshold,
       )
+      // §8.2 nudge (AI-IMP-151): an axis freshly engages when it was
+      // null before this query and latched now — the adjust applied on
+      // THAT frame is the last-px magnetic seat the host eases away.
+      const freshX = engagedX === null && x.engaged !== null
+      const freshY = engagedY === null && y.engaged !== null
       engagedX = x.engaged
       engagedY = y.engaged
       const xHit = x.hit
@@ -186,6 +191,7 @@ export function createSnapProvider(engagePx = SNAP_ENGAGE_PX, releasePx = SNAP_R
           position: xHit.stop.value,
           from: Math.min(xHit.stop.from, movingBounds.y + adjustY),
           to: Math.max(xHit.stop.to, movingBounds.y + movingBounds.height + adjustY),
+          ...(freshX ? { engagedDelta: adjustX } : {}),
         })
       }
       if (yHit) {
@@ -194,6 +200,7 @@ export function createSnapProvider(engagePx = SNAP_ENGAGE_PX, releasePx = SNAP_R
           position: yHit.stop.value,
           from: Math.min(yHit.stop.from, movingBounds.x + adjustX),
           to: Math.max(yHit.stop.to, movingBounds.x + movingBounds.width + adjustX),
+          ...(freshY ? { engagedDelta: adjustY } : {}),
         })
       }
       return { dx: proposedDelta.dx + adjustX, dy: proposedDelta.dy + adjustY, guides }

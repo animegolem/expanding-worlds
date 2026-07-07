@@ -113,7 +113,28 @@ describe('createSnapProvider', () => {
       query({ movingBounds: { x: 123, y: 300, width: 40, height: 40 } }),
     )
     // Static extent on y is 80..120; moving bounds sit at y 300..340.
-    expect(result.guides[0]).toEqual({ axis: 'x', position: 120, from: 80, to: 340 })
+    // This is the fresh-engage frame, so the guide also carries the
+    // display-only nudge seed (the -3 adjust just applied, §8.2).
+    expect(result.guides[0]).toEqual({
+      axis: 'x',
+      position: 120,
+      from: 80,
+      to: 340,
+      engagedDelta: -3,
+    })
+  })
+
+  it('reports the nudge seed only on the frame an axis freshly engages (§8.2)', () => {
+    const snap = provider()
+    // Fresh engagement on x: adjust -3 surfaces as the nudge seed.
+    const engage = snap.query(query({ movingBounds: { x: 123, y: 300, width: 40, height: 40 } }))
+    expect(engage.guides[0]!.engagedDelta).toBe(-3)
+    // Still engaged next frame (within release) → no fresh seed. The
+    // committed delta is unchanged; only the display signal is gone.
+    const held = snap.query(query({ movingBounds: { x: 124, y: 300, width: 40, height: 40 } }))
+    expect(held.guides[0]!.axis).toBe('x')
+    expect(held.guides[0]!.engagedDelta).toBeUndefined()
+    expect(held.dx).toBe(-4) // 120 - 124: geometry still snaps, byte-for-byte
   })
 
   it('snaps both axes independently and returns one guide per axis', () => {
