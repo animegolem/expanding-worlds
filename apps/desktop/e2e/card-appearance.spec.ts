@@ -141,7 +141,9 @@ test('image nodes place as-is: their look already represents them (§4.6)', asyn
 
   await win.mouse.dblclick(box.x + 400, box.y + 300)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Reference/)
-  await win.getByTestId('panel-pin').click()
+  // §8.5 rev 0.55 (AI-IMP-135): an image-anchored note opens as the
+  // BOUND page, where the pin verb is the TEAR (panel-tear).
+  await win.getByTestId('panel-tear').click()
   await win.getByTestId('panel-place-on-board').click()
   await expect(win.locator('.note-panel')).toHaveCount(0)
   await expect

@@ -146,3 +146,161 @@ test('deep zoom-out degrades the rings to a stroke, then fades the page whole', 
 
   await app.close()
 })
+
+// ---- AI-IMP-135: the reversible lifecycle — tear / place / pull pin /
+// untape, the rotation gate, and the centered tear. ----
+
+/** Re-issue the placement's full transform with a new rotation
+ * (radians), keeping its seeded center/size. */
+async function rotateImage(
+  win: Page,
+  c: { placementId: string; x: number; y: number; w: number; h: number },
+  rotation: number,
+): Promise<void> {
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'TransformContent', {
+    canvasId,
+    items: [
+      {
+        kind: 'placement',
+        placementId: c.placementId,
+        x: c.x,
+        y: c.y,
+        width: c.w,
+        height: c.h,
+        scale: 1,
+        rotation,
+      },
+    ],
+  })
+}
+
+const undoDepth = (win: Page) => win.evaluate(() => window.__ewUndo!.undoDepth())
+const placementCount = (win: Page) => win.evaluate(() => window.__ewDebug!.sceneStats().placements)
+
+test('rotation gate: a rotated image keeps the tethered card, and the gate is live mid-life', async () => {
+  const { app, win } = await launchApp('ew-e2e-book-rotated-')
+  const img = await seedImageNote(win, { w: 200, h: 320, x: 500, y: 400, title: 'Tilted' })
+  await setZoom(win, 1)
+
+  // Rotated BEFORE opening: the note opens as the tethered card — the
+  // binding would mount to the axis-aligned AABB and read as rings
+  // floating beside the art, so no book until a rotated-book design
+  // exists (AI-IMP-135 scope addition).
+  await rotateImage(win, img, 0.4)
+  await openImageNote(win, img)
+  const pane = win.getByTestId('note-pane')
+  await expect(pane.getByTestId('note-pane-title')).toHaveText(/Tilted/)
+  await expect(pane).not.toHaveAttribute('data-bound-side', /.+/)
+  await expect(win.getByTestId('binder-rings')).toHaveCount(0)
+
+  // Rotating back to square mid-life re-binds the page…
+  await rotateImage(win, img, 0)
+  await expect(pane).toHaveAttribute('data-bound-side', /^(left|right)$/)
+  await expect(win.getByTestId('binder-rings')).toHaveCount(1)
+
+  // …and rotating the open book drops it back to the tethered card.
+  await rotateImage(win, img, 0.4)
+  await expect(pane).not.toHaveAttribute('data-bound-side', /.+/)
+  await expect(win.getByTestId('binder-rings')).toHaveCount(0)
+
+  await app.close()
+})
+
+test('lifecycle walk: tear → sticky, place → landmark, pull pin → sticky, untape → book; persisted steps are one undo each', async () => {
+  const { app, win } = await launchApp('ew-e2e-lifecycle-walk-')
+  const img = await seedImageNote(win, { w: 200, h: 320, x: 500, y: 400, title: 'Walk' })
+  await setZoom(win, 1)
+  await win.waitForFunction(() => window.__ewUndo !== undefined)
+  await openImageNote(win, img)
+
+  const pane = win.getByTestId('note-pane')
+  await expect(pane).toHaveAttribute('data-bound-side', /^(left|right)$/)
+  const depth0 = await undoDepth(win)
+
+  // TEAR: the page rips out of its book and tapes itself to the glass —
+  // pinned, wearing tape + the torn edge; the book hardware goes.
+  await win.getByTestId('panel-tear').click()
+  const sticky = win.locator('.note-panel.pinned')
+  await expect(sticky).toHaveCount(1)
+  await expect(sticky).toHaveAttribute('data-paper', 'torn')
+  await expect(win.getByTestId('sticky-tape')).toHaveCount(1) // a zero-size anchor point: presence, not visibility
+  await expect(win.getByTestId('sticky-torn-edge')).toBeVisible()
+  await expect(win.getByTestId('binder-rings')).toHaveCount(0)
+  // A presentation flip: no structural undo entry.
+  expect(await undoDepth(win)).toBe(depth0)
+
+  // PLACE: the sticky becomes the LANDMARK — one undoable command; the
+  // placement keeps the torn edge and wears the push pin.
+  await win.getByTestId('panel-place-on-board').click()
+  await expect(win.locator('.note-panel')).toHaveCount(0)
+  await expect.poll(() => placementCount(win)).toBe(2)
+  await expect(win.locator('[data-testid^="landmark-pin-"]')).toHaveCount(1)
+  await expect(win.getByTestId('landmark-torn-edge')).toBeVisible()
+  await expect.poll(() => undoDepth(win)).toBe(depth0 + 1)
+
+  // PULL PIN: the landmark lifts off the board (one more undo entry)
+  // and the sticky reappears, still taped and torn.
+  await win.locator('[data-testid^="landmark-pin-"]').click()
+  await expect.poll(() => placementCount(win)).toBe(1)
+  await expect(win.locator('[data-testid^="landmark-pin-"]')).toHaveCount(0)
+  await expect(win.locator('.note-panel.pinned')).toHaveCount(1)
+  await expect(win.locator('.note-panel.pinned')).toHaveAttribute('data-paper', 'torn')
+  await expect.poll(() => undoDepth(win)).toBe(depth0 + 2)
+
+  // UNTAPE: the page returns to its book — bound again, hardware back,
+  // tape gone. The full walk is home.
+  await win.getByTestId('panel-untape').click()
+  await expect(win.getByTestId('note-pane')).toHaveAttribute('data-bound-side', /^(left|right)$/)
+  await expect(win.getByTestId('binder-rings')).toHaveCount(1)
+  await expect(win.getByTestId('sticky-tape')).toHaveCount(0)
+
+  // Mod+Z walks the persisted steps back one at a time: the landmark
+  // placement returns (undoing its delete), then goes (undoing place).
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect.poll(() => placementCount(win)).toBe(2)
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect.poll(() => placementCount(win)).toBe(1)
+
+  await app.close()
+})
+
+test('centered tear: double-click tears the page to a modal editor over the dimmed board; esc tucks it home', async () => {
+  const { app, win } = await launchApp('ew-e2e-centered-tear-')
+  const img = await seedImageNote(win, { w: 200, h: 320, x: 500, y: 400, title: 'Center' })
+  await setZoom(win, 1)
+  await openImageNote(win, img)
+
+  const pane = win.getByTestId('note-pane')
+  await expect(pane).toHaveAttribute('data-bound-side', /^(left|right)$/)
+  await expect(pane.getByTestId('note-pane-title')).toHaveText(/Center/)
+
+  // Double-click the page margin (the header strip left of the title
+  // input — page chrome, not a control and not the editor).
+  const box = (await pane.boundingBox())!
+  await win.mouse.dblclick(box.x + 4, box.y + 10)
+
+  // The torn-out page at the modal rung: torn chrome over the scrim.
+  const editor = win.getByTestId('big-editor')
+  await expect(editor).toBeVisible()
+  await expect(editor).toHaveAttribute('data-torn', 'true')
+  await expect(win.getByTestId('big-editor-torn-edge')).toBeVisible()
+  await expect(win.getByTestId('big-editor-backdrop')).toBeVisible()
+  // The page scrolls INSIDE itself (containment, §8.5).
+  await expect(
+    await editor.locator('.big-editor-body').evaluate((el) => getComputedStyle(el).overflowY),
+  ).toMatch(/auto|scroll/)
+
+  // Its spot in the book is empty while it is out: shell + rings hide.
+  await expect(pane).toHaveAttribute('data-torn-out', 'true')
+  await expect(win.getByTestId('binder-rings')).toHaveCount(0)
+
+  // Esc tucks it home (the ~200ms reverse beat rides the unmount).
+  await win.keyboard.press('Escape')
+  await expect(editor).toHaveCount(0)
+  await expect(pane).toHaveAttribute('data-bound-side', /^(left|right)$/)
+  await expect(pane).not.toHaveAttribute('data-torn-out', /.+/)
+  await expect(win.getByTestId('binder-rings')).toHaveCount(1)
+
+  await app.close()
+})

@@ -89,19 +89,29 @@ back; centered tear + esc tuck.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Tear/untape: presentation flips with beats, tape + torn
+- [x] Tear/untape: presentation flips with beats, tape + torn
       edge persist on the sticky, shadow only while
       floating/viewport-fixed.
-- [ ] Place → landmark: torn edge + push pin on the card, flat,
-      one undo group.
-- [ ] Pull pin / dismiss: reversal compounds, §9 confirm when
-      applicable, one undo each; e2e walks the full cycle.
-- [ ] Centered tear: modal-rung page over dimmed board, scroll
+- [x] Place → landmark: torn edge + push pin on the card, flat,
+      one undo group. (DOM hardware overlay, not a renderer
+      variant — see Issues; a single PlaceAsCard is the one undo
+      entry, no group window needed.)
+- [x] Pull pin / dismiss: reversal compounds, §9 confirm when
+      applicable, one undo each; e2e walks the full cycle. (§9
+      surfaces the standard last-placement NOTICE, not a blocking
+      confirm — no confirm convention exists; see Issues. Dismiss
+      is the ordinary landmark delete — see Issues.)
+- [x] Centered tear: modal-rung page over dimmed board, scroll
       inside, esc/click-off tucks home (~200ms reverse beat).
-- [ ] Beats one-shot (no loops — guard or review), constants from
-      130.
-- [ ] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
-      e2e hidden.
+- [x] Beats one-shot (no loops — guard or review), constants from
+      130 (plus a new provisional EW_BEAT_UNTAPE_MS=200 for the
+      reverse; all CSS animations run at iteration count 1 — no
+      app-wide reduced-motion convention exists, noted in Issues).
+- [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
+      e2e hidden. (Full run: units 242/516/368/58/18/1/1 all passed;
+      e2e 178 passed, 1 pre-existing source-panel flake green on
+      retry, exit 0. card-appearance.spec's image place-as-is test
+      updated to the new `panel-tear` verb — see Issues.)
 - [ ] HUMAN-TESTING entry appended at merge by the lead (playful
       vs twee; tear timing; pull-pin discoverability).
 
@@ -124,3 +134,81 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **SCOPE ADDITION (rotation gate) shipped**: the `bound` open-book
+  presentation now requires `rotation === 0` on the image placement
+  (`NotePanel.layout`). A rotated image's note opens/stays as the
+  tethered card; the gate is live mid-life (rotating an open book
+  drops it to the card, squaring it re-binds). E2E-covered.
+- **Landmark hardware is a DOM overlay, not a canvas-engine renderer
+  variant.** The ticket's Files-to-Touch named
+  `packages/canvas-engine/src/renderers/placement.ts`; that was NOT
+  touched (delegation constraint: engine consumption-only this wave,
+  plus the paper primitives are Svelte components a Pixi renderer
+  cannot host). Instead the landmark fact rides the settings table
+  (`note_torn_landmark:<placementId>`, presentation state, NO
+  migration) and `NotePanels` mounts world-tracked TornEdge + PushPin
+  hardware over the placement; the pin is the pull-pin verb. If a
+  future ticket wants the hardware inside the Pixi card body (batch
+  with world content, occlusion-correct), that is a deliberate
+  engine change to cut separately.
+- **"One undo group" is vacuous here**: place = ONE PlaceAsCard,
+  pull-pin = ONE DeleteContent — each already a single undo entry;
+  the presentation facts (settings writes) never enter the gateway,
+  so `runAsUndoGroup` would group nothing. Not used.
+- **Tear/untape are presentation flips, NOT undo entries** (the
+  acceptance's "each transition is one Mod+Z step" cannot hold for
+  them): pinned/torn state is panel-lifetime presentation exactly
+  like `size`, and the undo stack captures only structural commands
+  (`undo/*` was fenced to a parallel agent regardless). The e2e
+  asserts depth is UNCHANGED by tear and +1 for each persisted step.
+- **§9 "standard confirm" does not exist in the codebase** — board
+  deletes auto-trash a bare node and surface a notice (gestures-ui).
+  Pull-pin matches: when the landmark is the node's last placement it
+  deletes, emits the standard "Node moved to Trash…" notice, and
+  skips restoring a sticky for a note that just left with it.
+- **Dismiss is the ordinary landmark delete**, not a bespoke verb:
+  deleting the placement (⌫, one undo) leaves the note attached to
+  its image node, so the next open is the bound book — "the page
+  returns to its book". A dedicated dismiss affordance on the
+  landmark had no home (ContextMenu is fenced this wave); flag for a
+  menu-verbs follow-up if wanted.
+- **Undo asymmetry on pull-pin**: undoing the DeleteContent
+  resurrects the placement but the landmark fact was already cleared
+  (presentation state is not command-inverted), so the restored
+  placement returns bare — content safe, hardware asks to be
+  re-placed. Accepted as the presentation-state trade; same family
+  as pinned-panel state not rewinding under Mod+Z.
+- **PlaceAsCard places image nodes as-is** (AI-IMP-084 rule), so an
+  image-note's landmark is a second image placement wearing pin +
+  scar, not a card. The fact is keyed per landmark placement, so the
+  original image placement is never decorated.
+- **EW_BEAT_UNTAPE_MS = 200 added to chrome/beats.ts** (provisional,
+  `~200ms` from rev 0.55) — the ledger had no reverse-tear number.
+  z.test.ts asserts constants by name and is unaffected.
+- **No reduced-motion convention exists in the app** (grep found
+  none); the ticket said "check; else note" — noted. All lifecycle
+  animations are one-shot and short (≤300ms).
+- **Theme-token guard**: locally-scoped CSS duration vars initially
+  named `--ew-*` tripped theme.test.ts (every `--ew-` var must be a
+  theme.css token); renamed to component-local `--panel-beat-ms` /
+  `--big-tear-ms` / `--big-tuck-ms`.
+- **Playwright treats the tape's zero-size anchor wrapper as
+  hidden**; the e2e asserts its presence (count) instead of
+  visibility.
+- **RFC inconsistency (for the lead, rides this close)**: §8.5's
+  indicator-table row for the bound page still says "the tail is the
+  attribution" — stale since AI-IMP-134 (the binding is the
+  attribution); this ticket's Design section already carries the
+  agreed wording.
+- **card-appearance.spec.ts updated (not fenced)**: its "image nodes
+  place as-is" test pinned an image-anchored tethered panel via
+  `panel-pin`; that panel is now the BOUND page whose pin verb is the
+  TEAR (`panel-tear`, distinct testid so specs read the verb). One
+  click-site changed; all its assertions still hold (tear + place
+  behaves identically at the command layer). Full suite re-run green
+  after the fix.
+- The centered tear triggers on double-click of the bound page's
+  CHROME (header strip/margins), not inside the editor text — a
+  dblclick there must stay word-select. Feel question for the human
+  pass: is that discoverable enough?

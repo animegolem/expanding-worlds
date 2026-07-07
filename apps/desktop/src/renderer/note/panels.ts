@@ -22,6 +22,8 @@ import {
 } from './open-note'
 import { createNoteProjectPort } from './project-port'
 import type { ProjectPort } from './note-editor'
+import { attachLandmarks, clearLandmarkFact, landmarkFacts } from './paper/lifecycle'
+import type { BindSide } from './paper/bound-geometry'
 
 // §8.5 rev 0.55 (AI-IMP-134): the open book's geometry lives in a pure,
 // node-testable module under paper/; the store re-exports the side
@@ -78,6 +80,13 @@ export function clampPanelSize(size: PanelSize): PanelSize {
   }
 }
 
+/** A one-shot transition beat the panel component plays exactly once
+ * (§8.2 world beat budget, AI-IMP-135). The seq disambiguates repeats. */
+export interface PanelBeat {
+  kind: 'tear' | 'untape'
+  seq: number
+}
+
 export interface PanelRecord {
   key: number
   request: PanelRequest
@@ -89,6 +98,13 @@ export interface PanelRecord {
    * null = the tethered default; pinning initializes it and the
    * grip drags it. Never persisted, never in the note record. */
   size: PanelSize | null
+  /** §8.5 rev 0.55 (AI-IMP-135): a STICKY — a bound page torn out of
+   * its book and taped viewport-fixed. Holds the side the book bound
+   * on, so the torn edge scars the right page edge. Panel-lifetime
+   * presentation, exactly like `size`; null = an ordinary panel. */
+  tornFrom: BindSide | null
+  /** Latest transition beat to play (one-shot); null = none yet. */
+  beat: PanelBeat | null
   /** Focus pulse counter: bumps when an open request lands on an
    * already-pinned note so the panel can flash itself. */
   focus: number
@@ -194,11 +210,23 @@ function setTethered(request: PanelRequest, anchor: PanelAnchor): void {
   } else {
     records = [
       ...records,
-      { key: nextKey++, request, anchor, pinned: false, screen: null, size: null, focus: 0 },
+      {
+        key: nextKey++,
+        request,
+        anchor,
+        pinned: false,
+        screen: null,
+        size: null,
+        tornFrom: null,
+        beat: null,
+        focus: 0,
+      },
     ]
   }
   notify()
 }
+
+let nextBeatSeq = 1
 
 /** Orders async anchor resolves: only the LATEST open request may
  * land, so a slow query for an older click can never replace the
@@ -253,8 +281,14 @@ export function openCornerPanel(nodeId: string, noteId: string | null): void {
 }
 
 /** ⇱: tethered → screen-fixed; pinned panels accumulate and nothing
- * ever auto-unpins them (§8.5). */
-export function pinPanel(key: number, screen: { x: number; y: number }): void {
+ * ever auto-unpins them (§8.5). Tearing a BOUND page passes `tornFrom`
+ * (rev 0.55): the sticky wears tape + a torn edge on that side and
+ * plays the one-shot tear beat. */
+export function pinPanel(
+  key: number,
+  screen: { x: number; y: number },
+  opts?: { tornFrom?: BindSide },
+): void {
   const record = records.find((candidate) => candidate.key === key)
   if (!record || record.pinned) return
   record.pinned = true
@@ -262,7 +296,113 @@ export function pinPanel(key: number, screen: { x: number; y: number }): void {
   // Pinning makes it a proper window: the size starts at the tethered
   // default and belongs to this panel for its lifetime (§8.5).
   record.size = { ...DEFAULT_PANEL_SIZE }
+  if (opts?.tornFrom) {
+    record.tornFrom = opts.tornFrom
+    record.beat = { kind: 'tear', seq: nextBeatSeq++ }
+  }
   notify()
+}
+
+/** Un-tape (§8.5 rev 0.55): the STICKY returns to its book — the one
+ * deliberate un-pin in the app (pinned panels otherwise never unpin).
+ * The record re-tethers: layout finds its image anchor again and the
+ * page re-binds, playing the reversed tear. */
+export function unpinPanel(key: number): void {
+  const record = records.find((candidate) => candidate.key === key)
+  if (!record || !record.pinned) return
+  record.pinned = false
+  record.screen = null
+  record.size = null // tethered panels render at THE default
+  record.tornFrom = null
+  record.beat = { kind: 'untape', seq: nextBeatSeq++ }
+  notify()
+}
+
+/** Pull-pin restore (§8.5 rev 0.55): the landmark's page comes off the
+ * board and reappears as its STICKY — pinned, taped, torn — tethered to
+ * the book it originally tore from so un-tape can walk it all the way
+ * home. Runs through the ordinary tethered slot (one buffer per note). */
+export function restoreSticky(
+  noteId: string,
+  anchor: { canvasId: string; placementId: string; label: string },
+  screen: { x: number; y: number },
+  tornFrom: BindSide,
+): void {
+  // One buffer per note: if a pinned panel already holds it (the user
+  // reopened it between place and pull-pin), focus that instead of
+  // spawning a second editor against the same note.
+  const holder = records.find((record) => record.pinned && panelNoteId(record) === noteId)
+  if (holder) {
+    holder.focus += 1
+    notify()
+    return
+  }
+  setTethered(
+    { kind: 'note', noteId },
+    {
+      kind: 'placement',
+      canvasId: anchor.canvasId,
+      placementId: anchor.placementId,
+      label: anchor.label,
+    },
+  )
+  const record = tethered()
+  if (record) pinPanel(record.key, screen, { tornFrom })
+}
+
+/** Pull the pin (§8.5 rev 0.55): the landmark comes off the board —
+ * ONE undoable DeleteContent (captured by the undo store like any
+ * board delete) plus the presentation flip back to the STICKY. §9
+ * impact applies unchanged: deleting the node's LAST placement trashes
+ * the node, so we surface the standard notice and skip restoring a
+ * sticky for a note that just left with it. The cleared landmark fact
+ * is presentation state — an undo that resurrects the placement brings
+ * the content back without the pin (the hardware asks to be re-placed). */
+export async function pullLandmarkPin(placementId: string): Promise<void> {
+  if (!host || !storePort) return
+  const fact = landmarkFacts().get(placementId)
+  if (!fact) return
+  const item = host.controller
+    .items()
+    .find((candidate) => candidate.itemKind === 'placement' && candidate.id === placementId)
+  if (!item || item.itemKind !== 'placement') return
+  const aabb = itemWorldAABB(item)
+  const screenAt = aabb
+    ? host.controller.camera.worldToScreen({ x: aabb.x, y: aabb.y })
+    : { x: 80, y: 80 }
+  const isLast =
+    host.controller
+      .items()
+      .filter(
+        (candidate) => candidate.itemKind === 'placement' && candidate.nodeId === item.nodeId,
+      ).length <= 1
+  const result = await storePort.execute('DeleteContent', {
+    canvasId: host.canvasId,
+    placementIds: [placementId],
+    decorationIds: [],
+  })
+  if (result.status !== 'committed') {
+    if (result.status === 'error') toast(result.message, { kind: 'error' })
+    else toast('the project changed underneath (retry)', { kind: 'error' })
+    return
+  }
+  // §8.2 LIFT AWAY on the departing body, same as any delete.
+  host.beats.away([placementId])
+  clearLandmarkFact(placementId)
+  if (isLast) {
+    window.dispatchEvent(
+      new CustomEvent('ew-board-notice', {
+        detail: { message: 'Node moved to Trash with its last placement.' },
+      }),
+    )
+    return
+  }
+  restoreSticky(
+    fact.noteId,
+    { canvasId: fact.canvasId, placementId: fact.sourcePlacementId, label: fact.label },
+    { x: Math.max(8, screenAt.x), y: Math.max(8, screenAt.y) },
+    fact.tornFrom,
+  )
 }
 
 /** Grip drag on a pinned panel; tethered panels keep THE default. */
@@ -315,23 +455,33 @@ export function closePanel(key: number): void {
 // (one buffer per note); commit semantics are untouched (§7.1).
 
 let bigEditorKey: number | null = null
+/** §8.5 rev 0.55 (AI-IMP-135): the CENTERED TEAR — a big editor opened
+ * by tearing a bound page to center wears the torn-page chrome and the
+ * tear/tuck beats; an ordinary expand does not. */
+let bigEditorTorn = false
 const bigEditorListeners = new Set<(key: number | null) => void>()
 
 function notifyBigEditor(): void {
   for (const listener of bigEditorListeners) listener(bigEditorKey)
 }
 
-export function openBigEditor(key: number): void {
+export function openBigEditor(key: number, opts?: { torn?: boolean }): void {
   if (bigEditorKey === key) return
   if (!records.some((record) => record.key === key)) return
   bigEditorKey = key
+  bigEditorTorn = opts?.torn === true
   notifyBigEditor()
 }
 
 export function closeBigEditor(): void {
   if (bigEditorKey === null) return
   bigEditorKey = null
+  bigEditorTorn = false
   notifyBigEditor()
+}
+
+export function bigEditorIsTorn(): boolean {
+  return bigEditorTorn
 }
 
 export function bigEditorPanel(): number | null {
@@ -538,6 +688,9 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
       portDispose?.()
       portDispose = null
     },
+    // §8.5 rev 0.55 (AI-IMP-135): the landmark-facts mirror rides the
+    // panel store's lifetime — the landmark overlay layer reads it.
+    attachLandmarks(),
     onOpenNote((noteId, anchor) => openNotePanel(noteId, anchor)),
     onOpenPhantom((title) => openPhantomPanel(title)),
     onRevealNote((detail) => void revealNote(detail)),

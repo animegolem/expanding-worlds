@@ -61,6 +61,12 @@ export const EW_BEAT_PRESS_SCALE = 0.01
 /** locked-grab STRAIN: ~2px sideways, once per grab, never lifts. */
 export const EW_BEAT_STRAIN_PX = 2
 
+/** Untape / tuck-home: the tear REVERSED (§8.5 rev 0.55, AI-IMP-135) —
+ * the sticky returns to its book, the centered page tucks home.
+ * Provisional (`~200ms` in the spec); deliberately quicker than the
+ * tear so putting things back feels lighter than pulling them out. */
+export const EW_BEAT_UNTAPE_MS = 200
+
 /* --- provisional (ledger-unspecified) feel numbers, AI-IMP-151. --- */
 
 /** PRESS transition duration into the −1% locked seat. */

@@ -34,12 +34,17 @@
     resizePanel,
     setPanelAnchor,
     setPanelRequest,
+    unpinPanel,
     type PanelRecord,
   } from './panels'
   import { createNoteProjectPort } from './project-port'
   import { tetheredPanelOpacity, tetheredPanelScale } from '../chrome/feel'
+  import { EW_BEAT_TEAR_MS, EW_BEAT_UNTAPE_MS } from '../chrome/beats'
   import { pageDegradeStage, type PageDegradeStage } from '@ew/canvas-engine'
   import BinderRings from './paper/BinderRings.svelte'
+  import Tape from './paper/Tape.svelte'
+  import TornEdge from './paper/TornEdge.svelte'
+  import { setLandmarkFact, tornEdgeSide } from './paper/lifecycle'
   import {
     boundEdgeLength,
     chooseBindSide,
@@ -178,10 +183,11 @@
         x: pos.x + size.width / 2,
         y: pos.y + size.height / 2,
       })
+      const placementId = uuidv7()
       const placed = await project.execute('PlaceAsCard', {
         nodeId: node.id,
         canvasId: handle.canvasId,
-        placementId: uuidv7(),
+        placementId,
         x: world.x,
         y: world.y,
       })
@@ -189,6 +195,21 @@
         error =
           placed.status === 'error' ? placed.message : 'the project changed underneath (retry)'
         return
+      }
+      // §8.5 rev 0.55 (AI-IMP-135): a STICKY placed on the board is the
+      // LANDMARK — it keeps the torn edge and wears the push pin. The
+      // fact is presentation state riding the settings table (the ONE
+      // PlaceAsCard command above stays the undo entry); the overlay
+      // layer decorates the placement from it. An ordinary pinned
+      // panel's place-on-board stays plain, exactly as before.
+      if (record.tornFrom && record.anchor.kind === 'placement') {
+        setLandmarkFact(placementId, {
+          noteId: current.id,
+          canvasId: record.anchor.canvasId,
+          sourcePlacementId: record.anchor.placementId,
+          label: record.anchor.label,
+          tornFrom: record.tornFrom,
+        })
       }
       closePanel(record.key)
     } catch (cause) {
@@ -652,8 +673,16 @@
         // Other placement kinds (dot, card, icon) keep the tethered
         // card below (their look already represents them; a bound page
         // to a dot's height would be absurd).
-        if (item && item.appearanceKind === 'image') {
-          layoutBoundPage(aabb, camera)
+        //
+        // Rotation gate (AI-IMP-135, PR-review finding): the binding
+        // mounts to the image's AXIS-ALIGNED AABB, so on a rotated
+        // image the rings read as floating beside the art rather than
+        // gripping its edge. Until a rotated-book design exists, a
+        // rotated image keeps the tethered card — the gate is live, so
+        // rotating an open book mid-life drops it to the card and
+        // rotating back re-binds it.
+        if (item && item.appearanceKind === 'image' && item.rotation === 0) {
+          layoutBoundPage(aabb)
           return
         }
         // §8.5 rev 0.47: scale with the world, glued at the tether
@@ -769,6 +798,66 @@
   function pinHere(): void {
     pinPanel(record.key, pos)
   }
+
+  // ---- §8.5 rev 0.55 lifecycle transitions (AI-IMP-135) ----
+
+  /** TEAR: the bound page rips out of its book and tapes itself to the
+   * glass — the pin verb wearing paper (presentation flip + one-shot
+   * beat; nothing persists). The sticky spawns where the page sat, kept
+   * inside the window at the pinned default size. */
+  function tearOut(): void {
+    const view = viewportSize()
+    pinPanel(
+      record.key,
+      {
+        x: Math.min(Math.max(8, pos.x), view.width - DEFAULT_PANEL_SIZE.width - 8),
+        y: Math.min(Math.max(8, pos.y), view.height - DEFAULT_PANEL_SIZE.height - 8),
+      },
+      { tornFrom: boundSide },
+    )
+  }
+
+  /** UNTAPE: the sticky returns to its book — the tear reversed. The
+   * record re-tethers and the next layout re-binds the page. */
+  function untape(): void {
+    unpinPanel(record.key)
+    schedule()
+  }
+
+  /** The scar's edge on the sticky (the side that faced the binding). */
+  const stickyEdge = $derived(record.tornFrom ? tornEdgeSide(record.tornFrom) : null)
+
+  /** One-shot transition beat rider (§8.2 world beat budget): the store
+   * stamps `record.beat` on a transition; this plays it exactly once
+   * (seq-guarded) and clears the class when the ease terminates. Never
+   * looping — the CSS animations run at the default iteration count 1. */
+  let beatKind = $state<'tear' | 'untape' | null>(null)
+  let playedBeatSeq = 0
+  $effect(() => {
+    const beat = record.beat
+    if (!beat || beat.seq === playedBeatSeq) return
+    playedBeatSeq = beat.seq
+    beatKind = beat.kind
+    const ms = beat.kind === 'tear' ? EW_BEAT_TEAR_MS : EW_BEAT_UNTAPE_MS
+    const timer = setTimeout(() => (beatKind = null), ms)
+    return () => clearTimeout(timer)
+  })
+
+  /** CENTERED TEAR (§8.5 rev 0.55): double-click on the bound page's
+   * chrome tears it to the modal editor over the dimmed board. The CM
+   * surface keeps its own double-click (word select), as do the header
+   * controls — the page margins are the tear grip. */
+  function onPageDblClick(event: MouseEvent): void {
+    if (!bound || !note) return
+    const target = event.target as HTMLElement
+    if (target.closest('button, input, textarea')) return
+    if (editorHost && editorHost.contains(target)) return
+    openBigEditor(record.key, { torn: true })
+  }
+
+  /** While the page's buffer sits in the CENTERED editor, the bound
+   * shell hides — the page is torn out, its spot in the book empty. */
+  const tornOut = $derived(bound && overlayHost !== null)
 
   // §6.1 note-pane image drop (AI-IMP-097): a note surface is not an
   // embed target yet (that waits on AI-EPIC-018) — so an image dropped
@@ -1032,6 +1121,7 @@
   </svg>
 {/if}
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <section
   class="note-panel"
   class:pinned={record.pinned}
@@ -1039,15 +1129,20 @@
   class:bound-left={bound && boundSide === 'left'}
   class:bound-below={bound && boundSide === 'below'}
   class:pulse
-  style={`left:${pos.x}px;top:${pos.y}px;width:${renderWidth}px;height:${renderHeight}px;transform:scale(${scale});transform-origin:${transformOrigin};opacity:${opacity};${faded ? 'pointer-events:none;' : ''}`}
+  class:beat-tear={beatKind === 'tear'}
+  class:beat-untape={beatKind === 'untape'}
+  style={`left:${pos.x}px;top:${pos.y}px;width:${renderWidth}px;height:${renderHeight}px;transform:scale(${scale});transform-origin:${transformOrigin};opacity:${tornOut ? 0 : opacity};--panel-beat-ms:${beatKind === 'tear' ? EW_BEAT_TEAR_MS : EW_BEAT_UNTAPE_MS}ms;${faded || tornOut ? 'pointer-events:none;' : ''}`}
   data-testid={record.pinned ? `note-panel-pinned-${record.key}` : 'note-pane'}
   data-panel-key={record.key}
   data-tether-scale={scale}
   data-bound-side={bound ? boundSide : null}
   data-page-stage={bound ? pageStage : null}
+  data-paper={record.tornFrom ? 'torn' : null}
+  data-torn-out={tornOut ? 'true' : null}
   bind:this={panelEl}
   ondragovercapture={onSurfaceDragOver}
   ondropcapture={onSurfaceDrop}
+  ondblclick={onPageDblClick}
 >
   <header onpointerdown={onHeaderPointerDown}>
     {#if note && !phantom}
@@ -1117,16 +1212,43 @@
         ⤢
       </button>
     {/if}
-    {#if !record.pinned}
+    {#if record.pinned && record.tornFrom}
+      <!-- §8.5 rev 0.55: the sticky's un-tape — the tear reversed; the
+           page returns to its book (~200ms one-shot). -->
       <button
         type="button"
         class="chrome-btn"
-        data-testid="panel-pin"
-        onclick={pinHere}
-        use:tooltip={{ name: 'Pin — keep this panel on screen' }}
+        data-testid="panel-untape"
+        onclick={untape}
+        use:tooltip={{ name: 'Un-tape — return this page to its book' }}
       >
-        ⇱
+        ⤶
       </button>
+    {/if}
+    {#if !record.pinned}
+      {#if bound}
+        <!-- §8.5 rev 0.55: on the open book the pin verb IS the tear —
+             the page rips out and tapes itself to the glass. -->
+        <button
+          type="button"
+          class="chrome-btn"
+          data-testid="panel-tear"
+          onclick={tearOut}
+          use:tooltip={{ name: 'Tear out — tape this page to the glass' }}
+        >
+          ⇱
+        </button>
+      {:else}
+        <button
+          type="button"
+          class="chrome-btn"
+          data-testid="panel-pin"
+          onclick={pinHere}
+          use:tooltip={{ name: 'Pin — keep this panel on screen' }}
+        >
+          ⇱
+        </button>
+      {/if}
     {/if}
     <button
       type="button"
@@ -1307,7 +1429,7 @@
   {/if}
 </section>
 
-{#if ringMount}
+{#if ringMount && !tornOut}
   <!-- §8.5 rev 0.55 (AI-IMP-134): the binder rings straddle the seam.
        A sibling of the page (not a child) so the page's overflow clip
        never eats the half that overlaps the image; mounted at the seam
@@ -1325,6 +1447,26 @@
       edgeLength={ringMount.edgeLength}
       stage={ringMount.stage}
     />
+  </div>
+{/if}
+
+{#if record.pinned && record.tornFrom && stickyEdge}
+  <!-- §8.5 rev 0.55 (AI-IMP-135): the STICKY's paper hardware — tape
+       over the top edge, the torn scar on the edge that faced the
+       binding. A sibling of the panel (the tape straddles the top edge,
+       which the panel's own overflow clip would eat); it rides the same
+       position and plays the same beat so the two move as one body. -->
+  <div
+    class="sticky-hardware"
+    class:beat-tear={beatKind === 'tear'}
+    style={`left:${pos.x}px;top:${pos.y}px;width:${size.width}px;height:${size.height}px;--panel-beat-ms:${EW_BEAT_TEAR_MS}ms`}
+    data-testid="sticky-hardware"
+    aria-hidden="true"
+  >
+    <div class="sticky-tape" data-testid="sticky-tape"><Tape /></div>
+    <div class={`sticky-scar scar-${stickyEdge}`} data-testid="sticky-torn-edge">
+      <TornEdge side={stickyEdge} />
+    </div>
   </div>
 {/if}
 
@@ -1413,6 +1555,110 @@
     100% {
       box-shadow: 0 0 0 14px var(--ew-focus-ring-fade);
     }
+  }
+
+  /* §8.5 rev 0.55 lifecycle beats (AI-IMP-135): ONE-SHOT eases on the
+     independent translate/rotate properties so they compose with the
+     inline transform:scale() instead of stomping it. Iteration count 1
+     always (§8.2: never ambient, never looping); duration rides
+     --panel-beat-ms from the chrome/beats constants. Mid-flight the body
+     wears --ew-drag-shadow — the §8.5 depth cue for a floating thing. */
+  .note-panel.beat-tear {
+    animation: panel-beat-tear var(--panel-beat-ms) ease-out 1;
+  }
+
+  @keyframes panel-beat-tear {
+    0% {
+      translate: -14px -8px;
+      rotate: -2.5deg;
+      box-shadow: var(--ew-drag-shadow);
+    }
+    100% {
+      translate: 0 0;
+      rotate: 0deg;
+    }
+  }
+
+  .note-panel.beat-untape {
+    animation: panel-beat-untape var(--panel-beat-ms) ease-out 1;
+  }
+
+  @keyframes panel-beat-untape {
+    0% {
+      translate: 12px 6px;
+      rotate: 1.5deg;
+      box-shadow: var(--ew-drag-shadow);
+      opacity: 0.9;
+    }
+    100% {
+      translate: 0 0;
+      rotate: 0deg;
+    }
+  }
+
+  /* The sticky's paper hardware layer: same footprint as the panel,
+     unclipped so the tape straddles the top edge. Above the panel (its
+     own z), inert to the pointer. */
+  .sticky-hardware {
+    position: absolute;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 9;
+  }
+
+  /* The hardware mirrors the panel's tear beat minus the shadow (paper
+     scraps cast no shadow of their own). Un-tape clears tornFrom, so
+     the hardware is gone before that reverse beat plays — the page
+     alone carries it. */
+  .sticky-hardware.beat-tear {
+    animation: hardware-beat-tear var(--panel-beat-ms) ease-out 1;
+  }
+
+  @keyframes hardware-beat-tear {
+    0% {
+      translate: -14px -8px;
+      rotate: -2.5deg;
+    }
+    100% {
+      translate: 0 0;
+      rotate: 0deg;
+    }
+  }
+
+  .sticky-tape {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    width: 0;
+    height: 0;
+    overflow: visible;
+  }
+
+  /* The scar hugs the edge that faced the binding; TornEdge fills it. */
+  .sticky-scar {
+    position: absolute;
+    overflow: hidden;
+  }
+
+  .sticky-scar.scar-left {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+  }
+
+  .sticky-scar.scar-right {
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+  }
+
+  .sticky-scar.scar-top {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 10px;
   }
 
   header {
