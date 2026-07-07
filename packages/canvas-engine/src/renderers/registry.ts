@@ -30,6 +30,32 @@ export interface IconAtlasResource {
  * outline stub rather than failing the whole scene.
  */
 
+/**
+ * §8.5 placed-image body treatment (AI-IMP-140): the board-presentation
+ * radius + soft drop shadow, derived from theme tokens by the host (the
+ * engine reads no CSS). Board presentation ONLY — never baked into the
+ * source texture, so exports and crop previews read the untreated
+ * original. The shadow texture is a single 9-slice silhouette built once
+ * by the host; every image samples it, so shadows stay in one batch.
+ */
+export interface ImageTreatment {
+  /** World-unit corner radius drawn into the image body. */
+  readonly radius: number
+  /** Soft drop shadow under the body, or null to omit it. */
+  readonly shadow: {
+    /** Shared 9-slice shadow silhouette texture (host-built). */
+    readonly texture: Texture
+    /** 9-slice corner inset in texture px (= radius + blur padding). */
+    readonly inset: number
+    /** World-unit distance the shadow extends beyond the body per side. */
+    readonly spread: number
+    /** World-unit vertical offset (positive = downward). */
+    readonly offsetY: number
+    /** Shadow alpha, from the token. */
+    readonly alpha: number
+  } | null
+}
+
 export interface RendererResources {
   /** Resolves a texture for a managed asset URL; injectable for tests. */
   loadTexture: (url: string) => Promise<unknown>
@@ -74,6 +100,12 @@ export interface RendererResources {
    * branch renders the generic glyph fallback (minimal test hosts).
    */
   iconAtlas?: IconAtlasResource
+  /**
+   * §8.5 image body treatment (AI-IMP-140): the radius + shadow for
+   * placed image bodies, resolved LIVE from theme tokens by the host.
+   * Absent (minimal test hosts) means raw untreated sprites.
+   */
+  imageTreatment?: () => ImageTreatment | null
 }
 
 export interface ItemRenderer<T extends SceneItem = SceneItem> {

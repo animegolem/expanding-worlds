@@ -9,6 +9,10 @@ const rendererDir = fileURLToPath(new URL('.', import.meta.url))
 const allowedFiles = new Map<string, string>([
   ['theme.css', 'theme.css is the token source of truth.'],
   ['theme.test.ts', 'this test contains the raw-color detection pattern.'],
+  [
+    'canvas/image-treatment.test.ts',
+    'parses real box-shadow token strings (AI-IMP-140) — literal colors are the fixtures.',
+  ],
 ])
 
 function filesUnder(dir: string): string[] {

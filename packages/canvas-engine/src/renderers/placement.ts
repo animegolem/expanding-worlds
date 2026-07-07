@@ -1,7 +1,7 @@
-import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
+import { Container, Graphics, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js'
 import { assetUrl, type ScenePlacement } from '../types'
 import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
-import type { ItemRenderer, RendererResources } from './registry'
+import type { ImageTreatment, ItemRenderer, RendererResources } from './registry'
 
 /**
  * Placement renderer: dot, icon placeholder, or image appearance
@@ -107,6 +107,99 @@ interface PlacementObject extends Container {
   __acquiring?: string | null
   /** Body natural size the sprite renders at when the texture lands. */
   __imageSize?: { width: number; height: number }
+  /** The resident image texture (§8.5): kept so an in-place resize can
+   * redraw the rounded body Graphics without dropping to placeholder. */
+  __imageTexture?: Texture
+}
+
+/** §8.5 image body treatment (AI-IMP-140): host-injected radius + shadow,
+ * or null when a minimal test host injects none (raw untreated sprites). */
+function imageTreatment(resources: RendererResources): ImageTreatment | null {
+  return resources.imageTreatment?.() ?? null
+}
+
+/**
+ * Draws (or redraws) an image body: a rounded rect filled with the
+ * texture, stretched to the placement rect via textureSpace 'local'
+ * (AI-IMP-140). No per-sprite Graphics mask and no custom shader — the
+ * rounded quad keeps every same-texture image in the shared Graphics
+ * batch, and the texture is SAMPLED, never modified, so exports/crops
+ * read original pixels.
+ */
+function drawImageBody(
+  gfx: Graphics,
+  texture: Texture,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  gfx.clear()
+  gfx.roundRect(-width / 2, -height / 2, width, height, radius).fill({
+    texture,
+    textureSpace: 'local',
+  })
+}
+
+/** The loading placeholder shares the image body's rounded silhouette so
+ * the corner treatment does not pop in when the texture lands. */
+function drawImagePlaceholder(
+  gfx: Graphics,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  gfx.clear()
+  gfx.roundRect(-width / 2, -height / 2, width, height, radius).fill({ color: 0x2b2b2b })
+}
+
+/**
+ * §8.5 soft drop shadow (AI-IMP-140): one shared 9-slice silhouette
+ * texture (host-built) sits under the body, sized to the placement plus
+ * the token's spread, offset down, alpha from the token. One texture
+ * means every image shadow batches. Creates, resizes, or removes the
+ * shadow child and keeps it at the back of the body.
+ */
+function syncImageShadow(
+  container: PlacementObject,
+  width: number,
+  height: number,
+  resources: RendererResources,
+): void {
+  const shadow = imageTreatment(resources)?.shadow ?? null
+  const existing = container.getChildByLabel('image-shadow') as NineSliceSprite | null
+  if (!shadow) {
+    existing?.destroy()
+    return
+  }
+  const sw = width + shadow.spread * 2
+  const sh = height + shadow.spread * 2
+  let nine = existing
+  if (!nine) {
+    nine = new NineSliceSprite({
+      texture: shadow.texture,
+      leftWidth: shadow.inset,
+      topHeight: shadow.inset,
+      rightWidth: shadow.inset,
+      bottomHeight: shadow.inset,
+      width: sw,
+      height: sh,
+    })
+    nine.label = 'image-shadow'
+    // Always the backmost child: content and label paint over it.
+    container.addChildAt(nine, 0)
+  } else {
+    nine.width = sw
+    nine.height = sh
+    if (nine.texture !== shadow.texture) nine.texture = shadow.texture
+  }
+  nine.alpha = shadow.alpha
+  nine.position.set(-sw / 2, -sh / 2 + shadow.offsetY)
+}
+
+/** Index to insert a rebuilt image body at: above the shadow (kept at 0)
+ * but below any label the sync pass appended. */
+function imageBodyIndex(container: PlacementObject): number {
+  return container.getChildByLabel('image-shadow') ? 1 : 0
 }
 
 /** What the body is made of — a change forces a full rebuild. Size is
@@ -148,11 +241,15 @@ function buildBody(
     const width = item.width ?? item.assetWidth ?? 128
     const height = item.height ?? item.assetHeight ?? 128
     container.__imageSize = { width, height }
+    delete container.__imageTexture
+    const radius = imageTreatment(resources)?.radius ?? 0
     const placeholder = new Graphics()
-      .rect(-width / 2, -height / 2, width, height)
-      .fill({ color: 0x2b2b2b })
     placeholder.label = 'image-placeholder'
+    drawImagePlaceholder(placeholder, width, height, radius)
     container.addChild(placeholder)
+    // §8.5 shadow sits UNDER the body; built here so it is present for
+    // the placeholder too and never pops in when the texture lands.
+    syncImageShadow(container, width, height, resources)
     // Without a texture budget, load eagerly (tests, simple hosts).
     // With one, residency is granted by the Culler via
     // setPlacementTextureResident — the body stays a placeholder
@@ -348,13 +445,17 @@ async function attachTexture(
       return
     }
     const size = container.__imageSize ?? { width: 128, height: 128 }
-    container.getChildByLabel('image-placeholder')?.destroy()
-    const sprite = new Sprite(texture as Texture)
-    sprite.label = 'image'
-    sprite.anchor.set(0.5)
-    sprite.width = size.width
-    sprite.height = size.height
-    container.addChildAt(sprite, 0)
+    const placeholder = container.getChildByLabel('image-placeholder')
+    const insertIndex = placeholder
+      ? container.getChildIndex(placeholder)
+      : imageBodyIndex(container)
+    placeholder?.destroy()
+    const radius = imageTreatment(resources)?.radius ?? 0
+    const body = new Graphics()
+    body.label = 'image'
+    drawImageBody(body, texture as Texture, size.width, size.height, radius)
+    container.__imageTexture = texture as Texture
+    container.addChildAt(body, Math.min(insertIndex, container.children.length))
     if (resources.textures) container.__acquiredHash = contentHash
   } catch {
     /* placeholder stays; a broken blob must not take down the scene */
@@ -396,13 +497,15 @@ export function setPlacementTextureResident(
     container.__acquiredHash = null
     const sprite = container.getChildByLabel('image')
     if (sprite) {
+      const index = container.getChildIndex(sprite)
       sprite.destroy()
+      delete container.__imageTexture
       const size = container.__imageSize ?? { width: 128, height: 128 }
+      const radius = imageTreatment(resources)?.radius ?? 0
       const placeholder = new Graphics()
-        .rect(-size.width / 2, -size.height / 2, size.width, size.height)
-        .fill({ color: 0x2b2b2b })
       placeholder.label = 'image-placeholder'
-      container.addChildAt(placeholder, 0)
+      drawImagePlaceholder(placeholder, size.width, size.height, radius)
+      container.addChildAt(placeholder, Math.min(index, container.children.length))
     }
     if (hash) resources.textures.release(hash)
   }
@@ -544,16 +647,25 @@ export function syncPlacementIconLod(
  * placeholder) instead of rebuilding, so ephemeral resize gestures
  * keep the texture on screen every frame. Vector bodies (dot, icon)
  * redraw exactly via buildBody — they have no residency state. */
-function resizeImageBody(container: PlacementObject, item: ScenePlacement): void {
+function resizeImageBody(
+  container: PlacementObject,
+  item: ScenePlacement,
+  resources: RendererResources,
+): void {
   const width = item.width ?? item.assetWidth ?? 128
   const height = item.height ?? item.assetHeight ?? 128
   container.__imageSize = { width, height }
-  const body =
-    container.getChildByLabel('image') ?? container.getChildByLabel('image-placeholder')
-  if (body) {
-    ;(body as Sprite).width = width
-    ;(body as Sprite).height = height
+  const radius = imageTreatment(resources)?.radius ?? 0
+  // Redraw the rounded body geometry in place (the texture, if resident,
+  // is preserved so the image never blinks to placeholder mid-gesture).
+  const image = container.getChildByLabel('image') as Graphics | null
+  if (image && container.__imageTexture) {
+    drawImageBody(image, container.__imageTexture, width, height, radius)
+  } else {
+    const placeholder = container.getChildByLabel('image-placeholder') as Graphics | null
+    if (placeholder) drawImagePlaceholder(placeholder, width, height, radius)
   }
+  syncImageShadow(container, width, height, resources)
 }
 
 export const placementRenderer: ItemRenderer<ScenePlacement> = {
@@ -582,7 +694,7 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
       buildBody(container, item, resources)
     } else if (sizeChanged) {
       if (item.appearanceKind === 'image' && item.assetContentHash) {
-        resizeImageBody(container, item)
+        resizeImageBody(container, item, resources)
       } else if (item.appearanceKind === 'card') {
         resizeCardBody(container, item)
       } else {
