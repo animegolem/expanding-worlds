@@ -362,6 +362,152 @@ test('multi-select menu: count header + Gather into a frame = ONE undo (§8.4)',
   }
 })
 
+/** The scene's decorations via the debug seam (decorations.spec idiom). */
+interface DecoLite {
+  id: string
+  locked: number
+  hidden: number
+  data: Record<string, unknown>
+}
+async function decorations(win: Page): Promise<DecoLite[]> {
+  return win.evaluate(() => window.__ewDebug!.decorations() as unknown as DecoLite[])
+}
+
+test('decoration lock/hide via menu = ONE undo each; Dock style traffic stays out (AI-IMP-154)', async () => {
+  const { app, win } = await launchApp('ew-e2e-ctxmenu-deco-undo-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const deco = await seedDecoration(win, { x: 600, y: 380 })
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 1)
+    const locked = async (): Promise<number | undefined> =>
+      (await decorations(win)).find((d) => d.id === deco.id)?.locked
+    const hidden = async (): Promise<number | undefined> =>
+      (await decorations(win)).find((d) => d.id === deco.id)?.hidden
+
+    // Lock from the menu: one undo entry; Mod+Z restores unlocked.
+    const d0 = await undoDepth(win)
+    await win.mouse.click(box.x + deco.cx, box.y + deco.cy, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    await win.getByTestId('ctx-lock').click()
+    await expect.poll(() => locked()).toBe(1)
+    expect(await undoDepth(win)).toBe(d0 + 1)
+    // Keyboard Mod+Z (board holds focus after the empty-canvas click).
+    await win.mouse.click(box.x + 60, box.y + 60)
+    await win.keyboard.press('Meta+z')
+    await expect.poll(() => locked()).toBe(0)
+    expect(await undoDepth(win)).toBe(d0)
+
+    // Hide from the menu: one undo entry; undo brings it back.
+    await win.mouse.click(box.x + deco.cx, box.y + deco.cy, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    await win.getByTestId('ctx-hide').click()
+    await expect.poll(() => hidden()).toBe(1)
+    expect(await undoDepth(win)).toBe(d0 + 1)
+    await undoOnce(win)
+    await expect.poll(() => hidden()).toBe(0)
+    expect(await undoDepth(win)).toBe(d0)
+
+    // A Dock style edit commits the SAME command type (UpdateDecoration)
+    // through the same gateway but is NOT a captured gesture: the stack
+    // must not grow (the §8.4 verb capture is gesture-shaped, not
+    // type-shaped).
+    await win.mouse.click(box.x + deco.cx, box.y + deco.cy)
+    await expect(win.getByTestId('selection-style-controls')).toBeVisible()
+    await win.getByTestId('sel-stroke-width').fill('7')
+    await win.keyboard.press('Tab')
+    await expect
+      .poll(async () => (await decorations(win)).find((d) => d.id === deco.id)?.data['strokeWidth'])
+      .toBe(7)
+    expect(await undoDepth(win)).toBe(d0)
+  } finally {
+    await app.close()
+  }
+})
+
+test('mixed-selection Lock all covers decorations too; ONE Mod+Z frees everything (AI-IMP-154)', async () => {
+  const { app, win } = await launchApp('ew-e2e-ctxmenu-lockall-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const a = await seedPin(win, 'One', { x: 400, y: 300 })
+    const b = await seedPin(win, 'Two', { x: 800, y: 300 })
+    const deco = await seedDecoration(win, { x: 580, y: 320 })
+    await win.waitForFunction(
+      () =>
+        window.__ewDebug!.sceneStats().placements === 2 &&
+        window.__ewDebug!.sceneStats().decorations === 1,
+    )
+
+    // Marquee all three, then open the MULTI menu inside the selection.
+    await win.mouse.move(box.x + 300, box.y + 120)
+    await win.mouse.down()
+    await win.mouse.move(box.x + 1050, box.y + 550, { steps: 5 })
+    await win.mouse.up()
+    await win.waitForFunction(() => window.__ewDebug!.selection().length === 3)
+    await win.mouse.click(box.x + 400, box.y + 300, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('multi')
+
+    // Lock all: placements AND the decoration lock, as ONE undo entry.
+    const d0 = await undoDepth(win)
+    await win.getByTestId('ctx-lock-all').click()
+    const lockedStates = async (): Promise<Array<number | undefined>> => [
+      (await placement(win, a.placementId))?.locked,
+      (await placement(win, b.placementId))?.locked,
+      (await decorations(win)).find((d) => d.id === deco.id)?.locked,
+    ]
+    await expect.poll(() => lockedStates()).toEqual([1, 1, 1])
+    expect(await undoDepth(win)).toBe(d0 + 1)
+
+    // One undo frees the WHOLE selection the verb advertised.
+    await undoOnce(win)
+    await expect.poll(() => lockedStates()).toEqual([0, 0, 0])
+    expect(await undoDepth(win)).toBe(d0)
+  } finally {
+    await app.close()
+  }
+})
+
+test('decoration-only multi: Gather disabled-with-reason, Lock all still works (AI-IMP-154)', async () => {
+  const { app, win } = await launchApp('ew-e2e-ctxmenu-deco-multi-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const d1 = await seedDecoration(win, { x: 420, y: 300 })
+    const d2 = await seedDecoration(win, { x: 700, y: 320 })
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().decorations === 2)
+
+    await win.mouse.move(box.x + 300, box.y + 150)
+    await win.mouse.down()
+    await win.mouse.move(box.x + 950, box.y + 520, { steps: 5 })
+    await win.mouse.up()
+    await win.waitForFunction(() => window.__ewDebug!.selection().length === 2)
+    await win.mouse.click(box.x + d1.cx, box.y + d1.cy, { button: 'right' })
+    await expect(win.getByTestId('context-menu')).toBeVisible()
+    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('multi')
+
+    // §4.9 frames capture placements only — no empty frame from an
+    // enabled row: Gather is disabled-with-reason (§8.2 grammar).
+    await expect(win.getByTestId('ctx-gather-into-frame')).toHaveAttribute('aria-disabled', 'true')
+
+    // Lock all remains actionable and locks both decorations as one entry.
+    const d0 = await undoDepth(win)
+    await win.getByTestId('ctx-lock-all').click()
+    const lockedPair = async (): Promise<Array<number | undefined>> => {
+      const ds = await decorations(win)
+      return [ds.find((d) => d.id === d1.id)?.locked, ds.find((d) => d.id === d2.id)?.locked]
+    }
+    await expect.poll(() => lockedPair()).toEqual([1, 1])
+    expect(await undoDepth(win)).toBe(d0 + 1)
+    await undoOnce(win)
+    await expect.poll(() => lockedPair()).toEqual([0, 0])
+    expect(await undoDepth(win)).toBe(d0)
+  } finally {
+    await app.close()
+  }
+})
+
 test('frame menu: sort family + fill + Delete-frame-contents-stay (§8.4)', async () => {
   const { app, win } = await launchApp('ew-e2e-ctxmenu-frame-')
   try {

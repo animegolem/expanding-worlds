@@ -608,10 +608,16 @@ export function attachContextMenu(
       // Z-order runs over the current selection (the right-click just
       // selected this decoration); ReorderContent handles decorations.
       reorder: (op: ReorderOp) => void tooling.reorder(op),
+      // §8.4: a discrete verb is one undoable command. UpdateDecoration
+      // is captured at the gesture (runAsUndoGroup), never by type —
+      // Dock style drags / text commits emit it too and stay OUT of
+      // undo (AI-IMP-154). A group of one records as a single entry.
       setDecorationLock: () =>
-        void execute('UpdateDecoration', {
-          decorationId: d.id,
-          set: { locked: d.locked !== 1 },
+        void runAsUndoGroup(async () => {
+          await execute('UpdateDecoration', {
+            decorationId: d.id,
+            set: { locked: d.locked !== 1 },
+          })
         }),
       hideDecoration: () => void hideDecoration(d.id),
       deleteDecoration: () => void deleteContent([], [d.id]),
@@ -620,9 +626,12 @@ export function attachContextMenu(
 
   async function hideDecoration(id: string): Promise<void> {
     // Hidden decorations are unhittable (§6.8) — drop the selection.
-    if (await execute('UpdateDecoration', { decorationId: id, set: { hidden: true } })) {
-      host.controller.selection.clear()
-    }
+    // Captured at the gesture so it is one Mod+Z entry (AI-IMP-154).
+    await runAsUndoGroup(async () => {
+      if (await execute('UpdateDecoration', { decorationId: id, set: { hidden: true } })) {
+        host.controller.selection.clear()
+      }
+    })
   }
 
   async function deleteContent(placementIds: string[], decorationIds: string[]): Promise<void> {
@@ -649,7 +658,7 @@ export function attachContextMenu(
       distribute: (axis) => void tooling.distribute(axis),
       flipAll: (axis) => void flipAll(placementIds, axis),
       gatherIntoFrame: () => void gatherIntoFrame(items, placementIds),
-      lockAll: () => void lockAll(placementIds),
+      lockAll: () => void lockAll(items, placementIds, decorationIds),
       deleteSelection: () => void deleteContent(placementIds, decorationIds),
     }
   }
@@ -663,24 +672,53 @@ export function attachContextMenu(
     })
   }
 
-  async function lockAll(placementIds: string[]): Promise<void> {
-    if (placementIds.length === 0) return
+  /** §8.4 Lock all: covers the ENTIRE selection it advertises — both
+   * placements (SetPlacementLock) and decorations (UpdateDecoration) —
+   * inside one undo group, so a single Mod+Z frees everything
+   * (AI-IMP-154). UpdateDecoration is captured here because the group is
+   * open (GROUP_ONLY_COMMANDS), not because its bare type is allowlisted.
+   * Already-locked decorations are skipped so their inverse stays
+   * meaningful; placements lock unconditionally (SetPlacementLock's
+   * inverse restores prior state). */
+  async function lockAll(
+    items: readonly SceneItem[],
+    placementIds: string[],
+    decorationIds: string[],
+  ): Promise<void> {
+    if (placementIds.length === 0 && decorationIds.length === 0) return
+    const lockedDecorations = new Set(
+      items
+        .filter((i): i is SceneDecoration => i.itemKind === 'decoration' && i.locked === 1)
+        .map((i) => i.id),
+    )
     await runAsUndoGroup(async () => {
       for (const placementId of placementIds) {
         await host.gateway.execute('SetPlacementLock', { placementId, locked: true })
       }
+      for (const decorationId of decorationIds) {
+        if (lockedDecorations.has(decorationId)) continue
+        await host.gateway.execute('UpdateDecoration', {
+          decorationId,
+          set: { locked: true },
+        })
+      }
     })
   }
 
-  /** §8.4 Gather into a frame: create the frame around the selection's
-   * bbox and capture the placements as members — ONE undo group
-   * (commitFrame's nested group runs inline; AI-IMP-127/129 pattern). */
+  /** §8.4 Gather into a frame: create the frame around the placements'
+   * bbox and capture them as members — ONE undo group (commitFrame's
+   * nested group runs inline; AI-IMP-127/129 pattern). Frames capture
+   * PLACEMENTS only (CaptureInFrame's member_placement_id relation;
+   * AI-IMP-154), so the frame is bounded to — and captures — the
+   * placement subset alone; the grammar disables the row outright on a
+   * decoration-only selection so this never produces an empty frame. */
   async function gatherIntoFrame(
     items: readonly SceneItem[],
     placementIds: string[],
   ): Promise<void> {
     if (placementIds.length === 0) return
-    const bounds = unionBounds(items)
+    const placements = items.filter((i) => i.itemKind === 'placement')
+    const bounds = unionBounds(placements)
     if (!bounds) return
     const pad = 24
     const region = {

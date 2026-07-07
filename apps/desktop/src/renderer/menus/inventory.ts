@@ -520,9 +520,29 @@ function multiMenu(subject: MultiSubject, a: MenuActions): MenuGroup[] {
     {
       id: 'group',
       items: [
-        { id: 'gather-into-frame', label: 'Gather into a frame', run: a.gatherIntoFrame },
+        {
+          id: 'gather-into-frame',
+          label: 'Gather into a frame',
+          // §4.9 frames capture placements only (member_placement_id);
+          // a decoration-only selection would make an empty frame, so
+          // the row disables-with-reason (§8.2). A mixed selection
+          // gathers the placements alone (AI-IMP-154).
+          ...(subject.placementCount > 0
+            ? { run: a.gatherIntoFrame }
+            : { disabledReason: 'Gather into a frame — frames hold items, not decorations' }),
+        },
         { id: 'tags', label: 'Tags…', disabledReason: COMING_SOON.multiTags },
-        { id: 'lock-all', label: 'Lock all', shortcutId: 'board-lock', run: a.lockAll },
+        {
+          id: 'lock-all',
+          label: 'Lock all',
+          shortcutId: 'board-lock',
+          // Locks the whole selection — placements and decorations
+          // alike (AI-IMP-154). Disabled only when nothing lockable is
+          // selected (never, in practice, for a multi-selection).
+          ...(subject.placementCount + subject.decorationCount > 0
+            ? { run: a.lockAll }
+            : { disabledReason: 'Lock all — nothing lockable is selected' }),
+        },
       ],
     },
     {
