@@ -68,10 +68,10 @@ non-exported per §16.
 
 ### Functional Requirements
 
-- [ ] FR-1: Container format decision recorded and RFC open question 11 closed.
-- [ ] FR-2: Export pipeline per §16 in the utility process with progress reporting.
-- [ ] FR-3: Import pipeline recreating a project with preserved IDs per §16.
-- [ ] FR-4: Active-content-only export variant.
+- [x] FR-1: Container format decision recorded and RFC open question 11 closed. *(rev 0.57: one .ewproj ZIP)*
+- [x] FR-2: Export pipeline per §16 in the utility process with progress reporting. *(AI-IMP-157)*
+- [x] FR-3: Import pipeline recreating a project with preserved IDs per §16. *(AI-IMP-158; roundtrip diff exact)*
+- [x] FR-4: Active-content-only export variant. *(AI-IMP-157; FK-checked filter)*
 - [ ] FR-5: Slice walkthrough of §17 items 1–26 with evidence.
 - [ ] FR-6: §18 acceptance audit with pass/fail record.
 - [x] FR-7: Git snapshot engine at checkpoint moments per rev 0.52
