@@ -26,6 +26,7 @@
   import {
     closePanel,
     DEFAULT_PANEL_SIZE,
+    heldPanelScale,
     movePanel,
     openBigEditor,
     pinPanel,
@@ -34,12 +35,13 @@
     resizePanel,
     setPanelAnchor,
     setPanelRequest,
+    tetheredPanelOverviewOpacity,
     unpinPanel,
     type PanelRecord,
   } from './panels'
   import { createNoteProjectPort } from './project-port'
   import { runAsUndoGroup } from '../undo/undo-store'
-  import { tetheredPanelOpacity, tetheredPanelScale } from '../chrome/feel'
+  import { tetheredPanelScale } from '../chrome/feel'
   import { EW_BEAT_TEAR_MS, EW_BEAT_UNTAPE_MS } from '../chrome/beats'
   import { pageDegradeStage, type PageDegradeStage } from '@ew/canvas-engine'
   import BinderRings from './paper/BinderRings.svelte'
@@ -588,6 +590,14 @@
 
   let panelEl = $state<HTMLElement | null>(null)
   let pos = $state<{ x: number; y: number }>({ x: 0, y: 0 })
+  /** §8.5 (AI-IMP-193): NO PAINT BEFORE POSITION. The panel mounts with
+   * `pos` at the placeholder 0,0 and only earns a real spot on the first
+   * layout() (an rAF, plus any async anchor/note load) — visible in
+   * between, it flashed in the window's upper-left. Held invisible and
+   * inert until layout() has run once; every layout() flips it true in
+   * the SAME reactive batch that sets the real pos, so the first paint is
+   * already at the spawn point beside the pointer/placement. */
+  let positioned = $state(false)
   /** §8.5 rev 0.31: tethered panels render at THE default (size is
    * null until pinned); a pinned panel wears its own size. */
   const size = $derived(record.size ?? DEFAULT_PANEL_SIZE)
@@ -596,10 +606,15 @@
   let anchorGone = $state(false)
   /** §8.5 rev 0.47: a TETHERED panel anchored to a placement is world
    * content — it scales with the camera (transform-origin at the tether
-   * corner) so it stays glued to its node at every zoom, fading below
-   * the legibility floor. Pinned/corner/point/anchorless panels stay at
-   * scale 1 (screen-fixed). Opacity is 1 whenever scale is 1. */
+   * corner) so it stays glued to its node at every zoom. rev 0.47/AI-IMP-200
+   * HOLD-AT-FLOOR: `scale` is the RENDER scale, world-tracked down to
+   * MIN_PANEL_SCREEN_SCALE then held (screen-fixed size), so a note at
+   * board zoom never shrinks to an unreadable stamp. Pinned/corner/point/
+   * anchorless panels stay at scale 1 (screen-fixed). */
   let scale = $state(1)
+  /** The true, unclamped WORLD scale (min(1, zoom)) driving the deep
+   * OVERVIEW fade — distinct from the held render `scale` above. */
+  let worldScale = $state(1)
 
   // §8.5 rev 0.55 (AI-IMP-134): an image-anchored tethered panel is THE
   // OPEN BOOK — the page binds to the image's side, sized to the shared
@@ -631,7 +646,9 @@
    * was made for so a re-anchor recomputes it. */
   let boundForPlacement = ''
 
-  const opacity = $derived(bound ? (pageStage === 'hidden' ? 0 : 1) : tetheredPanelOpacity(scale))
+  const opacity = $derived(
+    bound ? (pageStage === 'hidden' ? 0 : 1) : tetheredPanelOverviewOpacity(worldScale),
+  )
   const faded = $derived(opacity === 0)
   const renderWidth = $derived(bound ? pageBase.width : size.width)
   const renderHeight = $derived(bound ? pageBase.height : size.height)
@@ -646,6 +663,10 @@
 
   function layout(): void {
     activeCanvasId = handle.canvasId
+    // §8.5 (AI-IMP-193): the panel has a real position from here on. Set
+    // in the same synchronous pass that computes `pos` below, so the
+    // first paint reveals it already placed — never at the 0,0 default.
+    positioned = true
     const view = viewportSize()
     const width = panelEl?.offsetWidth ?? 320
     const height = panelEl?.offsetHeight ?? 240
@@ -655,6 +676,7 @@
     // keeps a stale factor. `bound` resets too, so a swap away from an
     // image clears the open-book presentation.
     scale = 1
+    worldScale = 1
     bound = false
     ringMount = null
     if (record.pinned) {
@@ -687,11 +709,14 @@
           layoutBoundPage(aabb)
           return
         }
-        // §8.5 rev 0.47: scale with the world, glued at the tether
-        // corner (transform-origin 0 0). The gap stays a constant screen
-        // distance so the panel never crashes into the node, and the
-        // footprint used for the in-window clamp is the SCALED size.
-        scale = tetheredPanelScale(camera.zoom)
+        // §8.5 rev 0.47 / AI-IMP-200: world-track down to the floor, then
+        // HOLD. `worldScale` is the true camera scale (drives the deep
+        // overview fade); `scale` is the RENDER scale, held at the floor
+        // so the panel never becomes a postage stamp at board zoom. Glued
+        // at the tether corner (transform-origin 0 0); the gap stays a
+        // constant screen distance; the in-window clamp uses the held size.
+        worldScale = tetheredPanelScale(camera.zoom)
+        scale = heldPanelScale(worldScale)
         const rightEdge = camera.worldToScreen({ x: aabb.x + aabb.width, y: aabb.y })
         let x = rightEdge.x + 24
         let y = rightEdge.y
@@ -799,6 +824,12 @@
 
   function pinHere(): void {
     pinPanel(record.key, pos)
+    // AI-IMP-200: pinning at board zoom must relayout NOW — a pinned panel
+    // is screen-fixed at scale 1, but layout() only re-runs on a
+    // camera/scene beat, so without this the just-undocked sticky would
+    // linger at the held tethered scale until the next pan. (tearOut()
+    // already does this; pinHere() was missing it.)
+    schedule()
   }
 
   // ---- §8.5 rev 0.55 lifecycle transitions (AI-IMP-135) ----
@@ -1085,6 +1116,13 @@
       schedule()
     })()
 
+    // §8.5 (AI-IMP-193): position on the very next frame, independent of
+    // the async port/note load above — panelEl is bound and the anchor is
+    // known at mount, so layout() can place the panel before its content
+    // arrives. This flips `positioned` fast (~1 frame) so the hold-until-
+    // placed window is a blink, not the ~250ms it took waiting on the load.
+    schedule()
+
     return () => {
       cancelled = true
       for (const dispose of disposers) dispose()
@@ -1138,7 +1176,7 @@
   class:pulse
   class:beat-tear={beatKind === 'tear'}
   class:beat-untape={beatKind === 'untape'}
-  style={`left:${pos.x}px;top:${pos.y}px;width:${renderWidth}px;height:${renderHeight}px;transform:scale(${scale});transform-origin:${transformOrigin};opacity:${tornOut ? 0 : opacity};--panel-beat-ms:${beatKind === 'tear' ? EW_BEAT_TEAR_MS : EW_BEAT_UNTAPE_MS}ms;${faded || tornOut ? 'pointer-events:none;' : ''}`}
+  style={`left:${pos.x}px;top:${pos.y}px;width:${renderWidth}px;height:${renderHeight}px;transform:scale(${scale});transform-origin:${transformOrigin};opacity:${tornOut ? 0 : opacity};--panel-beat-ms:${beatKind === 'tear' ? EW_BEAT_TEAR_MS : EW_BEAT_UNTAPE_MS}ms;${!positioned ? 'visibility:hidden;' : ''}${faded || tornOut || !positioned ? 'pointer-events:none;' : ''}`}
   data-testid={record.pinned ? `note-panel-pinned-${record.key}` : 'note-pane'}
   data-panel-key={record.key}
   data-tether-scale={scale}

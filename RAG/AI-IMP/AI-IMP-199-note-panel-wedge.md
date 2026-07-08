@@ -64,11 +64,11 @@ e2e in the note/panels spec.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Wedge reproduced and root cause documented.
-- [ ] No open/close sequence leaves a note unopenable (spam e2e);
+- [x] Wedge reproduced and root cause documented.
+- [x] No open/close sequence leaves a note unopenable (spam e2e);
       stuck states get safety timeouts.
-- [ ] Coordinated verdict with 193 (same cause or not — stated).
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Coordinated verdict with 193 (same cause or not — stated).
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -87,3 +87,57 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Root-cause verdict (and the 193 coupling).** The owner-reported
+"opens immediately and closes, then can't open anymore for that node"
+is TWO braided defects, neither of which is a store-level open/close
+wedge:
+
+1. *"Opens immediately and closes"* = the AI-IMP-193 spawn flash. The
+   tethered panel mounts at the placeholder `pos {0,0}` and only earns
+   a real position on the next rAF `layout()` — for that gap it painted
+   in the window's upper-left. Read as a panel that "appeared and
+   vanished." Fixed in 193 (hold `visibility:hidden` + inert until the
+   first `layout()` places it; mount schedules that layout immediately).
+
+2. *"Can't open anymore"* = the AI-IMP-116 world-scale FADE-at-floor —
+   the SAME root cause as AI-IMP-200. At the zoom levels boards live at
+   (≈0.2–0.4) a tethered panel scaled to a stamp and, below the 0.4
+   floor, faded to `opacity:0` with `pointer-events:none`. The note WAS
+   open (record present) but invisible and un-clickable; the one-tethered
+   rule then swapped every re-open onto that same invisible slot, so it
+   read as permanently unopenable. Reproduced by an e2e opening a note at
+   board zoom 0.3 → pane opacity 0.5 and dropping toward 0. CURED by
+   200's hold-at-floor (the panel now holds at a legible, interactable
+   screen size at board zoom; it fades only in deep overview).
+
+So: 199 and **193 are NOT the same cause** (correcting the ticket's
+suspicion — 193 is the unpositioned first paint); 199's "unopenable"
+half **shares its cause with 200** (the world-scale fade). Honest close:
+199 is resolved by the 193 gate + the 200 hold-at-floor, plus the
+defensive hardening below.
+
+**Audit of every boolean/token for a no-reset-path (the ticket's ask).**
+The store's open/close is already race-hardened (AI-IMP-171 ghost-eats-
+reopen, AI-IMP-184/185 generation tokens); spam e2e (open+instant-close
+×10, event-interleaved open-while-closing ×14) always ends openable both
+before and after this change — there is no store wedge. The ONE terminal
+state with no reset path was the big-editor takeover-family input
+blocker: `attachPanels`' detach teardown nulled `bigEditorKey` but never
+RELEASED `bigEditorBlocker`, so its predicate closure stayed registered
+past a canvas swap (a latent `takeoverActive()` leak). Fixed: teardown
+now releases and nulls it, mirroring `closeBigEditor`. The big-editor
+tuck in `NotePanels` already carries the PathBar safety-timeout idiom
+(`tuckTimer` force-clears `bigTucking`/`bigEditorKey` if the beat is
+missed) — verified self-healing under the tuck-race repro, left as is.
+
+**Adjacent finding (reported, not the wedge).** Reopening a DIFFERENT
+note that reuses the tethered slot while a torn big editor is mid-tuck
+briefly reparents the new buffer into the tucking host (~200ms) before
+recovering — a transient glitch, not a permanent wedge; the tuck-race
+e2e confirms final recovery. Left for a follow-up.
+
+**Also fixed here (surfaced by the 200 undock work):** `pinHere()` did
+not `schedule()` a relayout (unlike `tearOut()`), so pinning at board
+zoom left the sticky at the held tethered scale until the next pan.
+Added the schedule — see AI-IMP-200 notes.

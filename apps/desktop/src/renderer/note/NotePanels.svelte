@@ -430,7 +430,10 @@
     background: var(--ew-paper-surface);
     border: 1px solid var(--ew-paper-border-strong);
     border-radius: 10px;
-    box-shadow: 0 18px 60px var(--ew-dialog-shadow);
+    /* §8.5 "The Two Materials" (AI-IMP-200): paper lifted over the board
+       casts a reading shadow. The old 0 18px 60px wash "did not read";
+       this token pairs a contact + ambient layer, themed for both. */
+    box-shadow: var(--ew-paper-float-shadow);
     z-index: 41;
     pointer-events: auto;
   }

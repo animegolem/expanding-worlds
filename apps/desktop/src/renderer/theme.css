@@ -169,6 +169,15 @@
      guard's allowlist stays exactly one file. */
   --ew-drag-shadow: 0 12px 26px rgba(0, 0, 0, 0.5);
 
+  /* §8.5 "The Two Materials" (AI-IMP-200): floating PAPER casts a real,
+     reading shadow — the depth cue that lifts a torn-out / expanded page
+     off the flat board beneath it. The big editor is paper held over the
+     dimmed board, so it wears this: a tight CONTACT layer plus a soft
+     AMBIENT one, which reads far better than the single diffuse dialog
+     wash it used to carry ("does not read"). Full box-shadow value, like
+     --ew-drag-shadow; themed so it reads over both dark and light art. */
+  --ew-paper-float-shadow: 0 2px 8px rgba(0, 0, 0, 0.34), 0 20px 44px rgba(0, 0, 0, 0.52);
+
   /* §8.5 placed-image body treatment (AI-IMP-140): board presentation
      only — a subtle rounded corner and a soft resting drop shadow so
      images read as objects on the board. NEVER baked into the source
@@ -322,6 +331,9 @@
   --ew-shadow: rgba(8, 10, 14, 0.18);
   --ew-dialog-shadow: rgba(8, 10, 14, 0.18);
   --ew-menu-shadow: rgba(8, 10, 14, 0.2);
+  /* Paper's cast on a light board: softer, but still a reading contact +
+     ambient pair (AI-IMP-200, The Two Materials). */
+  --ew-paper-float-shadow: 0 2px 8px rgba(8, 10, 14, 0.16), 0 18px 40px rgba(8, 10, 14, 0.26);
   --ew-accent-halo: rgba(43, 108, 176, 0.85);
   --ew-accent-halo-shadow: rgba(43, 108, 176, 0.35);
   --ew-focus-ring: rgba(43, 108, 176, 0.65);
