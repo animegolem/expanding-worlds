@@ -484,3 +484,71 @@ test('locked placements refuse move and resize with the not-allowed cursor', asy
 
   await app.close()
 })
+
+test('rev 0.21 Option split: Alt MID-move bypasses snapping and never duplicates; plain move snaps', async () => {
+  // §6.9 rev 0.21: Option's two meanings read at different moments and
+  // so never collide — held at drag START it duplicates (pinned by the
+  // ⌥-drag test above), pressed MID-drag it is the snap bypass. This
+  // pins the non-collision at the gesture-UI seam AND the first e2e of
+  // MOVE snapping: a plain move whose edge nears a neighbor lands
+  // EXACTLY on it, and the same approach with Alt held mid-drag follows
+  // the pointer instead — committing one moved placement, never a copy.
+  const { app, win } = await launch('ew-e2e-option-split-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Mover center (200, 200) — right edge 220 — and a static neighbor at
+  // (400, 200) whose west edge sits at x = 380. Camera is identity, so
+  // world = screen throughout. SNAP_ENGAGE_PX = 6, RELEASE = 9.
+  await seedPlacement(win, { x: 200, y: 200 })
+  await seedPlacement(win, { x: 400, y: 200 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+  const before = await scenePlacements(win)
+  const mover = before.find((p) => Math.round(p.x) === 200)!
+  const neighbor = before.find((p) => Math.round(p.x) === 400)!
+
+  await win.mouse.click(box.x + 200, box.y + 200)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+
+  // Phase 1 — a PLAIN move (no Alt at pointerdown, so no duplicate arms)
+  // whose right edge approaches the neighbor's west edge at 380; Alt
+  // pressed MID-drag is the snap bypass, so the center follows the
+  // pointer to 358 (right edge 378, two px inside the engage radius the
+  // plain phase will snap on). Exactly one moved placement — no copy.
+  await expectZone(win, 200, 200, 'move')
+  const beforeP1 = await revision(win)
+  await win.mouse.move(box.x + 200, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 340, box.y + 200, { steps: 5 })
+  await win.keyboard.down('Alt')
+  await win.mouse.move(box.x + 358, box.y + 200)
+  await win.mouse.up()
+  await win.keyboard.up('Alt')
+  await expect.poll(() => revision(win)).toBe(beforeP1 + 1)
+  const afterP1 = await scenePlacements(win)
+  expect(afterP1.length).toBe(2) // the non-collision: Alt mid-drag never copies
+  const movedP1 = afterP1.find((p) => p.id === mover.id)!
+  expect(movedP1.x).toBeCloseTo(358, 3) // bypassed: pointer wins over the stop
+  expect(afterP1.find((p) => p.id === neighbor.id)).toMatchObject({ x: 400, y: 200 })
+
+  // Phase 2 — the same approach WITHOUT Alt snaps: from the relocated
+  // move zone at 358, wander out past the release radius (center 345,
+  // right edge 365) and come back to one px from the stop; the
+  // committed right edge must land EXACTLY on 380 (center 360).
+  await expectZone(win, 358, 200, 'move')
+  const beforeP2 = await revision(win)
+  await win.mouse.move(box.x + 358, box.y + 200)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 345, box.y + 200, { steps: 3 })
+  await win.mouse.move(box.x + 359, box.y + 200, { steps: 3 })
+  await win.mouse.up()
+  await expect.poll(() => revision(win)).toBe(beforeP2 + 1)
+  const afterP2 = await scenePlacements(win)
+  expect(afterP2.length).toBe(2)
+  const snapped = afterP2.find((p) => p.id === mover.id)!
+  expect(snapped.x + (snapped.width ?? 0) / 2).toBeCloseTo(380, 3) // right edge on the stop
+  expect(snapped.x).toBeCloseTo(360, 3)
+  expect(snapped.width).toBeCloseTo(40, 3) // move never resizes
+  expect(afterP2.find((p) => p.id === neighbor.id)).toMatchObject({ x: 400, y: 200 })
+
+  await app.close()
+})
