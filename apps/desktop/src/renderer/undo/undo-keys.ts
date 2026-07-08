@@ -50,6 +50,13 @@ export function mountUndo(): () => void {
   const onKeydown = (event: KeyboardEvent): void => {
     const action = undoActionForEvent(event)
     if (action === null) return
+    // OS key-repeat on a held Mod+Z must not spam undo/redo across the IPC
+    // round-trip (M-06): the overlapping #step calls are what corrupt the
+    // stack. One structural undo/redo per physical press; a held key
+    // expresses no additional intent (the UndoStack also drops re-entrant
+    // steps as belt-and-braces). Scoped to the undo combos, mirroring the
+    // navigation binding's guard (navigation.ts, AI-IMP-176).
+    if (event.repeat) return
     // The editor and inputs keep their own history; never steal it.
     if (takeoverActive()) return
     if (isTypingTarget(event.target) || isTypingTarget(document.activeElement)) return

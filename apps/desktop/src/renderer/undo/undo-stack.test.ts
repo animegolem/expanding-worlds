@@ -174,6 +174,29 @@ describe('UndoStack (RFC §10.2)', () => {
     expect(h.log).toEqual(['inv-Move'])
   })
 
+  it('names the direction in a cross-canvas decline: redo says "redo it" (AI-IMP-181 M-38)', async () => {
+    const h = harness(selfInverting, { boardLabel: 'Harbor' })
+    // Record on board-1, undo it here (moves to redo), then navigate away
+    // so the redo target is now cross-canvas.
+    h.stack.record({
+      commandType: 'Move',
+      commandVersion: 1,
+      payload: {},
+      inverse: { commandType: 'inv-Move', commandVersion: 1, payload: {} },
+      canvasId: 'board-1',
+    })
+    await h.stack.undo()
+    expect(h.stack.canRedo()).toBe(true)
+    h.setCanvas('board-2')
+    await h.stack.redo()
+    // Declined from the wrong board — the verb is REDO, not undo.
+    expect(h.stack.canRedo()).toBe(true) // entry left in place
+    const declineToast = h.toasts[h.toasts.length - 1]!
+    expect(declineToast).toContain('Harbor')
+    expect(declineToast).toContain('to redo it')
+    expect(declineToast).not.toContain('to undo it')
+  })
+
   it('clears both stacks (project switch)', async () => {
     const h = harness(selfInverting)
     h.stack.record({
@@ -237,6 +260,69 @@ describe('UndoStack (RFC §10.2)', () => {
     ])
     await h.stack.undo()
     expect(h.log).toEqual(['inv-B'])
+  })
+
+  it('serializes overlapping undo() calls: the second is dropped, no phantom, no redo wipe (AI-IMP-181)', async () => {
+    // A gated executor: execute() blocks until the test releases it, so a
+    // second undo() genuinely overlaps the first across the "IPC" await —
+    // the exact window the old shared #applying boolean got misread in.
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    const log: string[] = []
+    const applyingSamples: boolean[] = []
+    const execute = vi.fn(async (command: StackCommand): Promise<CommandResult> => {
+      log.push(command.commandType)
+      await gate
+      return { status: 'committed', commandId: 'x', revision: 1, affected: [], inverse: null }
+    })
+    const deps: UndoStackDeps = {
+      execute,
+      currentCanvasId: () => 'board-1',
+      boardLabel: () => 'Some Board',
+      toast: () => {},
+      onChanged: vi.fn(),
+    }
+    const stack = new UndoStack(deps)
+    const rec = (type: string) =>
+      stack.record({
+        commandType: type,
+        commandVersion: 1,
+        payload: {},
+        inverse: { commandType: `inv-${type}`, commandVersion: 1, payload: {} },
+        canvasId: 'board-1',
+      })
+    rec('A')
+    rec('B')
+    expect(stack.undoDepth()).toBe(2)
+
+    // Fire two undos WITHOUT awaiting the first — the key-repeat overlap.
+    const first = stack.undo()
+    applyingSamples.push(stack.applying) // in flight: must be true
+    const second = stack.undo() // re-entrant: dropped, no second execute
+    applyingSamples.push(stack.applying) // still applying across the drop
+
+    // Only ONE inverse has been dispatched despite two undo() calls.
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(log).toEqual(['inv-B'])
+
+    release()
+    await Promise.all([first, second])
+
+    // The overlap collapsed to a single step: exactly one entry moved to
+    // redo, none re-captured, redo intact (undoDepth + redoDepth stayed 2).
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(stack.undoDepth()).toBe(1)
+    expect(stack.redoDepth()).toBe(1)
+    // #applying was continuously true through the whole in-flight window —
+    // the capture gate (undo-store) never opened for the re-applied commit.
+    expect(applyingSamples).toEqual([true, true])
+    expect(stack.applying).toBe(false)
+
+    // And the next physical press still undoes the remaining entry.
+    await stack.undo()
+    expect(log).toEqual(['inv-B', 'inv-A'])
+    expect(stack.undoDepth()).toBe(0)
+    expect(stack.redoDepth()).toBe(2)
   })
 
   it('recording a new command clears the redo stack (§10.2)', async () => {
