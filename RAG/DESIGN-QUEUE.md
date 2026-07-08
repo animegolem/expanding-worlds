@@ -11,6 +11,18 @@ all moved into the RFC.
 
 ## Blocking planned work
 
+- **Gallery preview + inspector** (alph's first field report,
+  2026-07-08 — blocks AI-IMP-204): he double-clicked a gallery tile
+  expecting it to expand; nothing happened. His reference model is
+  Allusion: single click opens a side panel with a larger preview +
+  data + tags, double click shows the whole image. The conversation
+  must capture **the reflow** (owner's named concern: what the grid
+  does when the panel opens, and what the panel looks like), our
+  metadata set (asset facts vs node facts), whether inspector tags
+  are editable, the double-click full-view presentation, and the
+  interaction with 188's click-away deselect. Candidate first
+  design conversation to include alph directly.
+
 (macOS move/resize chord RESOLVED 2026-07-07: owner ruled GO on
 both move AND resize — "I do want the resize… we have so many key
 shortcuts anyways, we can handle it." Binding is the lead's
