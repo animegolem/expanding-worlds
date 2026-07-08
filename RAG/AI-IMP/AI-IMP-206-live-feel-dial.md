@@ -69,14 +69,16 @@ host tunable changed; copy-values produces parseable JSON.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Tunable inventory documented in Issues Encountered (what's
+- [x] Tunable inventory documented in Issues Encountered (what's
       exposed, what was newly seamed).
-- [ ] Panel opens via menu/chord in a release-style build; sliders
+- [x] Panel opens via menu/chord in a release-style build; sliders
       live-apply; readouts, copy-values, reset all work.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
-      e2e.
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+      e2e. (build ✓, test ✓ 216 passed, lint ✓, e2e ✓ four foreground
+      shards.)
 - [ ] HUMAN-TESTING entry appended at merge by the lead (this one
-      IS the testing tool — include the open chord in the entry).
+      IS the testing tool — include the open chord ⌥⇧⌘F /
+      Ctrl+Shift+Alt+F in the entry).
 
 ### Acceptance Criteria
 
@@ -94,3 +96,74 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Tunable inventory (the audit).** host.ts's live-adjustable feel
+scalars, all on the zoom chase, all already exposed by the AI-IMP-098
+`zoomTuning` hook (nothing new had to be seamed):
+
+| tunable | host.ts source | shipped default | meaning |
+|---|---|---|---|
+| `tau` | `zoomChase.tau` ← `ZOOM_CHASE_TAU_MS` (engine) | 70 ms | zoom-ease time constant (the "weight" alph felt) |
+| `wheelSpeed` | `let wheelZoomSpeed` | 0.0015 | Cmd+wheel AND mouse-scheme plain-wheel zoom rate |
+| `pinchSpeed` | `let pinchZoomSpeed` | 0.01 | ctrl-flagged pinch zoom rate |
+
+Scalars deliberately NOT exposed, with reasons:
+- **Plain pan** — `controller.camera.panByScreen(-dx, -dy)` is a 1:1
+  passthrough with NO scalar (Apple's deltas are the tuned curve). There
+  is no pan glide/friction/inertia anywhere in the engine or host to
+  dial, so nothing to seam. (The ticket's "pan glide/friction etc." has
+  no counterpart in the current code.)
+- **CameraFlight `FLIGHT_DURATION_MS` (250 ms)** — the fit/frame flight
+  duration. A real feel scalar, but a distinct interaction (framing
+  jumps, not the wheel/pinch weight alph reported), it lives on the
+  `CameraFlight` engine object with no host-local `let`, and exposing it
+  would be scope creep on a bug report about zoom weight. Left as a
+  future one-line registration (the panel supports it).
+- `ZOOM_CHASE_HEADSTART_MS`, `ZOOM_CHASE_SNAP_LOG_EPSILON` — correctness
+  constants (first-frame latency, bit-exact rest), not feel dials.
+
+So the exposed set is the `zoomTuning` trio; the ONLY new host seam is
+`__ewDebug.zoomTuningDefaults()`, which returns the shipped values
+snapshotted at mount (before any dial) so **reset** restores CODE
+values, never a prior session's numbers.
+
+**The panel.** New `renderer/dev/feel-dial.ts` — a plain-DOM (NOT
+canvas-rendered) draggable overlay, kit-styled from theme tokens (no raw
+hex; no `<datalist>`), mounted once from `App.svelte`'s `onMount`
+(disposer returned). It talks to the host ONLY through the window
+`__ewDebug` hooks, so it holds no host reference and can't break its
+build. It is registration-driven: `const TUNABLES: Tunable[]` — adding a
+slider is one row. Each slider is LOG-scaled ×0.25–×4 around its shipped
+value with a live numeric + ×factor readout, live-apply on `input`.
+"Copy values" writes compact JSON of the current set to the clipboard
+(and exposes the same string via `__ewFeelDial.serialize()` for e2e,
+since headless clipboard reads are unreliable). Reset writes
+`zoomTuning(defaults)`. Session-only, no persistence.
+
+**Present in release builds by design.** `window.__ewDebug` is set
+unconditionally in `mountCanvasHost` (not dev-gated), and the feel-dial
+mounts from `App.svelte` in every build — so alph's Windows release
+build carries it, hidden until the chord.
+
+**Open chord: ⌥⇧⌘F (macOS) / Ctrl+Shift+Alt+F (Windows/Linux).**
+Matched by `code: 'KeyF'` (not `key`) because macOS ⌥F emits a dead-key
+glyph; `Mod` = ⌘-or-Ctrl via the shared `matchesCombo`. DELIBERATELY not
+declared in `keys/bindings.ts` — dev furniture must stay out of the
+Settings › Keyboard map an artist reads — so it uses a private window
+keydown listener. z-index rides `Z.tooltip` from the named ladder (the
+z-guard forbids literals; referenced, not hard-coded).
+
+**No menu entry added.** The app currently has NO application/dev menu
+wiring in main (`grep` for `Menu` in `src/main` is empty; the ☰ charm
+rail is the only menu surface and it is user-facing). Adding a dev entry
+there would surface the tool to artists — against the "hidden in normal
+use" intent — so the toggle is the keyboard chord only, as the ticket
+allows ("menu entry AND/OR chord"). If a Develop menu is ever wired,
+`window.__ewFeelDial.toggle()` is the one-line hook.
+
+**Validation:** `pnpm -r build` ✓, `pnpm -r test` ✓ (216 passed),
+`pnpm lint` ✓, hidden-window e2e ✓ (four foreground shards). New spec
+`e2e/feel-dial.spec.ts`: chord opens the overlay, τ slider live-applies
+to `__ewDebug.zoomTuning().tau` (×4 at the top of range), copy-values
+serializes to parseable JSON, reset restores the shipped default, chord
+toggles closed — 1 test, green.

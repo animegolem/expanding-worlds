@@ -260,6 +260,10 @@ declare global {
         wheelSpeed: number
         pinchSpeed: number
       }
+      /** AI-IMP-206: the shipped feel constants captured at mount (before
+       * any zoomTuning dial). The feel-dial's reset restores THESE — code
+       * values — never a prior session's dialed numbers. */
+      zoomTuningDefaults: () => { tau: number; wheelSpeed: number; pinchSpeed: number }
       /** Live chase state: is a wheel/pinch glide in flight, and
        * toward what resting zoom. */
       zoomChase: () => { active: boolean; targetZoom: number | null }
@@ -1671,6 +1675,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // constants are not settings; no UI, no persistence).
   let wheelZoomSpeed = 0.0015 // Cmd+wheel; ~×1.2 per 120px notch
   let pinchZoomSpeed = 0.01 // ctrl-flagged pinch deltas run 1–10px
+  // AI-IMP-206: snapshot the shipped feel constants NOW — before any
+  // zoomTuning dial touches them — so the dev feel-dial's reset button
+  // (and its e2e) always restore the code values (§11.5).
+  const zoomTuningShipped = {
+    tau: zoomChase.tau,
+    wheelSpeed: wheelZoomSpeed,
+    pinchSpeed: pinchZoomSpeed,
+  }
   let spaceHeld = false
   const local = (event: PointerEvent | WheelEvent): { x: number; y: number } => {
     const bounds = app.canvas.getBoundingClientRect()
@@ -1989,6 +2001,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       if (partial?.pinchSpeed !== undefined) pinchZoomSpeed = partial.pinchSpeed
       return { tau: zoomChase.tau, wheelSpeed: wheelZoomSpeed, pinchSpeed: pinchZoomSpeed }
     },
+    zoomTuningDefaults: () => ({ ...zoomTuningShipped }),
     zoomChase: () => ({ active: zoomChase.active, targetZoom: zoomChase.targetZoom }),
     beat: {
       // Composited scale multiplier laid over the model transform: >1
