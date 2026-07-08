@@ -63,6 +63,27 @@
   function next(): void {
     if (pageIndex < lastIndex) pageIndex += 1
   }
+
+  function prev(): void {
+    if (pageIndex > 0) pageIndex -= 1
+  }
+
+  // ArrowLeft/ArrowRight page the guide while it holds focus. The card
+  // already owns focus (see the effect above) and every descendant
+  // (picks, footer buttons) bubbles keydown up to it, so one listener
+  // here covers the whole card regardless of which control is focused.
+  // No Escape handling lives here (AI-IMP-183 is silent on this
+  // surface — the guide has no Escape-to-dismiss today), so there is
+  // nothing to collide with.
+  function onCardKeydown(event: KeyboardEvent): void {
+    if (event.key === 'ArrowRight') {
+      event.stopPropagation()
+      next()
+    } else if (event.key === 'ArrowLeft') {
+      event.stopPropagation()
+      prev()
+    }
+  }
 </script>
 
 {#if visible}
@@ -74,6 +95,7 @@
       tabindex="-1"
       role="dialog"
       aria-label="Welcome"
+      onkeydown={onCardKeydown}
     >
       <h2 class="title" data-testid="first-run-title">{page.title}</h2>
       {#if page.body}
@@ -108,6 +130,15 @@
           {/each}
         </div>
         <span class="spacer"></span>
+        <button
+          type="button"
+          class="link go prev"
+          data-testid="first-run-prev"
+          disabled={pageIndex === 0}
+          onclick={prev}
+        >
+          ‹ previous
+        </button>
         <button
           type="button"
           class="link skip"
@@ -265,5 +296,17 @@
 
   .link:hover {
     text-decoration: underline;
+  }
+
+  /* First-card previous: visible but inert, matching the app's
+     disabled-rows convention (PathBar's back/forward, MenuPopover's
+     §8.2 aria-disabled rows) rather than disappearing outright. */
+  .link:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .link:disabled:hover {
+    text-decoration: none;
   }
 </style>

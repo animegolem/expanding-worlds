@@ -32,6 +32,49 @@ test('a fresh profile shows the guide and renders the ratified page-2 copy verba
   await app.close()
 })
 
+test('previous pages back, tracks with the dots, and stays inert on the first card (AI-IMP-203)', async () => {
+  const { app, win } = await launchApp('ew-e2e-firstrun-prev-', { EW_SUPPRESS_FIRST_RUN: '0' })
+
+  const activeDotIndex = (): Promise<number> =>
+    win
+      .locator('[data-testid="first-run-dots"] .dot')
+      .evaluateAll((dots) => dots.findIndex((dot) => dot.getAttribute('data-active') === 'true'))
+
+  await expect(win.getByTestId('first-run-guide')).toBeVisible()
+  // First card: previous is rendered but inert (the app's disabled-rows
+  // convention — visible, named, disabled — rather than absent).
+  await expect(win.getByTestId('first-run-prev')).toBeDisabled()
+  expect(await activeDotIndex()).toBe(0)
+
+  await win.getByTestId('first-run-next').click()
+  await win.getByTestId('first-run-next').click()
+  await expect(win.getByTestId('first-run-title')).toHaveText('No knobs on your art')
+  expect(await activeDotIndex()).toBe(2)
+  await expect(win.getByTestId('first-run-prev')).toBeEnabled()
+
+  await win.getByTestId('first-run-prev').click()
+  await expect(win.getByTestId('first-run-title')).toHaveText('Your pictures are safe')
+  expect(await activeDotIndex()).toBe(1)
+
+  // ArrowLeft/ArrowRight page the guide the same way while it holds focus.
+  await win.keyboard.press('ArrowRight')
+  await expect(win.getByTestId('first-run-title')).toHaveText('No knobs on your art')
+  expect(await activeDotIndex()).toBe(2)
+
+  await win.keyboard.press('ArrowLeft')
+  await win.keyboard.press('ArrowLeft')
+  await expect(win.getByTestId('first-run-title')).toHaveText('A board for your pictures')
+  expect(await activeDotIndex()).toBe(0)
+  await expect(win.getByTestId('first-run-prev')).toBeDisabled()
+
+  // ArrowLeft on the first card is a no-op, never a dead click through
+  // to something else underneath.
+  await win.keyboard.press('ArrowLeft')
+  await expect(win.getByTestId('first-run-title')).toHaveText('A board for your pictures')
+
+  await app.close()
+})
+
 test('skip marks it seen; a later launch never shows it unbidden', async () => {
   const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-firstrun-proj-'))
   const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-firstrun-cfg-'))
