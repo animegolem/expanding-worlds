@@ -9,6 +9,7 @@
 import { uuidv7 } from '@ew/domain'
 import type { CanvasHostHandle } from '../canvas/host'
 import { navigateTo, pathEntries } from './navigation'
+import { runAsUndoGroup } from '../undo/undo-store'
 
 /** Mirror of @ew/persistence's BookmarkListRow (the renderer imports
  * only @ew/commands; queries cross the seam untyped). */
@@ -58,11 +59,15 @@ export async function jumpToBookmark(handle: CanvasHostHandle, row: BookmarkRow)
  */
 export async function bookmarkCurrentBoard(handle: CanvasHostHandle): Promise<void> {
   const label = pathEntries().at(-1)?.label ?? 'Board'
-  await handle.gateway.execute('CreateBookmark', {
-    bookmarkId: uuidv7(),
-    canvasId: handle.canvasId,
-    label,
-    viewport: handle.controller.camera.state(),
+  // AI-IMP-182: one Mod+Z per bookmark create (CreateBookmark is
+  // GROUP_ONLY, captured at this gesture; inverse RemoveBookmark).
+  await runAsUndoGroup(async () => {
+    await handle.gateway.execute('CreateBookmark', {
+      bookmarkId: uuidv7(),
+      canvasId: handle.canvasId,
+      label,
+      viewport: handle.controller.camera.state(),
+    })
   })
 }
 

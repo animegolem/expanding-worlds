@@ -58,6 +58,25 @@ async function readyUndo(win: Page): Promise<void> {
 
 const depth = (win: Page) => win.evaluate(() => window.__ewUndo!.undoDepth())
 
+/** The scene item's appearance kind for a placement (null when unset). */
+async function appearanceKindOf(win: Page, placementId: string): Promise<string | null> {
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const scene = await runQuery<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId,
+  })
+  const item = scene.items.find((i) => i['id'] === placementId)
+  return (item?.['appearanceKind'] as string | null) ?? null
+}
+
+/** The note a node currently references (null when detached). */
+async function nodeNoteId(win: Page, nodeId: string): Promise<string | null> {
+  return win.evaluate(async (id) => {
+    const node = await window.ew.project.query('getNode', { nodeId: id })
+    if (!node.ok) throw new Error(node.message)
+    return (node.result as { noteId: string | null }).noteId
+  }, nodeId)
+}
+
 test('move → Mod+Z restores, Shift+Mod+Z reapplies', async () => {
   const { app, win } = await launchApp('ew-e2e-undo-move-')
   await readyUndo(win)
@@ -403,6 +422,125 @@ test('held Cmd+Z undoes one step per press; no phantom, redo intact (§10.2 rev 
   await expect
     .poll(async () => Math.round((await placements(win))[0]!.x))
     .toBe(Math.round(movedX))
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-182 M-07: the appearance charm/menu commits SetNodeAppearance
+ * (GROUP_ONLY) — a bare execute here was silently uncaptured, so Cmd+Z
+ * did nothing to an appearance change. Wrapped in runAsUndoGroup, the
+ * change is one Mod+Z entry like every sibling SetNodeAppearance site.
+ */
+test('appearance change via the charm is one Mod+Z entry (M-07)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-appearance-')
+  await readyUndo(win)
+  const { placementId } = await seedPlacement(win, { x: 200, y: 200 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const before = (await placements(win)).find((p) => p.id === placementId)!
+  const kindBefore = await appearanceKindOf(win, placementId)
+
+  // Select the placement → the charm bar floats beneath it.
+  await win.mouse.click(box.x + before.x + 12, box.y + before.y + 12)
+  await expect(win.getByTestId('charm-bar')).toBeVisible()
+
+  // Open the appearance popover and pick the star icon (an unambiguous
+  // kind change from the seeded default).
+  await win.getByTestId('charm-appearance').click()
+  await win.getByTestId('appearance-icon-star').click()
+  await expect.poll(() => appearanceKindOf(win, placementId)).toBe('icon')
+  expect(await depth(win)).toBe(1)
+
+  // Before M-07 this Mod+Z did nothing; now it reverts the appearance.
+  await win.mouse.click(box.x + 40, box.y + 40)
+  await win.keyboard.press('Meta+z')
+  await expect.poll(() => appearanceKindOf(win, placementId)).toBe(kindBefore)
+  expect(await depth(win)).toBe(0)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-182 (RFC §6.6/§9.3 "immediately undoable"): detaching a note
+ * from a node via the context menu is one Mod+Z; its inverse
+ * (AttachNoteToNode) reattaches.
+ */
+test('detach note via the context menu is undoable (§6.6/§9.3)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-detach-')
+  await readyUndo(win)
+  const { noteId, nodeId } = await seedPlacedNote(win, 'Harbor', 'stone and salt', {
+    x: 400,
+    y: 300,
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const p = (await placements(win))[0]!
+  expect(await nodeNoteId(win, nodeId)).toBe(noteId)
+
+  // Right-click the dot → Detach note: the node→note reference clears.
+  await win.mouse.click(box.x + p.x + 12, box.y + p.y + 12, { button: 'right' })
+  await win.getByTestId('node-menu-detach').click()
+  await expect.poll(() => nodeNoteId(win, nodeId)).toBe(null)
+  expect(await depth(win)).toBe(1)
+
+  // One Mod+Z reattaches the note.
+  await win.mouse.click(box.x + 60, box.y + 60)
+  await win.keyboard.press('Meta+z')
+  await expect.poll(() => nodeNoteId(win, nodeId)).toBe(noteId)
+  expect(await depth(win)).toBe(0)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-182 (owner ruling 2026-07-08): every deliberate verb joins
+ * Mod+Z EXCEPT node-trash — the Trash is a trashed node's recovery
+ * home. Trashing a node (Delete frame → TrashNode) adds NO undo entry
+ * and a later Mod+Z never resurrects it.
+ */
+test('a node-trash does NOT enter Mod+Z (the Trash is its recovery home)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-trash-')
+  await readyUndo(win)
+  // A: a plain placement we move — a captured baseline entry.
+  const { placementId: aId } = await seedPlacement(win, { x: 150, y: 150 })
+  // B: a frame node we trash. Seed a placement then switch its node to
+  // the frame appearance via `exec` (the DIRECT gateway — uncaptured),
+  // so the frame exists with NO undo entry of its own.
+  const { placementId: bId, nodeId: bNode } = await seedPlacement(win, { x: 520, y: 340 })
+  await exec(win, 'SetNodeAppearance', { nodeId: bNode, appearance: { kind: 'frame' } })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+  await expect.poll(() => appearanceKindOf(win, bId)).toBe('frame')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Move A → one TransformContent entry (the ONLY captured entry).
+  const a = (await placements(win)).find((p) => p.id === aId)!
+  await win.mouse.move(box.x + a.x + 12, box.y + a.y + 12)
+  await win.mouse.down()
+  await win.mouse.move(box.x + a.x + 112, box.y + a.y + 12, { steps: 6 })
+  await win.mouse.up()
+  await expect
+    .poll(async () => Math.round((await placements(win)).find((p) => p.id === aId)!.x))
+    .toBe(Math.round(a.x + 100))
+  expect(await depth(win)).toBe(1)
+
+  // Right-click B → frame menu → Delete frame: TrashNode through the
+  // host gateway. It must add NO undo entry.
+  const b = (await placements(win)).find((p) => p.id === bId)!
+  await win.mouse.click(box.x + b.x, box.y + b.y, { button: 'right' })
+  await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'frame')
+  await win.getByTestId('ctx-delete-frame').click()
+  await expect.poll(() => placements(win).then((ps) => ps.some((p) => p.id === bId))).toBe(false)
+  expect(await depth(win)).toBe(1) // the trash added nothing
+
+  // Mod+Z undoes the MOVE (not the trash); B stays trashed.
+  await win.mouse.click(box.x + 40, box.y + 40)
+  await win.keyboard.press('Meta+z')
+  await expect
+    .poll(async () => Math.round((await placements(win)).find((p) => p.id === aId)!.x))
+    .toBe(Math.round(a.x))
+  expect(await depth(win)).toBe(0)
+  expect((await placements(win)).some((p) => p.id === bId)).toBe(false)
 
   await app.close()
 })

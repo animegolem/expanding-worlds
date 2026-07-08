@@ -118,4 +118,46 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
     expect(seen.map((n) => n.commandType)).toContain('UpdateDecoration')
     expect(window.__ewUndo!.undoDepth()).toBe(1)
   })
+
+  // AI-IMP-182 breadth (owner ruling: every deliberate verb joins Mod+Z
+  // EXCEPT node-trash). Each verb is GROUP_ONLY — captured at its gesture
+  // window as exactly one entry, never by bare type. One case per capture
+  // class asserts the allowlist membership through the same seam the UI
+  // sites drive.
+  const CAPTURED_VERBS: ReadonlyArray<{ verb: string; payload: unknown }> = [
+    { verb: 'RenameNote', payload: { noteId: 'n1', title: 'x' } },
+    { verb: 'AssignTagToNode', payload: { tagId: 't1', nodeId: 'n1' } },
+    { verb: 'RenameTag', payload: { tagId: 't1', name: 'x' } },
+    { verb: 'DetachNoteFromNode', payload: { nodeId: 'n1' } },
+    { verb: 'CreateBookmark', payload: { bookmarkId: 'b1' } },
+    { verb: 'RemoveBookmark', payload: { bookmarkId: 'b1' } },
+    { verb: 'ReorderBookmark', payload: { bookmarkId: 'b1' } },
+  ]
+  for (const { verb, payload } of CAPTURED_VERBS) {
+    it(`${verb} inside a gesture group records exactly one entry`, async () => {
+      await runAsUndoGroup(async () => {
+        await emitGateway.execute(verb, payload)
+      })
+      expect(window.__ewUndo!.undoDepth()).toBe(1)
+    })
+  }
+
+  it('a create-and-assign tag gesture (CreateTag + AssignTagToNode) folds to one entry', async () => {
+    await runAsUndoGroup(async () => {
+      await emitGateway.execute('CreateTag', { tagId: 't1', name: 'harbor' })
+      await emitGateway.execute('AssignTagToNode', { tagId: 't1', nodeId: 'n1' })
+    })
+    expect(window.__ewUndo!.undoDepth()).toBe(1)
+  })
+
+  it('TrashNode stays OUT of Mod+Z — never captured, even inside a group', async () => {
+    // The Trash is a trashed node's recovery home (owner ruling), so the
+    // node-trash verb is absent from both allowlists.
+    await emitGateway.execute('TrashNode', { nodeId: 'n1' })
+    expect(window.__ewUndo!.undoDepth()).toBe(0)
+    await runAsUndoGroup(async () => {
+      await emitGateway.execute('TrashNode', { nodeId: 'n1' })
+    })
+    expect(window.__ewUndo!.undoDepth()).toBe(0)
+  })
 })

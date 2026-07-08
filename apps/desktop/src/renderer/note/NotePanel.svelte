@@ -38,6 +38,7 @@
     type PanelRecord,
   } from './panels'
   import { createNoteProjectPort } from './project-port'
+  import { runAsUndoGroup } from '../undo/undo-store'
   import { tetheredPanelOpacity, tetheredPanelScale } from '../chrome/feel'
   import { EW_BEAT_TEAR_MS, EW_BEAT_UNTAPE_MS } from '../chrome/beats'
   import { pageDegradeStage, type PageDegradeStage } from '@ew/canvas-engine'
@@ -494,7 +495,8 @@
     await paneController?.flushPending()
     const project = paneProject
     if (!project) return
-    const result = await project.execute('RenameNote', { noteId, title })
+    // AI-IMP-182: one Mod+Z per rename gesture (RenameNote is GROUP_ONLY).
+    const result = await runAsUndoGroup(() => project.execute('RenameNote', { noteId, title }))
     if (result.status === 'error') {
       const found = conflictFrom(result, 'rename', title)
       if (found) conflict = found

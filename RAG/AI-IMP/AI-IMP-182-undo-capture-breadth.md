@@ -113,21 +113,23 @@ LOC: ~90–140 (many small wraps + allowlist entries).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] charms-ui commitAppearance + onImagePicked wrapped in
+- [x] charms-ui commitAppearance + onImagePicked wrapped in
       `runAsUndoGroup` (M-07); false "one undo" comment corrected.
-- [ ] Note-title rename undoable; command in the allowlist.
-- [ ] Tag add/remove/rename undoable; commands in the allowlist.
-- [ ] DetachNoteFromNode group-wrapped and in the allowlist
-      (ContextMenu `:520`).
-- [ ] Bookmark create/remove/reorder undoable; commands in the
+- [x] Note-title rename undoable; command in the allowlist.
+- [x] Tag add/rename undoable; commands in the allowlist. (Tag
+      *remove*: no renderer gesture fires UnassignTagFromNode today —
+      nothing to wrap; see Issues Encountered.)
+- [x] DetachNoteFromNode group-wrapped and in the allowlist
+      (ContextMenu `detachNote`).
+- [x] Bookmark create/remove/reorder undoable; commands in the
       allowlist.
-- [ ] TrashNode/purge confirmed NOT captured (Trash is the recovery
-      home) — assert it does not enter Mod+Z.
-- [ ] Each capture is small and independently revertible (feel-trim
+- [x] TrashNode/purge confirmed NOT captured (Trash is the recovery
+      home) — asserted (unit + e2e) it does not enter Mod+Z.
+- [x] Each capture is small and independently revertible (feel-trim
       friendly).
-- [ ] Unit tests per capture class; e2e: appearance flip undoes;
+- [x] Unit tests per capture class; e2e: appearance flip undoes;
       detach undoes; a node-trash does NOT enter Mod+Z.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 - [ ] Append an `RAG/HUMAN-TESTING.md` entry (feel pass): change an
       appearance, rename, edit tags, detach a note, add/reorder
@@ -160,3 +162,73 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**All eight breadth verbs added to `GROUP_ONLY_COMMANDS`** (not
+`CAPTURED_COMMANDS`): `RenameNote`, `AssignTagToNode`, `CreateTag`,
+`RenameTag`, `DetachNoteFromNode`, `CreateBookmark`, `RemoveBookmark`,
+`ReorderBookmark`. GROUP_ONLY + a gesture-site `runAsUndoGroup` wrap is
+the house pattern (matches `SetNodeAppearance`, `UpdateDecoration`): it
+folds multi-command gestures (create-and-assign tag = one entry) and
+keeps programmatic/import commits of the same type OUT of undo. Capture
+table (verb → wrapped where → class):
+
+- SetNodeAppearance (M-07) → `charms-ui.ts` commitAppearance +
+  onImagePicked → GROUP_ONLY (already listed; only the wraps were
+  missing). False "one undo" comment corrected.
+- RenameNote → `note-editor.ts` rename(), `NotePanel.svelte`
+  renameHere, `panels.ts` no-open-panel path (all three RenameNote
+  sites) → GROUP_ONLY.
+- AssignTagToNode + CreateTag → `charms-ui.ts` assignFromField,
+  `TagAddField.svelte` assign (both call `assignTagByName`) → GROUP_ONLY.
+- RenameTag → `TagPanel.svelte` commitRename → GROUP_ONLY.
+- DetachNoteFromNode → `ContextMenu.ts` detachNote → GROUP_ONLY.
+- CreateBookmark → `bookmarks.ts` bookmarkCurrentBoard → GROUP_ONLY.
+- RemoveBookmark / ReorderBookmark → `BookmarkMenu.svelte` remove /
+  completed-drag → GROUP_ONLY.
+
+**`runAsUndoGroup` made generic** (`<T>(fn: () => Promise<T>):
+Promise<T>`) — backward-compatible (existing `void`/`await` callers
+unaffected). This was needed so wrap sites that need the command
+`result` (rename/tag/bookmark conflict UX) read it as
+`const x = await runAsUndoGroup(() => execute(...))` instead of the
+closure-mutated `let x = null` idiom, which TypeScript narrows to
+`never` (assignment inside a nested callback is not tracked by CFA).
+
+**All inverses verified present** (per the STOP rule — none
+fabricated): RenameNote↔RenameNote, AssignTagToNode↔UnassignTagFromNode,
+CreateTag↔DeleteDraftTag, RenameTag↔RenameTag,
+DetachNoteFromNode↔AttachNoteToNode, CreateBookmark↔RemoveBookmark,
+ReorderBookmark↔ReorderBookmark (`handlers/notes.ts`, `handlers/tags.ts`,
+`handlers/nodes.ts`, `handlers/bookmarks.ts`).
+
+**Deviation — tag REMOVE has no renderer gesture.** The ticket names
+"tag add/remove/rename", but `UnassignTagFromNode` is issued NOWHERE in
+the renderer today — the tag chips open the tag panel; there is no
+per-node "remove this tag" UI. The inverse EXISTS
+(UnassignTagFromNode↔AssignTagToNode), so this is a missing *gesture*,
+not a missing inverse — I did not fabricate a removal UI. If/when a
+per-node tag-remove gesture ships, it wraps in `runAsUndoGroup` and
+`UnassignTagFromNode` joins the allowlist (one line each).
+
+**Not wrapped — other tag-ADD surfaces (flagged for owner ruling).**
+Two further deliberate tag-add surfaces keep their OWN copies (not
+`assignTagByName`): the gallery bulk action bar
+(`GalleryActionBar.svelte`, bulk-over-many-nodes) and the mirror
+recognition chip (`chrome/mirror.ts`, accept-suggestion). They are
+uncaptured by this ticket — its scope names the charm/note surfaces and
+stays small/feel-trimmable. Consistency with "every deliberate verb
+joins Mod+Z" may want them later; each is a one-wrap addition. Left for
+a lead ruling rather than silently over-reaching (and mirror/gallery
+touch files a parallel agent may edit).
+
+**Validation (foreground, hidden windows).** `pnpm -r build` clean;
+`pnpm -r test` (desktop script = vitest + electron-vite build +
+playwright) green except the first cut of the trash e2e; `pnpm lint`
+clean. The trash e2e initially assumed `charm-make-canvas` yields
+`appearanceKind: 'frame'` — it does NOT (make-canvas gives a dot node a
+childCanvasId; the 'frame' appearance is a distinct kind). Fixed to seed
+the frame via `exec SetNodeAppearance {kind:'frame'}` (direct gateway,
+uncaptured) — the `context-menus.spec.ts` idiom. Final `undo.spec.ts`
+run: 11/11 pass (incl. appearance-flip-undoes, detach-undoes,
+trash-not-captured). Unit: `undo-store.test.ts` + `tag-assign.test.ts`
+22/22.
