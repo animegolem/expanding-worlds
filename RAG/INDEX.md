@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 169 |
-| **Total** | **25** | **172** |
+| **Total** | **25** | **182** |
 
 ## In Progress
 
@@ -54,6 +54,16 @@
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-173-swarm-stability-audit|IMP-173]] — in-progress, no epic dependency found
 - [[AI-IMP-174-macos-move-resize-chord|IMP-174]] — planned, no epic dependency found
+- [[AI-IMP-175-tooltip-sweep|IMP-175]] — planned, no epic dependency found
+- [[AI-IMP-176-navigation-reentrancy|IMP-176]] — planned, no epic dependency found
+- [[AI-IMP-177-stale-read-models-on-navigation|IMP-177]] — planned, no epic dependency found
+- [[AI-IMP-178-drop-ask-queue|IMP-178]] — planned, no epic dependency found
+- [[AI-IMP-179-export-snapshot-race|IMP-179]] — planned, no epic dependency found
+- [[AI-IMP-180-frame-membership-undo|IMP-180]] — planned, no epic dependency found
+- [[AI-IMP-181-undo-reentrancy|IMP-181]] — planned, no epic dependency found
+- [[AI-IMP-182-undo-capture-breadth|IMP-182]] — planned, no epic dependency found
+- [[AI-IMP-183-escape-key-routing|IMP-183]] — planned, no epic dependency found
+- [[AI-IMP-184-async-open-generation-guards|IMP-184]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed

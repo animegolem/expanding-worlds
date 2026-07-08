@@ -1,0 +1,155 @@
+---
+node_id: AI-IMP-177
+tags:
+  - IMP-LIST
+  - Implementation
+  - navigation
+  - read-model
+  - staleness
+  - bug
+kanban_status: planned
+depends_on: []
+parent_epic:
+confidence_score: 0.85
+date_created: 2026-07-08
+---
+
+
+# AI-IMP-177-stale-read-models-on-navigation
+
+## Summary of Issue #1
+
+Severity **P1** (M-02, lead-verified) + **P3** (Codex stale-chip,
+high-confidence) from the AI-IMP-173 audit. A family of renderer
+read-models refresh only on `project.onChanged` (a real command
+commit) and NEVER on `openCanvas`/scene-apply or on the settings
+broadcast, so they go stale across navigation or a sibling toggle and
+then act on the previous board's / previous state's data:
+
+1. **Board-tooling background writes the PREVIOUS board's asset onto
+   the current board (M-02, P1, durable).** `attachBoardTooling`
+   mounts once and lives across navigations; its cached `background`
+   var is refreshed only by `project.onChanged`, but `openCanvas`
+   fires no project-changed event. Navigate A→B by ordinary means,
+   touch nothing, right-click B: the context menu reads stale board-A
+   background, enables "Reset/Edit backdrop", and
+   `SetCanvasBackground({canvasId:B, assetId:<board-A asset>})`
+   durably writes A's asset onto B. Cites:
+   `apps/desktop/src/renderer/canvas/board-tooling.ts:141` (background
+   state), `:161-171` (refreshBackground), `:444-459`
+   (commitBackgroundEdit), `:474-487` (resetBackgroundTransform),
+   `:552` (wired only to `project.onChanged`);
+   `apps/desktop/src/renderer/chrome/navigation.ts:58` (openCanvas
+   fires no project-changed event);
+   `apps/desktop/src/renderer/menus/ContextMenu.ts:794-801`, `:580-582`.
+
+2. **Frame sort chip stale after a Dock/context-menu toggle (Codex
+   P3).** The chip reads `frameSortOnDrop` only when the selected frame
+   ID changes; toggling the setting from the Dock or context menu while
+   the frame stays selected leaves the chip showing the old state. It
+   never subscribes to the settings broadcast, though the main process
+   already broadcasts setting writes. Cites:
+   `apps/desktop/src/renderer/canvas/charms-ui.ts:695` (chip reads
+   `frameSortOnDrop` only on newly-selected frame ID), `:977` (no
+   settings.onProjectChanged subscription); `apps/desktop/src/main/index.ts:931`
+   (broadcasts setting writes). Confirmed by the 138 agent's own report.
+
+Done means: the cached background re-reads (or clears) on canvas-open/
+scene-applied so backdrop verbs can never act on a stale board's asset;
+and the frame sort chip re-reads its state on the settings broadcast so
+it always reflects the current setting. Same root as M-01's serialize
+work (openCanvas fires no project-changed event) but a distinct fix —
+this is refresh triggers, not serialization.
+
+### Out of Scope
+
+- Navigation serialization / camera race (M-01/M-08) — AI-IMP-176.
+- Path-bar crumb label rename-refresh (M-36) — separate polish.
+- Any other read-model not in this family; if the sweep finds more,
+  note them for the master list, don't expand scope here.
+- The frame sort chip's underlying sort behavior — only its displayed
+  state is in scope.
+
+### Design/Approach
+
+Two targeted refresh-trigger additions, each copying an established
+in-repo subscription:
+
+1. **Background:** subscribe `refreshBackground` (or clear-then-refetch)
+   to the scene-applied / openCanvas signal in addition to
+   `project.onChanged`. The correct sibling is `setBackgroundFromFile`
+   (`board-tooling.ts:365-432`), which already guards on
+   `handle.canvasId===canvasId` — the background cache should be
+   re-fetched for the live canvas whenever the scene applies. Belt-and-
+   braces: the backdrop verbs in ContextMenu should read the background
+   for the CURRENT `canvasId` at menu-open time (do not trust a cache
+   that predates the navigation).
+
+2. **Frame sort chip:** subscribe the chip refresh to the settings
+   broadcast (`main/index.ts:931` already broadcasts). The house
+   pattern is `BookmarkMenu.svelte`'s `project.onChanged` live-refresh
+   subscription; add the analogous `settings.onProjectChanged` (or the
+   renderer's settings-broadcast hook) so the chip re-reads
+   `frameSortOnDrop` on every setting write, not only on frame
+   reselection.
+
+### Files to Touch
+
+`apps/desktop/src/renderer/canvas/board-tooling.ts`: refresh/clear the
+cached background on scene-applied/openCanvas (mirror the `:365-432`
+canvasId discipline).
+`apps/desktop/src/renderer/menus/ContextMenu.ts`: backdrop verbs read
+current-canvas background at open time (defensive).
+`apps/desktop/src/renderer/canvas/charms-ui.ts`: subscribe the sort
+chip to the settings broadcast; re-read `frameSortOnDrop` on it.
+`apps/desktop/tests/e2e/*`: navigation-backdrop e2e + chip-toggle e2e.
+LOC: ~50–80.
+
+### Implementation Checklist
+
+<CRITICAL_RULE>
+Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
+</CRITICAL_RULE>
+
+- [ ] Cached background re-fetches or clears on scene-applied/openCanvas
+      (mirror `board-tooling.ts:365-432` canvasId discipline).
+- [ ] Backdrop verbs in ContextMenu read the CURRENT canvas's
+      background at menu-open; Reset/Edit backdrop can never carry a
+      prior board's assetId.
+- [ ] Frame sort chip subscribes to the settings broadcast and
+      re-reads `frameSortOnDrop` on write (house pattern:
+      `BookmarkMenu.svelte` `project.onChanged`).
+- [ ] E2e: board A has a backdrop, board B has none; navigate A→B,
+      right-click B → menu shows NO backdrop-reset/edit verbs (or
+      they act on B's empty background, never A's asset).
+- [ ] E2e: toggle sort-on-drop from the Dock while a frame is
+      selected → the visible chip updates without reselecting.
+- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+      e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
+- [ ] Append an `RAG/HUMAN-TESTING.md` entry: navigate off a board with
+      a backdrop onto an empty one and try Reset backdrop; toggle the
+      frame sort setting with a frame selected and watch the chip.
+
+### Acceptance Criteria
+
+**Scenario: backdrop verbs never carry a stale board's asset.**
+**GIVEN** board A has a background asset and board B has none
+**WHEN** the user navigates A→B (touching nothing) and right-clicks B
+**THEN** the context menu does not offer to reset/edit a backdrop using
+A's asset
+**AND** no `SetCanvasBackground` can write A's assetId onto B.
+
+**Scenario: the frame sort chip tracks the live setting.**
+**GIVEN** a frame is selected and its sort chip is visible
+**WHEN** the sort-on-drop setting is toggled from the Dock or context
+menu without reselecting the frame
+**THEN** the chip updates to the new state immediately.
+
+### Issues Encountered
+
+<!--
+The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
+This section is filled out post work as you fill out the checklists.
+You SHOULD document any issues encountered and resolved during the sprint.
+You MUST document any failed implementations, blockers or missing tests.
+-->
