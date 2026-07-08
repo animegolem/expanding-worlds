@@ -155,6 +155,47 @@ export const MARKDOWN_ROUNDTRIP_CORPUS: readonly MarkdownRoundTripCase[] = [
     body: 'Para one.\n\n\n\nPara two after many blanks.',
     canonical: 'Para one.\n\nPara two after many blanks.',
   },
+  // AI-IMP-170: the §7.1 URL cluster + highlight (rev 0.66 — the frozen
+  // dialect grows by exactly these four constructs). Each round-trips
+  // BYTE-EXACT through the shipped editor (all stable fixed points), so
+  // a foreign note carrying links/images/highlights canonicalizes on
+  // first open WITHOUT loss. `linkify:false`/`html:false` are unchanged,
+  // so bare-text URLs and raw HTML stay text; only the explicit grammar
+  // (`[text](url)`, `<url>`, `![alt](url)`, `==…==`) is recognized.
+  stable('link-inline', 'See [the site](https://example.com) here.'),
+  stable('link-in-bold', 'A **bold [link](https://example.com) here** ok.'),
+  // CommonMark autolink: the default link serializer detects text===href
+  // with a scheme and emits `<url>`, so it survives verbatim (NOT
+  // rewritten to `[url](url)`).
+  stable('autolink', 'Visit <https://example.com> now.'),
+  // A markdown image is a NON-FETCHING chip node; it still serializes to
+  // `![alt](url)`. The `![[…]]` embed is a DIFFERENT construct (a
+  // source-preserving wiki token) and the two coexist on one line.
+  stable('image-inline', 'Art ![a cat](https://example.com/cat.png) here.'),
+  stable(
+    'image-and-embed',
+    '![web](https://example.com/a.png) vs ![[local.png]] coexist.',
+  ),
+  stable('highlight', 'Some ==marked== text.'),
+  // `==…==` is `mixable`, so nested emphasis interleaves without the mark
+  // re-closing around the inner span.
+  stable('highlight-nested-bold', 'A ==mark with **bold** in== it.'),
+  // Wiki tokens stay OPAQUE inside a highlight (the 156 rule fires on
+  // `[`/`!` regardless of the surrounding mark) — so link identity
+  // survives canonicalize-on-load even wrapped in `==…==`.
+  stable('highlight-with-token', 'A ==highlight [[Link]] inside== it.'),
+  // The 156 fear (an active-title token whose bytes are Markdown-active)
+  // INSIDE a highlight: `[[**b**]]` stays one opaque token, the `==`
+  // delimiters are the only mark parsed. Byte-stable.
+  stable('highlight-active-title-token', 'A ==mark [[**b**]] token== here.'),
+  // A URL link and a wiki token on ONE line: the markdown link claims
+  // `[site](url)`, the `[[Note]]` stays a source-preserving wiki token.
+  stable('link-and-token', '[site](https://example.com) and [[Note]] both.'),
+  // All four new constructs on one line, byte-exact.
+  stable(
+    'url-cluster-all-four',
+    'Mix [a](https://ex.com/x), <https://ex.com>, ![i](https://ex.com/i.png), ==hot==.',
+  ),
   // --- malformed wiki sequences (grammar: plain text, never tokens).
   // They are NOT valid tokens, so the source-preserving serializer does
   // NOT keep their brackets — they take ordinary Markdown escaping. The

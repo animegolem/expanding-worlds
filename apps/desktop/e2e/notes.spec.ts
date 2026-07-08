@@ -900,3 +900,70 @@ test('§7.1 heading folding: decoration-only, [...] marker, caret never strands 
 
   await app.close()
 })
+
+test('URL cluster renders without fetching; four constructs round-trip byte-exact (AI-IMP-170)', async () => {
+  const { app, win } = await launchApp('ew-e2e-url-cluster-')
+
+  // A body carrying all four §7.1 rev-0.66 constructs plus a wiki token,
+  // so the URL cluster and the wiki grammar are proven to coexist. The
+  // image host is deliberately fake: if ANY code path tried to fetch it,
+  // the request would be attempted (and caught below) even though it
+  // could never resolve.
+  const body =
+    'Refs: [the site](https://ew170.example/site), ' +
+    'autolink <https://ew170.example/a>, ' +
+    'image ![a cat](https://ew170.example/cat.png), ' +
+    '==marked== text, and [[Harbor]] wiki.'
+
+  // Record any network attempt to the image host BEFORE the note opens.
+  const imageRequests: string[] = []
+  win.on('request', (req) => {
+    if (req.url().includes('ew170.example')) imageRequests.push(req.url())
+  })
+
+  await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'Harbor' })
+  const { noteId } = await seedPlacedNote(win, 'Cluster', body, { x: 300, y: 240 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await expect(win.getByTestId('note-editor')).toContainText('Refs:')
+
+  const content = win.locator('[data-testid="note-editor-content"]')
+
+  // Inline link: distinct mark, hover chip naming the DOMAIN.
+  const link = content.locator('a.ew-url-link', { hasText: 'the site' })
+  await expect(link).toHaveAttribute('href', 'https://ew170.example/site')
+  await expect(link).toHaveAttribute('title', 'ew170.example')
+
+  // Autolink renders as a URL link too (text === href).
+  await expect(content.locator('a.ew-url-link', { hasText: 'https://ew170.example/a' })).toHaveCount(
+    1,
+  )
+
+  // Highlight mark.
+  await expect(content.locator('mark.ew-highlight', { hasText: 'marked' })).toHaveCount(1)
+
+  // Image is a NON-FETCHING chip: the chip is present, its label names the
+  // alt, and NO <img> element exists anywhere in the editor.
+  const chip = content.locator('.ew-image-chip')
+  await expect(chip).toHaveCount(1)
+  await expect(chip.locator('.ew-image-chip-label')).toHaveText('a cat')
+  expect(await content.locator('img').count()).toBe(0)
+
+  // The wiki token still decorates alongside the URL cluster (no regress).
+  await expect(
+    content.locator('[data-link-title="Harbor"][data-link-state]'),
+  ).toHaveCount(1)
+
+  // The four constructs are byte-exact fixed points, so canonicalize-on-
+  // load neither rewrites nor re-saves the body.
+  await expect(win.getByTestId('note-pane-dirty')).toBeHidden()
+  const stored = await runQuery<{ body: string }>(win, 'getNote', { noteId })
+  expect(stored.body).toBe(body)
+
+  // The load-bearing invariant (§11.5): nothing fetched the image.
+  expect(imageRequests, imageRequests.join('\n')).toEqual([])
+
+  await app.close()
+})
