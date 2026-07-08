@@ -12,7 +12,14 @@
  * hides when the node's RENDERED screen size drops below the
  * threshold — never zoom percentage.
  */
-import { adornedWorldAABB, itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
+import {
+  adornedWorldAABB,
+  isFurnitureVisible,
+  itemWorldAABB,
+  unionBounds,
+  type SceneItem,
+  type ScenePlacement,
+} from '@ew/canvas-engine'
 import type { NodeAppearance } from '@ew/commands'
 import { uuidv7 } from '@ew/domain'
 import { FRAME_SORT_ON_DROP_PREFIX } from '@ew/protocol'
@@ -121,6 +128,34 @@ function injectStyles(): void {
     .ew-charms .hint-group:hover { opacity: 1; }
   `
   document.head.appendChild(style)
+}
+
+/**
+ * AI-IMP-192 (§8.2 shrink ladder): true when the CURRENT SELECTION's
+ * on-screen footprint — the same union bbox "zoom to selection"
+ * already computes via `unionBounds` — has shrunk, at this camera
+ * zoom, below the shared FURNITURE floor (the EW_FURNITURE_MIN_PX
+ * family, AI-IMP-133). Below the floor there is nothing legible left
+ * for the charm bar to annotate, so the caller dismisses the
+ * selection outright rather than merely hiding the bar — the owner's
+ * explicit "dismissal, not hiding" call (zooming back in must NOT
+ * resurrect it). This is the pure LEVEL predicate; the caller's
+ * layout() wraps it in an above→below CROSSING gate so a selection
+ * born below the floor (search fly-to onto a tiny asset) survives.
+ * Degenerates to a single placement's own AABB when
+ * exactly one item is selected, so single- and multi-selection share
+ * one code path. An empty selection is never "below floor" — there is
+ * nothing to dismiss. Zoom-only (never camera x/y), so a pan at
+ * constant zoom can never flip this.
+ */
+export function isSelectionBelowFurnitureFloor(
+  selectedItems: readonly SceneItem[],
+  zoom: number,
+): boolean {
+  const bounds = unionBounds(selectedItems)
+  if (!bounds) return false
+  const maxEdge = Math.max(bounds.width, bounds.height) * zoom
+  return !isFurnitureVisible(maxEdge)
 }
 
 export function attachCharmsUi(
@@ -919,6 +954,23 @@ export function attachCharmsUi(
 
   // ------------------------------------------------- layout per frame
   let frame = 0
+  // AI-IMP-192 re-entry guard: clear() already no-ops once the
+  // selection is empty (Selection#clear checks size first), so this
+  // is a belt-and-suspenders assertion against layout() ever calling
+  // clear() from inside its own dismiss branch (e.g. a future refactor
+  // that reacted to selection.onChanged synchronously).
+  let dismissingSelection = false
+  // AI-IMP-192 crossing state: the dismissal is EDGE-triggered — it
+  // fires only when a selection OBSERVED above the furniture floor
+  // SHRINKS below it (the ticket's "during zoom-out"), never on a
+  // selection born below the floor. A level-triggered check here broke
+  // the §8.3 search fly-to: activating a tiny asset's location selects
+  // a placement that renders ~1px at rest zoom, and the instant clear
+  // ate the selection the flight had just made. Deliberate selection
+  // of a speck (fly-to, precision click) survives; zooming a legible
+  // selection down past the floor still dismisses it for good.
+  let floorSelectionKey = ''
+  let selectionSeenAboveFloor = false
   function schedule(): void {
     if (frame) return
     frame = requestAnimationFrame(() => {
@@ -929,6 +981,37 @@ export function attachCharmsUi(
 
   function layout(): void {
     const camera = host.controller.camera
+
+    // AI-IMP-192: dismiss (never just hide) a selection whose on-screen
+    // footprint has zoomed below the shared furniture floor — checked
+    // first so a same-frame dismiss falls straight through to the
+    // unselected branches below (bar hidden, no bar-beneath-a-speck).
+    // Edge-triggered on the above→below crossing (see the state decl):
+    // a NEW selection resets the crossing state; only one observed
+    // above the floor arms the dismissal. Zoom-only (pan at constant
+    // zoom never changes the footprint), and clearing is permanent —
+    // zooming back in does not resurrect.
+    const floorSelection = host.controller.selectedItems()
+    const selectionKey = floorSelection
+      .map((item) => item.id)
+      .sort()
+      .join('\n')
+    if (selectionKey !== floorSelectionKey) {
+      floorSelectionKey = selectionKey
+      selectionSeenAboveFloor = false
+    }
+    if (selectionKey !== '' && !dismissingSelection) {
+      if (!isSelectionBelowFurnitureFloor(floorSelection, camera.zoom)) {
+        selectionSeenAboveFloor = true
+      } else if (selectionSeenAboveFloor) {
+        dismissingSelection = true
+        host.controller.selection.clear()
+        dismissingSelection = false
+        floorSelectionKey = ''
+        selectionSeenAboveFloor = false
+      }
+    }
+
     const items = host.controller.items()
     const seen = new Set<string>()
     for (const item of items) {
