@@ -10,7 +10,7 @@
 | Planned | 4 | 0 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 175 |
+| Completed | 19 | 177 |
 | **Total** | **25** | **182** |
 
 ## In Progress
@@ -55,9 +55,7 @@
 - [[AI-IMP-173-swarm-stability-audit|IMP-173]] — in-progress, no epic dependency found
 - [[AI-IMP-174-macos-move-resize-chord|IMP-174]] — planned, no epic dependency found
 - [[AI-IMP-175-tooltip-sweep|IMP-175]] — planned, no epic dependency found
-- [[AI-IMP-177-stale-read-models-on-navigation|IMP-177]] — planned, no epic dependency found
 - [[AI-IMP-182-undo-capture-breadth|IMP-182]] — planned, no epic dependency found
-- [[AI-IMP-184-async-open-generation-guards|IMP-184]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -83,18 +81,18 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/NotePanel.svelte (2017 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1763 LOC)
 - apps/desktop/src/main/index.ts (1106 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (1042 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (1020 LOC)
 - apps/desktop/e2e/notes.spec.ts (969 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (951 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (907 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (925 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (896 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (886 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
+- apps/desktop/src/renderer/note/panels.ts (792 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (784 LOC)
-- apps/desktop/src/renderer/note/panels.ts (784 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
@@ -105,16 +103,16 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (645 LOC)
+- apps/desktop/src/renderer/canvas/board-tooling.ts (636 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
-- apps/desktop/src/renderer/canvas/board-tooling.ts (604 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 
 ### > 300 LOC
 
+- RAG/HUMAN-TESTING.md (600 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (595 LOC)
-- RAG/HUMAN-TESTING.md (594 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
 - packages/persistence/src/handlers/frames.test.ts (585 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)

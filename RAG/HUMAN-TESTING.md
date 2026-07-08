@@ -592,3 +592,9 @@ any flicker where things look ungrouped for a moment?
   rename mid-edit) — your selection should survive every one of
   them. Open the big editor and hit Mod+P — nothing should fire
   underneath it. One Escape = one layer, everywhere.
+- **Fix wave C (177/184) — nothing stale, nothing late**: give a
+  board a backdrop, hop to a bare board, right-click — no backdrop
+  verbs should appear (they used to, and Reset would copy the OLD
+  board's image over). Toggle a selected frame's sort from the Dock
+  — the charm chip should flip live. Right-click a frame and
+  immediately click away — the menu should NOT pop up late.
