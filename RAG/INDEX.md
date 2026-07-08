@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 180 |
+| Completed | 19 | 181 |
 | **Total** | **25** | **206** |
 
 ## In Progress
@@ -70,7 +70,6 @@
 - [[AI-IMP-200-panel-legibility-floor|IMP-200]] — planned, no epic dependency found
 - [[AI-IMP-201-wheel-over-panel-passthrough|IMP-201]] — planned, no epic dependency found
 - [[AI-IMP-202-desk-physics-absent|IMP-202]] — planned, no epic dependency found
-- [[AI-IMP-203-first-run-guide-previous-button|IMP-203]] — planned, no epic dependency found
 - [[AI-IMP-204-gallery-preview-inspector|IMP-204]] — planned, no epic dependency found
 - [[AI-IMP-205-mouse-navigation-scheme|IMP-205]] — planned, no epic dependency found
 - [[AI-IMP-206-live-feel-dial|IMP-206]] — planned, no epic dependency found
@@ -141,8 +140,8 @@ Generated from tracked files; binary assets excluded.
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
+- RAG/HUMAN-TESTING.md (554 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
-- RAG/HUMAN-TESTING.md (548 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
@@ -206,6 +205,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/src/renderer/chrome/PathBar.svelte (312 LOC)
+- apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
 - apps/desktop/src/preload/index.ts (312 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)

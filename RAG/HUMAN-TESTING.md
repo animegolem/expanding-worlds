@@ -10,6 +10,12 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Guide previous button** (AI-IMP-203, 2026-07-08, alph's
+  ask): replay the guide from Settings — page forward a few cards,
+  click ‹ previous and tap ArrowLeft/ArrowRight. Does the disabled
+  previous on card 1 read as "start of deck" rather than "broken
+  button"? (Alph should get this one — his find.)
+
 - [ ] **Menus, everything + About + trash tone** (AI-IMP-137,
   2026-07-07): right-click a drawn shape (style verbs only), a
   multi-selection (count header · align family · GATHER INTO A
