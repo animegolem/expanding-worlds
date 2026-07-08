@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 180 |
-| **Total** | **25** | **202** |
+| **Total** | **25** | **204** |
 
 ## In Progress
 
@@ -72,6 +72,8 @@
 - [[AI-IMP-202-desk-physics-absent|IMP-202]] — planned, no epic dependency found
 - [[AI-IMP-203-first-run-guide-previous-button|IMP-203]] — planned, no epic dependency found
 - [[AI-IMP-204-gallery-preview-inspector|IMP-204]] — planned, no epic dependency found
+- [[AI-IMP-205-mouse-navigation-scheme|IMP-205]] — planned, no epic dependency found
+- [[AI-IMP-206-live-feel-dial|IMP-206]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
