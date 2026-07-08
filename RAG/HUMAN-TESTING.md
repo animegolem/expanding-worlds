@@ -562,3 +562,17 @@ The full walk, on a placed image's note:
   and keep your edit alive. Escape once cancels the edit only;
   again closes the panel. Feel: does the pencil read instantly, and
   does refuse-and-stay feel better than refuse-and-close?
+
+## AI-IMP-180 — frame-membership survives delete + undo (2026-07-08)
+
+Capture a few items inside a frame. Then:
+- Delete ONE member (select it, Delete), and Mod+Z: the item should
+  come back AND be grouped in the frame again — not floating loose.
+- Delete the FRAME itself (select the frame's wash, Delete), and
+  Mod+Z: the frame returns AND every item it held should be its
+  member again, exactly as before.
+- For nesting: put a frame inside a frame with its own items, delete
+  the inner frame, Mod+Z — it should rejoin the outer frame AND
+  regain its own contents.
+Feel question: does the grouping snap back invisibly, or is there
+any flicker where things look ungrouped for a moment?

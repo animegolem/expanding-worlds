@@ -240,6 +240,50 @@ test('draw → capture → carry → resize-immune → release → undo (§4.9)'
   }
 })
 
+test('delete a member → undo restores membership; delete the frame → undo returns its members (§4.9, AI-IMP-180)', async () => {
+  const { app, win } = await launchApp('ew-e2e-frame-membership-undo-')
+  try {
+    await win.waitForFunction(() => window.__ewUndo !== undefined)
+    await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+
+    // A frame (world 100..400) holding two items, captured through the
+    // real command seam. Capture itself is not what AI-IMP-180 fixes, so
+    // it is issued directly — the flows under test are delete + undo.
+    await win.getByTestId('tool-frame').click()
+    await dragWorld(win, { x: 100, y: 100 }, { x: 400, y: 400 }, 6)
+    await expect.poll(async () => (await frameRoots(win)).length).toBe(1)
+    const frameId = (await frameRoots(win))[0]!.placementId
+    await win.getByTestId('tool-select').click()
+
+    const itemA = await seedItem(win, { x: 200, y: 200 })
+    const itemB = await seedItem(win, { x: 300, y: 300 })
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 3)
+    await exec(win, 'CaptureInFrame', {
+      framePlacementId: frameId,
+      memberPlacementIds: [itemA, itemB],
+    })
+    await expect.poll(() => transitiveMembers(win, frameId)).toEqual([itemA, itemB].sort())
+
+    // ---- delete a MEMBER via the board, then undo → membership intact ----
+    // (before AI-IMP-180 the placement returned permanently ungrouped).
+    await selectItem(win, itemA)
+    await win.keyboard.press('Delete')
+    await expect.poll(() => transitiveMembers(win, frameId)).toEqual([itemB])
+    await win.evaluate(() => window.__ewUndo!.undo())
+    await expect.poll(() => transitiveMembers(win, frameId)).toEqual([itemA, itemB].sort())
+
+    // ---- delete the FRAME's placement, then undo → all members return ----
+    await selectItem(win, frameId)
+    await win.keyboard.press('Delete')
+    await expect.poll(async () => (await frameRoots(win)).length).toBe(0)
+    await win.evaluate(() => window.__ewUndo!.undo())
+    await expect.poll(async () => (await frameRoots(win)).length).toBe(1)
+    await expect.poll(() => transitiveMembers(win, frameId)).toEqual([itemA, itemB].sort())
+  } finally {
+    await app.close()
+  }
+})
+
 test('hover dim: dragging an item over a frame focuses it and dims the rest', async () => {
   const { app, win } = await launchApp('ew-e2e-frames-dim-')
   try {

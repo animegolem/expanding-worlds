@@ -7,7 +7,7 @@ tags:
   - undo
   - lifecycle
   - bug
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.85
@@ -99,20 +99,20 @@ LOC: ~70–110.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] `RestorePlacementPayload` gains `capturedFrameMembers`, mirroring
+- [x] `RestorePlacementPayload` gains `capturedFrameMembers`, mirroring
       `releasedAnchors`.
-- [ ] Delete captures `frame_member` rows in both directions (as
+- [x] Delete captures `frame_member` rows in both directions (as
       member; as frame with members) before the cascade.
-- [ ] RestorePlacement/RestoreContent re-inserts captured membership
+- [x] RestorePlacement/RestoreContent re-inserts captured membership
       rows (mirror the connector-anchor restore, `lifecycle.ts:232-275`).
-- [ ] Missing `capturedFrameMembers` (old command-log records) is
+- [x] Missing `capturedFrameMembers` (old command-log records) is
       treated as empty, matching `releasedAnchors` tolerance.
-- [ ] Unit: delete a member → undo → membership intact; delete the
+- [x] Unit: delete a member → undo → membership intact; delete the
       frame → undo → all members returned.
-- [ ] E2e: same two flows through the real command seam.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] E2e: same two flows through the real command seam.
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
-- [ ] Append an `RAG/HUMAN-TESTING.md` entry: capture placements in a
+- [x] Append an `RAG/HUMAN-TESTING.md` entry: capture placements in a
       frame, delete a member then undo; delete the frame then undo;
       confirm grouping returns.
 
@@ -141,3 +141,44 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**FK-ordering subtlety (caught by the batch test, not the design).**
+The first draft re-inserted membership rows INSIDE `restorePlacementRow`,
+right after the placement insert, mirroring the connector-anchor rebind
+verbatim. That works for single delete+undo but FAILS the
+DeleteContent-of-a-frame-with-its-members case, and the failure is
+non-obvious: a `frame_member` row `{member, frame}` cascades the instant
+EITHER endpoint's placement is deleted, so only the FIRST-deleted
+endpoint's payload captures it (the later one finds it already gone). In
+a batch that deletes the frame first, ALL rows land in the frame's
+payload — and `RestoreContent` revives the frame's placement before its
+members exist, so the both-endpoints-live guard skipped every row and
+undo restored zero membership. Fix: re-insert membership as its OWN pass
+AFTER every placement in the restore is live (a second loop in
+`RestoreContent`; a trailing call in `RestorePlacement`), never
+per-placement. Extracted `reinsertCapturedFrameMembers` for that pass.
+The batch e2e/unit test is the guard against regressing back to the
+inline form.
+
+**Capture shape.** `capturedFrameMembers?: CapturedFrameMember[]` on
+`RestorePlacementPayload` — a flat array of `{ memberPlacementId,
+framePlacementId }`, i.e. literal `frame_member` rows. Both "directions"
+the ticket names collapse into one query,
+`WHERE member_placement_id = ?1 OR frame_placement_id = ?1`, because a
+row is the same shape whether this placement is the member or the frame.
+Defined a purpose-specific type rather than reusing `FrameMembershipTarget`
+(whose `framePlacementId` is nullable — meaningless here, the schema
+column is NOT NULL).
+
+**Defensive belt kept.** The both-endpoints-live count guard +
+`ON CONFLICT(member_placement_id) DO NOTHING` are now redundant given the
+post-all-placements pass (every endpoint is live, no duplicate attempts),
+but retained to match the connector-anchor code's `if (!current) continue`
+defensiveness against a captured row referencing a placement not being
+restored (LIFO undo-invalidation should prevent it, but skip-not-throw is
+the house posture).
+
+**No schema change** — the field lives entirely in the command payload;
+migration 0007 untouched. The existing test "deleting a member placement
+cascades its membership row away" still holds (capture snapshots the row
+into the payload; the DB row is still cascade-deleted).

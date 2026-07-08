@@ -475,3 +475,111 @@ describe('lifecycle (§9.6 aggregate)', () => {
     expect(memberRowCount()).toBe(1)
   })
 })
+
+// -------------------------------------------------- membership undo (IMP-180)
+
+describe('frame-membership undo (§4.9, AI-IMP-180)', () => {
+  it('undoing a member delete restores its membership', () => {
+    const f = frame()
+    const a = item()
+    const b = item()
+    committed('CaptureInFrame', {
+      framePlacementId: f.placementId,
+      memberPlacementIds: [a.placementId, b.placementId],
+    })
+    const del = committed('DeletePlacement', { placementId: a.placementId })
+    // The cascade wiped a's row; b's survives.
+    expect(parentOf(a.placementId)).toBeNull()
+    expect(memberRowCount()).toBe(1)
+
+    undo(del.inverse)
+    // a is back AND a member of f again — no longer permanently ungrouped.
+    expect(parentOf(a.placementId)).toBe(f.placementId)
+    expect(parentOf(b.placementId)).toBe(f.placementId)
+    expect(memberRowCount()).toBe(2)
+  })
+
+  it('undoing a frame delete restores all its members', () => {
+    const f = frame()
+    const a = item()
+    const b = item()
+    committed('CaptureInFrame', {
+      framePlacementId: f.placementId,
+      memberPlacementIds: [a.placementId, b.placementId],
+    })
+    const del = committed('DeletePlacement', { placementId: f.placementId })
+    // Deleting the frame's placement cascaded every member row.
+    expect(memberRowCount()).toBe(0)
+
+    undo(del.inverse)
+    expect(parentOf(a.placementId)).toBe(f.placementId)
+    expect(parentOf(b.placementId)).toBe(f.placementId)
+    expect(memberRowCount()).toBe(2)
+  })
+
+  it('captures both directions: a nested frame rejoins its parent AND regains its own members', () => {
+    const outer = frame()
+    const inner = frame()
+    const c = item()
+    committed('CaptureInFrame', {
+      framePlacementId: outer.placementId,
+      memberPlacementIds: [inner.placementId],
+    })
+    committed('CaptureInFrame', {
+      framePlacementId: inner.placementId,
+      memberPlacementIds: [c.placementId],
+    })
+    // inner is simultaneously a MEMBER (of outer) and a FRAME (holding c).
+    const del = committed('DeletePlacement', { placementId: inner.placementId })
+    expect(memberRowCount()).toBe(0)
+
+    undo(del.inverse)
+    expect(parentOf(inner.placementId)).toBe(outer.placementId)
+    expect(parentOf(c.placementId)).toBe(inner.placementId)
+    expect(memberRowCount()).toBe(2)
+  })
+
+  it('batch delete of a frame with its members restores every row (FK ordering)', () => {
+    const f = frame()
+    const a = item()
+    const b = item()
+    committed('CaptureInFrame', {
+      framePlacementId: f.placementId,
+      memberPlacementIds: [a.placementId, b.placementId],
+    })
+    // One DeleteContent removes the frame AND both members — the same
+    // rows are captured by multiple payloads; RestoreContent revives
+    // placements one at a time, exercising the both-endpoints-live guard.
+    const del = committed('DeleteContent', {
+      canvasId: handle.rootCanvasId,
+      placementIds: [f.placementId, a.placementId, b.placementId],
+      decorationIds: [],
+    })
+    expect(memberRowCount()).toBe(0)
+
+    undo(del.inverse)
+    expect(parentOf(a.placementId)).toBe(f.placementId)
+    expect(parentOf(b.placementId)).toBe(f.placementId)
+    expect(memberRowCount()).toBe(2)
+  })
+
+  it('old command-log records without the field still restore (ungrouped)', () => {
+    const f = frame()
+    const a = item()
+    committed('CaptureInFrame', {
+      framePlacementId: f.placementId,
+      memberPlacementIds: [a.placementId],
+    })
+    const del = committed('DeletePlacement', { placementId: a.placementId })
+    // Simulate a pre-AI-IMP-180 undo step: strip the new field.
+    const legacy = { ...(del.inverse!.payload as Record<string, unknown>) }
+    delete legacy.capturedFrameMembers
+    committed('RestorePlacement', legacy)
+    // Restores the placement without error; membership treated as empty.
+    expect(
+      handle.db.get<{ id: string }>('SELECT id FROM placement WHERE id = ?', a.placementId),
+    ).toBeDefined()
+    expect(parentOf(a.placementId)).toBeNull()
+    expect(memberRowCount()).toBe(0)
+  })
+})
