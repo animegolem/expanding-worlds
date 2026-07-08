@@ -511,3 +511,19 @@ The full walk, on a placed image's note:
 - **z-ladder port** (rode the batch): panels now sit above the charm
   layer, menus/popovers above panels, chrome above all. If any
   overlay ever hides behind another, that's a bug — report the pair.
+
+## Sign-off batch (2026-07-07 late): the signature pin · the decline toast
+
+- **AI-IMP-166 signature pin**: the path-tail bookmark control is now
+  THE pin (the one colored thing in the chrome). Click it — the beat
+  should read as one gesture (~0.7s: wiggle, hop, press, settle),
+  never looping, reseating exactly where it sat; then the menu sweeps
+  in with the usual cascade, rows wearing little globes. Close is a
+  plain fade — no reverse ceremony. Questions for the feel pass: is
+  the beat's length right on repeat visits (it plays EVERY open —
+  charming or tiring by the tenth time)? Does the pin read at
+  cap-height beside the board name, or does it want a nudge?
+- **AI-IMP-172 decline toast**: make a move on one board, hop to
+  another, hit Mod+Z — the toast should NAME the board ("That change
+  was made on “X” — open that board to undo it"). It said "another
+  board" before, always; now the name should make the walk obvious.
