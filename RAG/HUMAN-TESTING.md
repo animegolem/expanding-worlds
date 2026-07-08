@@ -584,3 +584,11 @@ any flicker where things look ungrouped for a moment?
   a framed item), undo — grouping should come back whole. Exports
   during idle are now corruption-proof (nothing to feel; just trust
   it).
+- **Fix wave B (181/183) — the keyboard behaves now**: hold Cmd+Z —
+  exactly one undo per press, no phantom re-dos. Decline a redo
+  cross-board — the toast says "redo," not "undo." Then the Escape
+  tour: with a selection alive, Escape-close every surface (bookmark
+  menu, board menu, project popover, location chooser, a title
+  rename mid-edit) — your selection should survive every one of
+  them. Open the big editor and hit Mod+P — nothing should fire
+  underneath it. One Escape = one layer, everywhere.

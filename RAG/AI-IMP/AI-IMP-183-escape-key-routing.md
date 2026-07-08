@@ -7,7 +7,7 @@ tags:
   - escape
   - focus
   - bug
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.8
