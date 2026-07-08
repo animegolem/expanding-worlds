@@ -15,6 +15,7 @@
 import { adornedWorldAABB, itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
 import type { NodeAppearance } from '@ew/commands'
 import { uuidv7 } from '@ew/domain'
+import { FRAME_SORT_ON_DROP_PREFIX } from '@ew/protocol'
 import type { BoardTooling } from './board-tooling'
 import type { CanvasHostHandle } from './host'
 import { Z } from '../z'
@@ -711,6 +712,19 @@ export function attachCharmsUi(
       if (sortChipFrameId === frameId) setSortChipState(on)
     })
   }
+
+  // AI-IMP-177: the chip reads its flag only when the selected frame ID
+  // changes, so a Dock/context-menu toggle while the same frame stays
+  // selected left the chip stale. Re-read on the settings broadcast (the
+  // house pattern is BookmarkMenu.svelte's project.onChanged refresh);
+  // absent/anything-but-false means sort-on-drop is ON (§4.9).
+  disposers.push(
+    window.ew.settings.onProjectChanged(({ key, value }) => {
+      if (sortChipFrameId === null) return
+      if (key !== `${FRAME_SORT_ON_DROP_PREFIX}${sortChipFrameId}`) return
+      setSortChipState(value !== false)
+    }),
+  )
 
   // ------------------------------------------------- corner charm
   // §8.5: the canvas is a node, and the active canvas's own note is

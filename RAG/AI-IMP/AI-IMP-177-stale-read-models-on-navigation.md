@@ -111,20 +111,20 @@ LOC: ~50–80.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Cached background re-fetches or clears on scene-applied/openCanvas
+- [x] Cached background re-fetches or clears on scene-applied/openCanvas
       (mirror `board-tooling.ts:365-432` canvasId discipline).
-- [ ] Backdrop verbs in ContextMenu read the CURRENT canvas's
+- [x] Backdrop verbs in ContextMenu read the CURRENT canvas's
       background at menu-open; Reset/Edit backdrop can never carry a
       prior board's assetId.
-- [ ] Frame sort chip subscribes to the settings broadcast and
+- [x] Frame sort chip subscribes to the settings broadcast and
       re-reads `frameSortOnDrop` on write (house pattern:
       `BookmarkMenu.svelte` `project.onChanged`).
-- [ ] E2e: board A has a backdrop, board B has none; navigate A→B,
+- [x] E2e: board A has a backdrop, board B has none; navigate A→B,
       right-click B → menu shows NO backdrop-reset/edit verbs (or
       they act on B's empty background, never A's asset).
-- [ ] E2e: toggle sort-on-drop from the Dock while a frame is
+- [x] E2e: toggle sort-on-drop from the Dock while a frame is
       selected → the visible chip updates without reselecting.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 - [ ] Append an `RAG/HUMAN-TESTING.md` entry: navigate off a board with
       a backdrop onto an empty one and try Reset backdrop; toggle the
@@ -153,3 +153,53 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Background refresh seam.** Subscribed `refreshBackground` to
+`handle.onSceneApplied` alongside the existing `project.onChanged`
+subscription. `onSceneApplied` fires on EVERY host `refresh()` — both a
+command refresh and an openCanvas board swap — and `handle.canvasId` is
+a live getter, so the cache re-fetches for whatever board the user now
+stands on. This is the least-surprising seam: it reuses the AI-IMP-113
+scene-ready primitive the whole renderer already leans on, rather than
+threading a new openCanvas callback. `refreshBackground` also gained the
+host's `forCanvas` guard (capture the id before the async query, drop the
+result if a swap landed underneath) so a slow query can't overwrite the
+live cache with a stale board's background.
+
+**Belt-and-braces without touching ContextMenu.** The brief forbids editing
+`ContextMenu.ts` (a parallel agent's fence) beyond reading it. Rather
+than a defensive read inside the menu, the guard lives one layer down:
+`board-tooling` now tracks `backgroundCanvasId` (the board the cache was
+fetched for) and a `liveBackground()` helper returns the cache ONLY when
+it matches `handle.canvasId`. The `background()` getter and every
+mutating backdrop verb (`enterBackgroundEdit`, `resetBackgroundTransform`,
+`commitBackgroundEdit`) read through it, so a cache that predates a
+navigation reads as empty and no verb can carry a prior board's assetId —
+the same guarantee the ticket's defensive-read step asked for, achieved
+without crossing the ContextMenu fence. ContextMenu's existing
+`tooling.background()` call at menu-open now transparently gets the
+guarded value.
+
+**Frame sort chip.** Added a `window.ew.settings.onProjectChanged`
+subscription in `charms-ui` (pushed onto `disposers`) that re-reads the
+chip when the changed key matches the currently-selected frame's
+`frame_sort_on_drop:<id>` key (`value !== false` ⇒ ON, mirroring
+`board-tooling.frameSortOnDrop`). Change kept surgical — no bar refactor —
+to avoid conflicting with the parallel charms/menus async-open work. The
+main process already broadcasts every `set-setting` to ALL windows
+(including the originator, `main/index.ts`), so a Dock/context-menu
+toggle in the same window reaches the chip.
+
+**Validation.** `pnpm -r build` ✓, `pnpm -r test` ✓ (210 e2e passed
+under `EW_TEST_HIDDEN_WINDOWS=1`, including the two new
+`stale-read-models.spec.ts` cases), `pnpm lint` ✓ (clean). The
+`stale-read-models` e2e drives the true bug paths: navigate a
+backdrop-bearing board onto an empty one via `__ewNav.navigateTo`
+(openCanvas — fires no onChanged) and assert the board menu's backdrop
+verbs go disabled with the Set label reverting to "Set backdrop
+image…"; and toggle sort-on-drop from the Dock while the frame stays
+selected and assert the charm chip flips live in both directions.
+
+**Note for the lead.** The `RAG/HUMAN-TESTING.md` append (checklist
+item 7) was intentionally left undone per the brief's do-not-touch
+list; the lead owns that entry.

@@ -139,6 +139,11 @@ export function attachBoardTooling(
   controller.setSnapProvider(createSnapProvider())
 
   let background: SceneBackground | null = null
+  // AI-IMP-177: the canvas the cached `background` was fetched for.
+  // openCanvas fires no project-changed event, so a cache keyed only to
+  // onChanged goes stale across navigation; tracking its canvas lets the
+  // getter and every backdrop verb refuse a cache that predates the swap.
+  let backgroundCanvasId: string | null = null
   let mode: EditMode | null = null
   const changed = new Set<() => void>()
   const notify = (): void => {
@@ -159,15 +164,31 @@ export function attachBoardTooling(
   }
 
   async function refreshBackground(): Promise<void> {
-    const response = await window.ew.project.query('getCanvasScene', { canvasId: handle.canvasId })
+    const forCanvas = handle.canvasId
+    const response = await window.ew.project.query('getCanvasScene', { canvasId: forCanvas })
     if (!response.ok) return
+    // A navigation may have swapped the canvas while the query was in
+    // flight; a stale result must never overwrite the live canvas's
+    // cache (mirrors host.refresh's forCanvas guard, AI-IMP-177).
+    if (forCanvas !== handle.canvasId) return
     const scene = response.result as { background: SceneBackground } | null
     background = scene?.background ?? null
+    backgroundCanvasId = forCanvas
     // A concurrent scene re-render (e.g. debounced camera persist)
     // re-applies durable settings to the sprite; restore the pending
     // ephemeral state while the edit mode is active.
     if (mode) applySettingsToSprite(mode.pending)
     notify()
+  }
+
+  /** The cached background ONLY when it belongs to the canvas the user
+   * is standing on now. A cache that predates a navigation must never
+   * feed a backdrop verb onto the current board (AI-IMP-177): the
+   * scene-applied refresh below re-fetches on every swap, and this
+   * guard makes a not-yet-refreshed cache read as empty rather than as
+   * the previous board's asset. */
+  function liveBackground(): SceneBackground | null {
+    return backgroundCanvasId === handle.canvasId ? background : null
   }
 
   async function run(commandType: string, payload: unknown): Promise<void> {
@@ -432,11 +453,12 @@ export function attachBoardTooling(
   }
 
   function enterBackgroundEdit(): void {
-    if (mode || !background?.assetId) return
+    const bg = liveBackground()
+    if (mode || !bg?.assetId) return
     // Clear the selection so no gesture handles can swallow pointer
     // events ahead of the mode's capture interceptor.
     controller.selection.clear()
-    const original = settingsOf(background)
+    const original = settingsOf(bg)
     mode = { original, pending: { ...original }, drag: null }
     notify()
   }
@@ -446,10 +468,11 @@ export function attachBoardTooling(
     const { original, pending } = mode
     mode = null
     notify()
-    if (!background?.assetId || sameSettings(original, pending)) return
+    const bg = liveBackground()
+    if (!bg?.assetId || sameSettings(original, pending)) return
     const result = await gateway.execute('SetCanvasBackground', {
       canvasId: handle.canvasId,
-      assetId: background.assetId,
+      assetId: bg.assetId,
       settings: { ...pending },
     })
     if (result.status !== 'committed') {
@@ -472,16 +495,17 @@ export function attachBoardTooling(
   }
 
   async function resetBackgroundTransform(): Promise<void> {
-    if (!background?.assetId) return
+    const bg = liveBackground()
+    if (!bg?.assetId) return
     // Reset returns to the normalized stage default at the origin
     // (§6.7 rev 0.11), not to raw pixels.
     const settings =
-      background.assetWidth && background.assetWidth > 0
-        ? { x: 0, y: 0, scale: STAGE_WIDTH / background.assetWidth, opacity: 1 }
+      bg.assetWidth && bg.assetWidth > 0
+        ? { x: 0, y: 0, scale: STAGE_WIDTH / bg.assetWidth, opacity: 1 }
         : { ...IDENTITY_SETTINGS }
     await run('SetCanvasBackground', {
       canvasId: handle.canvasId,
-      assetId: background.assetId,
+      assetId: bg.assetId,
       settings,
     })
   }
@@ -550,6 +574,13 @@ export function attachBoardTooling(
   window.addEventListener('keydown', onKeyDownCapture, { capture: true })
 
   const unsubscribeProject = window.ew.project.onChanged(() => void refreshBackground())
+  // AI-IMP-177: openCanvas fires NO project-changed event, so a cache
+  // refreshed only on onChanged goes stale across navigation — the
+  // context menu would then gate backdrop verbs on the PREVIOUS board's
+  // asset and Reset/Edit would write it onto the current board. Scene-
+  // applied fires on every board swap (and every command refresh), so
+  // re-fetch the live canvas's background there too.
+  const unsubscribeScene = handle.onSceneApplied(() => void refreshBackground())
   void refreshBackground()
 
   window.__ewBoardDebug = {
@@ -574,7 +605,7 @@ export function attachBoardTooling(
     zoomToFit,
     zoomToSelection,
     selectedImagePlacement,
-    background: () => background,
+    background: () => liveBackground(),
     backgroundEditActive: () => mode !== null,
     setBackgroundFromSelection,
     setBackgroundFromFile,
@@ -591,6 +622,7 @@ export function attachBoardTooling(
     },
     destroy() {
       unsubscribeProject()
+      unsubscribeScene()
       offLoadIntoFrame()
       canvas.removeEventListener('pointerdown', onPointerDownCapture, { capture: true })
       canvas.removeEventListener('pointermove', onPointerMoveCapture, { capture: true })
