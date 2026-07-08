@@ -2,6 +2,9 @@
 
 Decisions that need a finalized design conversation (owner + lead,
 sometimes the first tester) before implementation proceeds.
+Sibling doc: `RAG/design/DESIGN-GAPS.md` is the kit-coverage
+checklist (controls shipped but never drawn) worked by the design
+session; conversation items live here, drawing items live there.
 Compiled 2026-07-06 at the strategy review; keep it pruned like the
 flush list — resolved items move into the RFC and leave. The
 2026-07-07 design pass (rev 0.55) resolved the context-menu
