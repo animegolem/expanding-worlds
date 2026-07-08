@@ -1,14 +1,23 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { uuidv7 } from '@ew/domain'
 import yauzl from 'yauzl'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { blobRelativePath } from '../import/store'
+import { writeNotesTree } from '../notes-tree'
 import { openProjectService, type ProjectService } from '../service'
 import { DB_ENTRY, MANIFEST_ENTRY, parseManifest, type ExportManifest } from './manifest'
-import { estimateExportSize } from './project-export'
+import { estimateExportSize, exportProject } from './project-export'
+import { importProject } from './project-import'
 import { Db } from '../db'
 
 /**
@@ -265,6 +274,73 @@ describe('exportProject (§16, container rev 0.57)', () => {
     expect(copy.all('SELECT id FROM bookmark').length).toBe(0)
     expect(copy.all('SELECT id FROM canvas WHERE node_id = ?', nodeId).length).toBe(0)
     copy.close()
+  })
+
+  it('freezes the notes tree so a mid-export snapshot cannot corrupt the archive (AI-IMP-179)', async () => {
+    // A real note gives the archive a `.md` to freeze.
+    const info = service.info()
+    const noteId = uuidv7()
+    const created = service.execute({
+      commandId: uuidv7(),
+      projectId: info.projectId,
+      commandType: 'CreateNote',
+      commandVersion: 1,
+      issuedAt: new Date().toISOString(),
+      payload: { noteId, title: 'Race Note', body: 'the original, hashed body' },
+    } as never)
+    expect(created.status).toBe('committed')
+
+    // Lay down the live notes tree the way the service seam does before
+    // an export, then capture the bytes the export must ship.
+    const exportDb = Db.open(join(dir, 'project.sqlite'))
+    writeNotesTree(
+      {
+        db: exportDb,
+        projectId: info.projectId,
+        rootNodeId: info.rootNodeId,
+        rootCanvasId: info.rootCanvasId,
+      },
+      dir,
+    )
+    const notesDir = join(dir, 'notes')
+    const noteFile = readdirSync(notesDir).find((f) => f.endsWith('.md'))!
+    const liveNotePath = join(notesDir, noteFile)
+    const frozenBytes = readFileSync(liveNotePath)
+
+    // Export directly, and at the exact between-hash-and-stream moment
+    // rewrite the LIVE `.md` — standing in for a snapshot's
+    // writeNotesTree landing mid-export. The copy must make this
+    // provably harmless.
+    const dest = join(outDir, 'race.ewproj')
+    let injected = false
+    await exportProject(
+      { db: exportDb, dir },
+      dest,
+      { activeOnly: false },
+      {
+        beforeStream: () => {
+          writeFileSync(liveNotePath, 'CORRUPTED: a concurrent snapshot rewrote this .md')
+          injected = true
+        },
+      },
+    )
+    exportDb.close()
+    expect(injected).toBe(true)
+    // The live tree really did change under us.
+    expect(readFileSync(liveNotePath).equals(frozenBytes)).toBe(false)
+
+    // The archived note is the FROZEN bytes, not the mid-export rewrite.
+    const archivedNote = await readZipEntry(dest, `notes/${noteFile}`)
+    expect(archivedNote.equals(frozenBytes)).toBe(true)
+
+    // The manifest hash agrees with the archived bytes (no mismatch).
+    const manifest = parseManifest((await readZipEntry(dest, MANIFEST_ENTRY)).toString('utf8'))
+    const row = manifest.inventory.find((e) => e.path === `notes/${noteFile}`)!
+    expect(row.sha256).toBe(createHash('sha256').update(archivedNote).digest('hex'))
+
+    // And the archive re-imports cleanly — no HASH_MISMATCH refusal.
+    const importDest = join(outDir, 'reimported')
+    await expect(importProject(dest, importDest)).resolves.toBeTruthy()
   })
 
   it('estimates source size by stat and fails loudly on a missing blob', async () => {
