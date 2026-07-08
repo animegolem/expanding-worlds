@@ -324,7 +324,11 @@ export function attachCharmsUi(
       nodeId,
       appearance: { kind: 'image', assetId: imported.assetId, crop: null },
     })
-    closeAppearance()
+    // AI-IMP-184 (M-19): fold ONLY the popover this import opened. A slow
+    // import can resolve after the user opened a DIFFERENT node's
+    // appearance popover — an unconditional close would force that one
+    // shut. The commit above still targets the bound nodeId.
+    if (appearanceFor === placement.id) closeAppearance()
   }
   imageInput.addEventListener('change', (event) => void onImagePicked(event))
   appearance.appendChild(imageInput)
@@ -602,6 +606,10 @@ export function attachCharmsUi(
       await refreshVocab()
       if (chipsFor !== placement.id) return // toggled shut under us
       await rebuildChips(placement.nodeId)
+      // AI-IMP-184 (M-18): re-check AFTER rebuildChips too — closing or
+      // switching the popover DURING the rebuild must not resurrect the
+      // closed popover (or clobber the new one's DOM and steal focus).
+      if (chipsFor !== placement.id) return
       chips.style.display = 'flex'
       schedule()
       addInput.focus()

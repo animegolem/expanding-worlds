@@ -645,13 +645,21 @@ export async function jumpToPlacement(
   openNotePanel(noteId, { canvasId, placementId, label: title })
 }
 
+/** Orders async reveal resolves: only the LATEST "Fly here" request may
+ * land the chooser, so a slow getNoteUses for an older activation can
+ * never hijack the chooser the user is interacting with now (AI-IMP-184
+ * M-20, mirroring openNotePanel / AI-IMP-085). */
+let revealGeneration = 0
+
 async function revealNote(detail: {
   noteId: string
   title: string
   anchor?: { x: number; y: number }
 }): Promise<void> {
   if (!host) return
+  const generation = ++revealGeneration
   const response = await window.ew.project.query('getNoteUses', { noteId: detail.noteId })
+  if (generation !== revealGeneration) return // a newer reveal won
   if (!response.ok) return
   const uses = response.result as UsesView
   if (uses.totalPlacements === 0) {
