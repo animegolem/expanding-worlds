@@ -10,6 +10,20 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **The note panel family — your two worst FAILs** (AI-IMP-199
+  + 193 + 200, 2026-07-08): the "wedge" decomposed into two braided
+  bugs — the corner flash (193) plus panels FADING INVISIBLE at
+  board zoom while still holding the note slot (the 116 fade; cured
+  by 200's hold-at-floor). Try, in order: (1) place a pin — the
+  note must appear once, already beside the pin, never blinking in
+  the upper-left; (2) spam a note charm open/close 10× fast, tear
+  to big editor and Escape rapidly — the note must always reopen;
+  (3) at your normal board zoom, open a tethered note — it should
+  READ AS OPEN (held at half card size, never a stamp), and pinning
+  it should jump ~2× now, not 4–6×; (4) big editor over dark and
+  light art — does the paper shadow finally read? Feel dials if
+  wrong: MIN_PANEL_SCREEN_SCALE (0.5), overview fade (0.1).
+
 - [ ] **Charm bar below the floor** (AI-IMP-192, 2026-07-08, your
   proposal): select an image, zoom way out until it's a speck — the
   charm bar should vanish WITH the selection (zooming back in
