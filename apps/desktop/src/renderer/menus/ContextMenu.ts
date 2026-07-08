@@ -614,12 +614,16 @@ export function attachContextMenu(
   }
 
   async function openBoardNote(): Promise<void> {
-    const sceneResponse = await window.ew.project.query('getCanvasScene', {
-      canvasId: host.canvasId,
-    })
+    // AI-IMP-184 (M-17): capture the target canvas BEFORE the two awaits
+    // and bail if it changed underneath, mirroring refreshCorner
+    // (charms-ui.ts). A navigation mid-flight would otherwise tether the
+    // FIRST board's note over the board now on screen.
+    const canvasId = host.canvasId
+    const sceneResponse = await window.ew.project.query('getCanvasScene', { canvasId })
     if (!sceneResponse.ok || sceneResponse.result === null) return
     const nodeId = (sceneResponse.result as { nodeId: string }).nodeId
     const nodeResponse = await window.ew.project.query('getNode', { nodeId })
+    if (host.canvasId !== canvasId) return // navigated away mid-flight
     const noteId = nodeResponse.ok
       ? ((nodeResponse.result as { noteId: string | null } | null)?.noteId ?? null)
       : null
@@ -866,15 +870,29 @@ export function attachContextMenu(
     // newer menu opened (or the menu closed) during the await, this
     // resolution is stale and must not paint over it. AI-IMP-155.
     const token = openGen.current()
-    const sortOnDrop = await tooling.frameSortOnDrop(p.id)
-    if (openGen.isStale(token)) return
-    const subject: FrameSubject = {
-      kind: 'frame',
-      locked: p.locked === 1,
-      hasNote: p.noteId !== null,
-      sortOnDrop,
+    // AI-IMP-184 (M-25): the PRE-render window. No menu is up yet, so
+    // onOutsidePointer is not listening and close() never runs — a
+    // click-away during the await would leave openGen unbumped and let
+    // the resolved menu paint late. Watch for an intervening pointerdown
+    // ourselves and bail if one lands before we render.
+    let clickedAway = false
+    const onPreRenderPointer = (): void => {
+      clickedAway = true
     }
-    render('frame', menuFor(subject, frameActions(p)), at)
+    document.addEventListener('pointerdown', onPreRenderPointer, true)
+    try {
+      const sortOnDrop = await tooling.frameSortOnDrop(p.id)
+      if (clickedAway || openGen.isStale(token)) return
+      const subject: FrameSubject = {
+        kind: 'frame',
+        locked: p.locked === 1,
+        hasNote: p.noteId !== null,
+        sortOnDrop,
+      }
+      render('frame', menuFor(subject, frameActions(p)), at)
+    } finally {
+      document.removeEventListener('pointerdown', onPreRenderPointer, true)
+    }
   }
 
   // Suppress the OS menu everywhere the app owns the surface (§8.4);

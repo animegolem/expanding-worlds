@@ -107,22 +107,26 @@ LOC: ~90–140.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] openBoardNote captures the target canvasId before its awaits and
+- [x] openBoardNote captures the target canvasId before its awaits and
       bails if it changed (mirror `refreshCorner` `charms-ui.ts:657`).
-- [ ] openTagsFor re-checks `chipsFor===placement.id` after EVERY await,
+- [x] openTagsFor re-checks `chipsFor===placement.id` after EVERY await,
       including after `rebuildChips`.
-- [ ] onImagePicked's trailing close is guarded
+- [x] onImagePicked's trailing close is guarded
       `if (appearanceFor === placement.id)` — closes only its own popover.
-- [ ] revealNote uses an `openGeneration` token (mirror openNotePanel /
+- [x] revealNote uses an `openGeneration` token (mirror openNotePanel /
       AI-IMP-085); a stale resolution is ignored.
-- [ ] openFrameMenu bumps its generation BEFORE the await (or detects an
+- [x] openFrameMenu bumps its generation BEFORE the await (or detects an
       intervening pointerdown) so a click-away invalidates the pre-render
       paint.
 - [ ] Unit tests for the guard functions; e2e where cheap: navigate away
       during openBoardNote's awaits → no foreign-board note tethers;
       open+close a tag popover mid-rebuild → stays closed; import into A
       while B's appearance popover is open → B's stays open.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+      (Unit test for the revealNote generation guard added
+      —`panels-reveal-guard.test.ts`; the generation-counter concept is
+      also covered by `open-generation.test.ts`. The three interleave
+      e2e were NOT added — see Issues Encountered.)
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 - [ ] Append an `RAG/HUMAN-TESTING.md` entry: trigger each open path then
       immediately navigate/open a second surface; confirm no popover
@@ -160,3 +164,49 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Line drift (expected).** main moved since the ticket was cut. Current
+positions of each member: openFrameMenu `ContextMenu.ts:861`, openBoardNote
+`:616`, openTagsFor `charms-ui.ts:596`, onImagePicked `charms-ui.ts:306`,
+revealNote `panels.ts:648`. openFrameMenu already carried the AI-IMP-155
+POST-render token guard (`openGen.current()`/`isStale`); this ticket added
+only the missing PRE-render window coverage.
+
+**M-25 pre-render guard — shape chosen.** `openGen` bumps only in
+`close()`, which never runs before a menu exists, so the token alone can't
+cover the pre-render window (the ticket's diagnosis). Added a document
+capture-phase `pointerdown` listener spanning token-capture→render; if one
+fires the resolution bails (alongside the existing `isStale` check). The
+listener is installed AFTER the initiating right-click's own pointerdown
+has already fired (pointerdown precedes the `contextmenu` event), so the
+opening click never self-invalidates. Removed in a `finally`.
+
+**M-20 guard — inline counter, not the shared helper.** revealNote got a
+module-level `revealGeneration` counter mirroring openNotePanel's inline
+`openGeneration` (AI-IMP-085) — the established in-file house pattern — a
+DEDICATED counter (not openNotePanel's), so the two flows don't
+cross-invalidate. Reusing `menus/open-generation.ts` was rejected: it would
+couple `note/` to `menus/` and openNotePanel's own guard is inline anyway.
+
+**Testing — deviation on the three interleave e2e.** The suggested e2e
+(navigate-away mid openBoardNote; close a tag popover mid-rebuild; import
+into A while B's popover is open) each require interleaving a specific
+async resolution against a user action. The app exposes no test-side
+latency hook, so making them deterministic would need new app-side
+instrumentation — disproportionate for these guards, and timing-based
+interleave e2e are exactly the flake class CLAUDE.md warns against. Instead:
+a focused unit test (`panels-reveal-guard.test.ts`, 2 cases) drives the
+M-20 race deterministically (two reveals in flight, older resolving last →
+stale one ignored; lone reveal still seats its chooser) using the
+panels-teardown stubbing style; the generation-counter concept is also
+covered by `open-generation.test.ts`. The remaining guards are inline
+staleness re-checks (`host.canvasId`, `chipsFor`, `appearanceFor`) whose
+DOM/host coupling makes isolated unit testing disproportionate; their
+correctness is by inspection and the full e2e suite confirms no happy-path
+regression (208 e2e green). The HUMAN-TESTING entry is left to the lead
+(brief scoped `RAG/HUMAN-TESTING.md` out of this agent's touch set).
+
+**Validation (all foreground, hidden windows).**
+`pnpm -r build` → green. `pnpm -r test` → green (vitest units incl. the new
+guard test + `open-generation`; electron-vite build; 208 playwright e2e
+passed, 5.6m). `pnpm lint` → clean.
