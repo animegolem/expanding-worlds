@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 4 | 0 |
+| Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 180 |
-| **Total** | **25** | **185** |
+| **Total** | **25** | **193** |
 
 ## In Progress
 
@@ -56,9 +56,17 @@
 - [[AI-IMP-185-gesture-pipeline-hardening|IMP-185]] — planned, no epic dependency found
 - [[AI-IMP-186-frame-appearance-membership-guard|IMP-186]] — planned, no epic dependency found
 - [[AI-IMP-187-rotated-adornment-geometry|IMP-187]] — planned, no epic dependency found
+- [[AI-IMP-188-gallery-clickaway-deselect|IMP-188]] — planned, no epic dependency found
+- [[AI-IMP-189-dock-tooling-design-pass|IMP-189]] — planned, no epic dependency found
+- [[AI-IMP-190-shape-picker-and-gap-review|IMP-190]] — planned, no epic dependency found
+- [[AI-IMP-191-title-strip-fidelity|IMP-191]] — planned, no epic dependency found
+- [[AI-IMP-192-charm-bar-zoom-clamp|IMP-192]] — planned, no epic dependency found
+- [[AI-IMP-193-note-panel-spawn-flash|IMP-193]] — planned, no epic dependency found
+- [[AI-IMP-195-image-crispness|IMP-195]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
+- [[AI-IMP-194-note-paper-shape|IMP-194]] — open but parent epic AI-EPIC-023 is completed
 
 ---
 
@@ -353,5 +361,6 @@ Generated from tracked files; binary assets excluded.
 - [[AI-EPIC-023-paper-note-lifecycle|EPIC-023]] Paper note lifecycle — 2026-07-07
   - [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — completed
   - [[AI-IMP-135-lifecycle-transitions-and-beats|IMP-135]] Lifecycle transitions and beats — completed
+  - [[AI-IMP-194-note-paper-shape|IMP-194]] Note paper shape — planned
 
 </details>
