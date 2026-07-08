@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createReadStream, createWriteStream, mkdirSync, rmSync, statSync } from 'node:fs'
-import { readdir, stat } from 'node:fs/promises'
+import { cp, readdir, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { ZipFile } from 'yazl'
 import { Db } from '../db'
@@ -47,6 +47,21 @@ export interface ExportResult {
 export interface ExportOptions {
   activeOnly: boolean
   onProgress?: (p: ExportProgress) => void
+}
+
+/**
+ * Test-only seams. Kept off {@link ExportOptions} so the public,
+ * service-forwarded options never carry them: the service seam calls
+ * {@link exportProject} with three arguments, so in production `hooks`
+ * stays `{}`.
+ */
+export interface ExportHooks {
+  /** Awaited after the inventory is hashed and sealed, immediately
+   * before the archive streams its entries. AI-IMP-179 uses it to
+   * rewrite the LIVE notes tree at exactly the between-hash-and-stream
+   * moment and prove the stream reads the frozen `.tmp-export` copy,
+   * never the mutated live file. */
+  beforeStream?: () => void | Promise<void>
 }
 
 interface ProjectRow {
@@ -113,6 +128,7 @@ export async function exportProject(
   handle: { db: Db; dir: string },
   destPath: string,
   options: ExportOptions,
+  hooks: ExportHooks = {},
 ): Promise<ExportResult> {
   const { db, dir } = handle
 
@@ -128,6 +144,20 @@ export async function exportProject(
   try {
     db.prepare('VACUUM INTO ?').run(tempDb)
     if (options.activeOnly) filterActiveOnly(tempDb)
+
+    // Freeze the notes tree the same way the database is frozen: copy it
+    // into the export's private staging dir and hash+stream that COPY.
+    // A concurrent snapshot `writeNotesTree` rewrites the LIVE tree only,
+    // so it can never make the archived bytes disagree with the manifest
+    // hash (AI-IMP-179 — the export-vs-snapshot race). VACUUM INTO already
+    // gives project.sqlite this immunity; the copy extends it to notes.
+    const frozenNotesDir = join(tempDir, NOTES_DIR)
+    try {
+      await cp(join(dir, NOTES_DIR), frozenNotesDir, { recursive: true })
+    } catch {
+      // No notes tree to freeze — the planning loop below tolerates its
+      // absence and the database stays authoritative.
+    }
 
     const snapshot = Db.open(tempDb, { readOnly: true })
     const project = snapshot.get<ProjectRow>(
@@ -150,11 +180,13 @@ export async function exportProject(
 
     let noteCount = 0
     try {
-      const noteFiles = (await readdir(join(dir, NOTES_DIR)))
+      // Read the FROZEN copy, never the live tree — both the hash pass
+      // and the stream below resolve through these paths.
+      const noteFiles = (await readdir(frozenNotesDir))
         .filter((f) => f.endsWith('.md'))
         .sort()
       for (const file of noteFiles) {
-        const filePath = join(dir, NOTES_DIR, file)
+        const filePath = join(frozenNotesDir, file)
         planned.push({
           zipPath: `${NOTES_DIR}/${file}`,
           filePath,
@@ -195,6 +227,12 @@ export async function exportProject(
       counts: { notes: noteCount, assets: hashes.length },
       inventory,
     }
+
+    // Test-only: the inventory is now hashed and sealed. A snapshot that
+    // rewrites the live notes tree here (before a single entry streams)
+    // must not change the archive — the entries below read the frozen
+    // copy (AI-IMP-179).
+    await hooks.beforeStream?.()
 
     // ---- stream the archive ------------------------------------------
     const bytesTotal = planned.reduce((sum, p) => sum + p.bytes, 0)

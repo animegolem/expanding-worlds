@@ -98,16 +98,16 @@ LOC: ~40–70.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] `notes/` is copied into the export's private `.tmp-export` dir
+- [x] `notes/` is copied into the export's private `.tmp-export` dir
       after `VACUUM INTO`; both the manifest hash and yazl's stream
       read that copy, never the live tree.
-- [ ] The copy is cleaned up in the same `finally` as `.tmp-export`.
-- [ ] Integration/unit test: a `writeNotesTree` (or equivalent .md
+- [x] The copy is cleaned up in the same `finally` as `.tmp-export`.
+- [x] Integration/unit test: a `writeNotesTree` (or equivalent .md
       rewrite) executed between the hash and the stream no longer
       changes the produced archive; manifest and bytes agree.
-- [ ] The produced `.ewproj` re-imports without HASH_MISMATCH after
+- [x] The produced `.ewproj` re-imports without HASH_MISMATCH after
       such a concurrent write.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 
 ### Acceptance Criteria
@@ -128,3 +128,32 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The deterministic injection point is a test-only seam: `exportProject`
+  gained an optional 4th parameter `hooks: ExportHooks = {}` with a
+  single `beforeStream?` callback, awaited after the inventory is
+  hashed/sealed and before any archive entry streams. It is
+  deliberately NOT on `ExportOptions`, so the service seam (which
+  calls with three arguments) can never carry it into production —
+  in the app `hooks` is always `{}`. The alternative (restructuring so
+  no seam is needed) would have meant asserting only indirectly; the
+  seam pins the exact between-hash-and-stream moment the audit named.
+- The test drives `writeNotesTree` for the initial tree (mirroring the
+  service seam's pre-export refresh) but injects the mid-export
+  mutation as a direct `writeFileSync` of the note's `.md`. This is
+  equivalent for the property under test (live-tree bytes change
+  between hash and stream) and stronger in one way: `writeNotesTree`
+  only rewrites on metadata drift, so a second no-op call would not
+  reliably mutate the file; the direct write mutates unconditionally.
+- Verified the test actually catches the bug: with the fix temporarily
+  reverted (hash+stream pointed back at the live tree), the new test
+  fails at the frozen-bytes assertion; with the fix, the full suite is
+  green. (Revert was scratch-only, never committed.)
+- One pre-existing stderr line during desktop e2e
+  (`fatal: ambiguous argument 'main'` inside snapshot-push.spec) —
+  emitted by that test's own broken-remote scenario; the test passes
+  and it is unrelated to this ticket.
+- The `cp` of `notes/` is wrapped in try/catch mirroring the existing
+  no-notes-directory tolerance: a project that never wrote a tree
+  still exports, with the database authoritative (existing behavior
+  preserved).
