@@ -11,17 +11,16 @@ all moved into the RFC.
 
 ## Blocking planned work
 
-- **macOS move/resize chord** (Signature Pin pass, rev 0.64): the
-  frameless shell needs a held chord that moves/resizes the window
-  from anywhere; the exact macOS binding is an open feel call.
-  Blocks only that half of the frameless-shell ticket (frameless +
-  strip-as-drag-handle ship regardless).
+(macOS move/resize chord RESOLVED 2026-07-07: owner ruled GO on
+both move AND resize — "I do want the resize… we have so many key
+shortcuts anyways, we can handle it." Binding is the lead's
+proposal, adjudicated in the feel pass; tracked as AI-IMP-174.)
 
-- **Frame sort-control location** (design pass, open): title-row
-  chip vs frame charm bar; nesting clutter probably zoom-gated.
-  Blocks the frame-furniture ticket's final form (region + label
-  ship regardless).
-(Input-grammar unification RESOLVED 2026-07-07 by kit 1.2's "One
+(Frame sort-control location RESOLVED 2026-07-07: the owner ruled
+CHARM BAR — "it has to be in the charm bar"; the drawn title-row
+chip retires. AI-IMP-138 revised and unblocked in full. A tabled
+note below carries the follow-on question.
+Input-grammar unification RESOLVED 2026-07-07 by kit 1.2's "One
 voice" ruling — two input variants as grammar, ONE 5px button,
 uniform focus ring; AI-IMP-153 sweeps it in.
 Pointer-down micro-beats RESOLVED 2026-07-07: the audit landed as
@@ -51,6 +50,12 @@ The Two Materials + kit 1.1's beat ledger, ratified at rev 0.56
 
 - Text-drop special cases (code blocks, essay-length paste → note)
   (rev 0.36).
+- **Frame charm-bar crowding** (owner note, 2026-07-07, at the
+  sort-control ruling): putting frame controls in the charm bar
+  "opens us up to think more eventually" — is there a conversation
+  about whether deep-nested/many-frame charm clutter matters, and
+  does anything else migrate into the frame's bar? No work waits
+  on this; revisit when frames see real use.
 - **Undo capture breadth** (from the 2026-07-06 Codex review;
   AI-IMP-114 shipped a deliberate eight-command "gesture-shaped"
   set, narrower than §10.2's all-durable-commands reading): decide

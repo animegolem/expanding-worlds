@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 165 |
-| **Total** | **25** | **171** |
+| **Total** | **25** | **172** |
 
 ## In Progress
 
@@ -56,6 +56,7 @@
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-170-dialect-url-cluster|IMP-170]] — planned, no epic dependency found
 - [[AI-IMP-173-swarm-stability-audit|IMP-173]] — in-progress, no epic dependency found
+- [[AI-IMP-174-macos-move-resize-chord|IMP-174]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
