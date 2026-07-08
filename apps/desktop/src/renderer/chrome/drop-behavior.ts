@@ -48,7 +48,11 @@ interface PendingDrop {
 type Listener = (ask: DropAskState | null) => void
 
 let ask: DropAskState | null = null
-let parked: PendingDrop | null = null
+/** Multi-drops parked behind the anchored modal, oldest first. The
+ *  head is the batch the visible ask decides; the rest wait their turn.
+ *  A queue (not a single slot) so overlapping multi-drops never clobber
+ *  one another — copies `mirror.ts`'s `pendingAsk` array (AI-IMP-178). */
+let pendingAsk: PendingDrop[] = []
 const listeners = new Set<Listener>()
 let attached = false
 
@@ -59,13 +63,31 @@ function emit(): void {
 function attach(): void {
   if (attached || typeof window === 'undefined') return
   attached = true
-  // §8.2 engagement fade: idling with an unanswered ask keeps the drop
-  // separate (imports as-is) — the same ignore-is-dismissal the mirror
-  // ask uses. Nothing is persisted, so the next multi-drop asks again.
+  // §8.2 engagement fade: idling with unanswered asks keeps every parked
+  // drop separate (imports as-is) — the same ignore-is-dismissal the
+  // mirror ask uses. Nothing is persisted, so the next multi-drop asks
+  // again. Each batch's closure still runs, so no import is discarded.
   onEngagementChanged((engaged) => {
     if (engaged || ask === null) return
-    resolve('separate', false)
+    const queued = pendingAsk
+    pendingAsk = []
+    ask = null
+    emit()
+    for (const req of queued) req.run('separate')
   })
+}
+
+/** Reflect the head parked drop into the visible ask (or clear it when
+ *  the queue is empty), then wake the fade clock so a fresh modal
+ *  demands attention. */
+function present(): void {
+  const head = pendingAsk[0]
+  ask =
+    head === undefined
+      ? null
+      : { x: head.anchor.x, y: head.anchor.y, count: head.count, source: head.source }
+  emit()
+  if (head !== undefined) wake()
 }
 
 async function readBehavior(): Promise<DropBehavior> {
@@ -81,22 +103,25 @@ async function readBehavior(): Promise<DropBehavior> {
   return 'ask'
 }
 
-/** Fire the parked run once, clearing the ask; optionally persist. */
-function resolve(choice: DropChoice, remember: boolean): void {
-  const pending = parked
-  parked = null
-  ask = null
-  emit()
+/** Fire the HEAD parked run once and dequeue it, then present the next
+ *  parked ask (if any); optionally persist the choice. The answer binds
+ *  to exactly one batch, so no other batch's closure is discarded. */
+function resolveHead(choice: DropChoice, remember: boolean): void {
+  const head = pendingAsk.shift()
+  if (head === undefined) return
   if (remember && choice !== 'separate') {
     void window.ew.settings.setProject(DROP_BEHAVIOR_KEY, choice)
   }
-  pending?.run(choice)
+  present()
+  head.run(choice)
 }
 
 /**
  * Entry point for import surfaces: a multi-image drop/paste. Reads the
  * project's stored behavior; a concrete value runs immediately, `ask`
- * (or unset) parks the drop behind the anchored modal.
+ * (or unset) parks the drop behind the anchored modal. Overlapping
+ * multi-drops queue — a second drop arriving before the first is
+ * answered waits its turn rather than clobbering it (AI-IMP-178).
  */
 export async function requestDropBehavior(req: PendingDrop): Promise<void> {
   attach()
@@ -105,23 +130,25 @@ export async function requestDropBehavior(req: PendingDrop): Promise<void> {
     req.run(behavior)
     return
   }
-  parked = req
-  ask = { x: req.anchor.x, y: req.anchor.y, count: req.count, source: req.source }
-  emit()
-  wake()
+  pendingAsk.push(req)
+  // Present only when no ask is already showing — otherwise this request
+  // waits behind the head (mirror.ts's `if (ask === null)` present-guard).
+  if (ask === null) present()
 }
 
-/** The modal's four buttons. `remember` persists the choice (ignored
- *  for `separate`, which has no stored value). */
+/** The modal's four buttons apply to the HEAD parked drop. `remember`
+ *  persists the choice for FUTURE drops (ignored for `separate`, which
+ *  has no stored value); any already-queued asks still present in turn. */
 export function answerDropBehavior(choice: DropChoice, remember: boolean): void {
-  if (parked === null) return
-  resolve(choice, remember)
+  if (ask === null) return
+  resolveHead(choice, remember)
 }
 
-/** Explicit dismissal (backdrop / Escape) — keep the drop separate. */
+/** Explicit dismissal (backdrop / Escape) — keep the head drop separate,
+ *  then present the next parked ask. */
 export function dismissDropAsk(): void {
-  if (parked === null) return
-  resolve('separate', false)
+  if (ask === null) return
+  resolveHead('separate', false)
 }
 
 /** Subscribe to ask state; fires immediately, returns unsubscribe. */
@@ -135,6 +162,6 @@ export function onDropAskChanged(listener: Listener): () => void {
 /** Test-only reset. */
 export function __resetDropBehaviorForTests(): void {
   ask = null
-  parked = null
+  pendingAsk = []
   listeners.clear()
 }

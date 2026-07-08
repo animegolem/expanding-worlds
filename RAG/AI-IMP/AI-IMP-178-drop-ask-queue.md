@@ -84,16 +84,16 @@ LOC: ~30–50.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] `parked` replaced with a `pendingAsk[]` queue mirroring
+- [x] `parked` replaced with a `pendingAsk[]` queue mirroring
       `mirror.ts` (push + `if (ask===null)` present-guard).
-- [ ] Answering an ask applies to the head request's stored closure,
+- [x] Answering an ask applies to the head request's stored closure,
       then dequeues and presents the next parked ask.
-- [ ] No batch's `run` closure is discarded when a second multi-drop
+- [x] No batch's `run` closure is discarded when a second multi-drop
       arrives mid-ask.
-- [ ] E2e: two overlapping multi-drops (batch 1, then batch 2 before
+- [x] E2e: two overlapping multi-drops (batch 1, then batch 2 before
       answering batch 1); answer both asks; assert ALL files from both
       batches import.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 - [ ] Append an `RAG/HUMAN-TESTING.md` entry: drop one multi-file set,
       then drop a second before answering; answer both; confirm every
@@ -118,3 +118,35 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Semantics the ticket left implicit, resolved from its own Done-means
+  line ("each answered ask applies to exactly one batch and the next
+  parked ask then presents"): `remember` persists the head's choice for
+  FUTURE drops only — batches already queued behind the ask were
+  dropped under `ask` and still present in turn, one ask per batch.
+  This diverges deliberately from `mirror.ts` (whose one answer covers
+  ALL parked drops) because the drop ask is per-batch by design: the
+  modal names the batch's count, and choices like group-and-sort are
+  per-batch compositions. Pinned in a unit test.
+- The engagement-fade path also had the loss bug in miniature: fading
+  with queued asks must resolve EVERY parked batch to `separate`, not
+  just the head — otherwise the tail batches' closures would never run.
+  Handled by draining the whole queue on disengage (each closure still
+  fires, so no import is lost even when ignored).
+- E2e flake, twice, before stabilizing: (1) the §8.2 4s idle fade
+  raced slow cold runs and resolved batch 2's waiting ask to
+  `separate` before the second click (Playwright clicks fire no
+  pointermove) — fixed with the house `ew-test-set-engagement`
+  hold:true pin; (2) counting placements immediately after the second
+  answer raced the async frame composition — fixed by gating on
+  `getFrameTree` root count per batch before asserting placement
+  totals. Final spec passes 3/3 under --repeat-each.
+- New unit suite `drop-behavior.test.ts` (7 tests) stubs `window.ew`
+  under node vitest; fresh-worktree friction: `pnpm install` +
+  `pnpm -r build` required before vitest resolves `@ew/protocol`
+  (workspace deps resolve through dist, as CLAUDE.md warns).
+- Gates run 2026-07-08: `pnpm -r build` green; unit tests green
+  (packages 4 projects + desktop 312); playwright hidden e2e green
+  201/201 (run as two sequential --shard halves to fit the harness's
+  10-minute foreground cap — full coverage, one worker, same config);
+  `pnpm lint` green.
