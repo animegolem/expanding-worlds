@@ -3,34 +3,10 @@
 Things only the owner's hands can validate — feel, legibility,
 taste. Claude appends an entry when work lands that needs a human
 pass (with the shipping ticket and what to try); the owner flushes
-intermittently: delete lines that pass, and anything that fails
-becomes a finding for the next batch. This file is a queue, not a
-record — history lives in the tickets.
-
-## Owner actions (setup only you can do)
-
-- [ ] **Codex watcher not writing** (2026-07-07, you're on it): PRs
-  #5–#7 sat unreviewed and the drop-box hash never moved — suspect
-  the automation watches a COPIED folder, not the real repo. Real
-  paths: `.codex/triage-report.md` + `inbox/`; contract in
-  `.codex/PROTOCOL.md`.
-
-- [ ] **LOW PRIORITY — Codex GitHub auto-review stopped firing**
-  (2026-07-06): PR #4 got no auto-review and `!codex review` didn't
-  respond either (PR #1/#3 worked). Local Codex via the plugin
-  covers epic reviews meanwhile — look at the integration whenever,
-  no hurry.
-
-- [ ] **CI → Codex auto-diagnose secret** (2026-07-06): the
-  workflow needs an OpenAI **API key** in the repo (your ChatGPT
-  subscription does not cover Actions usage — this bills the API):
-  1. platform.openai.com → API keys → create one scoped for this.
-  2. `gh secret set OPENAI_API_KEY` in the repo (paste when
-     prompted), or GitHub → Settings → Secrets and variables →
-     Actions → new repository secret `OPENAI_API_KEY`.
-  3. Tell Claude it's set — the workflow file gets written then
-     (`workflow_run` on CI failure → codex-action diagnoses →
-     response lands back on the failing commit; no PR needed).
+intermittently: mark entries [x]/[FAIL] with notes, and Claude
+absorbs them — findings become tickets, and flushed entries move to
+the **Reviewed** section at the bottom. History lives in the
+tickets.
 
 ## Awaiting validation
 
@@ -43,13 +19,6 @@ record — history lives in the tickets.
   line) — does no-logo read as intended? Trash…: archive tone —
   neutral rows, Restore in accent, only "Empty trash…" wearing
   danger, the new empty-state line.
-
-- [ ] **One voice** (AI-IMP-153, 2026-07-07): every chrome button is
-  now ONE 5px geometry and every field rings 2px accent on focus
-  (browser default retired). Tab through settings, restore dialog,
-  gallery bars: does the uniform ring read as calm confidence or
-  too loud over art? The pill/standard input split is grammar now —
-  spot-check it never feels arbitrary.
 
 - [ ] **The object icons** (AI-IMP-132, 2026-07-07): give six nodes
   the six icon appearances (switcher popover now previews the real
@@ -69,15 +38,6 @@ record — history lives in the tickets.
   backdrop paints are now one Mod+Z each (the grammar demanded
   it) — undo a backdrop color and gut-check it.
 
-- [ ] **The designed void** (AI-IMP-130, 2026-07-07): the void
-  around the lit stage moved from the dark engineering placeholder
-  to the design value — notably SUBTLER (~22% toward black, oklab).
-  Look at a content board in dark AND light themes plus a flat
-  canvas color: does the lit/unlit boundary still read, or is it
-  too quiet now? On GLASS the void is gone entirely (the desktop is
-  the stage) — flip to glass and confirm that feels right, not
-  broken. Constant stays tunable if the subtle mix loses the plot.
-
 - [ ] **Metadata card v2** (AI-IMP-139, 2026-07-07): open a note on
   a multi-board node — the card now reads as SYSTEM (mono seam,
   "kept fresh by the app — edits here don't stick"). Gut checks:
@@ -88,20 +48,6 @@ record — history lives in the tickets.
   the fold can group a deep row under the wrong parent (read model
   has depth, not parentage) — if you hit it in practice, say so
   and the read-model field gets a ticket.
-
-- [ ] **The drop moment** (AI-IMP-129, 2026-07-07): THE Pinterest
-  test — drag 5+ images from Finder at once. The ask should read
-  instantly ("N images dropped — how should they land?" · Keep
-  separate · Sort · Group · Group & sort · remember tick). Pick
-  Group & sort: one frame, tiled inside, ONE Mod+Z back to
-  pre-drop. Tick remember and drop again — no modal. Feel calls:
-  (1) modal wording right? (2) is the unanswered-ask fade to
-  keep-separate (~4s) surprising or forgiving? (3) drop 3 images
-  INTO a frame — they should self-arrange (sort-on-drop, Dock
-  toggle turns it off); single drags never reshuffle — right line?
-  (4) UNTESTED BY MACHINE: "Add from library" on a selected frame
-  (gallery takeover → pick → lands captured+arranged) — this path
-  has no automated e2e, so give it a real pass.
 
 - [ ] **Snapshot remote push** (AI-IMP-122, 2026-07-07): Settings →
   snapshots → "Commit + push" reveals the remote URL field + Test
@@ -120,31 +66,6 @@ record — history lives in the tickets.
   create the copy, Open Restored Project — the app relaunches into
   the copy; your original must be exactly as you left it. Also
   eyeball the ☰ row placement (after Trash…, before End Session).
-
-- [ ] **Frames** (AI-IMP-127, 2026-07-07): the Dock has a frame tool —
-  draw a region (Shift = square), drop images inside, drag the frame:
-  everything travels together, one Mod+Z per gesture. Feel calls:
-  (1) while dragging an item over a frame, the frame focuses and the
-  rest of the board dims — right affordance, right strength? (2) the
-  region chrome is placeholder (letter item 14) — is it furniture
-  under your art or does it shout? (3) shrink a frame smaller than a
-  member: the member stays put and stays IN (geometry never edits
-  membership) — does that read as correct or as a bug? KNOWN EDGE:
-  with a frame selected, its charm bar can overlay nearby members and
-  eat a drag that starts on one — Escape first. Flag how much that
-  bites; the fix is a charm-surface ticket.
-
-- [ ] **Arrange + normalize** (AI-IMP-128, 2026-07-06): select a
-  messy handful of mixed-size images — the Dock's selection segment
-  now carries arrange (default reading order · name · import order ·
-  area) and normalize (height · width · size · area). Two feel
-  calls: (1) normalize matches everything to the selection MEDIAN —
-  on a real pinboard does that read as "tidied" or does it pick the
-  wrong reference? (2) arrange packs into a roughly-square block
-  anchored where the selection already sits — right, or should it
-  feel more like PureRef's? One Mod+Z must return the whole
-  invocation. Eight small Dock buttons is a stopgap until the
-  EPIC-016 menus — flag if they're too cryptic to find.
 
 - [ ] **Session snapshots** (AI-IMP-120, 2026-07-06): Settings →
   turn snapshots to "git commit" on a real project, work a while,
@@ -177,6 +98,8 @@ record — history lives in the tickets.
   (`PANEL_TETHER_MAX_SCALE` flips it if you want true both-ways
   scaling); (2) is the fade floor at the right zoom — text still
   legible just before it fades (`PANEL_LEGIBILITY_FLOOR` 0.4)?
+  NOTE: your 2026-07-08 too-small finding is AI-IMP-200 — retest
+  after it lands.
 
 - [ ] **Content-defined stage** (AI-IMP-118, 2026-07-06): on a board
   with no background image — an empty board should read as all-void
@@ -220,94 +143,68 @@ record — history lives in the tickets.
   alternative (subdivision briefly brightens past its cap instead)
   is a 3-line swap — say which you prefer.
 
-- [ ] **Zoom feel dial-in** (AI-IMP-098, 2026-07-06): pinch/Cmd+wheel
-  now glides to its target (τ=70ms default). Side-by-side with
-  PureRef in a dev session: `window.__ewDebug.zoomTuning({tau: 60})`
-  etc. live-tunes {tau, wheelSpeed, pinchSpeed}; call with no args
-  to read current. Report the numbers that feel right and they
-  freeze as constants.
-
-- [ ] **Label clearance** (AI-IMP-087, 2026-07-06): select a labeled
-  item and zoom in/out — the title should never touch the selection
-  ring. Note: at high zoom the label sits a constant ~6.5px under
-  the item; if you'd rather it keep a "world feel" gap up close,
-  say so — it's a one-line max(worldGap, clearance) change.
-- [ ] **One-undo compounds** (AI-IMP-086, 2026-07-06): place a note
-  on the board as a card, then undo once — card AND dot restore
-  together. Attach-new-note paths behave identically to before.
-
-- [ ] **Rotate cursor glyph** (AI-IMP-031, 2026-07-06): hover just
-  outside any corner of a selected item — a circular-arrow cursor
-  should appear and read as "rotate" over both dark and light art.
-- [ ] **Rotate band width** (AI-IMP-031, 2026-07-06): the rotate
-  zone is now ~18px of usable ring outside each corner — findable
-  by feel without hunting?
-- [ ] **Resize snapping** (AI-IMP-082, 2026-07-06): drag an edge or
-  corner toward a neighbor — the dragged edge should snap with a
-  guide line; Shift and Alt should bypass; engage/release
-  thresholds feel right at different zooms?
-- [ ] **Panel default size** (AI-IMP-083, 2026-07-06): open a few
-  notes tethered — is 320×300 the right "glance and a quick line"
-  size?
-- [ ] **Pinned panel resize** (AI-IMP-083, 2026-07-06): pin a note,
-  drag the corner grip — does the floating sticky note feel like a
-  proper window? Min clamp is 240×150.
-- [ ] **Big editor** (AI-IMP-083, 2026-07-06): expand a panel —
-  centered editor over dimmed board; Done, click-off, and Escape
-  all return. Right size (760px/70vh)? Note: the panel shadow in
-  LIGHT theme got token-level validation only — worth a ten-second
-  glance.
 - [ ] **Card appearance** (AI-IMP-084, 2026-07-06): pin a note
   panel, click Place on board — a flat card (title + excerpt, no
   shadow) lands near the panel. Does the chrome read at board
   zoom levels? (Renderer text is "legible, not final" per ticket.)
+
 - [ ] **Card mutual highlight** (AI-IMP-084, 2026-07-06): select a
   placed card while its note's panel is open — the panel should
   flash; nothing should glow when neither is active.
+
 - [ ] **Escalation sequence feel** (rev 0.31, whole arc): tethered
   card → pin → resize → big editor → place on board — does the
   one-step-at-a-time ladder feel deliberate rather than bureaucratic?
+
 - [ ] **Seed set curation** (AI-IMP-094, 2026-07-06): the example
   library ships GENERATED placeholder gradients under fictional
   artists — swap for a curated public-domain set when you and
   Raphaël pick one (drop replacements into
   apps/desktop/resources/seed/, update LICENSE.md).
+
 - [ ] **Does the example teach?** (AI-IMP-094, 2026-07-06): create
   a fresh library — does the artists-root → artist-boards → tagged
   works arrangement read as "this is what the surface is for"?
   Clear-the-example from the gallery header when done.
+
 - [ ] **Inbox mirror feel** (AI-IMP-092, 2026-07-06): designate a
   library, drop an image on a world — the first-drop ask should
   read right; with mirror on, the drop must feel instant (mirror is
   background); drop a duplicate — the tag-offer chip should fade on
   ignore with no debt.
+
 - [ ] **Source panel** (AI-IMP-091, 2026-07-06): open a project as
   source from the new live ⧉ charm, browse the mini grid, set the
   tag border, drag a cell onto the board — does the pull feel like
   one motion?
+
 - [ ] **The trash browser** (AI-IMP-102, 2026-07-06): trash a note,
   a node, and a board; ☰ → Trash… — all three should list with
   impact context; restore the node and click the toast's "Fly to
   it"; then Empty Trash and confirm the §9 summary reads right.
   First surface where deletes stop being one-way — gut-check the
   whole loop.
+
 - [ ] **The ☰ menu** (AI-IMP-110, 2026-07-06): open it — the full
   ratified geography should read as one stable place (Undo · Redo
   greyed with their printed shortcuts, Trash…, End Session,
   Settings live, Help/About shows the real version). Does the
   disabled-but-visible undo row read as a promise or as broken?
+
 - [ ] **Small states** (AI-IMP-106, 2026-07-06): type a wiki link
   to a note, trash the note, purge it — the link should go red
   with a wavy underline (grey means recoverable trash); clicking
   it should offer create/relink. Gut call wanted: does red/wavy
   read "dead" or "spelling error"? Flag for the design pass if
   the latter.
+
 - [ ] **Image drop on an open note** (AI-IMP-097, 2026-07-06): drag
   an image from Finder onto a note panel and onto the big editor —
   it should land on the board beside the note (view center if the
   note isn't placed on this board) with the "images live on the
   board" toast; text drops/paste into the editor must behave
   exactly as before.
+
 - [ ] **Undo/redo feel** (AI-IMP-114, 2026-07-06): move, flip, draw,
   delete, place-on-board, and materialize things, then Mod+Z / Shift+
   Mod+Z your way back and forth. Does one keypress map to one gesture
@@ -319,15 +216,19 @@ record — history lives in the tickets.
   «Board» — open that board to undo it" and does nothing — does that
   read as safe or as broken? (2) the stale-undo toast "That change can
   no longer be undone" — right words?
+
 - [ ] **Light-theme legibility over art** (EPIC-013, carried):
   chrome and scrim chips readable over bright and busy boards in
   the light theme.
+
 - [ ] **Gallery "earlier this year" buckets** (AI-IMP-078, carried):
   older items bucket as named months trailing 12, then year
   buckets — does the rhythm read right with a real library?
+
 - [ ] **Gallery cell sizing and feel** (AI-IMP-077, carried): grid
   density, thumbnail crop behavior, and scroll feel with real art
   at volume.
+
 - [ ] **TipTap note editor** (AI-IMP-146/147, 2026-07-07): the note
   editor engine changed under the hood. Type a while — does the feel
   match or beat the old editor (cursor, selection, IME, scroll)?
@@ -338,6 +239,7 @@ record — history lives in the tickets.
   `*`→`-`, `__bold__`→`**bold**`) — the text must read identically;
   anything that LOOKS different is a bug. Mod+Z inside the editor
   must stay text-only, never the board.
+
 - [ ] **Chrome cosmetic sweep** (AI-IMP-141, 2026-07-07): select
   things in BOTH themes — the selection outline/marquee now follows
   the accent token (light theme finally gets its own blue; dark
@@ -347,6 +249,7 @@ record — history lives in the tickets.
   little drawn shapes (document / framed box) — legible at a glance
   on busy art? Path bar crumbs separate with ▸ now. Gut check the
   whole pass against the kit HTML.
+
 - [ ] **Maple Mono in the editor** (AI-IMP-131, 2026-07-07): open
   some notes and WRITE — body text, *italics* (Maple's true
   cursive is the reason it won), **bold**, and h1/h2/h3 headings
@@ -356,18 +259,6 @@ record — history lives in the tickets.
   the same face), and a gallery text post. Chrome must look
   UNCHANGED everywhere — menus, dock, settings all stay system
   fonts; if any chrome went mono, that's a bug.
-- [ ] **The desk comes alive** (AI-IMP-151, 2026-07-07): the §8.2
-  physics ledger is playing. Drag things — grab should LIFT (+1%,
-  shadow), release should SETTLE with one soft landing, never a
-  bounce. Snap onto a guide: the last pixel should SEAT magnetically
-  instead of teleporting. Lock something and grab it: a ~2px STRAIN
-  under the refusal cursor — does it read as "held down," not
-  "broken"? Delete: the item LIFTS AWAY (up + fade) — nothing ever
-  crumples. Drag over a frame: members MAKE ROOM. Two gut calls:
-  (1) alive or busy? (2) five constants are provisional (press/
-  strain timing, away rise, make-room distance) — flag anything
-  that feels off; resize/rotate/marquee/draw/pan must stay
-  beat-free.
 
 ## AI-IMP-145 — the first-run walkthrough (2026-07-07)
 
@@ -498,14 +389,15 @@ The full walk, on a placed image's note:
 - **AI-IMP-165 frameless**: no OS frame anywhere; traffic lights
   in-board; drag the window by the top strip. The smoky gradient is
   subtle on an empty board — judge it over real art. Fullscreen and
-  maximize must feel normal.
+  maximize must feel normal. (Your 2026-07-08 finding — gradient
+  not rendering, pill box, spacing — is AI-IMP-191; retest after.)
 - **AI-IMP-167 cascade**: open any menu — rows fade in top-to-bottom
   inside ~190ms. Too slow? Too showy? It's the one grammar
   everywhere.
 - **AI-IMP-168 gallery**: the size slider (does the range feel
   right?); Space on a work = Quick Look, arrows walk neighbors, Esc
   back. The caption shows title + dimensions (no filename — model
-  debt, flagged).
+  debt, flagged). (Click-away deselect is AI-IMP-188.)
 - **AI-IMP-150**: nothing to feel — the dialect is frozen under
   guard. Typing/saving must feel identical.
 - **z-ladder port** (rode the batch): panels now sit above the charm
@@ -535,13 +427,6 @@ The full walk, on a placed image's note:
   width. Zoom out: rings degrade to a stroke, then the whole page
   fades. Feel questions: does the book read instantly as a book?
   Ring weight right? Does the calendar bind feel natural on wide art?
-- **AI-IMP-152 hand rules (verification, light)**: the six drag/key
-  rules were audited as already-shipped — worth one conscious pass:
-  Option BEFORE dragging = drops a copy; Option DURING a drag =
-  ignores snapping (never copies); Shift constrains axis; rotation
-  sticks to compass points, Shift steps 15°; locked items refuse
-  with the cursor only; Esc peels one thing at a time (gesture, then
-  lens, then selection).
 - **AI-IMP-138 frame furniture**: title a frame (its note title) —
   the name should sit ON the top edge in mono, exactly where item
   labels never go, and vanish as you zoom out while the frame's
@@ -576,6 +461,9 @@ Capture a few items inside a frame. Then:
   regain its own contents.
 Feel question: does the grouping snap back invisibly, or is there
 any flicker where things look ungrouped for a moment?
+
+## Fix waves (2026-07-08)
+
 - **Fix wave A (176/178/179/180) — mostly invisible, worth abuse**:
   double-click crumbs and spam trackpad-back — the camera should
   always land right and ⌂ should never die. Drop two image batches
@@ -609,3 +497,52 @@ any flicker where things look ungrouped for a moment?
   trusting it; any verb that FEELS wrong under undo gets trimmed
   (one line each, say the word). Trashing still recovers via Trash
   only, by design.
+
+---
+
+## Reviewed (owner pass, 2026-07-08 — on v0.15.0)
+
+**Setup items — resolved by choice:** the Codex watcher /
+auto-review / CI-diagnose secret trio is moot: **reviews are
+triggered manually** now, deliberately.
+
+**Passes:**
+- AI-IMP-153 one voice — PASS. Minor cleanup noted; parked for a
+  design-team flagging pass "when it's time-appropriate to
+  actually proceed."
+- AI-IMP-130 designed void — PASS.
+- AI-IMP-098 zoom feel — PASS as shipped (defaults freeze).
+- AI-IMP-087 label clearance — PASS.
+- AI-IMP-031 rotate cursor glyph + band width — PASS.
+- AI-IMP-082 resize snapping — PASS.
+- AI-IMP-083 pinned-panel resize — PASS; big editor opens/returns
+  correctly (see shadow failure below).
+
+**Failures → tickets (the finding lives in the ticket now):**
+- AI-IMP-129 "Add from library": picker opens then self-dismisses;
+  nothing selectable, step 1 impassable → **AI-IMP-196**.
+- AI-IMP-127 frames: no drop-target brightening (screen dims,
+  frame doesn't light); partial-overlap multi-drop captures one
+  item unsorted (cursor intent ignored); frame move/resize never
+  reflows members → **AI-IMP-197**.
+- AI-IMP-128 arrange/normalize: verbs undiscoverable ("I don't see
+  any of these options"); right-click align does different things
+  at different times, align-center collapses spreads into overlap
+  → **AI-IMP-198**.
+- AI-IMP-086 note open: panel opens-and-instantly-closes once, then
+  that node's note is permanently unopenable → **AI-IMP-199**.
+- AI-IMP-083 panel default size: tethered notes render far too
+  small ("almost unperceivable as even open"), notebook effect not
+  selling, undock jumps size 4–6×; big-editor shadows don't read
+  → **AI-IMP-200**.
+- Notes swallow wheel: canvas scroll blocked whenever the cursor is
+  over a note → **AI-IMP-201**.
+- AI-IMP-151 desk physics: only the pin beat visible — none of the
+  movement beats (lift/settle/seat/strain) play → **AI-IMP-202**.
+
+**Same pass, screenshot stream → tickets:** gallery click-away →
+188 · dock/beta controls + text style bars → 189 · shape
+hold-picker + Miro gap review → 190 · title strip
+(pill/spacing/gradient) → 191 · charm-bar zoom clamp → 192 · note
+spawn flash → 193 · note paper shape → 194 · image softness
+(mipmap/DPR diagnosis) → 195.

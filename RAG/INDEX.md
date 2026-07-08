@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 180 |
-| **Total** | **25** | **197** |
+| **Total** | **25** | **200** |
 
 ## In Progress
 
@@ -67,6 +67,9 @@
 - [[AI-IMP-197-frame-drop-feel-and-reflow|IMP-197]] — planned, no epic dependency found
 - [[AI-IMP-198-arrange-normalize-repair|IMP-198]] — planned, no epic dependency found
 - [[AI-IMP-199-note-panel-wedge|IMP-199]] — planned, no epic dependency found
+- [[AI-IMP-200-panel-legibility-floor|IMP-200]] — planned, no epic dependency found
+- [[AI-IMP-201-wheel-over-panel-passthrough|IMP-201]] — planned, no epic dependency found
+- [[AI-IMP-202-desk-physics-absent|IMP-202]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -119,7 +122,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/main/snapshot.ts (636 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
-- RAG/HUMAN-TESTING.md (611 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 
 ### > 300 LOC
@@ -134,6 +136,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/utility/index.ts (571 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
+- RAG/HUMAN-TESTING.md (548 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
