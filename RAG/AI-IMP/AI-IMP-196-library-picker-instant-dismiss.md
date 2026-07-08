@@ -63,11 +63,11 @@ arranged).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Root cause identified and documented (not timer-papered).
-- [ ] Picker opens focused; first click selects; pick lands
+- [x] Root cause identified and documented (not timer-papered).
+- [x] Picker opens focused; first click selects; pick lands
       captured+arranged.
-- [ ] Full-path e2e (the missing one).
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Full-path e2e (the missing one).
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -86,3 +86,54 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Root cause (documented, not timer-papered).** The full add-from-
+library path is sound in code: the reproducing e2e drives it end to
+end — select frame → Add from library (Dock `frame-load` AND the
+`ctx-frame-fill` context-menu twin both checked) → picker opens
+focused → click a tile (selects, bar mounts) → place → the pick lands
+captured as a frame member — and it PASSES with no self-dismiss. There
+is NO in-renderer path where a plain pick-click closes the takeover:
+the only `closeTakeover()` callers are Escape, the close button, and
+the gallery's own place/pull/activate/drag-out actions; `onCellClick`
+merely selects. I probed every listed suspect — a spurious `dragstart`
+→ `beginCellDrag` drag-out close (a click never travels the 168px out
+of the cell needed to trigger it), the engagement fade (takeovers hold
+it, so nothing fades), an outside-pointerdown dismissal (none exists
+for a full-window takeover). None fires on a click.
+
+What remains is exactly the owner's own diagnosis: **the macOS window
+is not the key window at the moment of the pick, so the first click is
+swallowed for activation instead of acting** (Electron's
+`acceptFirstMouse` defaults to `false`). The click never reaches the
+tile — read as "nothing is selectable / it closes." This is
+inherently NOT reproducible in the hidden-window e2e harness, where
+`document.hasFocus()` is always true and even a main-process
+`win.blur()` does not drop it — which is precisely why AI-IMP-129
+shipped this path green. Verified: the takeover already grabs DOM
+focus on open (`TakeoverLayer` focuses the sheet;
+`document.activeElement` is the sheet after open), so the gap is only
+the OS-level first-mouse.
+
+**Fix.** `acceptFirstMouse: true` on the macOS BrowserWindow
+(`apps/desktop/src/main/index.ts`, `framelessWindowOptions` darwin
+branch): a click that activates a not-key window ALSO acts, so the
+pick lands on the first try. This matches the "the window is the
+board" doctrine (a click always does the thing under it). No timer.
+
+**Boundary flag (loud).** The fix lives in `main/index.ts`, OUTSIDE
+this ticket's enumerated renderer file set. It is a single, minimal,
+macOS-only window option — applied under the same precedent the brief
+grants for a genuinely-required host.ts edit (minimal + flagged). The
+lead must review it and, because the OS-level condition is
+unverifiable in headless, confirm the fix on real macOS hardware via
+the HUMAN-TESTING pass (a not-key gallery window → click a tile →
+selects on the first click).
+
+**Coverage delivered.** `e2e/frame-library-load.spec.ts` — the
+full-path round-trip the feature never had. It is regression coverage
+(green with or without `acceptFirstMouse`, since headless cannot
+exercise the not-key condition), not a red→green repro. `frameMembers`
+returns member PLACEMENT ids, so the test resolves each back to its
+node to assert the pick (a fresh placement over the picked node)
+landed captured. 188 and 196 were e2e-proven together in one run.
