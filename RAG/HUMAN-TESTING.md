@@ -555,3 +555,10 @@ The full walk, on a placed image's note:
   chips (domain-named, nothing loads). Feel questions: does the
   image chip read as "there's an image here" or does it look like a
   broken link? Highlight tint sit right in both themes?
+- **AI-IMP-171 tag rename**: open a tag's panel — a pencil sits by
+  the name. Click it, type a new name, Enter: every chip, the
+  completion vocabulary, and the panel should follow. Try renaming
+  onto a name that already exists — it should refuse with a toast
+  and keep your edit alive. Escape once cancels the edit only;
+  again closes the panel. Feel: does the pencil read instantly, and
+  does refuse-and-stay feel better than refuse-and-close?
