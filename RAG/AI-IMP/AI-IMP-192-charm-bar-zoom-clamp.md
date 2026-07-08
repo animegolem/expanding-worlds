@@ -5,11 +5,12 @@ tags:
   - Implementation
   - canvas
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.7
 date_created: 2026-07-08
+date_completed: 2026-07-08
 ---
 
 
@@ -66,7 +67,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] No dismissal during pan at constant zoom; no re-entry loops.
 - [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (does
+- [x] HUMAN-TESTING entry appended at merge by the lead (does
       dismissal feel right vs hiding? — the owner's call to trim).
 
 ### Acceptance Criteria

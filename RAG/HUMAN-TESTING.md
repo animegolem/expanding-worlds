@@ -10,6 +10,14 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Charm bar below the floor** (AI-IMP-192, 2026-07-08, your
+  proposal): select an image, zoom way out until it's a speck — the
+  charm bar should vanish WITH the selection (zooming back in
+  leaves nothing selected; reselect deliberately). Two feels to
+  judge: dismissal vs mere hiding, and does the 8px floor fire at
+  the moment you'd expect? Note: selections BORN tiny (search
+  fly-to onto a small asset) deliberately survive.
+
 - [ ] **Library picker first click — THE 129 FAIL** (AI-IMP-196,
   2026-07-08): the fix is macOS-level and machine-unverifiable, so
   this one needs your hands. Click another app first (window

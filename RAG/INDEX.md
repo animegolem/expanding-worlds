@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 185 |
+| Completed | 19 | 186 |
 | **Total** | **25** | **206** |
 
 ## In Progress
@@ -59,7 +59,6 @@
 - [[AI-IMP-189-dock-tooling-design-pass|IMP-189]] — planned, no epic dependency found
 - [[AI-IMP-190-shape-picker-and-gap-review|IMP-190]] — planned, no epic dependency found
 - [[AI-IMP-191-title-strip-fidelity|IMP-191]] — planned, no epic dependency found
-- [[AI-IMP-192-charm-bar-zoom-clamp|IMP-192]] — planned, no epic dependency found
 - [[AI-IMP-193-note-panel-spawn-flash|IMP-193]] — planned, no epic dependency found
 - [[AI-IMP-195-image-crispness|IMP-195]] — planned, no epic dependency found
 - [[AI-IMP-197-frame-drop-feel-and-reflow|IMP-197]] — planned, no epic dependency found
@@ -96,8 +95,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/host.ts (2085 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2019 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1788 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (1142 LOC)
 - apps/desktop/src/main/index.ts (1112 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (1059 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (975 LOC)
@@ -128,8 +127,8 @@ Generated from tracked files; binary assets excluded.
 ### > 300 LOC
 
 - apps/desktop/src/renderer/note/NotePanels.svelte (598 LOC)
+- RAG/HUMAN-TESTING.md (594 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
-- RAG/HUMAN-TESTING.md (586 LOC)
 - packages/persistence/src/handlers/frames.test.ts (585 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - apps/desktop/e2e/undo.spec.ts (581 LOC)
@@ -152,6 +151,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.ts (514 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
+- apps/desktop/e2e/charms.spec.ts (482 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
@@ -167,7 +167,6 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)
 - packages/persistence/src/queries-search.test.ts (411 LOC)
-- apps/desktop/e2e/charms.spec.ts (400 LOC)
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
