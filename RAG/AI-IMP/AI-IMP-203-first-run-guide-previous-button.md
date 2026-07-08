@@ -59,11 +59,16 @@ card index and dots; ArrowLeft/ArrowRight equivalents.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Previous control renders, styled to match next, correct
-      first-card behavior.
-- [ ] Keyboard left/right page the guide both ways.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
-      e2e.
+- [x] Previous control renders, styled to match next, correct
+      first-card behavior. Choice: visible-but-`disabled` on the
+      first card (the kit's disabled-rows idiom — PathBar's
+      back/forward `disabled` + 0.35 opacity, MenuPopover's §8.2
+      visible-named-disabled rows), not hidden.
+- [x] Keyboard left/right page the guide both ways (card-scoped
+      keydown; the card already holds takeover focus).
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+      e2e (unit 1325 passing across 7 packages; e2e 214/214 in two
+      foreground shards).
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
@@ -82,3 +87,32 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- First-card choice: previous stays RENDERED but `disabled` (0.35
+  opacity, no hover underline) rather than absent — the footer row
+  never reflows between cards, and it matches PathBar's back/forward
+  and the §8.2 disabled-rows convention. A dead click on it is
+  swallowed by the native `disabled` attribute.
+- Keyboard wiring is a keydown handler ON THE CARD (which already
+  takes focus via the existing `$effect`), not a window listener —
+  arrows never exist outside the guide's focus scope, so no
+  interaction with the AI-IMP-183 Escape-routing surfaces. The guide
+  has no Escape handling today and this ticket adds none.
+- `stopPropagation` on the handled arrows so takeover-layer or
+  future window-level arrow bindings never double-handle a paged
+  key. `disabled` on prev also means Enter/Space can't re-trigger
+  it on card 1.
+- Placement: `spacer` pushes the whole action cluster right, so
+  "leading position in the footer row" = first button after the
+  spacer (‹ previous · skip · next ›), mirroring next's `.link.go`
+  type treatment.
+- Dots clickable: trivially reachable in the same seam (each dot
+  span would take an `onclick={() => (pageIndex = index)}` and a
+  button role) but explicitly out of scope — not built.
+- Validation ran as sequential foreground shards after an initial
+  `pnpm -r test` was auto-backgrounded (apps/desktop's `test`
+  script chains the full playwright suite): per-package vitest
+  (58+1+18+538+380+1+329 = 1325 passed), `pnpm lint` clean, e2e
+  split `e2e/[a-i]` = 100/100 and `e2e/[j-z]` = 114/114 (globs
+  verified via `--list` to cover all 59 specs / 214 tests exactly
+  once; 2.8m and 3.5m, hidden windows via playwright.config).
