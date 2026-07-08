@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 180 |
-| **Total** | **25** | **184** |
+| **Total** | **25** | **185** |
 
 ## In Progress
 
@@ -55,6 +55,7 @@
 - [[AI-IMP-174-macos-move-resize-chord|IMP-174]] — planned, no epic dependency found
 - [[AI-IMP-185-gesture-pipeline-hardening|IMP-185]] — planned, no epic dependency found
 - [[AI-IMP-186-frame-appearance-membership-guard|IMP-186]] — planned, no epic dependency found
+- [[AI-IMP-187-rotated-adornment-geometry|IMP-187]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
