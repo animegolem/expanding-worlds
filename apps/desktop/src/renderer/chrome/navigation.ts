@@ -39,6 +39,19 @@ let entries: NavEntry[] = []
 let cursor = -1
 const listeners = new Set<Listener>()
 
+// Navigation serialization (AI-IMP-176, M-01/M-08). Every public flight
+// (navigateTo/back/forward/goToIndex) has awaits — getCanvasScene for the
+// stale-target check, then openCanvas's own scene fetch — over which the
+// module state (entries/cursor) and the post-await camera write would
+// otherwise interleave. Each flight claims a monotonic token; after any
+// await it abandons its remaining work if a newer flight has since claimed
+// one. SUPERSEDE, not queue: the user's latest intent wins (the ticket's
+// house choice), so a second click/press mid-flight drops the first's
+// tail rather than stacking. The host-side forCanvas guards (openCanvas,
+// openEntry, jumpToBookmark) are the belt to this suspenders — even a race
+// the token misses can never write one board's camera onto another.
+let navToken = 0
+
 function notify(): void {
   for (const listener of listeners) listener()
 }
@@ -54,11 +67,20 @@ async function targetAlive(canvasId: string): Promise<boolean> {
 }
 
 async function openEntry(entry: NavEntry): Promise<void> {
-  if (!handle) return
-  await handle.openCanvas(entry.canvasId)
+  const h = handle
+  if (!h) return
+  await h.openCanvas(entry.canvasId)
+  // A superseding flight may have swapped the live canvas while
+  // openCanvas awaited its scene: applying this entry's viewport now
+  // would land it on whatever board is actually on screen and the
+  // debounced persist would durably overwrite that board's saved
+  // camera (M-01). Bail unless we are still the board we opened
+  // (mirrors host.refresh()'s forCanvas guard). The superseding
+  // flight owns the notify for the board it lands on.
+  if (h.canvasId !== entry.canvasId) return
   // openCanvas restored the canvas's persisted camera; the session
   // entry's own viewport wins when we have one.
-  if (entry.viewport) handle.controller.camera.set(entry.viewport)
+  if (entry.viewport) h.controller.camera.set(entry.viewport)
   notify()
 }
 
@@ -66,6 +88,10 @@ async function openEntry(entry: NavEntry): Promise<void> {
  * cross-canvas jump. No-op when already standing there. */
 export async function navigateTo(canvasId: string, label = 'Board'): Promise<void> {
   if (!handle || canvasId === handle.canvasId) return
+  // Claim the flight (supersedes any in-flight back/forward/goToIndex).
+  // The push/cursor mutation is synchronous, so it is atomic; the
+  // post-await camera write is guarded inside openEntry.
+  ++navToken
   captureViewport()
   entries = entries.slice(0, cursor + 1)
   entries.push({ canvasId, label, viewport: null })
@@ -77,31 +103,43 @@ export async function navigateTo(canvasId: string, label = 'Board'): Promise<voi
  * removed as they are found (§8.1 skip-and-collapse). */
 export async function back(): Promise<void> {
   if (!handle) return
+  const myToken = ++navToken
   while (cursor > 0) {
-    const candidate = entries[cursor - 1]!
-    if (await targetAlive(candidate.canvasId)) {
+    // Pin the candidate's index at check time: the splice below (or a
+    // superseding flight) must not act on a cursor re-read after the
+    // await, or a held Mod+[ could collapse an entry it never
+    // validated — Home at index 0 (M-08).
+    const candidateIndex = cursor - 1
+    const candidate = entries[candidateIndex]!
+    const alive = await targetAlive(candidate.canvasId)
+    if (myToken !== navToken) return // superseded — abandon our splice/open
+    if (alive) {
       captureViewport()
-      cursor -= 1
+      cursor = candidateIndex
       await openEntry(candidate)
       return
     }
-    entries.splice(cursor - 1, 1)
-    cursor -= 1
+    entries.splice(candidateIndex, 1)
+    cursor = candidateIndex
     notify()
   }
 }
 
 export async function forward(): Promise<void> {
   if (!handle) return
+  const myToken = ++navToken
   while (cursor < entries.length - 1) {
-    const candidate = entries[cursor + 1]!
-    if (await targetAlive(candidate.canvasId)) {
+    const candidateIndex = cursor + 1
+    const candidate = entries[candidateIndex]!
+    const alive = await targetAlive(candidate.canvasId)
+    if (myToken !== navToken) return // superseded — abandon our splice/open
+    if (alive) {
       captureViewport()
-      cursor += 1
+      cursor = candidateIndex
       await openEntry(candidate)
       return
     }
-    entries.splice(cursor + 1, 1)
+    entries.splice(candidateIndex, 1)
     notify()
   }
 }
@@ -111,8 +149,11 @@ export async function forward(): Promise<void> {
 export async function goToIndex(index: number): Promise<void> {
   if (!handle || index < 0 || index > cursor) return
   if (index === cursor) return
+  const myToken = ++navToken
   const target = entries[index]!
-  if (!(await targetAlive(target.canvasId))) {
+  const alive = await targetAlive(target.canvasId)
+  if (myToken !== navToken) return // superseded — abandon our splice/open
+  if (!alive) {
     entries.splice(index, 1)
     if (index <= cursor) cursor -= 1
     notify()
@@ -158,6 +199,11 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
 
   const onKeydown = (event: KeyboardEvent): void => {
     if (takeoverActive()) return
+    // OS key-repeat on a held Mod+[ / Mod+] must not spam back/forward:
+    // one navigation per physical press (M-08). Scoped to the nav keys
+    // here rather than the shared registry — undo-key repeat is a
+    // separate later wave and other bindings may want repeat.
+    if (event.repeat) return
     if (matches(event, KEY.navBack)) {
       event.preventDefault()
       void back()

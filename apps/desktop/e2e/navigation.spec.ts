@@ -76,6 +76,109 @@ test('path, back/forward, viewport restore, home (§17 item 12)', async () => {
   await app.close()
 })
 
+test('racing two navigations never persists the wrong board’s camera (§8.1, AI-IMP-176 M-01)', async () => {
+  const { app, win } = await launchApp('ew-e2e-nav-race-')
+  const root = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const canvasA = await seedCanvas(win)
+  const canvasB = await seedCanvas(win)
+
+  // Give A and B distinct SAVED cameras (persisted to the DB): fly to
+  // each, set a camera, wait out the 500 ms camera-persist debounce.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Alpha'), { id: canvasA })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasA)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 111, y: 222, zoom: 3 }))
+  await win.waitForTimeout(700)
+
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Beta'), { id: canvasB })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 777, y: 888, zoom: 4 }))
+  await win.waitForTimeout(700)
+
+  // Home, so A and B are only reachable via a fresh openCanvas.
+  await win.getByTestId('nav-home').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  // THE RACE: request A and B within the same tick. B is the latest
+  // intent and must win; A's post-await camera write must be abandoned
+  // (no A coordinates leaking onto B).
+  await win.evaluate(
+    ({ a, b }) => {
+      const p1 = window.__ewNav!.navigateTo(a, 'Alpha')
+      const p2 = window.__ewNav!.navigateTo(b, 'Beta')
+      return Promise.all([p1, p2])
+    },
+    { a: canvasA, b: canvasB },
+  )
+  await win.evaluate(() => window.__ewNav!.entries()) // settle the microtask tail
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+
+  // B renders with B's viewport, never A's.
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual({ x: 777, y: 888, zoom: 4 })
+
+  // Let the camera-persist debounce fire, then reopen B from scratch:
+  // A's coordinates were never written onto B's saved camera.
+  await win.waitForTimeout(700)
+  await win.getByTestId('nav-home').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Beta'), { id: canvasB })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual({ x: 777, y: 888, zoom: 4 })
+
+  await app.close()
+})
+
+test('held-key back is one nav per press and never deletes Home (§8.1, AI-IMP-176 M-08)', async () => {
+  const { app, win } = await launchApp('ew-e2e-nav-keyrepeat-')
+  const root = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const canvasB = await seedCanvas(win)
+  const canvasC = await seedCanvas(win)
+
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Harbor'), { id: canvasB })
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Keep'), { id: canvasC })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasC)
+
+  // Trash the middle entry so a Back from C hits the dead-candidate
+  // collapse branch — the branch that spliced Home under key-repeat.
+  await exec(win, 'TrashCanvas', { canvasId: canvasB })
+
+  // Hold Mod+[: the OS emits synthetic key-repeat keydowns. A burst of
+  // them must do NOTHING — one navigation per PHYSICAL press only.
+  await win.evaluate(() => {
+    for (let i = 0; i < 12; i++) {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: '[',
+          code: 'BracketLeft',
+          metaKey: true,
+          ctrlKey: true,
+          repeat: true,
+          bubbles: true,
+        }),
+      )
+    }
+  })
+  // Still on C; the Home entry is untouched at index 0.
+  expect(await win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasC)
+  expect(await win.evaluate(() => window.__ewNav!.entries()[0]!.label)).toBe('Home')
+
+  // A genuine (non-repeat) press navigates once: skips trashed Harbor,
+  // lands on the root — and does NOT splice Home.
+  await win.keyboard.press('ControlOrMeta+BracketLeft')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+  expect(await win.evaluate(() => window.__ewNav!.entries().map((e) => e.label))).toEqual([
+    'Home',
+    'Keep',
+  ])
+
+  // Home still works for the rest of the session.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Keep'), { id: canvasC })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasC)
+  await win.getByTestId('nav-home').click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
+
+  await app.close()
+})
+
 test('stale targets skip and collapse; history survives trash (§8.1)', async () => {
   const { app, win } = await launchApp('ew-e2e-nav-stale-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())

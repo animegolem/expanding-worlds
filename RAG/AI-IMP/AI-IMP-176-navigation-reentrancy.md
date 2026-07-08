@@ -119,25 +119,27 @@ LOC: ~70–110.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] One in-flight navigation promise; a superseding nav abandons the
+- [x] One in-flight navigation promise; a superseding nav abandons the
       prior navigation's post-await writes.
-- [ ] `openCanvas`'s `controller.camera.set` guarded by a live
+- [x] `openCanvas`'s `controller.camera.set` guarded by a live
       `canvasId` check (mirror `host.ts:1584-1594` / `:365-432`).
-- [ ] `openEntry` and `jumpToBookmark` viewport writes guarded the
+- [x] `openEntry` and `jumpToBookmark` viewport writes guarded the
       same way.
-- [ ] `event.repeat` filtered for back/forward; splice candidate index
+- [x] `event.repeat` filtered for back/forward; splice candidate index
       pinned at validation time, not re-read live.
-- [ ] E2e: crumb double-click within ~500ms lands the correct board's
+- [x] E2e: crumb double-click within ~500ms lands the correct board's
       camera and persists it (reopen B → B's viewport, not A's). Use
       `whenSceneApplied()`/`waitForItems`, never a synchronous
       camera read after navigateTo (AI-IMP-113).
-- [ ] E2e: held/repeated back spam leaves the Home button working and
+- [x] E2e: held/repeated back spam leaves the Home button working and
       entries[0] intact.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 - [ ] Append an `RAG/HUMAN-TESTING.md` entry: rapidly double-click
       crumbs and hold Mod+[ / Mod+]; confirm the camera never lands on
-      the wrong board and Home always returns.
+      the wrong board and Home always returns. — DEFERRED to the lead;
+      the delegation brief forbids this worktree touching
+      `RAG/HUMAN-TESTING.md`.
 
 ### Acceptance Criteria
 
@@ -163,3 +165,45 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Serialization = SUPERSEDE via a monotonic token, not a queue.** A
+  module-level `navToken` is incremented by every public flight
+  (navigateTo/back/forward/goToIndex); after each await a flight bails
+  if `myToken !== navToken`. This is the ticket's chosen "latest intent
+  wins": a second click/press mid-flight abandons the first's tail
+  rather than stacking. Tradeoff (accepted, ticket-endorsed): two
+  genuine back-taps landing within the same sub-ms `getCanvasScene`
+  round-trip coalesce to one back. `event.repeat` filtering already
+  removes the held-key case; distinct human taps almost always land
+  after the prior flight settles (local SQLite IPC is ~1ms). The
+  existing sequential-navigation e2e (awaits settlement between
+  presses) is unaffected.
+- **Two guard layers, deliberately.** The token supersede makes the
+  crumb-double-click / goToIndex case deterministically correct (the
+  abandoned flight never even calls openEntry). The host-side
+  forCanvas guards (openCanvas's `camera.set`, openEntry's and
+  jumpToBookmark's post-await viewport write, all keyed on the live
+  `canvasId`) are the belt to that suspenders — they catch any race the
+  token misses (e.g. `host.openCanvas` driven directly, outside the nav
+  store) so no board's camera can ever be written onto another.
+- **`event.repeat` filtered at the binding, not the registry.** Placed
+  in navigation.ts's `onKeydown` (which handles only back/forward)
+  rather than `registry.matches`, per the brief: undo-key repeat is a
+  later wave's concern and other bindings may legitimately want repeat.
+  Scoped and minimal.
+- **Race e2e is an invariant guard, not a deterministic pre-fix
+  failure.** IPC-response ordering for the two `getCanvasScene` awaits
+  is not controllable from Playwright, so a two-`navigateTo` race
+  usually resolves in issue order (B last → B wins) even on the old
+  code. The added tests assert the post-fix invariant holds (correct
+  board's camera live AND persisted on reopen; Home never spliced under
+  a key-repeat burst; one nav per physical press) — the standard shape
+  for a timing-dependent race fix. The deterministic leg is the token
+  supersede, exercised by the burst-then-real-press ordering in the
+  M-08 test.
+- **`host.openCanvas` scene query now keys on the captured
+  `forCanvas`,** not the live `canvasId`, so a superseding swap cannot
+  make it fetch (and then guard against) the wrong board's scene.
+- Gates all green: `pnpm -r build`, `pnpm lint` (eslint clean),
+  `pnpm -r test` (202 desktop e2e + all unit packages passed, 6.3m).
+  navigation.spec.ts alone: 10 passed incl. both new tests.
