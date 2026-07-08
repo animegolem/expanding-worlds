@@ -10,6 +10,21 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Library picker first click — THE 129 FAIL** (AI-IMP-196,
+  2026-07-08): the fix is macOS-level and machine-unverifiable, so
+  this one needs your hands. Click another app first (window
+  unfocused), then: selected frame → Add from library → click a
+  tile as your VERY FIRST click back into the window. It should
+  select and place into the frame — not feel dead, not dismiss.
+  Side effect to gut-check: a first click into an unfocused window
+  now ACTS everywhere (the PureRef behavior) — could a stray
+  activation click ever move a placement you didn't mean to touch?
+
+- [ ] **Gallery ground click** (AI-IMP-188, 2026-07-08): select a
+  few tiles (action bar up), click empty space between thumbnails —
+  selection clears, bar dismisses, Quick Look closes. Date/group
+  headers and tiles behave as before.
+
 - [ ] **Mouse navigation scheme** (AI-IMP-205, 2026-07-08, alph's
   ask — he gets first pass): Settings → Navigation → Mouse, then on
   a real mouse: scroll wheel zooms toward the cursor; holding the

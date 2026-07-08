@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 183 |
+| Completed | 19 | 185 |
 | **Total** | **25** | **206** |
 
 ## In Progress
@@ -56,14 +56,12 @@
 - [[AI-IMP-185-gesture-pipeline-hardening|IMP-185]] — planned, no epic dependency found
 - [[AI-IMP-186-frame-appearance-membership-guard|IMP-186]] — planned, no epic dependency found
 - [[AI-IMP-187-rotated-adornment-geometry|IMP-187]] — planned, no epic dependency found
-- [[AI-IMP-188-gallery-clickaway-deselect|IMP-188]] — planned, no epic dependency found
 - [[AI-IMP-189-dock-tooling-design-pass|IMP-189]] — planned, no epic dependency found
 - [[AI-IMP-190-shape-picker-and-gap-review|IMP-190]] — planned, no epic dependency found
 - [[AI-IMP-191-title-strip-fidelity|IMP-191]] — planned, no epic dependency found
 - [[AI-IMP-192-charm-bar-zoom-clamp|IMP-192]] — planned, no epic dependency found
 - [[AI-IMP-193-note-panel-spawn-flash|IMP-193]] — planned, no epic dependency found
 - [[AI-IMP-195-image-crispness|IMP-195]] — planned, no epic dependency found
-- [[AI-IMP-196-library-picker-instant-dismiss|IMP-196]] — planned, no epic dependency found
 - [[AI-IMP-197-frame-drop-feel-and-reflow|IMP-197]] — planned, no epic dependency found
 - [[AI-IMP-198-arrange-normalize-repair|IMP-198]] — planned, no epic dependency found
 - [[AI-IMP-199-note-panel-wedge|IMP-199]] — planned, no epic dependency found
@@ -97,8 +95,8 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4692 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (2085 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2019 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (1764 LOC)
-- apps/desktop/src/main/index.ts (1106 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (1788 LOC)
+- apps/desktop/src/main/index.ts (1112 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1059 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
@@ -131,12 +129,12 @@ Generated from tracked files; binary assets excluded.
 
 - apps/desktop/src/renderer/note/NotePanels.svelte (598 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
+- RAG/HUMAN-TESTING.md (586 LOC)
 - packages/persistence/src/handlers/frames.test.ts (585 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - apps/desktop/e2e/undo.spec.ts (581 LOC)
 - apps/desktop/src/renderer/note/editor-markdown.ts (579 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
-- RAG/HUMAN-TESTING.md (571 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
