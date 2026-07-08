@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 165 |
+| Completed | 19 | 166 |
 | **Total** | **25** | **172** |
 
 ## In Progress
@@ -53,7 +53,6 @@
 
 ### Orphaned IMPs (no epic dependency)
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
-- [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-170-dialect-url-cluster|IMP-170]] — planned, no epic dependency found
 - [[AI-IMP-173-swarm-stability-audit|IMP-173]] — in-progress, no epic dependency found
 - [[AI-IMP-174-macos-move-resize-chord|IMP-174]] — planned, no epic dependency found
@@ -117,11 +116,12 @@ Generated from tracked files; binary assets excluded.
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (562 LOC)
+- apps/desktop/e2e/gestures.spec.ts (554 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
+- RAG/HUMAN-TESTING.md (544 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (538 LOC)
-- RAG/HUMAN-TESTING.md (537 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (536 LOC)
 - packages/persistence/src/handlers/placements.ts (535 LOC)
 - packages/persistence/src/handlers/nodes.ts (529 LOC)
@@ -133,7 +133,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.ts (514 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
-- apps/desktop/e2e/gestures.spec.ts (486 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - packages/persistence/src/handlers/frames.test.ts (477 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)

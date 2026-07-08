@@ -535,3 +535,10 @@ The full walk, on a placed image's note:
   width. Zoom out: rings degrade to a stroke, then the whole page
   fades. Feel questions: does the book read instantly as a book?
   Ring weight right? Does the calendar bind feel natural on wide art?
+- **AI-IMP-152 hand rules (verification, light)**: the six drag/key
+  rules were audited as already-shipped — worth one conscious pass:
+  Option BEFORE dragging = drops a copy; Option DURING a drag =
+  ignores snapping (never copies); Shift constrains axis; rotation
+  sticks to compass points, Shift steps 15°; locked items refuse
+  with the cursor only; Esc peels one thing at a time (gesture, then
+  lens, then selection).
