@@ -281,6 +281,88 @@ test('the charm bar clears the §4.5 label, and hugs the body when the label hid
   await app.close()
 })
 
+test('AI-IMP-192: zoom-out past the furniture floor dismisses (not hides) the selection', async () => {
+  const { app, win } = await launchApp('ew-e2e-charm-zoom-clamp-')
+  await pinEngagement(win)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await seedPin(win, 'Tidepool', { x: 500, y: 350 }, { size: 100 })
+
+  await win.mouse.click(box.x + 500, box.y + 350)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await expect(win.getByTestId('charm-bar')).toBeVisible()
+
+  // 100×100 world body: zoom to just ABOVE the shared furniture floor
+  // (EW_FURNITURE_MIN_PX = 8px screen) — 100 * 0.09 = 9px — the
+  // selection and its bar stay.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.09 }))
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+  await expect(win.getByTestId('charm-bar')).toBeVisible()
+
+  // A pan at the SAME zoom must never dismiss — the check is zoom-
+  // only (never camera x/y).
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 500, y: 500, zoom: 0.09 }))
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+  await expect(win.getByTestId('charm-bar')).toBeVisible()
+
+  // Zoom out PAST the floor — 100 * 0.05 = 5px — the selection clears
+  // and the bar dismisses with it.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.05 }))
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(0)
+  await expect(win.getByTestId('charm-bar')).toBeHidden()
+
+  // Zooming back in does NOT resurrect the selection — deliberate
+  // dismissal, not hiding (§8.2/AI-IMP-192).
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(0)
+  await expect(win.getByTestId('charm-bar')).toBeHidden()
+
+  // A selection BORN below the floor is kept — the dismissal is the
+  // above→below CROSSING, not a level rule. A marquee while zoomed
+  // far out must be able to pick up specks (and the §8.3 search
+  // fly-to selects sub-floor placements the same way). Camera places
+  // the world-(500,350) speck at screen (300,200), clear of the
+  // title-strip reveal band and the corner charm; the marquee drags
+  // a comfortable box around it.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: -5500, y: -3650, zoom: 0.05 }))
+  await win.mouse.move(box.x + 250, box.y + 150)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 350, box.y + 250, { steps: 4 })
+  await win.mouse.up()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+  // ...and a pan at that same sub-floor zoom still never dismisses it.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: -5400, y: -3550, zoom: 0.05 }))
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+
+  await app.close()
+})
+
+test('AI-IMP-192: a multi-selection dismisses once its cluster crosses the furniture floor', async () => {
+  const { app, win } = await launchApp('ew-e2e-charm-zoom-clamp-multi-')
+  await pinEngagement(win)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await seedPin(win, 'Cairn A', { x: 400, y: 300 }, { size: 40 })
+  await seedPin(win, 'Cairn B', { x: 460, y: 300 }, { size: 40 })
+
+  // Marquee both (camera is identity at launch: world = screen).
+  await win.mouse.move(box.x + 350, box.y + 250)
+  await win.mouse.down()
+  await win.mouse.move(box.x + 530, box.y + 350, { steps: 5 })
+  await win.mouse.up()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(2)
+
+  // Union bbox spans world x[380,480] × y[280,320] — 100×40. At zoom
+  // 0.09 the longest edge (100) renders at 9px, just above the floor.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.09 }))
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(2)
+
+  // Past the floor (100 * 0.05 = 5px) — the whole cluster, not just
+  // one member, has to cross before the multi-selection clears.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.05 }))
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(0)
+
+  await app.close()
+})
+
 test('appearance switcher: dot→icon renders + undo, dot→card, card gated by note (§4.6)', async () => {
   const { app, win } = await launchApp('ew-e2e-appearance-')
   await pinEngagement(win)
