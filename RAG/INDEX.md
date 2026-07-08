@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 180 |
-| **Total** | **25** | **193** |
+| **Total** | **25** | **197** |
 
 ## In Progress
 
@@ -63,6 +63,10 @@
 - [[AI-IMP-192-charm-bar-zoom-clamp|IMP-192]] — planned, no epic dependency found
 - [[AI-IMP-193-note-panel-spawn-flash|IMP-193]] — planned, no epic dependency found
 - [[AI-IMP-195-image-crispness|IMP-195]] — planned, no epic dependency found
+- [[AI-IMP-196-library-picker-instant-dismiss|IMP-196]] — planned, no epic dependency found
+- [[AI-IMP-197-frame-drop-feel-and-reflow|IMP-197]] — planned, no epic dependency found
+- [[AI-IMP-198-arrange-normalize-repair|IMP-198]] — planned, no epic dependency found
+- [[AI-IMP-199-note-panel-wedge|IMP-199]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
