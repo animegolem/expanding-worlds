@@ -23,6 +23,7 @@ import {
 } from './open-note'
 import { createNoteProjectPort } from './project-port'
 import type { ProjectPort } from './note-editor'
+import { runAsUndoGroup } from '../undo/undo-store'
 import { attachLandmarks, clearLandmarkFact, landmarkFacts } from './paper/lifecycle'
 import type { BindSide } from './paper/bound-geometry'
 
@@ -728,16 +729,21 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
       }
       void (async () => {
         await flushAllPanels()
-        if (!storePort) return
+        const port = storePort
+        if (!port) return
         // checkRevision off: the flush above just committed through
         // OTHER gateways, and this port only learns their revisions
         // via the async project-changed push — an optimistic check
         // here would race itself into a silent conflict. RenameNote
         // targets a stable id; unconditional apply is the intent.
-        const result = await storePort.execute(
-          'RenameNote',
-          { noteId: detail.noteId, title: detail.title },
-          { checkRevision: false },
+        // AI-IMP-182: one Mod+Z per rename gesture (RenameNote is
+        // GROUP_ONLY, captured at this deliberate no-open-panel path too).
+        const result = await runAsUndoGroup(() =>
+          port.execute(
+            'RenameNote',
+            { noteId: detail.noteId, title: detail.title },
+            { checkRevision: false },
+          ),
         )
         if (result.status === 'error') toast(result.message, { kind: 'error' })
         else if (result.status === 'conflict') toast('rename conflicted — retry', { kind: 'error' })

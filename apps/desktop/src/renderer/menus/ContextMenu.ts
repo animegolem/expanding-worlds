@@ -533,7 +533,14 @@ export function attachContextMenu(
           promptTitle('New title', (title) => requestRenameNote(noteId, title))
         }
       },
-      detachNote: () => void execute('DetachNoteFromNode', { nodeId: p.nodeId }),
+      // AI-IMP-182 (RFC §6.6/§9.3 "immediately undoable"): detach is one
+      // Mod+Z. DetachNoteFromNode is GROUP_ONLY — captured at this gesture
+      // (its inverse AttachNoteToNode reattaches). A group of one records
+      // a single entry, exactly like the decoration verbs above.
+      detachNote: () =>
+        void runAsUndoGroup(async () => {
+          await execute('DetachNoteFromNode', { nodeId: p.nodeId })
+        }),
       makeNoteIndependent: () =>
         promptTitle('New unique title', (newTitle) =>
           void execute('MakeNoteIndependent', {

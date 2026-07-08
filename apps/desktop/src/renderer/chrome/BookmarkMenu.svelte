@@ -19,6 +19,7 @@
   import GlobeGlyph from './GlobeGlyph.svelte'
   import { applyMenuCascade } from './menu-cascade'
   import { tooltip } from './tooltip'
+  import { runAsUndoGroup } from '../undo/undo-store'
 
   // `closing` drives the unpin fade (RFC §8.2 rev 0.64, AI-IMP-166): the
   // ceremony is for arrival, so close is a plain opacity fade over
@@ -90,7 +91,11 @@
   }
 
   async function remove(row: BookmarkRow): Promise<void> {
-    await handle.gateway.execute('RemoveBookmark', { bookmarkId: row.id })
+    // AI-IMP-182: one Mod+Z per removal (RemoveBookmark is GROUP_ONLY,
+    // captured at this gesture; inverse CreateBookmark restores it).
+    await runAsUndoGroup(async () => {
+      await handle.gateway.execute('RemoveBookmark', { bookmarkId: row.id })
+    })
     await refresh()
   }
 
@@ -137,14 +142,16 @@
       const order = dragOrder
       dragId = null
       if (finalIndex === fromIndex) return
-      // One completed drag commits ONE durable command.
-      void handle.gateway
-        .execute('ReorderBookmark', {
+      // One completed drag commits ONE durable command — and one Mod+Z
+      // entry (AI-IMP-182: ReorderBookmark is GROUP_ONLY, captured at the
+      // completed-drag gesture; its inverse restores the prior order).
+      void runAsUndoGroup(async () => {
+        await handle.gateway.execute('ReorderBookmark', {
           bookmarkId: id,
           afterId: finalIndex > 0 ? order[finalIndex - 1] : null,
           beforeId: finalIndex < order.length - 1 ? order[finalIndex + 1] : null,
         })
-        .then(() => refresh())
+      }).then(() => refresh())
     }
 
     const onCancel = (): void => {

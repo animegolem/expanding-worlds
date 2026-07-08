@@ -4,6 +4,7 @@ import { EditorState } from '@tiptap/pm/state'
 import type { CommandResult } from '@ew/commands'
 import { stripMetadataBlock } from '@ew/domain'
 import { baseNoteExtensions, noteEditorProps } from './editor-markdown'
+import { runAsUndoGroup } from '../undo/undo-store'
 
 /**
  * Note editor controller (RFC-0001 §7.1/§10.2, AI-IMP-044/146). The
@@ -188,7 +189,12 @@ export class NoteEditorController {
     const note = this.#note
     if (!note) return null
     await this.flushPending()
-    const result = await this.#project.execute('RenameNote', { noteId: note.id, title })
+    // AI-IMP-182: the note-title rename is one Mod+Z entry. RenameNote is
+    // GROUP_ONLY, captured at this deliberate gesture only (autosave
+    // UpdateNote and programmatic renames stay out of undo).
+    const result = await runAsUndoGroup(() =>
+      this.#project.execute('RenameNote', { noteId: note.id, title }),
+    )
     if (result.status === 'committed' && this.#note?.id === note.id) {
       this.#note = { ...this.#note, title }
       this.#hooks.onNoteChanged?.(this.#note)

@@ -27,6 +27,7 @@ import { openCornerPanel } from '../note/panels'
 import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { openTagPanel } from '../tags/tag-panel'
 import { assignTagByName, filterTagCompletions } from '../tags/tag-assign'
+import { runAsUndoGroup } from '../undo/undo-store'
 import { importErrorNotice } from './import-surfaces'
 import { requestCropEditor } from './crop-request'
 import { themeTokenValue } from '../theme'
@@ -228,12 +229,17 @@ export function attachCharmsUi(
 
   /** Commit one appearance to the selected node and fold the popover.
    * The scene re-renders through the ordinary onSceneApplied path — no
-   * reselection. The handler's inverse restores the prior appearance
-   * (one undo). */
+   * reselection. Wrapped in a runAsUndoGroup so the change is one Mod+Z
+   * entry (AI-IMP-182 M-07): SetNodeAppearance is GROUP_ONLY, so a bare
+   * execute here was silently uncaptured — this matches the sibling
+   * sites (host.ts, crop-editor.ts). The handler's inverse restores the
+   * prior appearance. */
   function commitAppearance(next: NodeAppearance): void {
     const placement = selectedPlacement()
     if (!placement) return
-    void execute('SetNodeAppearance', { nodeId: placement.nodeId, appearance: next })
+    void runAsUndoGroup(async () => {
+      await execute('SetNodeAppearance', { nodeId: placement.nodeId, appearance: next })
+    })
     closeAppearance()
   }
 
@@ -321,9 +327,15 @@ export function attachCharmsUi(
       importErrorNotice(imported.message)
       return
     }
-    void execute('SetNodeAppearance', {
-      nodeId,
-      appearance: { kind: 'image', assetId: imported.assetId, crop: null },
+    // AI-IMP-182 M-07: SetNodeAppearance is GROUP_ONLY — wrap so the
+    // image apply is one Mod+Z entry, matching commitAppearance and the
+    // sibling sites. The bound nodeId (not live selection) stays the
+    // target through the group.
+    await runAsUndoGroup(async () => {
+      await execute('SetNodeAppearance', {
+        nodeId,
+        appearance: { kind: 'image', assetId: imported.assetId, crop: null },
+      })
     })
     // AI-IMP-184 (M-19): fold ONLY the popover this import opened. A slow
     // import can resolve after the user opened a DIFFERENT node's
@@ -418,7 +430,12 @@ export function attachCharmsUi(
   async function assignFromField(name: string): Promise<void> {
     const placement = selectedPlacement()
     if (!placement) return
-    const outcome = await assignTagByName(gatewayExecute, placement.nodeId, name, tagVocab)
+    // AI-IMP-182: one add-tag gesture = one Mod+Z. The group folds the
+    // create-and-assign pair (CreateTag + AssignTagToNode) into a single
+    // entry (both are GROUP_ONLY); an existing-tag assign is a group of one.
+    const outcome = await runAsUndoGroup(() =>
+      assignTagByName(gatewayExecute, placement.nodeId, name, tagVocab),
+    )
     if (outcome.status === 'error') return
     addInput.value = ''
     addCompletions.style.display = 'none'

@@ -24,6 +24,7 @@
   import { reserveTetheredPanelSpace } from '../note/panels'
   import { closeTagPanel, openTagPanel, type TagPanelState } from './tag-panel'
   import { contextMenuOpen } from '../menus/ContextMenu'
+  import { runAsUndoGroup } from '../undo/undo-store'
 
   interface TagViewPlacement {
     placementId: string
@@ -182,7 +183,12 @@
     }
     renameBusy = true
     try {
-      const result = await handle.gateway.execute('RenameTag', { tagId: panel.tagId, name })
+      // AI-IMP-182: one Mod+Z per tag rename (RenameTag is GROUP_ONLY,
+      // captured at this deliberate gesture; its inverse restores the
+      // prior name).
+      const result = await runAsUndoGroup(() =>
+        handle.gateway.execute('RenameTag', { tagId: panel.tagId, name }),
+      )
       if (result.status === 'committed') {
         // Reflect the new name in the switcher at once; live surfaces
         // (chips, vocabulary, this panel's view) follow on onChanged.

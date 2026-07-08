@@ -15,6 +15,7 @@
     type ExecuteCommand,
     type TagOption,
   } from './tag-assign'
+  import { runAsUndoGroup } from '../undo/undo-store'
 
   const {
     nodeId,
@@ -46,7 +47,9 @@
     if (busy) return
     busy = true
     try {
-      const outcome = await assignTagByName(execute, nodeId, name, allTags)
+      // AI-IMP-182: one add-tag gesture = one Mod+Z. The group folds the
+      // create-and-assign pair into a single entry (both GROUP_ONLY).
+      const outcome = await runAsUndoGroup(() => assignTagByName(execute, nodeId, name, allTags))
       if (outcome.status === 'error') return
       tagName = ''
       // Refresh the vocabulary so a just-created tag completes next,

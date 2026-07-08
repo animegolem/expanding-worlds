@@ -61,6 +61,25 @@ const GROUP_ONLY_COMMANDS = new Set<string>([
   'CaptureInFrame',
   'ReleaseFromFrame',
   'UpdateDecoration',
+  // AI-IMP-182 breadth (owner ruling 2026-07-08: every deliberate verb
+  // joins Mod+Z EXCEPT node-trash). Each is captured ONLY at its gesture
+  // (the UI site wraps the commit in runAsUndoGroup), never by bare type,
+  // so programmatic/import commits of the same command stay out of undo
+  // and a create-and-assign gesture (CreateTag + AssignTagToNode) folds
+  // into one entry. TrashNode/purge are deliberately ABSENT — the Trash
+  // is a trashed node's recovery home. Every command below has a tested
+  // inverse (RenameNote↔RenameNote, AssignTagToNode↔UnassignTagFromNode,
+  // CreateTag↔DeleteDraftTag, RenameTag↔RenameTag, DetachNoteFromNode↔
+  // AttachNoteToNode, Create/RemoveBookmark reciprocal, ReorderBookmark↔
+  // ReorderBookmark).
+  'RenameNote',
+  'AssignTagToNode',
+  'CreateTag',
+  'RenameTag',
+  'DetachNoteFromNode',
+  'CreateBookmark',
+  'RemoveBookmark',
+  'ReorderBookmark',
 ])
 
 /** Commits accumulate here while a group window is open (see runAsUndoGroup). */
@@ -113,15 +132,14 @@ export function redo(): void {
  * inline (the outer window owns the grouping). The gateway serializes
  * executes, so commits from `fn` arrive in order within the window.
  */
-export async function runAsUndoGroup(fn: () => Promise<void>): Promise<void> {
+export async function runAsUndoGroup<T>(fn: () => Promise<T>): Promise<T> {
   if (pendingGroup) {
-    await fn()
-    return
+    return fn()
   }
   const group: CapturedCommand[] = []
   pendingGroup = group
   try {
-    await fn()
+    return await fn()
   } finally {
     pendingGroup = null
     if (group.length === 1) stack?.record(group[0]!)
