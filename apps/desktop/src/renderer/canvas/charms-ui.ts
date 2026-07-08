@@ -15,6 +15,7 @@
 import { adornedWorldAABB, itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
 import type { NodeAppearance } from '@ew/commands'
 import { uuidv7 } from '@ew/domain'
+import type { BoardTooling } from './board-tooling'
 import type { CanvasHostHandle } from './host'
 import { Z } from '../z'
 import { navigateTo } from '../chrome/navigation'
@@ -120,7 +121,11 @@ function injectStyles(): void {
   document.head.appendChild(style)
 }
 
-export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): CharmsUiHandle {
+export function attachCharmsUi(
+  host: CanvasHostHandle,
+  element: HTMLElement,
+  tooling: BoardTooling,
+): CharmsUiHandle {
   injectStyles()
   const layer = document.createElement('div')
   layer.dataset['testid'] = 'charms-layer'
@@ -621,6 +626,92 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       })
   })
 
+  // ---------------------------------------- frame sort chip (§4.9)
+  // AI-IMP-138 (owner ruling 2026-07-07: "it has to be in the charm
+  // bar"). Shown ONLY when the single selection is a frame. The chip
+  // reflects and toggles AI-IMP-129's per-frame `frame_sort_on_drop`
+  // flag, and a sibling button packs the frame on demand — both through
+  // the SAME board-tooling path the Dock and context menu use, so there
+  // is one action path and no new command. AI-IMP-129 stores only the
+  // boolean (no sort-MODE fact), so the chip is the on/float toggle the
+  // brief's fallback specifies: "grid" = sort-on-drop ON, "float" = the
+  // visible off-state.
+  const frameDivider = document.createElement('span')
+  frameDivider.style.cssText = 'width:1px;height:16px;background:var(--ew-border);margin:0 3px;'
+  bar.appendChild(frameDivider)
+
+  /** A text-bearing bar chip (the icon buttons are square/glyph-only). */
+  function chipButton(
+    testId: string,
+    spec: { name: string },
+    onClick: () => void,
+  ): HTMLButtonElement {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.dataset['testid'] = testId
+    button.style.cssText =
+      'height:26px;padding:0 9px;display:flex;align-items:center;gap:4px;' +
+      'background:transparent;color:var(--ew-text);border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;'
+    button.addEventListener('click', (event) => {
+      event.stopPropagation()
+      onClick()
+    })
+    const tip = tooltip(button, spec)
+    disposers.push(tip.destroy)
+    bar.appendChild(button)
+    return button
+  }
+
+  // Which frame the chip currently reflects, and the flag it read.
+  let sortChipFrameId: string | null = null
+  let sortOnDropState = true
+  function setSortChipState(on: boolean): void {
+    sortOnDropState = on
+    sortToggle.textContent = on ? '▦ grid' : '◇ float'
+    sortToggle.setAttribute('aria-pressed', String(on))
+  }
+  const sortToggle = chipButton(
+    'charm-frame-sort-on-drop',
+    { name: 'Sort on drop — arrange items dropped into this frame' },
+    () => {
+      const placement = selectedPlacement()
+      if (!placement || placement.appearanceKind !== 'frame') return
+      const next = !sortOnDropState
+      setSortChipState(next)
+      void tooling.setFrameSortOnDrop(placement.id, next)
+    },
+  )
+  const sortNowButton = chipButton(
+    'charm-frame-sort-now',
+    { name: 'Sort in frame — compact-pack this frame’s contents now' },
+    () => {
+      const placement = selectedPlacement()
+      if (placement && placement.appearanceKind === 'frame') void tooling.sortFrame(placement.id)
+    },
+  )
+  sortNowButton.textContent = '⊞'
+  setSortChipState(true)
+
+  /** Show/refresh the frame chip for the selection (or hide it). Reads
+   * the flag once per newly-selected frame; the layout pass calls this
+   * before it measures the bar so centering accounts for the chip. */
+  function syncFrameChip(selected: ScenePlacement | null): void {
+    const isFrame = selected !== null && selected.appearanceKind === 'frame'
+    frameDivider.style.display = isFrame ? '' : 'none'
+    sortToggle.style.display = isFrame ? '' : 'none'
+    sortNowButton.style.display = isFrame ? '' : 'none'
+    if (!isFrame || !selected) {
+      sortChipFrameId = null
+      return
+    }
+    if (sortChipFrameId === selected.id) return
+    sortChipFrameId = selected.id
+    const frameId = selected.id
+    void tooling.frameSortOnDrop(frameId).then((on) => {
+      if (sortChipFrameId === frameId) setSortChipState(on)
+    })
+  }
+
   // ------------------------------------------------- corner charm
   // §8.5: the canvas is a node, and the active canvas's own note is
   // "the node you are standing inside" — a screen-fixed lower-left
@@ -840,6 +931,9 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
         y: aabb.y + aabb.height,
       })
       bar.style.display = 'flex'
+      // Toggle the §4.9 frame chip BEFORE measuring, so the bar width
+      // (and thus its centering) accounts for it.
+      syncFrameChip(selected)
       const barWidth = bar.offsetWidth || 200
       bar.style.left = `${bottomCenter.x - barWidth / 2}px`
       bar.style.top = `${bottomCenter.y + 10}px`
@@ -873,6 +967,7 @@ export function attachCharmsUi(host: CanvasHostHandle, element: HTMLElement): Ch
       }
     } else {
       bar.style.display = 'none'
+      syncFrameChip(null)
       chipsFor = null
       chips.style.display = 'none'
       closeAppearance()
