@@ -76,8 +76,18 @@ the week's testing says so. Lands with the AI-IMP-173 fix wave.)
   sync SEMANTICS (mergeable state representation), git is just
   transport; the Electron main/node:sqlite half is cleanly seamed
   behind packages/protocol, so a Rust persistence port is a fenced
-  job. Pricing musing attached: plausibly a ~$5 paid app on the
-  iOS store; desktop DMG stays direct.
+  job. Refinements (owner, 2026-07-08 follow-on): pricing shape
+  ADOPTED as intent — SELL the iOS app (~$5), desktop stays free
+  direct-download ("I do think I would like to do that"); perf
+  floor = the owner's 2020 iPad Pro ("if the 2020 iPad can ride
+  it, we're fine") — spike on that exact device; and the owner
+  suspects desktop converges onto the Rust/Tauri backend
+  EVENTUALLY anyway once it exists (lead agrees: after the iPad
+  port the Electron shell is the odd one out — the ruling is
+  "not a prerequisite," not "never"). Context shift recorded: the
+  project is now ALSO a resume piece / product story for the
+  owner, which raises the weight of EPIC-019 (public face),
+  signing/notarization, and store presence.
 - **Undo capture breadth — superseded original entry** (from the 2026-07-06 Codex review;
   AI-IMP-114 shipped a deliberate eight-command "gesture-shaped"
   set, narrower than §10.2's all-durable-commands reading): decide
