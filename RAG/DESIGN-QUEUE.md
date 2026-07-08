@@ -50,6 +50,15 @@ The Two Materials + kit 1.1's beat ledger, ratified at rev 0.56
 
 - Text-drop special cases (code blocks, essay-length paste → note)
   (rev 0.36).
+- **Tag REMOVE has no gesture** (AI-IMP-182 finding, 2026-07-08):
+  `UnassignTagFromNode` exists with a verified inverse but is
+  issued NOWHERE in the renderer — there is no per-node "remove
+  this tag" affordance (171's missing-doorknob sibling). Decide
+  where removal lives (chip ✕ on the node's tag chips? tag panel
+  row action?) — then it's a small ticket, and its capture wrap is
+  one line (the 182 pattern). Also from 182: the gallery bulk bar
+  and mirror recognition chip carry their own uncaptured tag-add
+  copies — same one-wrap shape when ruled.
 - **Frame charm-bar crowding** (owner note, 2026-07-07, at the
   sort-control ruling): putting frame controls in the charm bar
   "opens us up to think more eventually" — is there a conversation

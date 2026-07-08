@@ -598,3 +598,14 @@ any flicker where things look ungrouped for a moment?
   board's image over). Toggle a selected frame's sort from the Dock
   — the charm chip should flip live. Right-click a frame and
   immediately click away — the menu should NOT pop up late.
+- **Fix wave D (175/182) — hover everything, undo everything**:
+  hover every little control — each should offer the same chip
+  (six settings swatches, the gallery/search/tag ✕s, window
+  buttons); dock reorder + zoom-fit + gallery trash now print their
+  shortcuts. Eyeball asks: do "Flat canvas color 1–6" want real
+  names? Does the tag-lens wording read right? Then the big one:
+  Mod+Z now covers appearance flips, note renames, tag
+  create/assign/rename, detach, bookmark edits — spend a session
+  trusting it; any verb that FEELS wrong under undo gets trimmed
+  (one line each, say the word). Trashing still recovers via Trash
+  only, by design.

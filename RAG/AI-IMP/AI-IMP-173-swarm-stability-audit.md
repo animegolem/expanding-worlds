@@ -5,11 +5,12 @@ tags:
   - Implementation
   - audit
   - process
-kanban_status: in-progress
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-07
+date_completed: 2026-07-08
 ---
 
 
@@ -69,14 +70,14 @@ scratchpad until findings become tickets).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Domain partition + self-contained briefs; Codex seed shard
+- [x] Domain partition + self-contained briefs; Codex seed shard
       written.
-- [ ] Wave spawned; all shards collected with ANCHORS coverage
+- [x] Wave spawned; all shards collected with ANCHORS coverage
       tables.
-- [ ] Opus aggregation → master P-ranked list.
-- [ ] Lead verification of every P1/P2 (reproduce the flow in the
+- [x] Opus aggregation → master P-ranked list.
+- [x] Lead verification of every P1/P2 (reproduce the flow in the
       code before believing).
-- [ ] Ranked list delivered to the owner; confirmed findings cut as
+- [x] Ranked list delivered to the owner; confirmed findings cut as
       tickets.
 
 ### Acceptance Criteria
@@ -95,3 +96,25 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **The wave ran 2026-07-07 night → 2026-07-08.** Ten sonnet
+  reviewers (per-domain control-flow briefs, anchor tables
+  mandatory) + one opus aggregator → MASTER-FINDINGS: 46 findings,
+  6 P1 / 17 P2 / 21 P3 / 2 reclassified as EPIC-007 deferred scope.
+  Every P1 lead-verified before ticketing; Codex's independent
+  reviews (head 50ed3ebe, wave head 8404ea0d) contributed six more,
+  all landing inside families the swarm had already named.
+- **Fix execution:** ten tickets (AI-IMP-175–184) built by opus
+  agents in four collision-fenced waves, lead-reviewed and
+  union-gated per wave; two remaining families cut as planned
+  tickets (185 gesture hardening, 186 frame-appearance membership —
+  verify-first lines carried in each since those members are
+  agent-claimed); the P3 remainder lives on MASTER-FINDINGS
+  (scratchpad) with the durable items (tag-remove gesture, tag-add
+  capture stragglers) in DESIGN-QUEUE.
+- **Process findings:** agents park forever on auto-backgrounded
+  >10-min validation runs (three cases; fix = sharded foreground
+  gates in every brief); import-batch.spec is the suite's worst
+  flaker (twice today) — harden if it recurs; the sibling-does-it-
+  right ticket pattern measurably raised fix quality (every wave-A
+  agent found something true beyond its brief).
