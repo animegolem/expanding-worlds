@@ -21,7 +21,21 @@ all moved into the RFC.
   metadata set (asset facts vs node facts), whether inspector tags
   are editable, the double-click full-view presentation, and the
   interaction with 188's click-away deselect. Candidate first
-  design conversation to include alph directly.
+  design conversation to include alph directly. Follow-on input
+  (alph, same day): "idk where these images even came from feels
+  fairly opaque" — the inspector's metadata set should answer
+  provenance first (source URL/import origin/when), not just
+  dimensions.
+
+- **Right-rail membership** (alph's stacking screenshot + owner
+  diagnosis, 2026-07-08 — blocks AI-IMP-207 half 2): the rail's
+  surfaces are different kinds of thing (full-screen lens, overlay,
+  anchored menu, card, OS window) and currently stack. Exclusivity
+  is RULED (one open surface, 207 builds it); the conversation
+  decides membership — owner's hypothesis: "probably only toggles
+  that fully change the lens should be on that right-hand side,"
+  and the menu-openers need to be rethought as something else. 207
+  drafts the classification table as the conversation's input.
 
 (macOS move/resize chord RESOLVED 2026-07-07: owner ruled GO on
 both move AND resize — "I do want the resize… we have so many key
