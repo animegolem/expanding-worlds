@@ -449,6 +449,158 @@ test('RenameTag propagates: chip row, completion vocabulary, panel reopen (§17 
   await app.close()
 })
 
+/**
+ * AI-IMP-171 (§17 item 8 "rename a tag"): the UI verb. The tag panel's
+ * pencil swaps the completion switcher into an editor for THIS tag's
+ * name — Enter commits RenameTag through the command gateway; the same
+ * propagation 169 proved (chip row, completion vocabulary, panel) now
+ * flows from a user gesture. Renaming onto an existing name is refused
+ * with a toast naming the collision and the editor stays open; Escape
+ * cancels the edit without leaking to the canvas.
+ */
+test('UI rename: pencil → edit → Enter renames across surfaces; conflict toasts and keeps the editor open (§17 item 8, AI-IMP-171)', async () => {
+  const { app, win } = await launchApp('ew-e2e-tag-rename-ui-')
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'CreatePlacement', {
+    placementId,
+    canvasId,
+    nodeId,
+    x: 200,
+    y: 200,
+    width: 60,
+    height: 60,
+  })
+  const ruinsTagId = crypto.randomUUID()
+  await exec(win, 'CreateTag', { tagId: ruinsTagId, name: 'ruins' })
+  await exec(win, 'AssignTagToNode', { tagId: ruinsTagId, nodeId })
+  // A second tag to collide with on rename.
+  await exec(win, 'CreateTag', { tagId: crypto.randomUUID(), name: 'camp' })
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Open the tag panel via the charm door.
+  await win.mouse.click(box.x + 200, box.y + 200)
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection())).toEqual([placementId])
+  await win.getByTestId('charm-tags').click()
+  await win.getByTestId(`tag-chip-${ruinsTagId}`).click()
+  const panel = win.getByTestId('tag-panel')
+  await expect(panel).toBeVisible()
+  await expect(win.getByTestId('tag-panel-input')).toHaveValue('ruins')
+
+  // Pencil → edit mode: the switcher becomes a rename editor, prefilled
+  // with the current name, and the pencil reads pressed.
+  await win.getByTestId('tag-panel-rename').click()
+  const renameInput = win.getByTestId('tag-panel-rename-input')
+  await expect(renameInput).toBeVisible()
+  await expect(renameInput).toHaveValue('ruins')
+  await expect(win.getByTestId('tag-panel-rename')).toHaveAttribute('aria-pressed', 'true')
+  // The switcher input is not present while editing (distinct modes).
+  await expect(win.getByTestId('tag-panel-input')).toHaveCount(0)
+
+  // Collision: renaming onto an existing name is REFUSED — a toast names
+  // the collision and the editor stays open for a retype.
+  await renameInput.fill('camp')
+  await renameInput.press('Enter')
+  await expect(win.getByTestId('toast')).toContainText('camp')
+  await expect(renameInput).toBeVisible()
+  await expect(renameInput).toHaveValue('camp')
+
+  // A real rename: Enter commits and the editor returns to the switcher
+  // under the new name.
+  await renameInput.fill('wrecks')
+  await renameInput.press('Enter')
+  await expect(win.getByTestId('tag-panel-rename-input')).toHaveCount(0)
+  await expect(win.getByTestId('tag-panel-input')).toHaveValue('wrecks')
+  // Tag identity is independent of name (§4.8): the same tag id still
+  // carries the assignment, so the carrier row survives.
+  await expect(panel.getByTestId('tag-panel-row')).toHaveCount(1)
+
+  // Propagation (§17 item 8), now from a UI gesture: close the panel
+  // (Escape consumes the press — selection survives), then the charm
+  // chip row and completion vocabulary read the new name.
+  await win.keyboard.press('Escape')
+  await expect(panel).not.toBeVisible()
+  await expect(win.evaluate(() => window.__ewDebug!.selection())).resolves.toEqual([placementId])
+  // Clicking the ruins chip folded the charm popover; one click reopens
+  // it, re-querying the vocabulary.
+  await win.getByTestId('charm-tags').click()
+  await expect(win.getByTestId('charm-tag-chips')).toBeVisible()
+  await expect(win.getByTestId('charm-tag-chip-row')).toContainText('#wrecks')
+  await expect(win.getByTestId('charm-tag-chip-row')).not.toContainText('#ruins')
+  const addInput = win.getByTestId('charm-tag-add-input')
+  await addInput.fill('wr')
+  await expect(win.getByTestId('charm-tag-add-option')).toHaveText('wrecks')
+  await addInput.fill('ru')
+  await expect(win.getByTestId('charm-tag-add-option')).toHaveCount(0)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-171: Escape while the rename editor is open cancels the edit
+ * WITHOUT leaking to the canvas or closing the panel (the Escape-leak
+ * defect family, SearchPanel:328). One press peels the editor; the next
+ * peels the panel.
+ */
+test('UI rename: Escape cancels the edit, leaving the panel open and the name unchanged (§17 item 8, AI-IMP-171)', async () => {
+  const { app, win } = await launchApp('ew-e2e-tag-rename-esc-')
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'CreatePlacement', {
+    placementId,
+    canvasId,
+    nodeId,
+    x: 200,
+    y: 200,
+    width: 60,
+    height: 60,
+  })
+  const ruinsTagId = crypto.randomUUID()
+  await exec(win, 'CreateTag', { tagId: ruinsTagId, name: 'ruins' })
+  await exec(win, 'AssignTagToNode', { tagId: ruinsTagId, nodeId })
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements))
+    .toBe(1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  await win.mouse.click(box.x + 200, box.y + 200)
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection())).toEqual([placementId])
+  await win.getByTestId('charm-tags').click()
+  await win.getByTestId(`tag-chip-${ruinsTagId}`).click()
+  const panel = win.getByTestId('tag-panel')
+  await expect(panel).toBeVisible()
+
+  await win.getByTestId('tag-panel-rename').click()
+  const renameInput = win.getByTestId('tag-panel-rename-input')
+  await expect(renameInput).toBeVisible()
+  await renameInput.fill('wrecks')
+
+  // Escape peels the editor only: the panel stays, the name is
+  // unchanged, and the selection underneath is untouched (no leak).
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('tag-panel-rename-input')).toHaveCount(0)
+  await expect(panel).toBeVisible()
+  await expect(win.getByTestId('tag-panel-input')).toHaveValue('ruins')
+  await expect(win.evaluate(() => window.__ewDebug!.selection())).resolves.toEqual([placementId])
+  // No RenameTag ran: the vocabulary still holds only "ruins".
+  expect(await runQuery<unknown[]>(win, 'listTags')).toHaveLength(1)
+
+  // A second Escape peels the panel.
+  await win.keyboard.press('Escape')
+  await expect(panel).not.toBeVisible()
+
+  await app.close()
+})
+
 test('a phantom note panel carries no tag add-field (§4.8, AI-IMP-108)', async () => {
   const { app, win } = await launchApp('ew-e2e-tag-add-phantom-')
   // The board's own note draft is a phantom until the first edit.
