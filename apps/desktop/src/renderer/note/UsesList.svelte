@@ -29,6 +29,7 @@
 
 <script lang="ts">
   import { navigateTo } from '../chrome/navigation'
+  import { tooltip } from '../chrome/tooltip'
   import NodeRow from '../rows/NodeRow.svelte'
   import {
     requestCenterPlacements,
@@ -85,10 +86,13 @@
                 type="button"
                 class="row"
                 data-testid="uses-node"
-                title={canvas.canvasId === activeCanvasId
-                  ? 'Center these placements'
-                  : 'Fly to this board'}
                 onclick={() => selectGroup(canvas.canvasId, canvas.canvasTitle, node)}
+                use:tooltip={{
+                  name:
+                    canvas.canvasId === activeCanvasId
+                      ? 'Center these placements'
+                      : 'Fly to this board',
+                }}
               >
                 <NodeRow appearance={node} count={node.placements.length} tags={node.tags}>
                   {#snippet extra()}

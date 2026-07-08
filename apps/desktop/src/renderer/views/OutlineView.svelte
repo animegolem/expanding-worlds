@@ -21,6 +21,7 @@
   import { NODE_DRAG_MIME, NOTE_DRAG_MIME } from '../canvas/import-surfaces'
   import { closeTakeover } from '../chrome/takeover'
   import { navigateTo } from '../chrome/navigation'
+  import { tooltip } from '../chrome/tooltip'
   import { requestOpenNote, requestPlaceNode, requestPlaceNote } from '../note/open-note'
 
   interface OutlineChildRow {
@@ -252,7 +253,7 @@
         class="row alias"
         data-testid="outline-alias-row"
         onclick={() => flyToEntry(child.childCanvasId!)}
-        title="Already open above — jump to it"
+        use:tooltip={{ name: 'Already open above — jump to it' }}
       >
         <span class="glyph">⤴</span>
         <span class="title">{childTitle(child)}</span>
@@ -305,8 +306,8 @@
           type="button"
           class="row-action"
           data-testid="outline-place-node"
-          title="Place on Current Canvas"
           onclick={() => placeNodeOnBoard(child.nodeId)}
+          use:tooltip={{ name: 'Place on current canvas' }}
         >
           Place
         </button>
@@ -454,8 +455,8 @@
                 type="button"
                 class="row-action"
                 data-testid="outline-place-node"
-                title="Place on Current Canvas"
                 onclick={() => placeNodeOnBoard(node.id)}
+                use:tooltip={{ name: 'Place on current canvas' }}
               >
                 Place
               </button>
@@ -487,8 +488,8 @@
                   type="button"
                   class="row-action"
                   data-testid="outline-place-note"
-                  title="Place on Current Canvas"
                   onclick={() => placeNoteOnBoard(note.id)}
+                  use:tooltip={{ name: 'Place on current canvas' }}
                 >
                   Place
                 </button>

@@ -18,6 +18,7 @@
   import { showFirstRun } from '../chrome/first-run'
   import { toast } from '../chrome/status'
   import { closeTakeover } from '../chrome/takeover'
+  import { tooltip } from '../chrome/tooltip'
   import Button from '../ui/Button.svelte'
   import TextInput from '../ui/TextInput.svelte'
   // §8.2 keymap registry (AI-IMP-117): the Keyboard section reads the
@@ -370,8 +371,8 @@
           class:selected={settings.flatCanvasColor === 'off'}
           data-testid="settings-flat-off"
           aria-pressed={settings.flatCanvasColor === 'off'}
-          title="Theme surface"
           onclick={() => setAppSetting('flatCanvasColor', 'off')}
+          use:tooltip={{ name: 'Theme surface' }}
         >
           ×
         </button>
@@ -383,7 +384,9 @@
             style={`background: var(${token})`}
             data-testid={`settings-flat-${index + 1}`}
             aria-pressed={settings.flatCanvasColor === token}
+            aria-label={`Flat canvas color ${index + 1}`}
             onclick={() => setAppSetting('flatCanvasColor', token)}
+            use:tooltip={{ name: `Flat canvas color ${index + 1}` }}
           >
           </button>
         {/each}

@@ -23,6 +23,7 @@
   import { navigateTo } from './navigation'
   import { closeSearchPanel, type SearchPanelState } from './search'
   import { contextMenuOpen } from '../menus/ContextMenu'
+  import { tooltip } from './tooltip'
 
   // Read-model shapes (persistence queries-search / queries-structure).
   interface SearchResults {
@@ -363,6 +364,7 @@
       data-testid="search-close"
       aria-label="Close"
       onclick={closeSearchPanel}
+      use:tooltip={{ name: 'Close' }}
     >
       ✕
     </button>

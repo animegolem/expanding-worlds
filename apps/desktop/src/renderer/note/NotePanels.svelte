@@ -12,6 +12,7 @@
   import type { CanvasHostHandle } from '../canvas/host'
   import { importFilesAt } from '../canvas/import-surfaces'
   import { EW_BEAT_TEAR_MS, EW_BEAT_UNTAPE_MS } from '../chrome/beats'
+  import { tooltip } from '../chrome/tooltip'
   import LocationChooser from './LocationChooser.svelte'
   import NotePanel from './NotePanel.svelte'
   import PushPin from './paper/PushPin.svelte'
@@ -289,6 +290,7 @@
         style={`left:${indicator.x - 12}px;top:${indicator.y - 12}px`}
         onclick={indicator.flyTo}
         aria-label="Fly to this panel's node"
+        use:tooltip={{ name: "Fly to this panel's node" }}
       >
         <span style={`transform: rotate(${indicator.angle}rad)`}>➤</span>
       </button>
@@ -314,6 +316,7 @@
         style={`width:${view.pinSize}px;height:${view.pinSize}px;margin-left:${-view.pinSize / 2}px;top:${-view.pinSize * 0.45}px`}
         onclick={() => void pullLandmarkPin(view.placementId)}
         aria-label="Pull the pin — lift this page back off the board"
+        use:tooltip={{ name: 'Pull the pin — lift this page back off the board' }}
       >
         <PushPin size={view.pinSize} />
       </button>

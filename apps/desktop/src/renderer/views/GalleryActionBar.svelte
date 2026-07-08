@@ -23,6 +23,9 @@
   import { nameKey, uuidv7 } from '@ew/domain'
   import type { CommandResult } from '@ew/commands'
   import { toast } from '../chrome/status'
+  import { tooltip } from '../chrome/tooltip'
+  import { KEY } from '../keys/bindings'
+  import { formatBinding } from '../keys/registry'
   import Button from '../ui/Button.svelte'
   import TextInput from '../ui/TextInput.svelte'
 
@@ -210,7 +213,7 @@
       data-testid="gallery-action-pull"
       style="font-weight: 600;"
       disabled={busy || !canPull}
-      title={canPull ? undefined : PULL_HINT}
+      tip={canPull ? undefined : { name: PULL_HINT }}
       onclick={(event) => onPull?.(event)}
     >
       pull into this world
@@ -255,7 +258,7 @@
     aria-pressed={tagOpen}
     data-testid="gallery-action-tag"
     disabled={busy || readOnly}
-    title={readOnly ? READ_ONLY_HINT : undefined}
+    tip={readOnly ? { name: READ_ONLY_HINT } : undefined}
     onclick={() => (tagOpen = !tagOpen)}
   >
     tag
@@ -264,7 +267,7 @@
     variant="default"
     data-testid="gallery-action-place"
     disabled={busy || readOnly}
-    title={readOnly ? READ_ONLY_HINT : undefined}
+    tip={readOnly ? { name: READ_ONLY_HINT } : undefined}
     onclick={onPlace}
   >
     place
@@ -273,7 +276,9 @@
     variant="default"
     data-testid="gallery-action-trash"
     disabled={busy || readOnly}
-    title={readOnly ? READ_ONLY_HINT : undefined}
+    tip={readOnly
+      ? { name: READ_ONLY_HINT }
+      : { name: 'Move to Trash', shortcut: formatBinding(KEY.galleryDelete) }}
     onclick={() => void trashSelection()}
   >
     trash
@@ -284,6 +289,7 @@
     aria-label="Clear selection"
     data-testid="gallery-action-clear"
     onclick={onClear}
+    use:tooltip={{ name: 'Clear selection' }}
   >
     ✕
   </button>

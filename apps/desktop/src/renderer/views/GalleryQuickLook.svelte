@@ -15,6 +15,8 @@
   "no full-size image" line rather than a blown-up glyph.
 -->
 <script lang="ts">
+  import { tooltip } from '../chrome/tooltip'
+
   interface PreviewItem {
     kind: 'image' | 'note' | 'board'
     label: string
@@ -80,6 +82,7 @@
     data-testid="gallery-quicklook-close"
     aria-label="Close Quick Look"
     onclick={onClose}
+    use:tooltip={{ name: 'Close Quick Look' }}
   >
     Esc
   </button>

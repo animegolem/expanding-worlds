@@ -39,6 +39,7 @@
 
 <script lang="ts">
   import { navigateTo } from '../chrome/navigation'
+  import { tooltip } from '../chrome/tooltip'
   import { requestCenterPlacements } from './open-note'
   import { reserveTetheredPanelSpace } from './panels'
 
@@ -130,7 +131,7 @@
           class="bare seam-off"
           data-testid="metadata-toggle"
           onclick={() => onToggle(false)}
-          title="Stop keeping this block on this note"
+          use:tooltip={{ name: 'Stop keeping this block on this note' }}
         >
           ✕
         </button>
@@ -152,8 +153,8 @@
                     class="bare fold"
                     data-testid="metadata-fold"
                     aria-expanded={row.open}
-                    title={row.open ? 'Fold nested boards' : 'Unfold nested boards'}
                     onclick={() => toggleFold(row.board)}
+                    use:tooltip={{ name: row.open ? 'Fold nested boards' : 'Unfold nested boards' }}
                   >
                     {row.open ? '▾' : '▸'}
                   </button>
@@ -166,10 +167,13 @@
                   type="button"
                   class="bare fly-chip"
                   data-testid="metadata-fly"
-                  title={row.board.canvasId === activeCanvasId
-                    ? 'Center these placements'
-                    : `Fly to ${row.board.label}`}
                   onclick={() => flyToBoard(row.board)}
+                  use:tooltip={{
+                    name:
+                      row.board.canvasId === activeCanvasId
+                        ? 'Center these placements'
+                        : `Fly to ${row.board.label}`,
+                  }}
                 >
                   ⌖ fly
                 </button>
@@ -214,7 +218,7 @@
         class="bare off-on"
         data-testid="metadata-toggle"
         onclick={() => onToggle(true)}
-        title="Show metadata block on this note"
+        use:tooltip={{ name: 'Show metadata block on this note' }}
       >
         turn on
       </button>

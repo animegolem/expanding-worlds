@@ -85,11 +85,13 @@
     { axis: 'horizontal', label: 'Distribute H' },
     { axis: 'vertical', label: 'Distribute V' },
   ]
-  const reorderOps: Array<{ op: ReorderOp; label: string }> = [
-    { op: 'forward', label: 'Forward' },
-    { op: 'backward', label: 'Backward' },
-    { op: 'front', label: 'To front' },
-    { op: 'back', label: 'To back' },
+  // The z-order chords live in the registry (AI-IMP-136); the chip
+  // prints each from its binding so the letter can't drift.
+  const reorderOps: Array<{ op: ReorderOp; label: string; key: string }> = [
+    { op: 'forward', label: 'Forward', key: KEY.boardSendForward },
+    { op: 'backward', label: 'Backward', key: KEY.boardSendBackward },
+    { op: 'front', label: 'To front', key: KEY.boardSendFront },
+    { op: 'back', label: 'To back', key: KEY.boardSendBack },
   ]
   // §4.9 rev 0.38: compact-pack sort keys and normalize modes. No chord
   // is assigned (the family is broad and grows with EPIC-016 menus);
@@ -508,7 +510,7 @@
           type="button"
           data-testid={`order-${entry.op}`}
           onclick={() => void tooling.reorder(entry.op)}
-          use:tooltip={{ name: entry.label }}
+          use:tooltip={{ name: entry.label, shortcut: formatBinding(entry.key) }}
         >
           {entry.label}
         </button>
@@ -713,7 +715,7 @@
       class="tool"
       data-testid="zoom-fit"
       onclick={() => tooling.zoomToFit()}
-      use:tooltip={{ name: 'Zoom to fit' }}
+      use:tooltip={{ name: 'Zoom to fit', shortcut: formatBinding(KEY.boardZoomFit) }}
     >
       ⤢
     </button>

@@ -67,6 +67,7 @@
   import { toast } from '../chrome/status'
   import { consumeGalleryEverythingRequest } from '../chrome/first-run'
   import { closeTakeover } from '../chrome/takeover'
+  import { tooltip } from '../chrome/tooltip'
   import { requestOpenNote, requestPlaceNode } from '../note/open-note'
   import { openCornerPanel } from '../note/panels'
   import GalleryActionBar from './GalleryActionBar.svelte'
@@ -1135,7 +1136,7 @@
     </span>
     <!-- 168: thumbnail-size slider (§14.4 rev 0.55) — rescales the
          bucketed grid live; the choice persists app-tier. -->
-    <label class="thumb-size" title="Thumbnail size">
+    <label class="thumb-size" use:tooltip={{ name: 'Thumbnail size' }}>
       <span class="thumb-glyph small" aria-hidden="true">▪</span>
       <input
         type="range"

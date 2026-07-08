@@ -20,6 +20,7 @@
   import type { CanvasHostHandle } from '../canvas/host'
   import { navigateTo } from '../chrome/navigation'
   import { toast } from '../chrome/status'
+  import { tooltip } from '../chrome/tooltip'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
   import { reserveTetheredPanelSpace } from '../note/panels'
   import { closeTagPanel, openTagPanel, type TagPanelState } from './tag-panel'
@@ -353,9 +354,9 @@
       class:on={editing}
       aria-pressed={editing}
       data-testid="tag-panel-rename"
-      title="Rename this tag"
       disabled={!view}
       onpointerdown={toggleRename}
+      use:tooltip={{ name: 'Rename this tag' }}
     >
       ✎
     </button>
@@ -366,10 +367,14 @@
       aria-pressed={lensOn}
       data-testid="tag-panel-lens"
       disabled={!lensOn && activePlacementIds.length === 0}
-      title={activePlacementIds.length === 0 && !lensOn
-        ? 'No carriers on this board'
-        : 'Lens — dim everything but this tag'}
       onclick={toggleLens}
+      use:tooltip={{
+        name: lensOn
+          ? 'Lens on · esc'
+          : activePlacementIds.length === 0
+            ? 'No carriers on this board'
+            : 'Lens — dim everything but this tag',
+      }}
     >
       ◐
     </button>
@@ -379,6 +384,7 @@
       data-testid="tag-panel-close"
       aria-label="Close"
       onclick={closeTagPanel}
+      use:tooltip={{ name: 'Close' }}
     >
       ✕
     </button>
@@ -413,8 +419,8 @@
                 type="button"
                 class="action"
                 data-testid={`tag-row-note-${node.id}`}
-                title="Open note"
                 onclick={() => requestOpenNote(node.noteId!)}
+                use:tooltip={{ name: 'Open note' }}
               >
                 ¶
               </button>
@@ -425,8 +431,8 @@
               type="button"
               class="location"
               data-testid={`tag-row-fly-${placement.placementId}`}
-              title="Fly to this placement"
               onclick={() => void flyTo(placement)}
+              use:tooltip={{ name: 'Fly to this placement' }}
             >
               <span class="glyph">⌖</span>
               <span class="loc-label">{placement.canvasLabel}</span>
