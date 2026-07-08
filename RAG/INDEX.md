@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 181 |
+| Completed | 19 | 183 |
 | **Total** | **25** | **206** |
 
 ## In Progress
@@ -71,8 +71,6 @@
 - [[AI-IMP-201-wheel-over-panel-passthrough|IMP-201]] — planned, no epic dependency found
 - [[AI-IMP-202-desk-physics-absent|IMP-202]] — planned, no epic dependency found
 - [[AI-IMP-204-gallery-preview-inspector|IMP-204]] — planned, no epic dependency found
-- [[AI-IMP-205-mouse-navigation-scheme|IMP-205]] — planned, no epic dependency found
-- [[AI-IMP-206-live-feel-dial|IMP-206]] — planned, no epic dependency found
 - [[AI-IMP-207-rail-surface-exclusivity|IMP-207]] — planned, no epic dependency found
 - [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
 
@@ -96,16 +94,16 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4671 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (2043 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4692 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (2085 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2019 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1764 LOC)
 - apps/desktop/src/main/index.ts (1106 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1059 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (975 LOC)
 - apps/desktop/e2e/notes.spec.ts (969 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (954 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (932 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (896 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (886 LOC)
@@ -138,9 +136,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/undo.spec.ts (581 LOC)
 - apps/desktop/src/renderer/note/editor-markdown.ts (579 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
+- RAG/HUMAN-TESTING.md (571 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
-- RAG/HUMAN-TESTING.md (554 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
@@ -198,6 +196,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
+- apps/desktop/src/renderer/dev/feel-dial.ts (327 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)

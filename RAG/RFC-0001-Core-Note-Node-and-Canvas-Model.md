@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.66         | 7 July 2026      |
+| Accepted for Phase 1 | 0.67         | 8 July 2026      |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1444,11 +1444,27 @@ Zoom to fit and zoom to selection adjust camera state only and are not
 durable commands.
 
 **Camera input.** Input mapping follows platform muscle memory rather
-than inventing its own: on trackpads, pinch MUST zoom centered on the
-pointer and two-finger scroll SHOULD pan; a discrete mouse wheel zooms
-at the pointer; holding Space or dragging with the middle button pans.
-Whether wheel-zoom versus wheel-pan needs a user preference is an open
-question (§19). The pointer SHOULD communicate interaction state — a
+than inventing its own — and because a mouse wheel and a trackpad
+two-finger scroll arrive as identical wheel events (no engine can
+tell the devices apart), the plain wheel's meaning is a **navigation
+scheme setting** (rev 0.67, resolving former open question 18 on the
+first mixed-device tester's report): `trackpad` (default) keeps plain
+wheel = pan; `mouse` routes plain wheel into the same cursor-anchored
+zoom the modifier gestures use. Everything else is scheme-independent:
+pinch MUST zoom centered on the pointer and Mod+wheel zooms at the
+pointer in BOTH schemes; holding Space or dragging with the middle
+button pans in both (middle-drag suppresses the platform autoscroll).
+The scheme × gesture table:
+
+| Gesture | Trackpad scheme (default) | Mouse scheme |
+|---|---|---|
+| Plain wheel / two-finger scroll | Pan (1:1) | Zoom at cursor |
+| Pinch (ctrl-flagged wheel) | Zoom at cursor | Zoom at cursor |
+| Mod + wheel | Zoom at cursor | Zoom at cursor |
+| Middle-button drag | Pan | Pan |
+| Space + drag | Pan | Pan |
+
+The pointer SHOULD communicate interaction state — a
 grab cursor while panning, directional cursors over resize and rotate
 zones.
 
@@ -3958,9 +3974,11 @@ the optional media-backup adapter — now framed as adapter actions
 inside the §4.7 importer dialogue, alongside format conversion and
 the auto-optimize threshold.
 
-18. Whether camera input mapping needs a user preference (mouse-wheel
-zoom versus wheel pan) once artists with mixed trackpad and mouse
-setups weigh in.
+18. (Resolved, rev 0.67, AI-IMP-205.) Camera input mapping DOES need
+the user preference: the first mouse-device tester expected wheel =
+zoom on day one. Resolved as the navigation scheme setting in §6.9's
+camera-input table — trackpad (default, wheel pans) versus mouse
+(wheel zooms); pinch/Mod+wheel/middle-drag are scheme-independent.
 
 19. Whether frame objects — the on-canvas containers sanctioned in
 section 6.8 — become necessary after prototype use, and what
@@ -4219,8 +4237,11 @@ Accepted for the Phase 1 prototype:
   background.
 
 - Camera input follows platform muscle memory: pinch zooms at the
-  pointer, two-finger scroll pans, wheel zooms, Space or middle-drag
-  pans; the cursor communicates interaction state. Smart guides render
+  pointer, Space or middle-drag pans, and the plain wheel obeys the
+  navigation scheme setting (trackpad default: wheel pans; mouse:
+  wheel zooms at the cursor — rev 0.67, the devices are
+  indistinguishable at the event level so the user declares); the
+  cursor communicates interaction state. Smart guides render
   quiet and appear only while engaged; snapping uses hysteresis.
 
 - Rotation snaps by orientation (cardinal magnetism; Shift = 15°

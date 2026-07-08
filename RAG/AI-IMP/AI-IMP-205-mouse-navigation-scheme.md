@@ -6,11 +6,12 @@ tags:
   - canvas
   - input
   - feel
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.7
 date_created: 2026-07-08
+date_completed: 2026-07-08
 ---
 
 
@@ -76,14 +77,15 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Middle-button drag pans; no autoscroll/auxclick leakage.
 - [x] Scheme setting exists, persists, defaults to trackpad;
       wheel obeys it; pinch/Cmd+wheel zoom in both schemes.
-- [ ] RFC input grammar updated; 201's rule table cross-checked.
-      (Deferred to the LEAD per brief: agent must NOT edit the RFC —
-      the exact scheme × gesture → verb rows are handed off in the
-      agent report for the lead to add.)
+- [x] RFC input grammar updated; 201's rule table cross-checked.
+      (Lead, at merge: §6.9 camera-input gains the scheme × gesture
+      table, open question 18 resolved, §20 summary updated, rev
+      0.67. 201 note: its wheel-over-panel rule table gains a
+      scheme column — recorded in that ticket's wave brief.)
 - [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e. (build ✓, test ✓ full suite 216 passed, lint ✓, e2e ✓
       four foreground shards 41/59/66/49 + 1 perf-flaky-on-retry.)
-- [ ] HUMAN-TESTING entry appended at merge by the lead (alph
+- [x] HUMAN-TESTING entry appended at merge by the lead (alph
       first pass — it's his scheme).
 
 ### Acceptance Criteria

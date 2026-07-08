@@ -10,6 +10,23 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Mouse navigation scheme** (AI-IMP-205, 2026-07-08, alph's
+  ask — he gets first pass): Settings → Navigation → Mouse, then on
+  a real mouse: scroll wheel zooms toward the cursor; holding the
+  middle button + drag pans (no autoscroll puck should appear);
+  flip back to Trackpad and two-finger scroll pans again. Pinch and
+  ⌘/Ctrl+wheel zoom in both modes. Known tuning point: zoom-per-
+  notch on a discrete Windows wheel may feel different from
+  trackpad — that's what the feel dial is for.
+
+- [ ] **The feel dial** (AI-IMP-206, 2026-07-08 — this one IS the
+  tuning tool): press ⌥⇧⌘F (macOS) / Ctrl+Shift+Alt+F (Windows) to
+  open it. Drag Zoom-ease (τ) and feel the very next zoom change —
+  alph's "weight" complaint is this slider. When it feels right,
+  "Copy values" puts JSON on the clipboard — paste it in Discord
+  and the numbers become the shipped defaults. "Reset" returns to
+  code values.
+
 - [ ] **Guide previous button** (AI-IMP-203, 2026-07-08, alph's
   ask): replay the guide from Settings — page forward a few cards,
   click ‹ previous and tap ArrowLeft/ArrowRight. Does the disabled
