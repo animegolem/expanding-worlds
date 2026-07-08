@@ -20,6 +20,7 @@
 <script lang="ts">
   import { SOURCE_ITEM_MIME } from '../canvas/import-surfaces'
   import GalleryFacets from '../views/GalleryFacets.svelte'
+  import { tooltip } from './tooltip'
   import {
     acquireSourceSlot,
     closeSourcePanel,
@@ -277,6 +278,7 @@
       data-testid="source-panel-close"
       aria-label="Close source panel"
       onclick={() => closeSourcePanel()}
+      use:tooltip={{ name: 'Close source panel' }}
     >
       ✕
     </button>

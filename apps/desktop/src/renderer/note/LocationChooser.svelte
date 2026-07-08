@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import { dismissChooser, jumpToPlacement, type ChooserState } from './panels'
+  import { tooltip } from '../chrome/tooltip'
 
   const { state, hostElement }: { state: ChooserState; hostElement: HTMLElement } = $props()
 
@@ -35,7 +36,13 @@
 <div class="chooser" style={`left:${pos.x}px;top:${pos.y}px`} data-testid="location-chooser">
   <header>
     <span class="title">“{state.title}” — {state.uses.totalPlacements} places</span>
-    <button type="button" data-testid="chooser-close" onclick={dismissChooser} aria-label="Close">
+    <button
+      type="button"
+      data-testid="chooser-close"
+      onclick={dismissChooser}
+      aria-label="Close"
+      use:tooltip={{ name: 'Close' }}
+    >
       ✕
     </button>
   </header>

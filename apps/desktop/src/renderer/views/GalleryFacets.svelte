@@ -18,6 +18,7 @@
 -->
 <script lang="ts">
   import TextInput from '../ui/TextInput.svelte'
+  import { tooltip } from '../chrome/tooltip'
 
   type GalleryKind = 'image' | 'note' | 'board'
   type GallerySort = 'date' | 'name' | 'size'
@@ -205,6 +206,7 @@
         type="button"
         aria-label={`Remove ${tag.name} filter`}
         onclick={() => onRemoveTag(tag.id)}
+        use:tooltip={{ name: `Remove #${tag.name} filter` }}
       >
         ✕
       </button>

@@ -146,21 +146,24 @@
           class="no-drag"
           data-testid="window-minimize"
           aria-label="Minimize"
-          onclick={() => void window.ew.window.minimize()}>–</button
+          onclick={() => void window.ew.window.minimize()}
+          use:tooltip={{ name: 'Minimize' }}>–</button
         >
         <button
           type="button"
           class="no-drag"
           data-testid="window-maximize"
           aria-label="Maximize"
-          onclick={() => void window.ew.window.toggleMaximize()}>▢</button
+          onclick={() => void window.ew.window.toggleMaximize()}
+          use:tooltip={{ name: 'Maximize' }}>▢</button
         >
         <button
           type="button"
           class="no-drag close"
           data-testid="window-close"
           aria-label="Close"
-          onclick={() => void window.ew.window.close()}>✕</button
+          onclick={() => void window.ew.window.close()}
+          use:tooltip={{ name: 'Close' }}>✕</button
         >
       </div>
     {/if}

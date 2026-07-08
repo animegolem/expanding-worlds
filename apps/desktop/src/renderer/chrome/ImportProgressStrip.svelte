@@ -12,6 +12,7 @@
     requestImportCancel,
     type ImportProgressState,
   } from './import-progress'
+  import { tooltip } from './tooltip'
 
   let progress = $state<ImportProgressState | null>(null)
   $effect(() => onImportProgressChanged((next) => (progress = next)))
@@ -45,6 +46,7 @@
       aria-label="Cancel remaining imports"
       disabled={progress.cancelRequested}
       onclick={requestImportCancel}
+      use:tooltip={{ name: 'Cancel remaining imports' }}
     >
       ✕
     </button>

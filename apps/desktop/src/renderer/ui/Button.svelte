@@ -21,18 +21,29 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import type { HTMLButtonAttributes } from 'svelte/elements'
+  import { tooltip, type TooltipSpec } from '../chrome/tooltip'
 
   type Props = Omit<HTMLButtonAttributes, 'type'> & {
     variant?: 'default' | 'accent' | 'secondary' | 'ghost' | 'danger'
+    /** The §8.2 house tooltip chip. Use this — NEVER a native `title` —
+     * so a button's name / shortcut / disabled-reason rides the one
+     * chip style app-wide. */
+    tip?: TooltipSpec
     children: Snippet
   }
 
-  let { variant = 'default', children, ...rest }: Props = $props()
+  let { variant = 'default', tip, children, ...rest }: Props = $props()
 </script>
 
-<button type="button" class="ew-button {variant}" {...rest}>
-  {@render children()}
-</button>
+{#if tip}
+  <button type="button" class="ew-button {variant}" use:tooltip={tip} {...rest}>
+    {@render children()}
+  </button>
+{:else}
+  <button type="button" class="ew-button {variant}" {...rest}>
+    {@render children()}
+  </button>
+{/if}
 
 <style>
   /* ---- the one geometry (kit 1.2 ruling) ---- */
