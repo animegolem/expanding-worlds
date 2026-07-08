@@ -66,11 +66,11 @@ sweep; existing world-scale specs updated to the new clamp.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Hold-at-floor clamp; readable at typical zooms; deep-zoom
+- [x] Hold-at-floor clamp; readable at typical zooms; deep-zoom
       behavior defined and deliberate.
-- [ ] Undock size ratio measured before/after and recorded.
-- [ ] Big-editor shadow reads in both themes.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Undock size ratio measured before/after and recorded.
+- [x] Big-editor shadow reads in both themes.
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -89,3 +89,57 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Hold-at-floor.** Replaced fade-at-floor with a render clamp. The
+tethered placement panel now carries two scales: `worldScale` =
+`min(1, zoom)` (the true camera scale, drives only the deep-overview
+fade) and the RENDER `scale` = `heldPanelScale(worldScale)` =
+`max(worldScale, MIN_PANEL_SCREEN_SCALE)`. Above the floor it world-
+tracks; below it, it behaves like a mini pinned panel — position still
+world-tracked (glued to its node), size SCREEN-HELD at the floor. A
+deep-overview fade (`tetheredPanelOverviewOpacity`) keeps the old
+"dissolve, don't loom" behavior but only far out.
+
+**Constants (named, in `note/panels.ts`; owner feel-tunes).**
+`MIN_PANEL_SCREEN_SCALE = 0.5` (panel never renders below half its
+default card → ≥160px wide), `PANEL_OVERVIEW_FADE_SCALE = 0.1`,
+`PANEL_OVERVIEW_FADE_SPAN = 0.06` (held panel is fully opaque down to
+worldScale 0.1, gone by 0.04). NB: these live in `note/panels.ts`, NOT
+`chrome/feel.ts` — the brief fenced this agent out of `chrome/**`, and
+they are SCALE fractions (not rendered-px), so they sit beside the panel
+lifecycle. `feel.ts`'s now-unused `tetheredPanelOpacity`/
+`PANEL_LEGIBILITY_FLOOR`/`FADE` were left untouched (out of scope; still
+exercised by `feel.test.ts`) — a lead follow-up could delete them.
+
+**Undock ratio measured (recorded).** Undock = tether→pin (sticky is the
+full-size 320px card). Tethered rendered width vs pinned 320:
+- BEFORE (fade-at-floor, scale = min(1,zoom)): zoom 0.3 → 96px →
+  **3.33×**; zoom 0.2 → 64px → **5.0×** (the reported 4–6× jump).
+- AFTER (hold-at-floor, floor 0.5): any board zoom ≤0.5 → held 160px →
+  a flat **2.0×**.
+E2e `undock (tether → pin)…` asserts ratio ≤2.1 at zoom 0.3. The
+`…world-track down to a floor then HOLD…` e2e asserts width HOLDS at 160
+across zooms 0.5/0.25/0.12 (no shrink) and stays opaque, fading only at
+0.03.
+
+**Big-editor shadow (The Two Materials).** The doc's rule: world content
+is FLAT, floating PAPER casts a reading shadow. The big editor used
+`0 18px 60px var(--ew-dialog-shadow)` — a single diffuse wash that "did
+not read." Added token `--ew-paper-float-shadow` (a tight CONTACT layer +
+a soft AMBIENT layer, like `--ew-drag-shadow`), themed: dark/default
+`0 2px 8px rgba(0,0,0,.34), 0 20px 44px rgba(0,0,0,.52)`; light
+`0 2px 8px rgba(8,10,14,.16), 0 18px 40px rgba(8,10,14,.26)`; glass
+inherits the dark value (like `--ew-drag-shadow`, which glass also does
+not override). `.big-editor` now uses it. E2e asserts a non-empty,
+≥2-layer computed box-shadow.
+
+**Also fixed (adjacent, in the undock path):** `pinHere()` never
+scheduled a relayout (unlike `tearOut()`), so pinning at board zoom left
+the sticky at the held tethered scale until the next pan. Added
+`schedule()` so the undock resize lands immediately. (Cross-referenced
+in AI-IMP-199.)
+
+**199 coupling:** this hold-at-floor is ALSO the cure for AI-IMP-199's
+"can't open anymore" half — an open note at board zoom is now visible and
+interactable instead of faded to `pointer-events:none`. Same root cause
+(AI-IMP-116 world-scale fade).

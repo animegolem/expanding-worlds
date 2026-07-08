@@ -63,13 +63,13 @@ paints, no 0,0 frame).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] No paint before position: first visible frame is at the
+- [x] No paint before position: first visible frame is at the
       final spawn point.
-- [ ] Spawn anchored to pointer/placement with the house §8.8
+- [x] Spawn anchored to pointer/placement with the house §8.8
       clamp.
-- [ ] Root cause(s) of the double flash documented in Issues
+- [x] Root cause(s) of the double flash documented in Issues
       Encountered.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -87,3 +87,34 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Root cause (single, not two).** The double-flash is ONE cause, not a
+second re-render: the panel's `pos` is `$state({x:0,y:0})` at mount and
+only earns a real value in `layout()`, which runs inside a
+`requestAnimationFrame` (and, on a fresh open, after the async port +
+note load). The `<section>` was fully visible during that gap, so it
+painted at the window's upper-left — and because the load kicked several
+schedule()→layout() passes, it flashed there more than once before
+jumping to the anchor. There is no separate scene-applied re-render
+flash; gating the first paint removes every corner paint at once.
+
+**Fix.** Added a `positioned` guard (false until the first `layout()`).
+Until then the panel is `visibility:hidden` and `pointer-events:none`;
+`layout()` flips `positioned` true in the SAME synchronous pass that
+sets the real `pos`, so the first reveal is already placed. `onMount`
+now calls `schedule()` synchronously (independent of the async
+port/note load) so the hold window is ~1 frame, not the ~250ms the flash
+used to last. The spawn position already anchors to the placement/pointer
+through the existing §8.8 in-window clamp (`Math.min/max` into the
+viewport in `layout()` / `layoutBoundPage`) — no hand-rolled clamp added.
+
+**Verified** by a per-frame e2e sampler (`AI-IMP-193` in panels.spec):
+pre-fix it recorded a `{left:0, top:0, visible:true}` frame (the flash);
+post-fix NO visible frame ever sits in the upper-left, and the first
+placed paint is beside the node.
+
+**199 coupling verdict:** NOT the same cause as 199. This gate is the
+unpositioned first paint (the "opens…and closes" visual); 199's
+"can't-open-anymore" half is the AI-IMP-116 world-scale fade, shared
+with AI-IMP-200. Both were fixed. See AI-IMP-199 Issues for the full
+braid.

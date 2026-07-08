@@ -82,6 +82,48 @@ export function clampPanelSize(size: PanelSize): PanelSize {
   }
 }
 
+// ---- §8.5 rev 0.47 HOLD-AT-FLOOR (AI-IMP-200) ----
+// A tethered panel scales WITH the world (rev 0.47), but rev 0.47's
+// fade-at-floor made it a postage stamp at the zoom levels boards
+// actually live at — "almost unperceivable as even open" (owner FAIL).
+// The clamp holds the render size at a legibility floor: world-tracked
+// down to the floor, then a MINI PINNED PANEL below it (position still
+// world-tracked, glued to its node; size SCREEN-HELD). A deep-zoom fade
+// is kept only for far-out overview, where even the held panel would
+// loom over a tiny board. These are hand-tuned feel numbers (the owner
+// feel-tunes), NOT model state — and NOT the shrink-ladder's rendered-px
+// gates: they clamp a SCALE (a fraction of the default card), so they
+// live here beside the panel lifecycle rather than in the px ladder.
+
+/** The panel never renders below this SCREEN scale — half its default
+ * card. Below it the panel holds this size and world-tracks its node. */
+export const MIN_PANEL_SCREEN_SCALE = 0.5
+
+/** World scale at/above which the held panel is fully opaque. Below it,
+ * only in deep overview, the panel fades out (it can no longer earn its
+ * screen real estate over a board shrunk to a thumbnail). */
+export const PANEL_OVERVIEW_FADE_SCALE = 0.1
+
+/** Scale span of the overview fade: opacity ramps 1 → 0 across this,
+ * gone by PANEL_OVERVIEW_FADE_SCALE − PANEL_OVERVIEW_FADE_SPAN. */
+export const PANEL_OVERVIEW_FADE_SPAN = 0.06
+
+/** The render scale a tethered panel draws at for a given WORLD scale:
+ * world-tracked (= worldScale) until it would drop below the floor,
+ * then HELD at the floor so an open note always reads as open. */
+export function heldPanelScale(worldScale: number): number {
+  return Math.max(worldScale, MIN_PANEL_SCREEN_SCALE)
+}
+
+/** Overview-fade opacity for a tethered panel at `worldScale`: full at
+ * the board zooms notes are read at, a smooth 1 → 0 ramp only far out. */
+export function tetheredPanelOverviewOpacity(worldScale: number): number {
+  const gone = PANEL_OVERVIEW_FADE_SCALE - PANEL_OVERVIEW_FADE_SPAN
+  if (worldScale >= PANEL_OVERVIEW_FADE_SCALE) return 1
+  if (worldScale <= gone) return 0
+  return (worldScale - gone) / PANEL_OVERVIEW_FADE_SPAN
+}
+
 /** A one-shot transition beat the panel component plays exactly once
  * (§8.2 world beat budget, AI-IMP-135). The seq disambiguates repeats. */
 export interface PanelBeat {
@@ -790,7 +832,16 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
     renamers.clear()
     chooser = null
     notifyChooser()
+    // AI-IMP-199: the big editor's takeover-family input blocker was the
+    // one terminal state with no reset path — detach nulled bigEditorKey
+    // but never RELEASED bigEditorBlocker, so its predicate closure stayed
+    // registered and takeoverActive() could read stale across a canvas
+    // swap. Release it here so teardown fully unwinds the modal (mirrors
+    // closeBigEditor's own release).
     bigEditorKey = null
+    bigEditorTorn = false
+    bigEditorBlocker?.()
+    bigEditorBlocker = null
     notifyBigEditor()
     host = null
     notify()

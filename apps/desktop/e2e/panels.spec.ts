@@ -93,7 +93,7 @@ test('pin accumulation and the escalation ladder (§8.5)', async () => {
   await app.close()
 })
 
-test('tethered panels scale WITH the world; pinned stay screen-fixed; the floor fades (§8.5 rev 0.47, AI-IMP-116)', async () => {
+test('tethered panels world-track down to a floor then HOLD (no postage stamp); pinned stay screen-fixed; deep overview fades (§8.5 rev 0.47, AI-IMP-116/200)', async () => {
   const { app, win } = await launchApp('ew-e2e-panel-scale-')
   await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
@@ -110,9 +110,8 @@ test('tethered panels scale WITH the world; pinned stay screen-fixed; the floor 
   await expect(pane.getByTestId('note-pane-title')).toHaveText(/Harbor/)
   expect(await paneWidth()).toBe(320)
 
-  // Zoom the world to 50%: the tethered panel's rendered box shrinks in
-  // proportion (it is world content now) and stays glued right of its
-  // node, still fully opaque above the legibility floor.
+  // Zoom the world to 50%: still world-tracking, glued right of its node,
+  // at the floor boundary (MIN_PANEL_SCREEN_SCALE 0.5 → 160), fully opaque.
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.5 }))
   await expect.poll(paneWidth).toBe(160)
   expect(await paneOpacity()).toBeCloseTo(1, 1)
@@ -123,9 +122,19 @@ test('tethered panels scale WITH the world; pinned stay screen-fixed; the floor 
   const at50 = (await pane.boundingBox())!
   expect(at50.x - box.x).toBeGreaterThan(nodeScreenX) // panel is right of the node
 
-  // Zoom far out, below the floor: the panel FADES rather than shrinking
-  // into unreadable confetti (charm screen-size rule).
+  // AI-IMP-200 HOLD-AT-FLOOR: zoom further to the zoom boards actually
+  // live at — the panel does NOT keep shrinking into a stamp. It HOLDS at
+  // the floor (160), still opaque and interactable, position world-tracked.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.25 }))
+  await expect.poll(paneWidth).toBe(160)
+  expect(await paneOpacity()).toBeCloseTo(1, 1)
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.12 }))
+  await expect.poll(paneWidth).toBe(160)
+  expect(await paneOpacity()).toBeCloseTo(1, 1)
+
+  // Only in DEEP overview (worldScale below the fade floor) does the held
+  // panel dissolve — where it would otherwise loom over a thumbnail board.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.03 }))
   await expect.poll(paneOpacity).toBeLessThan(0.05)
 
   // Back to 100% and PIN: a pinned panel is a sticky note on the glass —
@@ -141,6 +150,70 @@ test('tethered panels scale WITH the world; pinned stay screen-fixed; the floor 
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.25 }))
   expect(Math.round((await pinned.boundingBox())!.width)).toBe(320)
   expect(await pinned.evaluate((el) => Number(getComputedStyle(el).opacity))).toBeCloseTo(1, 1)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-200: undocking (tether → pin) used to jump the size 4–6× at
+ * board zoom because the tethered panel had shrunk to a stamp. With
+ * hold-at-floor the tethered panel holds at the legibility floor, so the
+ * jump to the full-size pinned card shrinks to ~2×. This measures the
+ * ratio at a representative board zoom and records the win.
+ */
+test('undock (tether → pin) no longer multiplies the size 4–6× (§8.5, AI-IMP-200)', async () => {
+  const { app, win } = await launchApp('ew-e2e-panel-undock-')
+  await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/)
+
+  // A representative board zoom (0.3): the tethered panel holds at 160.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.3 }))
+  await expect
+    .poll(async () => Math.round((await win.getByTestId('note-pane').boundingBox())!.width))
+    .toBe(160)
+  const tetheredWidth = Math.round((await win.getByTestId('note-pane').boundingBox())!.width)
+
+  // Pin it: the sticky is the full-size card (320), screen-fixed and
+  // relaid-out immediately (undock resize lands now, not on next pan).
+  await win.getByTestId('panel-pin').click()
+  const pinned = win.locator('.note-panel.pinned')
+  await expect(pinned).toHaveCount(1)
+  await expect.poll(async () => Math.round((await pinned.boundingBox())!.width)).toBe(320)
+  const pinnedWidth = Math.round((await pinned.boundingBox())!.width)
+  expect(pinnedWidth).toBe(320)
+
+  // Undock ratio at board zoom: was 320/96 ≈ 3.3× (0.3) and up to 5× at
+  // 0.2; hold-at-floor makes it a flat 320/160 = 2.0×.
+  const ratio = pinnedWidth / tetheredWidth
+  expect(ratio).toBeLessThanOrEqual(2.1)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-200: the big editor is floating paper (The Two Materials) and
+ * must wear a shadow that READS — a token value, not the old diffuse
+ * wash. Assert it resolves to a non-empty, layered box-shadow.
+ */
+test('the big editor carries a reading paper shadow (§8.5 Two Materials, AI-IMP-200)', async () => {
+  const { app, win } = await launchApp('ew-e2e-big-shadow-')
+  await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/)
+  await win.getByTestId('panel-expand').click()
+  await expect(win.getByTestId('big-editor')).toBeVisible()
+  const shadow = await win
+    .getByTestId('big-editor')
+    .evaluate((el) => getComputedStyle(el).boxShadow)
+  // A real, layered cast: non-empty, more than one shadow layer.
+  expect(shadow).not.toBe('none')
+  expect(shadow.split('rgba').length).toBeGreaterThan(2) // ≥ 2 layers
 
   await app.close()
 })
@@ -583,6 +656,140 @@ test('image dropped on a note panel lands on the board beside it (§6.1, AI-IMP-
   // The note body is exactly as seeded — the drop never reached the editor.
   const note = await runQuery<{ body: string }>(win, 'getNote', { noteId })
   expect(note.body).toBe('quiet body')
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-199: the note-open lifecycle must be idempotent and
+ * self-healing — no sequence of fast open/close clicks may leave a
+ * node's note permanently unopenable for the session (owner review
+ * FAIL, 2026-07-08). The audit found the store's open/close is
+ * already race-guarded (AI-IMP-171/184/185); the one terminal state
+ * with no reset path was the big-editor input blocker leaking on host
+ * detach (fixed in panels.ts). These drive the wedging sequences and
+ * assert the panel always ends OPENABLE: present, opaque, and
+ * pointer-interactable.
+ */
+async function openablePaneState(win: import('@playwright/test').Page) {
+  return win.evaluate(() => {
+    const el = document.querySelector('[data-testid="note-pane"]') as HTMLElement | null
+    if (!el) return { present: false, opacity: 0, pointerEvents: 'none', title: '' }
+    const cs = getComputedStyle(el)
+    return {
+      present: true,
+      opacity: Number(cs.opacity),
+      pointerEvents: cs.pointerEvents,
+      title: el.querySelector('[data-testid="note-pane-title"]')?.textContent ?? '',
+    }
+  })
+}
+
+test('spam open/close a note 10× fast always ends openable (§8.5, AI-IMP-199)', async () => {
+  const { app, win } = await launchApp('ew-e2e-panel-wedge-')
+  await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Rapid open-then-instant-close, ten times — the exact wedging shape
+  // (open + immediate click-away on the close control).
+  for (let i = 0; i < 10; i += 1) {
+    await win.mouse.dblclick(box.x + 400, box.y + 300)
+    try {
+      await win.getByTestId('panel-close').click({ timeout: 1500 })
+    } catch {
+      // Not painted yet on this iteration; the next open still must work.
+    }
+  }
+
+  // The final open MUST succeed and be interactable.
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/, { timeout: 5000 })
+  const st = await openablePaneState(win)
+  expect(st.present).toBe(true)
+  expect(st.opacity).toBeGreaterThan(0.5)
+  expect(st.pointerEvents).not.toBe('none')
+
+  await app.close()
+})
+
+test('open-while-closing bursts through the store never wedge the tethered slot (AI-IMP-199)', async () => {
+  const { app, win } = await launchApp('ew-e2e-panel-wedge2-')
+  const { noteId } = await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+
+  // Interleave open + close with no awaits: the store must not strand a
+  // ghost tethered record that eats the re-open (the AI-IMP-171 lesson).
+  await win.evaluate((id: string) => {
+    for (let i = 0; i < 14; i += 1) {
+      window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+      ;(document.querySelector('[data-testid="panel-close"]') as HTMLElement | null)?.click()
+    }
+    window.dispatchEvent(new CustomEvent('ew-open-note', { detail: { noteId: id } }))
+  }, noteId)
+
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/, { timeout: 5000 })
+  const st = await openablePaneState(win)
+  expect(st.opacity).toBeGreaterThan(0.5)
+  expect(st.pointerEvents).not.toBe('none')
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-193: the tethered panel must NEVER paint at the placeholder
+ * 0,0 (the window's upper-left) before its real position lands. A
+ * per-frame sampler records the pane's inline position and computed
+ * visibility across the open; the invariant is that no VISIBLE frame
+ * ever sits at the upper-left — the first placed paint is already
+ * beside the node.
+ */
+test('note panel never flashes at the window corner before positioning (§8.5, AI-IMP-193)', async () => {
+  const { app, win } = await launchApp('ew-e2e-panel-flash-')
+  await seedPlacedNote(win, 'Harbor', 'stone quay', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Sample every frame for ~1.5s, capturing whether the pane is visible
+  // and where its inline position sits.
+  await win.evaluate(() => {
+    ;(window as unknown as { __paneSamples: unknown[] }).__paneSamples = []
+    let n = 0
+    const tick = (): void => {
+      const el = document.querySelector('[data-testid="note-pane"]') as HTMLElement | null
+      if (el) {
+        const cs = getComputedStyle(el)
+        ;(window as unknown as { __paneSamples: unknown[] }).__paneSamples.push({
+          visible: cs.visibility !== 'hidden' && Number(cs.opacity) > 0.01,
+          left: parseFloat(el.style.left || '0'),
+          top: parseFloat(el.style.top || '0'),
+        })
+      }
+      if (n++ < 90) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })
+
+  await win.mouse.dblclick(box.x + 400, box.y + 300)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/, { timeout: 5000 })
+  await win.waitForTimeout(400)
+
+  const samples = await win.evaluate(
+    () =>
+      (window as unknown as { __paneSamples: Array<{ visible: boolean; left: number; top: number }> })
+        .__paneSamples,
+  )
+  const visible = samples.filter((s) => s.visible)
+  // The panel did appear at least once, visible…
+  expect(visible.length).toBeGreaterThan(0)
+  // …and NO visible frame sat in the upper-left corner (the flash).
+  const corner = visible.filter((s) => s.left < 40 && s.top < 40)
+  expect(corner, JSON.stringify(corner)).toEqual([])
+  // Its placed position is beside the node (to its right), not the corner.
+  expect(visible[visible.length - 1]!.left).toBeGreaterThan(200)
 
   await app.close()
 })
