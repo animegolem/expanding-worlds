@@ -126,3 +126,57 @@
   font-size: 0.85em;
   letter-spacing: 0.05em;
 }
+
+/* §7.1 URL cluster (AI-IMP-170, rev 0.66). Inline URL links render
+   distinct from wiki links (`.ew-link`), with a hover chip naming the
+   DOMAIN (the DOM `title`, set in renderHTML). Activation stays ours
+   (§7.3): the mark carries NO openOnClick — v1 renders only. Colors ride
+   theme tokens (glass re-tints). */
+.ew-note-prose .ew-url-link {
+  color: var(--ew-url-link);
+  text-decoration: underline;
+  text-decoration-color: var(--ew-url-link-decoration);
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+/* §7.1 `==highlight==` marker mark. */
+.ew-note-prose .ew-highlight {
+  background: var(--ew-highlight-bg);
+  color: var(--ew-highlight-text);
+  border-radius: 3px;
+  padding: 0.02em 0.14em;
+}
+
+/* §7.1/§11.5 non-fetching image chip (`![alt](url)`): a glyph + label
+   pill that NEVER loads over the network (the markdown-it image renderer
+   emits this span, never an <img>). Activation routes through the
+   universal viewer when it exists; `![[…]]` embeds are a separate path. */
+.ew-note-prose .ew-image-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  vertical-align: baseline;
+  max-width: 100%;
+  padding: 0.03em 0.42em;
+  border: 1px solid var(--ew-image-chip-border);
+  border-radius: 5px;
+  background: var(--ew-image-chip-bg);
+  color: var(--ew-image-chip-text);
+  font-size: 0.9em;
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ew-note-prose .ew-image-chip-glyph {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.ew-note-prose .ew-image-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 24ch;
+}

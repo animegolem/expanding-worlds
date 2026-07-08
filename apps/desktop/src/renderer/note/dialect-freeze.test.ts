@@ -68,7 +68,11 @@ describe('frozen dialect guard (§7.1 — RFC decision, not a refactor)', () => 
         'extension:tabindex',
         'mark:bold',
         'mark:code',
+        // AI-IMP-170: the §7.1 URL cluster + highlight (rev 0.66). These
+        // three grow the frozen serializable surface by ruling.
+        'mark:highlight',
         'mark:italic',
+        'mark:link',
         'mark:strike',
         'node:blockquote',
         'node:bulletList',
@@ -77,6 +81,7 @@ describe('frozen dialect guard (§7.1 — RFC decision, not a refactor)', () => 
         'node:hardBreak',
         'node:heading',
         'node:horizontalRule',
+        'node:image',
         'node:listItem',
         'node:orderedList',
         'node:paragraph',
@@ -100,6 +105,8 @@ describe('frozen dialect guard (§7.1 — RFC decision, not a refactor)', () => 
         'hardBreak',
         'heading',
         'horizontalRule',
+        // AI-IMP-170: the non-fetching image chip (`![alt](url)`).
+        'image',
         'listItem',
         'orderedList',
         'paragraph',
@@ -108,7 +115,10 @@ describe('frozen dialect guard (§7.1 — RFC decision, not a refactor)', () => 
       expect(Object.keys(editor.schema.marks).sort()).toEqual([
         'bold',
         'code',
+        // AI-IMP-170: `==highlight==` and the inline URL `link` mark.
+        'highlight',
         'italic',
+        'link',
         'strike',
       ])
     } finally {

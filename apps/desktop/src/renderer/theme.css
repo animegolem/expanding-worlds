@@ -250,6 +250,17 @@
   --ew-note-code-bg: rgba(43, 108, 176, 0.1);
   --ew-note-code-text: #9c4221;
 
+  /* §7.1 URL cluster + highlight (AI-IMP-170, rev 0.66). Inline URL
+     links, the non-fetching image chip, and the `==highlight==` marker.
+     Light paper (light + dark boards); glass re-tints below. */
+  --ew-url-link: #2563b0;
+  --ew-url-link-decoration: #2563b080;
+  --ew-highlight-bg: rgba(250, 204, 21, 0.4);
+  --ew-highlight-text: #4a3a00;
+  --ew-image-chip-bg: rgba(43, 108, 176, 0.1);
+  --ew-image-chip-border: rgba(43, 108, 176, 0.32);
+  --ew-image-chip-text: #2b6cb0;
+
   /* The editor face + scale (RFC §7.1, STYLE-GUIDE v2 §3; AI-IMP-131).
      Maple Mono is the ONE typography carve-out — note TEXT only, never
      chrome (chrome keeps the platform stack). The face is bundled woff2
@@ -446,4 +457,14 @@
   /* Glass: dark paper, so the code chip lightens to stay legible. */
   --ew-note-code-bg: rgba(142, 194, 245, 0.14);
   --ew-note-code-text: #e0a878;
+
+  /* Glass: dark paper — the §7.1 URL cluster + highlight re-tint to stay
+     legible (AI-IMP-170). */
+  --ew-url-link: #8ec2f5;
+  --ew-url-link-decoration: #8ec2f580;
+  --ew-highlight-bg: rgba(234, 179, 8, 0.34);
+  --ew-highlight-text: #f5edd2;
+  --ew-image-chip-bg: rgba(142, 194, 245, 0.14);
+  --ew-image-chip-border: rgba(142, 194, 245, 0.32);
+  --ew-image-chip-text: #8ec2f5;
 }
