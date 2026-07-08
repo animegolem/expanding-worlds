@@ -13,11 +13,13 @@
   the panel next.
 -->
 <script lang="ts">
+  import { tick } from 'svelte'
   import { shortCode } from '@ew/domain'
   import NodeRow from '../rows/NodeRow.svelte'
   import TextInput from '../ui/TextInput.svelte'
   import type { CanvasHostHandle } from '../canvas/host'
   import { navigateTo } from '../chrome/navigation'
+  import { toast } from '../chrome/status'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
   import { reserveTetheredPanelSpace } from '../note/panels'
   import { closeTagPanel, openTagPanel, type TagPanelState } from './tag-panel'
@@ -59,6 +61,15 @@
   let lensOn = $state(false)
   let activeCanvasId = $state(handle.canvasId)
   let errorMessage = $state<string | null>(null)
+
+  // AI-IMP-171: rename THIS tag. The pencil swaps the completion
+  // switcher region into an editor for the current name — a distinct
+  // verb from the switcher (which pivots to ANOTHER tag), so it carries
+  // its own placeholder and the pencil's pressed state.
+  let editing = $state(false)
+  let renameValue = $state('')
+  let renameBusy = $state(false)
+  let renameInput = $state<HTMLInputElement | null>(null)
 
   // Same §8.5 point grammar as the location chooser: client coords of
   // the summoning control, clamped into the host.
@@ -132,6 +143,74 @@
     }
   }
 
+  // ------------------------------------------------------ §4.8 rename
+  async function startRename(): Promise<void> {
+    if (!view) return
+    renameValue = view.tag.name
+    editing = true
+    await tick()
+    renameInput?.focus()
+    renameInput?.select()
+  }
+
+  // Return to the switcher, discarding the edit (Escape, blur, or the
+  // pencil toggled off). Non-destructive: only Enter commits.
+  function cancelRename(): void {
+    editing = false
+  }
+
+  // The pencil is one toggle. pointerdown+preventDefault keeps the
+  // rename input's focus, so toggling off never counts as a stray blur
+  // (and never bounces through the click that would re-open it).
+  function toggleRename(event: PointerEvent): void {
+    event.preventDefault()
+    if (editing) cancelRename()
+    else void startRename()
+  }
+
+  // §4.8: identity is independent of name; the raw name goes to the
+  // handler, which owns name_key discipline. Enter commits; a
+  // TAG_NAME_CONFLICT names the collision in a toast and keeps the
+  // editor open so the user can retype.
+  async function commitRename(): Promise<void> {
+    if (renameBusy || !view) return
+    const name = renameValue.trim()
+    if (name.length === 0 || name === view.tag.name) {
+      cancelRename()
+      return
+    }
+    renameBusy = true
+    try {
+      const result = await handle.gateway.execute('RenameTag', { tagId: panel.tagId, name })
+      if (result.status === 'committed') {
+        // Reflect the new name in the switcher at once; live surfaces
+        // (chips, vocabulary, this panel's view) follow on onChanged.
+        search = name
+        editing = false
+        return
+      }
+      if (result.status === 'error' && result.code === 'TAG_NAME_CONFLICT') {
+        toast(`A tag named "${name}" already exists`, { kind: 'error' })
+        return
+      }
+      const message =
+        result.status === 'error' ? result.message : 'the project changed underneath (retry)'
+      toast(message, { kind: 'error' })
+    } finally {
+      renameBusy = false
+    }
+  }
+
+  function onRenameKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      void commitRename()
+    }
+    // Escape is consumed by the window-capture handler below (it must
+    // preempt the panel's lens/close Escape and never leak to the
+    // canvas — the SearchPanel:328 pattern).
+  }
+
   // ------------------------------------------------------ §4.8 lens
   const activePlacementIds = $derived(
     view?.nodes.flatMap((node) =>
@@ -168,13 +247,22 @@
     }),
   )
 
-  // Layered Escape, one layer per press: an active lens peels first
-  // (the host's own keydown handler does it — we just decline the
-  // event); with no lens the panel closes and CONSUMES the press so
-  // the host does not also clear the selection underneath.
+  // Layered Escape, one layer per press. The rename editor peels FIRST
+  // and CONSUMES the press (capture + stopPropagation, the
+  // SearchPanel:328 pattern) so the edit cancels without leaking to the
+  // canvas or peeling the lens/closing the panel underneath. With no
+  // editor: an active lens peels first (the host's own keydown handler
+  // does it — we just decline the event); with no lens the panel closes
+  // and CONSUMES the press so the host does not also clear the
+  // selection underneath.
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
+      if (editing) {
+        event.stopPropagation()
+        cancelRename()
+        return
+      }
       if (handle.lens() !== null) return
       event.stopPropagation()
       closeTagPanel()
@@ -211,33 +299,58 @@
   <header>
     <span class="hash">#</span>
     <span class="field-wrap">
-      <TextInput
-        variant="pill"
-        data-testid="tag-panel-input"
-        placeholder="tag…"
-        style="width: 100%"
-        bind:value={search}
-        onfocus={() => (searchFocus = true)}
-        onblur={() => (searchFocus = false)}
-        onkeydown={onSearchKeydown}
-      />
-      {#if searchFocus && search && completions().length > 0}
-        <span class="tag-completions" data-testid="tag-panel-completions">
-          {#each completions() as tag (tag.id)}
-            <button
-              type="button"
-              data-testid="tag-panel-option"
-              onpointerdown={(e) => {
-                e.preventDefault()
-                pickTag(tag)
-              }}
-            >
-              {tag.name}
-            </button>
-          {/each}
-        </span>
+      {#if editing}
+        <TextInput
+          variant="pill"
+          data-testid="tag-panel-rename-input"
+          placeholder="rename this tag…"
+          style="width: 100%"
+          bind:ref={renameInput}
+          bind:value={renameValue}
+          onkeydown={onRenameKeydown}
+          onblur={cancelRename}
+        />
+      {:else}
+        <TextInput
+          variant="pill"
+          data-testid="tag-panel-input"
+          placeholder="tag…"
+          style="width: 100%"
+          bind:value={search}
+          onfocus={() => (searchFocus = true)}
+          onblur={() => (searchFocus = false)}
+          onkeydown={onSearchKeydown}
+        />
+        {#if searchFocus && search && completions().length > 0}
+          <span class="tag-completions" data-testid="tag-panel-completions">
+            {#each completions() as tag (tag.id)}
+              <button
+                type="button"
+                data-testid="tag-panel-option"
+                onpointerdown={(e) => {
+                  e.preventDefault()
+                  pickTag(tag)
+                }}
+              >
+                {tag.name}
+              </button>
+            {/each}
+          </span>
+        {/if}
       {/if}
     </span>
+    <button
+      type="button"
+      class="rename-toggle"
+      class:on={editing}
+      aria-pressed={editing}
+      data-testid="tag-panel-rename"
+      title="Rename this tag"
+      disabled={!view}
+      onpointerdown={toggleRename}
+    >
+      ✎
+    </button>
     <button
       type="button"
       class="lens-toggle"
@@ -388,6 +501,7 @@
   }
 
   .lens-toggle,
+  .rename-toggle,
   .close {
     flex: none;
     min-width: 22px;
@@ -401,13 +515,15 @@
     font-size: 12px;
   }
 
-  .lens-toggle.on {
+  .lens-toggle.on,
+  .rename-toggle.on {
     background: var(--ew-accent);
     border-color: var(--ew-accent);
     color: var(--ew-on-accent);
   }
 
-  .lens-toggle:disabled {
+  .lens-toggle:disabled,
+  .rename-toggle:disabled {
     opacity: 0.4;
     cursor: default;
   }
