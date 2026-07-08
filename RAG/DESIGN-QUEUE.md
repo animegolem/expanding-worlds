@@ -56,7 +56,29 @@ The Two Materials + kit 1.1's beat ledger, ratified at rev 0.56
   about whether deep-nested/many-frame charm clutter matters, and
   does anything else migrate into the frame's bar? No work waits
   on this; revisit when frames see real use.
-- **Undo capture breadth** (from the 2026-07-06 Codex review;
+(Undo capture breadth RESOLVED 2026-07-08, owner ruling on the
+lead's reframe: EVERY deliberate verb joins Mod+Z — appearance,
+renames, tag edits, detach, bookmark edits, "free size rotating,
+all of those should definitely be covered" — EXCEPT node-trash,
+which keeps the Trash as its recovery home. Explicitly a
+feel-tested ruling: trimming a verb back out is one line each if
+the week's testing says so. Lands with the AI-IMP-173 fix wave.)
+
+- **iPad companion / V2 shape** (owner, 2026-07-08, tabled until
+  after testing week): the coherent V2 sketch — desktop app paired
+  with an iPad app (Tauri v2 shell + system WebKit hosting the SAME
+  renderer packages; PencilKit for pencil ink, plausibly as a new
+  decoration kind), with GIT AS THE SYNC REPOSITORY between the two
+  (the FR-7 snapshot engine already plants this flag). Key lead
+  observations recorded at capture: the desktop does NOT need
+  converting off Electron for this — the sync format is the
+  contract between apps, not the runtime; the hard design work is
+  sync SEMANTICS (mergeable state representation), git is just
+  transport; the Electron main/node:sqlite half is cleanly seamed
+  behind packages/protocol, so a Rust persistence port is a fenced
+  job. Pricing musing attached: plausibly a ~$5 paid app on the
+  iOS store; desktop DMG stays direct.
+- **Undo capture breadth — superseded original entry** (from the 2026-07-06 Codex review;
   AI-IMP-114 shipped a deliberate eight-command "gesture-shaped"
   set, narrower than §10.2's all-durable-commands reading): decide
   the target set — do renames, tag edits, appearance switches,
