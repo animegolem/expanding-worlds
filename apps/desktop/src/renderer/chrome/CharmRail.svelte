@@ -73,11 +73,15 @@
 
   $effect(() => {
     if (!projectOpen) return
+    // AI-IMP-183 (M-24): consume Escape (capture + stopPropagation) so it
+    // closes the project popover without leaking to the canvas underneath.
     const onKeydown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') projectOpen = false
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      projectOpen = false
     }
-    window.addEventListener('keydown', onKeydown)
-    return () => window.removeEventListener('keydown', onKeydown)
+    window.addEventListener('keydown', onKeydown, true)
+    return () => window.removeEventListener('keydown', onKeydown, true)
   })
 </script>
 

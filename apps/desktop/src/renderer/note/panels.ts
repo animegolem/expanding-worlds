@@ -13,6 +13,7 @@ import { itemWorldAABB, type ScreenInset } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from '../canvas/host'
 import { navigateTo } from '../chrome/navigation'
 import { toast } from '../chrome/status'
+import { registerInputBlocker } from '../chrome/takeover'
 import {
   onOpenNote,
   onOpenPhantom,
@@ -459,6 +460,10 @@ let bigEditorKey: number | null = null
  * by tearing a bound page to center wears the torn-page chrome and the
  * tear/tuck beats; an ordinary expand does not. */
 let bigEditorTorn = false
+/** §8.5 modal (AI-IMP-183 M-11): while the big editor is open it is a
+ * takeover-FAMILY input blocker — held here so open/close register and
+ * release it. */
+let bigEditorBlocker: (() => void) | null = null
 const bigEditorListeners = new Set<(key: number | null) => void>()
 
 function notifyBigEditor(): void {
@@ -470,6 +475,14 @@ export function openBigEditor(key: number, opts?: { torn?: boolean }): void {
   if (!records.some((record) => record.key === key)) return
   bigEditorKey = key
   bigEditorTorn = opts?.torn === true
+  // §8.5 modal (AI-IMP-183 M-11/M-29): register the editor as an input
+  // blocker so Mod+P quick-open and Mod+[/] Back/Forward are suppressed
+  // under it (they guard on takeoverActive()); registering also notifies
+  // the takeover store, retiring the tag/search panels — which removes
+  // the M-12 capture-steal by construction (the panels are gone before
+  // the editor's Escape matters). bigEditorKey is set above, so the
+  // predicate reads true when registerInputBlocker broadcasts.
+  if (!bigEditorBlocker) bigEditorBlocker = registerInputBlocker(() => bigEditorKey !== null)
   notifyBigEditor()
 }
 
@@ -477,6 +490,8 @@ export function closeBigEditor(): void {
   if (bigEditorKey === null) return
   bigEditorKey = null
   bigEditorTorn = false
+  bigEditorBlocker?.()
+  bigEditorBlocker = null
   notifyBigEditor()
 }
 

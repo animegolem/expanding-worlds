@@ -22,6 +22,7 @@
   import { openTagPanel } from '../tags/tag-panel'
   import { navigateTo } from './navigation'
   import { closeSearchPanel, type SearchPanelState } from './search'
+  import { contextMenuOpen } from '../menus/ContextMenu'
 
   // Read-model shapes (persistence queries-search / queries-structure).
   interface SearchResults {
@@ -331,7 +332,12 @@
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
-      event.stopPropagation()
+      // AI-IMP-183 (M-13): decline to a topmost context menu (document-
+      // capture) rather than stealing its Escape from underneath.
+      if (contextMenuOpen()) return
+      // AI-IMP-183 (M-28): stopImmediatePropagation so a sibling window-
+      // capture panel (tag) does not also close on the same press.
+      event.stopImmediatePropagation()
       closeSearchPanel()
     }
     window.addEventListener('keydown', onKeydown, true)

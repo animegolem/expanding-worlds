@@ -58,7 +58,16 @@ const inputBlockers = new Set<() => boolean>()
 
 export function registerInputBlocker(predicate: () => boolean): () => void {
   inputBlockers.add(predicate)
-  return () => inputBlockers.delete(predicate)
+  // AI-IMP-183 (M-29): a takeover-FAMILY overlay coming or going changes
+  // takeoverActive(), so broadcast it. Subscribers that retire on a
+  // takeover (the tag/search panels) now also close under an input
+  // blocker — e.g. the big editor — not only under a NAMED view. Listeners
+  // read takeoverActive() (not the null kind an unnamed blocker carries).
+  notify()
+  return () => {
+    inputBlockers.delete(predicate)
+    notify()
+  }
 }
 
 export function takeoverActive(): boolean {
