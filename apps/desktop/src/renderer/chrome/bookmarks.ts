@@ -40,6 +40,12 @@ export async function listBookmarks(): Promise<BookmarkRow[]> {
  * camera when one was captured. */
 export async function jumpToBookmark(handle: CanvasHostHandle, row: BookmarkRow): Promise<void> {
   await navigateTo(row.canvasId, row.label)
+  // A superseding flight may have moved the live canvas off this
+  // bookmark's board while navigateTo awaited: only restore the saved
+  // viewport if the board is still on screen, or the debounced persist
+  // would durably write it onto the wrong board (AI-IMP-176 M-01,
+  // mirrors host.refresh()'s forCanvas guard).
+  if (handle.canvasId !== row.canvasId) return
   if (row.viewport) handle.controller.camera.set(row.viewport)
 }
 

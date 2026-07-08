@@ -1811,8 +1811,16 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     sync.clear()
     resetBeats()
     textureBudget.releaseAll()
-    const scene = await runQuery<CanvasScene | null>('getCanvasScene', { canvasId })
-    if (scene) controller.camera.set(scene.camera)
+    const forCanvas = nextCanvasId
+    const scene = await runQuery<CanvasScene | null>('getCanvasScene', { canvasId: forCanvas })
+    // A superseding openCanvas while this scene query was in flight moved
+    // the live canvas on: writing this scene's camera now would land A's
+    // viewport on B, and the debounced SetCanvasCamera would durably
+    // overwrite B's saved camera with it (AI-IMP-176 M-01). Guard the
+    // write against the live canvasId, exactly as refresh() guards its
+    // apply. The refresh() call below already carries its own forCanvas
+    // guard for the scene body.
+    if (scene && forCanvas === canvasId) controller.camera.set(scene.camera)
     if (cameraTimer) clearTimeout(cameraTimer)
     cameraTimer = null
     await refresh()
