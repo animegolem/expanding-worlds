@@ -62,11 +62,11 @@ background (computed style assert).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pill removed; bare path text; prototype spacing at the
+- [x] Pill removed; bare path text; prototype spacing at the
       traffic lights.
-- [ ] Smoky hover gradient, opacity-only, tokenized.
-- [ ] Drag-handle behavior unchanged; pin/beat untouched.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Smoky hover gradient, opacity-only, tokenized.
+- [x] Drag-handle behavior unchanged; pin/beat untouched.
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -85,3 +85,54 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Prototype measurements used** (Pin & Menu Motion Prototype
+.dc.html, §t1 stripzone): strip gradient
+`linear-gradient(180deg, rgba(12,13,16,.82) 0%, rgba(12,13,16,.55)
+55%, rgba(12,13,16,.28) 100%)`; reveal `opacity 0→1, 220ms
+ease-out` (`[data-strip]`, opacity is the ONLY animated property);
+signature-spot content starts at `left:78px` in the prototype's
+46px band with lights at x:18 — mapped to the shipped 5rem (80px)
+clearance TitleStrip already validated against
+`trafficLightPosition x:14`. Shipped tokens updated to the
+prototype's exact stops: `--ew-strip-scrim` .88→.82 on rgb 9,10,13
+→ 12,13,16, `--ew-strip-scrim-fade` 0→.28, new
+`--ew-strip-scrim-mid` .55 (the middle stop could NOT reuse
+`--ew-scrim` — same dark value but re-themed light in the light
+theme, which would have broken the chrome-mono strip; all three
+stops are now :root-only strip tokens). The prototype's
+`border-bottom: 1px rgba(255,255,255,.04)` was deliberately
+omitted: a hairline edge reads as "a bar", which decision-01
+explicitly rejects, and the shipped strip has never had one.
+
+**Board button/menu relocation (consequence fix).** The pill
+removal puts bare path text exactly where the strip's Board button
+lived (both at the traffic-light corner); PathBar must also paint
+ABOVE the strip gradient (z-index 4 over the strip's 3) or the
+hover reveal covers the very text it frames. That stacked the
+Board button's hit target under the path bar, so Board moved to
+the strip's right edge (`margin-left:auto`) and the board-menu
+dropdown re-anchored `right:0.5rem` under its opener. On Linux the
+same auto margin carries the drawn window controls; verified
+mac-only (per AI-IMP-165's precedent, off-mac untested).
+
+**Svelte outro deadlock (found and fixed during validation).**
+First cut used `transition:fade`; the 220ms OUTRO keeps the
+detached strip in the DOM after hide, `revealTitleStrip`'s
+`isVisible()` idempotence guard reads that ghost as "up", skips
+the reveal move, and the click races the unmount — a
+deterministic `openBoardMenu` timeout in board-tooling e2e
+(background lifecycle). Reproduced minimally (open → close →
+reopen within 220ms), then fixed by fading IN only (`in:fade`);
+hide stays the instant unmount it has always been, which is all
+decision-01 requires ("fades in across the top band on hover").
+e2e helpers were out of this ticket's file fence, so the fix had
+to live in the component — the right place anyway.
+
+**Validation:** `pnpm -r build` clean; unit tests 380+538+58+1+18
++1 (packages) + 329 (desktop vitest) all green; `pnpm lint` clean;
+hidden-window e2e full suite 213/213 across four alphabetical
+shards (41 + 58 + 65 + 49) on the final source. New assertions in
+shell.spec: strip opacity SAMPLED mid-fade rises then settles at 1
+(a real fade, not a pop), and `path-bar` has computed
+`background-color: rgba(0,0,0,0)` (no pill).

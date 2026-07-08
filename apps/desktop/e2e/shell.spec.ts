@@ -175,6 +175,38 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
     )
     .toBe('drag')
 
+  // AI-IMP-191 (§8.2 decision-01): the hover reveal is a smoky
+  // near-black gradient that genuinely RISES (a fade, not a hard pop) —
+  // sample it mid-transition, then confirm it settles fully opaque.
+  const readStripOpacity = () =>
+    win.evaluate(() => {
+      const el = document.querySelector('[data-testid="title-strip"]') as HTMLElement | null
+      return el ? Number(getComputedStyle(el).opacity) : null
+    })
+  const earlyOpacity = await readStripOpacity()
+  await win.waitForTimeout(90)
+  const midOpacity = await readStripOpacity()
+  expect(midOpacity).not.toBeNull()
+  expect(earlyOpacity).not.toBeNull()
+  expect(midOpacity!).toBeGreaterThan(earlyOpacity!)
+  await expect
+    .poll(() =>
+      win.evaluate(
+        () => getComputedStyle(document.querySelector('[data-testid="title-strip"]')!).opacity,
+      ),
+    )
+    .toBe('1')
+
+  // AI-IMP-191: decision-01 drops the pill — the path/board-name reads
+  // as bare text at the traffic-light corner (no chip behind it).
+  await expect
+    .poll(() =>
+      win.evaluate(
+        () => getComputedStyle(document.querySelector('[data-testid="path-bar"]')!).backgroundColor,
+      ),
+    )
+    .toBe('rgba(0, 0, 0, 0)')
+
   // Engagement cadence: one shared clock fades the WHOLE layer; the
   // canvas never reflows. Driven via the deterministic test event —
   // hidden windows have no OS cursor to enter or leave.

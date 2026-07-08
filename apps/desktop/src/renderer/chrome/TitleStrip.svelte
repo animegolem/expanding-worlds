@@ -11,10 +11,23 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { SceneBackground, SceneDecoration } from '@ew/canvas-engine'
+  import { fade } from 'svelte/transition'
   import { appSettings, onAppSettingsChanged } from '../settings/settings'
   import { themeTokenValue } from '../theme'
   import { tooltip } from './tooltip'
   import { TITLE_STRIP_REVEAL_PX } from './feel'
+
+  // AI-IMP-191: decision-01's hover reveal is opacity-only — chrome
+  // animates exactly one property. 220ms matches the ratified prototype
+  // (Pin & Menu Motion Prototype, [data-strip]{transition:opacity 220ms
+  // ease-out}). A real fade (not a plain mount) so it smokes in instead
+  // of popping. INTRO ONLY (in:fade, never transition:fade): an outro
+  // keeps the fading strip in the DOM for 220ms after hide, and
+  // everything that polls "is the strip up?" (revealTitleStrip's
+  // idempotence guard) reads that ghost as open, then clicks race the
+  // detach — reproduced as a deterministic openBoardMenu deadlock in
+  // board-tooling e2e. Hide stays the instant unmount it always was.
+  const STRIP_FADE_MS = 220
 
   const {
     handle,
@@ -113,11 +126,16 @@
 
 {#if stripVisible}
   <!-- §8.2 "the shell eats the window": the strip root IS the window
-       drag handle (-webkit-app-region: drag). Every interactive child
-       carves itself back out with no-drag, or the OS would swallow the
-       click as a window move. data-drag-region mirrors the CSS so e2e
-       can assert the handle without depending on -webkit-app-region
-       surfacing through getComputedStyle. -->
+       drag handle (-webkit-app-region: drag). AI-IMP-191's reveal is a
+       genuine fade (in:fade, opacity only — chrome animates exactly one
+       property) rather than a hard mount pop; hide stays an instant
+       unmount (see STRIP_FADE_MS above for why an outro is forbidden),
+       so the reveal-zone hover contract e2e already relies on keeps
+       working. Every interactive child carves itself back out with
+       no-drag, or the OS would swallow the click as a window move.
+       data-drag-region mirrors the CSS so e2e can assert the handle
+       without depending on -webkit-app-region surfacing through
+       getComputedStyle. -->
   <div
     class="title-strip"
     class:mac={isMac}
@@ -126,10 +144,11 @@
     role="toolbar"
     tabindex="-1"
     onpointerleave={hide}
+    in:fade={{ duration: STRIP_FADE_MS }}
   >
     <button
       type="button"
-      class="no-drag"
+      class="no-drag board-trigger"
       data-testid="board-menu-button"
       class:active={boardMenuOpen}
       onclick={() => (boardMenuOpen = !boardMenuOpen)}
@@ -282,10 +301,15 @@
     pointer-events: auto;
   }
 
-  /* The strip and its sheets are a temporary top-edge layer and must
-     paint over the path bar (which occupies the same corner). §8.2:
-     a smoky near-black gradient (never a bar) that dissolves downward
-     into the board, and the window drag handle. */
+  /* The strip is a temporary top-edge layer: a smoky near-black gradient
+     (never a bar, §8.2) that dissolves downward into the board and IS
+     the window drag handle. PathBar (z-index 4, the signature spot)
+     reads ABOVE it on purpose — the gradient is a backdrop, not a
+     cover, so the bare path text stays legible while it fades in.
+     AI-IMP-191: the mount now carries in:fade (script block) instead of
+     popping — opacity is the only property that animates (§8.2
+     decision-01: chrome animates exactly one property), matching the
+     ratified prototype's 220ms ease-out. */
   .title-strip {
     position: absolute;
     top: 0;
@@ -296,10 +320,15 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.32rem 0.6rem 0.7rem;
+    /* AI-IMP-191: matches the ratified prototype's exact stops (stripzone
+       [data-strip]) — a continuous smoky decay (.82 → .55 → .28), not a
+       flat cap that cuts to fully transparent. All three stops are
+       :root-only strip tokens (chrome-mono, never re-themed — --ew-scrim
+       would have flipped the middle stop light in the light theme). */
     background: linear-gradient(
       to bottom,
       var(--ew-strip-scrim) 0%,
-      var(--ew-strip-scrim) 55%,
+      var(--ew-strip-scrim-mid) 55%,
       var(--ew-strip-scrim-fade) 100%
     );
     font-size: 0.75rem;
@@ -309,8 +338,9 @@
   }
 
   /* macOS traffic lights sit in-board over the strip's left edge
-     (trafficLightPosition x:14); clear them so strip content never
-     collides with or hides behind the lights. */
+     (trafficLightPosition x:14); reserve the clearance even though
+     nothing of the strip's own draws there any more (§8.2 decision-01:
+     that corner is the signature spot's alone — see .board-trigger). */
   .title-strip.mac {
     padding-left: 5rem;
   }
@@ -321,8 +351,16 @@
     -webkit-app-region: no-drag;
   }
 
-  .window-controls {
+  /* AI-IMP-191: PathBar (the signature spot) now reads above the strip
+     at the traffic-light corner (z-index 4), so Board can no longer
+     share that corner without silently losing its hit target underneath
+     the path's buttons. Pushed to the strip's own right edge instead —
+     the auto margin also carries window-controls (Linux) along with it. */
+  .board-trigger {
     margin-left: auto;
+  }
+
+  .window-controls {
     display: flex;
     gap: 0.25rem;
   }
@@ -341,7 +379,9 @@
   .board-menu {
     position: absolute;
     top: 2rem;
-    left: 0.5rem;
+    /* AI-IMP-191: mirrors .board-trigger's move to the strip's right
+       edge — the dropdown stays anchored under its own opener. */
+    right: 0.5rem;
     z-index: 3;
     display: flex;
     flex-direction: column;

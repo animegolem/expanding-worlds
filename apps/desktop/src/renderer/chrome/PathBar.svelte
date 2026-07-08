@@ -44,6 +44,11 @@
 
   const { handle }: { handle: CanvasHostHandle } = $props()
 
+  // AI-IMP-191: mac clears the in-board traffic lights the same way
+  // TitleStrip does (trafficLightPosition x:14) — one shared inset so
+  // the signature spot (⌂ + name + pin) never sits cramped against them.
+  const isMac = (window.ew?.window?.platform ?? 'darwin') === 'darwin'
+
   let crumbs = $state<ReadonlyArray<NavEntry>>(pathEntries())
   let backOk = $state(canGoBack())
   let forwardOk = $state(canGoForward())
@@ -137,7 +142,7 @@
   })
 </script>
 
-<div class="path-wrap">
+<div class="path-wrap" class:mac={isMac}>
   <nav class="path-bar" data-testid="path-bar">
     <button
       type="button"
@@ -225,6 +230,20 @@
        the path is short. The bar itself stays fit-content. */
     min-width: 15rem;
     pointer-events: none;
+    /* §8.2 decision-01: the signature spot (⌂ + name + pin) is the ONE
+       thing always shown at the traffic-light corner — it must read
+       above TitleStrip's smoky hover gradient (z-index 3), not be
+       painted over by it, or the reveal hides the very text it exists
+       to frame. */
+    z-index: 4;
+  }
+
+  /* AI-IMP-165 seats the macOS traffic lights in-board at x:14; AI-IMP-191
+     gives the path the same 5rem clearance TitleStrip already validated
+     for its own content, so the two never read as cramped against each
+     other. Non-mac platforms keep the tight default (no in-board lights). */
+  .path-wrap.mac {
+    left: 5rem;
   }
 
   .path-bar {
@@ -233,13 +252,13 @@
     align-items: center;
     gap: 0.15rem;
     padding: 0.15rem 0.3rem;
-    background: var(--ew-surface-subtle);
-    border: 1px solid var(--ew-border);
-    border-radius: 7px;
+    /* AI-IMP-191: no pill — decision-01 wants bare path text at the
+       traffic-light corner, not a chip. The hover-revealed strip
+       gradient underneath is what carries legibility, same as the
+       ratified prototype. */
     font-size: 0.75rem;
     color: var(--ew-text);
     pointer-events: auto;
-    overflow: hidden;
   }
 
   button {
