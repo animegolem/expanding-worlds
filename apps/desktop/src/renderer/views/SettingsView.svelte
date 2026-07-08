@@ -424,6 +424,27 @@
       )}
     </div>
 
+    <!-- §6.9 (AI-IMP-205): mouse vs trackpad wheel scheme. Chromium can't
+         tell the devices apart, so this is a deliberate choice. Trackpad
+         keeps two-finger scroll = pan; Mouse makes the wheel zoom. -->
+    <div class="row" data-testid="settings-row-navigation-scheme">
+      <span class="row-label">Navigation</span>
+      {@render segmented(
+        'settings-navigation-scheme',
+        [
+          { value: 'trackpad', label: 'Trackpad' },
+          { value: 'mouse', label: 'Mouse' },
+        ],
+        settings.navigationScheme,
+        (value) => setAppSetting('navigationScheme', value as AppSettings['navigationScheme']),
+      )}
+    </div>
+    <p class="section-note" data-testid="settings-navigation-note">
+      On a trackpad, two-finger scroll pans the board. On a mouse, the scroll wheel zooms toward the
+      cursor. Either way, ⌘/Ctrl + wheel and pinch always zoom, and holding the middle mouse button
+      pans.
+    </p>
+
     <div class="row" data-testid="settings-row-fade">
       <span class="row-label">Chrome fade delay</span>
       <div class="fade-controls">

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import Workspace from './Workspace.svelte'
   import { attachServiceStatus, attachSnapshotPush } from './chrome/status'
+  import { mountFeelDial } from './dev/feel-dial'
   import { mountUndo } from './undo/undo-keys'
 
   // Service lifecycle → §8.6 toasts + perch (AI-IMP-066). Attached
@@ -16,6 +17,12 @@
 
   // §10.2 structural undo/redo stack + Mod+Z driver (AI-IMP-114).
   onMount(mountUndo)
+
+  // AI-IMP-206 dev feel-dial: the ⌥⇧⌘F tuning overlay. Present in
+  // release builds by design (the remote tester dials feel on his own
+  // Windows build); hidden until the chord opens it. onMount's return
+  // is the disposer.
+  onMount(mountFeelDial)
 </script>
 
 <!--

@@ -260,6 +260,10 @@ declare global {
         wheelSpeed: number
         pinchSpeed: number
       }
+      /** AI-IMP-206: the shipped feel constants captured at mount (before
+       * any zoomTuning dial). The feel-dial's reset restores THESE — code
+       * values — never a prior session's dialed numbers. */
+      zoomTuningDefaults: () => { tau: number; wheelSpeed: number; pinchSpeed: number }
       /** Live chase state: is a wheel/pinch glide in flight, and
        * toward what resting zoom. */
       zoomChase: () => { active: boolean; targetZoom: number | null }
@@ -1671,6 +1675,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // constants are not settings; no UI, no persistence).
   let wheelZoomSpeed = 0.0015 // Cmd+wheel; ~×1.2 per 120px notch
   let pinchZoomSpeed = 0.01 // ctrl-flagged pinch deltas run 1–10px
+  // AI-IMP-206: snapshot the shipped feel constants NOW — before any
+  // zoomTuning dial touches them — so the dev feel-dial's reset button
+  // (and its e2e) always restore the code values (§11.5).
+  const zoomTuningShipped = {
+    tau: zoomChase.tau,
+    wheelSpeed: wheelZoomSpeed,
+    pinchSpeed: pinchZoomSpeed,
+  }
   let spaceHeld = false
   const local = (event: PointerEvent | WheelEvent): { x: number; y: number } => {
     const bounds = app.canvas.getBoundingClientRect()
@@ -1705,9 +1717,26 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     // A touch stops the glide (AI-IMP-098): any drag/pan gesture must
     // start from a camera at rest, never mid-chase under its feet.
     zoomChase.cancel()
+    // AI-IMP-205 middle-button pan: the engine already routes
+    // button === 1 into a pan (ToolManager passthrough → controller
+    // 'panning' state, same camera path as space-drag), and modifiers()
+    // forwards event.button — so the pan itself needs no new wiring
+    // here. What breaks it is Chromium's native middle-click autoscroll:
+    // it captures the pointer, so the app never sees the pointermove.
+    // preventDefault on the middle-button pointerdown suppresses the
+    // autoscroll (and its compatibility mousedown), letting the drag
+    // reach the controller unconditionally, on any device. The base
+    // cursor write below lands 'grabbing' via cursorFor's panning case.
+    if (event.button === 1) event.preventDefault()
     app.canvas.setPointerCapture(event.pointerId)
     tools.pointerDown(local(event), modifiers(event))
     updateCursor(local(event))
+  }
+  // AI-IMP-205: belt-and-suspenders autoscroll suppression — the
+  // auxclick that follows a middle press can still spawn the autoscroll
+  // puck on some Chromium builds; cancel it so nothing leaks.
+  const onAuxClick = (event: MouseEvent): void => {
+    if (event.button === 1) event.preventDefault()
   }
   const onPointerMove = (event: PointerEvent): void => {
     tools.pointerMove(local(event), modifiers(event))
@@ -1727,12 +1756,23 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     if (event.ctrlKey || event.metaKey) {
       // AI-IMP-098: feed the chase target; the camera glides to the
       // exact zoom the old instant zoomAt chain would have produced.
+      // Pinch (ctrl-flagged) and Cmd+wheel (meta) zoom in BOTH schemes.
       const speed = event.ctrlKey ? pinchZoomSpeed : wheelZoomSpeed
       flight.cancel() // zoom input wins over a flight, at event time
       zoomChase.zoomBy(local(event), Math.exp(-dy * speed))
+    } else if (appSettings().navigationScheme === 'mouse') {
+      // AI-IMP-205: mouse scheme routes plain wheel into the SAME
+      // cursor-anchored zoom chase as Cmd+wheel — same path, same speed
+      // (wheelZoomSpeed) — so a mouse user gets PureRef-style
+      // scroll-to-zoom. Read live off the settings store (no cached
+      // copy to invalidate, so no AI-IMP-177 subscription is needed);
+      // flipping the setting takes effect on the next wheel event.
+      flight.cancel()
+      zoomChase.zoomBy(local(event), Math.exp(-dy * wheelZoomSpeed))
     } else {
-      // Pan stays 1:1 passthrough (Apple's deltas ARE the tuned
-      // curve); the camera write cancels any chase via the hook.
+      // Trackpad scheme (default): pan stays 1:1 passthrough (Apple's
+      // deltas ARE the tuned curve); the camera write cancels any chase
+      // via the hook.
       controller.camera.panByScreen(-dx, -dy)
     }
   }
@@ -1766,6 +1806,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   app.canvas.addEventListener('pointerdown', onPointerDown)
   app.canvas.addEventListener('pointermove', onPointerMove)
   app.canvas.addEventListener('pointerup', onPointerUp)
+  app.canvas.addEventListener('auxclick', onAuxClick)
   app.canvas.addEventListener('wheel', onWheel, { passive: false })
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
@@ -1960,6 +2001,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       if (partial?.pinchSpeed !== undefined) pinchZoomSpeed = partial.pinchSpeed
       return { tau: zoomChase.tau, wheelSpeed: wheelZoomSpeed, pinchSpeed: pinchZoomSpeed }
     },
+    zoomTuningDefaults: () => ({ ...zoomTuningShipped }),
     zoomChase: () => ({ active: zoomChase.active, targetZoom: zoomChase.targetZoom }),
     beat: {
       // Composited scale multiplier laid over the model transform: >1

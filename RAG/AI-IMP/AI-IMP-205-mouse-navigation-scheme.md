@@ -73,12 +73,16 @@ trackpad scheme; pinch zooms in both.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Middle-button drag pans; no autoscroll/auxclick leakage.
-- [ ] Scheme setting exists, persists, defaults to trackpad;
+- [x] Middle-button drag pans; no autoscroll/auxclick leakage.
+- [x] Scheme setting exists, persists, defaults to trackpad;
       wheel obeys it; pinch/Cmd+wheel zoom in both schemes.
 - [ ] RFC input grammar updated; 201's rule table cross-checked.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
-      e2e.
+      (Deferred to the LEAD per brief: agent must NOT edit the RFC —
+      the exact scheme × gesture → verb rows are handed off in the
+      agent report for the lead to add.)
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+      e2e. (build ✓, test ✓ full suite 216 passed, lint ✓, e2e ✓
+      four foreground shards 41/59/66/49 + 1 perf-flaky-on-retry.)
 - [ ] HUMAN-TESTING entry appended at merge by the lead (alph
       first pass — it's his scheme).
 
@@ -97,3 +101,62 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Middle-drag was already wired at the engine layer.** Both
+`ToolManager.pointerDown` (`pan = modifiers.space || modifiers.button
+=== 1`) and `CanvasController.pointerDown` (`if (modifiers.space ||
+modifiers.button === 1)` → `'panning'`) already route button 1 into the
+same camera pan as space-drag, and host's `modifiers()` already forwards
+`event.button`. So the pan itself needed NO new gesture wiring — the
+`grabbing` cursor already falls out of `cursorFor`'s `panning` case. The
+ONLY thing breaking it in practice is Chromium's native middle-click
+autoscroll, which captures the pointer so the app never sees the
+pointermove. Fix is one line: `if (event.button === 1)
+event.preventDefault()` in `onPointerDown` (preventDefault on pointerdown
+also suppresses the compatibility mousedown that arms the autoscroll),
+plus a belt-and-suspenders `auxclick` preventDefault. The e2e drives a
+REAL Playwright middle drag (`mouse.down({ button: 'middle' })`), so the
+suppression is genuinely exercised, not stubbed.
+
+**Seam interactions checked (per brief):** (1) gestures-ui's
+capture-phase `onPointerDownCapture` returns early on `event.button !==
+0`, so middle-button never reaches the zone/marquee path — no conflict.
+(2) The AI-IMP-184 "pre-render pointerdown watcher" is
+`ContextMenu.ts`'s `onPreRenderPointer` — it only sets a `clickedAway`
+flag (no preventDefault/stopPropagation), so a middle press during a
+frame-menu await merely cancels that menu paint (as any pointerdown
+would); it does not touch the pan.
+
+**Scheme setting.** `navigationScheme: 'trackpad' | 'mouse'` (default
+trackpad) added to the renderer settings store — interface, defaults,
+and per-key `sanitize` guard — reusing the existing app-tier
+persistence path (main's app-settings.json is schema-less key/value, so
+NO main-side change was needed). `onWheel` reads `appSettings()
+.navigationScheme` LIVE at event time: mouse scheme routes the plain
+wheel into the exact same `zoomChase.zoomBy(local(event), exp(-dy *
+wheelZoomSpeed))` path Cmd+wheel uses (same path, same speed). Because
+the read is live, there is no cached copy to invalidate, so no
+AI-IMP-177 settings-broadcast subscription is required (documented in a
+code comment). Pinch (`ctrlKey`) and Cmd+wheel (`metaKey`) branch first
+and zoom in BOTH schemes, unchanged.
+
+**Settings UI.** A "Navigation" segmented row (Trackpad/Mouse) plus an
+explanatory note added to the Behavior section of SettingsView, using
+the existing `segmented` snippet — commit-on-click, no new styles.
+
+**RFC not edited (deliberate, per brief).** The exact input-grammar
+rows are handed to the lead in the agent report.
+
+**Out-of-scope finding (reported, not fixed):** the `deltaMode`
+line/page normalization in `onWheel` uses `event.deltaX/deltaY * unit`
+but the mouse-scheme zoom uses only `dy`; a discrete mouse wheel reports
+`deltaMode === 1` (lines) so a single notch is `dy = ±16 * 3` on many
+Windows mice — the zoom-per-notch will feel different from a trackpad
+pixel wheel. This is exactly what the AI-IMP-206 feel-dial exists to
+tune, so no constant is guessed here; flagged for the tuning session.
+
+**Validation:** `pnpm -r build` ✓, `pnpm -r test` ✓ (full suite, 216
+passed), `pnpm lint` ✓, hidden-window e2e ✓ in four foreground shards
+(41 / 59 / 66 / 49; perf.spec flaky-then-green on retry, unrelated).
+New spec `e2e/navigation-scheme.spec.ts` (middle-drag pan; trackpad-pan
+vs mouse-zoom; pinch/Cmd zoom in both) — 2 tests, green.
