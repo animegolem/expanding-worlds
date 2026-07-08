@@ -10,6 +10,16 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Title strip fidelity** (AI-IMP-191, 2026-07-08, your
+  screenshots): hover the top edge — the smoky band should breathe
+  in over ~a fifth of a second (not pop); the board name is bare
+  text clear of the traffic lights (no pill); dragging the empty
+  band still moves the window. TWO CALLS FOR YOU: (1) the Board
+  button moved to the strip's top-right (the bare path now owns the
+  corner) — right home for it? (2) the prototype carries a hairline
+  border under the strip; the builder omitted it (a hairline reads
+  as "a bar," which decision-01 rejects) — agree, or want the line?
+
 - [ ] **The note panel family — your two worst FAILs** (AI-IMP-199
   + 193 + 200, 2026-07-08): the "wedge" decomposed into two braided
   bugs — the corner flash (193) plus panels FADING INVISIBLE at

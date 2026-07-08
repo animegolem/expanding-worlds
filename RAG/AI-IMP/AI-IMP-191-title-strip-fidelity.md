@@ -5,11 +5,12 @@ tags:
   - Implementation
   - chrome
   - design-pass
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-08
+date_completed: 2026-07-08
 ---
 
 
@@ -68,7 +69,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Drag-handle behavior unchanged; pin/beat untouched.
 - [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 

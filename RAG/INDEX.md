@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 189 |
+| Completed | 19 | 190 |
 | **Total** | **25** | **206** |
 
 ## In Progress
@@ -58,7 +58,6 @@
 - [[AI-IMP-187-rotated-adornment-geometry|IMP-187]] — planned, no epic dependency found
 - [[AI-IMP-189-dock-tooling-design-pass|IMP-189]] — planned, no epic dependency found
 - [[AI-IMP-190-shape-picker-and-gap-review|IMP-190]] — planned, no epic dependency found
-- [[AI-IMP-191-title-strip-fidelity|IMP-191]] — planned, no epic dependency found
 - [[AI-IMP-195-image-crispness|IMP-195]] — planned, no epic dependency found
 - [[AI-IMP-197-frame-drop-feel-and-reflow|IMP-197]] — planned, no epic dependency found
 - [[AI-IMP-198-arrange-normalize-repair|IMP-198]] — planned, no epic dependency found
@@ -119,8 +118,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/board-tooling.ts (636 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
+- RAG/HUMAN-TESTING.md (618 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
-- RAG/HUMAN-TESTING.md (608 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (601 LOC)
 
@@ -148,19 +147,19 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/pin.ts (514 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
-- apps/desktop/src/renderer/theme.css (482 LOC)
+- apps/desktop/src/renderer/theme.css (487 LOC)
 - apps/desktop/e2e/charms.spec.ts (482 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
+- apps/desktop/e2e/shell.spec.ts (471 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (465 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
-- apps/desktop/e2e/shell.spec.ts (439 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - packages/persistence/src/handlers/notes.ts (434 LOC)
 - apps/desktop/src/renderer/canvas/crop-editor.ts (431 LOC)
-- apps/desktop/src/renderer/chrome/TitleStrip.svelte (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)
 - packages/persistence/src/queries-search.test.ts (411 LOC)
@@ -189,6 +188,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
+- apps/desktop/src/renderer/chrome/PathBar.svelte (331 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/dev/feel-dial.ts (327 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
@@ -197,7 +197,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
-- apps/desktop/src/renderer/chrome/PathBar.svelte (312 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
 - apps/desktop/src/preload/index.ts (312 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
