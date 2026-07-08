@@ -542,3 +542,16 @@ The full walk, on a placed image's note:
   sticks to compass points, Shift steps 15°; locked items refuse
   with the cursor only; Esc peels one thing at a time (gesture, then
   lens, then selection).
+- **AI-IMP-138 frame furniture**: title a frame (its note title) —
+  the name should sit ON the top edge in mono, exactly where item
+  labels never go, and vanish as you zoom out while the frame's
+  outline stays a hairline forever. Select the frame: the charm bar
+  grows a "▦ grid / ◇ float" toggle + sort-now. Feel questions: is
+  the on-edge position instantly readable as "this is the frame's
+  name"? Chip legible on nested frames?
+- **AI-IMP-170 URL cluster**: paste a note from Obsidian carrying a
+  link, a bare <url>, an image, and ==highlight== — everything
+  should survive byte-exact. Images render as small non-fetching
+  chips (domain-named, nothing loads). Feel questions: does the
+  image chip read as "there's an image here" or does it look like a
+  broken link? Highlight tint sit right in both themes?

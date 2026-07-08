@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 166 |
+| Completed | 19 | 168 |
 | **Total** | **25** | **172** |
 
 ## In Progress
@@ -52,8 +52,6 @@
 ## Anomalies
 
 ### Orphaned IMPs (no epic dependency)
-- [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
-- [[AI-IMP-170-dialect-url-cluster|IMP-170]] — planned, no epic dependency found
 - [[AI-IMP-173-swarm-stability-audit|IMP-173]] — in-progress, no epic dependency found
 - [[AI-IMP-174-macos-move-resize-chord|IMP-174]] — planned, no epic dependency found
 
@@ -78,20 +76,20 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5910 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4671 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (2019 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (2024 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2007 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1763 LOC)
 - apps/desktop/src/main/index.ts (1106 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (1020 LOC)
+- apps/desktop/e2e/notes.spec.ts (969 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (951 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (925 LOC)
-- apps/desktop/e2e/notes.spec.ts (902 LOC)
+- packages/canvas-engine/src/renderers/placement.test.ts (896 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (891 LOC)
+- packages/canvas-engine/src/renderers/placement.ts (886 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
-- packages/canvas-engine/src/renderers/placement.test.ts (838 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
-- packages/canvas-engine/src/renderers/placement.ts (823 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
 - apps/desktop/src/renderer/note/panels.ts (769 LOC)
@@ -113,13 +111,14 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/NotePanels.svelte (595 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
+- apps/desktop/src/renderer/note/editor-markdown.ts (579 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (562 LOC)
+- RAG/HUMAN-TESTING.md (557 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
-- RAG/HUMAN-TESTING.md (544 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (538 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (536 LOC)
@@ -136,10 +135,10 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - packages/persistence/src/handlers/frames.test.ts (477 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
+- apps/desktop/src/renderer/theme.css (470 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - apps/desktop/e2e/tags.spec.ts (460 LOC)
-- apps/desktop/src/renderer/theme.css (449 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - apps/desktop/e2e/shell.spec.ts (439 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
@@ -164,6 +163,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
+- apps/desktop/e2e/frames.spec.ts (349 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (347 LOC)
 - apps/desktop/src/renderer/note/format-bar.ts (347 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)
