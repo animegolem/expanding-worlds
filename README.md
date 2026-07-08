@@ -25,8 +25,17 @@ Grab the latest build from
 **First launch — the builds are unsigned for now**, so your OS will
 be suspicious once:
 
-- **macOS**: right-click the app → **Open** → Open (only needed the
-  first time).
+- **macOS**: on recent macOS (Sequoia/Tahoe) the old
+  right-click → Open trick no longer works, and the app may not
+  appear under Privacy & Security at all. Clear the quarantine flag
+  once in Terminal after dragging it to Applications:
+
+  ```
+  xattr -cr "/Applications/Expanding Worlds.app"
+  ```
+
+  Then it opens normally forever. (On older macOS, right-click →
+  **Open** → Open still works.)
 - **Windows**: SmartScreen → **More info** → **Run anyway**.
 - **Linux**: `chmod +x` the AppImage and run it.
 
