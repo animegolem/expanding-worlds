@@ -38,6 +38,21 @@ export interface ReleasedConnectorAnchor {
 }
 
 /**
+ * One `frame_member` row (§4.9) the delete would lose to migration
+ * 0007's ON DELETE CASCADE, captured before the cascade fires and
+ * re-inserted on restore (AI-IMP-180). Both directions are the same
+ * flat row shape: a delete of a member placement captures the row
+ * where it is the member; a delete of a frame placement captures every
+ * row where it is the frame. `framePlacementId` is always a real frame
+ * placement (the schema column is NOT NULL) — unlike a live membership
+ * write, there is no "uncaptured" sentinel here.
+ */
+export interface CapturedFrameMember {
+  memberPlacementId: string
+  framePlacementId: string
+}
+
+/**
  * Internal inverse of DeletePlacement: recreates the exact prior
  * placement row (including render_order so it returns to its slot)
  * and, when the delete bare-trashed the node in the same command,
@@ -68,6 +83,17 @@ export interface RestorePlacementPayload {
    * exactly as they did before).
    */
   releasedAnchors?: ReleasedConnectorAnchor[]
+  /**
+   * Frame membership rows the delete released via ON DELETE CASCADE
+   * (§4.9, AI-IMP-180), re-inserted on restore so an undone delete
+   * returns the placement to its frame — as a member (its own row) and,
+   * when the placement IS a frame, with all its members' rows. Optional:
+   * command-log records written before AI-IMP-180 omit it, and the
+   * handler treats a missing field as an empty set (those pre-existing
+   * undo steps restore the placement ungrouped, exactly as they did
+   * before). Mirrors `releasedAnchors`.
+   */
+  capturedFrameMembers?: CapturedFrameMember[]
 }
 
 /**

@@ -149,6 +149,22 @@ function deletePlacementRow(
   }
 
   const releasedAnchors = releaseConnectorAnchorsCapturing(ctx, placementId)
+  // AI-IMP-180 (§4.9): snapshot every frame_member row keyed on this
+  // placement BEFORE the DELETE — migration 0007's ON DELETE CASCADE on
+  // both FKs would silently wipe them otherwise. One OR captures both
+  // directions: the row where this placement is a member of some frame,
+  // and every row where this placement IS the frame and others are its
+  // members. Deleting a frame therefore carries all its members back.
+  const capturedFrameMembers = ctx.db
+    .all<{ member_placement_id: string; frame_placement_id: string }>(
+      `SELECT member_placement_id, frame_placement_id FROM frame_member
+       WHERE member_placement_id = ?1 OR frame_placement_id = ?1`,
+      placementId,
+    )
+    .map((r) => ({
+      memberPlacementId: r.member_placement_id,
+      framePlacementId: r.frame_placement_id,
+    }))
   ctx.db.run('DELETE FROM placement WHERE id = ?', placementId)
   affected.push(
     { kind: 'placement', id: placementId },
@@ -183,6 +199,7 @@ function deletePlacementRow(
     locked: prior.locked === 1,
     restoreNodeId,
     releasedAnchors,
+    capturedFrameMembers,
   }
 }
 
@@ -272,6 +289,55 @@ function restorePlacementRow(
       anchor.decorationId,
     )
     affected.push({ kind: 'decoration', id: anchor.decorationId })
+  }
+}
+
+/**
+ * AI-IMP-180 (§4.9): re-insert the frame_member rows the delete's
+ * cascade released. Runs as its OWN pass, AFTER every placement in the
+ * restore is live again — a member row keys on two placement rows, and
+ * a batch DeleteContent can delete a frame AND its members together.
+ * Because a row {member, frame} cascades the instant EITHER endpoint is
+ * deleted, only the first-deleted endpoint's payload captures it (the
+ * later one finds it already gone); that endpoint may be the frame,
+ * whose placement RestoreContent revives before its members exist. So
+ * membership must never be re-inserted inside the per-placement restore
+ * — only once all placements are back. Optional for command-log records
+ * written before this field existed (missing = empty, placement
+ * restores ungrouped, exactly as before). The both-endpoints-live guard
+ * and ON CONFLICT DO NOTHING are defensive: a captured row referencing a
+ * placement not being restored is skipped rather than throwing.
+ */
+function reinsertCapturedFrameMembers(
+  ctx: CommandContext,
+  payload: RestorePlacementPayload,
+  affected: AffectedRecord[],
+): void {
+  const now = ctx.now()
+  for (const member of payload.capturedFrameMembers ?? []) {
+    const bothLive = ctx.db.get<{ n: number }>(
+      'SELECT count(*) AS n FROM placement WHERE id IN (?1, ?2)',
+      member.memberPlacementId,
+      member.framePlacementId,
+    )!.n
+    if (bothLive < 2) continue
+    ctx.db.run(
+      `INSERT INTO frame_member
+         (member_placement_id, frame_placement_id, project_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(member_placement_id) DO NOTHING`,
+      member.memberPlacementId,
+      member.framePlacementId,
+      ctx.projectId,
+      now,
+      now,
+    )
+    // Name both endpoints so frame-tree subscribers re-query (the member
+    // rejoins; the frame's grouping changed).
+    affected.push(
+      { kind: 'placement', id: member.memberPlacementId },
+      { kind: 'placement', id: member.framePlacementId },
+    )
   }
 }
 
@@ -504,6 +570,12 @@ export function registerLifecycleHandlers(registry: CommandRegistry<CommandConte
     for (const placement of payload.placements) {
       restorePlacementRow(ctx, placement, affected)
     }
+    // Frame membership only after EVERY placement is live: a batch that
+    // deleted a frame with its members captured all rows in the
+    // frame's payload, which restores before the members (AI-IMP-180).
+    for (const placement of payload.placements) {
+      reinsertCapturedFrameMembers(ctx, placement, affected)
+    }
     for (const decoration of payload.decorations) {
       insertDecoration(ctx, decoration)
       affected.push({ kind: 'decoration', id: decoration.decorationId })
@@ -525,6 +597,7 @@ export function registerLifecycleHandlers(registry: CommandRegistry<CommandConte
   registry.register<RestorePlacementPayload>(COMMAND_RESTORE_PLACEMENT, 1, (ctx, payload) => {
     const affected: AffectedRecord[] = []
     restorePlacementRow(ctx, payload, affected)
+    reinsertCapturedFrameMembers(ctx, payload, affected)
     return {
       affected,
       inverse: {
