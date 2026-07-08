@@ -46,6 +46,7 @@ import {
   STAGE_VOID_VEIL_ALPHA,
   SceneSync,
   setPlacementTextureResident,
+  syncFrameRegionStroke,
   syncPlacementIconLod,
   syncPlacementLabelOffset,
   TextureBudget,
@@ -1475,6 +1476,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       // atlas tier for the current rendered size — camera motion never
       // re-runs a renderer update, so the LOD is re-derived here.
       syncPlacementIconLod(object, item, zoom, resources)
+      // §8.2/AI-IMP-138: floor the frame region's border so its
+      // membership boundary never rasterizes below one screen pixel,
+      // even far below the furniture threshold where the title is gone.
+      syncFrameRegionStroke(object, item, zoom, resources)
     }
   }
 

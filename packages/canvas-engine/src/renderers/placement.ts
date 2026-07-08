@@ -1,6 +1,7 @@
 import { Container, Graphics, Matrix, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js'
 import { assetUrl, type ScenePlacement } from '../types'
 import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
+import { renderStrokeWidth } from '../stroke-render'
 import type { ImageTreatment, ItemRenderer, RendererResources } from './registry'
 
 /**
@@ -114,6 +115,10 @@ interface PlacementObject extends Container {
    * so the async texture landing draws the same region without
    * re-parsing wire JSON. Null = uncropped. */
   __imageCrop?: PlacementCrop | null
+  /** §8.2/AI-IMP-138: the world-unit border width the frame region was
+   * last drawn at, so the per-cull stroke floor re-derive (camera
+   * motion runs no renderer update) is a no-op unless the floor bites. */
+  __frameStrokeWidth?: number
 }
 
 /**
@@ -405,11 +410,69 @@ function buildFrameBody(
   const colors = resources.frameColors?.() ?? FRAME_FALLBACK
   const region = new Graphics()
   region.label = 'frame'
+  const width = frameRegionStrokeWidth(item, resources.getZoom?.() ?? 1)
+  drawFrameRegion(region, w, h, colors, width)
+  container.__frameStrokeWidth = width
+  container.addChild(region)
+}
+
+/** Draw (or redraw) a frame region's wash + border at a given world
+ * stroke width. Clears first so the same Graphics can be re-stroked in
+ * place when the zoom floor changes (syncFrameRegionStroke). */
+function drawFrameRegion(
+  region: Graphics,
+  w: number,
+  h: number,
+  colors: { fill: number; border: number },
+  strokeWidth: number,
+): void {
+  region.clear()
   region
     .roundRect(-w / 2, -h / 2, w, h, FRAME_CORNER_RADIUS)
     .fill({ color: colors.fill, alpha: FRAME_FILL_ALPHA })
-    .stroke({ width: FRAME_BORDER_WIDTH, color: colors.border, alpha: FRAME_BORDER_ALPHA })
-  container.addChild(region)
+    .stroke({ width: strokeWidth, color: colors.border, alpha: FRAME_BORDER_ALPHA })
+}
+
+/**
+ * §8.2/AI-IMP-138 minimum region stroke: the world-unit border width to
+ * draw a frame at for the current zoom, floored (renderStrokeWidth) so
+ * the rasterized stroke never drops below MIN_STROKE_SCREEN_PX. A
+ * frame's region IS its membership boundary — it must stay visible even
+ * below the furniture floor, where the on-edge title and other
+ * furniture are gone. The effective on-screen scale is zoom × the
+ * placement's own scale (the world plane and the container both scale
+ * the local stroke), so the floor is computed against that product.
+ */
+export function frameRegionStrokeWidth(item: ScenePlacement, zoom: number): number {
+  const scale = Math.abs(item.scale) || 1
+  return renderStrokeWidth(FRAME_BORDER_WIDTH, zoom * scale)
+}
+
+/**
+ * Re-derive a frame region's border width for the current zoom and
+ * redraw it in place when the floor bites. Camera motion runs no
+ * renderer update, so the host re-runs this every cull pass (mirrors
+ * syncPlacementIconLod). Cheap and idempotent: a cached width makes it
+ * a no-op whenever the true width is unchanged. No-op for non-frame
+ * bodies and for containers without a built frame region.
+ */
+export function syncFrameRegionStroke(
+  object: Container,
+  item: ScenePlacement,
+  zoom: number,
+  resources: RendererResources,
+): void {
+  if (item.appearanceKind !== 'frame') return
+  const container = object as PlacementObject
+  const region = object.children.find((child) => child.label === 'frame') as Graphics | undefined
+  if (!region) return
+  const width = frameRegionStrokeWidth(item, zoom)
+  if (container.__frameStrokeWidth === width) return
+  container.__frameStrokeWidth = width
+  const w = item.width ?? DEFAULT_FRAME_SIZE
+  const h = item.height ?? DEFAULT_FRAME_SIZE
+  const colors = resources.frameColors?.() ?? FRAME_FALLBACK
+  drawFrameRegion(region, w, h, colors, width)
 }
 
 /**

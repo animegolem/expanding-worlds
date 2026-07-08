@@ -20,8 +20,9 @@ import {
 } from './placement'
 import { NineSliceSprite, Rectangle, Texture } from 'pixi.js'
 import type { IconAtlasResource, ImageTreatment, RendererResources } from './registry'
-import { syncPlacementIconLod } from './placement'
+import { frameRegionStrokeWidth, syncFrameRegionStroke, syncPlacementIconLod } from './placement'
 import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
+import { MIN_STROKE_SCREEN_PX } from '../stroke-render'
 
 /** Recording texture budget: resolves acquires on demand. */
 function fakeBudget() {
@@ -633,6 +634,63 @@ describe('frame appearance (§4.9, AI-IMP-127)', () => {
     expect(region.getLocalBounds().width).toBeLessThan(265)
     expect(region.getLocalBounds().height).toBeGreaterThanOrEqual(40)
     expect(region.getLocalBounds().height).toBeLessThan(45)
+  })
+
+  // §8.2/AI-IMP-138: the region stroke is the frame's membership
+  // boundary and must never rasterize below one screen pixel, even far
+  // below the furniture floor where the on-edge title is already gone.
+  function strokeWidth(gfx: Graphics): number | undefined {
+    const instruction = gfx.context.instructions.find((i) => i.action === 'stroke')
+    return instruction && 'style' in instruction.data
+      ? (instruction.data.style.width as number)
+      : undefined
+  }
+
+  it('frameRegionStrokeWidth keeps the true width above the floor, floors below it', () => {
+    const item = makePlacement({ appearanceKind: 'frame', width: 300, height: 300 })
+    // Zoom 1: 2 world px renders as 2 screen px — the floor never bites.
+    expect(frameRegionStrokeWidth(item, 1)).toBe(2)
+    expect(frameRegionStrokeWidth(item, 10)).toBe(2)
+    // Deep zoom: 2 world px would render sub-pixel, so the world width
+    // grows to hold exactly the 1px floor on screen.
+    const deep = 0.01
+    const width = frameRegionStrokeWidth(item, deep)
+    expect(width).toBeGreaterThan(2)
+    expect(width * deep).toBeCloseTo(MIN_STROKE_SCREEN_PX, 6)
+    // The placement's own scale multiplies the on-screen size too, so
+    // the floor is computed against zoom × scale.
+    const scaled = makePlacement({ appearanceKind: 'frame', width: 300, height: 300, scale: 0.5 })
+    expect(frameRegionStrokeWidth(scaled, deep) * deep * 0.5).toBeCloseTo(MIN_STROKE_SCREEN_PX, 6)
+  })
+
+  it('syncFrameRegionStroke redraws the region at the floored width, and restores it', () => {
+    const resources = frameResources()
+    const item = makePlacement({ appearanceKind: 'frame', width: 300, height: 300 })
+    const object = placementRenderer.create(item, resources)
+    const region = object.children[0] as Graphics
+    // Built at the default zoom 1 → the honest 2px stroke.
+    expect(strokeWidth(region)).toBe(2)
+
+    // Deep zoom: the boundary floors so it holds ≥1 screen px.
+    const deep = 0.005
+    syncFrameRegionStroke(object, item, deep, resources)
+    const floored = strokeWidth(region)!
+    expect(floored).toBeGreaterThan(2)
+    expect(floored * deep).toBeGreaterThanOrEqual(MIN_STROKE_SCREEN_PX - 1e-6)
+    // Colours survive the in-place redraw (still theme-sourced, no hex).
+    expect(styleColor(region, 'stroke')).toBe(THEME.border)
+    expect(styleColor(region, 'fill')).toBe(THEME.fill)
+
+    // Back to working zoom: the true width returns.
+    syncFrameRegionStroke(object, item, 1, resources)
+    expect(strokeWidth(region)).toBe(2)
+  })
+
+  it('syncFrameRegionStroke ignores non-frame bodies', () => {
+    const resources = frameResources()
+    const dot = makePlacement({ appearanceKind: 'dot', appearanceColor: '#4a90d9' })
+    const object = placementRenderer.create(dot, resources)
+    expect(() => syncFrameRegionStroke(object, dot, 0.01, resources)).not.toThrow()
   })
 })
 

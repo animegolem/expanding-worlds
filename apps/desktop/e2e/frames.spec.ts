@@ -90,6 +90,25 @@ async function dragWorld(
   await win.mouse.up()
 }
 
+/** Click a placement's center to select it (frames select on their wash). */
+async function selectItem(win: Page, placementId: string): Promise<void> {
+  const target = (await placements(win)).find((p) => p.id === placementId)!
+  const at = await screenOf(win, target.x, target.y)
+  await win.mouse.click(at.x, at.y)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
+    .toContain(placementId)
+}
+
+/** The nodeId behind a placement (frames title from their node's note). */
+async function nodeIdOf(win: Page, placementId: string): Promise<string> {
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const scene = await runQuery<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId,
+  })
+  return scene.items.find((i) => i['id'] === placementId)!['nodeId'] as string
+}
+
 /** Seed a bare 40×40 dot placement at a world point. */
 async function seedItem(win: Page, at: { x: number; y: number }): Promise<string> {
   const nodeId = crypto.randomUUID()
@@ -256,6 +275,74 @@ test('hover dim: dragging an item over a frame focuses it and dims the rest', as
     await expect.poll(() => alpha(bystander)).toBe(1)
     // Dropped outside → not captured.
     expect(await transitiveMembers(win, frameId)).toEqual([])
+  } finally {
+    await app.close()
+  }
+})
+
+test('frame furniture: on-edge title + charm-bar sort chip, both zoom-gated (§4.9, AI-IMP-138)', async () => {
+  const { app, win } = await launchApp('ew-e2e-frame-furniture-')
+  try {
+    await win.waitForFunction(() => window.__ewUndo !== undefined)
+    await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+    // Keep the adornment layer engaged for the whole run.
+    await win.evaluate(() =>
+      window.dispatchEvent(
+        new CustomEvent('ew-test-set-engagement', { detail: { engaged: true, hold: true } }),
+      ),
+    )
+
+    // A frame spanning world 100..400 (300×300, center 250,250).
+    await win.getByTestId('tool-frame').click()
+    await dragWorld(win, { x: 100, y: 100 }, { x: 400, y: 400 }, 6)
+    await expect.poll(async () => (await frameRoots(win)).length).toBe(1)
+    const frameId = (await frameRoots(win))[0]!.placementId
+    await win.getByTestId('tool-select').click()
+
+    // Title the frame's node via a note; the on-edge label reads it.
+    const nodeId = await nodeIdOf(win, frameId)
+    const noteId = crypto.randomUUID()
+    await exec(win, 'CreateNote', { noteId, title: 'Mood Board', body: '' })
+    await exec(win, 'AttachNoteToNode', { nodeId, noteId })
+
+    // ---- on-edge title: visible above the furniture floor ----
+    const title = win.getByTestId(`frame-title-${frameId}`)
+    await expect(title).toBeVisible()
+    await expect(title).toHaveText('Mood Board')
+
+    // ---- charm-bar sort chip reflects + sets AI-IMP-129's flag ----
+    await selectItem(win, frameId)
+    await expect(win.getByTestId('charm-bar')).toBeVisible()
+    const chip = win.getByTestId('charm-frame-sort-on-drop')
+    await expect(chip).toBeVisible()
+    await expect(win.getByTestId('charm-frame-sort-now')).toBeVisible()
+    // Default ON → the "grid" state; the flag is absent (absent = ON).
+    await expect(chip).toHaveText(/grid/)
+
+    // Toggle OFF → the "float" state, and the flag persists as false via
+    // the SAME board-tooling path the Dock uses.
+    await chip.click()
+    await expect(chip).toHaveText(/float/)
+    await expect
+      .poll(async () => {
+        const settings = await runQuery<Record<string, unknown>>(win, 'getSettings')
+        return settings[`frame_sort_on_drop:${frameId}`]
+      })
+      .toBe(false)
+
+    // ---- below the furniture floor: the title vanishes, region stays ----
+    // 300 world px × 0.02 = 6 px < the ~8 px furniture floor.
+    await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.02 }))
+    await expect(win.getByTestId(`frame-title-${frameId}`)).toHaveCount(0)
+    // The frame region itself never disappears (its ≥1px stroke persists
+    // — the unit test proves the width; here the placement stays live).
+    expect((await placements(win)).some((p) => p.id === frameId && p.appearanceKind === 'frame')).toBe(
+      true,
+    )
+
+    // ---- back above the floor: the title returns ----
+    await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+    await expect(win.getByTestId(`frame-title-${frameId}`)).toBeVisible()
   } finally {
     await app.close()
   }

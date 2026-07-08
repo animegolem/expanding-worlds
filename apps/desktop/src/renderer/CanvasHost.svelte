@@ -6,6 +6,7 @@
   import { toast } from './chrome/status'
   import { attachBoardTooling, type BoardTooling } from './canvas/board-tooling'
   import { attachCharmsUi, type CharmsUiHandle } from './canvas/charms-ui'
+  import { attachFramesFurniture, type FramesFurnitureHandle } from './canvas/frames-furniture'
   import { attachCropEditor, type CropEditorHandle } from './canvas/crop-editor'
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
@@ -55,6 +56,7 @@
     let textEntry: TextEntryController | null = null
     let openNote: OpenNoteSurfaceHandle | null = null
     let charms: CharmsUiHandle | null = null
+    let framesFurniture: FramesFurnitureHandle | null = null
     let cropEditor: CropEditorHandle | null = null
     let pinTool: PinToolHandle | null = null
     let placeMode: PlaceModeHandle | null = null
@@ -89,7 +91,13 @@
         textEntry = attachTextEntry(h, element)
         openNote = attachOpenNoteSurface(h, element)
         detachPanels = attachPanels(h)
-        charms = attachCharmsUi(h, element)
+        // The charm bar reads/sets the §4.9 frame sort-on-drop flag
+        // (AI-IMP-138) through the SAME board-tooling path the Dock uses,
+        // so tooling (attached above) is handed in.
+        charms = attachCharmsUi(h, element, tooling)
+        // §4.9/§8.2 on-edge frame title (AI-IMP-138): a sibling adornment
+        // layer, zoom-gated by the shrink ladder, never in exports.
+        framesFurniture = attachFramesFurniture(h, element)
         // §4.6 crop editor (AI-IMP-159): the takeover-family overlay the
         // charm-bar / context-menu Crop verbs open via requestCropEditor.
         cropEditor = attachCropEditor(h, element)
@@ -109,6 +117,7 @@
       textEntry?.destroy()
       openNote?.destroy()
       charms?.destroy()
+      framesFurniture?.destroy()
       cropEditor?.destroy()
       pinTool?.destroy()
       placeMode?.destroy()
