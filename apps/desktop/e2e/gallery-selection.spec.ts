@@ -234,3 +234,37 @@ test('single-cell drag-out sets NODE_DRAG_MIME, closes at the cell edge, and the
 
   await app.close()
 })
+
+test('free-space click clears selection + bar; group header and tiles unchanged (§8.2, AI-IMP-188)', async () => {
+  const { app, win } = await launchApp('ew-e2e-gallery-clickaway-')
+  const ids = await seedNodes(win, 8)
+  await openGallery(win)
+  // Date sort (default) buckets the seeded nodes, so a group header renders.
+  await expect(win.getByTestId('gallery-bucket').first()).toBeVisible()
+
+  // Select a tile → the floating action bar is up.
+  await cell(win, ids[2]!).click()
+  await expect(win.getByTestId('gallery-action-bar')).toBeVisible()
+  await expect(selectedCells(win)).toHaveCount(1)
+
+  // A click on a GROUP HEADER does NOT deselect (it is a control, not
+  // empty ground) — the selection and bar stand.
+  await win.getByTestId('gallery-bucket').first().click()
+  await expect(selectedCells(win)).toHaveCount(1)
+  await expect(win.getByTestId('gallery-action-bar')).toBeVisible()
+
+  // A click on empty gallery ground puts the selection down → the action
+  // bar dismisses with it. Click the lower-left of the scroller: below the
+  // two rows of eight cells and clear of the bottom-centered action bar.
+  const box = (await win.getByTestId('gallery-scroller').boundingBox())!
+  await win.mouse.click(box.x + 24, box.y + box.height - 24)
+  await expect(selectedCells(win)).toHaveCount(0)
+  await expect(win.getByTestId('gallery-action-bar')).toHaveCount(0)
+
+  // Clicking a tile still selects it (the ground handler skips cells).
+  await cell(win, ids[5]!).click()
+  await expect(cell(win, ids[5]!)).toHaveAttribute('data-selected', 'true')
+  await expect(win.getByTestId('gallery-action-bar')).toBeVisible()
+
+  await app.close()
+})

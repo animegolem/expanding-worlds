@@ -56,12 +56,12 @@ selection empty; click a tile → still selects.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Free-space click clears selection + bar + suggestion; tile
+- [x] Free-space click clears selection + bar + suggestion; tile
       and control clicks unchanged.
-- [ ] Group headers / filter row clicks do NOT deselect (they are
+- [x] Group headers / filter row clicks do NOT deselect (they are
       controls).
-- [ ] E2e round-trip.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] E2e round-trip.
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -80,3 +80,38 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Implementation.** One `onpointerdown` on the `.scroller` container
+(`GalleryView.svelte`, `onGalleryGroundPointerDown`, ~20 LOC incl.
+doc): it clears the selection (which unmounts the action bar and its
+tag-suggestion popover, both derived from the selection count) and
+closes the Quick Look preview, but ONLY when the pointerdown target is
+NOT a tile, a bucket header, or a control. The guard is a single
+`target.closest('[data-testid="gallery-cell"], .bucket-header, button,
+input, textarea, a, [role="option"]')` bail. The facet strip and the
+action bar mount OUTSIDE the scroller, so their clicks never reach the
+handler — the checklist's "filter row does not deselect" falls out of
+placement, no extra guard needed. Group headers are guarded explicitly
+via `.bucket-header`.
+
+**Resolved tension in the ticket text.** Design/Approach's parenthetical
+("a non-interactive descendant — test with the group headers") reads as
+if group headers should clear, but checklist item 2 is explicit that
+they must NOT. I followed the checklist (the Given-When-Then authority):
+a bucket-header click leaves the selection standing.
+
+**§8.2 disengage grammar.** This is a deliberate click on empty ground,
+never a fade — pointerdown, immediate, no clock. It does not touch the
+engagement/fade machinery.
+
+**196 coordination — proven together.** The free-space deselect does NOT
+re-break the 196 picker fix: `beginCellDrag`/`onCellClick` on tiles are
+untouched (the guard bails on any cell target), and the two specs
+(`gallery-selection.spec.ts` 188 + `frame-library-load.spec.ts` 196)
+were run and PASS in the same e2e invocation.
+
+**Testing note.** A synthetic `dispatchEvent(new PointerEvent('pointerdown'))`
+did NOT trigger the Svelte 5 handler reliably (delegation artifact); the
+e2e uses real `mouse.click` on empty lower-left ground (clear of the
+bottom-centered action bar) and a real header click, which faithfully
+exercise the handler.

@@ -585,7 +585,13 @@ const hiddenTestWindows = process.env['EW_TEST_HIDDEN_WINDOWS'] === '1'
 // so loudly in the ticket rather than silently masking it.
 function framelessWindowOptions(): Electron.BrowserWindowConstructorOptions {
   if (process.platform === 'darwin') {
-    return { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 13 } }
+    // AI-IMP-196: acceptFirstMouse so a click that activates a not-key
+    // window ALSO acts. Without it macOS swallows the first click for
+    // activation, so a control clicked in an inactive window (the owner-
+    // reported gallery picker on a selected frame) appears dead — the
+    // pick never lands. "The window is the board": a click should always
+    // do the thing under it, key or not. macOS-only option.
+    return { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 13 }, acceptFirstMouse: true }
   }
   if (process.platform === 'win32') {
     return {
