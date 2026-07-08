@@ -576,3 +576,11 @@ Capture a few items inside a frame. Then:
   regain its own contents.
 Feel question: does the grouping snap back invisibly, or is there
 any flicker where things look ungrouped for a moment?
+- **Fix wave A (176/178/179/180) — mostly invisible, worth abuse**:
+  double-click crumbs and spam trackpad-back — the camera should
+  always land right and ⌂ should never die. Drop two image batches
+  back to back before answering the "how should they land?" ask —
+  both batches should ask in turn, nothing lost. Delete a frame (or
+  a framed item), undo — grouping should come back whole. Exports
+  during idle are now corruption-proof (nothing to feel; just trust
+  it).

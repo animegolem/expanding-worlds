@@ -10,7 +10,7 @@
 | Planned | 4 | 0 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 169 |
+| Completed | 19 | 173 |
 | **Total** | **25** | **182** |
 
 ## In Progress
@@ -55,11 +55,7 @@
 - [[AI-IMP-173-swarm-stability-audit|IMP-173]] — in-progress, no epic dependency found
 - [[AI-IMP-174-macos-move-resize-chord|IMP-174]] — planned, no epic dependency found
 - [[AI-IMP-175-tooltip-sweep|IMP-175]] — planned, no epic dependency found
-- [[AI-IMP-176-navigation-reentrancy|IMP-176]] — planned, no epic dependency found
 - [[AI-IMP-177-stale-read-models-on-navigation|IMP-177]] — planned, no epic dependency found
-- [[AI-IMP-178-drop-ask-queue|IMP-178]] — planned, no epic dependency found
-- [[AI-IMP-179-export-snapshot-race|IMP-179]] — planned, no epic dependency found
-- [[AI-IMP-180-frame-membership-undo|IMP-180]] — planned, no epic dependency found
 - [[AI-IMP-181-undo-reentrancy|IMP-181]] — planned, no epic dependency found
 - [[AI-IMP-182-undo-capture-breadth|IMP-182]] — planned, no epic dependency found
 - [[AI-IMP-183-escape-key-routing|IMP-183]] — planned, no epic dependency found
@@ -85,7 +81,7 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5910 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4671 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (2024 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (2032 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2007 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1763 LOC)
 - apps/desktop/src/main/index.ts (1106 LOC)
@@ -99,13 +95,13 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/renderers/placement.ts (886 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (831 LOC)
+- packages/persistence/src/handlers/lifecycle.ts (784 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
 - apps/desktop/src/renderer/note/panels.ts (769 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (729 LOC)
-- packages/persistence/src/handlers/lifecycle.ts (711 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -121,11 +117,12 @@ Generated from tracked files; binary assets excluded.
 
 - apps/desktop/src/renderer/note/NotePanels.svelte (595 LOC)
 - apps/desktop/e2e/panels.spec.ts (588 LOC)
+- RAG/HUMAN-TESTING.md (586 LOC)
+- packages/persistence/src/handlers/frames.test.ts (585 LOC)
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
 - apps/desktop/src/renderer/note/editor-markdown.ts (579 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
-- RAG/HUMAN-TESTING.md (564 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (562 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
@@ -143,7 +140,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
-- packages/persistence/src/handlers/frames.test.ts (477 LOC)
+- apps/desktop/e2e/navigation.spec.ts (478 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
 - apps/desktop/src/renderer/theme.css (470 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
@@ -159,20 +156,20 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (403 LOC)
 - apps/desktop/e2e/charms.spec.ts (400 LOC)
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
+- apps/desktop/e2e/frames.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
-- apps/desktop/e2e/navigation.spec.ts (375 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (374 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (372 LOC)
 - apps/desktop/e2e/undo.spec.ts (367 LOC)
 - packages/canvas-engine/src/hit-test.test.ts (363 LOC)
 - packages/persistence/src/queries-gallery.test.ts (361 LOC)
 - packages/canvas-engine/src/hit-test.ts (361 LOC)
+- packages/persistence/src/export/project-export.test.ts (360 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (360 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (354 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
-- apps/desktop/e2e/frames.spec.ts (349 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (347 LOC)
 - apps/desktop/src/renderer/note/format-bar.ts (347 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)
