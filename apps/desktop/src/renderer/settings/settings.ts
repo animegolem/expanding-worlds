@@ -18,6 +18,13 @@ export type FadeDelay = number | 'never'
 export type CharmCorner = 'lower-right' | 'upper-right'
 export type TitleStripMode = 'hover' | 'always' | 'never'
 export type MenuPlacement = 'rail' | 'system'
+/** §6.9 (AI-IMP-205): mouse vs trackpad wheel muscle memory. Chromium
+ * cannot tell a mouse wheel from a trackpad two-finger scroll — both
+ * arrive as plain wheel events — so this is a deliberate choice, not a
+ * detection. `trackpad` (default) keeps plain wheel = pan; `mouse`
+ * routes plain wheel into zoom-at-cursor (the PureRef/Figma scheme).
+ * Pinch (ctrl-wheel) and Cmd+wheel zoom in BOTH schemes. */
+export type NavigationScheme = 'trackpad' | 'mouse'
 
 export interface AppSettings {
   theme: ThemeName
@@ -30,6 +37,8 @@ export interface AppSettings {
   flatCanvasColor: string
   /** Windows/Linux only (§11.5); inert on macOS. */
   menuPlacement: MenuPlacement
+  /** §6.9 (AI-IMP-205): plain-wheel muscle memory. Default trackpad. */
+  navigationScheme: NavigationScheme
 }
 
 export const APP_SETTING_DEFAULTS: AppSettings = {
@@ -40,6 +49,7 @@ export const APP_SETTING_DEFAULTS: AppSettings = {
   windowOpacity: 1,
   flatCanvasColor: 'off',
   menuPlacement: 'rail',
+  navigationScheme: 'trackpad',
 }
 
 type Listener = (settings: AppSettings) => void
@@ -75,6 +85,8 @@ function sanitize(raw: Record<string, unknown>): AppSettings {
   }
   const menu = raw['menuPlacement']
   if (menu === 'rail' || menu === 'system') next.menuPlacement = menu
+  const nav = raw['navigationScheme']
+  if (nav === 'trackpad' || nav === 'mouse') next.navigationScheme = nav
   return next
 }
 
