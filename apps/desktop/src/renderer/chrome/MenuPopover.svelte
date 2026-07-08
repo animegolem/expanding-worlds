@@ -85,12 +85,17 @@
   })
 
   $effect(() => {
+    // AI-IMP-183 (M-24): consume Escape (capture + stopPropagation) so it
+    // closes the menu without leaking to the canvas. Help/About and
+    // Restore own Esc while open (their own capture handlers) — DECLINE to
+    // them by returning without consuming.
     const onKeydown = (event: KeyboardEvent): void => {
-      // Help/About and Restore own Esc while open (capture-phase handlers).
-      if (event.key === 'Escape' && !helpOpen && !restoreOpen) onclose()
+      if (event.key !== 'Escape' || helpOpen || restoreOpen) return
+      event.stopPropagation()
+      onclose()
     }
-    window.addEventListener('keydown', onKeydown)
-    return () => window.removeEventListener('keydown', onKeydown)
+    window.addEventListener('keydown', onKeydown, true)
+    return () => window.removeEventListener('keydown', onKeydown, true)
   })
 </script>
 

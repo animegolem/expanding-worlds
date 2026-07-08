@@ -18,12 +18,17 @@
     return { x, y }
   })
 
+  // §7.3 (AI-IMP-183 M-10): Esc dismisses the chooser and CONSUMES the
+  // press (capture + stopPropagation, the SearchPanel:328 pattern) so the
+  // dismissal never also selects or drags the content underneath it.
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') dismissChooser()
+      if (event.key !== 'Escape') return
+      event.stopPropagation()
+      dismissChooser()
     }
-    window.addEventListener('keydown', onKeydown)
-    return () => window.removeEventListener('keydown', onKeydown)
+    window.addEventListener('keydown', onKeydown, true)
+    return () => window.removeEventListener('keydown', onKeydown, true)
   })
 </script>
 

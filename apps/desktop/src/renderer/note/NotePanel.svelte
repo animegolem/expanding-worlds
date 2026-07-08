@@ -1158,7 +1158,12 @@
         onblur={() => void commitTitle()}
         onkeydown={(event) => {
           if (event.key === 'Enter') (event.currentTarget as HTMLInputElement).blur()
-          if (event.key === 'Escape') titleDraft = note?.title ?? ''
+          if (event.key === 'Escape') {
+            // AI-IMP-183 (M-09): discarding the rename must not leak to the
+            // canvas host underneath (which would clear the selection).
+            event.stopPropagation()
+            titleDraft = note?.title ?? ''
+          }
         }}
       />
       {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
@@ -1349,7 +1354,12 @@
         oninput={onCanvasDraftInput}
         onblur={() => void materializeCanvasNote()}
         onkeydown={(event) => {
-          if (event.key === 'Escape') closePanel(record.key)
+          if (event.key === 'Escape') {
+            // AI-IMP-183 (M-09): closing the phantom draft must not also
+            // clear the canvas selection underneath it.
+            event.stopPropagation()
+            closePanel(record.key)
+          }
         }}
       ></textarea>
     </div>

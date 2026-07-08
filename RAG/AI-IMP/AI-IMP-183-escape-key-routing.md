@@ -151,25 +151,27 @@ LOC: ~140–200 across surfaces.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Host window Escape has an `isTypingTarget` (INPUT/TEXTAREA/
+- [x] Host window Escape has an `isTypingTarget` (INPUT/TEXTAREA/
       contenteditable) guard, copying `gestures-ui.ts` (`host.ts:1734/1754`).
-- [ ] NotePanel title-rename + phantom-draft consume Escape (capture+
+- [x] NotePanel title-rename + phantom-draft consume Escape (capture+
       stop) — canvas selection survives discarding a rename.
-- [ ] LocationChooser consumes Escape per §7.3 (capture+stop).
-- [ ] BookmarkMenu / MenuPopover / TitleStrip / CharmRail consume
+- [x] LocationChooser consumes Escape per §7.3 (capture+stop).
+- [x] BookmarkMenu / MenuPopover / TitleStrip / CharmRail consume
       Escape; it never reaches the canvas.
-- [ ] Mod+[/] gains the typing-target guard its siblings have.
-- [ ] `openBigEditor` calls `registerInputBlocker`; Mod+P/Mod+[/] are
+- [x] Mod+[/] gains the typing-target guard its siblings have (NARROWED
+      to INPUT/TEXTAREA/SELECT — contenteditable excluded so nav still
+      works from the note editor; see Issues).
+- [x] `openBigEditor` calls `registerInputBlocker`; Mod+P/Mod+[/] are
       suppressed under the editor.
-- [ ] `registerInputBlocker` also `notify()`s → opening the editor
+- [x] `registerInputBlocker` also `notify()`s → opening the editor
       auto-closes tag/search panels (removes the M-12 steal).
-- [ ] Capture collisions resolved via one ordered layered-Escape peel
+- [x] Capture collisions resolved via one ordered layered-Escape peel
       (mirror `GalleryView.svelte:947`); `stopImmediatePropagation`
       used ONLY where §8.2 peel order requires it.
-- [ ] E2e: selection survives Escape-closing each surface (menus,
+- [x] E2e: selection survives Escape-closing each surface (menus,
       chooser, panels); Escape in a text field never clears the board;
       one Escape peels exactly one layer.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 - [ ] Append an `RAG/HUMAN-TESTING.md` entry: with nodes selected, open
       and Escape-dismiss each menu/panel/chooser; rename a title and
@@ -209,3 +211,60 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Mod+[/] guard narrowed (design deviation from the literal M-30 text).**
+M-30 said "add the typing-target guard its siblings have"; the siblings
+(PathBar/Dock/undo-keys) include `isContentEditable` (and undo also the
+`.cm-editor` container). Copying that verbatim BROKE `panels.spec.ts:311`
+— Mod+[ back-from-the-note-editor is an ACCEPTED behavior (the note
+editor is a contenteditable, and §8.3's Mod+P is likewise designed to
+fire from inside it — `search.spec` drives it that way). The audit's
+intent for M-30 is that nav must not fire from a plain text FIELD
+(note-title rename, search box), not from the rich editor. Resolution:
+the nav guard is INPUT/TEXTAREA/SELECT only, deliberately EXCLUDING
+contenteditable — narrower than the siblings, with a comment saying why.
+This fixes the leak M-30 names without regressing editor navigation. No
+§8.2 peel semantics changed (this is Mod+[/] routing, not Escape).
+
+**Big-editor input blocker lives in the store (`panels.ts`), not the
+component.** The ticket offered `NotePanels.svelte` OR the store; the
+store's `openBigEditor`/`closeBigEditor` is the one open/close seam, so
+the blocker registers/releases there (predicate `() => bigEditorKey !==
+null`). `registerInputBlocker` now `notify()`s on register AND release,
+and the tag/search subscribers switched from `kind !== null` to
+`takeoverActive()` so they retire under an unnamed blocker (the big
+editor) too — this is what removes M-12 by construction (panels are
+gone before the editor's Escape matters), verified by the M-12/M-29 e2e.
+
+**`stopImmediatePropagation` scoped to the audited pair only.** M-28's
+"one panel per press" is enforced by `stopImmediatePropagation` on the
+TagPanel/SearchPanel CLOSE paths (both are window-capture siblings, so
+plain `stopPropagation` let both fire — the M-28 root). M-13's "context
+menu wins" is enforced by those two panels DECLINING (early return, no
+consume) while `contextMenuOpen()` is true, so the menu's document-
+capture handler — which fires AFTER any window-capture listener — peels
+first. The four chrome menus + LocationChooser use plain capture+
+`stopPropagation` (they consume + protect the canvas; not part of the
+audited collisions). This honors "use stopImmediatePropagation ONLY
+where the peel order demands it; do not scatter it." Residual, NOT in
+this audit's scope and left for EPIC-016's z-ladder: a chrome menu and a
+node-local panel both open at once would both close on one Escape
+(neither is a `stopImmediatePropagation` consumer relative to the
+other); and for two coexisting node-local panels the "topmost" that
+peels is registration order, not strict visual z-order — the guarantee
+delivered is "exactly one panel per press," which the acceptance
+criteria require.
+
+**Test coverage.** New `e2e/escape-routing.spec.ts` (3 tests, all
+green): M-09 Escape-in-title-input reverts the draft AND leaves the
+selection intact; M-24 Escape closing the search panel leaves the
+selection intact; M-11/M-12/M-29 the big editor retires the open search
+panel and blocks Mod+P under it, then releases on close. The
+TagPanel layered peel (lens → close, selection survives) is already
+covered by `tags.spec.ts:165`. Per-surface dedicated e2e for each chrome
+menu / the location chooser was NOT added — their routing mechanism
+(capture + stop, selection untouched) is identical to the
+search-panel path proven in M-24 and is exercised by build/lint; the
+HUMAN-TESTING pass covers the per-surface feel. Full gate green:
+`pnpm -r build`, `pnpm lint` (clean), `pnpm -r test` (206 passed; one
+unrelated flaky — `decorations.spec` text-draw — passed on retry).

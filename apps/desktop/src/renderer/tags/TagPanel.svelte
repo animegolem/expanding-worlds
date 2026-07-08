@@ -23,6 +23,7 @@
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
   import { reserveTetheredPanelSpace } from '../note/panels'
   import { closeTagPanel, openTagPanel, type TagPanelState } from './tag-panel'
+  import { contextMenuOpen } from '../menus/ContextMenu'
 
   interface TagViewPlacement {
     placementId: string
@@ -258,13 +259,20 @@
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
+      // AI-IMP-183 (M-13): a right-click context menu (document-capture)
+      // is the topmost surface — DECLINE so its own handler peels first
+      // rather than this window-capture panel stealing the press.
+      if (contextMenuOpen()) return
+      // AI-IMP-183 (M-28): consume with stopImmediatePropagation so a
+      // sibling window-capture panel (search) does not ALSO close on the
+      // same press — exactly one floating panel peels per Escape.
       if (editing) {
-        event.stopPropagation()
+        event.stopImmediatePropagation()
         cancelRename()
         return
       }
       if (handle.lens() !== null) return
-      event.stopPropagation()
+      event.stopImmediatePropagation()
       closeTagPanel()
     }
     window.addEventListener('keydown', onKeydown, true)

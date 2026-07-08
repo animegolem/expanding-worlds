@@ -61,6 +61,17 @@ export interface ContextMenuHandle {
   destroy(): void
 }
 
+/** AI-IMP-183 (M-13): the right-click menu is the topmost surface, but
+ * its Escape handler lives on document-capture — which fires AFTER any
+ * window-capture listener. Window-capture Escape consumers (the tag and
+ * search panels) query this and DECLINE while a menu is open, so the menu
+ * peels first instead of a panel underneath stealing the press. Counts
+ * open instances so multiple hosts stay correct. */
+let openContextMenus = 0
+export function contextMenuOpen(): boolean {
+  return openContextMenus > 0
+}
+
 function describeFailure(what: string, result: CommandResult): string {
   if (result.status === 'error') return `${what} failed: ${result.message}`
   if (result.status === 'conflict') return `${what} failed: the project changed underneath (retry)`
@@ -98,6 +109,9 @@ export function attachContextMenu(
   element.appendChild(fileInput)
 
   function close(): void {
+    // AI-IMP-183 (M-13): drop the open-instance count only when a menu was
+    // actually up (render() calls close() first, so guard the decrement).
+    if (menu) openContextMenus = Math.max(0, openContextMenus - 1)
     // Advance the open generation so any in-flight async open (which
     // captured the prior value) sees itself as stale and bails. render()
     // calls close() first, so a newer open advances it too. AI-IMP-155.
@@ -408,6 +422,8 @@ export function attachContextMenu(
   function render(kind: MenuKind, groups: MenuGroup[], at: { x: number; y: number }): void {
     close()
     menu = makeShell(kind)
+    // AI-IMP-183 (M-13): a menu is now up — panels decline Escape to it.
+    openContextMenus++
     rows = []
     focusIndex = -1
     groups.forEach((group, index) => {

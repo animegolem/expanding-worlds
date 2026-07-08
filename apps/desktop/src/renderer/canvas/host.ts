@@ -1740,6 +1740,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     // §8.2 takeover scoping (AI-IMP-068): no space-pan or tool
     // escape while a project-global view owns the window.
     if (takeoverActive()) return
+    // AI-IMP-183 (M-09, root fix): a keystroke landing in an editable
+    // (note title, phantom draft, any INPUT/TEXTAREA/contenteditable)
+    // never reaches tools.escape()/space-pan — the copy of gestures-ui.ts's
+    // guard so Escape inside a text field cannot clear the selection.
+    const target = event.target as HTMLElement | null
+    if (
+      target &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+    ) {
+      return
+    }
     if (event.code === 'Space') {
       spaceHeld = true
       updateCursor()

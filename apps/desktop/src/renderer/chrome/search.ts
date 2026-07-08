@@ -11,7 +11,7 @@
  * z-plane, so a survivor would float above the takeover).
  */
 
-import { onTakeoverChanged } from './takeover'
+import { onTakeoverChanged, takeoverActive } from './takeover'
 
 export type SearchPanelMode = 'search' | 'quick'
 
@@ -70,6 +70,8 @@ export function onSearchPanelChanged(listener: Listener): () => void {
 // The takeover store stays dependency-free; the panel retires itself.
 // (Fires immediately with the current takeover on module load — a
 // no-op close while nothing is open.)
-onTakeoverChanged((kind) => {
-  if (kind !== null) closeSearchPanel()
+// AI-IMP-183 (M-29): retire under ANY takeover-family overlay — a named
+// view OR an input blocker like the big editor — not only a named kind.
+onTakeoverChanged(() => {
+  if (takeoverActive()) closeSearchPanel()
 })

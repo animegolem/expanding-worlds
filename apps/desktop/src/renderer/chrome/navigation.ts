@@ -199,6 +199,22 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
 
   const onKeydown = (event: KeyboardEvent): void => {
     if (takeoverActive()) return
+    // AI-IMP-183 (M-30): Back/Forward must not fire from a focused text
+    // FIELD (note-title rename, search box) — where typing/navigation
+    // should stay put. Deliberately NARROWER than the sibling guard: a
+    // contenteditable is EXCLUDED so Mod+[/] still navigates from inside
+    // the rich note editor (an accepted behavior — panels.spec back-from-
+    // editor, and §8.3's Mod+P works from the editor too; the editor's
+    // own keymaps are §8.2-excluded and don't bind these chords).
+    const target = event.target as HTMLElement | null
+    if (
+      target &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT')
+    ) {
+      return
+    }
     // OS key-repeat on a held Mod+[ / Mod+] must not spam back/forward:
     // one navigation per physical press (M-08). Scoped to the nav keys
     // here rather than the shared registry — undo-key repeat is a
