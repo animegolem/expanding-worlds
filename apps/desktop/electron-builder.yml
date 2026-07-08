@@ -10,6 +10,10 @@ appId: io.github.animegolem.expanding-worlds
 productName: Expanding Worlds
 directories:
   output: dist-artifacts
+  # build/icon.png: crowned mark 5a (App Icon Document §5, owner-picked
+  # 2026-07-07) — electron-builder derives icns/ico/AppImage icons from
+  # this one 1024px master.
+  buildResources: build
 files:
   - out/**
 # §14.4 first-open seed (AI-IMP-094): the utility resolves the seed

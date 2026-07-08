@@ -6,12 +6,17 @@ tags:
   - export
   - acceptance
 date_created: 2026-07-03
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-07
+kanban_status: completed
 AI_IMP_spawned: [AI-IMP-120, AI-IMP-121, AI-IMP-122]
 ---
 
 # AI-EPIC-008-export-import-signoff
+
+> Shipped in v0.14.0 (2026-07-07). FR-5/FR-6 delivered as
+> RAG/PHASE-1-SIGNOFF.md (28/30 items fully evidenced; open clauses
+> tracked as AI-IMP-171 and AI-IMP-138); owner counter-signature line
+> remains on that document.
 
 ## Problem Statement/Feature Scope
 
@@ -72,8 +77,8 @@ non-exported per §16.
 - [x] FR-2: Export pipeline per §16 in the utility process with progress reporting. *(AI-IMP-157)*
 - [x] FR-3: Import pipeline recreating a project with preserved IDs per §16. *(AI-IMP-158; roundtrip diff exact)*
 - [x] FR-4: Active-content-only export variant. *(AI-IMP-157; FK-checked filter)*
-- [ ] FR-5: Slice walkthrough of §17 items 1–26 with evidence.
-- [ ] FR-6: §18 acceptance audit with pass/fail record.
+- [x] FR-5: Slice walkthrough of §17 items 1–26 with evidence. *(RAG/PHASE-1-SIGNOFF.md; gap tests AI-IMP-169)*
+- [x] FR-6: §18 acceptance audit with pass/fail record. *(RAG/PHASE-1-SIGNOFF.md FR-6 section)*
 - [x] FR-7: Git snapshot engine at checkpoint moments per rev 0.52
       §11.4 (end-session, quit, idle; readable notes tree; size
       readout) — AI-IMP-120.
