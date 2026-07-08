@@ -331,6 +331,82 @@ test('cross-canvas undo declines with a board-naming toast, then applies on its 
   await app.close()
 })
 
+/**
+ * AI-IMP-181 (§10.2): held Mod+Z is re-entrancy-safe. The OS emits one
+ * keydown then a stream of `repeat:true` events; the binding acts on the
+ * first and drops every repeat (and the UndoStack serializes any that
+ * slip through), so one physical hold undoes exactly ONE step and never
+ * re-captures the stack's own re-applied command. Redo is never wiped.
+ */
+test('held Cmd+Z undoes one step per press; no phantom, redo intact (§10.2 rev AI-IMP-181)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-held-')
+  await readyUndo(win)
+  await seedPlacement(win, { x: 150, y: 150 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Build a real stack of edits: three drags → three TransformContent
+  // entries (seeded creates go through the direct gateway, uncaptured).
+  const start = (await placements(win))[0]!
+  let x = start.x
+  const y = start.y
+  for (let i = 0; i < 3; i++) {
+    await win.mouse.move(box.x + x + 12, box.y + y + 12)
+    await win.mouse.down()
+    await win.mouse.move(box.x + x + 62, box.y + y + 12, { steps: 4 })
+    await win.mouse.up()
+    x += 50
+    await expect
+      .poll(async () => Math.round((await placements(win))[0]!.x))
+      .toBe(Math.round(x))
+  }
+  expect(await depth(win)).toBe(3)
+  const movedX = x
+
+  // Simulate a HELD key: one genuine keydown followed by OS repeats. The
+  // capture listener is on window, so dispatching there drives the real
+  // binding (repeat filter + dispatch), not a synthetic shortcut.
+  const holdKey = (shift: boolean) =>
+    win.evaluate((withShift) => {
+      for (let i = 0; i < 10; i++) {
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'z',
+            metaKey: true,
+            shiftKey: withShift,
+            repeat: i > 0,
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+      }
+    }, shift)
+
+  // First hold: exactly one entry undone; the rest sit on redo. No phantom
+  // means undoDepth + redoDepth stays 3 throughout.
+  await holdKey(false)
+  await expect.poll(() => win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(2)
+  expect(await win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(1)
+
+  // Second hold: one more, still consistent.
+  await holdKey(false)
+  await expect.poll(() => win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(1)
+  expect(await win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(2)
+
+  // Redo was never wiped: two held Shift+Mod+Z replays restore the stack
+  // and the placement's final position.
+  await holdKey(true)
+  await expect.poll(() => win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(2)
+  await holdKey(true)
+  await expect.poll(() => win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(3)
+  expect(await win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(0)
+  await expect
+    .poll(async () => Math.round((await placements(win))[0]!.x))
+    .toBe(Math.round(movedX))
+
+  await app.close()
+})
+
 test('the ☰ Undo/Redo rows flip live with stack depth', async () => {
   const { app, win } = await launchApp('ew-e2e-undo-menu-')
   await readyUndo(win)

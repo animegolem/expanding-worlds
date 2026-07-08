@@ -100,18 +100,18 @@ LOC: ~50–90.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] `#step` serialized: a second undo/redo started before the first
+- [x] `#step` serialized: a second undo/redo started before the first
       settles is dropped (or safely queued); the stack's own
       re-applied command is never recorded as a fresh action.
-- [ ] `event.repeat` filtered at the undo/redo binding.
-- [ ] `#applying` contract documented at its definition.
-- [ ] Decline toast picks "undo"/"redo" by `#step` direction
+- [x] `event.repeat` filtered at the undo/redo binding.
+- [x] `#applying` contract documented at its definition.
+- [x] Decline toast picks "undo"/"redo" by `#step` direction
       (`undo-stack.ts:173-177`).
-- [ ] Unit: overlapping `#step` calls leave `#undo`/`#redo`
+- [x] Unit: overlapping `#step` calls leave `#undo`/`#redo`
       consistent, no phantom entry, no redo wipe.
-- [ ] E2e: held Cmd+Z leaves the stacks consistent; redo still works
+- [x] E2e: held Cmd+Z leaves the stacks consistent; redo still works
       after.
-- [ ] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
+- [x] Gates: `pnpm -r build && pnpm -r test && pnpm lint` + hidden
       e2e (`EW_TEST_HIDDEN_WINDOWS=1`).
 - [ ] Append an `RAG/HUMAN-TESTING.md` entry: hold Cmd+Z through a
       stack of edits, then redo; confirm nothing phantoms and redo is
@@ -139,3 +139,33 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Serialization shape: DROP, not queue.** Added `#inFlight:
+  Promise<void> | null` and a `#serialize(from, to, verb)` gate that
+  `undo()`/`redo()` route through. While a step is applying, a
+  re-entrant call returns the in-flight promise unchanged — no second
+  `#step`, no enqueue. Chosen to match the latest-intent navigation fix
+  (AI-IMP-176): a held key expresses no additional intent. This keeps
+  the single shared `#applying` boolean truthful because only one step
+  is ever applying, so `undo-store`'s `onCommittedAnywhere` capture gate
+  (which reads `stack.applying`) can never see the flag cleared while
+  the stack's own re-applied commit is still landing.
+- **`event.repeat` filter** added at the undo/redo binding
+  (`undo-keys.ts`), scoped to the undo combos after `undoActionForEvent`
+  classifies the event — mirrors `navigation.ts`'s guard. This stops the
+  overlap at the source; the `#inFlight` drop is belt-and-braces for the
+  ☰-row double-click and fire-and-forget `void stack?.undo()` paths.
+- **How the unit proves the old race:** the new
+  `undo-stack.test.ts` case gates `execute()` on a Promise the test
+  releases manually, fires two `undo()` calls WITHOUT awaiting the first
+  (the exact key-repeat overlap), and asserts `execute` ran once, the
+  second was dropped, `#applying` stayed continuously `true` across the
+  drop window (the capture gate never reopened), and after release
+  `undoDepth+redoDepth` is still 2 (no phantom, no redo wipe). A second
+  case proves a cross-canvas REDO decline says "to redo it," not "undo."
+- **Decline toast** now interpolates the `#step` direction verb
+  (`undo-stack.ts`), so a declined redo names the correct action.
+- No blockers. The pre-existing `fatal: ambiguous argument 'main'` line
+  in the e2e log comes from `snapshot-push.spec.ts` (worktree has no
+  local `main` ref) and is unrelated to this work; all 205 e2e + 20
+  undo unit tests pass.

@@ -89,9 +89,24 @@ export class UndoStack {
   #deps: UndoStackDeps
   #undo: StackAction[] = []
   #redo: StackAction[] = []
-  /** True while an inverse/forward is being re-executed: the resulting
-   * commit must NOT be captured as a fresh forward command. */
+  /**
+   * True for the WHOLE duration of a #step's member execution: the
+   * resulting commits are the stack's OWN re-applied inverse/forward and
+   * must NOT be captured as fresh forward commands (undo-store's
+   * `onCommittedAnywhere` gates capture on this flag).
+   *
+   * CONTRACT (AI-IMP-181): this is one shared boolean, so it is only
+   * truthful while exactly one #step runs at a time. #step is therefore
+   * serialized behind {@link #inFlight} — never start a second step, and
+   * never clear this flag, while a step is still applying. Observing or
+   * flipping it mid-await across overlapping steps reintroduces the race
+   * this ticket fixed (the first step's completion cleared the flag while
+   * a second's commits were still landing → phantom capture, redo wipe).
+   */
   #applying = false
+  /** Non-null while a #step is applying; a re-entrant undo/redo awaits it
+   * instead of starting a second overlapping step (AI-IMP-181). */
+  #inFlight: Promise<void> | null = null
 
   constructor(deps: UndoStackDeps) {
     this.#deps = deps
@@ -148,11 +163,30 @@ export class UndoStack {
   }
 
   async undo(): Promise<void> {
-    await this.#step(this.#undo, this.#redo)
+    await this.#serialize(this.#undo, this.#redo, 'undo')
   }
 
   async redo(): Promise<void> {
-    await this.#step(this.#redo, this.#undo)
+    await this.#serialize(this.#redo, this.#undo, 'redo')
+  }
+
+  /**
+   * Serialize undo/redo so a second call cannot begin while the first's
+   * bookkeeping is still landing (AI-IMP-181). DROP, not queue: a
+   * re-entrant call (OS key-repeat on a held Mod+Z, or a double-clicked ☰
+   * row) expresses no additional intent, so it awaits the step already in
+   * flight rather than enqueuing another — matching the latest-intent
+   * navigation fix (AI-IMP-176). The keyboard binding also filters
+   * `event.repeat`, so the overlap rarely reaches here; this is the belt
+   * to that suspenders (and covers the ☰ row / fire-and-forget paths).
+   */
+  #serialize(from: StackAction[], to: StackAction[], verb: 'undo' | 'redo'): Promise<void> {
+    if (this.#inFlight) return this.#inFlight
+    const done = this.#step(from, to, verb).finally(() => {
+      this.#inFlight = null
+    })
+    this.#inFlight = done
+    return done
   }
 
   /** Drop everything — project switch (§10.2) or teardown. */
@@ -163,16 +197,18 @@ export class UndoStack {
     if (had) this.#deps.onChanged()
   }
 
-  async #step(from: StackAction[], to: StackAction[]): Promise<void> {
+  async #step(from: StackAction[], to: StackAction[], verb: 'undo' | 'redo'): Promise<void> {
     const action = from[from.length - 1]
     if (!action) return
 
     // V1 same-canvas fence: decline cross-board entries with a toast
-    // naming the board; leave the entry so it is undoable once the user
-    // is on that canvas (navigation-on-undo is deferred).
+    // naming the board AND the direction being declined (AI-IMP-181 M-38:
+    // a declined redo says "redo it," not "undo it"); leave the entry so
+    // it is actionable once the user is on that canvas (navigation-on-undo
+    // is deferred).
     if (action.canvasId !== this.#deps.currentCanvasId()) {
       const name = await this.#deps.boardLabel(action.canvasId)
-      this.#deps.toast(`That change was made on ${name} — open that board to undo it`)
+      this.#deps.toast(`That change was made on ${name} — open that board to ${verb} it`)
       return
     }
 
