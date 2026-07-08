@@ -527,3 +527,11 @@ The full walk, on a placed image's note:
   another, hit Mod+Z — the toast should NAME the board ("That change
   was made on “X” — open that board to undo it"). It said "another
   board" before, always; now the name should make the walk obvious.
+- **AI-IMP-134 bound page (the open book)**: open a note on a placed
+  portrait image — the page should bind flush to the image's freer
+  side at exactly the image's height, binder rings straddling the
+  seam, flat like world paper (no shadow). Open one on a wide
+  (≥1.4:1) image — it should bind BELOW like a calendar at image
+  width. Zoom out: rings degrade to a stroke, then the whole page
+  fades. Feel questions: does the book read instantly as a book?
+  Ring weight right? Does the calendar bind feel natural on wide art?

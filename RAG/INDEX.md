@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 0 |
-| Planned | 4 | 2 |
+| In Progress | 1 | 0 |
+| Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 18 | 164 |
-| **Total** | **25** | **170** |
+| Completed | 19 | 165 |
+| **Total** | **25** | **171** |
 
 ## In Progress
 
@@ -21,22 +21,6 @@
 **IMPs:**
 - [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
 - [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
-
----
-
-### [[AI-EPIC-008-export-import-signoff|EPIC-008: Export import signoff]]
-> RFC §16 requires portable export with lossless reimport, and §17–18
-
-**IMPs:**
-- [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
-- [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
-- [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — completed
-- [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
-- [[AI-IMP-157-project-export-pipeline|IMP-157]] Project export pipeline — completed
-- [[AI-IMP-158-project-import-roundtrip|IMP-158]] Project import roundtrip — completed
-- [[AI-IMP-169-signoff-gap-tests|IMP-169]] Signoff gap tests — completed
-- [[AI-IMP-171-tag-rename-affordance|IMP-171]] Tag rename affordance — planned
-- [[AI-IMP-172-decline-toast-board-name|IMP-172]] Decline toast board name — completed
 
 ---
 
@@ -71,9 +55,11 @@
 - [[AI-IMP-138-frame-furniture|IMP-138]] — planned, no epic dependency found
 - [[AI-IMP-152-hand-rules-build-audit|IMP-152]] — planned, no epic dependency found
 - [[AI-IMP-170-dialect-url-cluster|IMP-170]] — planned, no epic dependency found
+- [[AI-IMP-173-swarm-stability-audit|IMP-173]] — in-progress, no epic dependency found
 
 ### Status Mismatches
-- [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] — open but parent epic AI-EPIC-023 is completed
+- [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
+- [[AI-IMP-171-tag-rename-affordance|IMP-171]] — open but parent epic AI-EPIC-008 is completed
 
 ---
 
@@ -134,9 +120,9 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (538 LOC)
+- RAG/HUMAN-TESTING.md (537 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (536 LOC)
 - packages/persistence/src/handlers/placements.ts (535 LOC)
-- RAG/HUMAN-TESTING.md (529 LOC)
 - packages/persistence/src/handlers/nodes.ts (529 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (524 LOC)
 - packages/persistence/src/handlers/notes.test.ts (523 LOC)
@@ -207,7 +193,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>18 EPICs, 136 IMPs completed</summary>
+<summary>19 EPICs, 137 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -253,6 +239,16 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-065-uses-list-and-location-chooser|IMP-065]] Uses list and location chooser — completed
   - [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — completed
   - [[AI-IMP-067-pin-dock-tool|IMP-067]] Pin dock tool — completed
+- [[AI-EPIC-008-export-import-signoff|EPIC-008]] Export import signoff — 2026-07-07
+  - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
+  - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
+  - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — completed
+  - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed
+  - [[AI-IMP-157-project-export-pipeline|IMP-157]] Project export pipeline — completed
+  - [[AI-IMP-158-project-import-roundtrip|IMP-158]] Project import roundtrip — completed
+  - [[AI-IMP-169-signoff-gap-tests|IMP-169]] Signoff gap tests — completed
+  - [[AI-IMP-171-tag-rename-affordance|IMP-171]] Tag rename affordance — planned
+  - [[AI-IMP-172-decline-toast-board-name|IMP-172]] Decline toast board name — completed
 - [[AI-EPIC-009-canvas-feel-pass|EPIC-009]] Canvas feel pass — 2026-07-05
   - [[AI-IMP-024-native-camera-input-and-cursors|IMP-024]] Native camera input and cursors — completed
   - [[AI-IMP-025-texture-correctness-and-drag-fidelity|IMP-025]] Texture correctness and drag fidelity — completed
@@ -352,7 +348,7 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-112-gateway-burst-serialization|IMP-112]] Gateway burst serialization — completed
   - [[AI-IMP-113-scene-ready-primitive|IMP-113]] Scene ready primitive — completed
 - [[AI-EPIC-023-paper-note-lifecycle|EPIC-023]] Paper note lifecycle — 2026-07-07
-  - [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — planned
+  - [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — completed
   - [[AI-IMP-135-lifecycle-transitions-and-beats|IMP-135]] Lifecycle transitions and beats — completed
 
 </details>

@@ -6,12 +6,12 @@ tags:
   - design-pass
   - notes
   - panels
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-130]
 parent_epic: [[AI-EPIC-023-paper-note-lifecycle]]
 confidence_score: 0.6
 date_created: 2026-07-07
-date_completed:
+date_completed: 2026-07-07
 ---
 
 
@@ -91,8 +91,10 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Ring degradation per ladder; whole-page fade at the floor.
 - [x] Gates: `pnpm -r build`, `pnpm -r test`, `pnpm lint`, desktop
       e2e hidden.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (does the
+- [x] HUMAN-TESTING entry appended at merge by the lead (does the
       book read instantly; ring weight; wide-image calendar feel).
+      *(Appended 2026-07-07 at the owner's close-out review — the one
+      item that kept this merged ticket open.)*
 
 ### Acceptance Criteria
 
