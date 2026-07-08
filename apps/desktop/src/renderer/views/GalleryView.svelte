@@ -917,6 +917,28 @@
     tagOpen = false
   }
 
+  /** §8.2 desk physics (AI-IMP-188): a pointerdown on empty gallery
+   * ground puts the current selection down. Clearing it dismisses the
+   * floating action bar (its visibility derives from the selection
+   * count) together with its tag-suggestion popover, and closes the
+   * Quick Look preview. A pointerdown ON a tile, a bucket header, or a
+   * control is left alone — those own their own gesture; this is a
+   * deliberate click on empty ground, never a fade (§8.2 disengage).
+   * The facet strip and the action bar mount OUTSIDE the scroller, so
+   * their clicks never reach this handler. */
+  function onGalleryGroundPointerDown(event: PointerEvent): void {
+    const target = event.target as HTMLElement | null
+    if (
+      target?.closest(
+        '[data-testid="gallery-cell"], .bucket-header, button, input, textarea, a, [role="option"]',
+      )
+    )
+      return
+    if (selected.size === 0 && !previewOpen) return
+    clearSelection()
+    previewOpen = false
+  }
+
   // Escape peels one layer per press (rev 0.25), BEFORE the takeover
   // layer's window-level close listener: capture phase, the TagPanel
   // pattern. Field open → close it; selection → clear it; empty →
@@ -1225,6 +1247,7 @@
     </div>
   {/if}
 
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="scroller"
     data-testid="gallery-scroller"
@@ -1232,6 +1255,7 @@
     bind:clientWidth={viewportWidth}
     bind:clientHeight={viewportHeight}
     onscroll={onScroll}
+    onpointerdown={onGalleryGroundPointerDown}
   >
     {#if scope === 'everything' && needsLibrary}
       <!-- 089 designation (v1): a plain path field — the open call
