@@ -10,8 +10,8 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 190 |
-| **Total** | **25** | **206** |
+| Completed | 19 | 191 |
+| **Total** | **25** | **207** |
 
 ## In Progress
 
@@ -91,7 +91,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/host.ts (2085 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2057 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1788 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (1142 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (1168 LOC)
 - apps/desktop/src/main/index.ts (1112 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
@@ -103,7 +103,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/note/panels.ts (849 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
-- apps/desktop/e2e/panels.spec.ts (795 LOC)
+- apps/desktop/e2e/panels.spec.ts (826 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (784 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (777 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
@@ -148,11 +148,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
 - apps/desktop/src/renderer/theme.css (487 LOC)
+- apps/desktop/e2e/shell.spec.ts (485 LOC)
 - apps/desktop/e2e/charms.spec.ts (482 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
-- apps/desktop/e2e/shell.spec.ts (471 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (465 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)

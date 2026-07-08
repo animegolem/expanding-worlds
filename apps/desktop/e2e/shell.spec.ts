@@ -160,6 +160,25 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
 
   // Title strip: hidden at rest, revealed at the top edge.
   await expect(win.getByTestId('title-strip')).toHaveCount(0)
+  // AI-IMP-209 (CI catch): arm a MutationObserver BEFORE the reveal to
+  // capture the strip's opacity at the instant it mounts — in:fade
+  // applies its 0-opacity start state synchronously on insertion, so
+  // this reads < 1 regardless of how slowly the runner draws frames.
+  // The old fixed-90ms mid-fade sample raced the 220ms tween on the
+  // Linux runner (both samples read the same value): wall-clock
+  // sampling of a tween is never deterministic.
+  await win.evaluate(() => {
+    ;(window as unknown as { __stripMountOpacity: number | null }).__stripMountOpacity = null
+    const observer = new MutationObserver(() => {
+      const el = document.querySelector('[data-testid="title-strip"]') as HTMLElement | null
+      if (!el) return
+      ;(window as unknown as { __stripMountOpacity: number | null }).__stripMountOpacity = Number(
+        getComputedStyle(el).opacity,
+      )
+      observer.disconnect()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+  })
   await revealTitleStrip(win)
 
   // §8.2 frameless shell: the revealed strip IS the window drag handle.
@@ -176,19 +195,14 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
     .toBe('drag')
 
   // AI-IMP-191 (§8.2 decision-01): the hover reveal is a smoky
-  // near-black gradient that genuinely RISES (a fade, not a hard pop) —
-  // sample it mid-transition, then confirm it settles fully opaque.
-  const readStripOpacity = () =>
-    win.evaluate(() => {
-      const el = document.querySelector('[data-testid="title-strip"]') as HTMLElement | null
-      return el ? Number(getComputedStyle(el).opacity) : null
-    })
-  const earlyOpacity = await readStripOpacity()
-  await win.waitForTimeout(90)
-  const midOpacity = await readStripOpacity()
-  expect(midOpacity).not.toBeNull()
-  expect(earlyOpacity).not.toBeNull()
-  expect(midOpacity!).toBeGreaterThan(earlyOpacity!)
+  // near-black gradient that genuinely RISES (a fade, not a hard pop):
+  // it mounted at less-than-full opacity (captured by the observer
+  // above, race-free) and settles fully opaque.
+  const mountOpacity = await win.evaluate(
+    () => (window as unknown as { __stripMountOpacity: number | null }).__stripMountOpacity,
+  )
+  expect(mountOpacity).not.toBeNull()
+  expect(mountOpacity!).toBeLessThan(1)
   await expect
     .poll(() =>
       win.evaluate(

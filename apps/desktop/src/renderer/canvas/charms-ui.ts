@@ -971,6 +971,44 @@ export function attachCharmsUi(
   // selection down past the floor still dismisses it for good.
   let floorSelectionKey = ''
   let selectionSeenAboveFloor = false
+
+  /** AI-IMP-192: dismiss (never just hide) a selection whose on-screen
+   * footprint has zoomed below the shared furniture floor.
+   * Edge-triggered on the above→below crossing (see the state decl):
+   * a NEW selection resets the crossing state; only one observed above
+   * the floor arms the dismissal. Zoom-only (pan at constant zoom never
+   * changes the footprint), and clearing is permanent — zooming back in
+   * does not resurrect.
+   * AI-IMP-209 (CI catch): runs SYNCHRONOUSLY from the camera and
+   * selection onChanged listeners, not only from the rAF layout() — the
+   * Linux runner's slow software frames proved arming must never depend
+   * on a render tick having landed between "selected above the floor"
+   * and "zoomed below it" (back-to-back camera writes outran the frame
+   * and the crossing was missed forever). layout() still calls it as a
+   * belt for anything that moves the camera without firing the hooks. */
+  function checkFurnitureFloor(): void {
+    if (dismissingSelection) return
+    const floorSelection = host.controller.selectedItems()
+    const selectionKey = floorSelection
+      .map((item) => item.id)
+      .sort()
+      .join('\n')
+    if (selectionKey !== floorSelectionKey) {
+      floorSelectionKey = selectionKey
+      selectionSeenAboveFloor = false
+    }
+    if (selectionKey === '') return
+    if (!isSelectionBelowFurnitureFloor(floorSelection, host.controller.camera.zoom)) {
+      selectionSeenAboveFloor = true
+    } else if (selectionSeenAboveFloor) {
+      dismissingSelection = true
+      host.controller.selection.clear()
+      dismissingSelection = false
+      floorSelectionKey = ''
+      selectionSeenAboveFloor = false
+    }
+  }
+
   function schedule(): void {
     if (frame) return
     frame = requestAnimationFrame(() => {
@@ -982,35 +1020,10 @@ export function attachCharmsUi(
   function layout(): void {
     const camera = host.controller.camera
 
-    // AI-IMP-192: dismiss (never just hide) a selection whose on-screen
-    // footprint has zoomed below the shared furniture floor — checked
-    // first so a same-frame dismiss falls straight through to the
-    // unselected branches below (bar hidden, no bar-beneath-a-speck).
-    // Edge-triggered on the above→below crossing (see the state decl):
-    // a NEW selection resets the crossing state; only one observed
-    // above the floor arms the dismissal. Zoom-only (pan at constant
-    // zoom never changes the footprint), and clearing is permanent —
-    // zooming back in does not resurrect.
-    const floorSelection = host.controller.selectedItems()
-    const selectionKey = floorSelection
-      .map((item) => item.id)
-      .sort()
-      .join('\n')
-    if (selectionKey !== floorSelectionKey) {
-      floorSelectionKey = selectionKey
-      selectionSeenAboveFloor = false
-    }
-    if (selectionKey !== '' && !dismissingSelection) {
-      if (!isSelectionBelowFurnitureFloor(floorSelection, camera.zoom)) {
-        selectionSeenAboveFloor = true
-      } else if (selectionSeenAboveFloor) {
-        dismissingSelection = true
-        host.controller.selection.clear()
-        dismissingSelection = false
-        floorSelectionKey = ''
-        selectionSeenAboveFloor = false
-      }
-    }
+    // AI-IMP-192: floor check first, so a same-frame dismiss falls
+    // straight through to the unselected branches below (bar hidden,
+    // no bar-beneath-a-speck).
+    checkFurnitureFloor()
 
     const items = host.controller.items()
     const seen = new Set<string>()
@@ -1096,7 +1109,15 @@ export function attachCharmsUi(
     }
   }
 
-  disposers.push(host.controller.camera.onChanged(() => schedule()))
+  // AI-IMP-192/209: the floor check rides the SAME hooks synchronously
+  // (before the scheduled frame) so the crossing can never be outrun by
+  // back-to-back camera writes — see checkFurnitureFloor.
+  disposers.push(
+    host.controller.camera.onChanged(() => {
+      checkFurnitureFloor()
+      schedule()
+    }),
+  )
   disposers.push(
     host.onSceneApplied(() => {
       schedule()
@@ -1106,7 +1127,12 @@ export function attachCharmsUi(
       void refreshCorner()
     }),
   )
-  disposers.push(host.controller.selection.onChanged(() => schedule()))
+  disposers.push(
+    host.controller.selection.onChanged(() => {
+      checkFurnitureFloor()
+      schedule()
+    }),
+  )
   // §8.4 context-menu seam: open the appearance/tags popover for the
   // requested placement, selecting it first so the bar (and thus the
   // popover anchor) lays out beneath it.

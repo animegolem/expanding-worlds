@@ -706,10 +706,14 @@ test('spam open/close a note 10× fast always ends openable (§8.5, AI-IMP-199)'
   // The final open MUST succeed and be interactable.
   await win.mouse.dblclick(box.x + 400, box.y + 300)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/, { timeout: 5000 })
-  const st = await openablePaneState(win)
-  expect(st.present).toBe(true)
-  expect(st.opacity).toBeGreaterThan(0.5)
-  expect(st.pointerEvents).not.toBe('none')
+  // AI-IMP-209: poll — the positioning gate legitimately holds the pane
+  // hidden/inert for its first frame(s); see the burst test below.
+  await expect
+    .poll(async () => {
+      const st = await openablePaneState(win)
+      return st.present && st.opacity > 0.5 && st.pointerEvents !== 'none'
+    })
+    .toBe(true)
 
   await app.close()
 })
@@ -731,9 +735,17 @@ test('open-while-closing bursts through the store never wedge the tethered slot 
   }, noteId)
 
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/, { timeout: 5000 })
-  const st = await openablePaneState(win)
-  expect(st.opacity).toBeGreaterThan(0.5)
-  expect(st.pointerEvents).not.toBe('none')
+  // AI-IMP-209 (CI catch): the pane holds visibility:hidden +
+  // pointer-events:none until its first positioning frame lands
+  // (AI-IMP-193's no-paint-before-position gate), and on the Linux
+  // runner's slow software frames a one-shot sample landed inside that
+  // window. The invariant is EVENTUALLY interactable — poll for it.
+  await expect
+    .poll(async () => {
+      const st = await openablePaneState(win)
+      return st.opacity > 0.5 && st.pointerEvents !== 'none'
+    })
+    .toBe(true)
 
   await app.close()
 })
@@ -753,29 +765,48 @@ test('note panel never flashes at the window corner before positioning (§8.5, A
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
   const box = (await win.getByTestId('canvas-host').boundingBox())!
 
-  // Sample every frame for ~1.5s, capturing whether the pane is visible
-  // and where its inline position sits.
+  // Sample every frame, capturing whether the pane is visible and where
+  // its inline position sits. AI-IMP-209 (CI catch): no fixed tick
+  // budget — the Linux runner's software frames stretched the pane's
+  // first positioning frame past the old 90-tick/400ms window and the
+  // sampler stopped before ever seeing it visible. The sampler runs
+  // until it has recorded a handful of VISIBLE frames (or a generous
+  // cap), and the test polls for visibility instead of sleeping.
   await win.evaluate(() => {
     ;(window as unknown as { __paneSamples: unknown[] }).__paneSamples = []
     let n = 0
+    let seenVisible = 0
     const tick = (): void => {
       const el = document.querySelector('[data-testid="note-pane"]') as HTMLElement | null
       if (el) {
         const cs = getComputedStyle(el)
+        const visible = cs.visibility !== 'hidden' && Number(cs.opacity) > 0.01
+        if (visible) seenVisible += 1
         ;(window as unknown as { __paneSamples: unknown[] }).__paneSamples.push({
-          visible: cs.visibility !== 'hidden' && Number(cs.opacity) > 0.01,
+          visible,
           left: parseFloat(el.style.left || '0'),
           top: parseFloat(el.style.top || '0'),
         })
       }
-      if (n++ < 90) requestAnimationFrame(tick)
+      if (n++ < 1800 && seenVisible < 6) requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
   })
 
   await win.mouse.dblclick(box.x + 400, box.y + 300)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor/, { timeout: 5000 })
-  await win.waitForTimeout(400)
+  // Poll the SAMPLER's own record (not the live DOM) so the visible
+  // frame is guaranteed to be in the array we assert over.
+  await expect
+    .poll(() =>
+      win.evaluate(
+        () =>
+          (window as unknown as { __paneSamples: Array<{ visible: boolean }> }).__paneSamples.some(
+            (s) => s.visible,
+          ),
+      ),
+    )
+    .toBe(true)
 
   const samples = await win.evaluate(
     () =>
