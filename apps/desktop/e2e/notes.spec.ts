@@ -967,3 +967,59 @@ test('URL cluster renders without fetching; four constructs round-trip byte-exac
 
   await app.close()
 })
+
+test('the attach palette: type-new + Enter creates, attaches, and opens (AI-IMP-211)', async () => {
+  const { app, win } = await launchApp('ew-e2e-attach-palette-')
+  const node = await seedBarePin(win, { x: 300, y: 240 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Open the palette from the node's context menu.
+  await win.mouse.click(box.x + 300, box.y + 240, { button: 'right' })
+  await win.getByTestId('node-menu-attach-existing').click()
+  await expect(win.getByTestId('attach-picker')).toBeVisible()
+
+  // A non-matching title surfaces the highlighted Create row (index 0),
+  // so plain Enter creates — no mouse between typing and reading.
+  await win.getByTestId('attach-picker-query').fill('Harbor log')
+  await expect(win.getByTestId('attach-picker-create')).toBeVisible()
+  await win.getByTestId('attach-picker-query').press('Enter')
+
+  // Created, attached, and open tethered beside the node.
+  await expect.poll(() => nodeNoteId(win, node)).not.toBeNull()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor log/)
+  await expect(win.locator('.note-panel')).toHaveCount(1)
+  await expect(win.getByTestId('attach-picker')).toHaveCount(0) // palette closed
+
+  await app.close()
+})
+
+test('the attach palette: arrow selects an existing note, Escape cancels (AI-IMP-211)', async () => {
+  const { app, win } = await launchApp('ew-e2e-attach-palette-select-')
+  await seedPlacedNote(win, 'Ledger', 'entries', { x: 700, y: 300 })
+  const node = await seedBarePin(win, { x: 300, y: 240 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 2)
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // Escape cancels without attaching.
+  await win.mouse.click(box.x + 300, box.y + 240, { button: 'right' })
+  await win.getByTestId('node-menu-attach-existing').click()
+  await expect(win.getByTestId('attach-picker')).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('attach-picker')).toHaveCount(0)
+  expect(await nodeNoteId(win, node)).toBeNull()
+
+  // Reopen, type a partial, arrow past the Create row to the match, Enter.
+  await win.mouse.click(box.x + 300, box.y + 240, { button: 'right' })
+  await win.getByTestId('node-menu-attach-existing').click()
+  await win.getByTestId('attach-picker-query').fill('Ledg')
+  await expect(win.getByTestId('attach-picker-item')).toHaveText(/Ledger/)
+  await win.getByTestId('attach-picker-query').press('ArrowDown') // Create → the match
+  await win.getByTestId('attach-picker-query').press('Enter')
+  await expect.poll(() => nodeNoteId(win, node)).not.toBeNull()
+  await expect(win.getByTestId('attach-picker')).toHaveCount(0)
+
+  await app.close()
+})

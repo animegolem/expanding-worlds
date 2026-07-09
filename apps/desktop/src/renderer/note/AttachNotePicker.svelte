@@ -1,12 +1,18 @@
 <!--
-  Attach-note picker (RFC-0001 §6.6, AI-IMP-049): search active
-  titles via suggestTitles or create a new note from the typed title
-  and attach it. Title collisions on the create path route through
-  the §7.7 dialog — Use Existing attaches the conflicting note.
+  Attach-note picker (RFC-0001 §6.6/§8.3, AI-IMP-049/211): the note
+  charm's chooser, presented as a true command palette (CommandPalette).
+  Injected verbs: `search` lists attachable ACTIVE titles via
+  suggestTitles; `oncommit` attaches an existing note; `oncreate` creates
+  the typed title AND attaches it, then opens the note tethered beside its
+  node (§8.5) — no mouse between typing and reading. Title collisions on
+  the create path route through the §7.7 dialog — Use Existing attaches
+  the conflicting note.
 -->
 <script lang="ts">
   import { uuidv7 } from '@ew/domain'
   import type { CanvasHostHandle } from '../canvas/host'
+  import CommandPalette, { type PaletteItem } from './CommandPalette.svelte'
+  import { requestOpenNote } from './open-note'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
 
   let {
@@ -22,18 +28,48 @@
     inTrash: boolean
   }
 
-  let query = $state('')
-  let results = $state<Suggestion[]>([])
   let error = $state<string | null>(null)
   let conflict = $state<TitleConflict | null>(null)
 
-  async function search(): Promise<void> {
+  async function search(query: string): Promise<PaletteItem[]> {
     const response = await window.ew.project.query('suggestTitles', { query })
-    if (!response.ok) return
-    // Attach targets are existing ACTIVE notes only.
-    results = (response.result as Suggestion[]).filter((s) => !s.phantom && !s.inTrash)
+    if (!response.ok) return []
+    // Attach targets are existing ACTIVE notes only (never phantoms /
+    // trashed), and only ones with a real note id to attach.
+    return (response.result as Suggestion[])
+      .filter((s) => !s.phantom && !s.inTrash && s.noteId !== null)
+      .map((s) => ({ id: s.noteId!, label: s.title }))
   }
-  void search()
+
+  function createLabel(query: string): string {
+    return `Create “${query}”`
+  }
+
+  /**
+   * cursor-drop choice (AI-IMP-211): open the just-attached note TETHERED
+   * beside its node, reusing the §8.5 anchored-open path. The palette
+   * always attaches to a node that ALREADY has a placement on the active
+   * canvas (the note charm sits on it), so §8.5's "a note opens tethered
+   * beside its node" IS the honest "under the cursor" — and it needs no
+   * new spawn-at-screen or pin-a-panel machinery, and never contradicts
+   * "pinning is the user's act alone." The placement pre-exists the
+   * create, so items() carries it with no scene change to await; if it is
+   * somehow gone we fall back to the store's own anchor resolve.
+   */
+  function openBesideNode(noteId_: string, title: string): void {
+    const placement = handle.controller
+      .items()
+      .find((item) => item.itemKind === 'placement' && item.nodeId === nodeId)
+    if (placement && placement.itemKind === 'placement') {
+      requestOpenNote(noteId_, {
+        canvasId: handle.canvasId,
+        placementId: placement.id,
+        label: title,
+      })
+    } else {
+      requestOpenNote(noteId_)
+    }
+  }
 
   async function attach(noteId_: string): Promise<void> {
     const result = await handle.gateway.execute('AttachNoteToNode', { nodeId, noteId: noteId_ })
@@ -41,17 +77,19 @@
     else error = result.status === 'error' ? result.message : 'the project changed underneath'
   }
 
-  async function createAndAttach(): Promise<void> {
-    const title = query.trim()
+  async function createAndAttach(rawTitle: string): Promise<void> {
+    const title = rawTitle.trim()
     if (title.length === 0) return
-    // AI-IMP-086: one act, ONE command — a failed attach can no
-    // longer strand a loose note reserving the title.
+    const noteId_ = uuidv7()
+    // AI-IMP-086: one act, ONE command — a failed attach can no longer
+    // strand a loose note reserving the title.
     const created = await handle.gateway.execute('CreateNoteAndAttach', {
       nodeId,
-      noteId: uuidv7(),
+      noteId: noteId_,
       title,
     })
     if (created.status === 'committed') {
+      openBesideNode(noteId_, title)
       onclose()
       return
     }
@@ -69,128 +107,35 @@
   }
 </script>
 
-<div class="scrim" role="presentation">
-  <div class="picker" role="dialog" aria-modal="true" data-testid="attach-note-picker">
-    <input
-      type="text"
-      placeholder="Search notes or type a new title…"
-      data-testid="attach-picker-query"
-      bind:value={query}
-      oninput={() => void search()}
-    />
-    {#if error}
-      <p class="error" data-testid="attach-picker-error">{error}</p>
-    {/if}
-    <ul data-testid="attach-picker-results">
-      {#each results as result (result.noteId)}
-        <li>
-          <button type="button" onclick={() => void attach(result.noteId!)}>
-            {result.title}
-          </button>
-        </li>
-      {/each}
-    </ul>
-    {#if query.trim().length > 0}
-      <button type="button" class="create" data-testid="attach-picker-create" onclick={() => void createAndAttach()}>
-        Create “{query.trim()}” and attach
-      </button>
-    {/if}
-    <button type="button" class="cancel" data-testid="attach-picker-cancel" onclick={onclose}>
-      Cancel
-    </button>
-  </div>
-  {#if conflict}
-    <TitleConflictDialog
-      {conflict}
-      onOpenExisting={() => (conflict = null)}
-      onUseExisting={(noteId_) => {
-        conflict = null
-        void attach(noteId_)
-      }}
-      onRestoreExisting={(noteId_) => {
-        conflict = null
-        void (async () => {
-          const restored = await handle.gateway.execute('RestoreRecord', {
-            kind: 'note',
-            id: noteId_,
-          })
-          if (restored.status === 'committed') await attach(noteId_)
-        })()
-      }}
-      onChooseDifferent={() => (conflict = null)}
-    />
-  {/if}
-</div>
+<CommandPalette
+  testid="attach-picker"
+  placeholder="Search notes or type a new title…"
+  {search}
+  {createLabel}
+  {error}
+  oncommit={(item) => void attach(item.id)}
+  oncreate={(query) => void createAndAttach(query)}
+  {onclose}
+/>
 
-<style>
-  .scrim {
-    position: absolute;
-    inset: 0;
-    z-index: 35;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding-top: 15%;
-    background: var(--ew-dialog-scrim);
-  }
-
-  .picker {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    width: 280px;
-    max-height: 60%;
-    padding: 0.6rem;
-    background: var(--ew-surface-modal);
-    border: 1px solid var(--ew-border-control);
-    border-radius: 6px;
-    color: var(--ew-text-dialog);
-    font-size: 0.85rem;
-  }
-
-  input {
-    padding: 0.3rem 0.45rem;
-    border: 1px solid var(--ew-border-control);
-    border-radius: 3px;
-    background: var(--ew-surface-solid);
-    color: var(--ew-text-dialog);
-    font: inherit;
-  }
-
-  ul {
-    margin: 0;
-    padding: 0;
-    overflow: auto;
-    list-style: none;
-  }
-
-  ul button {
-    display: block;
-    width: 100%;
-    padding: 0.25rem 0.4rem;
-    border: none;
-    background: transparent;
-    color: var(--ew-text-dialog);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  ul button:hover {
-    background: var(--ew-surface-control-hover);
-  }
-
-  .create,
-  .cancel {
-    padding: 0.3rem 0.5rem;
-    font: inherit;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-
-  .error {
-    margin: 0;
-    color: var(--ew-danger-muted);
-    font-size: 0.78rem;
-  }
-</style>
+{#if conflict}
+  <TitleConflictDialog
+    {conflict}
+    onOpenExisting={() => (conflict = null)}
+    onUseExisting={(noteId_) => {
+      conflict = null
+      void attach(noteId_)
+    }}
+    onRestoreExisting={(noteId_) => {
+      conflict = null
+      void (async () => {
+        const restored = await handle.gateway.execute('RestoreRecord', {
+          kind: 'note',
+          id: noteId_,
+        })
+        if (restored.status === 'committed') await attach(noteId_)
+      })()
+    }}
+    onChooseDifferent={() => (conflict = null)}
+  />
+{/if}

@@ -75,12 +75,12 @@ spawn-at-cursor, e2e (new palette spec or panels extension).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Centered palette with scrim; keyboard-first (arrows, Enter,
+- [x] Centered palette with scrim; keyboard-first (arrows, Enter,
       Escape per 183).
-- [ ] Create "⟨title⟩" row on non-matching query; Enter creates.
-- [ ] Create attaches AND opens at the cursor (choice documented).
-- [ ] E2e round-trips for create, select, cancel.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Create "⟨title⟩" row on non-matching query; Enter creates.
+- [x] Create attaches AND opens at the cursor (choice documented).
+- [x] E2e round-trips for create, select, cancel.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -99,3 +99,49 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Reusable shell extracted: `note/CommandPalette.svelte` owns the
+  scrim + centered layout, the input, the row list, the keyboard
+  (↑/↓/Enter), the Escape window-capture (composes with 183 M-13/24/28
+  — declines to a topmost context menu, `stopImmediatePropagation`,
+  onclose), and a lifetime `registerInputBlocker(() => true)` so the
+  palette is a takeover-FAMILY blocker (Mod+P suppressed, tag/search
+  panels retire). Verbs are injected — `search`, `createLabel`,
+  `oncommit`, `oncreate` — so the future pin-wizard unification reuses
+  the same component. `AttachNotePicker.svelte` is now a thin wrapper
+  supplying the note verbs and owning the §7.7 conflict dialog.
+- Portaling: the palette scrim rides `overlayPortal` into the root
+  overlay host (§8.8 law 2 / Z.modal 600), matching the big editor —
+  the old picker sat at a raw `z-index:35` INSIDE `.canvas-host`,
+  which is BELOW note panels (200) and chrome (400); as a real modal
+  it must escape those stacking contexts.
+
+- **cursor-drop choice (documented).** The ticket named two options
+  (drop-under-cursor vs attach-to-cursor-click-to-place) and asked for
+  the simpler. I chose neither literal screen-drop: a committed create
+  opens the note **tethered beside the node it was just attached to**,
+  via the existing §8.5 anchored-open path (`requestOpenNote` with the
+  placement anchor found synchronously from `items()`). Rationale: the
+  palette always attaches to a node that ALREADY carries a placement on
+  the active canvas (the note charm sits on it), so §8.5's "a note
+  opens tethered beside its node" IS the honest "under the cursor" —
+  and it needs zero new machinery (no last-cursor tracking, no
+  spawn-a-pinned-panel-at-screen), reuses the tethered panel's own §8.8
+  layout clamp, and never contradicts §8.5's "pinning is the user's act
+  alone." Reading `items()` is safe here — the placement pre-exists the
+  create, so no scene-apply to await; a missing placement falls back to
+  the store's async anchor resolve.
+
+- Guard hit + fixed: the palette's hand-rolled `<input>` tripped
+  `input-styling-guard.test.ts` (AI-IMP-142 — no new .svelte may reach
+  for `--ew-surface-input`). Switched to the shared `ui/TextInput`
+  (variant="pill"), the house primitive; guard green.
+- testids preserved: `attach-picker-query` / `attach-picker-results` /
+  `attach-picker-create` fall out of the palette's `${testid}-*`
+  scheme with `testid="attach-picker"`, so the existing attach flow in
+  `notes.spec.ts` needed no change. New rows carry `attach-picker-item`.
+- Scope note (report, not fixed): only the CREATE path opens the note;
+  selecting an EXISTING note to attach still attaches-and-closes as
+  before (the ticket's acceptance is create-only). Symmetric
+  open-on-select could be a nice follow-up but was left out of scope.
+- No blockers. Full suite green (229 tests, 4 shards).
