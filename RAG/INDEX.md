@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 198 |
+| Completed | 19 | 199 |
 | **Total** | **25** | **236** |
 
 ## In Progress
@@ -77,7 +77,6 @@
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 - [[AI-IMP-226-single-writer-lock-protocol|IMP-226]] — planned, no epic dependency found
 - [[AI-IMP-227-service-construction-guard|IMP-227]] — planned, no epic dependency found
-- [[AI-IMP-228-commit-result-isolation|IMP-228]] — planned, no epic dependency found
 - [[AI-IMP-229-export-destination-trust|IMP-229]] — planned, no epic dependency found
 - [[AI-IMP-230-universal-redo-invalidation|IMP-230]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
@@ -133,8 +132,8 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
+- RAG/HUMAN-TESTING.md (677 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
-- RAG/HUMAN-TESTING.md (671 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)

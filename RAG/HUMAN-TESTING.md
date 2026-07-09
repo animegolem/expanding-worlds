@@ -10,6 +10,12 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Committed means committed** (AI-IMP-228, 2026-07-09, Sol
+  P1 — developer-flavored but worth one pass): make an edit, then
+  force-quit/restart just after — the edit must survive AND never
+  have shown an error at commit time. The old bug: a notification
+  hiccup could report a saved change as failed.
+
 - [ ] **Title band, round two** (AI-IMP-214/215, 2026-07-09, your
   Parking Lot): hover anywhere in the top ~46px — the smoky strip
   smokes in from the whole band now, not a 1px edge. Check: ⌂
