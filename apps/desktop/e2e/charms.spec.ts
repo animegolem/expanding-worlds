@@ -480,3 +480,34 @@ test('appearance switcher: image… imports through the ordinary pipeline (§4.6
 
   await app.close()
 })
+
+test('the note charm and the hint chip TOGGLE the note open/closed (AI-IMP-210)', async () => {
+  const { app, win } = await launchApp('ew-e2e-note-toggle-')
+  await pinEngagement(win)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const pin = await seedPin(win, 'Cistern', { x: 500, y: 350 })
+  const notePane = win.getByTestId('note-pane')
+
+  // Select the placement so the charm bar (with the note charm) shows.
+  await win.mouse.click(box.x + 500, box.y + 350)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await expect(win.getByTestId('charm-bar')).toBeVisible()
+
+  // Charm bar: open → close → reopen round-trip on the SAME control.
+  await expect(notePane).toHaveCount(0)
+  await win.getByTestId('charm-note').click()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Cistern/)
+  await win.getByTestId('charm-note').click()
+  await expect(notePane).toHaveCount(0) // the same click closed it
+  await win.getByTestId('charm-note').click()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Cistern/)
+
+  // The hint chip toggles too: close the open note, then reopen.
+  const hint = win.getByTestId(`hint-page-${pin.placementId}`)
+  await hint.click()
+  await expect(notePane).toHaveCount(0)
+  await hint.click()
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Cistern/)
+
+  await app.close()
+})

@@ -482,6 +482,22 @@ export function setPanelAnchor(key: number, anchor: PanelAnchor): void {
   notify()
 }
 
+/** §8.5 (AI-IMP-210): is `noteId` currently showing in ANY panel
+ * (tethered or pinned)? One buffer per note, so at most one holds it —
+ * the gesture-symmetry query behind the note charm / hint chip toggle. */
+export function isNoteOpen(noteId: string): boolean {
+  return records.some((record) => panelNoteId(record) === noteId)
+}
+
+/** Toggle-close for the note charm / hint chip (AI-IMP-210): close the
+ * panel showing `noteId` through the ordinary close path, so the close
+ * side-effects stay honest (§7.1 flush-on-close). No-op when the note is
+ * not open — the caller opens it in that branch. */
+export function closeNotePanel(noteId: string): void {
+  const record = records.find((candidate) => panelNoteId(candidate) === noteId)
+  if (record) closePanel(record.key)
+}
+
 export function closePanel(key: number): void {
   if (bigEditorKey === key) closeBigEditor()
   // §7.1: close is a guaranteed save point — a burst still inside
