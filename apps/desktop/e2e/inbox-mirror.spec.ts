@@ -162,6 +162,75 @@ test('mirror on: drop pins immediately, library gains one unplaced node; duplica
   await app.close()
 })
 
+/** Pin engagement ON with hold:true — the takeover posture (crop
+ * editor / first-run guide) that nulls the idle fade clock and
+ * short-circuits leave(). The engagement false-edge that USED to be
+ * the chip's only dismissal never arrives here. */
+function pinEngagement(win: Page): Promise<void> {
+  return win.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('ew-test-set-engagement', { detail: { engaged: true, hold: true } }),
+    )
+  })
+}
+
+test('recognition chip self-dismisses even with engagement pinned (AI-IMP-213)', async () => {
+  // The stuck-chip wedge: with the engagement fade pinned on (a
+  // takeover holds it, or the fade is set to 'never'), the chip's
+  // designed dismissal edge never fires — and the untagged
+  // "Already in your library" chip has no button to close it. The
+  // per-chip presentation timer must clear it regardless.
+  const libDir = await seedLibrary(false)
+  const { app, win } = await launchApp('ew-e2e-mirror-stuck-')
+  await designateLibrary(win, libDir)
+  await setMirror(win, true)
+
+  // Seed the library with the 1px bytes (first drop mirrors one node).
+  await dropPng(win, PNG_1PX, 'seed.png')
+  await expect.poll(() => libraryUnplacedCount(win), { timeout: 10_000 }).toBe(1)
+
+  await pinEngagement(win)
+
+  // Duplicate drop → the buttonless recognition chip.
+  await dropPng(win, PNG_1PX, 'dup.png', { x: 240, y: 200 })
+  const chip = win.getByTestId('mirror-chip')
+  await expect(chip).toBeVisible({ timeout: 10_000 })
+
+  // With engagement pinned, ONLY the presentation timer can dismiss
+  // it — the board must not be left wearing the pill.
+  await expect(chip).toHaveCount(0, { timeout: 15_000 })
+
+  await app.close()
+})
+
+test('burst of interleaved duplicate drops: every chip clears (AI-IMP-213)', async () => {
+  const libDir = await seedLibrary(false)
+  const { app, win } = await launchApp('ew-e2e-mirror-burst-')
+  await designateLibrary(win, libDir)
+  await setMirror(win, true)
+
+  await dropPng(win, PNG_1PX, 'seed.png')
+  await expect.poll(() => libraryUnplacedCount(win), { timeout: 10_000 }).toBe(1)
+
+  // Pin the fade clock so no idle fade can rescue any chip: only the
+  // per-chip timers may clear them.
+  await pinEngagement(win)
+
+  // A burst of duplicate drops at distinct anchors — each recognizes
+  // the seeded bytes and raises its own chip.
+  for (let i = 0; i < 5; i++) {
+    await dropPng(win, PNG_1PX, `burst-${i}.png`, { x: 120 + i * 30, y: 120 + i * 20 })
+  }
+  // At least one chip stood up...
+  await expect
+    .poll(() => win.getByTestId('mirror-chip').count(), { timeout: 10_000 })
+    .toBeGreaterThan(0)
+  // ...and the board ends clear of every recognition chip.
+  await expect(win.getByTestId('mirror-chip')).toHaveCount(0, { timeout: 20_000 })
+
+  await app.close()
+})
+
 test('recognition offers the library tags; apply merges them onto the fresh node', async () => {
   const libDir = await seedLibrary(true)
   const { app, win } = await launchApp('ew-e2e-mirror-rec-')

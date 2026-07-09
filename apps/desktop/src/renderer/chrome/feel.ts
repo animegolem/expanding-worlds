@@ -40,6 +40,18 @@ export const HINT_CHARM_REST_OPACITY = 0.7
 /** Lifetime of a non-sticky toast before it dissolves (§8.6). */
 export const TOAST_DURATION_MS = 6000
 
+/** §14.4 mirror chip presentation window (AI-IMP-213). A recognition
+ * or summary chip owns its OWN dismissal clock. The engagement fade
+ * (§8.2) is the EARLY dismissal — ignoring at idle/blur dissolves it
+ * sooner — but that false-edge is withheld whenever a takeover pins
+ * engagement (holdEngagement) or the fade is set to 'never', and the
+ * buttonless "Already in your library" chip has no manual escape. So
+ * the chip self-dismisses after this bounded window regardless of the
+ * engagement clock's state — comfortably longer than the idle fade so
+ * an engaged read/act still lands, short enough that the board is
+ * never left wearing a stuck pill. */
+export const MIRROR_CHIP_LIFETIME_MS = 8000
+
 /** Length of the perch's single arrival pulse (§8.6). */
 export const PERCH_PULSE_MS = 700
 
