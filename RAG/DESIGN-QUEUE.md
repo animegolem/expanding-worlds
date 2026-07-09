@@ -15,8 +15,9 @@ all moved into the RFC.
 ## Blocking planned work
 
 - **Reading a note on the board — the open-verb as a camera verb**
-  (owner, 2026-07-09, HIGH — he flagged this as premise-level and
-  wants thinking time; no build until ruled). The bound book is
+  (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
+  you're right"; the detailed ruling below still needs its answers
+  before build). The bound book is
   world content: shared edge locked to the image, 300-world-unit
   free axis, everything scaled at camera zoom, legibility guarded
   only by the 48/8px page-chrome ladder — so at board zoom the
@@ -62,6 +63,17 @@ all moved into the RFC.
   fairly opaque" — the inspector's metadata set should answer
   provenance first (source URL/import origin/when), not just
   dimensions.
+
+- **Pin wizard vs note creation — one surface?** (owner Parking
+  Lot, 2026-07-09): pin placement and node-note creation grew
+  "completely unique UIs that should probably have a design and
+  unification pass." AI-IMP-211 rebuilds the note picker as a
+  reusable palette (verbs injected) precisely so this conversation
+  can rule "the pin wizard becomes the same surface" cheaply if it
+  wants to. Also from the same flush, tied to the reading ruling:
+  "OS zoom controls within a note should resize text independently
+  of the board" — a second text-only zoom axis; decide whether the
+  camera-verb ruling makes it unnecessary.
 
 - **Right-rail membership** (alph's stacking screenshot + owner
   diagnosis, 2026-07-08 — blocks AI-IMP-207 half 2): the rail's
