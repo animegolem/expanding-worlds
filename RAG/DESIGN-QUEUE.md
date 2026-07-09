@@ -71,6 +71,26 @@ all moved into the RFC.
   → zoom-out viewport move; close → restores the original zoom.
   Alph is wireframing his version; semi-functional mockups to be
   worked up with the design session.
+  **DECODED (2026-07-09, second Discord pass — owner: "I get it
+  now, it's not as far out as we were thinking"):** alph's ask is
+  not about where text goes — it's that image + caption must be
+  ONE CONNECTED OBJECT, a CARD. His references: the Pinterest tile
+  (image with its left-aligned title inside one tile boundary) and
+  a polaroid-style mat (image matted on a card whose bottom band
+  carries the caption). His words: "can the note be encased in a
+  card/border around the image? … beyond being centered under them
+  there's little visual connection — one of the more subtle blocks
+  I've felt"; on today's rendering: the title is "disconnected
+  text, not a card … hierarchically not clear"; acceptance in his
+  own words: "as long as it feels connected." Owner's sketch
+  direction: maybe the outer edge of a book cover on either side,
+  like a border. Lead note: this is plausibly the existing §4.6
+  CARD APPEARANCE matured (note-body preview cards) and pure Two
+  Materials territory — the mat IS paper the art sits on. The
+  refined lifecycle: card-with-caption (glance, one object) →
+  expand to reading (the zoom experiment / floating window) → 
+  collapses back to the card. OWNER IS DRAFTING the authoritative
+  Note Lifecycle Document to work from; this capture is its input.
 
 - **Lifecycle closure decisions** (Terra lifecycle review,
   2026-07-09 — RAG/LEAD-REVIEW-2026-07-09-lifecycle-and-testing-

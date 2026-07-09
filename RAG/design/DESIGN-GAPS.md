@@ -51,6 +51,20 @@ build-side carrier for each.
       Two Materials defines the material; the panel mockups don't
       draw the folds/anatomy for the non-bound presentation the
       shipped panels use. 194 is blocked on the drawn answer.
+- [ ] **The caption card** (alph + owner, 2026-07-09 — the note
+      lifecycle's ambient tier; owner is drafting the full Note
+      Lifecycle Document, this is the drawn half): a noted image
+      and its caption must read as ONE object — a card/mat
+      encasing both (Pinterest tile / polaroid band; alph: today's
+      title is "disconnected text … hierarchically not clear";
+      done = "it feels connected"). Needs drawing: the mat's
+      anatomy (border weight, does it wrap all sides or shoulder
+      the image like a book cover edge — owner's musing), the
+      caption band (alignment — alph leans Pinterest left-align —
+      cutoff rule, type scale), how the card stretches as the note
+      expands toward reading, and its relationship to the existing
+      §4.6 card appearance (likely this IS that, matured). Two
+      Materials rules apply: the mat is paper.
 - [ ] **Gallery inspector + reflow** (AI-IMP-204)
       **(conversation)**: single-click side panel (larger preview,
       provenance-first metadata, tags) and double-click full view —
