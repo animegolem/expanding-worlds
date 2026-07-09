@@ -1,0 +1,20 @@
+{
+  "name": "ew-webkit-renderer-spike",
+  "private": true,
+  "type": "module",
+  "description": "AI-IMP-217: WebKit/Safari perf spike for the real @ew/canvas-engine render path. Throwaway per house rule; the report is the product.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host --port 5199"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "playwright-core": "^1.61.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  },
+  "dependencies": {
+    "pixi.js": "^8.19.0"
+  }
+}
