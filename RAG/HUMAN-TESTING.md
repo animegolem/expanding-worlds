@@ -10,6 +10,21 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Note charm toggles** (AI-IMP-210, 2026-07-09, your ask):
+  click the note charm — open; same click — closed; again — open.
+  The ¶ hint chip in the node's corner toggles identically.
+
+- [ ] **The creation palette** (AI-IMP-211, 2026-07-09, your
+  ruling): note charm on a note-less node → centered palette over a
+  dimmed board. Type a brand-new title, hit Enter — created,
+  attached, open, no mouse. Arrow to an existing note + Enter
+  attaches it; Escape cancels. ONE DEVIATION TO GUT-CHECK: you said
+  "dumps it under the cursor" — the builder opens it TETHERED
+  BESIDE THE NODE instead (argument: the palette always acts on a
+  node already on screen, so beside-the-node IS under-the-cursor
+  without new machinery). If that lands wrong in the hand, say so
+  and the literal cursor-drop becomes a small follow-up.
+
 - [ ] **Label fade at distance** (AI-IMP-216, 2026-07-09, your
   "Beyrl" screenshot): zoom a titled placement out past board zoom —
   the title should fade away with the shrinking art (gone by the
