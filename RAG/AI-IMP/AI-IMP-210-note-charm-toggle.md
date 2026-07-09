@@ -55,10 +55,10 @@ closes, third click reopens; same for the hint chip.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Charm-note toggles open/close through the panel's own close
+- [x] Charm-note toggles open/close through the panel's own close
       path; hint chip matches.
-- [ ] E2e: open→close→reopen round-trip on both surfaces.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] E2e: open→close→reopen round-trip on both surfaces.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -77,3 +77,18 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Seam chosen: `note/panels.ts` exposes `isNoteOpen(noteId)` (any
+  panel — tethered or pinned — holds the note; one buffer per note
+  makes it at most one) and `closeNotePanel(noteId)`, which routes to
+  the existing `closePanel(key)` so §7.1 flush-on-close stays honest.
+  `charms-ui.ts` imports both and branches in the two click handlers
+  (charm-note ~645, hint page ~918) only — `checkFurnitureFloor` /
+  `layout` untouched.
+- Tooltip copy: charm-note now "Note — open or close, or attach one";
+  the hint page chip "Open or close note". Kept static (state-live
+  tooltip text was out of scope and adds a refresh path for no real
+  gain here).
+- No blockers. e2e added to `charms.spec.ts`: open→close→reopen on the
+  charm bar, then close→reopen on the hint chip. Full suite green
+  (229 tests, 4 shards).

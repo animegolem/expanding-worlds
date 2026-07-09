@@ -30,7 +30,7 @@ import { navigateTo } from '../chrome/navigation'
 import { onEngagementChanged } from '../chrome/engagement'
 import { tooltip } from '../chrome/tooltip'
 import { requestAttachNote, requestOpenNote } from '../note/open-note'
-import { openCornerPanel } from '../note/panels'
+import { closeNotePanel, isNoteOpen, openCornerPanel } from '../note/panels'
 import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { openTagPanel } from '../tags/tag-panel'
 import { assignTagByName, filterTagCompletions } from '../tags/tag-assign'
@@ -642,11 +642,16 @@ export function attachCharmsUi(
     if (!placement || placement.childCanvasId) return
     void execute('CreateCanvas', { canvasId: uuidv7(), nodeId: placement.nodeId })
   })
-  barButton('charm-note', PAGE_GLYPH, { name: 'Note — open, or attach one' }, () => {
+  barButton('charm-note', PAGE_GLYPH, { name: 'Note — open or close, or attach one' }, () => {
     const placement = selectedPlacement()
     if (!placement) return
-    if (placement.noteId) requestOpenNote(placement.noteId)
-    else requestAttachNote(placement.nodeId)
+    if (placement.noteId) {
+      // AI-IMP-210: one gesture, one meaning — the same click closes an
+      // open note through the panel's own close path, and opens it when
+      // shut. Attach when the placement carries no note yet.
+      if (isNoteOpen(placement.noteId)) closeNotePanel(placement.noteId)
+      else requestOpenNote(placement.noteId)
+    } else requestAttachNote(placement.nodeId)
   })
   /** Open the tag-chips popover for a placement (shared by the charm
    * button and the §8.4 context-menu seam). */
@@ -906,7 +911,7 @@ export function attachCharmsUi(
       'background:var(--ew-art-chip-scrim-soft);pointer-events:none;'
     const created: CharmEntry = { group, page: null, frame: null, disposers: [] }
     if (wantsPage) {
-      const page = hintButton(`hint-page-${item.id}`, 'page', 'Open note')
+      const page = hintButton(`hint-page-${item.id}`, 'page', 'Open or close note')
       page.addEventListener('click', (event) => {
         event.stopPropagation()
         const current = host.controller
@@ -914,7 +919,11 @@ export function attachCharmsUi(
           .find((candidate) => candidate.id === item.id)
         const placement =
           current && current.itemKind === 'placement' ? current : item
-        if (placement.noteId)
+        if (!placement.noteId) return
+        // AI-IMP-210: the hint chip toggles too — close through the
+        // panel's own path if that note is open, otherwise open tethered.
+        if (isNoteOpen(placement.noteId)) closeNotePanel(placement.noteId)
+        else
           requestOpenNote(placement.noteId, {
             canvasId: host.canvasId,
             placementId: placement.id,
