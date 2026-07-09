@@ -343,6 +343,40 @@ describe('exportProject (§16, container rev 0.57)', () => {
     await expect(importProject(dest, importDest)).resolves.toBeTruthy()
   })
 
+  it('a promotion failure leaves the prior backup intact and removes the partial (CA-009)', async () => {
+    seedAsset(Buffer.from('media bytes that must survive a failed overwrite'))
+    const dest = join(outDir, 'backup.ewproj')
+
+    // A first export establishes the prior good backup.
+    await service.exportProject(dest, { activeOnly: false })
+    const goodBytes = readFileSync(dest)
+    expect(goodBytes.length).toBeGreaterThan(0)
+
+    // A second export fails at the atomic promote: `beforeRename` throws
+    // AFTER the partial is written, fsynced, and verified — standing in
+    // for a rename/crash at exactly the promotion moment.
+    const exportDb = Db.open(join(dir, 'project.sqlite'))
+    await expect(
+      exportProject(
+        { db: exportDb, dir },
+        dest,
+        { activeOnly: false },
+        {
+          beforeRename: () => {
+            throw new Error('injected promotion failure')
+          },
+        },
+      ),
+    ).rejects.toThrow('injected promotion failure')
+    exportDb.close()
+
+    // The prior backup is byte-for-byte intact...
+    expect(readFileSync(dest).equals(goodBytes)).toBe(true)
+    // ...and no partial sibling survived the failure.
+    const strays = readdirSync(outDir).filter((f) => f.startsWith('backup.ewproj.partial'))
+    expect(strays).toEqual([])
+  })
+
   it('estimates source size by stat and fails loudly on a missing blob', async () => {
     const hash = seedAsset(Buffer.from('here-then-gone'))
     const db = readDb()

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
@@ -177,6 +177,34 @@ function projectDir(): string {
   const arg = process.argv.find((a) => a.startsWith(OPEN_DIR_ARG))
   if (arg) return arg.slice(OPEN_DIR_ARG.length)
   return process.env['EW_PROJECT_DIR'] ?? join(app.getPath('userData'), 'projects', 'default')
+}
+
+/** CA-004: return a user-facing refusal string if `destPath` lands
+ * inside the active project directory, else null. Compares realpaths so
+ * a symlink can't dodge the check; the dest file may not exist yet, so
+ * its PARENT is resolved (falling back to a lexical resolve when the
+ * parent itself is a not-yet-created directory). */
+function destInsideProject(destPath: string): string | null {
+  let projectReal: string
+  try {
+    projectReal = realpathSync(projectDir())
+  } catch {
+    return null // no project dir on disk yet — nothing to protect
+  }
+  let destDirReal: string
+  try {
+    destDirReal = realpathSync(dirname(destPath))
+  } catch {
+    // Parent not yet created: a non-existent directory can't be the live
+    // project, but resolve lexically so a `<project>/new/x.ewproj` pick
+    // is still caught.
+    destDirReal = dirname(resolve(destPath))
+  }
+  const prefix = projectReal.endsWith(sep) ? projectReal : projectReal + sep
+  if (destDirReal === projectReal || destDirReal.startsWith(prefix)) {
+    return 'Choose a location outside the project folder — exporting into the project itself could overwrite your live data.'
+  }
+  return null
 }
 
 /** §14.4 create-new library (AI-IMP-094): the default location the
@@ -830,11 +858,13 @@ void app.whenReady().then(() => {
     return true
   })
 
-  // §8.2 Help/About: the running app version, straight from the
-  // packaged metadata — never a hardcoded renderer string.
-  // §16 portable export (AI-IMP-157): main owns the save dialog (the
-  // utility knows no windows); the archive streams in the utility.
-  ipcMain.handle('export:choose-dest', async (event) => {
+  // §16 portable export (AI-IMP-157; hardened AI-IMP-229/CA-004): main
+  // owns BOTH the save dialog and the forward to the utility, fused into
+  // one call. The renderer never names a path, so a renderer bug or
+  // compromise can no longer aim the exporter at the live database or
+  // any other user-writable file (the confused-deputy break). The utility
+  // knows no windows; the archive streams there.
+  ipcMain.handle('export:choose-and-run', async (event, activeOnly: boolean) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) return null
     const title = (await callUtility({ type: 'run-query', name: 'getProject' })) as {
@@ -850,15 +880,18 @@ void app.whenReady().then(() => {
       defaultPath: `${suggested}.ewproj`,
       filters: [{ name: 'Expanding Worlds project', extensions: ['ewproj'] }],
     })
-    return picked.canceled || !picked.filePath ? null : picked.filePath
+    if (picked.canceled || !picked.filePath) return null
+    const destPath = picked.filePath
+    // CA-004: refuse a destination inside the active project directory.
+    // Exporting reads the LIVE project; writing the archive back into it
+    // (or over a managed file) is the very overwrite this ticket closes,
+    // and it also invites the snapshot self-duplication of CA-010.
+    const refusal = destInsideProject(destPath)
+    if (refusal) {
+      return { type: 'export-project', ok: false, code: 'DEST_IN_PROJECT', message: refusal }
+    }
+    return callUtility({ type: 'export-project', destPath, activeOnly: activeOnly === true })
   })
-  ipcMain.handle('export:run', (_event, destPath: string, activeOnly: boolean) =>
-    callUtility({
-      type: 'export-project',
-      destPath: String(destPath),
-      activeOnly: activeOnly === true,
-    }),
-  )
   ipcMain.handle('export:estimate', () => callUtility({ type: 'export-estimate' }))
   // §16 import (AI-IMP-158): pick the archive, land the project as a
   // collision-safe sibling of the current one, then offer the

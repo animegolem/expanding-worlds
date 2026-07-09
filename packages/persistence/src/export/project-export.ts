@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto'
-import { createReadStream, createWriteStream, mkdirSync, rmSync, statSync } from 'node:fs'
-import { cp, readdir, stat } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import { createReadStream, createWriteStream, mkdirSync, renameSync, rmSync, statSync } from 'node:fs'
+import { cp, open, readdir, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import yauzl from 'yauzl'
 import { ZipFile } from 'yazl'
 import { Db } from '../db'
 import { blobRelativePath } from '../import/store'
@@ -62,6 +63,11 @@ export interface ExportHooks {
    * moment and prove the stream reads the frozen `.tmp-export` copy,
    * never the mutated live file. */
   beforeStream?: () => void | Promise<void>
+  /** Awaited after the partial is written, fsynced, and verified but
+   * BEFORE the atomic rename into place. AI-IMP-229 throws here to
+   * prove a promotion failure leaves the prior backup untouched and
+   * removes only the partial. */
+  beforeRename?: () => void | Promise<void>
 }
 
 interface ProjectRow {
@@ -82,6 +88,69 @@ function hashFile(path: string): Promise<string> {
     stream.on('data', (chunk) => hash.update(chunk))
     stream.on('end', () => resolve(hash.digest('hex')))
   })
+}
+
+/** Open a written archive's central directory for verification. Lazy
+ * entries + explicit close: yauzl's default fd-autoclose fires when the
+ * entry scan ends and would kill every later `openReadStream`. */
+function openZipForVerify(
+  path: string,
+): Promise<{ zip: yauzl.ZipFile; entries: Map<string, yauzl.Entry> }> {
+  return new Promise((resolve, reject) => {
+    yauzl.open(path, { lazyEntries: true, autoClose: false }, (err, zip) => {
+      if (err || !zip) return reject(err ?? new Error('export verify: archive unreadable'))
+      const entries = new Map<string, yauzl.Entry>()
+      zip.on('entry', (entry: yauzl.Entry) => {
+        if (!entry.fileName.endsWith('/')) entries.set(entry.fileName, entry)
+        zip.readEntry()
+      })
+      zip.on('end', () => resolve({ zip, entries }))
+      zip.on('error', reject)
+      zip.readEntry()
+    })
+  })
+}
+
+/** sha256 of one archive entry, streamed. yauzl checks the entry CRC as
+ * it inflates, so a truncated or corrupt write rejects here too. */
+function hashZipEntry(zip: yauzl.ZipFile, entry: yauzl.Entry): Promise<string> {
+  return new Promise((resolve, reject) => {
+    zip.openReadStream(entry, (err, stream) => {
+      if (err || !stream) return reject(err ?? new Error('export verify: entry unreadable'))
+      const hash = createHash('sha256')
+      stream.on('data', (c: Buffer) => hash.update(c))
+      stream.on('error', reject)
+      stream.on('end', () => resolve(hash.digest('hex')))
+    })
+  })
+}
+
+/**
+ * Re-read the just-written archive and prove every manifest entry is
+ * present and matches the sha256 sealed before streaming. This is what
+ * makes the atomic rename meaningful (CA-009): a full-but-corrupt write
+ * (short write, disk error, bad CRC) is caught here and the partial is
+ * discarded instead of promoted over a prior good backup. Assets are
+ * STORED under their content hash as their name, so this re-confirms
+ * them as well as the deflated db and notes entries.
+ */
+async function verifyArchive(archivePath: string, manifest: ExportManifest): Promise<void> {
+  const { zip, entries } = await openZipForVerify(archivePath)
+  try {
+    if (!entries.has(MANIFEST_ENTRY)) {
+      throw new Error('export verify: manifest.json missing from the written archive')
+    }
+    for (const item of manifest.inventory) {
+      const entry = entries.get(item.path)
+      if (!entry) throw new Error(`export verify: ${item.path} missing from the written archive`)
+      const actual = await hashZipEntry(zip, entry)
+      if (actual !== item.sha256) {
+        throw new Error(`export verify: ${item.path} does not match its manifest hash`)
+      }
+    }
+  } finally {
+    zip.close()
+  }
 }
 
 /** Every asset hash the archive carries (asset rows keep their trashed
@@ -140,6 +209,11 @@ export async function exportProject(
   rmSync(tempDir, { recursive: true, force: true })
   mkdirSync(tempDir, { recursive: true })
   const tempDb = join(tempDir, DB_ENTRY)
+
+  // Set once the partial archive exists; cleared only after it is
+  // atomically renamed into place. The finally removes any leftover, so
+  // a failed export never promotes a partial over a prior good backup.
+  let partialPath: string | null = null
 
   try {
     db.prepare('VACUUM INTO ?').run(tempDb)
@@ -234,11 +308,16 @@ export async function exportProject(
     // copy (AI-IMP-179).
     await hooks.beforeStream?.()
 
-    // ---- stream the archive ------------------------------------------
+    // ---- stream the archive to a unique partial sibling --------------
+    // CA-009: write to `${dest}.partial-<uuid>`, fsync, verify against
+    // the sealed manifest, then atomically rename into place. Until the
+    // rename the prior file at destPath is untouched; any failure below
+    // discards only the partial (the finally).
     const bytesTotal = planned.reduce((sum, p) => sum + p.bytes, 0)
     mkdirSync(dirname(destPath), { recursive: true })
+    partialPath = `${destPath}.partial-${randomUUID()}`
     const zip = new ZipFile()
-    const out = createWriteStream(destPath)
+    const out = createWriteStream(partialPath)
     let bytesWritten = 0
     let lastReport = 0
     zip.outputStream.on('data', (chunk: Buffer) => {
@@ -267,13 +346,37 @@ export async function exportProject(
     await done
     options.onProgress?.({ bytesWritten, bytesTotal })
 
+    // Durability: force the archive bytes to stable storage before we
+    // promote it. fsync is per-inode, so a fresh read handle suffices.
+    const fh = await open(partialPath, 'r')
+    try {
+      await fh.sync()
+    } finally {
+      await fh.close()
+    }
+
+    // Prove the finished archive matches the manifest it carries — a
+    // full-but-corrupt write must never be renamed over a good backup.
+    await verifyArchive(partialPath, manifest)
+
+    // Test seam: fail AFTER the partial is written, fsynced, and
+    // verified but BEFORE the promote, so a spec can prove the prior
+    // backup survives a rename/crash at exactly this moment (AI-IMP-229).
+    await hooks.beforeRename?.()
+
+    // Atomic promote: the only line that touches destPath.
+    renameSync(partialPath, destPath)
+    const finalSize = statSync(destPath).size
+    partialPath = null
+
     return {
-      bytesWritten: statSync(destPath).size,
+      bytesWritten: finalSize,
       entries: planned.length + 1,
       notes: noteCount,
       assets: hashes.length,
     }
   } finally {
     rmSync(tempDir, { recursive: true, force: true })
+    if (partialPath) rmSync(partialPath, { force: true })
   }
 }

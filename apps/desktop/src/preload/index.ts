@@ -217,11 +217,14 @@ const api = {
    * utility streams the archive; progress broadcasts ride
    * export:progress. */
   export: {
-    /** Save dialog; resolves the chosen path or null on cancel. */
-    chooseDest: (): Promise<string | null> =>
-      ipcRenderer.invoke('export:choose-dest') as Promise<string | null>,
-    run: (destPath: string, activeOnly: boolean): Promise<ExportProjectResponse> =>
-      ipcRenderer.invoke('export:run', destPath, activeOnly) as Promise<ExportProjectResponse>,
+    /** Fused choose-and-export (AI-IMP-229; CA-004): main owns the save
+     * dialog AND forwards the picked path itself — the renderer never
+     * names a path, closing the confused-deputy overwrite surface.
+     * Resolves the export result, or null when the dialog was cancelled. */
+    chooseAndRun: (activeOnly: boolean): Promise<ExportProjectResponse | null> =>
+      ipcRenderer.invoke('export:choose-and-run', activeOnly) as Promise<
+        ExportProjectResponse | null
+      >,
     /** §16 rev-0.18 live size footer: stat-walk source-byte estimate. */
     estimate: (): Promise<ExportEstimateResponse> =>
       ipcRenderer.invoke('export:estimate') as Promise<ExportEstimateResponse>,
