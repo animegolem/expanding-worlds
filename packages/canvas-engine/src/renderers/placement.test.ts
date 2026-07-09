@@ -13,7 +13,9 @@ import {
   SELECTION_OUTLINE_STROKE_PX,
   cssColorToNumber,
   cropFillMatrix,
+  labelZoomOpacity,
   parsePlacementCrop,
+  placementRenderedMaxEdge,
   placementRenderer,
   setPlacementTextureResident,
   syncPlacementLabelOffset,
@@ -21,7 +23,7 @@ import {
 import { NineSliceSprite, Rectangle, Texture } from 'pixi.js'
 import type { IconAtlasResource, ImageTreatment, RendererResources } from './registry'
 import { frameRegionStrokeWidth, syncFrameRegionStroke, syncPlacementIconLod } from './placement'
-import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
+import { EW_FURNITURE_MIN_PX, EW_PAGE_FLOOR_PX } from '../shrink-ladder'
 import { MIN_STROKE_SCREEN_PX } from '../stroke-render'
 
 /** Recording texture budget: resolves acquires on demand. */
@@ -574,6 +576,90 @@ describe('label / selection-outline clearance (AI-IMP-087)', () => {
     // below the body in world space with the same clearance.
     expect(labelOf(object)!.position.y).toBeCloseTo(-(25 + LABEL_CLEARANCE_PX / 2))
     expect(labelOf(object)!.scale.y).toBe(-1)
+  })
+})
+
+describe('label zoom ceiling (§8.2, AI-IMP-216)', () => {
+  function resourcesAtZoom(zoom: number): RendererResources {
+    return { ...fakeResources(), getZoom: () => zoom }
+  }
+
+  it('placementRenderedMaxEdge takes the larger edge, times zoom times |scale|', () => {
+    const item = makePlacement({ width: 100, height: 300, scale: 2 })
+    expect(placementRenderedMaxEdge(item, 1)).toBeCloseTo(300 * 2)
+    expect(placementRenderedMaxEdge(item, 0.5)).toBeCloseTo(300)
+    // A negative (flipped) scale contributes its magnitude, not sign.
+    const flipped = { ...item, scale: -2 }
+    expect(placementRenderedMaxEdge(flipped, 1)).toBeCloseTo(600)
+  })
+
+  it('placementRenderedMaxEdge falls back to the dot diameter with no width/height/asset size', () => {
+    const item = makePlacement({ width: null, height: null, assetWidth: null, assetHeight: null })
+    expect(placementRenderedMaxEdge(item, 1)).toBeCloseTo(DEFAULT_DOT_RADIUS * 2)
+  })
+
+  it('labelZoomOpacity is 1 at/above the page floor, 0 at/below the furniture floor', () => {
+    expect(labelZoomOpacity(EW_PAGE_FLOOR_PX)).toBe(1)
+    expect(labelZoomOpacity(EW_PAGE_FLOOR_PX + 1)).toBe(1)
+    expect(labelZoomOpacity(1000)).toBe(1)
+    expect(labelZoomOpacity(EW_FURNITURE_MIN_PX)).toBe(0)
+    expect(labelZoomOpacity(EW_FURNITURE_MIN_PX - 1)).toBe(0)
+    expect(labelZoomOpacity(0)).toBe(0)
+  })
+
+  it('labelZoomOpacity ramps linearly between the two ladder constants (no new magic numbers)', () => {
+    const mid = (EW_FURNITURE_MIN_PX + EW_PAGE_FLOOR_PX) / 2
+    expect(labelZoomOpacity(mid)).toBeCloseTo(0.5)
+    // Monotonic across the band: a continuous ramp, not a step, so a
+    // zoom glide never pops or flickers at a single-frame boundary.
+    const samples = Array.from({ length: 9 }, (_, i) =>
+      labelZoomOpacity(EW_FURNITURE_MIN_PX + ((EW_PAGE_FLOOR_PX - EW_FURNITURE_MIN_PX) * i) / 8),
+    )
+    for (let i = 1; i < samples.length; i += 1) {
+      expect(samples[i]!).toBeGreaterThan(samples[i - 1]!)
+    }
+  })
+
+  it('the label fades to invisible on zoom-out and resurrects on zoom-in (presentation, not selection dismissal — unlike AI-IMP-192)', () => {
+    // A 200×200 body: at zoom 1 the rendered edge (200) clears the page
+    // floor comfortably, so the label starts fully opaque.
+    const item = makePlacement({ noteTitle: 'Beyrl', width: 200, height: 200 })
+    const object = placementRenderer.create(item, resourcesAtZoom(1))
+    const label = labelOf(object)!
+    expect(label.alpha).toBe(1)
+    expect(label.visible).toBe(true)
+
+    // Board zoom, deep out: rendered = 200 × 0.03 = 6px, under the
+    // furniture floor — the label yields with its unreadable body.
+    syncPlacementLabelOffset(object, item, 0.03)
+    expect(label.alpha).toBe(0)
+    expect(label.visible).toBe(false)
+
+    // Zoom back in past the page floor: the SAME Text child returns,
+    // full opacity — no rebuild, no permanent dismissal.
+    syncPlacementLabelOffset(object, item, 1)
+    expect(labelOf(object)).toBe(label)
+    expect(label.alpha).toBe(1)
+    expect(label.visible).toBe(true)
+  })
+
+  it('fades through the band rather than popping at a single boundary', () => {
+    // rendered = 200 × zoom; solve for zoom landing mid-band (rendered
+    // = (EW_FURNITURE_MIN_PX + EW_PAGE_FLOOR_PX) / 2 = 28).
+    const item = makePlacement({ noteTitle: 'Beyrl', width: 200, height: 200 })
+    const object = placementRenderer.create(item, resourcesAtZoom(1))
+    const label = labelOf(object)!
+    const midZoom = (EW_FURNITURE_MIN_PX + EW_PAGE_FLOOR_PX) / 2 / 200
+    syncPlacementLabelOffset(object, item, midZoom)
+    expect(label.alpha).toBeCloseTo(0.5)
+    // Still visible mid-fade — only fully-zero opacity drops `visible`.
+    expect(label.visible).toBe(true)
+  })
+
+  it('a placement with no label is an inert no-op (no crash, nothing to fade)', () => {
+    const item = makePlacement({ noteTitle: null })
+    const object = placementRenderer.create(item, resourcesAtZoom(1))
+    expect(() => syncPlacementLabelOffset(object, item, 0.001)).not.toThrow()
   })
 })
 

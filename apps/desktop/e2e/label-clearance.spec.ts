@@ -2,6 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test, type Page } from '@playwright/test'
+import { EW_FURNITURE_MIN_PX } from '@ew/canvas-engine'
 import type { EwApi } from '../src/preload/index'
 
 declare global {
@@ -110,6 +111,65 @@ test('selected labeled item: the label clears the outline band at zooms 0.5 / 1 
       }, { message: `label clear of outline at zoom ${zoom}` })
       .toBeGreaterThan(chrome.gap - 1) // breathing gap, 1 px raster tolerance
   }
+
+  await app.close()
+})
+
+/**
+ * §8.2 label zoom ceiling (AI-IMP-216): Owner Parking Lot flush
+ * (2026-07-09) — at board zoom (~37%) a placement title rendered HUGE
+ * relative to its shrunken artwork, the label sibling of the 192
+ * charm-bar fix. The label rides the shrink ladder's own two bounds
+ * (EW_FURNITURE_MIN_PX / EW_PAGE_FLOOR_PX) as a fade envelope keyed on
+ * the PLACEMENT's own rendered size (packages/canvas-engine's
+ * placementRenderedMaxEdge + labelZoomOpacity), so it fades out with
+ * an unreadable body and — unlike the AI-IMP-192 selection dismissal —
+ * resurrects the instant zoom-in restores legibility.
+ */
+test('a placement label fades below the furniture floor and resurrects on zoom-in (§8.2, AI-IMP-216)', async () => {
+  const { app, win } = await launch('ew-e2e-label-zoom-ceiling-')
+
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const noteId = crypto.randomUUID()
+  await runCommand(win, 'CreateNode', { nodeId })
+  await runCommand(win, 'CreatePlacement', {
+    placementId,
+    canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
+    nodeId,
+    x: 0,
+    y: 0,
+    width: 200,
+    height: 200,
+  })
+  await runCommand(win, 'CreateNote', { noteId, title: 'Beyrl' })
+  await runCommand(win, 'AttachNoteToNode', { nodeId, noteId })
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.labelBounds(id), placementId))
+    .not.toBeNull()
+
+  const labelWidth = async (): Promise<number> =>
+    (await win.evaluate((id) => window.__ewDebug!.labelBounds(id), placementId))?.width ?? 0
+
+  // Working zoom: the 200-world-unit body's rendered edge clears the
+  // page floor comfortably (200 ≥ EW_PAGE_FLOOR_PX) — the label reads.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await expect.poll(labelWidth).toBeGreaterThan(0)
+
+  // Deep zoom-out: rendered = 200 × zoom is well under the furniture
+  // floor — the label yields with its now-unreadable body.
+  const belowFloorZoom = EW_FURNITURE_MIN_PX / 2 / 200
+  await win.evaluate(
+    (zoom) => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom }),
+    belowFloorZoom,
+  )
+  await expect.poll(labelWidth).toBe(0)
+
+  // Zoom back in past the page floor: the label resurrects — this is
+  // presentation, not the AI-IMP-192 selection dismissal, so there is
+  // no "stays gone until reselected" behavior to fight here.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await expect.poll(labelWidth).toBeGreaterThan(0)
 
   await app.close()
 })
