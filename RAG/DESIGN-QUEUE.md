@@ -14,6 +14,39 @@ all moved into the RFC.
 
 ## Blocking planned work
 
+- **Reading a note on the board — the open-verb as a camera verb**
+  (owner, 2026-07-09, HIGH — he flagged this as premise-level and
+  wants thinking time; no build until ruled). The bound book is
+  world content: shared edge locked to the image, 300-world-unit
+  free axis, everything scaled at camera zoom, legibility guarded
+  only by the 48/8px page-chrome ladder — so at board zoom the
+  open note is an unreadable strip BY DESIGN, and none of the
+  patch options survive contact (hold-at-floor breaks the ring
+  seam; px minimums make text overflow a world frame; open-in-
+  held-panel abandons the book). The owner's emerging answer:
+  **opening a note IS a zoom** — "when I hit note, it should be
+  zooming in to fill my viewport; this whole viewport should
+  basically be the note." Lead analysis at capture: this is
+  coherent and already in the app's grammar — flyTo/CameraFlight
+  is the shipped primitive, the book stays pure world content (no
+  broken seams, no held scales), and readability is guaranteed by
+  the CAMERA, not the panel (world-scaled text at reading zoom ≈
+  scale 1, which is exactly the case that already works). Every
+  infinite canvas has unreadable text at distance; the camera IS
+  the reading mechanism — we'd be automating the lean-in as the
+  open gesture. Questions the ruling must answer: does close fly
+  BACK (store the pre-open framing)? what's the big editor's
+  remaining role (essay-length? keyboard-first?)? tiny images at
+  reading zoom (the bound seam drags the image huge — fine as
+  context, or cap?); does 200's held floor stay for pinned/free
+  panels (lead: yes — this ruling is about the BOUND book);
+  interaction with the Parking Lot item "OS zoom controls resize
+  note text independently" (a second, text-only zoom axis — decide
+  whether it folds in or dies here). Related: the pin-wizard vs
+  note-creation unification pass (Parking Lot) and AI-IMP-211's
+  palette, whose "create opens the note" lands wherever this
+  ruling puts reading.
+
 - **Gallery preview + inspector** (alph's first field report,
   2026-07-08 — blocks AI-IMP-204): he double-clicked a gallery tile
   expecting it to expand; nothing happened. His reference model is
