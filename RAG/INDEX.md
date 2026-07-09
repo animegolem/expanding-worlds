@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 191 |
+| Completed | 19 | 194 |
 | **Total** | **25** | **221** |
 
 ## In Progress
@@ -68,11 +68,8 @@
 - [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
 - [[AI-IMP-210-note-charm-toggle|IMP-210]] — planned, no epic dependency found
 - [[AI-IMP-211-note-creation-palette|IMP-211]] — planned, no epic dependency found
-- [[AI-IMP-212-selection-aware-fit|IMP-212]] — planned, no epic dependency found
-- [[AI-IMP-213-recognition-chip-stuck|IMP-213]] — planned, no epic dependency found
 - [[AI-IMP-214-title-strip-trigger-and-nav-buttons|IMP-214]] — planned, no epic dependency found
 - [[AI-IMP-215-board-menu-clickaway|IMP-215]] — planned, no epic dependency found
-- [[AI-IMP-216-label-zoom-ceiling|IMP-216]] — planned, no epic dependency found
 - [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
 - [[AI-IMP-218-index-lock-age-gate|IMP-218]] — planned, no epic dependency found
 - [[AI-IMP-219-destructive-gc|IMP-219]] — planned, no epic dependency found
@@ -131,8 +128,8 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (645 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
+- RAG/HUMAN-TESTING.md (635 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
-- RAG/HUMAN-TESTING.md (618 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
 - packages/persistence/src/handlers/pin.test.ts (603 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (601 LOC)
@@ -180,12 +177,14 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
+- apps/desktop/e2e/inbox-mirror.spec.ts (385 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (380 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (374 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (364 LOC)
 - packages/canvas-engine/src/hit-test.test.ts (363 LOC)
 - packages/persistence/src/queries-gallery.test.ts (361 LOC)
 - packages/canvas-engine/src/hit-test.ts (361 LOC)
+- apps/desktop/src/renderer/chrome/mirror.ts (361 LOC)
 - packages/persistence/src/export/project-export.test.ts (360 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
@@ -208,8 +207,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
-- apps/desktop/e2e/inbox-mirror.spec.ts (316 LOC)
-- apps/desktop/src/renderer/chrome/mirror.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
 - apps/desktop/src/preload/index.ts (312 LOC)

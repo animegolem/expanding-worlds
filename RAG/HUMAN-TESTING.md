@@ -10,6 +10,23 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Label fade at distance** (AI-IMP-216, 2026-07-09, your
+  "Beyrl" screenshot): zoom a titled placement out past board zoom —
+  the title should fade away with the shrinking art (gone by the
+  8px floor, full by 48px) and return on zoom-in. The fade band is
+  a feel call: too early? too late?
+
+- [ ] **Selection-aware fit** (AI-IMP-212, 2026-07-09): select one
+  of several far-apart items, hit ⤢ or ⇧1 — frames just that item;
+  clear selection, same verb frames everything. Does it feel right
+  next to the explicit "Zoom selection" button?
+
+- [ ] **The chip puts itself down** (AI-IMP-213, 2026-07-09, alph
+  first pass — his find): drop a duplicate so "Already in your
+  library" appears, keep working WITHOUT going idle — it should
+  clear itself within ~8s; also try while a crop editor is open.
+  Never marooned mid-screen again.
+
 - [ ] **Title strip fidelity** (AI-IMP-191, 2026-07-08, your
   screenshots): hover the top edge — the smoky band should breathe
   in over ~a fifth of a second (not pop); the board name is bare
