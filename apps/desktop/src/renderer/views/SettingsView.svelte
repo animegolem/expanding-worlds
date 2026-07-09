@@ -162,11 +162,12 @@
       projectSettings = { ...projectSettings, export_size_acknowledged: true }
       await window.ew.settings.setProject('export_size_acknowledged', true)
     }
-    const dest = await window.ew.export.chooseDest()
-    if (!dest) return
     exportProgress = { bytesWritten: 0, bytesTotal: exportEstimate ?? 0 }
     try {
-      const result = await window.ew.export.run(dest, exportActiveOnly)
+      // Fused: main owns the save dialog and forwards the picked path
+      // itself (AI-IMP-229). null means the dialog was cancelled.
+      const result = await window.ew.export.chooseAndRun(exportActiveOnly)
+      if (result === null) return
       if (result.ok) {
         toast(
           `Exported ${result.notes} note${result.notes === 1 ? '' : 's'} and ${result.assets} image${
