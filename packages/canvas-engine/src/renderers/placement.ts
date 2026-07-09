@@ -1,6 +1,6 @@
 import { Container, Graphics, Matrix, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js'
 import { assetUrl, type ScenePlacement } from '../types'
-import { EW_FURNITURE_MIN_PX } from '../shrink-ladder'
+import { EW_FURNITURE_MIN_PX, EW_PAGE_FLOOR_PX } from '../shrink-ladder'
 import { renderStrokeWidth } from '../stroke-render'
 import type { ImageTreatment, ItemRenderer, RendererResources } from './registry'
 
@@ -12,7 +12,12 @@ import type { ImageTreatment, ItemRenderer, RendererResources } from './registry
  * is a Text child under the body: it exists only when the node has a
  * note AND label visibility is on, and its size is proportional to
  * the placement's world size (rev 0.8 — labels are world content,
- * never screen-space overlays, and there is no legibility clamping).
+ * never screen-space overlays; the glyphs themselves are never
+ * clamped). §8.2 label zoom ceiling (AI-IMP-216): the label's
+ * OPACITY, not its size, is gated on the placement's own rendered
+ * screen size — below EW_FURNITURE_MIN_PX it fades to nothing, so a
+ * legible title never dominates a body too small to read. See
+ * placementRenderedMaxEdge / labelZoomOpacity below.
  */
 
 export const DEFAULT_DOT_RADIUS = 12
@@ -702,6 +707,50 @@ export function placementLabelWorldBottom(item: ScenePlacement, zoom: number): n
 }
 
 /**
+ * The placement BODY's own rendered (screen) size: its max edge in
+ * world units × the live zoom × the placement's own scale — the same
+ * "rendered screen size" quantity the shrink ladder already gates
+ * furniture (syncPlacementIconLod) and the bound page on (§8.2). The
+ * §8.2 label ceiling below rides THIS, not the label's own glyph
+ * size, because the complaint is about the body/label RATIO: a
+ * legible title over a body too small to read inverts the hierarchy
+ * no matter how small the glyphs themselves have honestly shrunk to
+ * (LABEL_HEIGHT_RATIO, unchanged).
+ */
+export function placementRenderedMaxEdge(item: ScenePlacement, zoom: number): number {
+  const width = item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2
+  const height = item.height ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2
+  const safeZoom = zoom > 0 ? zoom : 1
+  const scale = Math.abs(item.scale) || 1
+  return Math.max(width, height) * safeZoom * scale
+}
+
+/**
+ * §8.2 label zoom ceiling (AI-IMP-216): the label has no legibility
+ * clamp of its own (LABEL_HEIGHT_RATIO honestly shrinks its glyphs
+ * with the body), but a readable title sitting on artwork too small
+ * to read at all inverts the same content/chrome doctrine the ladder
+ * already polices for furniture (isFurnitureVisible) and the bound
+ * page (pageDegradeStage). Rather than invent a third boundary, the
+ * label rides the ladder's own two EXISTING bounds as a fade
+ * envelope: full opacity at/above EW_PAGE_FLOOR_PX — already
+ * documented as the tier "a bound page's affordances need to still
+ * read," which fits a run of text; EW_FURNITURE_MIN_PX alone is
+ * calibrated for a glyph MARK (an icon dot) and is too small to hold
+ * a legible word — ramping linearly to fully hidden at/below
+ * EW_FURNITURE_MIN_PX, where the ladder degrades everything else to
+ * nothing too. The ramp is continuous in the placement's rendered
+ * size, so a zoom glide crosses it smoothly: no single-frame pop, no
+ * boundary flicker (the ladder's existing banding stands in for a
+ * bespoke hysteresis margin).
+ */
+export function labelZoomOpacity(renderedMaxEdgePx: number): number {
+  if (renderedMaxEdgePx >= EW_PAGE_FLOOR_PX) return 1
+  if (renderedMaxEdgePx <= EW_FURNITURE_MIN_PX) return 0
+  return (renderedMaxEdgePx - EW_FURNITURE_MIN_PX) / (EW_PAGE_FLOOR_PX - EW_FURNITURE_MIN_PX)
+}
+
+/**
  * Creates, updates, or removes the label Text child. Called on every
  * update so renames (new noteTitle through the scene re-query),
  * visibility toggles, and resizes all reflow it. Flip is applied to
@@ -741,7 +790,12 @@ function syncLabel(container: Container, item: ScenePlacement, zoom: number): vo
  * world-scale label as zoom-out compresses world gaps. Divides out
  * the container scale too (the label is a child, so item.scale
  * applies on top of local units). The host re-applies this each cull
- * pass: camera motion never re-runs renderer updates.
+ * pass: camera motion never re-runs renderer updates — which is also
+ * where the §8.2 label zoom ceiling (AI-IMP-216) is re-derived, for
+ * the same reason: a pure zoom glide runs no renderer update, so the
+ * fade/hide must be recomputed here every cull pass, not just at
+ * create/update. Presentation, not selection (unlike AI-IMP-192): the
+ * label resurrects the instant zoom-in crosses back above the floor.
  */
 export function syncPlacementLabelOffset(
   object: Container,
@@ -758,6 +812,13 @@ export function syncPlacementLabelOffset(
   // keeps the label below the body in world space (its own scale
   // sign, set in syncLabel, un-mirrors the glyphs).
   label.position.set(0, offset * (item.flipY === 1 ? -1 : 1))
+  const opacity = labelZoomOpacity(placementRenderedMaxEdge(item, zoom))
+  label.alpha = opacity
+  // At opacity 0, also drop `visible` (not just alpha 0): pixi's
+  // global-bounds walk skips !visible nodes, so getBounds collapses
+  // to a zero rect — the observable "the label is gone" the e2e/debug
+  // seam (labelBounds) polls for, and a small render-cost saving.
+  label.visible = opacity > 0
 }
 
 /**
