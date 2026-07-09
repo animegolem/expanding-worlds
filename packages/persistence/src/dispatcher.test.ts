@@ -9,7 +9,7 @@ import {
   type CommittedResult,
   type ProjectChangedEvent,
 } from '@ew/commands'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerNodeHandlers } from './handlers/nodes'
 import { createProject, type ProjectHandle } from './project'
@@ -209,6 +209,49 @@ describe('Dispatcher', () => {
     unsubscribe()
     dispatcher.execute(envelope({ projectId: handle.projectId }))
     expect(events).toHaveLength(1)
+  })
+
+  it('a throwing subscriber never rewrites a committed result (CA-003)', () => {
+    const dispatcher = makeDispatcher()
+    // A subscriber that throws — production's posts over the utility
+    // parent port can throw during shutdown/transport failure.
+    dispatcher.subscribe(() => {
+      throw new Error('transport gone')
+    })
+    // A healthy subscriber registered after it: one throw must not
+    // starve the rest.
+    const healthy: ProjectChangedEvent[] = []
+    dispatcher.subscribe((e) => healthy.push(e))
+
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const nodeId = uuidv7()
+    const result = dispatcher.execute(
+      envelope({ projectId: handle.projectId, expectedProjectRevision: 0, payload: { nodeId } }),
+    )
+    consoleError.mockRestore()
+
+    // The protocol never lies about durable state: committed, real revision.
+    expect(result.status).toBe('committed')
+    const committed = result as CommittedResult
+    expect(committed.revision).toBe(1)
+    expect(committed.affected).toEqual([{ kind: 'node', id: nodeId }])
+
+    // The row, revision bump, and command-log entry are all durable.
+    expect(handle.db.get('SELECT id FROM node WHERE id = ?', nodeId)).toBeDefined()
+    expect(
+      handle.db.get<{ project_revision: number }>('SELECT project_revision FROM project')!
+        .project_revision,
+    ).toBe(1)
+    expect(
+      handle.db.get<{ resulting_revision: number }>(
+        'SELECT resulting_revision FROM command_log WHERE command_id = ?',
+        committed.commandId,
+      )!.resulting_revision,
+    ).toBe(1)
+
+    // The healthy subscriber still ran despite the earlier throw.
+    expect(healthy).toHaveLength(1)
+    expect(healthy[0]).toMatchObject({ type: 'project-changed', revision: 1 })
   })
 })
 

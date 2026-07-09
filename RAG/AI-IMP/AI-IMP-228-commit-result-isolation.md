@@ -60,12 +60,12 @@ entry exist AND the second subscriber still ran.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Committed result immune to subscriber failure; per-
+- [x] Committed result immune to subscriber failure; per-
       subscriber isolation (one throw doesn't starve the rest).
-- [ ] Stale rollback comment corrected.
-- [ ] Regression test: throwing subscriber → committed result +
+- [x] Stale rollback comment corrected.
+- [x] Regression test: throwing subscriber → committed result +
       durable rows + remaining subscribers notified.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -84,3 +84,29 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The transaction and its error mapping now live in one `try` that
+  assigns `committed = ctx.db.transaction(...)`; the RevisionConflict/
+  DomainError/INTERNAL catch stays exactly as-is but every path
+  returns, so TS control-flow analysis proves `committed` assigned
+  past the block (no `!` needed). Subscriber notification moved into a
+  new private `#notify(event)` called AFTER the try/catch, so it can
+  never re-enter the error mapping.
+- No service-health seam exists in persistence (recovery.ts's `healthy`
+  is checkpoint-scoped, unrelated). Per the brief's fallback: each
+  subscriber is isolated in its own try/catch and a throw is logged via
+  `console.error` with command type + id + revision, tagged with a
+  `TODO(service-health)` hook for when a health/refresh seam lands.
+- The false rollback comment ("the transaction already rolled back")
+  was on the INTERNAL branch. It is now accurate because that branch
+  can only be reached by a pre-commit throw (resolve or in-transaction
+  failure); reworded to "SQLite rolled it back (or it never began), so
+  no durable state changed".
+- Regression test spies on `console.error` (mocked silent) so the
+  expected log does not pollute test output.
+- Conflict/refusal/validation/mismatch paths untouched — only the
+  post-commit notification moved out of the error-mapping scope.
+- Gates all green: `pnpm -r build`; persistence 539 units (incl. the
+  new test) + all packages; desktop vitest 335; `pnpm lint` clean; e2e
+  4 shards 44 + 64 + 75 + 50 = 233 passed, 1 flaky (drop-ask-queue
+  import timing, retried-green, unrelated to this change).

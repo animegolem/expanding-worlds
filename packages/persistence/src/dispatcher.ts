@@ -4,6 +4,7 @@ import {
   type CommandEnvelope,
   type CommandRegistry,
   type CommandResult,
+  type HandlerOutcome,
   type ProjectChangedEvent,
 } from '@ew/commands'
 import type { Db } from './db'
@@ -70,6 +71,14 @@ export class Dispatcher {
       }
     }
 
+    // The transaction decides the committed result. Only the code
+    // that can still roll back (resolve → handler → revision bump →
+    // command_log) lives inside the error-mapping try; the moment
+    // the transaction returns, the mutation is durable and its
+    // result is fixed. Subscriber notification runs OUTSIDE this
+    // block (CA-003) so a throwing subscriber can never rewrite a
+    // committed result into a protocol lie about durable state.
+    let committed: { outcome: HandlerOutcome; revision: number }
     try {
       const resolved = this.#registry.resolve(envelope.commandType, envelope.commandVersion)
       const payload = resolved.upcast(envelope.payload)
@@ -81,7 +90,7 @@ export class Dispatcher {
         now: () => new Date().toISOString(),
       }
 
-      const { outcome, revision } = ctx.db.transaction(() => {
+      committed = ctx.db.transaction(() => {
         const current = ctx.db.get<{ project_revision: number }>(
           'SELECT project_revision FROM project WHERE id = ?',
           ctx.projectId,
@@ -120,24 +129,6 @@ export class Dispatcher {
         )
         return { outcome, revision: next }
       })
-
-      const event: ProjectChangedEvent = {
-        type: 'project-changed',
-        projectId: this.#handle.projectId,
-        revision,
-        commandId: envelope.commandId,
-        commandType: envelope.commandType,
-        affected: outcome.affected,
-      }
-      for (const subscriber of this.#subscribers) subscriber(event)
-
-      return {
-        status: 'committed',
-        commandId: envelope.commandId,
-        revision,
-        affected: outcome.affected,
-        inverse: outcome.inverse,
-      }
     } catch (err) {
       if (err instanceof RevisionConflict) {
         return {
@@ -157,13 +148,61 @@ export class Dispatcher {
         if (err.details) result.details = err.details
         return result
       }
-      // Unexpected failure: the transaction already rolled back;
-      // surface it structurally so the IPC seam never rejects.
+      // Failure before or during the transaction: SQLite rolled it
+      // back (or it never began), so no durable state changed. Surface
+      // it structurally so the IPC seam never rejects.
       return {
         status: 'error',
         commandId: envelope.commandId,
         code: 'INTERNAL',
         message: err instanceof Error ? err.message : String(err),
+      }
+    }
+
+    // Past this point the mutation is durably committed. Notification
+    // failure is refresh/service-health debt, never a rewritten
+    // command result.
+    const { outcome, revision } = committed
+    const event: ProjectChangedEvent = {
+      type: 'project-changed',
+      projectId: this.#handle.projectId,
+      revision,
+      commandId: envelope.commandId,
+      commandType: envelope.commandType,
+      affected: outcome.affected,
+    }
+    this.#notify(event)
+
+    return {
+      status: 'committed',
+      commandId: envelope.commandId,
+      revision,
+      affected: outcome.affected,
+      inverse: outcome.inverse,
+    }
+  }
+
+  /**
+   * Deliver a committed change to every subscriber, each isolated in
+   * its own try/catch so one throw never starves the rest (CA-003).
+   * Production's subscriber posts over the utility parent port, which
+   * can throw during shutdown/transport failure — that is delivery
+   * debt against a durable mutation, not a command failure.
+   */
+  #notify(event: ProjectChangedEvent): void {
+    for (const subscriber of this.#subscribers) {
+      try {
+        subscriber(event)
+      } catch (err) {
+        // TODO(service-health): when a health/refresh seam lands,
+        // count this as delivery debt (stale renderer needs a resync)
+        // instead of only logging. No such seam exists yet.
+        console.error(
+          `[dispatcher] project-changed subscriber threw for ` +
+            `${event.commandType} ${event.commandId} at revision ${event.revision}; ` +
+            `mutation is durable, this notification was dropped`,
+          err,
+        )
       }
     }
   }
