@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 200 |
+| Completed | 19 | 201 |
 | **Total** | **25** | **236** |
 
 ## In Progress
@@ -76,7 +76,6 @@
 - [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 - [[AI-IMP-226-single-writer-lock-protocol|IMP-226]] — planned, no epic dependency found
-- [[AI-IMP-229-export-destination-trust|IMP-229]] — planned, no epic dependency found
 - [[AI-IMP-230-universal-redo-invalidation|IMP-230]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
@@ -112,12 +111,12 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/NotePanel.svelte (2057 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1788 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1177 LOC)
-- apps/desktop/src/main/index.ts (1112 LOC)
+- apps/desktop/src/main/index.ts (1145 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - apps/desktop/e2e/notes.spec.ts (1025 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1023 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (982 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (975 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (976 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (947 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (932 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
@@ -131,7 +130,7 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
-- RAG/HUMAN-TESTING.md (682 LOC)
+- RAG/HUMAN-TESTING.md (689 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
@@ -184,9 +183,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)
 - packages/persistence/src/queries-search.test.ts (411 LOC)
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
+- packages/persistence/src/export/project-export.test.ts (394 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (385 LOC)
+- packages/persistence/src/export/project-export.ts (382 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (380 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (374 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (364 LOC)
@@ -194,7 +195,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-gallery.test.ts (361 LOC)
 - packages/canvas-engine/src/hit-test.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (361 LOC)
-- packages/persistence/src/export/project-export.test.ts (360 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
@@ -217,9 +217,9 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/arrange.ts (320 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/persistence/src/service.ts (315 LOC)
+- apps/desktop/src/preload/index.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
-- apps/desktop/src/preload/index.ts (312 LOC)
 - spike/webkit-renderer/src/main.ts (311 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)

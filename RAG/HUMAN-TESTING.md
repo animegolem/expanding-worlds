@@ -10,6 +10,13 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Export trust + atomicity** (AI-IMP-229, 2026-07-09, Sol
+  P1): export to an external folder (succeeds, counts look right);
+  try a destination INSIDE the project folder (clear refusal);
+  cancel the dialog (note: a 0% progress bar now flashes during
+  the dialog — feel call whether that bothers you); overwrite an
+  existing .ewproj (old file only replaced on success).
+
 - [ ] **A failed open heals** (AI-IMP-227, 2026-07-09, Sol P1):
   if a project ever refuses to open (corrupt cache, disk hiccup),
   fix the cause and reopen — it must open normally, never "locked
