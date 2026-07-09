@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 191 |
-| **Total** | **25** | **215** |
+| **Total** | **25** | **221** |
 
 ## In Progress
 
@@ -74,6 +74,12 @@
 - [[AI-IMP-215-board-menu-clickaway|IMP-215]] — planned, no epic dependency found
 - [[AI-IMP-216-label-zoom-ceiling|IMP-216]] — planned, no epic dependency found
 - [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
+- [[AI-IMP-218-index-lock-age-gate|IMP-218]] — planned, no epic dependency found
+- [[AI-IMP-219-destructive-gc|IMP-219]] — planned, no epic dependency found
+- [[AI-IMP-220-trash-retention-job|IMP-220]] — planned, no epic dependency found
+- [[AI-IMP-221-gallery-undo-coordination|IMP-221]] — planned, no epic dependency found
+- [[AI-IMP-222-import-streaming|IMP-222]] — planned, no epic dependency found
+- [[AI-IMP-223-export-staging-isolation|IMP-223]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
