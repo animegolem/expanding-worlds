@@ -59,10 +59,10 @@ chosen rule; the gallery precedent swallows the dismissing click).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Outside pointerdown closes the Board menu; inside clicks
+- [x] Outside pointerdown closes the Board menu; inside clicks
       unchanged; Escape composition intact.
-- [ ] Dismissing-click swallow rule stated and pinned by e2e.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Dismissing-click swallow rule stated and pinned by e2e.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -81,3 +81,47 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Scope of "outside":** the close fires on a pointerdown on the BOARD
+  (the empty ground), per the owner's words ("clicking the canvas
+  outside of the gradient UI") and the acceptance ("clicks the board
+  outside it"). The board surface is the Pixi `<canvas>` element itself
+  (`target.tagName === 'CANVAS'`): the `.canvas-host` div wraps the
+  whole chrome layer, so `closest('[data-testid="canvas-host"]')` cannot
+  stand in for "the board" — it matches the menu, notices, and the dock
+  too. A first attempt closing on ANY non-menu/non-trigger pointerdown
+  regressed `background stage` (the softness-notice dismiss folded the
+  menu it belonged to); scoping to the canvas element matches the
+  gallery ground precedent (which ignores clicks on tiles/controls) and
+  fixes that.
+- **SWALLOW RULE (chosen + pinned):** the dismissing board click is
+  SWALLOWED — `stopPropagation` at capture, before the canvas' own
+  capture-phase pointerdown listener, so it ONLY lowers the menu and
+  does not also deselect/marquee on the board beneath. This follows the
+  gallery precedent (the dismissing click is consumed). Pinned by e2e:
+  a selected pin survives the click-away (`selection().length === 1`
+  after clicking empty board), proving the click lowered the menu
+  without acting on the board.
+- **Escape composition intact:** the AI-IMP-183 Escape `$effect`
+  (capture + stopPropagation) is untouched and still peels the menu
+  first-layer; e2e re-opens and closes via Escape, asserting the pin
+  still survives (Escape never reaches the board either).
+- **No unmount race (the 191 ghost lesson):** the strip hides by instant
+  unmount (in:fade is intro-only), reveal/lower is the widened band's
+  `pointermove` (AI-IMP-214), and the dismissing click never fires
+  `pointerleave` — so dropping `boardMenuOpen` just unmounts the strip in
+  the same tick; no double-fire, no ghost.
+- **Behaviour reversal — one e2e choreography update.** The old menu
+  deliberately stayed open on click-away so "background work (pick image,
+  click canvas, adjust) doesn't fight the menu." Reversing that means the
+  `background stage` test's "select the image with the menu still open →
+  from-selection" flow no longer holds; updated it to the new grammar
+  (fold the menu with Escape, select on the bare board, reopen for
+  from-selection). `background lifecycle` and `decorations` already
+  selected/closed before touching the canvas, so they were unaffected.
+  Stale "never on click-away" comments in TitleStrip and e2e/helpers.ts
+  updated.
+- Gates: `pnpm -r build`, per-package units (canvas-engine 380,
+  persistence 538, protocol 1, shared-ui 1), desktop vitest 335, `pnpm
+  lint` clean, e2e in 4 shards (a-d 44, e-i 62, j-r 72, s-z 50 = 228),
+  all green.

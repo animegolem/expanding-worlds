@@ -441,6 +441,76 @@ test('☰ Help/About shortcuts link opens Settings and dismisses the ☰ popover
 })
 
 /**
+ * AI-IMP-214 acceptance: the reveal trigger spans the full would-be-chrome
+ * band (not a hairline at the very edge), arms reveal ONLY (never sinks a
+ * canvas click that lands in the widened band), and the hover-revealed nav
+ * arrows read as the chrome-mono light token in BOTH themes — never the
+ * board's themed text, which goes near-black in the light theme and vanishes.
+ */
+test('AI-IMP-214: title band reveal is full-height + arms-only, nav arrows read mono-light', async () => {
+  const { app, win } = await launchApp('ew-e2e-title-band-')
+
+  try {
+    await expect(win.getByTestId('title-strip')).toHaveCount(0)
+
+    // The band is the full title-band height, not the old ~1px hairline.
+    const zone = (await win.getByTestId('title-strip-reveal').boundingBox())!
+    expect(zone.height).toBeGreaterThanOrEqual(40)
+
+    // Arms reveal only: the trigger zone is inert (pointer-events:none), so a
+    // canvas click landing anywhere in the widened band is never swallowed.
+    await expect
+      .poll(() =>
+        win.evaluate(
+          () =>
+            getComputedStyle(document.querySelector('[data-testid="title-strip-reveal"]')!)
+              .pointerEvents,
+        ),
+      )
+      .toBe('none')
+
+    // A pointer anywhere in the band — here band-height − 4px — smokes it in.
+    await win.mouse.move(zone.x + zone.width / 2, zone.y + zone.height - 4)
+    await expect(win.getByTestId('title-strip')).toBeVisible()
+
+    // The nav arrows wear the SAME chrome-mono token the smoky strip uses
+    // (--ew-strip-text, :root-only) in both themes — not --ew-text, which the
+    // light theme drives near-black. Comparing to the strip's own resolved
+    // color pins the token, and distinguishes the fix from the old bug.
+    const arrowColor = (): Promise<string> =>
+      win.evaluate(
+        () => getComputedStyle(document.querySelector('[data-testid="nav-back"]')!).color,
+      )
+    const stripColor = (): Promise<string> =>
+      win.evaluate(
+        () => getComputedStyle(document.querySelector('[data-testid="title-strip"]')!).color,
+      )
+    const applyTheme = (theme: 'dark' | 'light'): Promise<unknown> =>
+      win.evaluate((name) => {
+        const hook = (window as unknown as {
+          __ewTheme: { apply: (t: 'dark' | 'light' | 'glass') => Promise<unknown> }
+        }).__ewTheme
+        return hook.apply(name)
+      }, theme)
+    const currentTheme = (): Promise<string> =>
+      win.evaluate(() => document.documentElement.dataset['theme'] ?? 'dark')
+
+    expect(await arrowColor()).not.toBe('rgb(0, 0, 0)')
+    expect(await arrowColor()).toBe(await stripColor())
+
+    await applyTheme('light')
+    await expect.poll(currentTheme).toBe('light')
+    expect(await arrowColor()).not.toBe('rgb(0, 0, 0)')
+    expect(await arrowColor()).toBe(await stripColor())
+
+    await applyTheme('dark')
+    await expect.poll(currentTheme).toBe('dark')
+  } finally {
+    await app.close()
+  }
+})
+
+/**
  * AI-IMP-075 acceptance: theme tokens repaint chrome live, and glass
  * reports the applied theme or the dark fallback from main.
  */

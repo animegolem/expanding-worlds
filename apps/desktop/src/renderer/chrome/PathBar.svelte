@@ -283,6 +283,16 @@
     transition: opacity 120ms ease-out;
   }
 
+  /* AI-IMP-214: the ‹ › arrows surface only on hover, and hovering the top
+     band also smokes in the dark strip beneath them — so they must read as
+     the chrome-mono light token (:root-only, never re-themed), not the
+     board's themed --ew-text which goes near-black in the light theme and
+     vanishes against the strip. Home/crumbs/pin stay themed: they are the
+     always-shown signature spot that sits on the bare board, not the strip. */
+  .arrows button {
+    color: var(--ew-strip-text);
+  }
+
   .path-bar:hover .arrows {
     opacity: 1;
   }
@@ -290,6 +300,16 @@
   .arrows button:disabled {
     opacity: 0.35;
     cursor: default;
+  }
+
+  /* AI-IMP-214: seat ⌂ in the same centered line-box the pin uses so it
+     shares the row's baseline and reads centered on the traffic-light axis
+     (trafficLightPosition y:13) instead of riding high in its own glyph box. */
+  .home {
+    display: inline-grid;
+    place-items: center;
+    min-height: 1.3rem;
+    line-height: 1;
   }
 
   .crumb.current {

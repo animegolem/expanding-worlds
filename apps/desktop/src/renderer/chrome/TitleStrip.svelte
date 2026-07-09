@@ -92,12 +92,16 @@
     if (file) void tooling.setBackgroundFromFile(file)
   }
 
-  // Leaving the strip lowers it; the Board menu holds it up while
-  // open and closes only on Escape or its own button — deliberately
-  // NOT on click-away, so background work (pick image, click canvas,
-  // adjust) doesn't fight the menu.
-  function hide(): void {
-    revealed = false
+  // AI-IMP-214: the reveal is sensed off the cursor's Y over the whole
+  // would-be-chrome band (TITLE_STRIP_REVEAL_PX), NOT a pointer-events
+  // overlay — the reveal-zone below is inert (pointer-events:none) so the
+  // trigger arms reveal only and never sinks a canvas click beneath it.
+  // Below the band lowers the strip (the Board menu still holds it up via
+  // stripVisible while open). One source of truth for reveal/lower, so
+  // there is no pointerleave-vs-band flicker in the strip's own gap.
+  function onWindowPointerMove(event: PointerEvent): void {
+    if (stripMode !== 'hover') return
+    revealed = event.clientY <= TITLE_STRIP_REVEAL_PX
   }
 
   $effect(() => {
@@ -112,15 +116,49 @@
     window.addEventListener('keydown', onKeydown, true)
     return () => window.removeEventListener('keydown', onKeydown, true)
   })
+
+  // AI-IMP-215: §8.2 desk physics — a pointerdown on the BOARD (empty ground)
+  // puts the open Board menu down, the grammar 188 gave the gallery's
+  // onGalleryGroundPointerDown. The board surface is the Pixi <canvas> itself
+  // (the .canvas-host div wraps the whole chrome layer, so it can't stand in
+  // for "the board"); a chrome click — the menu, a notice, the dock — targets
+  // a div/button, never the canvas, so the menu is left standing (only empty
+  // ground puts things down, and background work like a notice-dismiss must
+  // not fold the menu it belongs to). Escape (above) still peels it first.
+  //
+  // SWALLOW RULE (stated + pinned by e2e): the dismissing board click is
+  // SWALLOWED (stopPropagation at capture, before the canvas' own capture
+  // listener) so it ONLY lowers the menu and does not also act on the board
+  // beneath — no stray deselect/marquee. This matches the gallery precedent
+  // (the dismissing click is consumed). No race with the strip's lower: the
+  // strip hides by instant unmount (the 191 ghost lesson — no outros),
+  // reveal/lower is the pointermove above and never the click, so dropping
+  // boardMenuOpen here just unmounts the strip in the same tick.
+  $effect(() => {
+    if (!boardMenuOpen) return
+    const onPointerDown = (event: PointerEvent): void => {
+      const target = event.target as Element | null
+      if (target?.tagName !== 'CANVAS') return
+      boardMenuOpen = false
+      event.stopPropagation()
+    }
+    window.addEventListener('pointerdown', onPointerDown, true)
+    return () => window.removeEventListener('pointerdown', onPointerDown, true)
+  })
 </script>
 
+<svelte:window onpointermove={onWindowPointerMove} />
+
 {#if stripMode === 'hover'}
+  <!-- AI-IMP-214: the reveal is cursor-Y sensed (onWindowPointerMove); this
+       zone is inert (pointer-events:none) and stays only as the hover TARGET
+       e2e boundingBoxes against — so the widened band never sinks a canvas
+       click that lands in it. -->
   <div
     class="reveal-zone"
     style={`height: ${TITLE_STRIP_REVEAL_PX}px`}
     data-testid="title-strip-reveal"
     role="presentation"
-    onpointerenter={() => (revealed = true)}
   ></div>
 {/if}
 
@@ -143,7 +181,6 @@
     data-drag-region="drag"
     role="toolbar"
     tabindex="-1"
-    onpointerleave={hide}
     in:fade={{ duration: STRIP_FADE_MS }}
   >
     <button
@@ -297,8 +334,11 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 2; /* above the path bar so the top edge always reveals */
-    pointer-events: auto;
+    z-index: 2;
+    /* AI-IMP-214: inert — the reveal is cursor-Y sensed, so this zone must
+       never sink a canvas click that lands in the widened band. It stays in
+       the DOM purely as the e2e hover target's boundingBox anchor. */
+    pointer-events: none;
   }
 
   /* The strip is a temporary top-edge layer: a smoky near-black gradient
