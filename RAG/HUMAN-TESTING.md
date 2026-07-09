@@ -10,6 +10,15 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Title band, round two** (AI-IMP-214/215, 2026-07-09, your
+  Parking Lot): hover anywhere in the top ~46px — the smoky strip
+  smokes in from the whole band now, not a 1px edge. Check: ⌂
+  vertically centered on the traffic lights (optical call, headless
+  can't judge it); ‹ › arrows legibly light in BOTH themes; open
+  the Board menu and click empty board — it closes, and the
+  dismissing click must NOT deselect or disturb anything (clicking
+  a toast or the dock leaves the menu standing).
+
 - [ ] **WebKit spike — the three device passes** (AI-IMP-217,
   2026-07-09; the V2 go/no-go data): `cd spike/webkit-renderer &&
   npm install && npm run dev`, then run the 30s sweep at 100 and

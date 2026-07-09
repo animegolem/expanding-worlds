@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 196 |
+| Completed | 19 | 198 |
 | **Total** | **25** | **221** |
 
 ## In Progress
@@ -66,8 +66,6 @@
 - [[AI-IMP-204-gallery-preview-inspector|IMP-204]] — planned, no epic dependency found
 - [[AI-IMP-207-rail-surface-exclusivity|IMP-207]] — planned, no epic dependency found
 - [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
-- [[AI-IMP-214-title-strip-trigger-and-nav-buttons|IMP-214]] — planned, no epic dependency found
-- [[AI-IMP-215-board-menu-clickaway|IMP-215]] — planned, no epic dependency found
 - [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — in-progress, no epic dependency found
 - [[AI-IMP-218-index-lock-age-gate|IMP-218]] — planned, no epic dependency found
 - [[AI-IMP-219-destructive-gc|IMP-219]] — planned, no epic dependency found
@@ -110,9 +108,9 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/renderers/placement.ts (947 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (932 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
+- apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
 - apps/desktop/src/renderer/note/panels.ts (865 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
-- apps/desktop/e2e/board-tooling.spec.ts (830 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (784 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
@@ -121,8 +119,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
+- RAG/HUMAN-TESTING.md (671 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
-- RAG/HUMAN-TESTING.md (662 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (645 LOC)
@@ -141,6 +139,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
+- apps/desktop/e2e/shell.spec.ts (555 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
@@ -157,12 +156,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/charms.spec.ts (513 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/handlers/placements.test.ts (505 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (505 LOC)
 - apps/desktop/src/renderer/theme.css (487 LOC)
-- apps/desktop/e2e/shell.spec.ts (485 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
-- apps/desktop/src/renderer/chrome/TitleStrip.svelte (465 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
@@ -189,6 +187,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (353 LOC)
+- apps/desktop/src/renderer/chrome/PathBar.svelte (351 LOC)
 - apps/desktop/src/renderer/note/format-bar.ts (347 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
@@ -199,7 +198,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
-- apps/desktop/src/renderer/chrome/PathBar.svelte (331 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/dev/feel-dial.ts (327 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
