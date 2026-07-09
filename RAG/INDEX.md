@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 198 |
-| **Total** | **25** | **221** |
+| **Total** | **25** | **223** |
 
 ## In Progress
 
@@ -73,6 +73,8 @@
 - [[AI-IMP-221-gallery-undo-coordination|IMP-221]] — planned, no epic dependency found
 - [[AI-IMP-222-import-streaming|IMP-222]] — planned, no epic dependency found
 - [[AI-IMP-223-export-staging-isolation|IMP-223]] — planned, no epic dependency found
+- [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
+- [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed

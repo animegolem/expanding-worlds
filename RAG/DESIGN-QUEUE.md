@@ -47,6 +47,47 @@ all moved into the RFC.
   note-creation unification pass (Parking Lot) and AI-IMP-211's
   palette, whose "create opens the note" lands wherever this
   ruling puts reading.
+  **Alph's counter-frame (2026-07-09, Discord):** notes as
+  CAPTIONS — a truncated caption under the image ("showing up as
+  captions w/ a cutoff") that expands/opens as a floating window;
+  he questions the tethered side panel outright ("idk if there's
+  an elegant solution to having the note pop up on the side
+  especially if it's meant to disappear"). Lead read at capture:
+  strong and on-genre (the soul statement is tumblr × pinterest,
+  and captions are that genre's native text presentation), and it
+  does NOT compete with the camera verb — it reframes the AMBIENT
+  tier. Three-tier shape emerging: caption (glance — world
+  content, persistent, rides the 216 fade ladder), reading (the
+  deliberate act — owner's zoom-to-fill OR alph's floating window;
+  the conversation picks the default), big editor (long writing).
+  Watch-outs: caption noise on dense boards (needs the fade +
+  maybe per-placement/board toggle — labelVisible is the
+  precedent); the cutoff rule (lines vs chars); a caption REPLACES
+  the label for noted placements (never stack); overlap with the
+  existing card appearance — decide whether the caption IS the
+  card matured. **Owner's concrete working spec for the zoom
+  experiment (2026-07-09):** open → viewport zooms so the note
+  fills most of the open space beside the image, centered; detach
+  → zoom-out viewport move; close → restores the original zoom.
+  Alph is wireframing his version; semi-functional mockups to be
+  worked up with the design session.
+
+- **Lifecycle closure decisions** (Terra lifecycle review,
+  2026-07-09 — RAG/LEAD-REVIEW-2026-07-09-lifecycle-and-testing-
+  closure.md): six rulings gate the 218–224 wave. (1) index.lock:
+  age-gate + documented residual risk — LEAD-RULED accepted, 218
+  carries it; owner may overrule. (2) "Clean up now" semantics:
+  holding period vs immediate delete, dry-run/report shape (OWNER,
+  blocks 219). (3) Retention purge at project open: silent vs
+  announced (OWNER, blocks 220). (4) End Session post-state:
+  project chooser vs closed shell vs app exit (OWNER, blocks 224).
+  (5) Gallery verb undo dispositions: 221's verify-first table,
+  owner ratifies. (6) Which three tester sessions gate the release
+  + classifying the 47 HUMAN-TESTING entries into gate /
+  preference / observation (owner+lead pass). Also adopted from
+  the review: the four-state integration status (Implemented /
+  Integrated / Tester-validated / Deferred honestly) for epic
+  closes and lead reviews.
 
 - **Gallery preview + inspector** (alph's first field report,
   2026-07-08 — blocks AI-IMP-204): he double-clicked a gallery tile
