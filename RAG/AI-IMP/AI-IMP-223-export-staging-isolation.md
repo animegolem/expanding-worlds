@@ -22,10 +22,25 @@ recreates the SHARED `.tmp-export` staging dir
 (project-export.ts ~139, `rmSync` then `mkdirSync`), so re-entrant
 exports delete each other's staging mid-write — a truncated
 archive from the loser. Low likelihood (UI mostly serializes) but
-the 179 export-race family taught us "mostly" isn't a guard. Done
-means exports cannot clobber each other: per-request staging dirs
-(`.tmp-export-<uuid>`) cleaned in the finally, plus startup sweep
-of orphaned staging dirs from crashed exports.
+the 179 export-race family taught us "mostly" isn't a guard.
+
+**EXPANDED by Sol audit CA-010 (P2, 2026-07-09):** the staging dir
+lives INSIDE the project, snapshot's managed .gitignore doesn't
+exclude it, and snapshot stages with `git add -A` — an overlapping
+snapshot can COMMIT the frozen database/notes copy, duplicating
+the whole project inside its own backup (disk exhaustion, slow
+shutdown, remote-push cost). Removing staging after `git add`
+doesn't unstage it; `seedGitignore` early-returns on its marker so
+a template edit alone won't fix existing projects; saving the
+final .ewproj inside the project has the same hazard (229 refuses
+that destination).
+
+Done means: staging moves to per-request dirs in OS TEMP (outside
+the project entirely — kills both the clobber and the snapshot
+capture), cleaned in the finally + an orphan sweep; snapshot
+stages an explicit ALLOWLIST instead of `git add -A`; and the
+managed .gitignore block gains a migration path (marker version
+bump) so existing projects get the new exclusions.
 
 ### Out of Scope
 
@@ -35,16 +50,26 @@ of orphaned staging dirs from crashed exports.
 
 ### Design/Approach
 
-Suffix the staging dir with the export's id; the existing
-try/finally already owns cleanup — point it at the per-request
-dir. Startup (or export-start) sweeps `.tmp-export*` older than
-an hour. Unit: two concurrent exportProject calls both produce
-valid archives (the existing hash-verify makes this cheap to
-assert).
+Staging: `mkdtemp(join(tmpdir(), 'ew-export-'))` per request; the
+existing try/finally owns cleanup — point it at the per-request
+dir; sweep orphaned `ew-export-*` older than a day at export
+start. VACUUM INTO works across filesystems (it's a SQLite write,
+not a rename) — verify; if the notes-tree copy relied on same-
+volume rename anywhere, switch to copy. Snapshot allowlist:
+enumerate what a project legitimately contains (db, notes/,
+assets/, derivatives/, settings — read the snapshot ticket/RFC
+§11 for the canonical list) and `git add` exactly that set;
+anything unexpected is logged, never committed. Gitignore
+migration: version the managed marker (`ew-managed v2`), rewrite
+the block when the version is old. Unit: two concurrent exports
+both valid; a snapshot during a (simulated) export commits no
+staging or archive.
 
 ### Files to Touch
 
-`packages/persistence/src/export/project-export.ts`, its spec.
+`packages/persistence/src/export/project-export.ts` + spec,
+`apps/desktop/src/main/snapshot.ts` (allowlist + gitignore
+migration) + its spec.
 
 ### Implementation Checklist
 

@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 198 |
-| **Total** | **25** | **223** |
+| **Total** | **25** | **236** |
 
 ## In Progress
 
@@ -75,6 +75,19 @@
 - [[AI-IMP-223-export-staging-isolation|IMP-223]] — planned, no epic dependency found
 - [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
+- [[AI-IMP-226-single-writer-lock-protocol|IMP-226]] — planned, no epic dependency found
+- [[AI-IMP-227-service-construction-guard|IMP-227]] — planned, no epic dependency found
+- [[AI-IMP-228-commit-result-isolation|IMP-228]] — planned, no epic dependency found
+- [[AI-IMP-229-export-destination-trust|IMP-229]] — planned, no epic dependency found
+- [[AI-IMP-230-universal-redo-invalidation|IMP-230]] — planned, no epic dependency found
+- [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
+- [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
+- [[AI-IMP-233-deliberate-verb-matrix|IMP-233]] — planned, no epic dependency found
+- [[AI-IMP-234-import-resource-limits|IMP-234]] — planned, no epic dependency found
+- [[AI-IMP-235-anchor-canvas-equality|IMP-235]] — planned, no epic dependency found
+- [[AI-IMP-236-source-slot-epochs|IMP-236]] — planned, no epic dependency found
+- [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
+- [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
