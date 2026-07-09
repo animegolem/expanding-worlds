@@ -13,6 +13,7 @@ import {
   type ArrangeSortKey,
   type DistributeAxis,
   type NormalizeMode,
+  type Rect,
   type ReorderOp,
   type SceneBackground,
   type ScenePlacement,
@@ -324,18 +325,26 @@ export function attachBoardTooling(
     height: element.clientHeight,
   })
 
+  /** Bounds of the active selection, or null when nothing is selected. */
+  const selectionBounds = (): Rect | null => unionBounds(controller.selectedItems())
+
+  /** §6.7 rev 0.11: a background stage is the canvas's home extent.
+   * rev 0.50: without an image, frame the content-defined lit extent
+   * (padded, grow-only) so the fit matches exactly what is lit — the
+   * raw item bbox is only a last-resort fallback. */
+  const stageFitBounds = (): Rect | null =>
+    stageExtent(background) ?? handle.contentStageExtent() ?? unionBounds(controller.items())
+
+  /** AI-IMP-212: with an active selection, fit frames it (same bounds +
+   * flyTo path as zoomToSelection); with none, fit frames the stage
+   * extent as before. Shared by the ⤢ button and its ⇧1 chord. */
   function zoomToFit(): void {
-    // §6.7 rev 0.11: a background stage is the canvas's home extent.
-    // rev 0.50: without an image, frame the content-defined lit extent
-    // (padded, grow-only) so the fit matches exactly what is lit — the
-    // raw item bbox is only a last-resort fallback.
-    const bounds =
-      stageExtent(background) ?? handle.contentStageExtent() ?? unionBounds(controller.items())
+    const bounds = selectionBounds() ?? stageFitBounds()
     if (bounds) handle.flyTo(bounds)
   }
 
   function zoomToSelection(): void {
-    const bounds = unionBounds(controller.selectedItems())
+    const bounds = selectionBounds()
     if (bounds) handle.flyTo(bounds)
   }
 
