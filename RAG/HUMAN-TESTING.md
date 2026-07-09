@@ -10,6 +10,11 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **A failed open heals** (AI-IMP-227, 2026-07-09, Sol P1):
+  if a project ever refuses to open (corrupt cache, disk hiccup),
+  fix the cause and reopen — it must open normally, never "locked
+  by pid …" with no way back short of killing the app.
+
 - [ ] **Committed means committed** (AI-IMP-228, 2026-07-09, Sol
   P1 — developer-flavored but worth one pass): make an edit, then
   force-quit/restart just after — the edit must survive AND never
