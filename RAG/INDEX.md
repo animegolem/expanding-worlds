@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 191 |
-| **Total** | **25** | **214** |
+| **Total** | **25** | **215** |
 
 ## In Progress
 
@@ -73,6 +73,7 @@
 - [[AI-IMP-214-title-strip-trigger-and-nav-buttons|IMP-214]] — planned, no epic dependency found
 - [[AI-IMP-215-board-menu-clickaway|IMP-215]] — planned, no epic dependency found
 - [[AI-IMP-216-label-zoom-ceiling|IMP-216]] — planned, no epic dependency found
+- [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
