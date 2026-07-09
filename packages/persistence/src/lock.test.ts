@@ -2,22 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-// Interception point for the reclaim-race test: fires after every
-// renameSync so a "racing winner" can land between our rename and
-// the verify read-back. Null for every other test.
-const renameHook = vi.hoisted(() => ({ after: null as ((to: string) => void) | null }))
-vi.mock('node:fs', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs')>()
-  return {
-    ...actual,
-    renameSync: (from: Parameters<typeof actual.renameSync>[0], to: Parameters<typeof actual.renameSync>[1]) => {
-      actual.renameSync(from, to)
-      renameHook.after?.(String(to))
-    },
-  }
-})
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LOCK_FILENAME, ProjectLock, ProjectLockedError, type LockHolder } from './lock'
 
 let dir: string
@@ -88,32 +73,25 @@ describe('ProjectLock', () => {
     }
   })
 
-  it('refuses when another racer wins the stale reclaim (AI-IMP-058)', () => {
-    // Simulate the losing interleave: our rename lands, then the
-    // racing winner's rename lands before the verify read-back.
-    const stale: LockHolder = {
+  it('never evicts a live same-host holder on heartbeat age (AI-IMP-226)', () => {
+    // A live same-host pid whose JS event loop stalled past the stale
+    // window (a huge synchronous import, SIGSTOP) keeps a fresh acquirer
+    // OUT — its SQLite handle is still open, so evicting it on heartbeat
+    // age alone would split-brain the writer. Use THIS process's pid as
+    // the "live" holder and an ancient heartbeat.
+    const stalledButAlive: LockHolder = {
       pid: process.pid,
       hostname: hostname(),
-      token: 'stale-token',
+      token: 'stalled-token',
       acquiredAt: new Date(Date.now() - 120_000).toISOString(),
       heartbeatAt: new Date(Date.now() - 120_000).toISOString(),
     }
-    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(stale))
-    renameHook.after = (to) => {
-      const winner: LockHolder = {
-        pid: 424242,
-        hostname: hostname(),
-        token: 'racing-winner',
-        acquiredAt: new Date().toISOString(),
-        heartbeatAt: new Date().toISOString(),
-      }
-      writeFileSync(to, JSON.stringify(winner))
-    }
-    try {
-      expect(() => ProjectLock.acquire(dir)).toThrowError(ProjectLockedError)
-    } finally {
-      renameHook.after = null
-    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(stalledButAlive))
+    // staleAfterMs 0 makes the heartbeat maximally "stale"; the live
+    // same-host pid must still be respected.
+    expect(() => ProjectLock.acquire(dir, { staleAfterMs: 0 })).toThrowError(ProjectLockedError)
+    const holder = JSON.parse(readFileSync(join(dir, LOCK_FILENAME), 'utf8')) as LockHolder
+    expect(holder.token).toBe('stalled-token')
   })
 
   it('respects a fresh foreign lock', () => {
