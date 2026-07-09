@@ -655,6 +655,47 @@ test('delete selection with §9.2 notice, z-order recovery, select-all (AI-IMP-0
   await app.close()
 })
 
+test('AI-IMP-215: a board click outside the Board menu puts it down and is swallowed', async () => {
+  const { app, win } = await launch('ew-e2e-board-clickaway-')
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+
+  // A selected pin gives the dismissing click something on the board it
+  // WOULD disturb (empty-ground clicks deselect) if it were not swallowed.
+  await runCommand(win, 'CreatePin', {
+    nodeId: crypto.randomUUID(),
+    canvasId,
+    placementId: crypto.randomUUID(),
+    x: 400,
+    y: 300,
+    appearance: { kind: 'dot', color: '#4a90d9' },
+  })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  await win.mouse.click(box.x + 400, box.y + 300)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+
+  await openBoardMenu(win)
+
+  // §8.2 desk physics: a pointerdown on empty board (clear of the top-right
+  // menu) puts the menu down through its own close path...
+  await win.mouse.click(box.x + 150, box.y + 450)
+  await expect(win.getByTestId('board-menu')).toHaveCount(0)
+  // ...and the dismissing click is SWALLOWED (the gallery precedent,
+  // AI-IMP-188): it lowered the menu and did NOT also deselect the pin.
+  expect(await win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+
+  // Inside clicks are unchanged, and Escape composition is intact: reopen,
+  // then Escape still peels the menu first-layer (AI-IMP-183).
+  await openBoardMenu(win)
+  await expect(win.getByTestId('board-menu')).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('board-menu')).toHaveCount(0)
+  // The pin survived the whole exchange (Escape never reached the board).
+  expect(await win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+
+  await app.close()
+})
+
 test('background stage: grid, normalize, replace preserves extent, from-selection preserves rect (AI-IMP-032)', async () => {
   const { app, win } = await launch('ew-e2e-stage-')
   const box = (await win.getByTestId('canvas-host').boundingBox())!
@@ -762,8 +803,15 @@ test('background stage: grid, normalize, replace preserves extent, from-selectio
   // background flight framed the stage, and the full-bleed board
   // (AI-IMP-064) frames it differently than the old padded layout.
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  // AI-IMP-215: a board click now puts the open Board menu down (and is
+  // swallowed), so fold the menu, select the placement on the bare board,
+  // then reopen for from-selection — the new §8.2 grammar (act on the board,
+  // then open the menu to apply it to the selection).
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('board-menu')).toHaveCount(0)
   await win.mouse.click(box.x + 500, box.y + 300)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await openBoardMenu(win)
   await expect(win.getByTestId('bg-set-from-selection')).toBeEnabled()
   await win.getByTestId('bg-set-from-selection').click()
   await expect

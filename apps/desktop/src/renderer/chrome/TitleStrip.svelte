@@ -116,6 +116,35 @@
     window.addEventListener('keydown', onKeydown, true)
     return () => window.removeEventListener('keydown', onKeydown, true)
   })
+
+  // AI-IMP-215: §8.2 desk physics — a pointerdown on the BOARD (empty ground)
+  // puts the open Board menu down, the grammar 188 gave the gallery's
+  // onGalleryGroundPointerDown. The board surface is the Pixi <canvas> itself
+  // (the .canvas-host div wraps the whole chrome layer, so it can't stand in
+  // for "the board"); a chrome click — the menu, a notice, the dock — targets
+  // a div/button, never the canvas, so the menu is left standing (only empty
+  // ground puts things down, and background work like a notice-dismiss must
+  // not fold the menu it belongs to). Escape (above) still peels it first.
+  //
+  // SWALLOW RULE (stated + pinned by e2e): the dismissing board click is
+  // SWALLOWED (stopPropagation at capture, before the canvas' own capture
+  // listener) so it ONLY lowers the menu and does not also act on the board
+  // beneath — no stray deselect/marquee. This matches the gallery precedent
+  // (the dismissing click is consumed). No race with the strip's lower: the
+  // strip hides by instant unmount (the 191 ghost lesson — no outros),
+  // reveal/lower is the pointermove above and never the click, so dropping
+  // boardMenuOpen here just unmounts the strip in the same tick.
+  $effect(() => {
+    if (!boardMenuOpen) return
+    const onPointerDown = (event: PointerEvent): void => {
+      const target = event.target as Element | null
+      if (target?.tagName !== 'CANVAS') return
+      boardMenuOpen = false
+      event.stopPropagation()
+    }
+    window.addEventListener('pointerdown', onPointerDown, true)
+    return () => window.removeEventListener('pointerdown', onPointerDown, true)
+  })
 </script>
 
 <svelte:window onpointermove={onWindowPointerMove} />

@@ -111,7 +111,8 @@ export async function seedPlacedNote(
 /**
  * Chrome helpers (AI-IMP-059): the title strip is hover-revealed at
  * the top edge; the Board menu (background ops, hidden list) hangs
- * off it and closes on Escape or its button, never on click-away.
+ * off it and closes on Escape, its button, or a pointerdown outside it
+ * (AI-IMP-215 — §8.2 desk physics: a click on empty board puts it down).
  * Both helpers are idempotent.
  */
 export async function revealTitleStrip(win: Page): Promise<void> {
