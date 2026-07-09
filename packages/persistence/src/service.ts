@@ -134,165 +134,182 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
       ? createProject(dir, options.title ?? 'Untitled Project', options)
       : openProject(dir, options)
 
-  // §11.4: recover before the API accepts a single command — except
-  // read-only opens, which MUST NOT mutate the source (repairs are
-  // the owner's writable open's job).
-  const recoveryReport: RecoveryReport = handle.readOnly
-    ? { checksRun: [], repairs: [], integrityErrors: [] }
-    : runRecovery({
-        db: handle.db,
-        projectId: handle.projectId,
-        dir: handle.dir,
-      })
-
-  const commands = new CommandRegistry<CommandContext>()
-  registerNodeHandlers(commands)
-  registerNoteHandlers(commands)
-  registerAssetHandlers(commands)
-  registerCanvasHandlers(commands)
-  registerPlacementHandlers(commands)
-  registerTagHandlers(commands)
-  registerDecorationHandlers(commands)
-  registerLifecycleHandlers(commands)
-  registerPinHandlers(commands)
-  registerBookmarkHandlers(commands)
-  registerFrameHandlers(commands)
-
-  const queries = new QueryRegistry()
-  registerCoreQueries(queries)
-  registerNoteQueries(queries)
-  registerAssetQueries(queries)
-  registerStructureQueries(queries)
-  registerFrameQueries(queries)
-  registerSearchQueries(queries)
-  registerLifecycleQueries(queries)
-  registerSettingsQueries(queries)
-  registerGalleryQueries(queries)
-
-  const dispatcher = new Dispatcher(handle, commands)
-  const queryCtx = {
-    db: handle.db,
-    projectId: handle.projectId,
-    rootNodeId: handle.rootNodeId,
-    rootCanvasId: handle.rootCanvasId,
-  }
-
-  // §11.4 lazy rebuild: missing thumbnail derivatives re-enqueue on
-  // every WRITABLE open (deleted derivatives dir, pre-076 project).
-  // The renderer drains the queue in the background once a window is
-  // up. A read-only source serves whatever derivatives it has.
-  const derivCtx = { db: handle.db, now: () => new Date().toISOString() }
-  if (!handle.readOnly) enqueueMissingThumbnails(derivCtx, handle.dir)
-
-  const readOnlyError = (): Error & { code: string } => {
-    const err = new Error(
-      'this project is open read-only (§11.1 source open) — writes are refused',
-    ) as Error & { code: string }
-    err.code = 'EW_READ_ONLY'
-    return err
-  }
-
-  return {
-    info(): ProjectInfo {
-      const revision = handle.db.get<{ project_revision: number }>(
-        'SELECT project_revision FROM project WHERE id = ?',
-        handle.projectId,
-      )!.project_revision
-      return {
-        projectId: handle.projectId,
-        rootNodeId: handle.rootNodeId,
-        rootCanvasId: handle.rootCanvasId,
-        revision,
-      }
-    },
-    readOnly: handle.readOnly,
-    execute: (envelope) =>
-      handle.readOnly
-        ? {
-            status: 'error',
-            commandId: envelope.commandId,
-            code: 'EW_READ_ONLY',
-            message: 'this project is open read-only (§11.1 source open)',
-          }
-        : dispatcher.execute(envelope),
-    query: (name, args) => queries.run(queryCtx, name, args),
-    setSetting: (key, value) => {
-      if (handle.readOnly) throw readOnlyError()
-      setProjectSetting(handle.db, handle.projectId, key, value)
-    },
-    subscribe: (fn) => dispatcher.subscribe(fn),
-    recovery: () => recoveryReport,
-    checkpoint: () => {
-      // A read-only source took no lock and left the WAL to its
-      // writable owner — checkpointing here would be a no-op the
-      // driver refuses, so skip it outright.
-      if (handle.readOnly) return
-      handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
-    },
-    writeNotesTree: () => {
-      if (handle.readOnly) throw readOnlyError()
-      return writeNotesTree(
-        {
-          db: handle.db,
-          projectId: handle.projectId,
-          rootNodeId: handle.rootNodeId,
-          rootCanvasId: handle.rootCanvasId,
-        },
-        handle.dir,
-      )
-    },
-    importAsset: (input) => {
-      if (handle.readOnly) return Promise.reject(readOnlyError())
-      return importAsset(
-        {
+  // CA-002 construction guard: the writable handle now holds the lock
+  // and its heartbeat is already ticking. A throw in ANY step below
+  // (recovery, handler/query registration, dispatcher, derivative
+  // enqueue) would otherwise leak the handle — the heartbeat would
+  // refresh the lock forever and one recoverable startup fault would
+  // wedge the project until the utility died. Close the handle fully
+  // (db, then lock release which clears the timer) before rethrowing,
+  // so a repaired retry reacquires cleanly. Read-only opens hold no
+  // lock, but the Db still needs closing on a construction throw.
+  try {
+    // §11.4: recover before the API accepts a single command — except
+    // read-only opens, which MUST NOT mutate the source (repairs are
+    // the owner's writable open's job).
+    const recoveryReport: RecoveryReport = handle.readOnly
+      ? { checksRun: [], repairs: [], integrityErrors: [] }
+      : runRecovery({
           db: handle.db,
           projectId: handle.projectId,
           dir: handle.dir,
-          execute: (envelope) => dispatcher.execute(envelope),
-          now: () => new Date().toISOString(),
-        },
-        input,
-      )
-    },
-    ingestFrom: (source, input) => {
-      if (handle.readOnly) return Promise.reject(readOnlyError())
-      return ingestFromSource(
-        {
-          db: handle.db,
-          projectId: handle.projectId,
-          dir: handle.dir,
-          execute: (envelope) => dispatcher.execute(envelope),
-          now: () => new Date().toISOString(),
-        },
-        source,
-        input,
-      )
-    },
-    ingestSource: () => ({ db: handle.db, dir: handle.dir }),
-    exportProject: async (destPath, exportOptions) => {
-      if (handle.readOnly) throw readOnlyError()
-      // Order matters (mirrors the §11.4 snapshot moment): the notes
-      // tree regenerates FIRST (refreshing §7.8 blocks), then the WAL
-      // truncates so project.sqlite is complete at rest, then the
-      // consistent copy streams into the archive.
-      writeNotesTree(
-        {
-          db: handle.db,
+        })
+
+    const commands = new CommandRegistry<CommandContext>()
+    registerNodeHandlers(commands)
+    registerNoteHandlers(commands)
+    registerAssetHandlers(commands)
+    registerCanvasHandlers(commands)
+    registerPlacementHandlers(commands)
+    registerTagHandlers(commands)
+    registerDecorationHandlers(commands)
+    registerLifecycleHandlers(commands)
+    registerPinHandlers(commands)
+    registerBookmarkHandlers(commands)
+    registerFrameHandlers(commands)
+
+    const queries = new QueryRegistry()
+    registerCoreQueries(queries)
+    registerNoteQueries(queries)
+    registerAssetQueries(queries)
+    registerStructureQueries(queries)
+    registerFrameQueries(queries)
+    registerSearchQueries(queries)
+    registerLifecycleQueries(queries)
+    registerSettingsQueries(queries)
+    registerGalleryQueries(queries)
+
+    const dispatcher = new Dispatcher(handle, commands)
+    const queryCtx = {
+      db: handle.db,
+      projectId: handle.projectId,
+      rootNodeId: handle.rootNodeId,
+      rootCanvasId: handle.rootCanvasId,
+    }
+
+    // §11.4 lazy rebuild: missing thumbnail derivatives re-enqueue on
+    // every WRITABLE open (deleted derivatives dir, pre-076 project).
+    // The renderer drains the queue in the background once a window is
+    // up. A read-only source serves whatever derivatives it has.
+    const derivCtx = { db: handle.db, now: () => new Date().toISOString() }
+    if (!handle.readOnly) enqueueMissingThumbnails(derivCtx, handle.dir)
+
+    const readOnlyError = (): Error & { code: string } => {
+      const err = new Error(
+        'this project is open read-only (§11.1 source open) — writes are refused',
+      ) as Error & { code: string }
+      err.code = 'EW_READ_ONLY'
+      return err
+    }
+
+    return {
+      info(): ProjectInfo {
+        const revision = handle.db.get<{ project_revision: number }>(
+          'SELECT project_revision FROM project WHERE id = ?',
+          handle.projectId,
+        )!.project_revision
+        return {
           projectId: handle.projectId,
           rootNodeId: handle.rootNodeId,
           rootCanvasId: handle.rootCanvasId,
-        },
-        handle.dir,
-      )
-      handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
-      return exportProject({ db: handle.db, dir: handle.dir }, destPath, exportOptions)
-    },
-    estimateExportSize: () => estimateExportSize({ db: handle.db, dir: handle.dir }),
-    // Claiming mutates the queue: a read-only source reports drained
-    // and lands nothing — it serves the derivatives it already has.
-    claimThumbnailJob: () => (handle.readOnly ? null : claimNextThumbnailJob(derivCtx, handle.dir)),
-    completeThumbnailJob: (input) =>
-      handle.readOnly ? null : completeThumbnailJob(derivCtx, handle.dir, input),
-    close: () => handle.close(),
+          revision,
+        }
+      },
+      readOnly: handle.readOnly,
+      execute: (envelope) =>
+        handle.readOnly
+          ? {
+              status: 'error',
+              commandId: envelope.commandId,
+              code: 'EW_READ_ONLY',
+              message: 'this project is open read-only (§11.1 source open)',
+            }
+          : dispatcher.execute(envelope),
+      query: (name, args) => queries.run(queryCtx, name, args),
+      setSetting: (key, value) => {
+        if (handle.readOnly) throw readOnlyError()
+        setProjectSetting(handle.db, handle.projectId, key, value)
+      },
+      subscribe: (fn) => dispatcher.subscribe(fn),
+      recovery: () => recoveryReport,
+      checkpoint: () => {
+        // A read-only source took no lock and left the WAL to its
+        // writable owner — checkpointing here would be a no-op the
+        // driver refuses, so skip it outright.
+        if (handle.readOnly) return
+        handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+      },
+      writeNotesTree: () => {
+        if (handle.readOnly) throw readOnlyError()
+        return writeNotesTree(
+          {
+            db: handle.db,
+            projectId: handle.projectId,
+            rootNodeId: handle.rootNodeId,
+            rootCanvasId: handle.rootCanvasId,
+          },
+          handle.dir,
+        )
+      },
+      importAsset: (input) => {
+        if (handle.readOnly) return Promise.reject(readOnlyError())
+        return importAsset(
+          {
+            db: handle.db,
+            projectId: handle.projectId,
+            dir: handle.dir,
+            execute: (envelope) => dispatcher.execute(envelope),
+            now: () => new Date().toISOString(),
+          },
+          input,
+        )
+      },
+      ingestFrom: (source, input) => {
+        if (handle.readOnly) return Promise.reject(readOnlyError())
+        return ingestFromSource(
+          {
+            db: handle.db,
+            projectId: handle.projectId,
+            dir: handle.dir,
+            execute: (envelope) => dispatcher.execute(envelope),
+            now: () => new Date().toISOString(),
+          },
+          source,
+          input,
+        )
+      },
+      ingestSource: () => ({ db: handle.db, dir: handle.dir }),
+      exportProject: async (destPath, exportOptions) => {
+        if (handle.readOnly) throw readOnlyError()
+        // Order matters (mirrors the §11.4 snapshot moment): the notes
+        // tree regenerates FIRST (refreshing §7.8 blocks), then the WAL
+        // truncates so project.sqlite is complete at rest, then the
+        // consistent copy streams into the archive.
+        writeNotesTree(
+          {
+            db: handle.db,
+            projectId: handle.projectId,
+            rootNodeId: handle.rootNodeId,
+            rootCanvasId: handle.rootCanvasId,
+          },
+          handle.dir,
+        )
+        handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+        return exportProject({ db: handle.db, dir: handle.dir }, destPath, exportOptions)
+      },
+      estimateExportSize: () => estimateExportSize({ db: handle.db, dir: handle.dir }),
+      // Claiming mutates the queue: a read-only source reports drained
+      // and lands nothing — it serves the derivatives it already has.
+      claimThumbnailJob: () => (handle.readOnly ? null : claimNextThumbnailJob(derivCtx, handle.dir)),
+      completeThumbnailJob: (input) =>
+        handle.readOnly ? null : completeThumbnailJob(derivCtx, handle.dir, input),
+      close: () => handle.close(),
+    }
+  } catch (err) {
+    // Any construction failure closes the handle fully (db,
+    // then lock release + heartbeat-timer clear) so no writer
+    // lock is left refreshing and a repaired retry can reacquire.
+    handle.close()
+    throw err
   }
 }

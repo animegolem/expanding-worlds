@@ -44,8 +44,12 @@ export function createProject(
   }
 
   const lock = ProjectLock.acquire(dir, options.lock)
+  // `opened` tracks the Db for the catch; the body uses the non-null
+  // `db` const so closures keep it narrowed.
+  let opened: Db | null = null
   try {
     const db = Db.open(dbPath)
+    opened = db
     migrate(db)
 
     const projectId = uuidv7()
@@ -96,6 +100,11 @@ export function createProject(
 
     return makeHandle(db, lock, dir)
   } catch (err) {
+    // CA-002: a Db opened before the failure (migrate, the seed
+    // transaction, or makeHandle throwing) MUST close before the lock
+    // releases — otherwise the writer connection and its file lock
+    // leak while the lock file is unlinked, wedging the directory.
+    opened?.close()
     lock.release()
     throw err
   }
@@ -131,8 +140,10 @@ export function openProject(dir: string, options: OpenOptions = {}): ProjectHand
   }
 
   const lock = ProjectLock.acquire(dir, options.lock)
+  let opened: Db | null = null
   try {
     const db = Db.open(dbPath)
+    opened = db
     // §11.4 refuse-kindly: a project written by a newer build carries
     // migrations this binary does not have, so migrate() would silently
     // no-op and expose a schema it cannot understand. Refuse before any
@@ -141,7 +152,9 @@ export function openProject(dir: string, options: OpenOptions = {}): ProjectHand
       'SELECT schema_version FROM project',
     )?.schema_version
     if (ahead !== undefined && ahead > LATEST_SCHEMA_VERSION) {
-      db.close()
+      // The catch below closes db and releases the lock — throwing
+      // here (rather than releasing inline) keeps every exceptional
+      // branch on one close path (CA-002).
       const err = new Error(
         'this project was written by a newer version of Expanding Worlds — ' +
           'update the app to open it',
@@ -152,6 +165,9 @@ export function openProject(dir: string, options: OpenOptions = {}): ProjectHand
     migrate(db)
     return makeHandle(db, lock, dir)
   } catch (err) {
+    // Close any opened Db BEFORE releasing the lock so the writer
+    // connection never outlives the lock file (CA-002).
+    opened?.close()
     lock.release()
     throw err
   }
@@ -168,6 +184,10 @@ function makeHandle(db: Db, lock: ProjectLock | null, dir: string): ProjectHandl
   )
   if (!rootCanvas) throw new Error('root canvas missing')
 
+  // Idempotent: node:sqlite's close() throws on a second call, so a
+  // double close() (e.g. a construction guard closing after the caller
+  // already did) must be a no-op. lock.release() is already idempotent.
+  let closed = false
   return {
     db,
     projectId: project.id,
@@ -176,6 +196,11 @@ function makeHandle(db: Db, lock: ProjectLock | null, dir: string): ProjectHandl
     dir,
     readOnly: lock === null,
     close(): void {
+      if (closed) return
+      closed = true
+      // db first, then release the lock (which clears the heartbeat
+      // timer and unlinks the lock file) — never leave the connection
+      // open after the lock is gone.
       db.close()
       lock?.release()
     },
