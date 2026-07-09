@@ -10,6 +10,12 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **One writer, always** (AI-IMP-226, 2026-07-09, Sol P1 —
+  the wave headline): force-quit mid-session, relaunch immediately
+  — reopens promptly (dead-pid reclaim). Then stall the app with a
+  huge import and try opening the same project from a second
+  instance — it must REFUSE, never open a second writer.
+
 - [ ] **Export trust + atomicity** (AI-IMP-229, 2026-07-09, Sol
   P1): export to an external folder (succeeds, counts look right);
   try a destination INSIDE the project folder (clear refusal);

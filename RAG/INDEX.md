@@ -10,7 +10,7 @@
 | Planned | 4 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 201 |
+| Completed | 19 | 202 |
 | **Total** | **25** | **236** |
 
 ## In Progress
@@ -75,7 +75,6 @@
 - [[AI-IMP-223-export-staging-isolation|IMP-223]] — planned, no epic dependency found
 - [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
-- [[AI-IMP-226-single-writer-lock-protocol|IMP-226]] — planned, no epic dependency found
 - [[AI-IMP-230-universal-redo-invalidation|IMP-230]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
@@ -130,7 +129,7 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
-- RAG/HUMAN-TESTING.md (689 LOC)
+- RAG/HUMAN-TESTING.md (695 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
@@ -213,6 +212,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
 - apps/desktop/src/renderer/dev/feel-dial.ts (327 LOC)
+- packages/persistence/src/lock.ts (324 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
 - packages/persistence/src/handlers/decorations.ts (317 LOC)
