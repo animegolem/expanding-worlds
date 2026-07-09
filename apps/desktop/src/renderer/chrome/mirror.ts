@@ -20,6 +20,7 @@ import { nameKey, uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import { onEngagementChanged, wake } from './engagement'
 import { onImportProgressChanged } from './import-progress'
+import { MIRROR_CHIP_LIFETIME_MS } from './feel'
 
 /** One committed foreground import, offered to the mirror. */
 export interface MirrorDrop {
@@ -82,6 +83,44 @@ let batchActive = false
 
 let attached = false
 
+/**
+ * Per-chip presentation timers (AI-IMP-213, stuck-state family). A
+ * chip's designed dismissal is the §8.2 engagement fade — but that
+ * false-edge is a shared clock the chip does not control, and it never
+ * arrives while a takeover pins engagement (holdEngagement) or the
+ * fade is 'never'; the buttonless "Already in your library" chip then
+ * has no way back and maroons mid-board. Every chip therefore also
+ * owns a self-dismissal timer, armed at creation, that removes it after
+ * a bounded window regardless of the engagement clock's state. Guarded
+ * fire (it no-ops if the chip is already gone) + cleared on every
+ * removal path is the PathBar safety-timeout idiom (AI-IMP-166).
+ */
+const chipTimers = new Map<number, ReturnType<typeof setTimeout>>()
+
+function armChipTimer(id: number): void {
+  chipTimers.set(
+    id,
+    setTimeout(() => {
+      chipTimers.delete(id)
+      if (!chips.some((chip) => chip.id === id)) return
+      chips = chips.filter((chip) => chip.id !== id)
+      emit()
+    }, MIRROR_CHIP_LIFETIME_MS),
+  )
+}
+
+function clearChipTimer(id: number): void {
+  const timer = chipTimers.get(id)
+  if (timer === undefined) return
+  clearTimeout(timer)
+  chipTimers.delete(id)
+}
+
+function clearAllChipTimers(): void {
+  for (const timer of chipTimers.values()) clearTimeout(timer)
+  chipTimers.clear()
+}
+
 function emit(): void {
   for (const listener of listeners) listener({ ask, chips })
 }
@@ -98,6 +137,7 @@ function attach(): void {
     ask = null
     pendingAsk = []
     chips = []
+    clearAllChipTimers()
     emit()
   })
   // Bulk collapse: the summary chip waits for BOTH the strip and the
@@ -125,7 +165,9 @@ function maybeEmitSummary(): void {
   if (bulkRecognized > 0) parts.push(`${bulkRecognized} recognized`)
   bulkMirrored = 0
   bulkRecognized = 0
-  chips = [...chips, { id: nextChipId++, kind: 'summary', message: parts.join(' · ') }]
+  const id = nextChipId++
+  chips = [...chips, { id, kind: 'summary', message: parts.join(' · ') }]
+  armChipTimer(id)
   emit()
   wake()
 }
@@ -167,10 +209,11 @@ async function mirrorOne(drop: MirrorDrop): Promise<void> {
       if (drop.bulk) {
         bulkRecognized += 1
       } else {
+        const id = nextChipId++
         chips = [
           ...chips,
           {
-            id: nextChipId++,
+            id,
             kind: 'recognition',
             x: drop.clientX,
             y: drop.clientY,
@@ -178,6 +221,7 @@ async function mirrorOne(drop: MirrorDrop): Promise<void> {
             tagNames,
           },
         ]
+        armChipTimer(id)
         emit()
         wake()
       }
@@ -259,6 +303,7 @@ export function answerMirrorAsk(yes: boolean): void {
 /** Explicit ignore — same outcome as the engagement fade. */
 export function dismissMirrorChip(id: number): void {
   if (!chips.some((chip) => chip.id === id)) return
+  clearChipTimer(id)
   chips = chips.filter((chip) => chip.id !== id)
   emit()
 }
@@ -303,6 +348,7 @@ export function onMirrorUiChanged(listener: UiListener): () => void {
 export function __resetMirrorForTests(): void {
   ask = null
   chips = []
+  clearAllChipTimers()
   pendingAsk = []
   noticeShown = false
   libraryOpen = false
