@@ -92,12 +92,16 @@
     if (file) void tooling.setBackgroundFromFile(file)
   }
 
-  // Leaving the strip lowers it; the Board menu holds it up while
-  // open and closes only on Escape or its own button — deliberately
-  // NOT on click-away, so background work (pick image, click canvas,
-  // adjust) doesn't fight the menu.
-  function hide(): void {
-    revealed = false
+  // AI-IMP-214: the reveal is sensed off the cursor's Y over the whole
+  // would-be-chrome band (TITLE_STRIP_REVEAL_PX), NOT a pointer-events
+  // overlay — the reveal-zone below is inert (pointer-events:none) so the
+  // trigger arms reveal only and never sinks a canvas click beneath it.
+  // Below the band lowers the strip (the Board menu still holds it up via
+  // stripVisible while open). One source of truth for reveal/lower, so
+  // there is no pointerleave-vs-band flicker in the strip's own gap.
+  function onWindowPointerMove(event: PointerEvent): void {
+    if (stripMode !== 'hover') return
+    revealed = event.clientY <= TITLE_STRIP_REVEAL_PX
   }
 
   $effect(() => {
@@ -114,13 +118,18 @@
   })
 </script>
 
+<svelte:window onpointermove={onWindowPointerMove} />
+
 {#if stripMode === 'hover'}
+  <!-- AI-IMP-214: the reveal is cursor-Y sensed (onWindowPointerMove); this
+       zone is inert (pointer-events:none) and stays only as the hover TARGET
+       e2e boundingBoxes against — so the widened band never sinks a canvas
+       click that lands in it. -->
   <div
     class="reveal-zone"
     style={`height: ${TITLE_STRIP_REVEAL_PX}px`}
     data-testid="title-strip-reveal"
     role="presentation"
-    onpointerenter={() => (revealed = true)}
   ></div>
 {/if}
 
@@ -143,7 +152,6 @@
     data-drag-region="drag"
     role="toolbar"
     tabindex="-1"
-    onpointerleave={hide}
     in:fade={{ duration: STRIP_FADE_MS }}
   >
     <button
@@ -297,8 +305,11 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 2; /* above the path bar so the top edge always reveals */
-    pointer-events: auto;
+    z-index: 2;
+    /* AI-IMP-214: inert — the reveal is cursor-Y sensed, so this zone must
+       never sink a canvas click that lands in the widened band. It stays in
+       the DOM purely as the e2e hover target's boundingBox anchor. */
+    pointer-events: none;
   }
 
   /* The strip is a temporary top-edge layer: a smoky near-black gradient

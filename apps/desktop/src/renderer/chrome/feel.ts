@@ -17,8 +17,15 @@ export const CHROME_REST_OPACITY = 0.92
 /** Delay before a control's tooltip chip appears. */
 export const TOOLTIP_DELAY_MS = 500
 
-/** Pointer band at the top edge that reveals the title strip. */
-export const TITLE_STRIP_REVEAL_PX = 10
+/** Pointer band at the top edge that reveals the title strip. §8.2: the
+ * whole would-be window-chrome band arms the reveal, not a hairline — the
+ * owner's ruling (AI-IMP-214) is "hovering anywhere over the normal window
+ * chrome bar should be showing the gradient." 46px matches the ratified Pin
+ * & Menu Motion Prototype's [data-stripzone]{height:46px} (the band the whole
+ * bookmark beat lives inside). The trigger arms reveal only — it is sensed off
+ * the cursor's Y, never a pointer-events overlay, so it never sinks a canvas
+ * click beneath it. */
+export const TITLE_STRIP_REVEAL_PX = 46
 
 /** §8.4/§8.2: node hint charms are FURNITURE and hide when the node's
  * rendered screen size drops below this — screen pixels, never zoom
