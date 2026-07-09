@@ -74,6 +74,17 @@ async function contentCommandsSince(win: Page, sinceRevision: number): Promise<s
   }, sinceRevision)
 }
 
+/** AI-IMP-212: a flyTo runs for a fixed FLIGHT_DURATION_MS regardless of
+ * whether the target equals the current camera (camera-flight.ts ticks
+ * to t=1 either way), so `flightActive` is the only reliable "the eased
+ * fit has actually landed" signal — reading camera() right after the
+ * first observed change risks a mid-flight value. */
+async function waitForFlightSettled(win: Page): Promise<void> {
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.stage().flightActive))
+    .toBe(false)
+}
+
 async function revision(win: Page): Promise<number> {
   return win.evaluate(async () => {
     const project = await window.ew.project.query('getProject')
@@ -287,20 +298,62 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
 
   // Zoom to fit / to selection: camera-only, no durable command (the
   // revision is read before the debounced camera persist can land).
-  const cameraBefore = await win.evaluate(() => window.__ewDebug!.camera())
+  // A single placement is still selected from the alt-drag above —
+  // clear it first so this first fit exercises the "no selection"
+  // stage-extent branch, same as before AI-IMP-212. setCamera resets
+  // to identity first: the marquee/click math below assumes
+  // world === screen, which the upcoming fits will no longer hold once
+  // the camera actually flies somewhere.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await win.mouse.click(box.x + 600, box.y + 500) // clear selection
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 0)
   const beforeZoom = await revision(win)
   await win.getByTestId('zoom-fit').click()
   expect(await contentCommandsSince(win, beforeZoom)).toHaveLength(0)
-  // §6.9 rev 0.11: fits EASE — poll past the flight.
-  await expect
-    .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
-    .not.toEqual(cameraBefore)
-  const fitted = await win.evaluate(() => window.__ewDebug!.camera())
+  // §6.9 rev 0.11: fits EASE — a flight always runs the full duration
+  // even to a same-valued target, so wait for it to land before reading
+  // the settled camera (an intermediate tween frame would be flaky).
+  await waitForFlightSettled(win)
+  const fittedAll = await win.evaluate(() => window.__ewDebug!.camera())
+
+  // AI-IMP-212: with a selection active, the same ⤢ button (and its
+  // ⇧1 chord) frames the selection instead of the whole stage. Select
+  // the lone placement dragged to (192, 154) — distant from the
+  // all-content fit above — and confirm the camera lands somewhere
+  // else. Re-identity the camera first (the fit above just moved it).
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await win.mouse.click(box.x + 192, box.y + 154)
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
+  await win.getByTestId('zoom-fit').click()
+  expect(await contentCommandsSince(win, beforeZoom)).toHaveLength(0)
+  await waitForFlightSettled(win)
+  const fittedSelectionViaFit = await win.evaluate(() => window.__ewDebug!.camera())
+  expect(fittedSelectionViaFit).not.toEqual(fittedAll)
+
+  // The explicit "Zoom selection" button shares the exact same bounds
+  // + flyTo path (dedup'd through one helper), so it lands on the same
+  // camera target rather than merely "a different one."
   await win.getByTestId('zoom-selection').click()
   expect(await contentCommandsSince(win, beforeZoom)).toHaveLength(0)
-  await expect
-    .poll(() => win.evaluate(() => window.__ewDebug!.camera()))
-    .not.toEqual(fitted)
+  await waitForFlightSettled(win)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(fittedSelectionViaFit)
+
+  // The ⇧1 chord dispatches through the identical zoomToFit(), so it
+  // also frames the still-active selection, not the whole stage.
+  await win.keyboard.press('Shift+1')
+  expect(await contentCommandsSince(win, beforeZoom)).toHaveLength(0)
+  await waitForFlightSettled(win)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(fittedSelectionViaFit)
+
+  // Clearing the selection returns the same ⤢/⇧1 verb to the
+  // stage-extent branch. Re-identity the camera before the deselect
+  // click for the same reason as above.
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+  await win.mouse.click(box.x + 600, box.y + 500) // clear selection
+  await win.waitForFunction(() => window.__ewDebug!.selection().length === 0)
+  await win.keyboard.press('Shift+1')
+  await waitForFlightSettled(win)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(fittedAll)
 
   await app.close()
 })
