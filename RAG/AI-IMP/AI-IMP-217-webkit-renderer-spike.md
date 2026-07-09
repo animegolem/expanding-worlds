@@ -6,7 +6,7 @@ tags:
   - spike
   - v2
   - performance
-kanban_status: planned
+kanban_status: in-progress
 depends_on: []
 parent_epic:
 confidence_score: 0.7

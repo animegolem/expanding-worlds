@@ -10,6 +10,18 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **WebKit spike — the three device passes** (AI-IMP-217,
+  2026-07-09; the V2 go/no-go data): `cd spike/webkit-renderer &&
+  npm install && npm run dev`, then run the 30s sweep at 100 and
+  500 images in (1) desktop Safari on this Mac, (2) the iPhone 17,
+  (3) the 2020 iPad Pro — devices open the printed `Network:` URL
+  on the same Wi-Fi; keep Safari foregrounded. Paste each JSON back.
+  Context already in the report (RAG/spike-reports/
+  webkit-renderer.md): Chromium on this Mac pins 120Hz at 100
+  images; the risk is MEMORY (4.7GB resident textures at 500 vs
+  the iPad's 6GB) — on the iPad, watch for a tab reload (memory
+  kill) more than judder.
+
 - [ ] **Note charm toggles** (AI-IMP-210, 2026-07-09, your ask):
   click the note charm — open; same click — closed; again — open.
   The ¶ hint chip in the node's corner toggles identically.

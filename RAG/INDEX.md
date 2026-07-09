@@ -68,7 +68,7 @@
 - [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
 - [[AI-IMP-214-title-strip-trigger-and-nav-buttons|IMP-214]] — planned, no epic dependency found
 - [[AI-IMP-215-board-menu-clickaway|IMP-215]] — planned, no epic dependency found
-- [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
+- [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — in-progress, no epic dependency found
 - [[AI-IMP-218-index-lock-age-gate|IMP-218]] — planned, no epic dependency found
 - [[AI-IMP-219-destructive-gc|IMP-219]] — planned, no epic dependency found
 - [[AI-IMP-220-trash-retention-job|IMP-220]] — planned, no epic dependency found
@@ -122,8 +122,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
+- RAG/HUMAN-TESTING.md (662 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
-- RAG/HUMAN-TESTING.md (650 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (645 LOC)
 - apps/desktop/src/main/snapshot.ts (636 LOC)
@@ -208,6 +208,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
 - apps/desktop/src/preload/index.ts (312 LOC)
+- spike/webkit-renderer/src/main.ts (311 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)
 - apps/desktop/e2e/note-lifecycle.spec.ts (306 LOC)
