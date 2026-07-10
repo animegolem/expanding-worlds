@@ -227,7 +227,18 @@ function reclaimUnderGuard(path: string, guardPath: string, staleAfterMs: number
   try {
     mkdirSync(guardPath)
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'EPERM' || code === 'EBUSY') {
+      // Windows DELETE_PENDING at the guard: a mkdir racing another
+      // process's rmdir of the same path reports EPERM/EBUSY rather
+      // than EEXIST (AI-IMP-249 round 4 — the same kernel semantics
+      // the O_EXCL create hit in round 3). We created nothing and own
+      // nothing; the disposition is identical to guard-held — report
+      // no progress and let the caller's bounded window re-race once
+      // the kernel settles.
+      return false
+    }
+    if (code !== 'EEXIST') throw err
     // Guard is held. If it is itself abandoned (a reclaimer crashed
     // mid-swap), steal it; mkdir re-arbitrates the retake next pass.
     if (guardIsStale(guardPath)) removeGuard(guardPath)

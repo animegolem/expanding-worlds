@@ -101,7 +101,11 @@ jobs:
         run: pnpm -r build
 
       - name: Package units (includes the lock probe)
-        run: pnpm --filter='./packages/*' test
+        # Windows runners are slow, shared, and AV-scanned — integration
+        # tests doing real IO legitimately exceed vitest's 5s default
+        # under load (AI-IMP-249 round 4: 8-15s on tests that pass in
+        # 1-3s elsewhere). Timeout raised on THIS platform only.
+        run: pnpm --filter='./packages/*' test -- --testTimeout=20000
 
       - name: Desktop units
         working-directory: apps/desktop
