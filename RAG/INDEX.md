@@ -84,7 +84,7 @@
 - [[AI-IMP-236-source-slot-epochs|IMP-236]] — planned, no epic dependency found
 - [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
 - [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
-- [[AI-IMP-239-new-board-verb|IMP-239]] — planned, no epic dependency found
+- [[AI-IMP-239-new-board-verb|IMP-239]] — in-progress, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -118,7 +118,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/renderers/placement.test.ts (982 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (976 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (947 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (932 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (938 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
 - apps/desktop/src/renderer/note/panels.ts (865 LOC)
@@ -129,7 +129,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
-- apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
+- apps/desktop/src/renderer/menus/inventory.ts (709 LOC)
 - RAG/HUMAN-TESTING.md (695 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -204,10 +204,10 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/format-bar.ts (347 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
+- apps/desktop/src/renderer/menus/inventory.test.ts (345 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (344 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
-- apps/desktop/src/renderer/menus/inventory.test.ts (337 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)

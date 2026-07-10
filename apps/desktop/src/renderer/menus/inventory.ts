@@ -188,6 +188,9 @@ export interface MenuActions {
   reorder(op: ReorderOp): void
   deleteItem(): void
   // ---- board ----
+  /** §8.4 (AI-IMP-239): create a fresh named board and dive into it —
+   * node + canvas + a board-object placement at the click, one undo. */
+  newBoard(): void
   selectAll(): void
   zoomToFit(): void
   setBackdropFromFile(): void
@@ -388,6 +391,13 @@ function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
 function boardMenu(subject: BoardSubject, a: MenuActions): MenuGroup[] {
   const hasBg = subject.hasBackgroundImage
   return [
+    {
+      // §8.4 (AI-IMP-239): the create verb leads the board menu —
+      // frequency-first, the one gesture that seeds a fresh board where
+      // the user right-clicked.
+      id: 'create',
+      items: [{ id: 'new-board', label: 'New board…', run: a.newBoard }],
+    },
     {
       id: 'board-actions',
       items: [
