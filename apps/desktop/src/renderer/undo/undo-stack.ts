@@ -189,6 +189,25 @@ export class UndoStack {
     return done
   }
 
+  /**
+   * Clear the redo stack unconditionally (RFC §10.2, AI-IMP-230 /
+   * Sol CA-005). ANY new durable, non-undo/non-redo commit invalidates
+   * redo — even an UNCAPTURED one, even one with a null inverse, even one
+   * that lands inside a group but is never recorded. The coordinator
+   * (undo-store) calls this for every foreign commit BEFORE deciding
+   * whether it also becomes an undo entry, so Mod+Shift+Z can never
+   * replay onto a world that already moved on. Kept separate from
+   * {@link record}/{@link recordGroup} precisely because most
+   * invalidating commits never produce an undo entry (the old
+   * null-inverse early return in `record` skipped this, standing redo
+   * stale — the exact CA-005 defect).
+   */
+  invalidateRedo(): void {
+    if (this.#redo.length === 0) return
+    this.#redo = []
+    this.#deps.onChanged()
+  }
+
   /** Drop everything — project switch (§10.2) or teardown. */
   clear(): void {
     const had = this.#undo.length > 0 || this.#redo.length > 0

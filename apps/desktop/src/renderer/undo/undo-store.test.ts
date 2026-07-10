@@ -13,14 +13,26 @@ import { attachUndo, runAsUndoGroup } from './undo-store'
  * entries and a verb-shaped one lands exactly one.
  */
 
-/** A committed result carrying a reciprocal inverse (so it is captured). */
-function committed(revision: number): Extract<CommandResult, { status: 'committed' }> {
+/** Commands the persistence layer commits with a NULL inverse (not
+ * undoable by design): note-body autosave (CodeMirror owns text history)
+ * and camera persistence. The mock mirrors that so the CA-005 tests
+ * exercise the real null-inverse path (AI-IMP-230). */
+const NULL_INVERSE_COMMANDS = new Set(['UpdateNote', 'SetCanvasCamera'])
+
+/** A committed result; carries a reciprocal inverse unless the command
+ * type is one persistence commits without one. */
+function committed(
+  revision: number,
+  commandType = 'UpdateDecoration',
+): Extract<CommandResult, { status: 'committed' }> {
   return {
     status: 'committed',
     commandId: `cmd-${revision}`,
     revision,
     affected: [],
-    inverse: { commandType: 'UpdateDecoration', commandVersion: 1, payload: {} },
+    inverse: NULL_INVERSE_COMMANDS.has(commandType)
+      ? null
+      : { commandType: 'UpdateDecoration', commandVersion: 1, payload: {} },
   }
 }
 
@@ -33,7 +45,10 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
     revision = 0
     // A mock Project API: getProject bootstraps the stack's gateway,
     // execute commits with a rising revision, onChanged is inert.
-    const execute = vi.fn(async (): Promise<CommandResult> => committed(++revision))
+    const execute = vi.fn(
+      async (envelope: { commandType: string }): Promise<CommandResult> =>
+        committed(++revision, envelope.commandType),
+    )
     vi.stubGlobal('window', {
       ew: {
         project: {
@@ -148,6 +163,88 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
       await emitGateway.execute('AssignTagToNode', { tagId: 't1', nodeId: 'n1' })
     })
     expect(window.__ewUndo!.undoDepth()).toBe(1)
+  })
+
+  // AI-IMP-230 / Sol CA-005: §10.2 requires ANY new durable command after
+  // an undo to clear redo. The coordinator sees every gateway commit, but
+  // used to forward only captured ones — an uncaptured or null-inverse
+  // commit returned before the stack could invalidate redo, so redo stayed
+  // stale and Mod+Shift+Z could replay onto a moved world.
+  it('an UNCAPTURED commit after an undo clears redo (CA-005 probe)', async () => {
+    // Capture a real structural command, undo it → redoDepth 1.
+    await runAsUndoGroup(async () => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' })
+    })
+    expect(window.__ewUndo!.undoDepth()).toBe(1)
+    await window.__ewUndo!.undo()
+    expect(window.__ewUndo!.redoDepth()).toBe(1)
+
+    // Now commit an UNCAPTURED durable command (note-body autosave). It is
+    // not in the capture set, yet redo must drop to 0.
+    await emitGateway.execute('UpdateNote', { noteId: 'n1', body: 'edited' })
+    expect(window.__ewUndo!.redoDepth()).toBe(0)
+    // The undo entry that produced the redo is gone too (it was consumed by
+    // the undo); the uncaptured commit created no new undo entry.
+    expect(window.__ewUndo!.undoDepth()).toBe(0)
+  })
+
+  it('a null-inverse commit after an undo still clears redo (CA-005)', async () => {
+    await runAsUndoGroup(async () => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' })
+    })
+    await window.__ewUndo!.undo()
+    expect(window.__ewUndo!.redoDepth()).toBe(1)
+    // SetCanvasCamera commits with a null inverse (persistence, not
+    // undoable) — the old `record` early-return skipped redo invalidation.
+    await emitGateway.execute('SetCanvasCamera', { canvasId: 'canvas-1', x: 1, y: 2, zoom: 1 })
+    expect(window.__ewUndo!.redoDepth()).toBe(0)
+  })
+
+  it("the stack's OWN undo/redo commits never invalidate redo (self-cycle)", async () => {
+    // Two captured entries; undo BOTH. Each undo re-executes an inverse
+    // through the gateway, whose commit broadcasts back through the same
+    // seam. Those self-commits are gated by `applying`, so they must NOT
+    // clear the redo the undos are building: redoDepth climbs to 2.
+    await runAsUndoGroup(async () => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' })
+    })
+    await runAsUndoGroup(async () => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p2', canvasId: 'canvas-1' })
+    })
+    expect(window.__ewUndo!.undoDepth()).toBe(2)
+    await window.__ewUndo!.undo()
+    await window.__ewUndo!.undo()
+    expect(window.__ewUndo!.undoDepth()).toBe(0)
+    expect(window.__ewUndo!.redoDepth()).toBe(2)
+  })
+
+  // AI-IMP-231 / Sol CA-006: overlapping asynchronous undo groups must NOT
+  // merge — a note edit made while a multi-file import holds its group open
+  // must be its OWN single undo entry. SKIPPED: the fix is BLOCKED. Robust
+  // token-scoping needs either AsyncLocalStorage (unavailable in the
+  // sandboxed renderer — sandbox:true / nodeIntegration:false) or explicit
+  // per-command token threading through ~15 runAsUndoGroup call sites, all
+  // in files this ticket may not touch (import-surfaces / note / menus /
+  // tags / chrome). The current global `pendingGroup` MERGES these into one
+  // entry. See AI-IMP-231 Issues Encountered for the full diagnosis. This
+  // stays as the executable spec for whoever lands the mechanism.
+  it.skip('overlapping groups stay separate: each Mod+Z reverses only its own (CA-006)', async () => {
+    let releaseImport!: () => void
+    const gate = new Promise<void>((r) => (releaseImport = r))
+    // Import group: open, commit A, then PARK on an await (interactive gap).
+    const importGroup = runAsUndoGroup(async () => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'imp', canvasId: 'canvas-1' })
+      await gate
+      await emitGateway.execute('CreatePlacement', { placementId: 'imp2', canvasId: 'canvas-1' })
+    })
+    // While import is parked, an unrelated note edit runs its OWN group.
+    await runAsUndoGroup(async () => {
+      await emitGateway.execute('RenameNote', { noteId: 'n1', title: 'x' })
+    })
+    releaseImport()
+    await importGroup
+    // Desired: TWO entries (import, note edit) — not one merged blob.
+    expect(window.__ewUndo!.undoDepth()).toBe(2)
   })
 
   it('TrashNode stays OUT of Mod+Z — never captured, even inside a group', async () => {

@@ -56,10 +56,21 @@ export interface RelinkBrokenLinksPayload {
  * Internal inverse of RelinkBrokenLinks: returns the named bound
  * records to broken with the given display text. Not part of the
  * public UI command set.
+ *
+ * AI-IMP-233 / Sol CA-008: when the forward relink used its `create`
+ * branch (inserted a brand-new note as the link target), a plain
+ * re-break would leave that created note and its unique-title
+ * reservation as durable residue. `removeCreatedNoteId` carries that
+ * note so BreakNoteLinks can also remove it ON UNDO — but ONLY when it
+ * is still safe (untouched empty body, no other bound links point to
+ * it). `createdTitle` lets the redo re-create it via the relink `create`
+ * branch, keeping undo↔redo symmetric.
  */
 export interface BreakNoteLinksPayload {
   linkIds: string[]
   displayTitle: string
+  removeCreatedNoteId?: string
+  createdTitle?: string
 }
 
 export const COMMAND_CREATE_NOTE = 'CreateNote'
