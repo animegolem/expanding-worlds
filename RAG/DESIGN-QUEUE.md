@@ -242,8 +242,18 @@ which keeps the Trash as its recovery home. Explicitly a
 feel-tested ruling: trimming a verb back out is one line each if
 the week's testing says so. Lands with the AI-IMP-173 fix wave.)
 
-- **iPad companion / V2 shape** (owner, 2026-07-08, tabled until
-  after testing week): the coherent V2 sketch — desktop app paired
+- **iPad companion / V2 shape** (owner, 2026-07-08; UNTABLED
+  2026-07-09 evening — strategy review "within the next day or
+  so"; goal is NOT shipping but "basic interaction patterns
+  start to form and the shell working and constructed"; pricing
+  intent restated and hardened: free desktop, $5 iOS — "it's a
+  better story on my resume if it's a product." Decision inputs
+  in hand: 217 WebKit engine numbers, 240 Tauri shell + 10 seams
+  + asset-protocol acquittal, 241 texture-tiering ACQUIT (~140MB
+  resident regardless of board size — the iPad memory question is
+  closed), 243 Rust persistence seam analysis in flight. Owner
+  device passes on iPhone/iPad remain the last physical
+  validation.): the coherent V2 sketch — desktop app paired
   with an iPad app (Tauri v2 shell + system WebKit hosting the SAME
   renderer packages; PencilKit for pencil ink, plausibly as a new
   decoration kind), with GIT AS THE SYNC REPOSITORY between the two
