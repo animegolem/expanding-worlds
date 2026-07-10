@@ -114,7 +114,13 @@ never delegated. Implementation may be decomposed:
   doc, never in the number. Patch for hotfixes. On epic close: bump
   `apps/desktop/package.json` minor, tag `vX.Y.0`, push the tag —
   the release workflow builds unsigned DMG/NSIS/AppImage and
-  attaches them to the GitHub Release. Perf e2e is a local hardware
+  attaches them to the GitHub Release. `CHANGELOG.md` (standard as
+  of v0.20.0): closing tickets append under `[Unreleased]`; the
+  release commit renames that section to the version with two
+  voices — "For testers" (plain language, what the tester will
+  notice; becomes the GitHub Release body, above the standing
+  macOS xattr install note) and "Under the hood" (the closed
+  tickets, one clause each). Perf e2e is a local hardware
   gate only (CI runners have no GPU; the suite refuses software GL).
 - E2E runs use invisible windows (`EW_TEST_HIDDEN_WINDOWS=1`, set by
   playwright.config) — never run the suite with visible windows on
