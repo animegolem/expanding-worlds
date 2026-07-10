@@ -107,14 +107,28 @@ async function createImagePin(
 ): Promise<{ nodeId: string; placementId: string } | null> {
   const nodeId = uuidv7()
   const placementId = uuidv7()
-  const result = await host.gateway.execute('CreatePin', {
-    nodeId,
-    canvasId,
-    placementId,
-    x: world.x,
-    y: world.y,
-    appearance: { kind: 'image', assetId, crop: null },
-  })
+  // checkRevision off (AI-IMP-238, per the gateway's standing
+  // inter-instance rule): the importAsset that just resolved committed
+  // CommitAssetImport inside the UTILITY process, bumping the project
+  // revision out of band — the gateway learns it only via the ASYNC
+  // project-changed push. When that push loses the race to this
+  // CreatePin, the optimistic check false-conflicts and the file
+  // reports "failed" with its asset committed but pinless (the batch
+  // flake's root cause, convicted deterministically). This CreatePin
+  // creates only fresh-id records, so a stale project revision is
+  // never a real conflict for it.
+  const result = await host.gateway.execute(
+    'CreatePin',
+    {
+      nodeId,
+      canvasId,
+      placementId,
+      x: world.x,
+      y: world.y,
+      appearance: { kind: 'image', assetId, crop: null },
+    },
+    { checkRevision: false },
+  )
   if (result.status !== 'committed') {
     onError(describeFailure('CreatePin', result))
     return null
