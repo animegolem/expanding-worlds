@@ -567,11 +567,14 @@ describe('invariant 31: in-memory undo, persisted metadata-only log', () => {
     const projectDir = join(dir, 'p')
     service.close()
     service = openProjectService(projectDir, {})
-    expect(
-      Db.open(join(projectDir, DB_FILENAME)).get<{ n: number }>(
-        'SELECT count(*) AS n FROM command_log',
-      )!.n,
-    ).toBe(logged)
+    const reopenedReader = Db.open(join(projectDir, DB_FILENAME))
+    try {
+      expect(reopenedReader.get<{ n: number }>('SELECT count(*) AS n FROM command_log')!.n).toBe(
+        logged,
+      )
+    } finally {
+      reopenedReader.close()
+    }
   })
 })
 

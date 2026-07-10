@@ -70,7 +70,9 @@ function plantCorpse(dir: string, deadPid: number): void {
   )
 }
 
-function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promise<string> {
+type WorkerOutcome = { kind: 'WIN' | 'LOCKED'; diagnostic: string }
+
+function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promise<WorkerOutcome> {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       process.execPath,
@@ -89,7 +91,8 @@ function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promi
     // which the collected protocol line is authoritative.
     proc.on('close', () => {
       const line = out.trim().split('\n').pop() ?? ''
-      if (line === 'WIN' || line === 'LOCKED') resolve(line)
+      if (line === 'WIN') resolve({ kind: 'WIN', diagnostic: line })
+      else if (line.startsWith('LOCKED ')) resolve({ kind: 'LOCKED', diagnostic: line })
       else reject(new Error(`worker produced "${out.trim()}" (stderr: ${err.trim()})`))
     })
   })
@@ -97,7 +100,7 @@ function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promi
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-async function runRound(dir: string, staleAfterMs: number, deadPid: number): Promise<number> {
+async function runRound(dir: string, staleAfterMs: number, deadPid: number): Promise<WorkerOutcome[]> {
   plantCorpse(dir, deadPid)
   const barrierDir = mkdtempSync(join(tmpdir(), 'ew-lock-barrier-'))
   try {
@@ -112,7 +115,7 @@ async function runRound(dir: string, staleAfterMs: number, deadPid: number): Pro
       await sleep(5)
     }
     writeFileSync(join(barrierDir, 'go'), '')
-    return (await outcomes).filter((o) => o === 'WIN').length
+    return await outcomes
   } finally {
     rmSync(barrierDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
@@ -127,8 +130,14 @@ describe('single-writer lock under multi-process contention (AI-IMP-226 / CA-001
         const deadPid = deadSameHostPid()
         try {
           for (let round = 0; round < ROUNDS; round++) {
-            const winners = await runRound(dir, staleAfterMs, deadPid)
-            expect(winners, `round ${round} at staleAfterMs ${staleAfterMs}`).toBe(1)
+            const outcomes = await runRound(dir, staleAfterMs, deadPid)
+            const winners = outcomes.filter((outcome) => outcome.kind === 'WIN').length
+            expect(
+              winners,
+              `round ${round} at staleAfterMs ${staleAfterMs}: ${outcomes
+                .map((outcome) => outcome.diagnostic)
+                .join(' | ')}`,
+            ).toBe(1)
           }
         } finally {
           rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })

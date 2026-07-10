@@ -1,9 +1,15 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { LOCK_FILENAME, ProjectLock, ProjectLockedError, type LockHolder } from './lock'
+import {
+  LOCK_FILENAME,
+  ProjectLock,
+  ProjectLockedError,
+  RECLAIM_GUARD_DIRNAME,
+  type LockHolder,
+} from './lock'
 
 let dir: string
 
@@ -51,6 +57,34 @@ describe('ProjectLock', () => {
     const holder = JSON.parse(readFileSync(join(dir, LOCK_FILENAME), 'utf8')) as LockHolder
     expect(holder.pid).toBe(process.pid)
     lock.release()
+  })
+
+  it('outlives a leaked reclaim guard before reclaiming its corpse (AI-IMP-249)', () => {
+    const corpse: LockHolder = {
+      pid: 999999,
+      hostname: 'ghost-host',
+      token: 'corpse-token',
+      acquiredAt: new Date(Date.now() - 120_000).toISOString(),
+      heartbeatAt: new Date(Date.now() - 120_000).toISOString(),
+    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(corpse))
+
+    // Simulate a reclaimer that crashed after taking the guard. At eight
+    // seconds old it is still protected, but the old 200-attempt loop gave
+    // up in at most 1.2 seconds and stranded every contender.
+    const guardPath = join(dir, RECLAIM_GUARD_DIRNAME)
+    mkdirSync(guardPath)
+    const guardTime = new Date(Date.now() - 8_000)
+    utimesSync(guardPath, guardTime, guardTime)
+
+    const startedAt = Date.now()
+    const lock = ProjectLock.acquire(dir, { staleAfterMs: 0 })
+    try {
+      expect(Date.now() - startedAt).toBeGreaterThanOrEqual(1_000)
+      expect(existsSync(guardPath)).toBe(false)
+    } finally {
+      lock.release()
+    }
   })
 
   it('reclaims a same-host lock whose holder pid is dead (AI-IMP-053)', () => {
