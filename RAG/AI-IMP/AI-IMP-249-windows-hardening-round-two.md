@@ -71,6 +71,27 @@ is not stale-reclaim-specific; the unlink in play is likely the
 winner's RELEASE. Verify against libuv semantics and the probe's
 new diagnostics.
 
+**ROUND 4 (gate run 29082725843, P2 fix aboard):** units + lock
+probe GREEN — the P2 honest-diagnosis fix held. The failure moved
+to the smoke e2e: all 7 shell specs died at `electron.launch` with
+"Electron failed to install correctly" (missing dist/path.txt).
+This was the FIRST execution of the smoke step on Windows (every
+prior round failed at units, so the step never ran). CAUSE, with
+in-repo precedent: the pnpm electron-postinstall husk is NOT
+macOS-specific — the Linux job already treats the same disease
+with its "Ensure Electron binary" workflow step (install.js
+"succeeds" extracting one entry; the step fetches the zip then
+extracts it itself and writes path.txt). The Windows job simply
+lacks the equivalent step, and the playwright globalSetup repair
+deliberately skips non-darwin. FIX: mirror the Linux step for
+win32 (pwsh: install.js fetch → Expand-Archive →
+`printf`-style no-newline path.txt = electron.exe → assert
+electron.exe exists). Unverified assumption for the run to prove:
+install.js leaves the zip in `%LOCALAPPDATA%/electron/Cache` as it
+does under `~/.cache/electron` on Linux. repair-electron.sh's
+"macOS-only" scope note is now known-stale for CI (workflow steps
+own the CI repair; the script stays the local-dev path).
+
 Done means the Windows leg (branch ci/windows-leg) runs green and
 merges to main, closing AI-IMP-242's last item — with each
 survivor either fixed at the cause or documented as a
