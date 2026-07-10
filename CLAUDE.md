@@ -56,6 +56,17 @@ never delegated. Implementation may be decomposed:
 - The lead reserves migration numbers at ticket-cut time; a brief
   that may touch schema carries its number explicitly (parallel
   agents collided on 0004 once — EPIC-022 meta-analysis).
+- **Pre-implementation doc review (standard as of 2026-07-10):**
+  before code is written against a non-trivial ticket, someone —
+  the builder's first act, or a dedicated reviewer — verifies the
+  ticket's claims against the CURRENT source and record, and
+  reports corrections + a repair scope for approval BEFORE
+  implementing. Ticket diagnoses are hypotheses until verified;
+  the review supersedes them with cited causes in the ticket
+  itself. Origin: AI-IMP-249's review corrected two lead
+  hypotheses (with citations) and found a leak the ticket missed —
+  before a line changed. Cheap where it's wasted, decisive where
+  it isn't.
 - Benchmark review check: verify the measurement environment before
   trusting numbers (headless Chromium runs WebGL on SwiftShader —
   this nearly inverted the renderer decision). The desktop perf suite

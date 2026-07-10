@@ -37,6 +37,19 @@ normative spec) govern; this file is your delta.
 - Leave HUMAN-TESTING.md alone — suggest entries in your report; the
   lead appends. Never check off owner items anywhere.
 
+## Pre-implementation review (standard, 2026-07-10)
+
+Your first deliverable on a non-trivial ticket is NOT code — it is
+a verification pass: check every claim in the ticket against the
+current source (cite file:line), report corrections and a focused
+repair scope, and wait for approval before changing anything.
+Ticket diagnoses are hypotheses until verified; your review
+supersedes them, written into the ticket. The AI-IMP-249 review is
+the reference specimen: two lead hypotheses corrected with
+citations, one missed product leak found, protocol-weakening
+shortcuts rejected — all before a line changed. Trivial tickets
+(a test assert, a copy change) may skip straight to build; say so.
+
 ## Validation (bitten repeatedly — follow exactly)
 
 - NEVER `pnpm -r test`: apps/desktop's `test` script chains the FULL
