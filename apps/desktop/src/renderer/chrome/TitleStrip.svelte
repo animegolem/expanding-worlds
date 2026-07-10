@@ -15,6 +15,7 @@
   import { appSettings, onAppSettingsChanged } from '../settings/settings'
   import { themeTokenValue } from '../theme'
   import { tooltip } from './tooltip'
+  import { onTitleBandEnter } from './engagement'
   import { TITLE_STRIP_REVEAL_PX } from './feel'
 
   // AI-IMP-191: decision-01's hover reveal is opacity-only — chrome
@@ -104,6 +105,25 @@
     revealed = event.clientY <= TITLE_STRIP_REVEAL_PX
   }
 
+  // AI-IMP-255: over the OS-owned drag band (mac hidden titlebar /
+  // Windows titleBarOverlay) NO pointermove arrives, so the Y-sense
+  // above can never reveal there — the band-enter signal (derived from
+  // the synthetic pointerleave in engagement.ts) is the reveal trigger
+  // for the packaged frameless shell. Lowering stays with the
+  // pointermove (events resume below the band) plus blur, so a cursor
+  // parked off-window above the strip can't pin it forever once focus
+  // moves on.
+  $effect(() =>
+    onTitleBandEnter(() => {
+      if (stripMode === 'hover') revealed = true
+    }),
+  )
+
+  function onWindowBlur(): void {
+    if (stripMode !== 'hover') return
+    revealed = false
+  }
+
   $effect(() => {
     if (!boardMenuOpen) return
     // AI-IMP-183 (M-24): consume Escape (capture + stopPropagation) so it
@@ -147,7 +167,7 @@
   })
 </script>
 
-<svelte:window onpointermove={onWindowPointerMove} />
+<svelte:window onpointermove={onWindowPointerMove} onblur={onWindowBlur} />
 
 {#if stripMode === 'hover'}
   <!-- AI-IMP-214: the reveal is cursor-Y sensed (onWindowPointerMove); this

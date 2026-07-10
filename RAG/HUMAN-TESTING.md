@@ -770,3 +770,15 @@ hold-picker + Miro gap review → 190 · title strip
 (pill/spacing/gradient) → 191 · charm-bar zoom clamp → 192 · note
 spawn flash → 193 · note paper shape → 194 · image softness
 (mipmap/DPR diagnosis) → 195.
+
+## AI-IMP-255 — title band blackout fix (2026-07-10)
+
+**Build:** any post-cff35f38 build or a reloaded `pnpm dev` window
+(same frameless shell options as the DMG).
+**Try:** slide the cursor into the very top of the window and rest it
+there. Before: nothing appears and ALL chrome vanishes. Expected now:
+the dark title strip fades in and chrome stays put while the cursor
+sits in the band; moving below the band lowers the strip and normal
+fade cadence resumes; clicking away to another app still fades chrome.
+Worth checking on alph's Windows build too — the native band there is
+the 34px titleBarOverlay, same mechanism.

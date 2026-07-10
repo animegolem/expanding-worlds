@@ -13,6 +13,11 @@ annotations.
 ## [Unreleased]
 
 ### For testers
+- Fixed: resting the cursor on the invisible top bar made ALL
+  chrome vanish and never showed the dark title strip — the OS
+  owns that band in the frameless window and the app read it as
+  "cursor left." The strip now reveals there and chrome stays put.
+  (AI-IMP-255, hotfix target v0.19.1)
 - Anchored popups and panels (tag panel, search, menus, chooser
   chips) can no longer land partly off-screen in a narrow window —
   one shared placement rule now clamps and flips all of them.

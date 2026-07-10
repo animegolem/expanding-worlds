@@ -8,7 +8,7 @@
  * Node charms (AI-IMP-063) consume the same store from the canvas
  * adornment pass via `isEngaged()`.
  */
-import { CHROME_FADE_DELAY_MS } from './feel'
+import { CHROME_FADE_DELAY_MS, TITLE_STRIP_REVEAL_PX } from './feel'
 
 type Listener = (engaged: boolean) => void
 
@@ -19,6 +19,7 @@ let idleTimer: ReturnType<typeof setTimeout> | null = null
 // null means "never" — chrome only fades on leave/blur, not on idle.
 let fadeDelayMs: number | null = CHROME_FADE_DELAY_MS
 const listeners = new Set<Listener>()
+const bandListeners = new Set<() => void>()
 let attached = false
 
 function set(next: boolean): void {
@@ -41,6 +42,30 @@ function leave(): void {
   set(false)
 }
 
+/**
+ * AI-IMP-255: the frameless shell's top band is OS-owned on mac
+ * (titleBarStyle:'hidden') and Windows (titleBarOverlay) — Chromium
+ * delivers NO pointer events over a drag region, and entering it
+ * synthesizes a document pointerleave. Treating that as "left the
+ * window" blanked all chrome the moment the cursor reached the title
+ * band (v0.19.0 field report), and the strip's pointermove reveal
+ * could never fire there. So a pointerleave whose exit Y is inside
+ * the would-be-strip band is read as "entered the title band": stay
+ * engaged and tell the strip to reveal. A genuine exit through the
+ * top keeps chrome up while the cursor is gone — accepted tradeoff;
+ * window blur (below) still fades unconditionally. E2E cannot reach
+ * this path (synthetic events skip the OS drag layer) — owner-
+ * validated per HUMAN-TESTING.md.
+ */
+function pointerLeave(event: PointerEvent): void {
+  if (event.clientY <= TITLE_STRIP_REVEAL_PX && event.clientY >= 0) {
+    poke()
+    for (const listener of bandListeners) listener()
+    return
+  }
+  leave()
+}
+
 function attach(): void {
   if (attached) return
   // Unit tests exercise consumers (status.ts) under node — engagement
@@ -51,7 +76,7 @@ function attach(): void {
   window.addEventListener('pointerdown', poke, { passive: true, capture: true })
   window.addEventListener('wheel', poke, { passive: true, capture: true })
   window.addEventListener('keydown', poke, { capture: true })
-  document.documentElement.addEventListener('pointerleave', leave)
+  document.documentElement.addEventListener('pointerleave', pointerLeave as EventListener)
   window.addEventListener('blur', leave)
   // Deterministic cadence control for hidden-window e2e, where no OS
   // cursor ever enters or leaves the window.
@@ -103,6 +128,17 @@ export function setFadeDelay(delay: number | 'never'): void {
   if (engaged && !held && fadeDelayMs !== null) {
     idleTimer = setTimeout(() => set(false), fadeDelayMs)
   }
+}
+
+/** AI-IMP-255: fires when the cursor crosses into the OS-owned title
+ * band (sensed via the synthetic pointerleave above — the only signal
+ * the renderer gets there). The strip reveals on this; pointermove Y
+ * alone can miss the band entirely when the cursor crosses 46px in
+ * one frame. */
+export function onTitleBandEnter(listener: () => void): () => void {
+  attach()
+  bandListeners.add(listener)
+  return () => bandListeners.delete(listener)
 }
 
 /** Subscribe to engagement changes; fires immediately with the

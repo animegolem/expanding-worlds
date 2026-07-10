@@ -91,11 +91,11 @@ is event-dead but cursor-occupied:
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] engagement: pointerleave with clientY in the band pokes
+- [x] engagement: pointerleave with clientY in the band pokes
       instead of fading; out-of-band leave and blur fade (units).
-- [ ] TitleStrip reveals on band-enter signal and on Y≤46
+- [x] TitleStrip reveals on band-enter signal and on Y≤46
       pointermove; lowers on below-band move and blur.
-- [ ] Shell e2e still green (reveal contract via synthetic events
+- [x] Shell e2e still green (reveal contract via synthetic events
       unchanged); full desktop vitest green.
 - [ ] Packaged-build hand check on macOS: hover top band → strip
       appears, chrome stays; HUMAN-TESTING.md entry for the owner
