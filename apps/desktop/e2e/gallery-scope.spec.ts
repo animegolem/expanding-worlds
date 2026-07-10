@@ -152,6 +152,52 @@ test('this world · everything: entries and tag vocabulary swap; actions grey; p
   await app.close()
 })
 
+test('CA-014: a quick everything → this-world flip during the open leaves the scope state honest', async () => {
+  // Library fixture through an ordinary session, then the world under
+  // test with its own single entry.
+  const libraryDir = mkdtempSync(join(tmpdir(), 'ew-e2e-scope-flip-lib-'))
+  {
+    const { app, win } = await launchAppInDir(libraryDir)
+    await seedPlacedNote(win, 'Library Seed', 'lore', { x: 60, y: 60 })
+    await app.close()
+  }
+
+  const { app, win } = await launchApp('ew-e2e-scope-flip-')
+  await seedPlacedNote(win, 'World Note', 'local lore', { x: 120, y: 120 })
+  await openGallery(win)
+
+  const everything = win.getByTestId('gallery-scope-everything')
+  const thisWorld = win.getByTestId('gallery-scope-this-world')
+  const cells = win.locator('[data-testid="gallery-cell"]')
+
+  // Designate through the UI so the store=true open path (the CA-014
+  // `await settings.setApp` mid-open) runs, then IMMEDIATELY flip back
+  // to this-world while that write is in flight: the stale continuation
+  // must not re-mark the now-closed source open.
+  await everything.click()
+  await expect(win.getByTestId('gallery-designate')).toBeVisible()
+  await win.getByTestId('gallery-designate-input').fill(libraryDir)
+  await win.getByTestId('gallery-designate-confirm').click()
+  await thisWorld.click() // race the flip against the open handshake
+
+  // This-world is honest: its single entry, no stranded "Opening…" line.
+  await expect(thisWorld).toHaveAttribute('aria-pressed', 'true')
+  await expect(win.getByTestId('gallery-scope-waiting')).toHaveCount(0)
+  await expect(cells).toHaveCount(1)
+  await expect(cells.first()).toContainText('World Note')
+
+  // Flip to everything again: the source must GENUINELY open. A falsely
+  // 'open' flag left by the stale continuation would leave the grid
+  // querying a closed source and stranded empty; instead it resolves to
+  // the library's one entry.
+  await everything.click()
+  await expect(cells).toHaveCount(1)
+  await expect(cells.first()).toContainText('Library Seed')
+  await expect(win.getByTestId('gallery-scope-waiting')).toHaveCount(0)
+
+  await app.close()
+})
+
 test('no library designated: the everything side prompts; the open validates before storing', async () => {
   const libraryDir = mkdtempSync(join(tmpdir(), 'ew-e2e-scope-designate-lib-'))
   {

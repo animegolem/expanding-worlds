@@ -26,11 +26,25 @@ export interface SourceSlotHolder {
 export type AcquireResult = { ok: true } | { ok: false; message: string }
 
 let holder: SourceSlotHolder | null = null
+/** An acquire whose open is still in flight (CA-013): modelled as
+ * explicit state so a release — or a newer acquire — can invalidate the
+ * intent BEFORE it ever installs a holder. Without this, releasing
+ * during the very first acquire (holder still null) was a no-op, and
+ * the late open then installed the closed surface and leaked its
+ * handle. */
+let pending: { epoch: number; ownerId: string } | null = null
 /** Bumped by every acquire/release: an open that lands after a newer
  * intent must not install itself as the holder (the callers' own
  * fences — the gallery's scopeEpoch — decide what to SHOW; this one
  * only keeps the registry's ownership record truthful). */
 let slotEpoch = 0
+/** The epoch of the most recent ACQUIRE. A superseded open must close
+ * the transport it opened ONLY when no newer acquire exists: a newer
+ * acquire's own open has already replaced this transport (the utility's
+ * replace-on-open), so closing here would stomp the new owner. When
+ * only releases advanced the epoch, the handle this open left behind is
+ * unwanted and must be closed. */
+let lastAcquireEpoch = 0
 const evictionCallbacks = new Map<string, () => void>()
 
 /** Open `dir` into the source slot for `ownerId`. A different owner
@@ -43,6 +57,7 @@ export async function acquireSourceSlot(
   onEvicted?: () => void,
 ): Promise<AcquireResult> {
   const epoch = ++slotEpoch
+  lastAcquireEpoch = epoch
   if (holder && holder.ownerId !== ownerId) {
     const evicted = holder.ownerId
     holder = null
@@ -50,12 +65,25 @@ export async function acquireSourceSlot(
     evictionCallbacks.delete(evicted)
     notify?.()
   }
+  // Record the in-flight intent so a release landing during THIS open
+  // (before any holder exists) can invalidate it.
+  pending = { epoch, ownerId }
   const opened = await window.ew.secondary.open('source', dir)
   if (epoch !== slotEpoch) {
-    // A newer acquire or release superseded this open mid-flight; the
-    // newest intent owns the slot record — report non-acquisition.
+    // A newer acquire or a release superseded this open mid-flight; the
+    // newest intent owns the slot record — report non-acquisition. If
+    // the open nonetheless SUCCEEDED it left a live handle: close it,
+    // but only when no newer acquire followed (else replace-on-open has
+    // already handed the transport to that newer owner and closing here
+    // would stomp them).
+    if (opened.ok && lastAcquireEpoch === epoch) {
+      void window.ew.secondary.close('source')
+    }
     return { ok: false, message: 'superseded by a newer source-slot request' }
   }
+  // This open is the current intent (epoch === slotEpoch means neither
+  // a release nor a newer acquire raced ahead).
+  pending = null
   if (!opened.ok) {
     holder = null
     return { ok: false, message: opened.message }
@@ -66,15 +94,24 @@ export async function acquireSourceSlot(
   return { ok: true }
 }
 
-/** Close the slot — but only if `ownerId` still holds it: releasing
- * after an eviction (or after another surface took over) is a no-op,
- * never a stomp on the new holder's transport. */
+/** Close the slot for `ownerId`. Releasing after an eviction (or after
+ * another surface took over) is a no-op, never a stomp on the new
+ * holder's transport. A release that lands during this owner's own
+ * PENDING first acquire still kills the intent: it bumps the epoch so
+ * the resolving open supersedes itself (and closes the handle it
+ * opened), which the old holder-only path missed (CA-013). */
 export function releaseSourceSlot(ownerId: string): void {
   evictionCallbacks.delete(ownerId)
-  if (!holder || holder.ownerId !== ownerId) return
-  holder = null
+  const heldByOwner = holder?.ownerId === ownerId
+  const pendingByOwner = pending?.ownerId === ownerId
+  if (!heldByOwner && !pendingByOwner) return
+  if (pendingByOwner) pending = null
+  if (heldByOwner) holder = null
   slotEpoch += 1
-  void window.ew.secondary.close('source')
+  // Close the live transport only when this owner actually holds it. A
+  // pending-only release leaves the close to the superseded open's own
+  // continuation, which alone knows whether a newer acquire replaced it.
+  if (heldByOwner) void window.ew.secondary.close('source')
 }
 
 export function sourceSlotHolder(): SourceSlotHolder | null {

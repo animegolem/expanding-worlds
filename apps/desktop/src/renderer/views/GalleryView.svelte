@@ -63,7 +63,11 @@
     requestLoadIntoFrame,
   } from '../canvas/frame-load'
   import { navigateTo } from '../chrome/navigation'
-  import { acquireSourceSlot, releaseSourceSlot } from '../chrome/source-slot'
+  import {
+    acquireSourceSlot,
+    releaseSourceSlot,
+    sourceSlotHolder,
+  } from '../chrome/source-slot'
   import { toast } from '../chrome/status'
   import { consumeGalleryEverythingRequest } from '../chrome/first-run'
   import { closeTakeover } from '../chrome/takeover'
@@ -385,10 +389,21 @@
       libraryError = opened.message
       return
     }
-    if (store) await window.ew.settings.setApp('libraryProjectDir', dir)
+    if (store) {
+      await window.ew.settings.setApp('libraryProjectDir', dir)
+      // Recheck after the write (the 184 generation-guard idiom): a
+      // scope flip during it ran leaveEverything, which closed the slot
+      // and cleared sourceOpen. The stale continuation must not re-mark
+      // a closed source open — and must not release, since a re-entered
+      // everything may already own a fresh slot under this same owner.
+      if (epoch !== scopeEpoch) return
+    }
     needsLibrary = false
     libraryError = null
-    sourceOpen = true
+    // Derive from the slot's ACTUAL state rather than blindly asserting
+    // true (CA-014): only a source this view still holds makes the
+    // everything scope live.
+    sourceOpen = sourceSlotHolder()?.ownerId === SLOT_OWNER
   }
 
   function designateLibrary(): void {
