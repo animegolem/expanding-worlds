@@ -1,10 +1,17 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { fileURLToPath } from 'node:url'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry, registerCoreQueries } from './queries'
-import { registerSettingsQueries, setProjectSetting } from './settings'
+import {
+  decodeTrashRetention,
+  getProjectSetting,
+  registerSettingsQueries,
+  setProjectSetting,
+  TRASH_RETENTION_KEY,
+} from './settings'
 
 let dir: string
 let handle: ProjectHandle
@@ -19,6 +26,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   handle.close()
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
@@ -83,5 +91,75 @@ describe('project-tier settings (§11.5, AI-IMP-074)', () => {
     expect(() =>
       setProjectSetting(handle.db, handle.projectId, 'k', undefined),
     ).toThrow(/JSON-serializable/)
+  })
+
+  it('falls back visibly for malformed JSON and parseable-but-invalid values', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    handle.db.run(
+      'UPDATE settings SET value = ? WHERE project_id = ? AND key = ?',
+      '{',
+      handle.projectId,
+      TRASH_RETENTION_KEY,
+    )
+    expect(
+      getProjectSetting(
+        handle.db,
+        handle.projectId,
+        TRASH_RETENTION_KEY,
+        'never',
+        decodeTrashRetention,
+      ),
+    ).toBe('never')
+
+    handle.db.run(
+      'UPDATE settings SET value = ? WHERE project_id = ? AND key = ?',
+      JSON.stringify('weekly'),
+      handle.projectId,
+      TRASH_RETENTION_KEY,
+    )
+    expect(
+      getProjectSetting(
+        handle.db,
+        handle.projectId,
+        TRASH_RETENTION_KEY,
+        'never',
+        decodeTrashRetention,
+      ),
+    ).toBe('never')
+    expect(warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('contains corruption per row in getSettings', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    setProjectSetting(handle.db, handle.projectId, 'healthy', { enabled: true })
+    handle.db.run(
+      'INSERT INTO settings (project_id, key, value) VALUES (?, ?, ?)',
+      handle.projectId,
+      'malformed_unknown',
+      '{',
+    )
+    handle.db.run(
+      'UPDATE settings SET value = ? WHERE project_id = ? AND key = ?',
+      JSON.stringify('weekly'),
+      handle.projectId,
+      TRASH_RETENTION_KEY,
+    )
+
+    const settings = getSettings()
+    expect(settings['healthy']).toEqual({ enabled: true })
+    expect(settings[TRASH_RETENTION_KEY]).toBe('never')
+    expect(settings).not.toHaveProperty('malformed_unknown')
+    expect(warn).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('project-setting storage adoption guard (AI-IMP-251)', () => {
+  it('keeps settings-table SQL inside settings.ts', () => {
+    for (const file of ['./project.ts', './queries-lifecycle.ts', './handlers/lifecycle.ts']) {
+      const source = readFileSync(fileURLToPath(new URL(file, import.meta.url)), 'utf8')
+      expect(source, `${file} bypasses the project-setting codec`).not.toMatch(
+        /(?:FROM|INTO|UPDATE)\s+settings\b/i,
+      )
+    }
   })
 })

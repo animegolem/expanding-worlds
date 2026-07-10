@@ -63,6 +63,54 @@ read-only, and forced write failure.
 PRE-IMPLEMENTATION REVIEW (standing process): verify both audits'
 citations against current source first; record corrections here.
 
+#### Pre-implementation review — 2026-07-10 (`5fceb908`)
+
+The persistence diagnosis is confirmed against current main:
+
+- `setProjectSetting` owns the ordinary upsert at
+  `packages/persistence/src/settings.ts:14-33`, while
+  `getProjectSetting` catches only malformed JSON at `:35-50`.
+- `getTrashRetention` still performs its own SELECT and unguarded
+  parse at `queries-lifecycle.ts:231-239`; `SetTrashRetention`
+  repeats SELECT, parse, and upsert at
+  `handlers/lifecycle.ts:755-774`; `getSettings` still lets one
+  malformed row fail the whole query at `settings.ts:53-62`.
+- The handler's allowed-value check at
+  `handlers/lifecycle.ts:755-761` is authoritative domain
+  validation and remains in the handler.
+
+The write-result diagnosis is also confirmed, with these scope
+corrections:
+
+1. Protocol, preload, main, and utility already preserve the typed
+   result end to end (`protocol/src/index.ts:90-98`,
+   `preload/index.ts:95-108`, `main/index.ts:992-999`,
+   `utility/index.ts:469-483`). Main broadcasts a setting change
+   only after `ok: true`; none of those files needs a repair.
+2. SettingsView has five optimistic project-setting writes that
+   ignore the result, not only the two backup citations:
+   metadata defaults (`SettingsView.svelte:101-110`), export-size
+   acknowledgement (`:153-164`), snapshot mode (`:209-216`),
+   snapshot remote (`:247-253`), and multi-drop behavior
+   (`:270-277`). One result-aware helper will own rollback,
+   supersession, and the error toast for all five.
+3. The remote field's blur-save and Test button are separate async
+   paths (`SettingsView.svelte:617`, `:624`). A click can test the
+   draft and report Connected before a failed save resolves. The
+   test path must await a successful save before probing.
+4. Whole-map fallback is necessarily per row because project
+   setting keys are extensible and include ID-prefixed families.
+   Known keys such as `trash_retention` use a key decoder and
+   concrete fallback; malformed unknown rows are omitted (the
+   existing consumers already treat absence as their per-key
+   default). Both cases emit a debug-visible warning without
+   exposing the stored value.
+5. Project creation seeds `trash_retention` with a fourth direct
+   settings INSERT at `packages/persistence/src/project.ts:93-98`.
+   It runs inside the seed transaction but can still call
+   `setProjectSetting`; it joins the write migration so the upsert/
+   serialization grammar truly has one owner.
+
 ### Files to Touch
 
 - `packages/persistence/src/settings.ts`: decoder param; whole-map
@@ -85,19 +133,19 @@ citations against current source first; record corrections here.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pre-implementation review: HC-003 + C10-011 citations
+- [x] Pre-implementation review: HC-003 + C10-011 citations
       verified; corrections recorded in this ticket.
-- [ ] `getProjectSetting` accepts a key decoder;
+- [x] `getProjectSetting` accepts a key decoder;
       parseable-but-invalid falls back (test proves it).
-- [ ] Trash-retention read/write paths routed through the helpers;
+- [x] Trash-retention read/write paths routed through the helpers;
       handler validation unchanged and still tested.
-- [ ] `getSettings` whole-map policy: one malformed row cannot
+- [x] `getSettings` whole-map policy: one malformed row cannot
       take down the settings view (test proves it).
-- [ ] SettingsView project-setting writes are result-aware:
+- [x] SettingsView project-setting writes are result-aware:
       injected write failure rolls back optimistic state and shows
       the error; remote test cannot report Connected on an unsaved
       draft.
-- [ ] `pnpm -r build`, package units, desktop `npx vitest run`
+- [x] `pnpm -r build`, package units, desktop `npx vitest run`
       green. (Electron e2e supplied by the lead at merge.)
 
 ### Acceptance Criteria
@@ -119,3 +167,23 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The review proved the protocol/preload/main/utility result path
+  was already complete, so none of those files changed. The repair
+  lives at the persistence codec and renderer consumer boundaries.
+- Project creation contained a fourth direct settings INSERT not
+  named by the audit. It now seeds through `setProjectSetting`
+  inside the existing transaction; the adoption scan leaves
+  settings-table SQL in `settings.ts` only.
+- The renderer writer serializes per key, shares identical
+  in-flight writes, and rolls the latest failure back to the last
+  confirmed value. Tests cover no project, read-only, forced
+  rejection, and refusing to run the remote probe after a failed
+  save.
+- `pnpm lint` initially found one `prefer-const` issue in the new
+  promise queue; it was corrected and lint reran green.
+- Validation: `pnpm -r build` green; package units green (1050
+  tests); desktop Vitest green (370 passed, 1 skipped); `pnpm
+  lint` green. Desktop Vitest retained the existing non-fatal
+  jsdom canvas diagnostics. Electron e2e was not run per the
+  assignment; the lead supplies it at merge.

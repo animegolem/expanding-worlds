@@ -22,16 +22,18 @@ import {
   type TrashCanvasPayload,
   type TrashNodePayload,
   type TrashNotePayload,
-  type TrashRetention,
 } from '@ew/commands'
 import { extractWikiLinks } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching } from '../links'
+import {
+  decodeTrashRetention,
+  getProjectSetting,
+  setProjectSetting,
+  TRASH_RETENTION_KEY,
+} from '../settings'
 import { deleteDecorationRow, insertDecoration, requireDecoration } from './decorations'
 import { releaseConnectorAnchors, releaseConnectorAnchorsCapturing } from './placements'
-
-const TRASH_RETENTION_KEY = 'trash_retention'
-const TRASH_RETENTIONS = new Set<TrashRetention>(['never', '30d', '60d', '90d'])
 
 type LifecycleTable = 'note' | 'node' | 'canvas'
 
@@ -753,25 +755,21 @@ export function registerLifecycleHandlers(registry: CommandRegistry<CommandConte
   })
 
   registry.register<SetTrashRetentionPayload>(COMMAND_SET_TRASH_RETENTION, 1, (ctx, payload) => {
-    if (!TRASH_RETENTIONS.has(payload?.retention as TrashRetention)) {
+    const retention = decodeTrashRetention(payload?.retention)
+    if (retention === undefined) {
       throw new DomainError(
         'VALIDATION_FAILED',
         'retention must be one of "never", "30d", "60d", "90d"',
       )
     }
-    const prior = ctx.db.get<{ value: string }>(
-      'SELECT value FROM settings WHERE project_id = ? AND key = ?',
+    const priorRetention = getProjectSetting(
+      ctx.db,
       ctx.projectId,
       TRASH_RETENTION_KEY,
+      'never',
+      decodeTrashRetention,
     )
-    const priorRetention = prior ? (JSON.parse(prior.value) as TrashRetention) : 'never'
-    ctx.db.run(
-      `INSERT INTO settings (project_id, key, value) VALUES (?, ?, ?)
-       ON CONFLICT (project_id, key) DO UPDATE SET value = excluded.value`,
-      ctx.projectId,
-      TRASH_RETENTION_KEY,
-      JSON.stringify(payload.retention),
-    )
+    setProjectSetting(ctx.db, ctx.projectId, TRASH_RETENTION_KEY, retention)
     return {
       affected: [{ kind: 'project', id: ctx.projectId }],
       inverse: {

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { uuidv7 } from '@ew/domain'
 import { CommandRegistry, type CommandResult, type CommittedResult } from '@ew/commands'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
 import { registerCanvasHandlers } from './handlers/canvases'
 import { registerDecorationHandlers } from './handlers/decorations'
@@ -58,6 +58,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   handle.close()
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
@@ -234,6 +235,21 @@ describe('getTrashRetention (§9.1)', () => {
     expect(query<string>('getTrashRetention')).toBe('never')
     committed('SetTrashRetention', { retention: '90d' })
     expect(query<string>('getTrashRetention')).toBe('90d')
+  })
+
+  it('falls back to never for malformed and parseable-invalid rows', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    handle.db.run(
+      "UPDATE settings SET value = '{' WHERE project_id = ? AND key = 'trash_retention'",
+      handle.projectId,
+    )
+    expect(query<string>('getTrashRetention')).toBe('never')
+    handle.db.run(
+      "UPDATE settings SET value = ? WHERE project_id = ? AND key = 'trash_retention'",
+      JSON.stringify('weekly'),
+      handle.projectId,
+    )
+    expect(query<string>('getTrashRetention')).toBe('never')
   })
 })
 
