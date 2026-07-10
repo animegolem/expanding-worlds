@@ -10,6 +10,12 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Connectors stay honest** (AI-IMP-235, 2026-07-09, Sol
+  P2): draw a connector anchored to two images, delete/undo and
+  move the anchored images — anchors track exactly; nothing about
+  drawing should feel changed (the fix refuses a state the UI
+  could never legitimately create).
+
 - [ ] **One writer, always** (AI-IMP-226, 2026-07-09, Sol P1 —
   the wave headline): force-quit mid-session, relaunch immediately
   — reopens promptly (dead-pid reclaim). Then stall the app with a

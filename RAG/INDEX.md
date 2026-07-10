@@ -10,7 +10,7 @@
 | Planned | 5 | 2 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 202 |
+| Completed | 19 | 203 |
 | **Total** | **26** | **241** |
 
 ## In Progress
@@ -88,7 +88,6 @@
 - [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
 - [[AI-IMP-233-deliberate-verb-matrix|IMP-233]] — planned, no epic dependency found
 - [[AI-IMP-234-import-resource-limits|IMP-234]] — planned, no epic dependency found
-- [[AI-IMP-235-anchor-canvas-equality|IMP-235]] — planned, no epic dependency found
 - [[AI-IMP-236-source-slot-epochs|IMP-236]] — planned, no epic dependency found
 - [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
 - [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
@@ -140,8 +139,8 @@ Generated from tracked files; binary assets excluded.
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
+- RAG/HUMAN-TESTING.md (701 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
-- RAG/HUMAN-TESTING.md (695 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
@@ -193,6 +192,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)
 - packages/persistence/src/queries-search.test.ts (411 LOC)
+- packages/persistence/src/handlers/decorations.test.ts (402 LOC)
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
 - packages/persistence/src/export/project-export.test.ts (394 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
@@ -220,6 +220,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
 - apps/desktop/src/renderer/menus/inventory.test.ts (337 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
+- packages/persistence/src/handlers/decorations.ts (333 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (330 LOC)
@@ -227,7 +228,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/lock.ts (324 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
-- packages/persistence/src/handlers/decorations.ts (317 LOC)
 - packages/persistence/src/service.ts (315 LOC)
 - apps/desktop/src/preload/index.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
