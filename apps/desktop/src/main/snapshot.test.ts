@@ -6,6 +6,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -74,22 +75,42 @@ describe('snapshot engine (AI-IMP-121)', () => {
     rmSync(base, { recursive: true, force: true })
   })
 
-  it('recovers a wedged repo by sweeping a stale .git/index.lock', async () => {
+  it('recovers a wedged repo by sweeping an AGED .git/index.lock (AI-IMP-218)', async () => {
     writeDb(projectDir, 'ONE')
     await engine.runSnapshot('end-session')
     expect(commitCount(projectDir)).toBe(1)
 
     // Simulate a quit that abandoned an in-flight commit: an orphaned
-    // index.lock that would make every later `git add` fail.
+    // index.lock, backdated well past STALE_LOCK_MS (~10 min) so the
+    // age-gate treats it as the orphan it is.
     const lock = join(projectDir, '.git', 'index.lock')
     writeFileSync(lock, '')
-    expect(existsSync(lock)).toBe(true)
+    const aged = new Date(Date.now() - 20 * 60 * 1000)
+    utimesSync(lock, aged, aged)
 
-    // The next snapshot must sweep the stale lock and still commit.
+    // The next snapshot must sweep the aged lock and still commit.
     writeDb(projectDir, 'TWO')
     await engine.runSnapshot('end-session')
     expect(existsSync(lock)).toBe(false)
     expect(commitCount(projectDir)).toBe(2)
+  })
+
+  it('defers the snapshot when a FRESH index.lock is present (AI-IMP-218)', async () => {
+    writeDb(projectDir, 'ONE')
+    await engine.runSnapshot('end-session')
+    expect(commitCount(projectDir)).toBe(1)
+
+    // A fresh lock stands in for a LIVE external git operation. The
+    // age-gate must NOT touch it, and must skip the commit this episode.
+    const lock = join(projectDir, '.git', 'index.lock')
+    writeFileSync(lock, '')
+
+    writeDb(projectDir, 'TWO')
+    await engine.runSnapshot('end-session')
+    // The lock is untouched and no new commit was recorded — the change
+    // rides the next (retry) episode once the lock ages out.
+    expect(existsSync(lock)).toBe(true)
+    expect(commitCount(projectDir)).toBe(1)
   })
 
   it('commits only the allowlist — strays and export staging stay out (AI-IMP-223)', async () => {

@@ -61,6 +61,13 @@ const IDLE_MS = (() => {
   return Number.isFinite(n) && n >= 0 ? n : 10 * 60 * 1000
 })()
 
+/** A `.git/index.lock` older than this is an orphan from an abandoned
+ * commit (safe to sweep); a younger one may be a LIVE git operation and
+ * defers the snapshot instead (AI-IMP-218). ~10 min is generous over any
+ * real commit — even a first-ever multi-GB one finishes well inside it —
+ * so an orphan always ages past the gate. */
+const STALE_LOCK_MS = 10 * 60 * 1000
+
 /** The lock/heartbeat, WAL/journal sidecars, and regenerable
  * derivative/cache trees never belong in history — a snapshot commits
  * project.sqlite (checkpointed), assets/, and notes/ only.
@@ -277,25 +284,58 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   /** A quit that abandons an in-flight `git add`/`commit` (the ritual
    * is time-bounded; a first-ever multi-GB commit can exceed it) orphans
    * `.git/index.lock`, after which every later snapshot fails with only a
-   * logged error — the worst failure mode for a backup. The engine
-   * serializes its OWN git ops and the project dir is app-managed, so a
-   * lock present at snapshot start is stale by construction: sweep it
-   * (carried from the AI-IMP-120 review). */
-  function sweepStaleIndexLock(dir: string): void {
+   * logged error — the worst failure mode for a backup.
+   *
+   * AI-IMP-120's original rationale — "the engine serializes its OWN git
+   * ops and the project dir is app-managed, so a lock at snapshot start
+   * is stale by construction" — holds ONLY while nothing external touches
+   * the repo. But snapshot-push invites exactly that: a user inspecting
+   * the backup repo, a GUI git tool pointed at it. Sweeping a LIVE lock
+   * would permit a concurrent index write — corruption in the one place
+   * it must never reach (AI-IMP-218). So the sweep is AGE-GATED: a lock
+   * older than {@link STALE_LOCK_MS} is an orphan (an abandoned commit
+   * ages well past it) and is swept; a YOUNGER lock DEFERS this snapshot
+   * (returns false — the next episode retries once it ages out). The lead
+   * ruled the age-gate plus its documented RESIDUAL RISK acceptable: a
+   * genuinely wedged lock younger than the threshold stalls backups for
+   * up to STALE_LOCK_MS before it ages past the gate and is swept — a
+   * bounded delay, traded against ever corrupting the backup index.
+   * Returns true when the index is free to use, false to defer. */
+  function sweepStaleIndexLock(dir: string): boolean {
     const lock = join(dir, '.git', 'index.lock')
-    if (!existsSync(lock)) return
+    let mtimeMs: number
+    try {
+      mtimeMs = statSync(lock).mtimeMs
+    } catch {
+      return true // no lock (ENOENT) — the index is free
+    }
+    if (Date.now() - mtimeMs < STALE_LOCK_MS) {
+      console.warn(
+        '[snapshot] .git/index.lock present and fresh; deferring this snapshot ' +
+          '(an external git operation may hold it — the next episode retries)',
+      )
+      return false
+    }
     try {
       rmSync(lock)
       console.warn('[snapshot] removed a stale .git/index.lock before committing')
+      return true
     } catch (err) {
+      // Could not clear it — defer rather than commit against a lock we
+      // do not control.
       console.error('[snapshot] failed to remove stale index.lock:', err)
+      return false
     }
   }
 
-  async function ensureGitReady(dir: string): Promise<void> {
+  /** Prepare the repo and report whether a commit may proceed. A fresh
+   * index.lock returns false — the caller logs a skipped episode and the
+   * next snapshot retries (AI-IMP-218). */
+  async function ensureGitReady(dir: string): Promise<boolean> {
     seedGitignore(dir)
-    if (existsSync(join(dir, '.git'))) sweepStaleIndexLock(dir)
-    if (!existsSync(join(dir, '.git'))) {
+    if (existsSync(join(dir, '.git'))) {
+      if (!sweepStaleIndexLock(dir)) return false
+    } else {
       await git(dir, ['init', '-q'])
       // A stable default branch name regardless of the machine's
       // init.defaultBranch.
@@ -314,6 +354,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     // Never let a machine-global commit.gpgsign wedge an unattended
     // snapshot on a passphrase prompt.
     await git(dir, ['config', 'commit.gpgsign', 'false']).catch(() => undefined)
+    return true
   }
 
   function commitMessage(trigger: SnapshotTrigger, notes: number, assets: number): string {
@@ -492,7 +533,10 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     if (!enabled || !hasGit) return
 
     const dir = deps.projectDir()
-    await ensureGitReady(dir)
+    // A fresh .git/index.lock (a possible LIVE external git op) defers
+    // this snapshot — a logged skip; the next episode retries once the
+    // lock ages out (AI-IMP-218).
+    if (!(await ensureGitReady(dir))) return
     await commitIfChanged(dir, trigger, notes, assets)
 
     // §11.4 remote push (AI-IMP-122): commit-push mode with a configured
