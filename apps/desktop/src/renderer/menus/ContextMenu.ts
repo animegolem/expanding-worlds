@@ -36,6 +36,7 @@ import { navigateTo } from '../chrome/navigation'
 import { applyMenuCascade } from '../chrome/menu-cascade'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { requestCharmPopover } from '../canvas/charms-ui'
+import { requestCaptionEditor } from '../canvas/caption-request'
 import {
   requestAttachNote,
   requestOpenNote,
@@ -474,6 +475,8 @@ export function attachContextMenu(
       flip: noop,
       openAppearance: noop,
       openTags: noop,
+      editCaption: noop,
+      removeCaption: noop,
       openNote: noop,
       attachNewNote: noop,
       attachExistingNote: noop,
@@ -560,6 +563,8 @@ export function attachContextMenu(
       flip: (axis) => void execute('FlipPlacement', { placementId: p.id, axis }),
       openAppearance: () => requestCharmPopover(p.id, 'appearance'),
       openTags: () => requestCharmPopover(p.id, 'tags'),
+      editCaption: () => requestCaptionEditor(p.id),
+      removeCaption: () => void execute('SetPlacementCaption', { placementId: p.id, caption: null }),
       toggleHideLabel: () =>
         void execute('SetPlacementLabelVisibility', {
           placementId: p.id,
@@ -867,6 +872,7 @@ export function attachContextMenu(
       hasNote: hit.noteId !== null,
       locked: hit.locked === 1,
       labelVisible: hit.labelVisible === 1,
+      hasCaption: hit.caption !== null,
       isImage: hit.appearanceKind === 'image',
     }
     render('item', menuFor(subject, itemActions(hit)), at)

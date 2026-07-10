@@ -31,6 +31,7 @@ function placement(box: { x: number; y: number; width: number; height: number })
     flipY: 0,
     renderOrder: 0,
     labelVisible: 0,
+    caption: null,
     locked: 0,
     appearanceKind: 'dot',
     appearanceColor: null,
