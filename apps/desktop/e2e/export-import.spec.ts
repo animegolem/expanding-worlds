@@ -155,7 +155,20 @@ test('a failed export preserves the prior backup and leaves no partial', async (
 
 test('the roundtrip: import materializes a sibling project that opens with the content', async () => {
   const { app, win } = await launchApp('ew-e2e-roundtrip-')
-  await seedPlacedNote(win, 'Survivor', 'the body that must come back', { x: 220, y: 180 })
+  const { nodeId } = await seedPlacedNote(win, 'Survivor', 'the body that must come back', {
+    x: 220,
+    y: 180,
+  })
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const sourceScene = await runQuery<{
+    items: Array<{ id: string; nodeId?: string; caption?: string | null }>
+  }>(win, 'getCanvasScene', { canvasId })
+  const placementId = sourceScene.items.find((item) => item.nodeId === nodeId)?.id
+  if (!placementId) throw new Error('seed placement missing from scene')
+  await exec(win, 'SetPlacementCaption', {
+    placementId,
+    caption: 'Caption that travels',
+  })
 
   const archive = join(mkdtempSync(join(tmpdir(), 'ew-e2e-roundtrip-out-')), 'travel.ewproj')
   await stubSaveDialog(app, archive)
@@ -185,6 +198,13 @@ test('the roundtrip: import materializes a sibling project that opens with the c
     { query: 'Survivor' },
   )
   expect(JSON.stringify(search)).toContain('Survivor')
+  const importedCanvasId = await second.win.evaluate(() => window.__ewDebug!.canvasId())
+  const importedScene = await runQuery<{
+    items: Array<{ caption?: string | null }>
+  }>(second.win, 'getCanvasScene', { canvasId: importedCanvasId })
+  expect(importedScene.items.some((item) => item.caption === 'Caption that travels')).toBe(
+    true,
+  )
   await second.app.close()
 })
 
