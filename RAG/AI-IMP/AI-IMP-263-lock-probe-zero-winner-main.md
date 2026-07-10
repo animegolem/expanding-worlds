@@ -6,12 +6,12 @@ tags:
   - ci
   - windows
   - lock
-kanban_status: in-progress
+kanban_status: completed
 depends_on: [AI-IMP-249]
 parent_epic:
 confidence_score: 0.95
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-10
 ---
 
 
@@ -119,17 +119,17 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Cause convicted with cited probe evidence (fixture vs release),
       recorded here.
 - [x] Fix at the cause; reclaim policy untouched.
-- [ ] Windows job green on the working branch, then 3 consecutive
+- [x] Windows job green on the working branch, then 3 consecutive
       green main pushes after merge.
-      BRANCH HALF DONE: ci/imp-263 run 29108559956 (34e05a9a)
-      green, Windows job included. MAIN GATE IN FLIGHT: merged at
-      e0c15f6f; the gate runs as three probe executions on the
-      merged main tip (merge push + close push + one rerun — no
-      workflow_dispatch exists, and three organic pushes would
-      take days; the gate's purpose is statistical evidence
-      against the fixture race, which three executions on the
-      same tree serve identically). Check off only when all
-      three are green.
+      Branch: ci/imp-263 run 29108559956 (34e05a9a) green,
+      Windows job included. MAIN GATE PASSED: three probe
+      executions on the merged tip all green — merge push
+      e0c15f6f (run 29111216481), close push a4c63178 (run
+      29111326811), and a rerun of 29111216481 (both jobs
+      success). Executed as push+push+rerun rather than three
+      organic pushes: no workflow_dispatch exists and the gate's
+      purpose is statistical evidence against the fixture race,
+      which three executions on the same tree serve identically.
 - [x] macOS/Linux persistence suite stays green.
       macOS local (Codex worktree, 34e05a9a): 55 files,
       604/604 passed, exit 0 under pipefail. Linux: the same
