@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 216 |
-| **Total** | **26** | **242** |
+| **Total** | **26** | **243** |
 
 ## In Progress
 
@@ -84,6 +84,7 @@
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
+- [[AI-IMP-249-windows-hardening-round-two|IMP-249]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -179,7 +180,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/export/project-import.test.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
-- packages/persistence/src/export/project-export.ts (441 LOC)
+- packages/persistence/src/export/project-export.ts (445 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - apps/desktop/src/renderer/canvas/crop-editor.ts (431 LOC)
