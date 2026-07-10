@@ -43,6 +43,21 @@ all moved into the RFC.
   ENDORSED by the tester; the launcher question narrows to Home's
   empty-state affordances and the naming/display rules. The
   blocking bug he hit instead is label legibility (AI-IMP-262).
+  DIRECTION SET (owner, same day, later in the session): the
+  launcher UI is THE PROJECT PICKER, not Home and not in-project
+  at all — it lists projects as covers with recents, and its
+  creation gesture is dropping an image: that MAKES A NEW PROJECT
+  seeded by the image (PureRef's "becomes real when you interact,
+  name when you save" mapped to project birth). Home stays an
+  ordinary spatial board inside each world; NO drop-on-Home board
+  rule (explicitly rejected). Grid worry resolved as select →
+  group → arrange with the existing frame grammar (alph: clusters
+  by personal/school/work/diary). Domain model untouched — this is
+  app-tier chrome. Remaining for the build conversation: cover
+  source (auto Home thumbnail vs chosen image), where the dropped
+  seed image lands (placed on Home vs inbox), naming moment (at
+  drop vs deferred), plus the still-open naming/display rules and
+  Home empty state.
 
 - **Reading a note on the board — the open-verb as a camera verb**
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
