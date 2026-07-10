@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
@@ -230,17 +230,55 @@ test('charm corner flips existing hint charms live (§11.5)', async () => {
   await app.close()
 })
 
-test('corrupt app-settings file falls back to defaults', async () => {
+test('corrupt app-settings file falls back to defaults, announces the recovery loudly, and preserves the bad file (CA-015/AI-IMP-237)', async () => {
   const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-appcfg-bad-'))
   const { writeFileSync, mkdirSync } = await import('node:fs')
   mkdirSync(configDir, { recursive: true })
   writeFileSync(join(configDir, 'app-settings.json'), '{not json')
 
-  const { app, win } = await launchApp('ew-e2e-settings-bad-', {
+  const { app, win, projectDir } = await launchApp('ew-e2e-settings-bad-', {
     EW_APP_CONFIG_DIR: configDir,
   })
   await expect.poll(() => currentTheme(win)).toBe('dark')
+
+  // The reset is LOUD — a §8.6 toast, not a silent fallback. Checked
+  // before anything else touches settings, since the toast is
+  // transient (auto-dismisses after TOAST_DURATION_MS).
+  await expect(win.getByTestId('app-settings-recovered')).toContainText('reset to defaults')
+
+  // The unreadable original is preserved beside the good path for
+  // inspection rather than simply discarded.
+  const before = readdirSync(configDir)
+  expect(before).not.toContain('app-settings.json')
+  expect(before.some((name) => name.startsWith('app-settings.json.corrupt-'))).toBe(true)
+  expect(before.some((name) => name.includes('.tmp-'))).toBe(false)
+
   await openSettings(win)
   await expect(win.getByTestId('settings-theme-dark')).toHaveAttribute('aria-pressed', 'true')
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('settings-view')).toHaveCount(0)
+
+  // A write after the recovery goes through the atomic path and
+  // survives a relaunch — the crash-safety half of CA-015, not just
+  // the load-time half.
+  await openSettings(win)
+  await win.getByTestId('settings-charm-corner-upper-right').click()
+  await win.keyboard.press('Escape')
   await app.close()
+
+  const persisted = JSON.parse(
+    readFileSync(join(configDir, 'app-settings.json'), 'utf8'),
+  ) as Record<string, unknown>
+  expect(persisted['charmCorner']).toBe('upper-right')
+  // No leftover temp file from the write that just happened.
+  expect(readdirSync(configDir).some((name) => name.includes('.tmp-'))).toBe(false)
+
+  const relaunch = await launchAppInDir(projectDir, { EW_APP_CONFIG_DIR: configDir })
+  await openSettings(relaunch.win)
+  await expect(
+    relaunch.win.getByTestId('settings-charm-corner-upper-right'),
+  ).toHaveAttribute('aria-pressed', 'true')
+  // The recovery toast does not repeat on a clean second boot.
+  await expect(relaunch.win.getByTestId('app-settings-recovered')).toHaveCount(0)
+  await relaunch.app.close()
 })

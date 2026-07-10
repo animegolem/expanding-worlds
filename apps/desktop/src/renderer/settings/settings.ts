@@ -12,6 +12,7 @@
  */
 import { setFadeDelay } from '../chrome/engagement'
 import { CHROME_FADE_DELAY_MS } from '../chrome/feel'
+import { toast } from '../chrome/status'
 import { applyTheme, type ThemeName } from '../theme'
 
 export type FadeDelay = number | 'never'
@@ -110,7 +111,18 @@ export async function initSettings(): Promise<void> {
   if (initialized) return
   initialized = true
   try {
-    current = sanitize(await window.ew.settings.appAll())
+    const raw = await window.ew.settings.appAll()
+    current = sanitize(raw)
+    // CA-015 (AI-IMP-237): main flags a corrupt-file recovery once,
+    // on the read that discovers it. A silent reset to defaults would
+    // leave theme/library/first-run changes unexplained, so this is a
+    // loud §8.6 toast rather than a quiet fallback.
+    if (raw['recovered'] === true) {
+      toast("Settings couldn't be read and were reset to defaults", {
+        kind: 'error',
+        surface: 'app-settings-recovered',
+      })
+    }
   } catch {
     current = { ...APP_SETTING_DEFAULTS }
   }
@@ -138,7 +150,22 @@ export function setAppSetting<K extends keyof AppSettings>(key: K, value: AppSet
   current = { ...current, [key]: value }
   applySideEffects(previous)
   notify()
-  void window.ew.settings.setApp(key, value)
+  // Optimistic apply stays instant; a failed persist reverts it
+  // instead of vanishing (CA-015 — the old code discarded this
+  // promise entirely, so a rejection neither rolled back nor
+  // notified).
+  void window.ew.settings.setApp(key, value).then((result) => {
+    if (result.ok) return
+    if (current[key] !== value) return // superseded by a later set
+    const stale = current
+    current = { ...current, [key]: previous[key] }
+    applySideEffects(stale)
+    notify()
+    toast(`Couldn't save that setting${result.message ? ` — ${result.message}` : ''}`, {
+      kind: 'error',
+      surface: 'app-settings-save-failed',
+    })
+  })
 }
 
 /** Fires immediately with the current settings; returns unsubscribe. */
@@ -146,4 +173,12 @@ export function onAppSettingsChanged(listener: Listener): () => void {
   listeners.add(listener)
   listener(current)
   return () => listeners.delete(listener)
+}
+
+/** Test-only: wipe module state so unit tests stay independent
+ * (matches chrome/status.ts's __resetStatusForTests pattern). */
+export function __resetSettingsForTests(): void {
+  current = { ...APP_SETTING_DEFAULTS }
+  listeners.clear()
+  initialized = false
 }

@@ -35,6 +35,15 @@ export type FetchUrlForImportResult =
   | { ok: true; bytes: Uint8Array; filename: string }
   | { ok: false; message: string }
 
+/** CA-015 (AI-IMP-237): app-settings:set used to resolve `true`
+ * unconditionally — a failed persist vanished instead of surfacing.
+ * The handler now returns this typed result so the renderer can
+ * revert its optimistic value and toast on failure. */
+export interface SetAppSettingResult {
+  ok: boolean
+  message?: string
+}
+
 /**
  * The only capability surface the sandboxed renderer receives
  * (RFC-0001 §13.2): the Project API of §11.3. Nothing else crosses
@@ -87,8 +96,8 @@ const api = {
   settings: {
     appAll: (): Promise<Record<string, unknown>> =>
       ipcRenderer.invoke('app-settings:get') as Promise<Record<string, unknown>>,
-    setApp: (key: string, value: unknown): Promise<boolean> =>
-      ipcRenderer.invoke('app-settings:set', key, value) as Promise<boolean>,
+    setApp: (key: string, value: unknown): Promise<SetAppSettingResult> =>
+      ipcRenderer.invoke('app-settings:set', key, value) as Promise<SetAppSettingResult>,
     onAppChanged: (callback: (change: { key: string; value: unknown }) => void): (() => void) => {
       const listener = (_event: IpcRendererEvent, change: { key: string; value: unknown }): void =>
         callback(change)
