@@ -15,21 +15,32 @@ export class Db {
   }
 
   static open(path: string, options: { readOnly?: boolean } = {}): Db {
-    if (options.readOnly) {
-      // §11.1/§14.4 source opening: the CONNECTION is read-only and
-      // query_only doubles the guarantee — no lock is taken and no
-      // pragma here writes (journal_mode is whatever the writable
-      // life of the database left it).
-      const raw = new DatabaseSync(path, { readOnly: true })
-      raw.exec('PRAGMA query_only = ON')
-      raw.exec('PRAGMA busy_timeout = 5000')
+    const raw = new DatabaseSync(path, options.readOnly ? { readOnly: true } : {})
+    try {
+      if (options.readOnly) {
+        // §11.1/§14.4 source opening: the CONNECTION is read-only and
+        // query_only doubles the guarantee — no lock is taken and no
+        // pragma here writes (journal_mode is whatever the writable
+        // life of the database left it).
+        raw.exec('PRAGMA query_only = ON')
+        raw.exec('PRAGMA busy_timeout = 5000')
+      } else {
+        raw.exec('PRAGMA journal_mode = WAL')
+        raw.exec('PRAGMA foreign_keys = ON')
+        raw.exec('PRAGMA busy_timeout = 5000')
+      }
       return new Db(raw)
+    } catch (err) {
+      // Opening invalid/corrupt input can fail in an initial pragma after
+      // DatabaseSync has already acquired the native handle. Close it before
+      // rethrowing: on Windows an unclosed handle prevents fixture cleanup.
+      try {
+        raw.close()
+      } catch {
+        // Preserve the pragma/open failure — it is the useful diagnosis.
+      }
+      throw err
     }
-    const raw = new DatabaseSync(path)
-    raw.exec('PRAGMA journal_mode = WAL')
-    raw.exec('PRAGMA foreign_keys = ON')
-    raw.exec('PRAGMA busy_timeout = 5000')
-    return new Db(raw)
   }
 
   exec(sql: string): void {
