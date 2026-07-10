@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { CommandResult, InverseCommand } from '@ew/commands'
-import { UndoStack, UNDO_STALE_TOAST, type StackCommand, type UndoStackDeps } from './undo-stack'
+import {
+  PARTIAL_UNDO_TOAST,
+  UndoStack,
+  UNDO_STALE_TOAST,
+  type StackCommand,
+  type UndoStackDeps,
+} from './undo-stack'
 
 /**
  * A scriptable executor. Each `execute(command)` returns a committed
@@ -43,6 +49,7 @@ function harness(
     execute,
     onChanged: deps.onChanged as ReturnType<typeof vi.fn>,
     fail: (type: string) => failing.add(type),
+    unfail: (type: string) => failing.delete(type),
     setCanvas: (id: string) => (canvasId = id),
   }
 }
@@ -244,6 +251,41 @@ describe('UndoStack (RFC §10.2)', () => {
     expect(h.log.slice(3)).toEqual(['CreateNode', 'SetAppearance', 'CreatePlacement'])
     expect(h.stack.undoDepth()).toBe(1)
     expect(h.stack.redoDepth()).toBe(0)
+  })
+
+  it('offers a repair after a grouped undo fails behind a committed prefix', async () => {
+    const inverseFor = (command: StackCommand): InverseCommand | null =>
+      command.commandType.startsWith('inv-')
+        ? null
+        : { commandType: `inv-${command.commandType}`, commandVersion: 1, payload: {} }
+    const h = harness(inverseFor)
+    const cap = (type: string) => ({
+      commandType: type,
+      commandVersion: 1,
+      payload: {},
+      inverse: { commandType: `inv-${type}`, commandVersion: 1, payload: {} },
+      canvasId: 'board-1',
+    })
+    h.stack.recordGroup([cap('A'), cap('B'), cap('C')])
+    h.fail('inv-B')
+
+    await h.stack.undo()
+
+    expect(h.log).toEqual(['inv-C', 'inv-B'])
+    expect(h.toasts).toEqual([PARTIAL_UNDO_TOAST])
+    expect(h.stack.undoDepth()).toBe(0)
+    expect(h.stack.redoDepth()).toBe(1)
+
+    // Redo is now an explicit repair of the committed prefix. Once it
+    // succeeds, the ORIGINAL three-member group returns to undo intact.
+    h.unfail('inv-B')
+    await h.stack.redo()
+    expect(h.log).toEqual(['inv-C', 'inv-B', 'C'])
+    expect(h.stack.undoDepth()).toBe(1)
+    expect(h.stack.redoDepth()).toBe(0)
+
+    await h.stack.undo()
+    expect(h.log.slice(3)).toEqual(['inv-C', 'inv-B', 'inv-A'])
   })
 
   it('drops null-inverse members and records a one-member group like a single', async () => {
