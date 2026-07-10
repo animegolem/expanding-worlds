@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 215 |
-| **Total** | **26** | **241** |
+| **Total** | **26** | **242** |
 
 ## In Progress
 
@@ -84,6 +84,7 @@
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
+- [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -228,8 +229,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
 - packages/persistence/src/service.ts (315 LOC)
-- RAG/DESIGN-QUEUE.md (314 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
+- RAG/DESIGN-QUEUE.md (314 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)
 - apps/desktop/e2e/note-lifecycle.spec.ts (306 LOC)
