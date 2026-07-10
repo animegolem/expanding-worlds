@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.67         | 8 July 2026      |
+| Accepted for Phase 1 | 0.68         | 10 July 2026     |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -452,6 +452,48 @@ relatively-sized content in the model — it has no independent
 existence to own a size of its own. The exact ratio and any
 legibility clamping are presentation tuning left to prototype feel,
 not model state.
+
+**Captions — the identity-free register (rev 0.68, first tester +
+owner).** The model above offers two registers of board text — the
+note (titled, an outline and search citizen) and the §4.6 decoration
+(free paint belonging to nothing) — and the first tester's
+brainstorming fell exactly between them: "I couldn't write 'I like
+the blue' without attaching a new note to every image and giving it
+a title… hardly an idea worth registering"; "eventually the outline
+is full of 'nice contrast here'… that clutter would really bother
+me." The CAPTION is the register between: subordinate text a
+placement MAY carry.
+
+- A caption is per-placement text with NO identity: no title, no
+  node, no note, and deliberately NO outline row — like appearance,
+  it is a property of the placement, so the same node placed twice
+  may carry two different captions. It moves, scales, and deletes
+  with its placement.
+- A caption renders beneath the placement through the label
+  machinery (world-scaled, the §8.2 fade ladder, the crisp-raster
+  buckets), wrapped to the placement's width and clamped to a few
+  lines (the exact clamp is presentation tuning). While a caption
+  is present it REPLACES the title label — placement text never
+  stacks.
+- Entry is by verb: the placement context menu gains **Add
+  caption** and the §8.4 charm bar gains a caption charm; editing
+  is inline at the caption's position, the commit is ONE undoable
+  command, and Escape discards.
+- **Promote to note** completes the escalation ladder (phantom →
+  note; caption → note): a small routing dialogue asks whether the
+  caption text becomes the new note's TITLE or its BODY, with a
+  save-this-choice control that persists the answer as an §11.5
+  app-tier setting (the dialogue stops appearing once saved). On
+  commit the note is created and attached and the caption clears —
+  one undo group. When the node already HAS a note the verb is
+  disabled with its reason (no append semantics are invented).
+- Captions are placement data: they ride export/import and the
+  snapshot projection like any placement property. Joining §11.1
+  full-text search is DEFERRED WITH SCOPE: when it lands, captions
+  are indexed scoped to their placement's node and a caption hit
+  points at the IMAGE — the caption is the model's one
+  searchable-but-never-outlined text, and that asymmetry is
+  deliberate (search finds thoughts; the outline registers ideas).
 
 ## 4.6 Appearance
 
@@ -4690,3 +4732,16 @@ Accepted for the Phase 1 prototype:
   is EPIC-021's, unshipped); items 27–30 join for the gallery,
   library, frames, and rich-note/backup surfaces Phase 1 grew. No
   criterion was weakened; the audit walks what ships.
+
+- The caption ratified (rev 0.68, owner + first tester): the
+  identity-free text register between note and decoration —
+  per-placement subordinate text with no title, node, note, or
+  outline row; replaces the title label while present; entered by
+  menu verb + charm; promoted to a note through a title-or-body
+  routing dialogue whose answer can persist as an app setting;
+  FTS deferred with scope (a caption hit points at the image;
+  searchable-but-never-outlined is deliberate). The refused
+  alternatives are recorded with it: the node-gets-title
+  restructure and sentences-as-titles (§4.5). Visual maturation
+  (the mat/card reading of image+caption as one object) is held
+  for the design pass after tester contact.

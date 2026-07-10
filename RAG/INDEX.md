@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 226 |
-| **Total** | **27** | **259** |
+| **Total** | **27** | **261** |
 
 ## In Progress
 
@@ -102,6 +102,8 @@
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
 - [[AI-IMP-264-lock-protocol-composite-hardening|IMP-264]] — planned, no epic dependency found
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
+- [[AI-IMP-266-placement-captions|IMP-266]] — planned, no epic dependency found
+- [[AI-IMP-267-caption-promotion|IMP-267]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -123,7 +125,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4692 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4747 LOC)
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (2172 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC)
@@ -187,13 +189,13 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/charms.spec.ts (513 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/persistence/src/export/project-import.test.ts (502 LOC)
+- RAG/DESIGN-QUEUE.md (500 LOC)
 - packages/persistence/src/handlers/notes.ts (490 LOC)
 - packages/persistence/src/handlers/pin.ts (489 LOC)
 - apps/desktop/src/renderer/theme.css (487 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
-- RAG/DESIGN-QUEUE.md (475 LOC)
 - packages/persistence/src/handlers/nodes.ts (465 LOC)
 - spike/webkit-renderer/src/tiering.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)

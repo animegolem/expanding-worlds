@@ -182,6 +182,17 @@ all moved into the RFC.
   but-not-outlined text — deliberate, but §11/§14 must say it out
   loud (a search hit on a caption points at the IMAGE, implying
   no tree location).
+  **CAPTION RESOLVED (2026-07-10, owner ratified the seven-point
+  proposal with two amendments — RFC rev 0.68 §4.5, tickets
+  AI-IMP-266/267, migration 0009 reserved):** per-placement;
+  replaces the label; menu verb + caption charm; promotion via a
+  title-or-body ROUTING DIALOGUE with save-this-choice persisting
+  an app setting (owner amendment); FTS deferred with scope; the
+  MAT/CARD visual maturation deliberately held until alph reacts
+  to the mechanics ("ship the feature, see if he even likes it
+  before visual design work"). The mat question stays QUEUED here
+  as part of the card/lifecycle rendering conversation above; the
+  identity/register half leaves the queue.
 
 - **The canonical projection (CONVERGED 2026-07-10, both Fables +
   owner; awaiting formal §11/§16 ratification at the strategy
