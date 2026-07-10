@@ -10,6 +10,16 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Tauri shell — quiet-machine rerun** (AI-IMP-240,
+  2026-07-09): all timing rows were taken under ~10-agent load
+  (loadavg 69-114!) and are marked LOAD-SUPPRESSED. When the
+  machine is quiet: `cd spike/tauri-shell && npm install &&
+  (cd ../.. && pnpm -r build) && EW_SPIKE_IMAGES=100 pnpm tauri
+  dev` (auto-runs, writes results/sweep-100.json), repeat at 500.
+  Note WKWebView caps rAF at 60Hz — p50 ~17ms is the display
+  link, not a regression. The load-immune number already stands:
+  4.39GB resident  images.
+
 - [ ] **Connectors stay honest** (AI-IMP-235, 2026-07-09, Sol
   P2): draw a connector anchored to two images, delete/undo and
   move the anchored images — anchors track exactly; nothing about

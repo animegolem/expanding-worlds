@@ -5,11 +5,12 @@ tags:
   - Implementation
   - spike
   - v2
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.65
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -68,12 +69,16 @@ rustup if absent — document install steps),
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Harness scene renders inside Tauri v2 on macOS; sweep JSON
-      captured.
-- [ ] Textures through the asset protocol; findings recorded.
-- [ ] IPC echo measured at two payload sizes.
-- [ ] Report shipped with the port-seam list.
-- [ ] Repo untouched outside spike/ + the report + this ticket.
+- [x] Harness scene renders inside Tauri v2 on macOS; sweep JSON
+      captured. (100 & 500 images; `gl.renderer` = Apple GPU, DPR 2.)
+- [x] Textures through the asset protocol; findings recorded.
+      (`convertFileSrc` → `fetch`; raw read median 5 ms, no size ceiling
+      to 128 MB.)
+- [x] IPC echo measured at two payload sizes. (1 KB ≈ 1 ms, 1 MB ≈
+      45 ms round-trip.)
+- [x] Report shipped with the port-seam list.
+      (`RAG/spike-reports/tauri-shell.md`, 10 seams.)
+- [x] Repo untouched outside spike/ + the report + this ticket.
 
 ### Acceptance Criteria
 
@@ -90,3 +95,37 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Rust toolchain present** (`cargo 1.90.0`, aarch64-apple-darwin); no
+  rustup install needed. `create-tauri-app` was not used — the shell was
+  scaffolded by hand (vanilla-ts equivalent) to keep control of the pixi
+  dedupe seam.
+- **Build blocker (resolved), now seam #2:** first `cargo build` failed
+  — enabling `assetProtocol` in `tauri.conf.json` requires the
+  `protocol-asset` Cargo feature on the `tauri` crate; the allowlist
+  mismatch aborts the build. Added the feature; green.
+- **Default 2-minute background-command timeout killed the first run**
+  mid-suite: first-pass texture painting (100 unique 1–2 K-px PNGs
+  written via IPC) plus loadavg 69 exceeded 120 s. Reran with the 10-min
+  cap; textures persist in the app cache so subsequent runs are fast.
+- **⚠️ All timing numbers are `LOAD-SUPPRESSED`.** ~10 sibling agents
+  were building/testing on the same M1 Pro during capture:
+  `vm.loadavg ≈ 69` (100-img run) and `≈ 114` (500-img run) on 10 cores.
+  fps/frame-time/IPC/scene-fetch are inflated; every report row is
+  annotated and the lead must rerun decisive sweeps on a quiet box.
+  Load-independent facts (resident-texture bytes: 0.948 GB @100 ≈ 217's
+  0.95 GB; 4.39 GB @500 ≈ 217's 4.72 GB; protocol works; no size
+  ceiling; IPC verified) are trustworthy.
+- **Owner focus-steal constraint applied:** the Tauri window renders
+  off-screen + unfocused (`x:4000, focus:false, visible:true` in
+  `tauri.conf.json`). `visible:false` was avoided (WKWebView can pause
+  hidden content). Cadence was real 60 Hz (not a 1 Hz throttle), but the
+  stall tail could not be cleanly split from machine load — flagged for
+  the quiet rerun (on-screen vs off-screen frame-count control).
+- **CSP disabled (`"csp": null`) for the dev spike** (seam #6): a real
+  port must author a CSP allowing the asset scheme in `img/connect-src`
+  and `worker-src blob:` for Pixi's decode workers. Non-trivial; flagged,
+  not solved.
+- **Dev-mode only:** no `.app` bundle built (signing/entitlement wall
+  not tested; ticket allows dev numbers). Render/asset/IPC hot paths are
+  identical in a bundle.

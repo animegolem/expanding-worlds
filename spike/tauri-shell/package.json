@@ -1,0 +1,22 @@
+{
+  "name": "ew-tauri-shell-spike",
+  "private": true,
+  "type": "module",
+  "description": "AI-IMP-240: Tauri v2 (WKWebView) shell spike hosting the AI-IMP-217 engine harness. Textures via Tauri asset protocol; one Rust echo IPC command. Throwaway per house rule; the report is the product.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host --port 5200",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.9.0",
+    "pixi.js": "^8.19.0"
+  }
+}

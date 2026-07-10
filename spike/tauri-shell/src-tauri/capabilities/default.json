@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Spike default capability: core defaults for the main window. Custom app commands (echo, texture_path, …) are allowed by default and need no ACL entry.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

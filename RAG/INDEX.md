@@ -10,7 +10,7 @@
 | Planned | 5 | 2 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 203 |
+| Completed | 19 | 204 |
 | **Total** | **26** | **241** |
 
 ## In Progress
@@ -91,7 +91,6 @@
 - [[AI-IMP-236-source-slot-epochs|IMP-236]] — planned, no epic dependency found
 - [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
 - [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
-- [[AI-IMP-240-tauri-shell-spike|IMP-240]] — planned, no epic dependency found
 - [[AI-IMP-241-texture-budget-tiers|IMP-241]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-243-rust-persistence-seam-analysis|IMP-243]] — planned, no epic dependency found
@@ -117,6 +116,7 @@ Generated from tracked files; binary assets excluded.
 
 - pnpm-lock.yaml (5910 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4692 LOC)
+- spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (2085 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2057 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1788 LOC)
@@ -139,7 +139,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
-- RAG/HUMAN-TESTING.md (701 LOC)
+- RAG/HUMAN-TESTING.md (711 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -212,6 +212,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (353 LOC)
 - apps/desktop/src/renderer/chrome/PathBar.svelte (351 LOC)
+- spike/tauri-shell/src/main.ts (350 LOC)
 - apps/desktop/src/renderer/note/format-bar.ts (347 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
