@@ -10,7 +10,7 @@
 | Planned | 5 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 215 |
+| Completed | 19 | 216 |
 | **Total** | **26** | **242** |
 
 ## In Progress
@@ -82,7 +82,6 @@
 - [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
-- [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
 
@@ -108,7 +107,7 @@ Generated from tracked files; binary assets excluded.
 - pnpm-lock.yaml (5910 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4692 LOC)
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (2085 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (2170 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2057 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1177 LOC)
@@ -128,7 +127,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/lifecycle.ts (784 LOC)
 - apps/desktop/src/main/snapshot.ts (775 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
-- RAG/HUMAN-TESTING.md (765 LOC)
+- RAG/HUMAN-TESTING.md (772 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
@@ -136,9 +135,9 @@ Generated from tracked files; binary assets excluded.
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - apps/desktop/e2e/undo.spec.ts (674 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
+- apps/desktop/src/renderer/canvas/board-tooling.ts (661 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
 - packages/persistence/src/invariants.spec.ts (647 LOC)
-- apps/desktop/src/renderer/canvas/board-tooling.ts (645 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
 - packages/persistence/src/handlers/notes.test.ts (618 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
@@ -152,11 +151,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/editor-markdown.ts (579 LOC)
 - RAG/scripts/generate-index.sh (575 LOC)
 - apps/desktop/src/utility/index.ts (571 LOC)
+- apps/desktop/src/renderer/canvas/import-surfaces.ts (565 LOC)
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
 - RAG/spike-reports/rust-persistence-seams.md (558 LOC)
 - apps/desktop/e2e/shell.spec.ts (555 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
-- apps/desktop/src/renderer/canvas/import-surfaces.ts (552 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)

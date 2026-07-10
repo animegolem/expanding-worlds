@@ -10,6 +10,13 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Compound gestures fail whole** (AI-IMP-232, 2026-07-09,
+  Sol P2): drag items into a frame under a forced refusal (dev:
+  __ewDebug.failNextCommand("TransformContent")) — items snap back,
+  NO membership change, and the next normal drag still captures.
+  Group-and-sort a multi-drop whose sort refuses: imports land, no
+  frame appears, one Mod+Z removes them all, nothing hangs.
+
 - [ ] **Batch drops never lose a file** (AI-IMP-238, 2026-07-09 —
   the flake was REAL: files failing under burst, hidden by
   retries): drop 10+ mixed images in quick overlapping drops — the
