@@ -42,7 +42,8 @@
   let retention = $state<TrashRetention>('never')
   let projectId = $state<string | null>(null)
   let projectSettings = $state<Record<string, unknown>>({})
-
+  // Merge note (EPIC-027): C10-011's ProjectSettingWriter was the same
+  // finding as AI-IMP-251, which merged first — 251's writer stands.
   const projectSettingWriter = createProjectSettingWriter({
     read: (key) => projectSettings[key],
     apply: (key, value) => {
@@ -196,16 +197,19 @@
   // §16 import (AI-IMP-158): pick a .ewproj, land it as a sibling
   // project, offer to open it (the restore relaunch path).
   let importedDir = $state<string | null>(null)
+  let importedOpenToken = $state<string | null>(null)
   let importing = $state(false)
   async function runImport(): Promise<void> {
     const archive = await window.ew.export.chooseArchive()
     if (!archive) return
     importing = true
     importedDir = null
+    importedOpenToken = null
     try {
       const result = await window.ew.export.import(archive)
       if (result.ok) {
         importedDir = result.dir
+        importedOpenToken = result.openToken
         toast(
           `Imported "${result.title}" — ${result.notes} note${result.notes === 1 ? '' : 's'}, ${
             result.assets
@@ -265,6 +269,11 @@
     await saveRemote(remoteDraft)
   }
   async function testRemote(url: string): Promise<void> {
+    const trimmed = url.trim()
+    if (!(await saveRemote(trimmed))) {
+      remoteTest = { state: 'fail', message: 'The remote could not be saved.' }
+      return
+    }
     remoteTest = { state: 'testing' }
     const result = await runAfterProjectSettingSaved(
       () => saveRemote(url),
@@ -561,12 +570,12 @@
         >
           {importing ? 'Importing…' : 'Import…'}
         </Button>
-        {#if importedDir}
+        {#if importedDir && importedOpenToken}
           <Button
             variant="default"
             data-testid="settings-import-open"
             style="flex: none"
-            onclick={() => void window.ew.snapshot.open(importedDir!)}
+            onclick={() => void window.ew.snapshot.open(importedOpenToken!)}
           >
             Open imported project
           </Button>

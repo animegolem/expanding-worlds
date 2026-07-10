@@ -57,27 +57,41 @@ export class Db {
    * makes work durable, and any throw rolls its level back.
    */
   transaction<T>(fn: () => T): T {
-    const name = `ew_tx_${this.#txDepth}`
-    this.#raw.exec(this.#txDepth === 0 ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${name}`)
-    this.#txDepth += 1
+    const enteredDepth = this.#txDepth
+    const name = `ew_tx_${enteredDepth}`
+    this.#raw.exec(enteredDepth === 0 ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${name}`)
+    this.#txDepth = enteredDepth + 1
+    let result: T
     try {
-      const result = fn()
-      this.#txDepth -= 1
-      this.#raw.exec(this.#txDepth === 0 ? 'COMMIT' : `RELEASE ${name}`)
+      result = fn()
+    } catch (err) {
+      this.#rollbackLevel(enteredDepth, name)
+      throw err
+    }
+    try {
+      this.#raw.exec(enteredDepth === 0 ? 'COMMIT' : `RELEASE ${name}`)
+      this.#txDepth = enteredDepth
       return result
     } catch (err) {
-      this.#txDepth -= 1
-      try {
-        this.#raw.exec(this.#txDepth === 0 ? 'ROLLBACK' : `ROLLBACK TO ${name}; RELEASE ${name}`)
-      } catch {
-        // Certain failures (e.g. a deferred FK violation at commit)
-        // auto-roll-back the WHOLE transaction first, so our rollback
-        // finds nothing. The original error is the one that matters —
-        // swallowing this rollback error stops it being masked
-        // ("no such savepoint" hid the real cause, AI-IMP-084 0006).
-        this.#txDepth = 0
-      }
+      // A deferred FK or I/O failure happens HERE, after fn returned.
+      // SQLite leaves an outer transaction open on a failed COMMIT, so
+      // it needs a plain ROLLBACK before this connection is reusable.
+      this.#rollbackLevel(enteredDepth, name)
       throw err
+    }
+  }
+
+  #rollbackLevel(enteredDepth: number, name: string): void {
+    try {
+      this.#raw.exec(
+        enteredDepth === 0 ? 'ROLLBACK' : `ROLLBACK TO ${name}; RELEASE ${name}`,
+      )
+    } catch {
+      // Preserve the original body/commit error. If SQLite already
+      // rolled the whole transaction back there is no outer depth left;
+      // otherwise retain the caller's level so its catch can unwind it.
+    } finally {
+      this.#txDepth = this.#raw.isTransaction ? enteredDepth : 0
     }
   }
 

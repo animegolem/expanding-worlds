@@ -134,6 +134,88 @@ function requireDistinctMembers(memberPlacementIds: string[], command: string): 
   }
 }
 
+function payloadRecord(payload: unknown, command: string): Record<string, unknown> {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new DomainError('VALIDATION_FAILED', `${command} payload must be an object`)
+  }
+  return payload as Record<string, unknown>
+}
+
+function requireId(value: unknown, label: string): void {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new DomainError('VALIDATION_FAILED', `${label} must be a non-empty string`)
+  }
+}
+
+function requireIdArray(value: unknown, label: string): void {
+  if (!Array.isArray(value)) {
+    throw new DomainError('VALIDATION_FAILED', `${label} must be an array`)
+  }
+  for (const id of value) requireId(id, `${label} entry`)
+}
+
+function validateCapturePayload(payload: unknown): void {
+  const record = payloadRecord(payload, 'CaptureInFrame')
+  requireId(record.framePlacementId, 'CaptureInFrame framePlacementId')
+  requireIdArray(record.memberPlacementIds, 'CaptureInFrame memberPlacementIds')
+}
+
+function validateReleasePayload(payload: unknown): void {
+  const record = payloadRecord(payload, 'ReleaseFromFrame')
+  requireIdArray(record.memberPlacementIds, 'ReleaseFromFrame memberPlacementIds')
+}
+
+function validateRestorePayload(payload: unknown): void {
+  const record = payloadRecord(payload, 'RestoreFrameMembership')
+  if (!Array.isArray(record.targets)) {
+    throw new DomainError('VALIDATION_FAILED', 'RestoreFrameMembership targets must be an array')
+  }
+  for (const raw of record.targets) {
+    const target = payloadRecord(raw, 'RestoreFrameMembership target')
+    requireId(target.memberPlacementId, 'RestoreFrameMembership memberPlacementId')
+    if (target.framePlacementId !== null) {
+      requireId(target.framePlacementId, 'RestoreFrameMembership framePlacementId')
+    }
+  }
+}
+
+function validateRestoreState(ctx: CommandContext, targets: FrameMembershipTarget[]): void {
+  requireDistinctMembers(
+    targets.map((target) => target.memberPlacementId),
+    'RestoreFrameMembership',
+  )
+  const intended = new Map(
+    targets.map((target) => [target.memberPlacementId, target.framePlacementId] as const),
+  )
+  for (const target of targets) {
+    const member = requireActivePlacement(ctx, target.memberPlacementId)
+    if (target.framePlacementId === null) continue
+    const frame = requireActivePlacement(ctx, target.framePlacementId)
+    if (frame.appearance_kind !== 'frame') {
+      throw new DomainError(
+        'VALIDATION_FAILED',
+        'membership parent is not a frame placement',
+        { framePlacementId: target.framePlacementId },
+      )
+    }
+    if (member.canvas_id !== frame.canvas_id) {
+      throw new DomainError('VALIDATION_FAILED', 'frame and member must share one canvas', {
+        framePlacementId: target.framePlacementId,
+        memberPlacementId: target.memberPlacementId,
+      })
+    }
+    let current: string | null = target.framePlacementId
+    const visited = new Set<string>()
+    while (current !== null) {
+      if (current === target.memberPlacementId || visited.has(current)) {
+        throw new DomainError('FRAME_CYCLE', 'membership restore would create a cycle')
+      }
+      visited.add(current)
+      current = intended.has(current) ? intended.get(current)! : currentParent(ctx, current)
+    }
+  }
+}
+
 /**
  * Apply a set of membership targets and return the inverse
  * (each member's prior parent) — shared by CaptureInFrame,
@@ -190,7 +272,7 @@ export function registerFrameHandlers(registry: CommandRegistry<CommandContext>)
       framePlacementId: payload.framePlacementId,
     }))
     return applyTargets(ctx, targets)
-  })
+  }, validateCapturePayload)
 
   registry.register<ReleaseFromFramePayload>(COMMAND_RELEASE_FROM_FRAME, 1, (ctx, payload) => {
     requireDistinctMembers(payload.memberPlacementIds, 'ReleaseFromFrame')
@@ -206,15 +288,19 @@ export function registerFrameHandlers(registry: CommandRegistry<CommandContext>)
       framePlacementId: null,
     }))
     return applyTargets(ctx, targets)
-  })
+  }, validateReleasePayload)
 
-  // Internal inverse: replays a known-good prior membership state.
-  // Trusting by design (undo runs LIFO against the state the forward
-  // command produced), so no same-canvas/cycle re-validation — the
-  // FK constraints still guard against referencing a purged row.
+  // Inverses cross the same public command seam as forward commands.
+  // Validate the complete intended graph before the first write; a
+  // forged/stale batch must not bypass frame-kind, canvas, or cycle
+  // invariants merely because ordinary undo issued the original shape.
   registry.register<RestoreFrameMembershipPayload>(
     COMMAND_RESTORE_FRAME_MEMBERSHIP,
     1,
-    (ctx, payload) => applyTargets(ctx, payload.targets),
+    (ctx, payload) => {
+      validateRestoreState(ctx, payload.targets)
+      return applyTargets(ctx, payload.targets)
+    },
+    validateRestorePayload,
   )
 }

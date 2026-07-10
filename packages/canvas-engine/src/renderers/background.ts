@@ -30,8 +30,15 @@ interface BackgroundSettings {
 
 interface LevelState {
   container: Container
-  tiles: Array<{ address: TileAddress; sprite: Sprite | null }>
+  tiles: Array<{
+    address: TileAddress
+    sprite: Sprite | null
+    texture: unknown | null
+    loading: boolean
+    wanted: boolean
+  }>
   built: boolean
+  active: boolean
 }
 
 export class BackgroundSync {
@@ -39,7 +46,9 @@ export class BackgroundSync {
   #resources: RendererResources
   #maxTextureSize: number
   #currentHash: string | null = null
+  #latestSettings: Record<string, unknown> | null = null
   #generation = 0
+  #plainTexture: unknown | null = null
   // Tiled state (only while an oversized background is active).
   #source: TileTextureSource | null = null
   #levels = new Map<number, LevelState>()
@@ -55,32 +64,29 @@ export class BackgroundSync {
   /** Applies the image; returns the color the host should clear with. */
   apply(background: SceneBackground): string | null {
     const hash = background.assetContentHash
+    this.#latestSettings = background.settings
     if (hash !== this.#currentHash) {
       this.#currentHash = hash
       this.#generation += 1
       const generation = this.#generation
-      this.#teardownTiles()
+      this.#teardownImageResources()
       for (const child of [...this.#plane.children]) child.destroy({ children: true })
       if (hash) {
         const placeholder = new Graphics().rect(0, 0, 4, 4).fill({ color: 0x1e1e1e })
         placeholder.label = 'background-placeholder'
         this.#plane.addChild(placeholder)
-        void this.#mount(hash, generation, background.settings).catch(() => {
+        void this.#mount(hash, generation).catch(() => {
           /* missing blob leaves the placeholder; recovery owns repair */
         })
       }
     } else if (hash) {
       const root = this.#plane.children.find((c) => c.label === 'background-image')
-      if (root) this.#applySettings(root as Container, background.settings)
+      if (root) this.#applySettings(root as Container, this.#latestSettings)
     }
     return background.color
   }
 
-  async #mount(
-    hash: string,
-    generation: number,
-    settings: Record<string, unknown> | null,
-  ): Promise<void> {
+  async #mount(hash: string, generation: number): Promise<void> {
     const url = assetUrl(hash)
     if (this.#resources.loadTileSource) {
       const source = await this.#resources.loadTileSource(url)
@@ -89,21 +95,25 @@ export class BackgroundSync {
         return
       }
       if (Math.max(source.width, source.height) > this.#maxTextureSize) {
-        this.#mountTiled(source, settings)
+        this.#mountTiled(source)
         return
       }
       source.destroy()
     }
     const texture = await this.#resources.loadTexture(url)
-    if (this.#generation !== generation) return
+    if (this.#generation !== generation) {
+      this.#destroyTexture(texture)
+      return
+    }
     this.#plane.children.find((c) => c.label === 'background-placeholder')?.destroy()
     const sprite = new Sprite(texture as Texture)
     sprite.label = 'background-image'
     this.#plane.addChild(sprite)
-    this.#applySettings(sprite, settings)
+    this.#plainTexture = texture
+    this.#applySettings(sprite, this.#latestSettings)
   }
 
-  #mountTiled(source: TileTextureSource, settings: Record<string, unknown> | null): void {
+  #mountTiled(source: TileTextureSource): void {
     this.#plane.children.find((c) => c.label === 'background-placeholder')?.destroy()
     this.#source = source
     this.#topLevel = maxLevel(source.width, source.height)
@@ -111,7 +121,7 @@ export class BackgroundSync {
     const root = new Container()
     root.label = 'background-image'
     this.#plane.addChild(root)
-    this.#applySettings(root, settings)
+    this.#applySettings(root, this.#latestSettings)
     // Coarsest level first: cheap full coverage while finer tiles load
     // (2^-top zoom selects exactly the top level).
     this.updateView(2 ** -this.#topLevel, null)
@@ -134,6 +144,11 @@ export class BackgroundSync {
       | undefined
     if (!root) return
     const level = levelForZoom(zoom * root.scale.x, this.#topLevel)
+    if (level !== this.#activeLevel) {
+      for (const state of this.#levels.values()) this.#destroyLevel(state)
+      this.#levels.clear()
+      this.#activeLevel = level
+    }
     let state = this.#levels.get(level)
     if (!state) {
       state = {
@@ -141,16 +156,16 @@ export class BackgroundSync {
         tiles: planLevelTiles(source.width, source.height, level).map((address) => ({
           address,
           sprite: null,
+          texture: null,
+          loading: false,
+          wanted: false,
         })),
         built: false,
+        active: true,
       }
       state.container.label = `background-level-${level}`
       root.addChild(state.container)
       this.#levels.set(level, state)
-    }
-    if (level !== this.#activeLevel) {
-      this.#activeLevel = level
-      for (const [l, s] of this.#levels) s.container.visible = l === level
     }
     // Image-local view rect for tile culling (root transform removed).
     const local: WorldRect | null = view
@@ -164,38 +179,82 @@ export class BackgroundSync {
     const generation = this.#generation
     for (const tile of state.tiles) {
       const visible = local === null || tileVisible(tile.address, local)
+      tile.wanted = visible
       if (tile.sprite) {
-        tile.sprite.renderable = visible
+        if (visible) tile.sprite.renderable = true
+        else this.#destroyTile(tile)
         continue
       }
-      if (!visible) continue
+      if (!visible || tile.loading) continue
       // Lazy per-tile upload; dest rect == source rect in world units.
       const slot = tile
+      slot.loading = true
       void source
         .texture(tile.address)
         .then((texture) => {
-          if (this.#generation !== generation || slot.sprite) return
+          slot.loading = false
+          if (this.#generation !== generation || !state.active || !slot.wanted || slot.sprite) {
+            this.#destroyTexture(texture)
+            return
+          }
           const sprite = new Sprite(texture as Texture)
           sprite.label = `tile-${tile.address.level}-${tile.address.sx}-${tile.address.sy}`
           sprite.position.set(tile.address.sx, tile.address.sy)
           sprite.width = tile.address.sw
           sprite.height = tile.address.sh
           slot.sprite = sprite
+          slot.texture = texture
           state.container.addChild(sprite)
         })
         .catch(() => {
+          slot.loading = false
           /* a failed tile leaves a hole, not a crash */
         })
     }
   }
 
+  /** Release every background-owned decoded/GPU resource. */
+  destroy(): void {
+    this.#generation += 1
+    this.#currentHash = null
+    this.#teardownImageResources()
+    for (const child of [...this.#plane.children]) child.destroy({ children: true })
+  }
+
+  #teardownImageResources(): void {
+    if (this.#plainTexture) {
+      this.#destroyTexture(this.#plainTexture)
+      this.#plainTexture = null
+    }
+    this.#teardownTiles()
+  }
+
   #teardownTiles(): void {
+    for (const state of this.#levels.values()) this.#destroyLevel(state)
     if (this.#source) {
       this.#source.destroy()
       this.#source = null
     }
     this.#levels.clear()
     this.#activeLevel = -1
+  }
+
+  #destroyLevel(state: LevelState): void {
+    state.active = false
+    for (const tile of state.tiles) this.#destroyTile(tile)
+    state.container.destroy({ children: true })
+  }
+
+  #destroyTile(tile: LevelState['tiles'][number]): void {
+    tile.sprite?.destroy()
+    tile.sprite = null
+    if (tile.texture) this.#destroyTexture(tile.texture)
+    tile.texture = null
+  }
+
+  #destroyTexture(texture: unknown): void {
+    if (this.#resources.destroyTexture) this.#resources.destroyTexture(texture)
+    else (texture as Texture).destroy(true)
   }
 
   #applySettings(object: Container, settings: Record<string, unknown> | null): void {

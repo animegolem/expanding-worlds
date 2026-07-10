@@ -6,7 +6,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Db } from '../db'
 import { openProjectService, type ProjectService } from '../service'
 import { IMPORT_LIMITS } from './import-limits'
-import { importProject, readArchiveManifest } from './project-import'
+import {
+  IMPORT_RESERVATION_SUFFIX,
+  importProject,
+  readArchiveManifest,
+  releaseImportDestination,
+  reserveAvailableImportDestination,
+} from './project-import'
 
 /**
  * §16 roundtrip (AI-IMP-158): export → import into a fresh directory
@@ -279,6 +285,39 @@ describe('importProject (§16 roundtrip, AI-IMP-158)', () => {
     const { mkdirSync } = await import('node:fs')
     mkdirSync(destDir)
     await expect(importProject(archive, destDir)).rejects.toMatchObject({ code: 'DEST_EXISTS' })
+  })
+
+  it('gives concurrent imports request-owned staging and one final-name winner', async () => {
+    const archive = join(outDir, 'concurrent.ewproj')
+    await service.exportProject(archive, { activeOnly: false })
+    const destDir = join(outDir, 'same-final-name')
+
+    const outcomes = await Promise.allSettled([
+      importProject(archive, destDir),
+      importProject(archive, destDir),
+    ])
+
+    expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1)
+    const rejection = outcomes.find((outcome) => outcome.status === 'rejected')
+    expect(rejection).toMatchObject({ status: 'rejected', reason: { code: 'DEST_BUSY' } })
+    expect(existsSync(destDir)).toBe(true)
+    expect(existsSync(`${destDir}${IMPORT_RESERVATION_SUFFIX}`)).toBe(false)
+    expect(
+      (await import('node:fs')).readdirSync(outDir).filter((name) => name.includes('.partial-')),
+    ).toEqual([])
+  })
+
+  it('atomically suffixes a second main-owned destination reservation', () => {
+    const preferred = join(outDir, 'available')
+    const first = reserveAvailableImportDestination(preferred)
+    const second = reserveAvailableImportDestination(preferred)
+    try {
+      expect(first.destDir).toBe(preferred)
+      expect(second.destDir).toBe(`${preferred} (2)`)
+    } finally {
+      releaseImportDestination(first)
+      releaseImportDestination(second)
+    }
   })
 
   it('refuses a schema-version mismatch by manifest alone', async () => {

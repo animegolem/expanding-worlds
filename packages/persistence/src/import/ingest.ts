@@ -17,6 +17,7 @@ import { existsSync } from 'node:fs'
 import type { Db } from '../db'
 import { importAsset, type ImportDeps } from './pipeline'
 import { blobPath } from './store'
+import { assertManagedPath } from '../path-safety'
 
 /**
  * Cross-project ingest-by-copy (RFC-0001 §14.4, AI-IMP-090):
@@ -169,7 +170,7 @@ export async function ingestFromSource(
       `the source project holds no active asset with hash ${input.contentHash}`,
     )
   }
-  const blob = blobPath(source.dir, input.contentHash)
+  const blob = assertManagedPath(source.dir, blobPath(source.dir, input.contentHash))
   if (!existsSync(blob)) {
     throw new DomainError(
       'INGEST_BLOB_MISSING',

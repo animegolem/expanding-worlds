@@ -6,6 +6,7 @@ import { type LockOptions, ProjectLock } from './lock'
 import { migrate } from './migrate'
 import { LATEST_SCHEMA_VERSION } from './migrations/index'
 import { setProjectSetting, TRASH_RETENTION_KEY } from './settings'
+import { assertManagedPath, assertManagedProjectLayout } from './path-safety'
 
 export const DB_FILENAME = 'project.sqlite'
 
@@ -39,7 +40,8 @@ export function createProject(
   options: OpenOptions = {},
 ): ProjectHandle {
   mkdirSync(dir, { recursive: true })
-  const dbPath = join(dir, DB_FILENAME)
+  assertManagedProjectLayout(dir)
+  const dbPath = assertManagedPath(dir, join(dir, DB_FILENAME))
   if (existsSync(dbPath)) {
     throw new Error(`createProject: ${dbPath} already exists`)
   }
@@ -109,7 +111,8 @@ export function createProject(
 /** Opens an existing project: lock, migrate pending, read identity.
  * Read-only opens (§11.1/§14.4) skip lock AND migration. */
 export function openProject(dir: string, options: OpenOptions = {}): ProjectHandle {
-  const dbPath = join(dir, DB_FILENAME)
+  assertManagedProjectLayout(dir)
+  const dbPath = assertManagedPath(dir, join(dir, DB_FILENAME))
   if (!existsSync(dbPath)) {
     throw new Error(`openProject: no project at ${dbPath}`)
   }

@@ -1,12 +1,20 @@
 import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
-import { existsSync, realpathSync } from 'node:fs'
+import { realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
-import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
+import {
+  assertManagedPath,
+  blobRelativePath,
+  releaseImportDestination,
+  reserveAvailableImportDestination,
+  thumbnailRelativePath,
+} from '@ew/persistence'
 import { loadAppSettingsFile, writeAppSettingsFile } from './app-settings'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import { createSnapshotEngine } from './snapshot'
+import { MaterializedProjectOpenRegistry } from './open-capability'
+import { RendererFlushCoordinator } from './flush-coordinator'
 import type {
   ProjectRequest,
   ProjectResponse,
@@ -345,8 +353,12 @@ function registerAssetProtocol(): void {
     const thumb = THUMB_URL_RE.exec(request.url)
     if (thumb) {
       try {
+        const path = assertManagedPath(
+          servingDir,
+          join(servingDir, thumbnailRelativePath(thumb[1]!)),
+        )
         const file = await net.fetch(
-          pathToFileURL(join(servingDir, thumbnailRelativePath(thumb[1]!))).toString(),
+          pathToFileURL(path).toString(),
         )
         if (!file.ok) return new Response('no thumbnail', { status: 404 })
         return new Response(file.body, {
@@ -363,7 +375,7 @@ function registerAssetProtocol(): void {
     const match = ASSET_URL_RE.exec(request.url)
     // The regex is the traversal guard: only a bare hex hash resolves.
     if (!match) return new Response('bad asset url', { status: 400 })
-    const path = join(servingDir, blobRelativePath(match[1]!))
+    const path = assertManagedPath(servingDir, join(servingDir, blobRelativePath(match[1]!)))
     try {
       const file = await net.fetch(pathToFileURL(path).toString())
       if (!file.ok) return new Response('unknown asset', { status: 404 })
@@ -685,24 +697,14 @@ function setWindowVibrancy(win: BrowserWindow, enabled: boolean): boolean {
  * with app:flush-done; bounded so a hung or dead renderer cannot trap
  * the checkpoint. Mirrors the close path's timeout, but its own
  * listener so it never entangles the quit flush. */
-function flushRenderers(): Promise<void> {
+const rendererFlushes = new RendererFlushCoordinator()
+
+async function flushRenderers(): Promise<void> {
   const wins = BrowserWindow.getAllWindows().filter((win) => !win.webContents.isDestroyed())
-  if (wins.length === 0) return Promise.resolve()
-  return new Promise<void>((resolve) => {
-    let remaining = wins.length
-    const finish = (): void => {
-      clearTimeout(timer)
-      ipcMain.removeListener('app:flush-done', onDone)
-      resolve()
-    }
-    const onDone = (): void => {
-      remaining -= 1
-      if (remaining <= 0) finish()
-    }
-    const timer = setTimeout(finish, 2_000)
-    ipcMain.on('app:flush-done', onDone)
-    for (const win of wins) win.webContents.send('app:flush')
-  })
+  const outcomes = await Promise.all(wins.map((win) => rendererFlushes.flush(win.webContents)))
+  if (outcomes.some((outcome) => outcome !== 'ok')) {
+    throw new Error(`renderer flush did not complete: ${outcomes.join(', ')}`)
+  }
 }
 
 // §11.4 session snapshots (AI-IMP-120): the engine owns git mechanics
@@ -720,6 +722,7 @@ const snapshots = createSnapshotEngine({
   // once-per-episode failure toast live renderer-side (chrome/status).
   onPushState: (state) => broadcastPushState(state),
 })
+const materializedProjectOpens = new MaterializedProjectOpenRegistry()
 
 // Last push state, retained so a window created after a push began can
 // catch up on attach (the same cold-boot race the service event has).
@@ -772,14 +775,18 @@ async function createWindow(): Promise<void> {
   // editor buffer still inside its debounce window, bounded so a hung
   // renderer can never trap the user.
   let flushed = false
+  let closeFlushPending = false
   win.on('close', (event) => {
     if (flushed || win.webContents.isDestroyed()) return
     event.preventDefault()
-    const ack = new Promise<void>((resolve) => {
-      ipcMain.once('app:flush-done', () => resolve())
-    })
-    win.webContents.send('app:flush')
-    void Promise.race([ack, new Promise((resolve) => setTimeout(resolve, 2_000))]).then(() => {
+    if (closeFlushPending) return
+    closeFlushPending = true
+    void rendererFlushes.flush(win.webContents).then((outcome) => {
+      closeFlushPending = false
+      // A renderer that explicitly reports failure still owns a live
+      // dirty buffer (C10-001), so keep the window. Timeout retains the
+      // pre-existing bounded-close guarantee for an unresponsive process.
+      if (outcome === 'failed') return
       flushed = true
       win.close()
     })
@@ -815,6 +822,9 @@ void app.whenReady().then(() => {
   registerAssetProtocol()
   grantLocalFonts()
   startUtility()
+  ipcMain.on('app:flush-done', (event, acknowledgement: unknown) => {
+    rendererFlushes.acknowledge(event.sender.id, acknowledgement)
+  })
   void callUtility({
     type: 'init-project',
     dir: projectDir(),
@@ -865,16 +875,24 @@ void app.whenReady().then(() => {
   // Restore NEVER writes inside the source project (destroy-nothing
   // applies to time travel); it returns the NEW directory's path.
   ipcMain.handle('snapshot:list', () => snapshots.listSnapshots())
-  ipcMain.handle('snapshot:restore', (_event, sha: string) => snapshots.restore(String(sha)))
-  // Open Restored Project: relaunch on the restored directory (the
-  // standard cold-boot open path — §11.2 recovery rebuilds derivatives
-  // lazily). app.quit runs the clean-close ritual first so the current
-  // project's writer lock releases (§11.1) before the reboot lands.
-  ipcMain.handle('restore:open', (_event, dir: string) => {
+  ipcMain.handle('snapshot:restore', async (event, sha: string) => {
+    const result = await snapshots.restore(String(sha))
+    return result.ok
+      ? { ...result, openToken: materializedProjectOpens.issue(event.sender, result.dir) }
+      : result
+  })
+  // Open Restored/Imported Project: consume the one-use authority main
+  // issued when it materialized the directory. The renderer can display
+  // the path but cannot aim relaunch at an arbitrary writable directory.
+  // app.quit runs the clean-close ritual first so the current project's
+  // writer lock releases (§11.1) before the reboot lands.
+  ipcMain.handle('restore:open', (event, openToken: unknown) => {
+    const dir = materializedProjectOpens.consume(event.sender, openToken)
+    if (!dir) return false
     const args = process.argv
       .slice(1)
       .filter((a) => !a.startsWith(OPEN_DIR_ARG))
-      .concat([`${OPEN_DIR_ARG}${String(dir)}`])
+      .concat([`${OPEN_DIR_ARG}${dir}`])
     app.relaunch({ args })
     app.quit()
     return true
@@ -928,15 +946,28 @@ void app.whenReady().then(() => {
     })
     return picked.canceled || picked.filePaths.length === 0 ? null : picked.filePaths[0]
   })
-  ipcMain.handle('import:run', (_event, archivePath: string) => {
+  ipcMain.handle('import:run', async (event, archivePath: string) => {
     const parent = dirname(projectDir())
     const stem = basename(String(archivePath)).replace(/\.ewproj$/i, '') || 'project'
     const date = new Date().toISOString().slice(0, 10)
-    let destDir = join(parent, `${stem}-imported-${date}`)
-    for (let n = 2; existsSync(destDir) || existsSync(`${destDir}.partial`); n += 1) {
-      destDir = join(parent, `${stem}-imported-${date} (${n})`)
+    const reservation = reserveAvailableImportDestination(
+      join(parent, `${stem}-imported-${date}`),
+    )
+    try {
+      const result = await callUtility({
+        type: 'import-project',
+        archivePath: String(archivePath),
+        destDir: reservation.destDir,
+        reservationToken: reservation.token,
+      })
+      return 'type' in result && result.type === 'import-project' && result.ok
+        ? { ...result, openToken: materializedProjectOpens.issue(event.sender, result.dir) }
+        : result
+    } finally {
+      // Utility normally consumes it; this covers utility death/refusal
+      // before importProject takes ownership.
+      releaseImportDestination(reservation)
     }
-    return callUtility({ type: 'import-project', archivePath: String(archivePath), destDir })
   })
   ipcMain.handle('app:get-version', () => app.getVersion())
 

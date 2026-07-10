@@ -85,9 +85,10 @@ describe('BackgroundSync tiled path (§12.2)', () => {
   it('tiles oversized originals under the background-image root', async () => {
     const plane = new Container()
     const source = fakeTileSource(10_000, 6_000)
+    const resources = fakeResources()
     const sync = new BackgroundSync(
       plane,
-      { ...fakeResources(), loadTileSource: async () => source },
+      { ...resources, loadTileSource: async () => source },
       4096,
     )
     sync.apply(background('c'.repeat(64)))
@@ -124,7 +125,7 @@ describe('BackgroundSync tiled path (§12.2)', () => {
     await settled()
     const level2 = root.children.find((c) => c.label === 'background-level-2') as Container
     expect(level2.visible).toBe(true)
-    expect(mountLevel.visible).toBe(false)
+    expect(root.children).not.toContain(mountLevel)
 
     // Narrow view at full zoom: only intersecting level-0 tiles upload.
     const before = source.requested.length
@@ -135,6 +136,30 @@ describe('BackgroundSync tiled path (§12.2)', () => {
     expect(fresh[0]).toMatchObject({ sx: 0, sy: 0 })
     const level0 = root.children.find((c) => c.label === 'background-level-0') as Container
     expect(level0.visible).toBe(true)
+  })
+
+  it('releases inactive levels and tiles that leave the viewport budget', async () => {
+    const plane = new Container()
+    const source = fakeTileSource(10_000, 6_000)
+    const resources = fakeResources()
+    const sync = new BackgroundSync(
+      plane,
+      { ...resources, loadTileSource: async () => source },
+      4096,
+    )
+    sync.apply(background('b'.repeat(64)))
+    await settled()
+    expect(resources.destroyed).toHaveLength(0)
+
+    // Switching away from the coarse mount level releases its tile.
+    sync.updateView(1, { x: 0, y: 0, width: 100, height: 100 })
+    await settled()
+    expect(resources.destroyed).toHaveLength(1)
+
+    // Moving the same level's viewport away releases its prior tile.
+    sync.updateView(1, { x: 8_000, y: 5_000, width: 100, height: 100 })
+    await settled()
+    expect(resources.destroyed.length).toBeGreaterThanOrEqual(2)
   })
 
   it('small images keep the plain sprite path and destroy the probe source', async () => {
@@ -155,9 +180,10 @@ describe('BackgroundSync tiled path (§12.2)', () => {
   it('clearing the background tears the pyramid down', async () => {
     const plane = new Container()
     const source = fakeTileSource(10_000, 6_000)
+    const resources = fakeResources()
     const sync = new BackgroundSync(
       plane,
-      { ...fakeResources(), loadTileSource: async () => source },
+      { ...resources, loadTileSource: async () => source },
       4096,
     )
     sync.apply(background('f'.repeat(64)))
@@ -165,6 +191,7 @@ describe('BackgroundSync tiled path (§12.2)', () => {
     sync.apply({ ...background('f'.repeat(64)), assetContentHash: null, assetId: null })
     expect(sync.tiled).toBe(false)
     expect(source.destroyed).toBe(true)
+    expect(resources.destroyed.length).toBeGreaterThan(0)
     expect(plane.children).toHaveLength(0)
   })
 })

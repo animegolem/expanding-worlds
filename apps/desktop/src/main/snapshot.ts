@@ -15,17 +15,22 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { promisify } from 'node:util'
-import type {
-  ProjectRequest,
-  ProjectResponse,
-  RestoreResult,
-  SnapshotEntry,
-  SnapshotMode,
-  SnapshotPushState,
-  SnapshotStatus,
-  SnapshotTestConnectionResult,
+import {
+  SNAPSHOT_MODE_KEY,
+  SNAPSHOT_REMOTE_KEY,
+  type ProjectRequest,
+  type ProjectResponse,
+  type SnapshotEntry,
+  type SnapshotMode,
+  type SnapshotPushState,
+  type SnapshotStatus,
+  type SnapshotTestConnectionResult,
 } from '@ew/protocol'
-import { SNAPSHOT_MODE_KEY, SNAPSHOT_REMOTE_KEY } from '@ew/protocol'
+import { assertManagedPath } from '@ew/persistence'
+
+export type SnapshotMaterializeResult =
+  | { ok: true; dir: string }
+  | { ok: false; code: string; message: string }
 
 /**
  * Session snapshot engine (RFC-0001 §11.4, AI-IMP-120). Lives in the
@@ -170,7 +175,7 @@ export interface SnapshotEngine {
    * NEW sibling directory `<project>-restored-<date>` (collision-
    * suffixed), never in-place, then validate the extracted db opens.
    * The source project directory is never written. */
-  restore: (sha: string) => Promise<RestoreResult>
+  restore: (sha: string) => Promise<SnapshotMaterializeResult>
   /** §11.4 remote push (AI-IMP-122): the deliberate Test connection
    * action — `git ls-remote <url>` with the terminal prompt disabled so
    * a missing credential fails fast instead of hanging on a hidden
@@ -233,7 +238,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   const NO_PROMPT_ENV: NodeJS.ProcessEnv = { GIT_TERMINAL_PROMPT: '0' }
 
   function seedGitignore(dir: string): void {
-    const path = join(dir, '.gitignore')
+    const path = assertManagedPath(dir, join(dir, '.gitignore'))
     try {
       if (!existsSync(path)) {
         writeFileSync(path, GITIGNORE_BODY, 'utf8')
@@ -529,7 +534,18 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
         assets = written.assets
       }
     }
-    await deps.callUtility({ type: 'checkpoint-wal' })
+    const checkpoint = await deps.callUtility({ type: 'checkpoint-wal' })
+    if (
+      !('type' in checkpoint) ||
+      checkpoint.type !== 'checkpoint-wal' ||
+      !checkpoint.ok
+    ) {
+      const message =
+        'message' in checkpoint && typeof checkpoint.message === 'string'
+          ? checkpoint.message
+          : 'the project database could not be checkpointed'
+      throw new Error(`snapshot deferred: ${message}`)
+    }
     if (!enabled || !hasGit) return
 
     const dir = deps.projectDir()
@@ -688,7 +704,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     }
   }
 
-  async function restore(sha: string): Promise<RestoreResult> {
+  async function restore(sha: string): Promise<SnapshotMaterializeResult> {
     const sourceDir = deps.projectDir()
     if (!existsSync(join(sourceDir, '.git'))) {
       return { ok: false, code: 'NO_HISTORY', message: 'this project has no snapshot history' }

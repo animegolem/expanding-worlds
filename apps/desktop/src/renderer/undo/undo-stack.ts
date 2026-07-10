@@ -59,6 +59,10 @@ export interface StackAction {
   members: StackMember[]
   /** Board the originating command acted on (v1 same-canvas fence). */
   canvasId: string
+  /** A partial-step repair replays the committed prefix. Once that
+   * succeeds, restore this exact grouped action instead of deriving a
+   * smaller opposite from the repair commands. */
+  repairOf?: StackAction
 }
 
 /** One committed forward command offered to the stack for capture. */
@@ -84,6 +88,8 @@ export interface UndoStackDeps {
 }
 
 export const UNDO_STALE_TOAST = 'That change can no longer be undone'
+export const PARTIAL_UNDO_TOAST = 'That change was only partly undone — Redo will restore it'
+export const PARTIAL_REDO_TOAST = 'That change was only partly redone — Undo will restore it'
 
 export class UndoStack {
   #deps: UndoStackDeps
@@ -232,45 +238,65 @@ export class UndoStack {
     }
 
     from.pop()
-    // Execute every member in order; each yields its opposite step. Any
-    // non-committed member drops the whole entry (§10.2) — a group that
-    // fails partway leaves earlier members applied (inverses are trusted
-    // LIFO against the state the forward produced, so this is rare).
+    // Execute every member in order; each yields its opposite step.
+    // A failure before the first commit is stale and drops the entry. A
+    // failure after a prefix committed exposes a repair action on the
+    // opposite stack; completing it restores this exact grouped action.
     const opposites: StackMember[] = []
     this.#applying = true
-    for (const member of action.members) {
-      let result: CommandResult
-      try {
-        result = await this.#deps.execute(member.command)
-      } catch {
-        this.#applying = false
-        this.#deps.toast(UNDO_STALE_TOAST)
-        this.#deps.onChanged()
-        return
+    try {
+      for (const member of action.members) {
+        let result: CommandResult
+        try {
+          result = await this.#deps.execute(member.command)
+        } catch {
+          this.#recordFailureRepair(action, opposites, to, verb)
+          return
+        }
+        if (result.status !== 'committed') {
+          this.#recordFailureRepair(action, opposites, to, verb)
+          return
+        }
+        opposites.push({
+          command:
+            result.inverse === null
+              ? member.fallback
+              : {
+                  commandType: result.inverse.commandType,
+                  commandVersion: result.inverse.commandVersion,
+                  payload: result.inverse.payload,
+                },
+          fallback: member.command,
+        })
       }
-      if (result.status !== 'committed') {
-        this.#applying = false
-        this.#deps.toast(UNDO_STALE_TOAST)
-        this.#deps.onChanged()
-        return
-      }
-      opposites.push({
-        command:
-          result.inverse === null
-            ? member.fallback
-            : {
-                commandType: result.inverse.commandType,
-                commandVersion: result.inverse.commandVersion,
-                payload: result.inverse.payload,
-              },
-        fallback: member.command,
-      })
+    } finally {
+      this.#applying = false
     }
-    this.#applying = false
 
     // Reverse so the opposite action replays its members in original
     // forward order (undo of undo = redo runs forwards).
-    to.push({ members: opposites.reverse(), canvasId: action.canvasId })
+    to.push(
+      action.repairOf ?? { members: opposites.reverse(), canvasId: action.canvasId },
+    )
+    this.#deps.onChanged()
+  }
+
+  #recordFailureRepair(
+    action: StackAction,
+    opposites: StackMember[],
+    to: StackAction[],
+    verb: 'undo' | 'redo',
+  ): void {
+    if (opposites.length === 0) {
+      this.#deps.toast(UNDO_STALE_TOAST)
+    } else {
+      to.push({
+        members: opposites.reverse(),
+        canvasId: action.canvasId,
+        repairOf: action,
+      })
+      this.#deps.toast(verb === 'undo' ? PARTIAL_UNDO_TOAST : PARTIAL_REDO_TOAST)
+    }
     this.#deps.onChanged()
   }
 }

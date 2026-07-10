@@ -11,7 +11,7 @@ import type {
   ExportProgressEvent,
   ExportProjectResponse,
   ImportAssetResponse,
-  ImportProjectResponse,
+  OpenableImportProjectResponse,
   IngestFromSecondaryResponse,
   MirrorToLibraryResponse,
   OpenSecondaryResponse,
@@ -126,11 +126,14 @@ const api = {
      * ack (bounded by a timeout on the main side).
      */
     onFlushRequest: (callback: () => Promise<void>): (() => void) => {
-      const listener = (): void => {
+      const listener = (_event: IpcRendererEvent, request: { requestId?: unknown }): void => {
+        if (typeof request?.requestId !== 'string') return
         void Promise.resolve()
           .then(callback)
-          .catch(() => undefined)
-          .then(() => ipcRenderer.send('app:flush-done'))
+          .then(
+            () => ipcRenderer.send('app:flush-done', { requestId: request.requestId, ok: true }),
+            () => ipcRenderer.send('app:flush-done', { requestId: request.requestId, ok: false }),
+          )
       }
       ipcRenderer.on('app:flush', listener)
       return () => ipcRenderer.removeListener('app:flush', listener)
@@ -202,8 +205,8 @@ const api = {
       ipcRenderer.invoke('snapshot:restore', sha) as Promise<RestoreResult>,
     /** Open Restored Project: relaunch the app on the restored
      * directory (the standard cold-boot open path). */
-    open: (dir: string): Promise<boolean> =>
-      ipcRenderer.invoke('restore:open', dir) as Promise<boolean>,
+    open: (openToken: string): Promise<boolean> =>
+      ipcRenderer.invoke('restore:open', openToken) as Promise<boolean>,
     /** §11.4 remote push (AI-IMP-122): the deliberate Test connection
      * action (git ls-remote) behind the Advanced remote-URL row. The
      * ONLY network call the user triggers by hand. */
@@ -249,8 +252,8 @@ const api = {
     /** Materialize the archive as a collision-safe sibling project.
      * Typed refusal; a failed import leaves nothing on disk. Open the
      * result through snapshot.open (the restore relaunch path). */
-    import: (archivePath: string): Promise<ImportProjectResponse> =>
-      ipcRenderer.invoke('import:run', archivePath) as Promise<ImportProjectResponse>,
+    import: (archivePath: string): Promise<OpenableImportProjectResponse> =>
+      ipcRenderer.invoke('import:run', archivePath) as Promise<OpenableImportProjectResponse>,
   },
   /** §14.4 secondary project slots (AI-IMP-088): source = read-only
    * browse of another project, library = the writable mirror target.

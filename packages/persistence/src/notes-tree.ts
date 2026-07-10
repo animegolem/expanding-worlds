@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { shortCode } from '@ew/domain'
 import type { Db } from './db'
 import { refreshNoteMetadataBlock } from './note-metadata-db'
+import { assertManagedPath } from './path-safety'
 
 /**
  * Readable notes tree writer (RFC-0001 §16, AI-IMP-120). A session
@@ -110,8 +111,9 @@ export function assignNoteFilename(
  * single-writer discipline.
  */
 export function writeNotesTree(ctx: NotesTreeCtx, dir: string): NotesTreeResult {
-  const notesDir = join(dir, NOTES_DIR)
+  const notesDir = assertManagedPath(dir, join(dir, NOTES_DIR))
   mkdirSync(notesDir, { recursive: true })
+  assertManagedPath(dir, notesDir)
 
   // Stable order: title_key then id, so collision suffixes are
   // deterministic across runs.
@@ -137,7 +139,7 @@ export function writeNotesTree(ctx: NotesTreeCtx, dir: string): NotesTreeResult 
     const body = row?.body ?? ''
     // A single trailing newline — POSIX-friendly and diff-stable.
     const content = body.endsWith('\n') ? body : `${body}\n`
-    const path = join(notesDir, filename)
+    const path = assertManagedPath(dir, join(notesDir, filename))
     // Skip identical writes so unchanged notes leave the file (and its
     // git blob) untouched.
     if (existsSync(path) && readFileSync(path, 'utf8') === content) continue
@@ -148,7 +150,7 @@ export function writeNotesTree(ctx: NotesTreeCtx, dir: string): NotesTreeResult 
   // trashed since the last snapshot, so the tree mirrors the project.
   for (const entry of readdirSync(notesDir)) {
     if (entry.endsWith(MD_EXT) && !written.has(entry)) {
-      rmSync(join(notesDir, entry), { force: true })
+      rmSync(assertManagedPath(dir, join(notesDir, entry)), { force: true })
     }
   }
 

@@ -17,54 +17,126 @@ import { isIP } from 'node:net'
 
 export function isPrivateAddress(ip: string): boolean {
   if (isIP(ip) === 4) {
-    const parts = ip.split('.').map(Number)
-    const a = parts[0]!
-    const b = parts[1]!
-    if (a === 0 || a === 10 || a === 127) return true
-    if (a === 169 && b === 254) return true
-    if (a === 172 && b >= 16 && b <= 31) return true
-    if (a === 192 && b === 168) return true
-    return false
+    const value = parseIpv4(ip)!
+    // IANA marks the PCP and TURN anycast addresses globally reachable
+    // even though the surrounding 192.0.0.0/24 protocol block is not.
+    if (value === parseIpv4('192.0.0.9') || value === parseIpv4('192.0.0.10')) return false
+    return IPV4_NON_GLOBAL.some(([base, prefix]) => inIpv4Cidr(value, base, prefix))
   }
-  // Uncompressed v4-mapped spelling (a resolver may hand it back raw).
-  const lower = ip.toLowerCase().replace(/^0:0:0:0:0:ffff:/, '::ffff:')
-  // IPv4-embedded translation prefixes (Codex round 3, P2): NAT64
-  // well-known (64:ff9b::/96), NAT64 local-use (64:ff9b:1::/48), and
-  // 6to4 (2002::/16) all embed an IPv4 the OS may translate straight
-  // to a private target. Decode the embedded address and judge THAT;
-  // an embedding we can't decode fails closed.
-  const translated =
-    /^64:ff9b(?:|:1(?::[0-9a-f]{1,4})*)::(?:([0-9a-f]{1,4}):)?([0-9a-f]{1,4})$/.exec(lower) ??
-    /^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4})(?:::?|:)/.exec(lower)
-  if (translated) {
-    const hi = parseInt(translated[1] ?? '0', 16)
-    const lo = parseInt(translated[2]!, 16)
-    if (Number.isNaN(hi) || Number.isNaN(lo)) return true
-    return isPrivateAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`)
+  if (isIP(ip) !== 6) return true
+  const value = parseIpv6(ip)
+  if (value === null) return true
+
+  // IPv4-mapped and the NAT64 well-known prefix are globally routable
+  // containers. Their embedded destination decides the policy.
+  if (inIpv6Cidr(value, '::ffff:0:0', 96) || inIpv6Cidr(value, '64:ff9b::', 96)) {
+    return isPrivateAddress(ipv4FromLowBits(value))
   }
-  if (lower.startsWith('64:ff9b') || lower.startsWith('2002:')) return true
-  if (lower === '::' || lower === '::1') return true
-  if (lower.startsWith('fc') || lower.startsWith('fd')) return true // fc00::/7 ULA
-  if (/^fe[89ab]/.test(lower)) return true // fe80::/10 link-local
-  if (lower.startsWith('::ffff:')) {
-    // v4-mapped. WHATWG URL normalizes the dotted spelling to HEX
-    // groups ("[::ffff:127.0.0.1]" → hostname "[::ffff:7f00:1]"), so
-    // both must map back to the embedded IPv4 — the hex form
-    // previously fell through every range check as public (Codex
-    // review P1, reproduced).
-    const tail = lower.slice(7)
-    if (tail.includes('.')) return isPrivateAddress(tail)
-    const hex = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(tail)
-    if (hex) {
-      const hi = parseInt(hex[1]!, 16)
-      const lo = parseInt(hex[2]!, 16)
-      return isPrivateAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`)
-    }
-    // A mapped form we don't recognize never gets the benefit of the
-    // doubt.
-    return true
+  // 6to4 embeds IPv4 immediately after 2002::/16.
+  if (inIpv6Cidr(value, '2002::', 16)) {
+    const embedded = Number((value >> 80n) & 0xffff_ffffn)
+    return isPrivateAddress(formatIpv4(embedded))
   }
-  return false
+
+  return IPV6_NON_GLOBAL.some(([base, prefix]) => inIpv6Cidr(value, base, prefix))
+}
+
+type Ipv4Cidr = readonly [base: number, prefix: number]
+type Ipv6Cidr = readonly [base: string, prefix: number]
+
+// IANA IPv4 Special-Purpose Address Registry entries whose globally
+// reachable flag is false (plus multicast/reserved address space).
+const IPV4_NON_GLOBAL: readonly Ipv4Cidr[] = [
+  [parseIpv4('0.0.0.0')!, 8],
+  [parseIpv4('10.0.0.0')!, 8],
+  [parseIpv4('100.64.0.0')!, 10],
+  [parseIpv4('127.0.0.0')!, 8],
+  [parseIpv4('169.254.0.0')!, 16],
+  [parseIpv4('172.16.0.0')!, 12],
+  [parseIpv4('192.0.0.0')!, 24],
+  [parseIpv4('192.0.2.0')!, 24],
+  [parseIpv4('192.88.99.0')!, 24],
+  [parseIpv4('192.168.0.0')!, 16],
+  [parseIpv4('198.18.0.0')!, 15],
+  [parseIpv4('198.51.100.0')!, 24],
+  [parseIpv4('203.0.113.0')!, 24],
+  [parseIpv4('224.0.0.0')!, 4],
+  [parseIpv4('240.0.0.0')!, 4],
+]
+
+// IANA IPv6 special-purpose space that is not globally reachable.
+// Mapped/NAT64-WKP/6to4 are handled above because their embedded IPv4
+// decides whether a real request can reach a local target.
+const IPV6_NON_GLOBAL: readonly Ipv6Cidr[] = [
+  ['::', 96], // unspecified, loopback, and deprecated v4-compatible
+  ['64:ff9b::', 32], // malformed/adjacent translation spellings fail closed
+  ['64:ff9b:1::', 48], // NAT64 local-use
+  ['100::', 64], // discard-only
+  ['2001::', 32], // Teredo
+  ['2001:2::', 48], // benchmarking
+  ['2001:10::', 28], // ORCHID (deprecated)
+  ['2001:20::', 28], // ORCHIDv2
+  ['2001:db8::', 32], // documentation
+  ['3fff::', 20], // documentation
+  ['5f00::', 16], // segment-routing SIDs
+  ['fc00::', 7], // unique-local
+  ['fe80::', 10], // link-local
+  ['fec0::', 10], // deprecated site-local
+  ['ff00::', 8], // multicast
+]
+
+function parseIpv4(ip: string): number | null {
+  if (isIP(ip) !== 4) return null
+  return ip
+    .split('.')
+    .map(Number)
+    .reduce((value, octet) => (value * 256 + octet) >>> 0, 0)
+}
+
+function inIpv4Cidr(value: number, base: number, prefix: number): boolean {
+  const mask = prefix === 0 ? 0 : (0xffff_ffff << (32 - prefix)) >>> 0
+  return (value & mask) >>> 0 === (base & mask) >>> 0
+}
+
+function parseIpv6(ip: string): bigint | null {
+  if (isIP(ip) !== 6) return null
+  let normalized = ip.toLowerCase()
+  if (normalized.includes('.')) {
+    const colon = normalized.lastIndexOf(':')
+    const v4 = parseIpv4(normalized.slice(colon + 1))
+    if (v4 === null) return null
+    normalized = `${normalized.slice(0, colon)}:${(v4 >>> 16).toString(16)}:${(v4 & 0xffff).toString(16)}`
+  }
+  const halves = normalized.split('::')
+  if (halves.length > 2) return null
+  const left = halves[0] === '' ? [] : halves[0]!.split(':')
+  const right = halves.length === 1 || halves[1] === '' ? [] : halves[1]!.split(':')
+  const missing = 8 - left.length - right.length
+  if (missing < 0 || halves.length === 1 && missing !== 0) return null
+  const groups = [...left, ...Array.from({ length: missing }, () => '0'), ...right]
+  if (groups.length !== 8) return null
+  let value = 0n
+  for (const group of groups) {
+    const parsed = Number.parseInt(group, 16)
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 0xffff) return null
+    value = (value << 16n) | BigInt(parsed)
+  }
+  return value
+}
+
+function inIpv6Cidr(value: bigint, base: string, prefix: number): boolean {
+  const baseValue = parseIpv6(base)
+  if (baseValue === null) throw new Error(`invalid IPv6 CIDR base ${base}`)
+  const shift = BigInt(128 - prefix)
+  return value >> shift === baseValue >> shift
+}
+
+function ipv4FromLowBits(value: bigint): string {
+  return formatIpv4(Number(value & 0xffff_ffffn))
+}
+
+function formatIpv4(value: number): string {
+  return [value >>> 24, value >>> 16 & 255, value >>> 8 & 255, value & 255].join('.')
 }
 
 /**
@@ -87,13 +159,16 @@ export function resolveRedirectTarget(current: string | URL, location: string | 
 }
 
 /** Null when the host is public; a user-facing refusal otherwise. */
-export async function assertPublicHost(url: URL): Promise<string | null> {
+export async function assertPublicHost(
+  url: URL,
+  resolveHost: typeof lookup = lookup,
+): Promise<string | null> {
   const refusal = `refusing to fetch a private or local address (${url.hostname})`
   const host = url.hostname.replace(/^\[|\]$/g, '')
   if (host === 'localhost' || host.endsWith('.localhost')) return refusal
   if (isIP(host) !== 0) return isPrivateAddress(host) ? refusal : null
   try {
-    const addresses = await lookup(host, { all: true })
+    const addresses = await resolveHost(host, { all: true })
     if (addresses.some((entry) => isPrivateAddress(entry.address))) return refusal
   } catch {
     return `could not resolve ${host}`

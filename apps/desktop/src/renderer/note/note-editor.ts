@@ -103,7 +103,10 @@ export class NoteEditorController {
         if (transaction.docChanged) this.#onTyped()
       },
       onBlur: () => {
-        void this.flushPending()
+        // Blur is an autosave trigger, not a destructive caller. Report the
+        // failure through onError while keeping the dirty buffer available
+        // for retry; do not create an unhandled rejection in the renderer.
+        void this.flushPending().catch(() => undefined)
       },
     })
   }
@@ -293,8 +296,16 @@ export class NoteEditorController {
             this.#setDirty(false)
           }
         } else {
-          this.#hooks.onError?.(`autosave failed: ${describe(result)}`)
+          throw new NoteFlushError(`autosave failed: ${describe(result)}`)
         }
+      })
+      .catch((error: unknown) => {
+        const failure =
+          error instanceof NoteFlushError
+            ? error
+            : new NoteFlushError(`autosave failed: ${describeError(error)}`)
+        this.#hooks.onError?.(failure.message)
+        throw failure
       })
       .finally(() => {
         this.#inFlight = null
@@ -335,7 +346,9 @@ export class NoteEditorController {
     if (this.#timer !== null) clearTimeout(this.#timer)
     this.#timer = setTimeout(() => {
       this.#timer = null
-      void this.flushPending()
+      // The buffer remains dirty after failure and the hook already reports
+      // it. A timer has no caller to observe a rejection.
+      void this.flushPending().catch(() => undefined)
     }, NOTE_AUTOSAVE_IDLE_MS)
   }
 
@@ -346,8 +359,16 @@ export class NoteEditorController {
   }
 }
 
+export class NoteFlushError extends Error {
+  override readonly name = 'NoteFlushError'
+}
+
 function describe(result: CommandResult): string {
   if (result.status === 'error') return result.message
   if (result.status === 'conflict') return 'project changed underneath'
   return result.status
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }

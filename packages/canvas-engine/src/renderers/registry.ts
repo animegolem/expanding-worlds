@@ -59,6 +59,8 @@ export interface ImageTreatment {
 export interface RendererResources {
   /** Resolves a texture for a managed asset URL; injectable for tests. */
   loadTexture: (url: string) => Promise<unknown>
+  /** Releases a texture and its decoded source when this renderer owns it. */
+  destroyTexture?: (texture: unknown) => void
   /**
    * §12.2 lazy textures: when present, image bodies stay placeholders
    * until residency is granted (Culler enter/leave drives

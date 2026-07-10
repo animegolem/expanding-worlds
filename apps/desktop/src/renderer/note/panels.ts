@@ -160,6 +160,7 @@ let records: PanelRecord[] = []
 let nextKey = 1
 const listeners = new Set<Listener>()
 const flushers = new Map<number, () => Promise<void>>()
+const closingPanels = new Set<number>()
 const renamers = new Map<number, (noteId: string, title: string) => void>()
 let host: CanvasHostHandle | null = null
 let storePort: ProjectPort | null = null
@@ -499,12 +500,25 @@ export function closeNotePanel(noteId: string): void {
 }
 
 export function closePanel(key: number): void {
-  if (bigEditorKey === key) closeBigEditor()
-  // §7.1: close is a guaranteed save point — a burst still inside
-  // the debounce window commits before the panel goes (AI-IMP-085;
-  // the command lands async, the panel need not wait for it).
+  if (closingPanels.has(key)) return
   const flush = flushers.get(key)
-  if (flush) void flush().catch(() => undefined)
+  if (!flush) {
+    finishClosePanel(key)
+    return
+  }
+  // §7.1: close is a guaranteed save point. The panel and its live
+  // editor are the only copy of a rejected draft, so they stay mounted
+  // until the commit succeeds. NoteEditorController reports failures;
+  // leaving the panel open gives the user a retry path.
+  closingPanels.add(key)
+  void flush()
+    .then(() => finishClosePanel(key))
+    .catch(() => undefined)
+    .finally(() => closingPanels.delete(key))
+}
+
+function finishClosePanel(key: number): void {
+  if (bigEditorKey === key) closeBigEditor()
   flushers.delete(key)
   records = records.filter((record) => record.key !== key)
   notify()
@@ -624,7 +638,7 @@ export function registerPanelRename(
 }
 
 export async function flushAllPanels(): Promise<void> {
-  await Promise.all([...flushers.values()].map((flush) => flush().catch(() => undefined)))
+  await Promise.all([...flushers.values()].map((flush) => flush()))
 }
 
 // ---- §7.3 activation pipeline (AI-IMP-065): text resolved first
@@ -845,6 +859,7 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
     for (const dispose of disposers) dispose()
     records = []
     flushers.clear()
+    closingPanels.clear()
     renamers.clear()
     chooser = null
     notifyChooser()

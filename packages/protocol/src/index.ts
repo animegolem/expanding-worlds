@@ -378,8 +378,15 @@ export interface SnapshotEntry {
  * (offered to Open Restored Project); on failure a typed code/message
  * surfaces in the picker. Restore never touches the source project. */
 export type RestoreResult =
-  | { ok: true; dir: string }
+  | { ok: true; dir: string; openToken: string }
   | { ok: false; code: string; message: string }
+
+/** Renderer-facing import result. The utility's ImportProjectResponse
+ * intentionally has no open authority; main adds a sender-bound token
+ * only after a successful materialization. */
+export type OpenableImportProjectResponse =
+  | (Extract<ImportProjectResponse, { ok: true }> & { openToken: string })
+  | Extract<ImportProjectResponse, { ok: false }>
 
 /** §16 portable export (AI-IMP-157; container rev 0.57): stream the
  * `.ewproj` archive to a main-chosen destination. Progress rides the
@@ -426,6 +433,8 @@ export interface ImportProjectRequest {
   type: 'import-project'
   archivePath: string
   destDir: string
+  /** Main's filesystem-backed, destination-bound reservation. */
+  reservationToken: string
 }
 
 export type ImportProjectResponse =

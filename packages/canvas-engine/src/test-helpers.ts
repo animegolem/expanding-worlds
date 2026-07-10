@@ -3,13 +3,18 @@ import type { RendererResources } from './renderers/registry'
 import type { SceneDecoration, ScenePlacement } from './types'
 
 /** Test-only fakes: no GPU, no protocol — loads resolve to WHITE. */
-export function fakeResources(): RendererResources & { requested: string[] } {
+export function fakeResources(): RendererResources & { requested: string[]; destroyed: unknown[] } {
   const requested: string[] = []
+  const destroyed: unknown[] = []
   return {
     requested,
+    destroyed,
     loadTexture(url: string) {
       requested.push(url)
       return Promise.resolve(Texture.WHITE)
+    },
+    destroyTexture(texture: unknown) {
+      destroyed.push(texture)
     },
   }
 }

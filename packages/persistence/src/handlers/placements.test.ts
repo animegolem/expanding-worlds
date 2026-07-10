@@ -94,6 +94,31 @@ function visibleOrder(): string[] {
 }
 
 describe('CreatePlacement', () => {
+  it('rejects malformed and non-finite geometry before SQLite', () => {
+    expect(exec('CreatePlacement', null)).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+    })
+    const placementId = uuidv7()
+    expect(
+      exec('CreatePlacement', {
+        placementId,
+        canvasId: handle.rootCanvasId,
+        nodeId: handle.rootNodeId,
+        x: Number.POSITIVE_INFINITY,
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(placementRow(placementId)).toBeUndefined()
+    expect(
+      exec('CreatePlacement', {
+        placementId,
+        canvasId: handle.rootCanvasId,
+        nodeId: handle.rootNodeId,
+        scale: 0,
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
+
   it('enforces FK-valid canvas and node (invariant 7)', () => {
     expect(
       exec('CreatePlacement', {
@@ -160,6 +185,23 @@ describe('CreatePlacement', () => {
 })
 
 describe('MovePlacement', () => {
+  it('rejects non-finite or non-positive transforms without changing the placement', () => {
+    const placementId = createPlacement({ x: 10, y: 20 })
+    const before = placementRow(placementId)
+    expect(
+      exec('MovePlacement', {
+        placementId,
+        x: Number.NEGATIVE_INFINITY,
+        y: 20,
+        width: null,
+        height: null,
+        scale: 1,
+        rotation: 0,
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(placementRow(placementId)).toEqual(before)
+  })
+
   it('applies the completed-gesture transform and round-trips its inverse', () => {
     const placementId = createPlacement({ x: 1, y: 2 })
     const move = committed('MovePlacement', {
@@ -412,6 +454,35 @@ describe('releaseConnectorAnchors (helper for AI-IMP-013)', () => {
 })
 
 describe('TransformContent (invariant 25: one command per gesture)', () => {
+  it('validates every placement and decoration number before writing the batch', () => {
+    const placementId = createPlacement({ x: 1, y: 2 })
+    const decorationId = createDecoration({ data: { x: 3, y: 4 } })
+    const before = placementRow(placementId)
+    expect(
+      exec('TransformContent', {
+        canvasId: handle.rootCanvasId,
+        items: [
+          {
+            kind: 'placement',
+            placementId,
+            x: 100,
+            y: 200,
+            width: null,
+            height: null,
+            scale: 1,
+            rotation: 0,
+          },
+          {
+            kind: 'decoration',
+            decorationId,
+            data: { x: Number.POSITIVE_INFINITY, y: 4 },
+          },
+        ],
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(placementRow(placementId)).toEqual(before)
+  })
+
   function transform(placementId: string, x: number, y: number) {
     return {
       kind: 'placement' as const,

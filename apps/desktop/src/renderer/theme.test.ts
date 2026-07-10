@@ -163,4 +163,26 @@ describe('applyTheme', () => {
     expect(setVibrancy).toHaveBeenNthCalledWith(1, true)
     expect(setVibrancy).toHaveBeenNthCalledWith(2, false)
   })
+
+  it('does not let a stale glass fallback overwrite a newer theme', async () => {
+    let finishGlass!: (applied: boolean) => void
+    const glassResult = new Promise<boolean>((resolve) => {
+      finishGlass = resolve
+    })
+    const setVibrancy = vi.fn((enabled: boolean) =>
+      enabled ? glassResult : Promise.resolve(true),
+    )
+    const root = installGlobals(setVibrancy)
+
+    const glass = applyTheme('glass')
+    await vi.waitFor(() => expect(setVibrancy).toHaveBeenCalledWith(true))
+    await expect(applyTheme('light')).resolves.toBe('light')
+
+    finishGlass(false)
+    await glass
+
+    expect(root.dataset['theme']).toBe('light')
+    expect(setVibrancy).toHaveBeenCalledTimes(2)
+    expect(setVibrancy).toHaveBeenNthCalledWith(2, false)
+  })
 })

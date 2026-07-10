@@ -23,7 +23,7 @@
     | { kind: 'list' }
     | { kind: 'confirm'; entry: SnapshotEntry }
     | { kind: 'restoring'; entry: SnapshotEntry }
-    | { kind: 'done'; dir: string }
+    | { kind: 'done'; dir: string; openToken: string }
     | { kind: 'failed'; message: string }
 
   let entries = $state<SnapshotEntry[]>([])
@@ -80,7 +80,7 @@
       return
     }
     phase = result.ok
-      ? { kind: 'done', dir: result.dir }
+      ? { kind: 'done', dir: result.dir, openToken: result.openToken }
       : { kind: 'failed', message: result.message }
   }
 </script>
@@ -189,7 +189,7 @@
           variant="accent"
           data-testid="restore-open"
           onclick={() => {
-            if (phase.kind === 'done') void window.ew.snapshot.open(phase.dir)
+            if (phase.kind === 'done') void window.ew.snapshot.open(phase.openToken)
           }}
         >
           Open Restored Project

@@ -63,6 +63,28 @@ describe('assertPublicHost — redirect hops are refused with the standard messa
     )
   })
 
+  it('refuses Alibaba metadata in RFC 6598 shared address space', async () => {
+    expect(await assertPublicHost(new URL('http://100.100.100.200/latest/meta-data/'))).toBe(
+      refusal('100.100.100.200'),
+    )
+  })
+
+  it('applies the same non-global policy to every DNS answer', async () => {
+    const resolvedMetadata = async () => [{ address: '100.100.100.200', family: 4 as const }]
+    expect(
+      await assertPublicHost(
+        new URL('https://images.example.test/reference.png'),
+        resolvedMetadata as never,
+      ),
+    ).toBe(refusal('images.example.test'))
+  })
+
+  it('normalizes IPv4 shorthand before classification', async () => {
+    const target = new URL('http://127.1/admin')
+    expect(target.hostname).toBe('127.0.0.1')
+    expect(await assertPublicHost(target)).toBe(refusal('127.0.0.1'))
+  })
+
   it('refuses IPv6 loopback (bracketed host normalized)', async () => {
     expect(await assertPublicHost(new URL('http://[::1]/'))).toBe(refusal('[::1]'))
   })
@@ -93,6 +115,41 @@ describe('isPrivateAddress sanity (hop guard building block)', () => {
     expect(isPrivateAddress('93.184.216.34')).toBe(false)
     expect(isPrivateAddress('8.8.8.8')).toBe(false)
     expect(isPrivateAddress('2606:2800:220:1:248:1893:25c8:1946')).toBe(false)
+  })
+
+  it('covers RFC 6598 exactly, including the Alibaba metadata endpoint', () => {
+    expect(isPrivateAddress('100.64.0.0')).toBe(true)
+    expect(isPrivateAddress('100.100.100.200')).toBe(true)
+    expect(isPrivateAddress('100.127.255.255')).toBe(true)
+    expect(isPrivateAddress('100.63.255.255')).toBe(false)
+    expect(isPrivateAddress('100.128.0.0')).toBe(false)
+  })
+
+  it('refuses non-global protocol, benchmark, documentation, multicast, and reserved IPv4', () => {
+    expect(isPrivateAddress('192.0.0.8')).toBe(true)
+    expect(isPrivateAddress('192.0.2.1')).toBe(true)
+    expect(isPrivateAddress('192.88.99.1')).toBe(true)
+    expect(isPrivateAddress('198.18.0.1')).toBe(true)
+    expect(isPrivateAddress('198.51.100.1')).toBe(true)
+    expect(isPrivateAddress('203.0.113.1')).toBe(true)
+    expect(isPrivateAddress('224.0.0.1')).toBe(true)
+    expect(isPrivateAddress('255.255.255.255')).toBe(true)
+    // Explicit globally-reachable exceptions inside 192.0.0.0/24.
+    expect(isPrivateAddress('192.0.0.9')).toBe(false)
+    expect(isPrivateAddress('192.0.0.10')).toBe(false)
+  })
+
+  it('refuses non-global IPv6 special-purpose ranges', () => {
+    expect(isPrivateAddress('100::1')).toBe(true)
+    expect(isPrivateAddress('2001::1')).toBe(true)
+    expect(isPrivateAddress('2001:2::1')).toBe(true)
+    expect(isPrivateAddress('2001:db8::1')).toBe(true)
+    expect(isPrivateAddress('3fff::1')).toBe(true)
+    expect(isPrivateAddress('5f00::1')).toBe(true)
+    expect(isPrivateAddress('fec0::1')).toBe(true)
+    expect(isPrivateAddress('ff02::1')).toBe(true)
+    // NAT64 local-use is non-global regardless of its embedded address.
+    expect(isPrivateAddress('64:ff9b:1::808:808')).toBe(true)
   })
 
   it('flags HEX-form v4-mapped literals (WHATWG URL normalization; review P1)', () => {

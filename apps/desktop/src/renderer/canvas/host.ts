@@ -406,6 +406,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const resources: RendererResources = {
     loadTexture,
     loadTileSource,
+    destroyTexture: (texture) => (texture as Texture).destroy(true),
     ...(iconAtlas ? { iconAtlas } : {}),
     textures: {
       acquire: (hash, url) => textureBudget.acquire(hash, url),
@@ -2150,6 +2151,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     },
     destroy() {
       textureBudget.releaseAll()
+      backgroundSync.destroy()
       detachGestures()
       unsubscribe()
       unsubscribeSettings()

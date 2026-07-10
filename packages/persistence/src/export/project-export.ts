@@ -16,6 +16,11 @@ import yauzl from 'yauzl'
 import { ZipFile } from 'yazl'
 import { Db } from '../db'
 import { blobRelativePath } from '../import/store'
+import {
+  assertManagedPath,
+  assertManagedTree,
+  UnsafeManagedPathError,
+} from '../path-safety'
 import { filterActiveOnly } from './active-only'
 import {
   DB_ENTRY,
@@ -216,17 +221,20 @@ function assetHashes(db: Db): string[] {
 export async function estimateExportSize(handle: { db: Db; dir: string }): Promise<number> {
   const safeSize = async (path: string): Promise<number> => {
     try {
-      return (await stat(path)).size
-    } catch {
+      return (await stat(assertManagedPath(handle.dir, path))).size
+    } catch (error) {
+      if (error instanceof UnsafeManagedPathError) throw error
       return 0
     }
   }
   let total = await safeSize(join(handle.dir, 'project.sqlite'))
   try {
-    for (const entry of await readdir(join(handle.dir, NOTES_DIR))) {
+    const notesDir = assertManagedPath(handle.dir, join(handle.dir, NOTES_DIR))
+    for (const entry of await readdir(notesDir)) {
       if (entry.endsWith('.md')) total += await safeSize(join(handle.dir, NOTES_DIR, entry))
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof UnsafeManagedPathError) throw error
     // No notes tree yet — the export path writes one; the estimate
     // simply omits it (bodies are small beside media).
   }
@@ -275,6 +283,7 @@ export async function exportProject(
   let partialPath: string | null = null
 
   try {
+    assertManagedPath(dir, join(dir, 'project.sqlite'))
     db.prepare('VACUUM INTO ?').run(tempDb)
     if (options.activeOnly) filterActiveOnly(tempDb)
 
@@ -286,8 +295,11 @@ export async function exportProject(
     // gives project.sqlite this immunity; the copy extends it to notes.
     const frozenNotesDir = join(tempDir, NOTES_DIR)
     try {
-      await cp(join(dir, NOTES_DIR), frozenNotesDir, { recursive: true })
-    } catch {
+      const notesDir = join(dir, NOTES_DIR)
+      assertManagedTree(dir, notesDir)
+      await cp(notesDir, frozenNotesDir, { recursive: true })
+    } catch (error) {
+      if (error instanceof UnsafeManagedPathError) throw error
       // No notes tree to freeze — the planning loop below tolerates its
       // absence and the database stays authoritative.
     }
@@ -335,7 +347,7 @@ export async function exportProject(
 
     for (const hash of hashes) {
       const rel = blobRelativePath(hash)
-      const filePath = join(dir, rel)
+      const filePath = assertManagedPath(dir, join(dir, rel))
       const size = (await stat(filePath)).size // a missing blob throws — honest failure
       planned.push({ zipPath: rel.replaceAll('\\', '/'), filePath, compress: false, bytes: size })
     }

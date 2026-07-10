@@ -45,6 +45,12 @@ export {
   type NoteMetadataView,
 } from './note-metadata-db'
 export { getProjectSetting, setProjectSetting } from './settings'
+export {
+  assertManagedPath,
+  assertManagedProjectLayout,
+  assertManagedTree,
+  UnsafeManagedPathError,
+} from './path-safety'
 // §16/§11.4 readable notes tree for session snapshots (AI-IMP-120).
 export {
   writeNotesTree,
@@ -73,6 +79,11 @@ export {
 export {
   importProject,
   readArchiveManifest,
+  releaseImportDestination,
+  reserveAvailableImportDestination,
+  reserveImportDestination,
+  IMPORT_RESERVATION_SUFFIX,
+  type ImportDestinationReservation,
   type ImportResult as ProjectImportResult,
   type ImportRefusal,
 } from './export/project-import'
