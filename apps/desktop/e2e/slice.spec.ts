@@ -254,7 +254,7 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
     placementId: crypto.randomUUID(),
     x: 520,
     y: 120,
-    appearance: { kind: 'image', assetId: pinAsset, crop: { x: 4, y: 4, width: 32, height: 24 } },
+    appearance: { kind: 'image', assetId: pinAsset, crop: { x: 0.1, y: 0.1, width: 0.5, height: 0.5 } },
   })
   const pinned = await scene()
   expect(

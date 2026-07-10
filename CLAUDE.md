@@ -71,6 +71,12 @@ never delegated. Implementation may be decomposed:
   trusting numbers (headless Chromium runs WebGL on SwiftShader —
   this nearly inverted the renderer decision). The desktop perf suite
   refuses software GL for the same reason.
+- Validation chains always `set -o pipefail`: piping a test runner
+  through grep/tail otherwise reports the FILTER's exit, not the
+  suite's — one unpiped chain reported exit 0 over 43 failed
+  persistence suites and a second masked 4 real e2e failures behind
+  a green call (EPIC-027 merge, AI-IMP-256). Read counts, not exit
+  codes; "N passed" without the failed line is not a pass.
 - Playwright: never hand `waitForFunction` an async closure — a
   Promise is truthy, so the wait passes vacuously (produced a
   false-green in EPIC-004). Use `expect.poll` with `win.evaluate`.

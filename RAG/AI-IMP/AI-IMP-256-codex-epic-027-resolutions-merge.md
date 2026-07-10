@@ -24,7 +24,7 @@ resolved ALL 14 C10 findings as atomic commits (bd09e1fd..27de4efa,
 base e657d00d) with per-commit regression tests, validated locally
 including full Electron e2e (243/243, six shards — the desktop
 session runs Electron, unlike sandboxed clones). This ticket
-records the lead review and merge (`4ad2f197`) so EPIC-027's
+records the lead review and merge (`c7c0b1a2`) so EPIC-027's
 FR-1..13 have a kanban artifact; the commits map 1:1 to C10 IDs
 and thus to the FRs.
 
@@ -59,7 +59,7 @@ C10-002's openToken flow through SettingsView preserved.
 
 ### Files to Touch
 
-(See merge `4ad2f197` — 53 files; conflict resolutions in
+(See merge `c7c0b1a2` — 53 files; conflict resolutions in
 `packages/persistence/src/project.ts` and
 `apps/desktop/src/renderer/views/SettingsView.svelte`.)
 
@@ -82,7 +82,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 
 ### Acceptance Criteria
 
-**GIVEN** merged main at `4ad2f197`
+**GIVEN** merged main at `c7c0b1a2`
 **WHEN** the full local gate runs
 **THEN** build, package units, desktop units, and the complete e2e
 suite pass
@@ -103,3 +103,27 @@ push. C10-011's duplicate implementation cost was one review
 round, not lost work — the wave-1/parallel-Codex race is the
 expected price of two builders on one audit; base-freshness checks
 go in future briefs.
+
+TWO LEAD ERRORS CAUGHT BY THE GATE, recorded honestly: (1) the
+project.ts conflict resolution silently failed (Edit refused an
+unread file) and the merge was committed with LIVE CONFLICT
+MARKERS — 43 persistence suites failed at transform; (2) the first
+gate chain MASKED that failure (grep swallowed the pipeline exit,
+no pipefail) and reported exit 0 — the same false-green class as
+the Playwright waitForFunction lesson. Repaired, amended (final
+merge hash c7c0b1a2), full gate re-run WITH pipefail before the
+tag. Rules reinforced: gate chains always `set -o pipefail`; any
+merge with a failed Edit gets a tree-wide conflict-marker scan
+before commit.
+
+THIRD FINDING from the unmasked gate: wave 1's e2e validation was
+ALSO misread — 4 real failures (3 search + 1 slice) hid behind the
+same unpiped tail and my "238 passed, 1 flaky" green call. Cause:
+two e2e seeds spoke an untyped dialect the new appearance codec
+rightly refuses — search.spec omitted the required `crop` key, and
+slice.spec:257 passed a PIXEL-SPACE crop ({x:4,width:32}) that
+pre-codec handlers silently stored, which is HC-004/C10-008's
+entire premise demonstrated in our own suite. Ruling: the codec is
+correct (every product caller passes crop explicitly; the typed
+payload requires it); the seeds were fixed to the §4.6 normalized
+contract. Full suite re-run before tag.

@@ -100,7 +100,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [ ] Packaged-build hand check on macOS: hover top band → strip
       appears, chrome stays; HUMAN-TESTING.md entry for the owner
       (mac) and alph (Windows).
-- [ ] v0.19.1 tagged with the changelog entry once owner-confirmed.
+- [x] Ships in v0.20.0 (overtook the v0.19.1 plan — the C10 merge landed the same day); changelog entry aboard.
 
 ### Acceptance Criteria
 

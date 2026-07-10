@@ -87,7 +87,7 @@ async function seedSearchWorld(win: Page): Promise<SearchWorld> {
           placementId,
           x: 600,
           y: 300,
-          appearance: { kind: 'image', assetId: imported.assetId },
+          appearance: { kind: 'image', assetId: imported.assetId, crop: null },
         },
       })
       if (outcome.status !== 'committed') throw new Error(JSON.stringify(outcome))

@@ -172,7 +172,7 @@ map 1:1 to FRs above.)
       mechanical, unassigned
 
 **Codex resolutions batch (2026-07-10):** FR-1..13 closed in one
-reviewed merge (`4ad2f197`) — the in-context Codex resolved all 14
+reviewed merge (`c7c0b1a2`) — the in-context Codex resolved all 14
 C10 findings atomically; AI-IMP-256 is the review/merge record.
 C10-011 was built twice (wave-1 race); AI-IMP-251's implementation
 stands, the duplicate was dropped at merge.

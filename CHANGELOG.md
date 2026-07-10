@@ -10,14 +10,14 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
-## [Unreleased]
+## [v0.20.0] — 2026-07-10 — the hardening build
 
 ### For testers
 - Fixed: resting the cursor on the invisible top bar made ALL
   chrome vanish and never showed the dark title strip — the OS
   owns that band in the frameless window and the app read it as
   "cursor left." The strip now reveals there and chrome stays put.
-  (AI-IMP-255, hotfix target v0.19.1)
+  (AI-IMP-255)
 - Anchored popups and panels (tag panel, search, menus, chooser
   chips) can no longer land partly off-screen in a narrow window —
   one shared placement rule now clamps and flips all of them.
@@ -35,7 +35,7 @@ annotations.
 
 ### Under the hood
 - All 14 control-flow audit findings resolved (C10-001..014,
-  merge 4ad2f197, review record AI-IMP-256): capability-bound
+  merge c7c0b1a2, review record AI-IMP-256): capability-bound
   restore/import open, symlink-safe managed paths, IANA-complete
   net-guard, request-owned import staging, correlated flush acks,
   honest tx-depth recovery, atomic grouped undo repair state,
