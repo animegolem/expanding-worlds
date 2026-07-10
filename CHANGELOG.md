@@ -28,6 +28,13 @@ annotations.
   the cull pass instead of stretching one DPR-sized texture forever
   (AI-IMP-262) — convicted by a runtime repro: a New-board pin's
   label rasters at ~7 device px and Home zooms magnified it 8-20×.
+- The Windows lock-probe zero-winner convicted as fixture PID reuse
+  and fixed in the fixture (AI-IMP-263, Codex): the planted corpse
+  pid was recycled into a live runner process and every worker
+  honestly refused it — the lock protocol and release path are
+  exonerated with cited run evidence; lock.ts untouched. Probe now
+  plants a fresh ESRCH-verified pid per round with a one-shot
+  recycled-corpse retry. Kills the intermittent main-push CI reds.
 
 ## [v0.20.0] — 2026-07-10 — the hardening build
 

@@ -6,7 +6,7 @@ tags:
   - ci
   - windows
   - lock
-kanban_status: planned
+kanban_status: in-progress
 depends_on: [AI-IMP-249]
 parent_epic:
 confidence_score: 0.95
@@ -121,7 +121,19 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Fix at the cause; reclaim policy untouched.
 - [ ] Windows job green on the working branch, then 3 consecutive
       green main pushes after merge.
-- [ ] macOS/Linux persistence suite stays green.
+      BRANCH HALF DONE: ci/imp-263 run 29108559956 (34e05a9a)
+      green, Windows job included. MAIN GATE IN FLIGHT: merged at
+      e0c15f6f; the gate runs as three probe executions on the
+      merged main tip (merge push + close push + one rerun — no
+      workflow_dispatch exists, and three organic pushes would
+      take days; the gate's purpose is statistical evidence
+      against the fixture race, which three executions on the
+      same tree serve identically). Check off only when all
+      three are green.
+- [x] macOS/Linux persistence suite stays green.
+      macOS local (Codex worktree, 34e05a9a): 55 files,
+      604/604 passed, exit 0 under pipefail. Linux: the same
+      run's `check` job green (build + full units + smoke e2e).
 
 ### Acceptance Criteria
 

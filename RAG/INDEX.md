@@ -102,7 +102,7 @@
 - [[AI-IMP-259-path-bar-containment|IMP-259]] — planned, no epic dependency found
 - [[AI-IMP-260-delete-loose-notes|IMP-260]] — planned, no epic dependency found
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
-- [[AI-IMP-263-lock-probe-zero-winner-main|IMP-263]] — planned, no epic dependency found
+- [[AI-IMP-263-lock-probe-zero-winner-main|IMP-263]] — in-progress, no epic dependency found
 - [[AI-IMP-264-lock-protocol-composite-hardening|IMP-264]] — planned, no epic dependency found
 
 ### Status Mismatches
