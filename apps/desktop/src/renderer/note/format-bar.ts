@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core'
 import type { Editor } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
+import { placeAnchored } from '../chrome/anchored-placement'
 import { Z } from '../z'
 
 /**
@@ -91,16 +92,21 @@ export function clampBar(
   gap = GAP,
   margin = MARGIN,
 ): BarPlacement {
-  let left = anchor.centerX - size.width / 2
-  const maxLeft = viewport.width - size.width - margin
-  left = maxLeft < margin ? margin : Math.min(Math.max(margin, left), maxLeft)
-
-  let top = anchor.top - size.height - gap
-  if (top < margin) top = anchor.bottom + gap
-  const maxTop = viewport.height - size.height - margin
-  top = maxTop < margin ? margin : Math.min(Math.max(margin, top), maxTop)
-
-  return { left, top }
+  const placed = placeAnchored({
+    anchor: {
+      x: anchor.centerX,
+      y: anchor.top,
+      width: 0,
+      height: anchor.bottom - anchor.top,
+    },
+    surface: size,
+    host: { x: 0, y: 0, width: viewport.width, height: viewport.height },
+    x: { preferred: 'center' },
+    y: { preferred: 'before', fallback: 'after' },
+    gap,
+    margin,
+  })
+  return { left: placed.x, top: placed.y }
 }
 
 /**

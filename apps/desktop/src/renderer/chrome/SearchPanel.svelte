@@ -17,6 +17,11 @@
 -->
 <script lang="ts">
   import type { CanvasHostHandle } from '../canvas/host'
+  import { pointAnchor } from './anchored-placement'
+  import {
+    placeAnchoredElement,
+    type AnchoredElementOptions,
+  } from './anchored-placement-dom'
   import TextInput from '../ui/TextInput.svelte'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
   import { openTagPanel } from '../tags/tag-panel'
@@ -86,22 +91,26 @@
   let inputEl = $state<HTMLInputElement | null>(null)
   let listEl = $state<HTMLElement | null>(null)
 
-  const PANEL_WIDTH = 340
-
   // Same §8.5 point grammar as the tag panel: client coords of the
   // summoning charm, clamped into the host; the panel hangs to the
   // charm's left (the rail lives at the right edge). Mod+P (no
   // anchor) centers near the top, quick-switcher style.
-  const pos = $derived.by(() => {
+  function placement(current: SearchPanelState): AnchoredElementOptions {
     const bounds = hostElement.getBoundingClientRect()
-    if (!panel.anchor) return { x: Math.max(8, bounds.width / 2 - PANEL_WIDTH / 2), y: 64 }
-    const x = Math.min(
-      Math.max(8, panel.anchor.x - bounds.left - PANEL_WIDTH - 8),
-      bounds.width - PANEL_WIDTH - 8,
-    )
-    const y = Math.min(Math.max(8, panel.anchor.y - bounds.top), bounds.height - 320)
-    return { x, y }
-  })
+    return {
+      anchor: current.anchor
+        ? pointAnchor(current.anchor.x - bounds.left, current.anchor.y - bounds.top)
+        : pointAnchor(bounds.width / 2, 64),
+      host: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+      x: {
+        preferred: current.anchor ? 'before' : 'center',
+        fallback: current.anchor ? 'after' : undefined,
+      },
+      y: { preferred: 'start' },
+      gap: { x: current.anchor ? 8 : 0 },
+      margin: 8,
+    }
+  }
 
   const tagMode = $derived(panel.mode === 'search' && query.startsWith('#'))
 
@@ -346,7 +355,12 @@
   })
 </script>
 
-<div class="search-panel" data-testid="search-panel" data-mode={panel.mode} style={`left:${pos.x}px;top:${pos.y}px`}>
+<div
+  class="search-panel"
+  data-testid="search-panel"
+  data-mode={panel.mode}
+  use:placeAnchoredElement={() => placement(panel)}
+>
   <header>
     <span class="glyph">{panel.mode === 'quick' ? '»' : '⌕'}</span>
     <TextInput

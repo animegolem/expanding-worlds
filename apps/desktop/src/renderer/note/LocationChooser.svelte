@@ -6,18 +6,29 @@
   re-tether. Esc or ✕ dismisses; the viewport stays put until chosen.
 -->
 <script lang="ts">
+  import { pointAnchor } from '../chrome/anchored-placement'
+  import {
+    placeAnchoredElement,
+    type AnchoredElementOptions,
+  } from '../chrome/anchored-placement-dom'
   import { dismissChooser, jumpToPlacement, type ChooserState } from './panels'
   import { tooltip } from '../chrome/tooltip'
 
   const { state, hostElement }: { state: ChooserState; hostElement: HTMLElement } = $props()
 
-  const pos = $derived.by(() => {
+  function placement(current: ChooserState): AnchoredElementOptions {
     const bounds = hostElement.getBoundingClientRect()
-    if (!state.anchor) return { x: bounds.width / 2 - 130, y: 80 }
-    const x = Math.min(Math.max(8, state.anchor.x - bounds.left), bounds.width - 270)
-    const y = Math.min(Math.max(8, state.anchor.y - bounds.top + 6), bounds.height - 240)
-    return { x, y }
-  })
+    return {
+      anchor: current.anchor
+        ? pointAnchor(current.anchor.x - bounds.left, current.anchor.y - bounds.top)
+        : pointAnchor(bounds.width / 2, 80),
+      host: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+      x: { preferred: current.anchor ? 'start' : 'center' },
+      y: { preferred: current.anchor ? 'after' : 'start', fallback: 'before' },
+      gap: { y: current.anchor ? 6 : 0 },
+      margin: 8,
+    }
+  }
 
   // §7.3 (AI-IMP-183 M-10): Esc dismisses the chooser and CONSUMES the
   // press (capture + stopPropagation, the SearchPanel:328 pattern) so the
@@ -33,7 +44,11 @@
   })
 </script>
 
-<div class="chooser" style={`left:${pos.x}px;top:${pos.y}px`} data-testid="location-chooser">
+<div
+  class="chooser"
+  use:placeAnchoredElement={() => placement(state)}
+  data-testid="location-chooser"
+>
   <header>
     <span class="title">“{state.title}” — {state.uses.totalPlacements} places</span>
     <button

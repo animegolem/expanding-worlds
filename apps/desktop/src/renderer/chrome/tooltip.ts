@@ -5,6 +5,7 @@
  */
 import { TOOLTIP_DELAY_MS } from './feel'
 import { Z } from '../z'
+import { placeAnchored } from './anchored-placement'
 
 export interface TooltipSpec {
   name: string
@@ -47,13 +48,17 @@ function show(anchor: HTMLElement, spec: TooltipSpec): void {
   el.style.display = 'block'
   const rect = anchor.getBoundingClientRect()
   const chipRect = el.getBoundingClientRect()
-  let x = rect.left + rect.width / 2 - chipRect.width / 2
-  x = Math.max(4, Math.min(x, window.innerWidth - chipRect.width - 4))
-  // Above the control by default; below when there is no headroom.
-  let y = rect.top - chipRect.height - 6
-  if (y < 4) y = rect.bottom + 6
-  el.style.left = `${x}px`
-  el.style.top = `${y}px`
+  const placed = placeAnchored({
+    anchor: rect,
+    surface: chipRect,
+    host: { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight },
+    x: { preferred: 'center' },
+    y: { preferred: 'before', fallback: 'after' },
+    gap: { y: 6 },
+    margin: 4,
+  })
+  el.style.left = `${placed.x}px`
+  el.style.top = `${placed.y}px`
 }
 
 function hide(): void {
