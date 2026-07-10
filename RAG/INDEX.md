@@ -10,7 +10,7 @@
 | Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 222 |
+| Completed | 19 | 223 |
 | **Total** | **27** | **257** |
 
 ## In Progress
@@ -102,7 +102,6 @@
 - [[AI-IMP-259-path-bar-containment|IMP-259]] — planned, no epic dependency found
 - [[AI-IMP-260-delete-loose-notes|IMP-260]] — planned, no epic dependency found
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
-- [[AI-IMP-262-board-pin-label-legibility|IMP-262]] — planned, no epic dependency found
 - [[AI-IMP-263-lock-probe-zero-winner-main|IMP-263]] — planned, no epic dependency found
 
 ### Status Mismatches
@@ -132,19 +131,19 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
 - apps/desktop/src/main/index.ts (1203 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1177 LOC)
+- packages/canvas-engine/src/renderers/placement.test.ts (1065 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1035 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
 - apps/desktop/e2e/notes.spec.ts (1025 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (1004 LOC)
-- packages/canvas-engine/src/renderers/placement.test.ts (982 LOC)
-- packages/canvas-engine/src/renderers/placement.ts (947 LOC)
+- packages/canvas-engine/src/renderers/placement.ts (1003 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (937 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/note/panels.ts (880 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
-- RAG/HUMAN-TESTING.md (794 LOC)
+- RAG/HUMAN-TESTING.md (808 LOC)
 - apps/desktop/src/main/snapshot.ts (791 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (782 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
