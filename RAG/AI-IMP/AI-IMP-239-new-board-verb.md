@@ -8,7 +8,7 @@ tags:
   - ux
 kanban_status: planned
 depends_on: []
-parent_epic:
+parent_epic: [[AI-EPIC-026-structure-you-fill-in]]
 confidence_score: 0.65
 date_created: 2026-07-09
 ---

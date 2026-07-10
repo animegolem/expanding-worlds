@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 1 | 0 |
-| Planned | 4 | 1 |
+| Planned | 5 | 2 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 202 |
-| **Total** | **25** | **241** |
+| **Total** | **26** | **241** |
 
 ## In Progress
 
@@ -46,6 +46,14 @@
 
 ### [[AI-EPIC-025-palette-picker|EPIC-025: Palette picker]]
 > The first tester's own ask (2026-07-07, verbatim intent): "the tool
+
+---
+
+### [[AI-EPIC-026-structure-you-fill-in|EPIC-026: Structure you fill in]]
+> Two missing primitives surfaced in the first tester's week, both
+
+**IMPs:**
+- [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — planned
 
 ---
 
@@ -84,7 +92,6 @@
 - [[AI-IMP-236-source-slot-epochs|IMP-236]] — planned, no epic dependency found
 - [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
 - [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
-- [[AI-IMP-239-new-board-verb|IMP-239]] — planned, no epic dependency found
 - [[AI-IMP-240-tauri-shell-spike|IMP-240]] — planned, no epic dependency found
 - [[AI-IMP-241-texture-budget-tiers|IMP-241]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
@@ -230,6 +237,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)
 - apps/desktop/e2e/note-lifecycle.spec.ts (306 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
+- RAG/DESIGN-QUEUE.md (304 LOC)
 - apps/desktop/e2e/gallery-keyboard.spec.ts (302 LOC)
 
 ---
