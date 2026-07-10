@@ -57,6 +57,41 @@ export interface AppearanceCrop {
   height: number
 }
 
+/** Smallest normalized crop edge accepted by the editor and command
+ * boundary. One domain constant keeps renderer clamping and durable
+ * validation from drifting apart. */
+export const MIN_APPEARANCE_CROP_SIZE = 0.05
+
+/** A committed appearance crop is a finite normalized rectangle wholly
+ * inside the source image, with neither edge collapsed below the shared
+ * minimum. Command handlers enforce this predicate at the runtime seam. */
+export function isAppearanceCrop(value: unknown, epsilon = 1e-6): value is AppearanceCrop {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<Record<keyof AppearanceCrop, unknown>>
+  const x = candidate.x
+  const y = candidate.y
+  const width = candidate.width
+  const height = candidate.height
+  if (
+    typeof x !== 'number' ||
+    typeof y !== 'number' ||
+    typeof width !== 'number' ||
+    typeof height !== 'number' ||
+    ![x, y, width, height].every(Number.isFinite)
+  ) {
+    return false
+  }
+  if (
+    width < MIN_APPEARANCE_CROP_SIZE - epsilon ||
+    height < MIN_APPEARANCE_CROP_SIZE - epsilon
+  ) {
+    return false
+  }
+  if (x < -epsilon || y < -epsilon) return false
+  if (x + width > 1 + epsilon || y + height > 1 + epsilon) return false
+  return true
+}
+
 /** §4.3 */
 export interface NodeRecord extends LifecycleFields, TimestampFields {
   id: string

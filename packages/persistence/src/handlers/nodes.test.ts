@@ -250,7 +250,7 @@ describe('SetNodeAppearance (§4.6)', () => {
     })
 
     const assetId = insertAsset()
-    const crop = { x: 1, y: 2, width: 30, height: 40 }
+    const crop = { x: 0.1, y: 0.2, width: 0.3, height: 0.4 }
     committed('SetNodeAppearance', {
       nodeId,
       appearance: { kind: 'image', assetId, crop },
@@ -321,6 +321,35 @@ describe('SetNodeAppearance (§4.6)', () => {
     const nodeId = createNode()
     expect(
       exec('SetNodeAppearance', { nodeId, appearance: { kind: 'hologram' } }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
+
+  it('rejects empty dot/icon values and malformed image crops at runtime', () => {
+    const nodeId = createNode()
+    expect(
+      exec('SetNodeAppearance', { nodeId, appearance: { kind: 'dot', color: '' } }),
+    ).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      message: 'dot appearance requires a color',
+    })
+    expect(
+      exec('SetNodeAppearance', { nodeId, appearance: { kind: 'icon', icon: '' } }),
+    ).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      message: 'icon appearance requires an icon name',
+    })
+    const assetId = insertAsset()
+    expect(
+      exec('SetNodeAppearance', {
+        nodeId,
+        appearance: {
+          kind: 'image',
+          assetId,
+          crop: { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 1 },
+        },
+      }),
     ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
   })
 })

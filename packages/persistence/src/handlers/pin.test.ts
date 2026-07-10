@@ -101,7 +101,7 @@ function pinPayload(overrides: Partial<CreatePinPayload> = {}): CreatePinPayload
 describe('CreatePin', () => {
   it('creates a note-less image pin sized to the asset natural dimensions', () => {
     const assetId = importAsset(640, 480)
-    const crop = { x: 10, y: 20, width: 300, height: 200 }
+    const crop = { x: 0.1, y: 0.2, width: 0.3, height: 0.2 }
     const payload = pinPayload({ appearance: { kind: 'image', assetId, crop } })
     const result = committed('CreatePin', payload)
 
@@ -248,6 +248,33 @@ describe('CreatePin', () => {
     })
     expect(
       exec('CreatePin', { ...pinPayload(), appearance: { kind: 'nope' } }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(
+      exec('CreatePin', { ...pinPayload(), appearance: { kind: 'dot', color: '' } }),
+    ).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      message: 'dot appearance requires a color',
+    })
+    expect(
+      exec('CreatePin', { ...pinPayload(), appearance: { kind: 'icon', icon: '' } }),
+    ).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      message: 'icon appearance requires an icon name',
+    })
+    const assetId = importAsset(640, 480)
+    expect(
+      exec(
+        'CreatePin',
+        pinPayload({
+          appearance: {
+            kind: 'image',
+            assetId,
+            crop: { x: 0.9, y: 0, width: 0.2, height: 1 },
+          },
+        }),
+      ),
     ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
     expect(counts()).toEqual(before)
   })
@@ -589,6 +616,14 @@ describe('PlaceAsCard / UnplaceCard (AI-IMP-086)', () => {
         nodeId: uuidv7(),
         appearanceChanged: false,
         priorAppearance: null,
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(
+      exec('UnplaceCard', {
+        placementId: inverse.placementId,
+        nodeId,
+        appearanceChanged: true,
+        priorAppearance: { kind: 'icon', icon: 'star' },
       }),
     ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
     expect(

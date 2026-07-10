@@ -66,6 +66,45 @@ coding; record corrections here. Existing tests cover unknown
 kinds and image-asset presence but NOT empty dot/icon
 (`handlers/nodes.test.ts:268-285`, `:320-325`) — confirm and fill.
 
+#### Pre-implementation review — 2026-07-10 (`5fceb908`)
+
+The audit diagnosis is confirmed against current main:
+
+- `CreatePin` validates and maps appearance fields at
+  `handlers/pin.ts:50-88`, then repeats the fixed-column mapping in
+  its node insert at `:162-178`.
+- `SetNodeAppearance` maps the forward value at
+  `handlers/nodes.ts:429-491` and decodes the prior columns at
+  `:493-515`. It still accepts empty dot colors and icon names,
+  unlike `CreatePin` (`handlers/pin.ts:60-69`).
+- `UnplaceCard` maps its restore payload at
+  `handlers/pin.ts:483-506`, and `CommandRegistry.resolve` still
+  passes runtime `unknown` through at `commands/src/registry.ts:73-83`.
+- The cited node tests still cover missing image assets and unknown
+  kinds but not empty dot/icon payloads
+  (`handlers/nodes.test.ts:268-285`, `:320-325`).
+
+Corrections and focused repair scope approved before coding:
+
+1. `PlaceAsCard` is a fourth local appearance mapping omitted by
+   the audit: it decodes dot/null prior state at
+   `handlers/pin.ts:380-428` and writes card columns directly at
+   `:395-402`. It joins the codec migration.
+2. `UnplaceCard` restores only dot or null by construction; its
+   codec call must preserve that narrow vocabulary rather than
+   accepting every `NodeAppearance` kind from a forged inverse.
+3. Crop validation is also absent at the runtime boundary. The
+   renderer's `crop-rect.ts:140-153` says the handler mirrors its
+   normalized, finite, minimum-size contract, but no handler calls
+   it; `pin.test.ts:104` even blesses a non-normalized fixture. The
+   shared handler codec will enforce the existing normalized crop
+   contract and the fixture will be corrected.
+4. Existing structured contracts stay exact: empty dot/icon and
+   disallowed kinds use `VALIDATION_FAILED`; a missing active image
+   asset uses `ASSET_NOT_FOUND` with `no active asset <id>`. The
+   CreatePin vocabulary remains dot/icon/image, while
+   SetNodeAppearance remains null/dot/icon/image/card/frame.
+
 ### Files to Touch
 
 - `packages/persistence/src/handlers/node-appearance.ts` (new):
@@ -84,17 +123,17 @@ kinds and image-asset presence but NOT empty dot/icon
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pre-implementation review: HC-004 citations + current error
+- [x] Pre-implementation review: HC-004 citations + current error
       codes verified; corrections recorded in this ticket.
-- [ ] Codec module: validate (with allowed-kind set), encode,
+- [x] Codec module: validate (with allowed-kind set), encode,
       decode; unit tests round-trip every appearance kind.
-- [ ] CreatePin, SetNodeAppearance, and UnplaceCard inverse all
+- [x] CreatePin, SetNodeAppearance, and UnplaceCard inverse all
       route through the codec; no local column mapping remains.
-- [ ] SetNodeAppearance rejects empty dot color / icon name with
+- [x] SetNodeAppearance rejects empty dot color / icon name with
       the same structured error CreatePin uses (regression test).
-- [ ] Existing structured error codes and messages preserved
+- [x] Existing structured error codes and messages preserved
       (no consumer breakage; grep consumers to confirm).
-- [ ] `pnpm -r build`, package units green. (Desktop vitest +
+- [x] `pnpm -r build`, package units green. (Desktop vitest +
       e2e supplied by the lead at merge.)
 
 ### Acceptance Criteria
@@ -115,3 +154,18 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The review found `PlaceAsCard`'s direct card write and dot/null
+  decode in addition to the three audit-cited paths. It now uses
+  the same codec; its inverse vocabulary remains deliberately
+  narrower than public `SetNodeAppearance`.
+- The first package run exposed two pre-normalized crop fixtures
+  (`pin.test.ts` and `nodes.test.ts`). Both used coordinates far
+  outside the normalized source rectangle despite the renderer's
+  stated contract. They were corrected, and the shared domain
+  predicate now drives both renderer and handler validation.
+- Validation: `pnpm -r build` green; package units green (1045
+  tests); desktop Vitest green (363 passed, 1 skipped); `pnpm
+  lint` green. Desktop Vitest printed jsdom's existing non-fatal
+  canvas `getContext` diagnostics. Electron e2e was not run per
+  the assignment; the lead supplies it at merge.

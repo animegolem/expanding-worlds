@@ -8,6 +8,8 @@
  * vitest suite share one clamp/normalize/reset/min-size definition.
  */
 
+import { isAppearanceCrop, MIN_APPEARANCE_CROP_SIZE } from '@ew/domain'
+
 export interface CropRect {
   x: number
   y: number
@@ -21,7 +23,7 @@ export const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 }
 
 /** Minimum normalized edge length: a crop can never collapse past this
  * (both as a handle-drag floor and a validation floor). */
-export const MIN_CROP_SIZE = 0.05
+export const MIN_CROP_SIZE = MIN_APPEARANCE_CROP_SIZE
 
 /** The eight drag handles: four corners + four edge midpoints. */
 export type CropHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
@@ -144,11 +146,5 @@ function clamp01Ranged(value: number, min: number, max: number): number {
  * CHECK — the growing-domain convention).
  */
 export function isValidCrop(rect: CropRect, epsilon = 1e-6): boolean {
-  const values = [rect.x, rect.y, rect.width, rect.height]
-  if (!values.every((v) => Number.isFinite(v))) return false
-  if (rect.width < MIN_CROP_SIZE - epsilon || rect.height < MIN_CROP_SIZE - epsilon) return false
-  if (rect.x < -epsilon || rect.y < -epsilon) return false
-  if (rect.x + rect.width > 1 + epsilon) return false
-  if (rect.y + rect.height > 1 + epsilon) return false
-  return true
+  return isAppearanceCrop(rect, epsilon)
 }

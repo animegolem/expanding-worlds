@@ -18,12 +18,18 @@ import {
   type DetachAndTrashNotePayload,
   type DetachNoteFromNodePayload,
   type MakeNoteIndependentPayload,
-  type NodeAppearance,
   type SetNodeAppearancePayload,
   type UnmakeNoteIndependentPayload,
 } from '@ew/commands'
 import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching, refreshNoteLinks } from '../links'
+import {
+  ALL_APPEARANCE_KINDS,
+  decodeAppearanceColumns,
+  prepareNodeAppearance,
+  updateNodeAppearance,
+  type AppearanceColumns,
+} from './node-appearance'
 import { requireLinkableTitle, requireTitleFree } from './notes'
 
 // §4.6 rev 0.31: the note card is the fourth appearance kind. It
@@ -427,93 +433,23 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
   )
 
   registry.register<SetNodeAppearancePayload>(COMMAND_SET_NODE_APPEARANCE, 1, (ctx, payload) => {
-    const prior = requireNode<{
-      appearance_kind: string | null
-      appearance_color: string | null
-      appearance_icon: string | null
-      appearance_asset_id: string | null
-      appearance_crop: string | null
-    }>(
+    const priorColumns = requireNode<AppearanceColumns>(
       ctx,
       payload.nodeId,
-      'appearance_kind, appearance_color, appearance_icon, appearance_asset_id, appearance_crop',
+      `appearance_kind AS kind, appearance_color AS color,
+       appearance_icon AS icon, appearance_asset_id AS assetId,
+       appearance_crop AS crop`,
     )
-
-    // §4.6: dot, icon, image, and card are appearances, not node types.
-    const next = payload.appearance
-    let kind: string | null = null
-    let color: string | null = null
-    let icon: string | null = null
-    let assetId: string | null = null
-    let crop: string | null = null
-    if (next !== null) {
-      kind = next.kind
-      if (next.kind === 'dot') {
-        color = next.color
-      } else if (next.kind === 'icon') {
-        icon = next.icon
-      } else if (next.kind === 'image') {
-        const asset = ctx.db.get<{ id: string }>(
-          `SELECT id FROM asset
-           WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
-          next.assetId,
-          ctx.projectId,
-        )
-        if (!asset) throw new DomainError('ASSET_NOT_FOUND', `no active asset ${next.assetId}`)
-        assetId = next.assetId
-        // Non-destructive crop/framing; the asset itself is untouched.
-        crop = next.crop === null ? null : JSON.stringify(next.crop)
-      } else if (next.kind !== 'card' && next.kind !== 'frame') {
-        // §4.6 rev 0.31: card is payload-less — content comes from
-        // the attached note through the read model. §4.9 rev 0.54:
-        // frame is payload-less too — its drawn region rides the
-        // placement geometry and membership lives in frame_member.
-        // Validated here (not a SQLite CHECK) per the EPIC-022
-        // growing-domain convention; migration 0007 dropped the
-        // node.appearance_kind CHECK.
-        throw new DomainError(
-          'VALIDATION_FAILED',
-          'appearance kind must be dot, icon, image, card, or frame',
-        )
-      }
-    }
-    ctx.db.run(
-      `UPDATE node SET appearance_kind = ?, appearance_color = ?, appearance_icon = ?,
-              appearance_asset_id = ?, appearance_crop = ?, updated_at = ?
-       WHERE id = ?`,
-      kind,
-      color,
-      icon,
-      assetId,
-      crop,
-      ctx.now(),
-      payload.nodeId,
-    )
-
-    let priorAppearance: NodeAppearance | null = null
-    if (prior.appearance_kind === 'dot' && prior.appearance_color !== null) {
-      priorAppearance = { kind: 'dot', color: prior.appearance_color }
-    } else if (prior.appearance_kind === 'card') {
-      priorAppearance = { kind: 'card' }
-    } else if (prior.appearance_kind === 'frame') {
-      priorAppearance = { kind: 'frame' }
-    } else if (prior.appearance_kind === 'icon' && prior.appearance_icon !== null) {
-      priorAppearance = { kind: 'icon', icon: prior.appearance_icon }
-    } else if (prior.appearance_kind === 'image' && prior.appearance_asset_id !== null) {
-      priorAppearance = {
-        kind: 'image',
-        assetId: prior.appearance_asset_id,
-        crop:
-          prior.appearance_crop === null
-            ? null
-            : (JSON.parse(prior.appearance_crop) as {
-                x: number
-                y: number
-                width: number
-                height: number
-              }),
-      }
-    }
+    const priorAppearance = decodeAppearanceColumns(priorColumns)
+    // §4.6/§4.9: the growing appearance vocabulary is validated here,
+    // never in a SQLite CHECK. The codec owns every payload field and
+    // active image-asset lookup before the first write.
+    const next = prepareNodeAppearance(ctx, payload.appearance, {
+      allowedKinds: ALL_APPEARANCE_KINDS,
+      allowNull: true,
+      kindMessage: 'appearance kind must be dot, icon, image, card, or frame',
+    })
+    updateNodeAppearance(ctx, payload.nodeId, next.columns)
     return {
       affected: [{ kind: 'node', id: payload.nodeId }],
       inverse: {
