@@ -226,6 +226,34 @@ all moved into the RFC.
   of the board" — a second text-only zoom axis; decide whether the
   camera-verb ruling makes it unnecessary.
 
+- **Traveling tags — the library boundary (PROPOSED 2026-07-10,
+  owner tentatively accepts, alph confirm pending).** alph tagged
+  library-imported images in his project and was surprised the
+  library copies stayed untagged — two intents under one noun:
+  CONTENT tags (what the image is; should follow the asset) vs
+  WORLD tags (what it means here; project-scoped is correct).
+  Rejected: "just global" (separate SQLite per project + cross-
+  project completion pollution) and dual swim lanes (every tag
+  surface doubles; filing question on every keystroke). PROPOSED:
+  travel is a PROPERTY carried by an EPIC-026 category — tags in a
+  travels-with-content category cross at content-crossing moments
+  (ingest carries them in, mirror carries them out, created-if-
+  missing), world tags stay home; one noun, one input, the
+  category chip is the visible lane. Backflow (alph's exact flow —
+  tagging AFTER import) is never ambient: (a) a deliberate
+  "push tags to library" verb on the mirror relationship, and (b)
+  OWNER ADDITION: proper-close as the automatic settle moment —
+  close ENQUEUES a tag manifest into the library's existing
+  EPIC-015 INBOX (plain filesystem, no lock contention with an
+  open library window, idempotent, crash-safe), applied on the
+  library's next open; the verb shares the same path. Doctrine:
+  proper close is when a project settles its debts (checkpoint,
+  snapshot, projection for the iPad handoff, traveling tags).
+  Placement-determinant tags PARKED as a named question — third
+  scope, all consumers assume node binding, frames/boards already
+  carry instance meaning; revisit only with a driving case from
+  the field.
+
 - **Tag categories — the missing primitive (RATIFIED 2026-07-09,
   owner + alph, Discord; awaiting epic cut + RFC fold-in):** typed
   tag categories as the ONLY level of tag nesting — the booru

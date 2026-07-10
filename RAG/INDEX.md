@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 222 |
-| **Total** | **27** | **256** |
+| **Total** | **27** | **257** |
 
 ## In Progress
 
@@ -103,6 +103,7 @@
 - [[AI-IMP-260-delete-loose-notes|IMP-260]] — planned, no epic dependency found
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
 - [[AI-IMP-262-board-pin-label-legibility|IMP-262]] — planned, no epic dependency found
+- [[AI-IMP-263-lock-probe-zero-winner-main|IMP-263]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -202,6 +203,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/export/project-export.ts (457 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
+- RAG/DESIGN-QUEUE.md (432 LOC)
 - apps/desktop/src/renderer/canvas/crop-editor.ts (431 LOC)
 - RAG/CODE-AUDIT-2026-07-10-CODEX.md (426 LOC)
 - packages/persistence/src/export/project-export.test.ts (425 LOC)
@@ -212,7 +214,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/lock.ts (401 LOC)
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
-- RAG/DESIGN-QUEUE.md (389 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (386 LOC)
 - spike/webkit-renderer/src/main.ts (385 LOC)
