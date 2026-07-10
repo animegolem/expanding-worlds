@@ -126,11 +126,14 @@ const api = {
      * ack (bounded by a timeout on the main side).
      */
     onFlushRequest: (callback: () => Promise<void>): (() => void) => {
-      const listener = (): void => {
+      const listener = (_event: IpcRendererEvent, request: { requestId?: unknown }): void => {
+        if (typeof request?.requestId !== 'string') return
         void Promise.resolve()
           .then(callback)
-          .catch(() => undefined)
-          .then(() => ipcRenderer.send('app:flush-done'))
+          .then(
+            () => ipcRenderer.send('app:flush-done', { requestId: request.requestId, ok: true }),
+            () => ipcRenderer.send('app:flush-done', { requestId: request.requestId, ok: false }),
+          )
       }
       ipcRenderer.on('app:flush', listener)
       return () => ipcRenderer.removeListener('app:flush', listener)

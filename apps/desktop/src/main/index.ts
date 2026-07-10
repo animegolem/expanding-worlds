@@ -14,6 +14,7 @@ import { loadAppSettingsFile, writeAppSettingsFile } from './app-settings'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import { createSnapshotEngine } from './snapshot'
 import { MaterializedProjectOpenRegistry } from './open-capability'
+import { RendererFlushCoordinator } from './flush-coordinator'
 import type {
   ProjectRequest,
   ProjectResponse,
@@ -696,24 +697,14 @@ function setWindowVibrancy(win: BrowserWindow, enabled: boolean): boolean {
  * with app:flush-done; bounded so a hung or dead renderer cannot trap
  * the checkpoint. Mirrors the close path's timeout, but its own
  * listener so it never entangles the quit flush. */
-function flushRenderers(): Promise<void> {
+const rendererFlushes = new RendererFlushCoordinator()
+
+async function flushRenderers(): Promise<void> {
   const wins = BrowserWindow.getAllWindows().filter((win) => !win.webContents.isDestroyed())
-  if (wins.length === 0) return Promise.resolve()
-  return new Promise<void>((resolve) => {
-    let remaining = wins.length
-    const finish = (): void => {
-      clearTimeout(timer)
-      ipcMain.removeListener('app:flush-done', onDone)
-      resolve()
-    }
-    const onDone = (): void => {
-      remaining -= 1
-      if (remaining <= 0) finish()
-    }
-    const timer = setTimeout(finish, 2_000)
-    ipcMain.on('app:flush-done', onDone)
-    for (const win of wins) win.webContents.send('app:flush')
-  })
+  const outcomes = await Promise.all(wins.map((win) => rendererFlushes.flush(win.webContents)))
+  if (outcomes.some((outcome) => outcome !== 'ok')) {
+    throw new Error(`renderer flush did not complete: ${outcomes.join(', ')}`)
+  }
 }
 
 // §11.4 session snapshots (AI-IMP-120): the engine owns git mechanics
@@ -784,14 +775,18 @@ async function createWindow(): Promise<void> {
   // editor buffer still inside its debounce window, bounded so a hung
   // renderer can never trap the user.
   let flushed = false
+  let closeFlushPending = false
   win.on('close', (event) => {
     if (flushed || win.webContents.isDestroyed()) return
     event.preventDefault()
-    const ack = new Promise<void>((resolve) => {
-      ipcMain.once('app:flush-done', () => resolve())
-    })
-    win.webContents.send('app:flush')
-    void Promise.race([ack, new Promise((resolve) => setTimeout(resolve, 2_000))]).then(() => {
+    if (closeFlushPending) return
+    closeFlushPending = true
+    void rendererFlushes.flush(win.webContents).then((outcome) => {
+      closeFlushPending = false
+      // A renderer that explicitly reports failure still owns a live
+      // dirty buffer (C10-001), so keep the window. Timeout retains the
+      // pre-existing bounded-close guarantee for an unresponsive process.
+      if (outcome === 'failed') return
       flushed = true
       win.close()
     })
@@ -827,6 +822,9 @@ void app.whenReady().then(() => {
   registerAssetProtocol()
   grantLocalFonts()
   startUtility()
+  ipcMain.on('app:flush-done', (event, acknowledgement: unknown) => {
+    rendererFlushes.acknowledge(event.sender.id, acknowledgement)
+  })
   void callUtility({
     type: 'init-project',
     dir: projectDir(),
