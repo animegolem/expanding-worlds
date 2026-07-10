@@ -5,6 +5,7 @@ import { itemWorldAABB } from '../hit-test'
 import {
   CARD_DEFAULT_HEIGHT,
   CARD_DEFAULT_WIDTH,
+  CAPTION_MAX_LINES,
   DEFAULT_DOT_RADIUS,
   LABEL_CLEARANCE_PX,
   LABEL_HEIGHT_RATIO,
@@ -15,6 +16,7 @@ import {
   cropFillMatrix,
   labelTextResolution,
   labelZoomOpacity,
+  placementLabelLayout,
   parsePlacementCrop,
   placementRenderedMaxEdge,
   placementRenderer,
@@ -463,6 +465,75 @@ describe('placement labels (§4.5)', () => {
     expect(labelOf(hidden)).toBeUndefined()
   })
 
+  it('renders a caption in the shared label slot ahead of the note title', () => {
+    const item = makePlacement({
+      noteTitle: 'Registered title',
+      caption: 'I like the blue',
+      width: 180,
+      height: 100,
+    })
+    const object = placementRenderer.create(item, fakeResources())
+    const label = labelOf(object)!
+    expect(label.text).toBe(placementLabelLayout(item)!.text)
+    expect(label.style.wordWrap).toBe(true)
+    expect(label.style.wordWrapWidth).toBe(180)
+  })
+
+  it('renders a caption without a note and labelVisible hides it', () => {
+    const item = makePlacement({ caption: 'Identity-free', noteTitle: null })
+    expect(labelOf(placementRenderer.create(item, fakeResources()))!.text).toBe(
+      placementLabelLayout(item)!.text,
+    )
+    expect(
+      labelOf(
+        placementRenderer.create({ ...item, labelVisible: 0 }, fakeResources()),
+      ),
+    ).toBeUndefined()
+  })
+
+  it('keeps a card face title while its caption occupies the under-card label slot', () => {
+    const item = makePlacement({
+      appearanceKind: 'card',
+      noteId: 'note-1',
+      noteTitle: 'Card face title',
+      caption: 'Under-card thought',
+      width: CARD_DEFAULT_WIDTH,
+      height: CARD_DEFAULT_HEIGHT,
+    })
+    const object = placementRenderer.create(item, fakeResources())
+    const card = object.getChildByLabel('card') as Container
+    expect((card.getChildByLabel('card-title') as Text).text).toBe('Card face title')
+    expect(labelOf(object)!.text).toBe(placementLabelLayout(item)!.text)
+  })
+
+  it('wraps and clamps captions deterministically to three lines with ellipsis', () => {
+    const item = makePlacement({
+      caption: 'alpha beta gamma delta epsilon zeta eta theta',
+      width: 70,
+      height: 100,
+    })
+    const layout = placementLabelLayout(item)!
+    expect(layout.lineCount).toBe(CAPTION_MAX_LINES)
+    expect(layout.text.split('\n')).toHaveLength(CAPTION_MAX_LINES)
+    expect(layout.text.endsWith('…')).toBe(true)
+    expect(labelOf(placementRenderer.create(item, fakeResources()))!.text).toBe(layout.text)
+  })
+
+  it('splits wide and Unicode words while treating explicit newlines as hard breaks', () => {
+    const wide = placementLabelLayout(
+      makePlacement({ caption: 'WWWWWWWW', width: 28, height: 100 }),
+    )!
+    expect(wide.text.split('\n')).toHaveLength(CAPTION_MAX_LINES)
+    expect(wide.text.endsWith('…')).toBe(true)
+
+    const longWord = placementLabelLayout(
+      makePlacement({ caption: '🌊🌊🌊🌊\nsecond\nthird\nfourth', width: 28, height: 100 }),
+    )!
+    expect(longWord.lineCount).toBe(CAPTION_MAX_LINES)
+    expect(longWord.text.endsWith('…')).toBe(true)
+    expect(longWord.text).not.toContain('�')
+  })
+
   it('updates text on rename and size on resize through the update path', () => {
     const resources = fakeResources()
     const item = makePlacement({ noteTitle: 'Old', width: 100, height: 50 })
@@ -476,6 +547,23 @@ describe('placement labels (§4.5)', () => {
     placementRenderer.update(object, resized, renamed, resources)
     expect(labelOf(object)!.style.fontSize).toBeCloseTo(100 * LABEL_HEIGHT_RATIO)
     expect(labelOf(object)!.text).toBe('New')
+  })
+
+  it('updates and clears a caption back to the title through the update path', () => {
+    const resources = fakeResources()
+    const item = makePlacement({
+      noteTitle: 'Title',
+      caption: 'First caption',
+      width: 160,
+      height: 80,
+    })
+    const object = placementRenderer.create(item, resources)
+    const edited = { ...item, caption: 'Edited caption' }
+    placementRenderer.update(object, edited, item, resources)
+    expect(labelOf(object)!.text).toBe('Edited caption')
+    const cleared = { ...edited, caption: null }
+    placementRenderer.update(object, cleared, edited, resources)
+    expect(labelOf(object)!.text).toBe('Title')
   })
 
   it('toggling visibility removes and restores the label', () => {
@@ -898,8 +986,31 @@ describe('card appearance (§4.6 rev 0.31, AI-IMP-084)', () => {
     // §7.1 editor carve-out (AI-IMP-131): card note text bakes in Maple.
     expect(String(title.style.fontFamily)).toContain('Maple Mono')
     expect(String(excerpt.style.fontFamily)).toContain('Maple Mono')
-    // The chrome's title line IS the label — no duplicate under-label.
-    expect(object.children.find((child) => child.label === 'label')).toBeUndefined()
+    // An uncaptioned card leaves the under-placement label slot empty.
+    expect(labelOf(object)).toBeUndefined()
+  })
+
+  it('keeps the card face title while rendering a caption in the under-card slot', () => {
+    const resources = fakeResources()
+    const before = makePlacement({
+      appearanceKind: 'card',
+      noteId: 'note-1',
+      noteTitle: 'Harbor Study',
+      noteExcerpt: 'stone quay',
+      caption: 'First reaction',
+      width: 260,
+      height: 160,
+    })
+    const object = placementRenderer.create(before, resources)
+    expect((cardGroup(object).getChildByLabel('card-title') as Text).text).toBe('Harbor Study')
+    expect(labelOf(object)!.text).toBe(placementLabelLayout(before)!.text)
+
+    const cardBefore = cardGroup(object)
+    const after = { ...before, caption: 'Changed reaction' }
+    placementRenderer.update(object, after, before, resources)
+    expect(cardGroup(object)).not.toBe(cardBefore)
+    expect((cardGroup(object).getChildByLabel('card-title') as Text).text).toBe('Harbor Study')
+    expect(labelOf(object)!.text).toBe(placementLabelLayout(after)!.text)
   })
 
   it('clamps long titles to one deterministic line', () => {
