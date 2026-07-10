@@ -10,7 +10,7 @@
 | Planned | 5 | 2 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 204 |
+| Completed | 19 | 205 |
 | **Total** | **26** | **241** |
 
 ## In Progress
@@ -91,7 +91,6 @@
 - [[AI-IMP-236-source-slot-epochs|IMP-236]] — planned, no epic dependency found
 - [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
 - [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
-- [[AI-IMP-241-texture-budget-tiers|IMP-241]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-243-rust-persistence-seam-analysis|IMP-243]] — planned, no epic dependency found
 
@@ -183,6 +182,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
 - packages/commands/src/payloads/structure.ts (476 LOC)
+- spike/webkit-renderer/src/tiering.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
 - packages/persistence/src/handlers/tags.ts (460 LOC)
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
@@ -197,6 +197,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/export/project-export.test.ts (394 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
+- spike/webkit-renderer/src/main.ts (385 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (385 LOC)
 - packages/persistence/src/export/project-export.ts (382 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (380 LOC)
@@ -233,7 +234,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/preload/index.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
-- spike/webkit-renderer/src/main.ts (311 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)
 - apps/desktop/e2e/note-lifecycle.spec.ts (306 LOC)
