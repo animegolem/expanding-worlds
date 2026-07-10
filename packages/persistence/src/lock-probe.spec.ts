@@ -47,7 +47,7 @@ beforeAll(async () => {
 })
 
 afterAll(() => {
-  rmSync(bundleDir, { recursive: true, force: true })
+  rmSync(bundleDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 /** A guaranteed-dead same-host pid: a child that has already exited. */
@@ -114,7 +114,7 @@ async function runRound(dir: string, staleAfterMs: number, deadPid: number): Pro
     writeFileSync(join(barrierDir, 'go'), '')
     return (await outcomes).filter((o) => o === 'WIN').length
   } finally {
-    rmSync(barrierDir, { recursive: true, force: true })
+    rmSync(barrierDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 }
 
@@ -131,7 +131,7 @@ describe('single-writer lock under multi-process contention (AI-IMP-226 / CA-001
             expect(winners, `round ${round} at staleAfterMs ${staleAfterMs}`).toBe(1)
           }
         } finally {
-          rmSync(dir, { recursive: true, force: true })
+          rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
         }
       },
       120_000,

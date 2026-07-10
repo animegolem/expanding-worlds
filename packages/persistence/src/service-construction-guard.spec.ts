@@ -83,7 +83,7 @@ afterEach(() => {
   faults.migrate = false
   faults.enqueue = false
   faults.dispatcher = false
-  if (dir) rmSync(dir, { recursive: true, force: true })
+  if (dir) rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 function seedProject(): string {

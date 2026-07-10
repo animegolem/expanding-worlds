@@ -39,8 +39,8 @@ beforeEach(() => {
 
 afterEach(() => {
   service.close()
-  rmSync(dir, { recursive: true, force: true })
-  rmSync(outDir, { recursive: true, force: true })
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  rmSync(outDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 /** Reach the live connection the way the service's own modules do —

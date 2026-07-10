@@ -30,7 +30,7 @@ describe('WAL checkpoint on the primary', () => {
 
   afterEach(() => {
     service.close()
-    rmSync(dir, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('truncates the -wal file after writes', () => {
@@ -110,7 +110,7 @@ describe('WAL checkpoint on a read-only source', () => {
     } finally {
       source.close()
       owner.close()
-      rmSync(dir, { recursive: true, force: true })
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
     }
   })
 })

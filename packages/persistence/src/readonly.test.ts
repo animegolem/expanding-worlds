@@ -40,7 +40,7 @@ describe('read-only project open', () => {
 
   afterEach(() => {
     owner.close()
-    rmSync(dir, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('reads while the owner holds the project, without touching the lock', () => {
@@ -105,7 +105,7 @@ describe('read-only project open', () => {
         /open the project writable once/,
       )
     } finally {
-      rmSync(behindDir, { recursive: true, force: true })
+      rmSync(behindDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
     }
   })
 

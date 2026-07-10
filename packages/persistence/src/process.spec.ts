@@ -45,7 +45,7 @@ beforeAll(async () => {
 })
 
 afterAll(() => {
-  rmSync(bundleDir, { recursive: true, force: true })
+  rmSync(bundleDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 let dir: string
@@ -58,7 +58,7 @@ beforeEach(() => {
 afterEach(() => {
   if (child && child.exitCode === null) child.kill('SIGKILL')
   child = null
-  rmSync(dir, { recursive: true, force: true })
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 function runFixture(script: string, arg: string): ChildProcess {

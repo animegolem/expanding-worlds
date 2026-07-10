@@ -406,8 +406,12 @@ export async function exportProject(
     options.onProgress?.({ bytesWritten, bytesTotal })
 
     // Durability: force the archive bytes to stable storage before we
-    // promote it. fsync is per-inode, so a fresh read handle suffices.
-    const fh = await open(partialPath, 'r')
+    // promote it. fsync is per-inode, so a fresh handle suffices — but
+    // it must be opened WRITABLE ('r+'): Windows' FlushFileBuffers
+    // demands write access and rejects a read-only handle with EPERM
+    // (AI-IMP-242's leg caught export completely broken on Windows);
+    // POSIX doesn't care either way.
+    const fh = await open(partialPath, 'r+')
     try {
       await fh.sync()
     } finally {
