@@ -22,18 +22,25 @@ function committed(): CommandResult {
   return { status: 'committed', commandId: 'c', revision: 1, affected: [], inverse: null }
 }
 
+function refused(): CommandResult {
+  return { status: 'error', commandId: 'c', code: 'WRITE_FAILED', message: 'disk full' }
+}
+
 class FakePort implements ProjectPort {
   notes = new Map<string, NoteRecord>()
   updates: Array<{ noteId: string; body: string }> = []
+  commands: string[] = []
+  result: CommandResult = committed()
 
   async execute(commandType: string, payload: unknown): Promise<CommandResult> {
-    if (commandType === 'UpdateNote') {
+    this.commands.push(commandType)
+    if (commandType === 'UpdateNote' && this.result.status === 'committed') {
       const { noteId, body } = payload as { noteId: string; body: string }
       const note = this.notes.get(noteId)
       if (note) note.body = body
       this.updates.push({ noteId, body })
     }
-    return committed()
+    return this.result
   }
 
   async query<T>(name: string, args?: unknown): Promise<T> {
@@ -121,6 +128,54 @@ describe('NoteEditorController canonicalize-on-load (§7.1)', () => {
     expect(controller.dirty).toBe(false)
     await controller.flushPending()
     expect(port.updates).toHaveLength(0)
+    controller.destroy()
+  })
+})
+
+describe('failed flush preserves the authoritative editor buffer', () => {
+  it('stops switch, rename, and close while the draft remains dirty', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const errors: string[] = []
+    const port = new FakePort()
+    port.notes.set('n1', {
+      id: 'n1',
+      title: 'One',
+      titleKey: 'one',
+      body: '* non-canonical draft',
+      lifecycleState: 'active',
+    })
+    port.notes.set('n2', {
+      id: 'n2',
+      title: 'Two',
+      titleKey: 'two',
+      body: 'second',
+      lifecycleState: 'active',
+    })
+    const controller = new NoteEditorController(port, { onError: (message) => errors.push(message) })
+    controller.mount(host)
+    await controller.open('n1')
+    expect(controller.dirty).toBe(true)
+
+    port.result = refused()
+    await expect(controller.open('n2')).rejects.toThrow('autosave failed: disk full')
+    expect(controller.note?.id).toBe('n1')
+    expect(controller.dirty).toBe(true)
+
+    await expect(controller.rename('Changed')).rejects.toThrow('autosave failed: disk full')
+    expect(port.commands).not.toContain('RenameNote')
+    expect(controller.note?.title).toBe('One')
+
+    await expect(controller.close()).rejects.toThrow('autosave failed: disk full')
+    expect(controller.note?.id).toBe('n1')
+    expect(controller.dirty).toBe(true)
+    expect(controller.prose).toBe('- non-canonical draft')
+    expect(errors).toEqual([
+      'autosave failed: disk full',
+      'autosave failed: disk full',
+      'autosave failed: disk full',
+    ])
+
     controller.destroy()
   })
 })
