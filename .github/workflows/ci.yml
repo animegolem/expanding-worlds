@@ -111,6 +111,29 @@ jobs:
         working-directory: apps/desktop
         run: npx vitest run
 
+      # Same disease the Linux job treats in its "Ensure Electron
+      # binary" step: pnpm's electron postinstall "succeeds" while
+      # extracting a single entry, leaving a husk dist. Run
+      # 29082725843 — the first execution of the smoke step on this
+      # leg — proved the husk is not macOS/Linux-specific: all 7
+      # shell specs died at electron.launch. Use install.js only to
+      # fetch the archive, extract it ourselves, write path.txt with
+      # no trailing newline (the AI-IMP-111 landmines).
+      - name: Ensure Electron binary
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force "$env:LOCALAPPDATA/electron/Cache", node_modules/electron/dist, node_modules/electron/path.txt -ErrorAction Ignore
+          node node_modules/electron/install.js
+          if ($LASTEXITCODE -ne 0) { Write-Host "install.js exited $LASTEXITCODE (ignored; we extract ourselves)" }
+          $zip = Get-ChildItem "$env:LOCALAPPDATA/electron/Cache" -Recurse -Filter 'electron-v*-win32-x64.zip' | Select-Object -First 1
+          if (-not $zip) { throw 'electron zip not found in cache after install.js' }
+          Write-Host "extracting $($zip.FullName) ($([math]::Round($zip.Length/1MB))MB)"
+          Remove-Item -Recurse -Force node_modules/electron/dist -ErrorAction Ignore
+          Expand-Archive -Path $zip.FullName -DestinationPath node_modules/electron/dist -Force
+          Set-Content -Path node_modules/electron/path.txt -Value 'electron.exe' -NoNewline
+          if (-not (Test-Path node_modules/electron/dist/electron.exe)) { throw 'electron.exe missing after extraction' }
+
       # Smoke only: shell launch + IPC round-trip. Windows runners
       # launch Electron GUIs natively (no xvfb). If this step proves
       # flaky it gets a loud skip with a linked ticket — never a
