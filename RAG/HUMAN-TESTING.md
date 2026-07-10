@@ -10,6 +10,12 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Batch drops never lose a file** (AI-IMP-238, 2026-07-09 —
+  the flake was REAL: files failing under burst, hidden by
+  retries): drop 10+ mixed images in quick overlapping drops — the
+  summary must never report a failed file; every image lands as a
+  pin.
+
 - [ ] **RATIFY THE UNDO MATRIX** (AI-IMP-233, 2026-07-09 — your
   ruling, your sign-off): every deliberate verb now answers Mod+Z —
   attach note, create-and-attach, make independent, relink, group/

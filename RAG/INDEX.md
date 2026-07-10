@@ -10,7 +10,7 @@
 | Planned | 5 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 213 |
+| Completed | 19 | 214 |
 | **Total** | **26** | **241** |
 
 ## In Progress
@@ -83,7 +83,6 @@
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
-- [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-243-rust-persistence-seam-analysis|IMP-243]] — planned, no epic dependency found
 
@@ -129,7 +128,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/lifecycle.ts (784 LOC)
 - apps/desktop/src/main/snapshot.ts (775 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
-- RAG/HUMAN-TESTING.md (759 LOC)
+- RAG/HUMAN-TESTING.md (765 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
@@ -156,11 +155,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
 - apps/desktop/e2e/shell.spec.ts (555 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
+- apps/desktop/src/renderer/canvas/import-surfaces.ts (552 LOC)
 - apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (548 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (545 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
-- apps/desktop/src/renderer/canvas/import-surfaces.ts (538 LOC)
 - packages/persistence/src/handlers/placements.ts (535 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (532 LOC)
 - packages/persistence/src/handlers/nodes.ts (529 LOC)

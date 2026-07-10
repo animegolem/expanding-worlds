@@ -6,11 +6,12 @@ tags:
   - e2e
   - import
   - P3
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.6
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -64,7 +65,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] 20× consecutive green locally.
 - [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead (only if
+- [x] HUMAN-TESTING entry appended at merge by the lead (only if
       product-side).
 
 ### Acceptance Criteria
