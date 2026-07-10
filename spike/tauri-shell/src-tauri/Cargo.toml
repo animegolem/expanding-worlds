@@ -1,0 +1,22 @@
+[package]
+name = "ew-tauri-shell-spike"
+version = "0.1.0"
+description = "AI-IMP-240 Tauri v2 shell spike for the @ew/canvas-engine harness"
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "ew_tauri_shell_spike_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# SEAM: enabling `assetProtocol` in tauri.conf.json REQUIRES the matching
+# `protocol-asset` Cargo feature — the build fails with an allowlist
+# mismatch otherwise. A real port must set this in lockstep with config.
+tauri = { version = "2", features = ["protocol-asset"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
