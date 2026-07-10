@@ -303,10 +303,26 @@ export function attachBoardTooling(
         }
       }
       if (placementIds.length === 0) return
-      await handle.waitForItems(placementIds)
-      await gateway.execute('CaptureInFrame', { framePlacementId, memberPlacementIds: placementIds })
+      // AI-IMP-232 (CA-007): bounded wait — if the placements never
+      // apply, STOP rather than capture/arrange against a set the scene
+      // does not yet hold.
+      if (!(await handle.waitForItems(placementIds))) return
+      // Fail-stop: an un-inspected capture used to let the arrange run
+      // even when the capture was refused — laying out a frame whose
+      // membership never changed. Surface the refusal and stop.
+      const captured = await gateway.execute('CaptureInFrame', {
+        framePlacementId,
+        memberPlacementIds: placementIds,
+      })
+      if (captured.status !== 'committed') {
+        onError(describeFailure('CaptureInFrame', captured))
+        return
+      }
       const payload = await arrangeFramePayload(framePlacementId)
-      if (payload) await gateway.execute('TransformContent', payload)
+      if (payload) {
+        const arranged = await gateway.execute('TransformContent', payload)
+        if (arranged.status !== 'committed') onError(describeFailure('TransformContent', arranged))
+      }
     })
   })
 
