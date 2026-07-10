@@ -79,6 +79,11 @@ export {
 export {
   importProject,
   readArchiveManifest,
+  releaseImportDestination,
+  reserveAvailableImportDestination,
+  reserveImportDestination,
+  IMPORT_RESERVATION_SUFFIX,
+  type ImportDestinationReservation,
   type ImportResult as ProjectImportResult,
   type ImportRefusal,
 } from './export/project-import'

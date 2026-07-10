@@ -1,5 +1,14 @@
-import { createHash } from 'node:crypto'
-import { createWriteStream, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { createHash, randomUUID } from 'node:crypto'
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { dirname, join, sep } from 'node:path'
 import yauzl from 'yauzl'
 import { Db } from '../db'
@@ -44,6 +53,67 @@ export interface ImportResult {
   title: string
   notes: number
   assets: number
+}
+
+export const IMPORT_RESERVATION_SUFFIX = '.import-reservation'
+
+export interface ImportDestinationReservation {
+  destDir: string
+  token: string
+}
+
+/** Atomically reserve one final project name before any archive await. */
+export function reserveImportDestination(destDir: string): ImportDestinationReservation {
+  if (existsSync(destDir)) {
+    throw refuse('DEST_EXISTS', `the destination already exists: ${destDir}`)
+  }
+  const token = randomUUID()
+  const reservationPath = `${destDir}${IMPORT_RESERVATION_SUFFIX}`
+  try {
+    writeFileSync(reservationPath, token, { flag: 'wx', encoding: 'utf8' })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw refuse('DEST_BUSY', `the destination is already being imported: ${destDir}`)
+    }
+    throw error
+  }
+  // Close the check/create race with an external directory creator.
+  if (existsSync(destDir)) {
+    releaseImportDestination({ destDir, token })
+    throw refuse('DEST_EXISTS', `the destination already exists: ${destDir}`)
+  }
+  return { destDir, token }
+}
+
+/** Pick and reserve the first available `(2)`-suffixed destination. */
+export function reserveAvailableImportDestination(
+  preferredDestDir: string,
+): ImportDestinationReservation {
+  for (let n = 1; ; n += 1) {
+    const destDir = n === 1 ? preferredDestDir : `${preferredDestDir} (${n})`
+    try {
+      return reserveImportDestination(destDir)
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === 'DEST_EXISTS' || error.code === 'DEST_BUSY')
+      ) {
+        continue
+      }
+      throw error
+    }
+  }
+}
+
+/** Remove only the reservation carrying this request's token. */
+export function releaseImportDestination(reservation: ImportDestinationReservation): void {
+  const path = `${reservation.destDir}${IMPORT_RESERVATION_SUFFIX}`
+  try {
+    if (readFileSync(path, 'utf8') === reservation.token) unlinkSync(path)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  }
 }
 
 interface OpenZip {
@@ -253,19 +323,31 @@ export async function importProject(
   archivePath: string,
   destDir: string,
   limits: ImportLimits = IMPORT_LIMITS,
+  reservedToken?: string,
 ): Promise<ImportResult> {
-  // Enforce our own contract (Codex round 3, P3): POSIX rename happily
-  // replaces an existing EMPTY directory, so the app caller's
-  // collision-safe naming must not be the only line of defense.
-  if (existsSync(destDir)) {
-    throw refuse('DEST_EXISTS', `the destination already exists: ${destDir}`)
-  }
-  const manifest = await readArchiveManifest(archivePath, limits)
-  const partial = `${destDir}.partial`
-  rmSync(partial, { recursive: true, force: true })
-
-  const { zip, entries } = await openArchive(archivePath, limits)
+  const reservation =
+    reservedToken === undefined
+      ? reserveImportDestination(destDir)
+      : { destDir, token: reservedToken }
+  const reservationPath = `${destDir}${IMPORT_RESERVATION_SUFFIX}`
+  const partial = `${destDir}.partial-${randomUUID()}`
+  let zip: yauzl.ZipFile | null = null
   try {
+    try {
+      if (readFileSync(reservationPath, 'utf8') !== reservation.token) {
+        throw refuse('DEST_BUSY', `the destination reservation is not owned by this import`)
+      }
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'DEST_BUSY') throw error
+      throw refuse('DEST_BUSY', `the destination reservation is not available`)
+    }
+    // Request-owned staging. Pre-create it exclusively before the first
+    // await so no other import can delete or write this tree.
+    mkdirSync(partial)
+    const manifest = await readArchiveManifest(archivePath, limits)
+    const opened = await openArchive(archivePath, limits)
+    zip = opened.zip
+    const { entries } = opened
     // Every inventoried entry must exist AND must be one of the budget-
     // validated entries the scan admitted (CA-011: bind the inventory to
     // the allowed set, and reconcile each declared manifest size against
@@ -369,10 +451,9 @@ export async function importProject(
       notes: manifest.counts.notes,
       assets: manifest.counts.assets,
     }
-  } catch (err) {
-    rmSync(partial, { recursive: true, force: true })
-    throw err
   } finally {
-    zip.close()
+    zip?.close()
+    rmSync(partial, { recursive: true, force: true })
+    releaseImportDestination(reservation)
   }
 }

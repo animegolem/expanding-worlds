@@ -159,7 +159,12 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       // service guard. Typed refusal on any defect; the partial
       // directory never survives a failure.
       try {
-        const result = await importProject(request.archivePath, request.destDir)
+        const result = await importProject(
+          request.archivePath,
+          request.destDir,
+          undefined,
+          request.reservationToken,
+        )
         return { type: 'import-project', ok: true, ...result }
       } catch (err) {
         const code =

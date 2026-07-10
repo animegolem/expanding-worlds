@@ -433,6 +433,8 @@ export interface ImportProjectRequest {
   type: 'import-project'
   archivePath: string
   destDir: string
+  /** Main's filesystem-backed, destination-bound reservation. */
+  reservationToken: string
 }
 
 export type ImportProjectResponse =

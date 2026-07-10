@@ -1,9 +1,15 @@
 import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
-import { existsSync, realpathSync } from 'node:fs'
+import { realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
-import { assertManagedPath, blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
+import {
+  assertManagedPath,
+  blobRelativePath,
+  releaseImportDestination,
+  reserveAvailableImportDestination,
+  thumbnailRelativePath,
+} from '@ew/persistence'
 import { loadAppSettingsFile, writeAppSettingsFile } from './app-settings'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import { createSnapshotEngine } from './snapshot'
@@ -946,18 +952,24 @@ void app.whenReady().then(() => {
     const parent = dirname(projectDir())
     const stem = basename(String(archivePath)).replace(/\.ewproj$/i, '') || 'project'
     const date = new Date().toISOString().slice(0, 10)
-    let destDir = join(parent, `${stem}-imported-${date}`)
-    for (let n = 2; existsSync(destDir) || existsSync(`${destDir}.partial`); n += 1) {
-      destDir = join(parent, `${stem}-imported-${date} (${n})`)
+    const reservation = reserveAvailableImportDestination(
+      join(parent, `${stem}-imported-${date}`),
+    )
+    try {
+      const result = await callUtility({
+        type: 'import-project',
+        archivePath: String(archivePath),
+        destDir: reservation.destDir,
+        reservationToken: reservation.token,
+      })
+      return 'type' in result && result.type === 'import-project' && result.ok
+        ? { ...result, openToken: materializedProjectOpens.issue(event.sender, result.dir) }
+        : result
+    } finally {
+      // Utility normally consumes it; this covers utility death/refusal
+      // before importProject takes ownership.
+      releaseImportDestination(reservation)
     }
-    const result = await callUtility({
-      type: 'import-project',
-      archivePath: String(archivePath),
-      destDir,
-    })
-    return 'type' in result && result.type === 'import-project' && result.ok
-      ? { ...result, openToken: materializedProjectOpens.issue(event.sender, result.dir) }
-      : result
   })
   ipcMain.handle('app:get-version', () => app.getVersion())
 
