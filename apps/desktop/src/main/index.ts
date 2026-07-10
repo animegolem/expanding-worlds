@@ -1,9 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
+import { loadAppSettingsFile, writeAppSettingsFile } from './app-settings'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import { createSnapshotEngine } from './snapshot'
 import type {
@@ -252,8 +253,13 @@ function assetScopeDir(url: string): string | null {
 // Preferences that follow the application rather than any project:
 // one flat JSON file in the configuration directory, loaded once,
 // rewritten whole on every set (a handful of keys). Defaults live in
-// the renderer store; a missing or corrupt file is simply empty. The
-// env override keeps e2e app instances out of the real user config.
+// the renderer store; a missing file is simply empty (fresh install).
+// The env override keeps e2e app instances out of the real user
+// config. The file-level read/write logic (atomic write, corrupt-file
+// recovery — CA-015/AI-IMP-237) lives in the electron-free
+// `app-settings.ts` so it unit-tests without an Electron `app`
+// instance; this module owns the in-memory cache, the IPC surface,
+// and cross-window broadcast.
 
 function appConfigDir(): string {
   return process.env['EW_APP_CONFIG_DIR'] ?? app.getPath('userData')
@@ -261,33 +267,49 @@ function appConfigDir(): string {
 
 const APP_SETTINGS_FILENAME = 'app-settings.json'
 let appSettings: Record<string, unknown> | null = null
+// Set when loadAppSettings() had to recover from a corrupt file;
+// app-settings:get consumes (reads and clears) it once so the
+// renderer's one boot-time read surfaces exactly one recovery toast.
+let appSettingsRecovered = false
+
+function appSettingsPath(): string {
+  return join(appConfigDir(), APP_SETTINGS_FILENAME)
+}
 
 function loadAppSettings(): Record<string, unknown> {
   if (appSettings) return appSettings
-  try {
-    const parsed: unknown = JSON.parse(
-      readFileSync(join(appConfigDir(), APP_SETTINGS_FILENAME), 'utf8'),
-    )
-    appSettings =
-      parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : {}
-  } catch {
-    appSettings = {}
-  }
+  const loaded = loadAppSettingsFile(appSettingsPath())
+  appSettings = loaded.settings
+  if (loaded.recovered) appSettingsRecovered = true
   return appSettings
 }
 
-function setAppSetting(key: string, value: unknown): void {
+interface SetAppSettingResult {
+  ok: boolean
+  message?: string
+}
+
+function setAppSetting(key: string, value: unknown): SetAppSettingResult {
   const settings = loadAppSettings()
+  const hadKey = Object.prototype.hasOwnProperty.call(settings, key)
+  const previous = settings[key]
   settings[key] = value
-  mkdirSync(appConfigDir(), { recursive: true })
-  writeFileSync(join(appConfigDir(), APP_SETTINGS_FILENAME), JSON.stringify(settings, null, 2))
+  try {
+    writeAppSettingsFile(appSettingsPath(), settings)
+  } catch (err) {
+    // Roll back the in-memory copy so main's cache doesn't disagree
+    // with the file it failed to write; the renderer performs the
+    // matching optimistic-value revert on a failed result.
+    if (hadKey) settings[key] = previous
+    else delete settings[key]
+    return { ok: false, message: err instanceof Error ? err.message : String(err) }
+  }
   // Cross-window sync: every window (including the writer, which
   // already applied optimistically and dedupes) hears the change.
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send('app-settings:changed', { key, value })
   }
+  return { ok: true }
 }
 
 /**
@@ -1057,6 +1079,12 @@ void app.whenReady().then(() => {
   )
   ipcMain.handle('app-settings:get', () => {
     const settings = loadAppSettings()
+    // CA-015: a corrupt-file recovery is consumed exactly once here —
+    // the renderer's one boot-time read turns it into a toast; later
+    // reads (a second window, a re-fetch) see a normal result.
+    const recovered = appSettingsRecovered
+    appSettingsRecovered = false
+    const result = recovered ? { ...settings, recovered: true } : settings
     // §19 first-run guide (AI-IMP-145): the e2e suite launches ~19 fresh
     // app-config dirs, so without a suppressor the walkthrough takeover
     // would block board interaction in every spec. playwright.config
@@ -1064,13 +1092,12 @@ void app.whenReady().then(() => {
     // with '0'. Injected on READ only — never persisted, so a real
     // dismissal still writes the flag normally.
     if (process.env['EW_SUPPRESS_FIRST_RUN'] === '1') {
-      return { ...settings, firstRunSeen: true }
+      return { ...result, firstRunSeen: true }
     }
-    return settings
+    return result
   })
   ipcMain.handle('app-settings:set', (_event, key: string, value: unknown) => {
-    setAppSetting(String(key), value)
-    return true
+    return setAppSetting(String(key), value)
   })
   ipcMain.handle('window:set-opacity', (event, value: number) => {
     const win = BrowserWindow.fromWebContents(event.sender)
