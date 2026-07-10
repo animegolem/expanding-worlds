@@ -604,6 +604,12 @@
   /** Tail endpoints in host coordinates, tethered-with-anchor only. */
   let tail = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   let anchorGone = $state(false)
+  /** §8.5 (AI-IMP-258): TRUE when layout() parked this unpinned panel
+   * at the anchorless fallback — no tether holds it, so the store's
+   * documented `screen` contract applies ("once pinned, or for
+   * anchorless panels") and the header drags it WITHOUT pinning.
+   * Placement/corner/point-tethered panels stay layout-owned. */
+  let freeFloating = $state(false)
   /** §8.5 rev 0.47: a TETHERED panel anchored to a placement is world
    * content — it scales with the camera (transform-origin at the tether
    * corner) so it stays glued to its node at every zoom. rev 0.47/AI-IMP-200
@@ -679,6 +685,7 @@
     worldScale = 1
     bound = false
     ringMount = null
+    freeFloating = false
     if (record.pinned) {
       if (record.screen) pos = record.screen
       tail = null
@@ -749,8 +756,15 @@
       tail = { x1: x, y1: y + 18, x2: at.x, y2: at.y }
       return
     }
-    // Anchorless (zero placements / stale anchor): a calm default.
-    pos = { x: view.width - width - 16, y: 56 }
+    // Anchorless (zero placements / stale anchor / placement on another
+    // canvas): a calm default, and FREE-FLOATING — nothing tethers it,
+    // so a dragged position (record.screen) is honored across layouts.
+    // The default clears the charm rail's right-edge column (2rem +
+    // 0.6rem inset, chrome-above-panels): the old -16 default parked
+    // the close button UNDER the rail, whose search charm ate its
+    // clicks — the AI-IMP-258 field report's "dead" close.
+    freeFloating = true
+    pos = record.screen ?? { x: view.width - width - 56, y: 56 }
     tail = null
   }
 
@@ -954,9 +968,12 @@
   }
 
   // Header drag repositions pinned panels (§8.5: unpinning and
-  // closing are the user's acts; dragging is just placement).
+  // closing are the user's acts; dragging is just placement) — and
+  // FREE-FLOATING ones (AI-IMP-258): an anchorless panel has no
+  // tether to preserve, so pinning-before-dragging would be ceremony.
+  // Tethered panels still refuse: layout owns them, drag would fight it.
   function onHeaderPointerDown(event: PointerEvent): void {
-    if (!record.pinned) return
+    if (!record.pinned && !freeFloating) return
     const target = event.target as HTMLElement
     if (target.closest('button') || target.closest('input')) return
     const start = { x: event.clientX, y: event.clientY }
@@ -1170,6 +1187,7 @@
 <section
   class="note-panel"
   class:pinned={record.pinned}
+  class:free-floating={freeFloating}
   class:bound
   class:bound-left={bound && boundSide === 'left'}
   class:bound-below={bound && boundSide === 'below'}
@@ -1190,6 +1208,13 @@
   ondblclick={onPageDblClick}
 >
   <header onpointerdown={onHeaderPointerDown}>
+    {#if record.pinned || freeFloating}
+      <!-- §8.5 (AI-IMP-258): the drag handle. The header is otherwise
+           title-input + buttons — both refused as drag starts — which
+           left a draggable panel with no visibly grabbable inch. Shown
+           exactly when dragging is honored (pinned or free-floating). -->
+      <div class="grip" data-testid="panel-grip" aria-hidden="true">⠿</div>
+    {/if}
     {#if note && !phantom}
       <input
         class="title-input"
@@ -1724,8 +1749,20 @@
     cursor: default;
   }
 
-  .note-panel.pinned header {
+  .note-panel.pinned header,
+  .note-panel.free-floating header {
     cursor: grab;
+  }
+
+  .grip {
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0 0.1rem;
+    color: var(--ew-paper-text-muted);
+    font-size: 0.65rem;
+    cursor: grab;
+    user-select: none;
   }
 
   .chrome-btn {

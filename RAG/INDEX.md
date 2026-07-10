@@ -10,7 +10,7 @@
 | Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 224 |
+| Completed | 19 | 225 |
 | **Total** | **27** | **259** |
 
 ## In Progress
@@ -98,7 +98,6 @@
 - [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
 - [[AI-IMP-255-title-band-native-drag-blackout|IMP-255]] — in-progress, no epic dependency found
 - [[AI-IMP-257-top-band-click-delivery|IMP-257]] — in-progress, no epic dependency found
-- [[AI-IMP-258-loose-note-panel-mount|IMP-258]] — planned, no epic dependency found
 - [[AI-IMP-259-path-bar-containment|IMP-259]] — planned, no epic dependency found
 - [[AI-IMP-260-delete-loose-notes|IMP-260]] — planned, no epic dependency found
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
@@ -128,7 +127,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4692 LOC)
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (2172 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (2057 LOC)
+- apps/desktop/src/renderer/note/NotePanel.svelte (2094 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
 - apps/desktop/src/main/index.ts (1203 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1177 LOC)
@@ -144,7 +143,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
-- RAG/HUMAN-TESTING.md (808 LOC)
+- RAG/HUMAN-TESTING.md (818 LOC)
 - apps/desktop/src/main/snapshot.ts (791 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (782 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)

@@ -6,12 +6,12 @@ tags:
   - renderer
   - notes
   - field-report
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.55
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-10
 ---
 
 
@@ -68,13 +68,76 @@ this one).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pre-implementation review: both symptoms reproduced; drag
+- [x] Pre-implementation review: both symptoms reproduced; drag
       regression bisected to a commit; causes cited here.
-- [ ] One mount path: loose-note panel gets grip + working
+      REVIEW VERDICT (2026-07-10, live e2e repro + hit-testing;
+      scratch specs imp258-repro*.spec.ts, folded into the final
+      regression spec): the lead hypothesis is SUPERSEDED — there
+      is NO parallel mount path and NO regression. One mount path
+      serves placed and loose notes already; every finding below
+      reproduces IDENTICALLY on v0.16.0 (NotePanel.svelte and
+      CharmRail.svelte are byte-equivalent in every load-bearing
+      line — anchorless default, pinned-only drag gate since
+      AI-IMP-064, header markup, rail geometry, 7 charms). alph's
+      "drag worked in my first build" was the PLACED-note path
+      (tether → pin → drag); loose notes are a new usage path for
+      him. Convicted causes, from a real instance at 1280×800:
+      (1) CLOSE IS DEAD, deterministically: the anchorless
+      default (NotePanel.svelte layout(), `pos = {x: view.width -
+      width - 16, y: 56}`) parks the panel's right edge under the
+      CharmRail column (right: 0.6rem, top: 2.4rem, 32×220px,
+      chrome-above-panels per the §8.8 ladder) —
+      elementFromPoint at panel-close's center returns
+      charm-search, so "close" OPENS THE SEARCH TAKEOVER. Both
+      elements anchor right, so the collision holds at every
+      window size. (2) PIN WORKS but is invisible: pinPanel keeps
+      pos for an anchorless panel — zero feedback, reads as dead.
+      (3) EXPAND WORKS (click opened the big editor); "expand
+      dead" in the field report is collateral of (1)/(2) chaos —
+      no defect found. (4) DRAG: onHeaderPointerDown refuses
+      unpinned panels (by §8.5 design, unchanged since 064) and
+      the header is almost entirely title-input + buttons, both
+      excluded as drag starts — a pinned drag from the ~3px free
+      sliver DID move the panel (−200,+150), so the machinery is
+      intact and the grab AREA is the defect. Note: the store's
+      own contract anticipated the fix — PanelRecord.screen is
+      documented "Screen-fixed position once pinned (or for
+      anchorless panels)" but layout() never honors screen for
+      unpinned anchorless records.
+- [x] One mount path: loose-note panel gets grip + working
       pin/expand/close.
-- [ ] Drag regression fixed at cause (not re-implemented around).
-- [ ] Component tests for both mounts; loose-note e2e spec green.
-- [ ] HUMAN-TESTING entry for alph.
+      SUPERSEDED-AND-SATISFIED: there was already exactly one
+      mount path (review above). The actual repairs, all in
+      NotePanel.svelte: (1) the anchorless spawn default moves
+      to `view.width - width - 56`, clear of the charm rail's
+      column, so pin/expand/close all hit-test to themselves —
+      close now closes instead of opening search; (2) a `grip`
+      drag handle (⠿, panel-grip) renders at the header's left
+      exactly when dragging is honored (pinned or free-floating).
+- [x] Drag regression fixed at cause (not re-implemented around).
+      NO REGRESSION EXISTED (review above) — the cause was a
+      latent day-one gap, fixed at cause: the anchorless fallback
+      is now FREE-FLOATING — it honors the store's documented
+      `record.screen` contract (`pos = record.screen ?? default`)
+      and onHeaderPointerDown accepts unpinned free-floating
+      panels. Tethered panels still refuse drags (layout owns
+      them); corner/point/bound behavior untouched. A dragged
+      position survives camera relayouts and carries into a
+      later pin.
+- [x] Component tests for both mounts; loose-note e2e spec green.
+      Adjusted to the repo's actual idiom (store-level vitest, no
+      Svelte component mounting exists in this codebase):
+      panels-free-floating.test.ts pins the store half (movePanel
+      persists screen on an unpinned record; pin keeps it); the
+      DOM half is e2e/loose-note-panel.spec.ts (3 tests): every
+      control hit-tests to ITSELF via elementFromPoint + close
+      closes with no collateral takeover; grip-drag without
+      pinning + position holds across a camera relayout + pin
+      keeps the spot; placed-note tether unchanged (no grip,
+      drag refused). Gate: desktop vitest 406 passed/1 skipped
+      (49 files); e2e panels/notes/note-lifecycle/panel-flyto/
+      note-metadata/loose-note-panel 46/46, pipefail on.
+- [x] HUMAN-TESTING entry for alph.
 
 ### Acceptance Criteria
 
@@ -92,3 +155,20 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The ticket's two premises both fell in review: there is no
+  parallel mount path, and nothing regressed — v0.16.0's
+  NotePanel and CharmRail are equivalent in every load-bearing
+  line, so alph's "drag worked in my first build" was the
+  placed-note path. The bisect item is satisfied by that negative
+  result with citations, not a commit.
+- "Expand dead" reproduced as WORKING; recorded as collateral of
+  the close-opens-search chaos. If alph still sees a dead expand
+  on Windows after this build, it is a NEW report.
+- Deliberate scope choice: the tethered slot's `screen` persists
+  across content swaps (drag a loose note's panel, open another
+  loose note — the panel stays where you put it). Window-like and
+  §8.5-consistent; flagged here in case the feel pass disagrees.
+- Component-mount tests don't exist as an idiom in this repo;
+  the checklist's "component tests" landed as store-contract
+  vitest + the e2e spec (details on the item).

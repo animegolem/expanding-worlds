@@ -10,6 +10,16 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Loose notes are real windows now** (AI-IMP-258,
+  2026-07-10 — alph's report, alph should re-check): open a note
+  with no placement from the gallery — its panel spawns top-right
+  but CLEAR of the charm rail, close actually closes (no more
+  search panel opening out of nowhere), and the ⠿ grip at the
+  header's left drags it anywhere WITHOUT pinning first; the spot
+  holds while you pan/zoom. Pin afterwards keeps it where you put
+  it. A placed note's panel is unchanged (glued to its node until
+  pinned).
+
 - [ ] **Compound gestures fail whole** (AI-IMP-232, 2026-07-09,
   Sol P2): drag items into a frame under a forced refusal (dev:
   __ewDebug.failNextCommand("TransformContent")) — items snap back,

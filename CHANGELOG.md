@@ -17,6 +17,11 @@ annotations.
   blurry smudge once you zoomed in — labels now re-sharpen as you
   zoom, so a board's name is readable at the zooms Home is actually
   used at.
+- Fixed: a note with no placement (opened from the gallery) spawned
+  its panel half-under the right-edge charm rail — its close button
+  secretly clicked the search charm, and the panel could never be
+  moved. It now spawns clear of the rail, close closes, and a new ⠿
+  grip on the header drags it anywhere without pinning first.
 
 ### Under the hood
 - The Windows CI leg is standing and green (AI-IMP-242/249,
@@ -28,6 +33,12 @@ annotations.
   the cull pass instead of stretching one DPR-sized texture forever
   (AI-IMP-262) — convicted by a runtime repro: a New-board pin's
   label rasters at ~7 device px and Home zooms magnified it 8-20×.
+- The loose-note panel becomes FREE-FLOATING (AI-IMP-258): the
+  anchorless fallback honors the store's day-one `screen` contract,
+  header drag accepts unpinned free-floating panels, the spawn
+  default clears the charm-rail column, and a ⠿ grip marks the
+  grab area. Review corrected the ticket: no regression existed —
+  the collision and the grab-area gap shipped identically in v0.16.
 - The Windows lock-probe zero-winner convicted as fixture PID reuse
   and fixed in the fixture (AI-IMP-263, Codex): the planted corpse
   pid was recycled into a live runner process and every worker
