@@ -69,7 +69,7 @@ import {
   type SnapGuide,
   type IconAtlasResource,
 } from '@ew/canvas-engine'
-import type { TransformContentPayload } from '@ew/commands'
+import type { CommandEnvelope, CommandResult, TransformContentPayload } from '@ew/commands'
 import { Application, Container, Graphics, Texture } from 'pixi.js'
 import {
   EW_BEAT_AWAY_MS,
@@ -109,6 +109,14 @@ import type { Rect } from '@ew/canvas-engine'
  * used 2000 ms). A destination scene that has not applied by then is
  * treated as absent and the caller degrades gracefully. */
 const WAIT_FOR_ITEMS_DEFAULT_TIMEOUT_MS = 2000
+
+/** AI-IMP-232: bound for a targeted whenSceneApplied wait. A committed
+ * command normally produces its project-changed event (and the refresh
+ * that applies it) well inside this window; the bound only exists so a
+ * dropped/absent event can never hang a compound flow (and its undo
+ * group) forever — the CA-007 failure mode. Matches the waitForItems
+ * bound. */
+const WHEN_SCENE_APPLIED_DEFAULT_TIMEOUT_MS = 2000
 
 export interface CanvasHostHandle {
   /** Seams for feature modules (gestures UI, import surfaces, tools). */
@@ -151,8 +159,14 @@ export interface CanvasHostHandle {
   /** Resolves after the NEXT applied scene — a one-shot wrap of
    * onSceneApplied that always detaches its listener. The primitive
    * for "issue a navigate/commit, then read the fresh scene"; do not
-   * read items()/camera synchronously after navigateTo (AI-IMP-113). */
-  whenSceneApplied(): Promise<void>
+   * read items()/camera synchronously after navigateTo (AI-IMP-113).
+   * AI-IMP-232: pass `revision` (a committed command's result.revision)
+   * to make the wait TARGET-AWARE — it resolves once an applied scene
+   * reflects at least that revision (try-now included), instead of
+   * resolving on the next unrelated refresh. A bounded `timeoutMs`
+   * (default 2000) always backstops so a dropped event cannot hang a
+   * compound flow; a bare call still resolves on the next apply. */
+  whenSceneApplied(opts?: { revision?: number; timeoutMs?: number }): Promise<void>
   /** Resolves true once every id in `ids` is present in the applied
    * scene — checked now, then on each scene-apply — or false when
    * `timeoutMs` (default 2000) elapses first. Try-now / subscribe /
@@ -229,6 +243,11 @@ declare global {
       /** Test seam: place the camera deterministically (cancels any
        * flight through the external-change hook). */
       setCamera: (state: { x: number; y: number; zoom: number }) => void
+      /** AI-IMP-232 test seam: arm a one-shot conflict for the NEXT
+       * command of `commandType` issued through this host's gateway, so
+       * the compound fail-stop paths (CA-007) are exercisable in e2e.
+       * Fires once, then disarms. */
+      failNextCommand: (commandType: string) => void
       /** AI-IMP-040: last clamp-applied render width, null if never
        * clamped away from the stored width. */
       renderedStroke: (id: string) => number | null
@@ -431,8 +450,31 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     nodeId: project.rootNodeId,
   })
   let canvasId = rootCanvas.id
+  // AI-IMP-232 test seam: arm a one-shot conflict for the next command
+  // of a given type (via __ewDebug.failNextCommand) so the compound
+  // fail-stop paths can be exercised deterministically in e2e. Inert
+  // until armed — the same shape as the other __ewDebug drive hooks.
+  let failNextCommandType: string | null = null
   const gateway = new CommandGateway(
-    { execute: (envelope) => window.ew.project.execute(envelope) },
+    {
+      execute: (envelope: CommandEnvelope): Promise<CommandResult> => {
+        if (failNextCommandType !== null && envelope.commandType === failNextCommandType) {
+          failNextCommandType = null
+          // Report the REAL observed revision as `actual` so the gateway's
+          // noteRevision on conflict is a no-op — a poisoned (advanced)
+          // observed revision would false-conflict every later command.
+          const at = gateway.revision
+          const conflict: CommandResult = {
+            status: 'conflict',
+            commandId: envelope.commandId,
+            expectedRevision: envelope.expectedProjectRevision ?? at,
+            actualRevision: at,
+          }
+          return Promise.resolve(conflict)
+        }
+        return window.ew.project.execute(envelope)
+      },
+    },
     project.id,
     project.revision,
     uuidv7,
@@ -1194,16 +1236,31 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
     // One undo entry: the move, every capture/release, and the scoped
     // arrange of each sort-on-drop frame all commit together.
+    // AI-IMP-232 (CA-007): fail-stop. If the move is refused (e.g. a
+    // revision conflict) NOTHING downstream runs — no capture/release
+    // would silently re-parent items whose move never landed, and no
+    // arrange would run against the wrong set. The refusal the user
+    // sees is the move's own authoritative snap-back on the next
+    // refresh; stopping here is what makes that snap-back honest.
     await runAsUndoGroup(async () => {
-      await gateway.execute('TransformContent', payload)
+      const moved = await gateway.execute('TransformContent', payload)
+      if (moved.status !== 'committed') return
       for (const [framePlacementId, memberPlacementIds] of captures) {
-        await gateway.execute('CaptureInFrame', { framePlacementId, memberPlacementIds })
+        const captured = await gateway.execute('CaptureInFrame', {
+          framePlacementId,
+          memberPlacementIds,
+        })
+        if (captured.status !== 'committed') return
       }
       if (releases.length > 0) {
-        await gateway.execute('ReleaseFromFrame', { memberPlacementIds: releases })
+        const released = await gateway.execute('ReleaseFromFrame', {
+          memberPlacementIds: releases,
+        })
+        if (released.status !== 'committed') return
       }
       for (const arrange of arranges) {
-        await gateway.execute('TransformContent', arrange)
+        const arranged = await gateway.execute('TransformContent', arrange)
+        if (arranged.status !== 'committed') return
       }
     })
     clearHoverDim()
@@ -1537,12 +1594,26 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // AI-IMP-113: the scene-ready primitive. Every navigate-then-read
   // site used to hand-roll try-now / one-shot onSceneApplied / timeout
   // and each new copy regressed as a "flake" (IMP-018/023/048/065/073).
-  function whenSceneApplied(): Promise<void> {
+  // AI-IMP-232 (CA-007): an optional `revision` target makes the wait
+  // qualified — it resolves once an applied scene reflects that revision
+  // (try-now against lastAppliedRevision), not on the next unrelated
+  // refresh. A bounded timeout always backstops so a dropped event can
+  // never hang a compound flow (and its undo group); a bare call keeps
+  // the original "resolve on the NEXT apply" contract, now bounded.
+  function whenSceneApplied(opts?: { revision?: number; timeoutMs?: number }): Promise<void> {
+    const target = opts?.revision
+    if (target !== undefined && lastAppliedRevision >= target) return Promise.resolve()
     return new Promise((resolve) => {
       const off = subscribeSceneApplied(() => {
+        if (target !== undefined && lastAppliedRevision < target) return
         off()
+        clearTimeout(timer)
         resolve()
       })
+      const timer = setTimeout(() => {
+        off()
+        resolve()
+      }, opts?.timeoutMs ?? WHEN_SCENE_APPLIED_DEFAULT_TIMEOUT_MS)
     })
   }
   function waitForItems(
@@ -1576,6 +1647,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
 
   let refreshing = false
   let refreshQueued = false
+  // AI-IMP-232: the highest project revision an applied scene is known
+  // to reflect. `gateway.revision` at query time is a safe lower bound —
+  // the onChanged handler advances it (noteRevision) before the refresh
+  // it triggers, and a committed command advances it before its own
+  // event. A targeted whenSceneApplied wait resolves against this.
+  let lastAppliedRevision = 0
   async function refresh(): Promise<void> {
     // Coalesce bursts of project-changed events into one trailing query.
     if (refreshing) {
@@ -1591,6 +1668,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       // resuming refresh re-acquired the old scene's textures (perf
       // memory-release regression).
       const forCanvas = canvasId
+      // Snapshot the observed revision BEFORE the query suspends: the
+      // fetched scene reflects at least this (AI-IMP-232 wait target).
+      const observedRevision = gateway.revision
       const [scene, frameTree] = await Promise.all([
         runQuery<CanvasScene | null>('getCanvasScene', { canvasId }),
         runQuery<{ roots: Parameters<typeof indexFrameTree>[0] }>('getFrameTree', { canvasId }),
@@ -1609,6 +1689,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         sceneBackground = null
         updateContentStage()
         drawStageOrGrid()
+        lastAppliedRevision = Math.max(lastAppliedRevision, observedRevision)
         notifySceneApplied()
         return
       }
@@ -1642,6 +1723,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       // rings; setItems already intersected the lens with survivors.
       drawLens()
       scheduleCull()
+      lastAppliedRevision = Math.max(lastAppliedRevision, observedRevision)
       notifySceneApplied()
     } finally {
       refreshing = false
@@ -1893,6 +1975,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     },
     glInfo,
     openCanvas,
+    failNextCommand: (commandType: string) => {
+      failNextCommandType = commandType
+    },
     backgroundTiled: () => backgroundSync.tiled,
     decorations: () =>
       controller.items().filter((item): item is SceneDecoration => item.itemKind === 'decoration'),
