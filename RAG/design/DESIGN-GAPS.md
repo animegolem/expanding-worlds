@@ -24,6 +24,20 @@ build-side carrier for each.
 
 ### Drawn-control gaps (code shipped, kit silent)
 
+- [ ] **The New-board verb** (AI-IMP-239, owner ruling 2026-07-09
+      — "first-time creation is the miss"): there is no affordance
+      for a fresh board; the model is fine (boards belong to
+      nodes) but the journey needs sugar — one gesture: name it,
+      Enter, you're inside. Needs drawing: the menu row's place in
+      the §8.4 empty-board grammar (and whether the Board menu
+      carries a twin), the naming moment (the 211 palette reused —
+      does "New board" get distinct framing from note creation?),
+      what the board-object placed on the origin board LOOKS like
+      (frame-family? does it carry the caption card once that
+      lands?), and the arrival beat on dive. Sibling of the
+      Make-canvas charm item below — one drawing session should
+      settle both, they are the same family (boards being born).
+
 - [ ] **Make-canvas charm** (AI-IMP-208, owner M-ticket): the
       charm bar's Make-canvas button — the core recursive verb —
       never landed in the charm-bar mockup. Needs: glyph (code
