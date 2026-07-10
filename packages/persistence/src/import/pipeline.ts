@@ -19,6 +19,7 @@ import {
   importTempRelativeDir,
   moveIntoStore,
 } from './store'
+import { assertManagedPath } from '../path-safety'
 
 /**
  * Staged asset import per RFC-0001 §11.2: copy to temp → sniff and
@@ -93,7 +94,7 @@ export async function stageImport(deps: ImportDeps, input: ImportInput): Promise
   await ensureLayout(deps.dir)
   const importId = uuidv7()
   const tempRelative = join(importTempRelativeDir(importId), TEMP_BLOB_NAME)
-  const tempFile = join(deps.dir, tempRelative)
+  const tempFile = assertManagedPath(deps.dir, join(deps.dir, tempRelative))
   const now = deps.now()
   deps.db.run(
     `INSERT INTO pending_imports
@@ -114,7 +115,9 @@ export async function stageImport(deps: ImportDeps, input: ImportInput): Promise
     sourceUrl: input.sourceUrl,
   }
   try {
-    await mkdir(importTempDir(deps.dir, importId), { recursive: true })
+    const tempDir = assertManagedPath(deps.dir, importTempDir(deps.dir, importId))
+    await mkdir(tempDir, { recursive: true })
+    assertManagedPath(deps.dir, tempFile)
     if (input.bytes !== undefined) {
       await writeFile(tempFile, input.bytes)
     } else {
@@ -136,7 +139,7 @@ export async function stageImport(deps: ImportDeps, input: ImportInput): Promise
  * zero records: temp cleaned, pending row deleted.
  */
 export async function sniffStaged(deps: ImportDeps, staged: StagedImport): Promise<SniffResult> {
-  const handle = await open(staged.tempFile, 'r')
+  const handle = await open(assertManagedPath(deps.dir, staged.tempFile), 'r')
   let header: Buffer
   try {
     const buffer = Buffer.alloc(SNIFF_HEADER_BYTES)
@@ -165,7 +168,7 @@ export async function sniffStaged(deps: ImportDeps, staged: StagedImport): Promi
 export async function hashStaged(deps: ImportDeps, staged: StagedImport): Promise<string> {
   const digest = createHash('sha256')
   try {
-    for await (const chunk of createReadStream(staged.tempFile)) {
+    for await (const chunk of createReadStream(assertManagedPath(deps.dir, staged.tempFile))) {
       digest.update(chunk as Buffer)
     }
   } catch (err) {

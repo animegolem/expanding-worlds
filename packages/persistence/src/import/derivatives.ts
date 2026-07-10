@@ -3,6 +3,7 @@ import { dirname } from 'node:path'
 import { uuidv7 } from '@ew/domain'
 import type { Db } from '../db'
 import { thumbnailPath } from './store'
+import { assertManagedPath } from '../path-safety'
 
 /**
  * Derivative job queue (RFC-0001 §11.2): thumbnails are regenerable
@@ -103,7 +104,7 @@ export function claimNextThumbnailJob(ctx: DerivativeCtx, dir: string): Thumbnai
          ORDER BY j.created_at, j.id LIMIT 1`,
       ) ?? null
     if (!job) return null
-    if (!existsSync(thumbnailPath(dir, job.contentHash))) return job
+    if (!existsSync(assertManagedPath(dir, thumbnailPath(dir, job.contentHash)))) return job
     markJobDone(ctx, job.jobId)
   }
 }
@@ -138,9 +139,10 @@ export function completeThumbnailJob(
     markJobFailed(ctx, input.jobId)
     return null
   }
-  const dest = thumbnailPath(dir, job.contentHash)
+  const dest = assertManagedPath(dir, thumbnailPath(dir, job.contentHash))
   mkdirSync(dirname(dest), { recursive: true })
-  const tmp = `${dest}.tmp-${input.jobId}`
+  assertManagedPath(dir, dest)
+  const tmp = assertManagedPath(dir, `${dest}.tmp-${input.jobId}`)
   writeFileSync(tmp, input.bytes)
   renameSync(tmp, dest)
   markJobDone(ctx, input.jobId)
@@ -172,7 +174,7 @@ export function enqueueMissingThumbnails(ctx: DerivativeCtx, dir: string): numbe
   for (const asset of assets) {
     if (seen.has(asset.contentHash)) continue
     seen.add(asset.contentHash)
-    if (existsSync(thumbnailPath(dir, asset.contentHash))) continue
+    if (existsSync(assertManagedPath(dir, thumbnailPath(dir, asset.contentHash)))) continue
     enqueueThumbnail(ctx, asset.id)
     enqueued += 1
   }

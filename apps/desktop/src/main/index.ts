@@ -3,7 +3,7 @@ import { existsSync, realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
-import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
+import { assertManagedPath, blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
 import { loadAppSettingsFile, writeAppSettingsFile } from './app-settings'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import { createSnapshotEngine } from './snapshot'
@@ -346,8 +346,12 @@ function registerAssetProtocol(): void {
     const thumb = THUMB_URL_RE.exec(request.url)
     if (thumb) {
       try {
+        const path = assertManagedPath(
+          servingDir,
+          join(servingDir, thumbnailRelativePath(thumb[1]!)),
+        )
         const file = await net.fetch(
-          pathToFileURL(join(servingDir, thumbnailRelativePath(thumb[1]!))).toString(),
+          pathToFileURL(path).toString(),
         )
         if (!file.ok) return new Response('no thumbnail', { status: 404 })
         return new Response(file.body, {
@@ -364,7 +368,7 @@ function registerAssetProtocol(): void {
     const match = ASSET_URL_RE.exec(request.url)
     // The regex is the traversal guard: only a bare hex hash resolves.
     if (!match) return new Response('bad asset url', { status: 400 })
-    const path = join(servingDir, blobRelativePath(match[1]!))
+    const path = assertManagedPath(servingDir, join(servingDir, blobRelativePath(match[1]!)))
     try {
       const file = await net.fetch(pathToFileURL(path).toString())
       if (!file.ok) return new Response('unknown asset', { status: 404 })

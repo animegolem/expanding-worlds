@@ -1,5 +1,6 @@
 import { mkdir, rename, rm, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { assertManagedPath } from '../path-safety'
 
 /**
  * Managed project file layout per RFC-0001 §11.2, created beside
@@ -21,9 +22,11 @@ export const IMPORT_TMP_DIR = join('cache', 'import-tmp')
 
 /** Creates the §11.2 directory layout on demand (idempotent). */
 export async function ensureLayout(dir: string): Promise<void> {
-  await mkdir(join(dir, ASSETS_DIR), { recursive: true })
-  await mkdir(join(dir, THUMBNAILS_DIR), { recursive: true })
-  await mkdir(join(dir, IMPORT_TMP_DIR), { recursive: true })
+  for (const relative of [ASSETS_DIR, THUMBNAILS_DIR, IMPORT_TMP_DIR]) {
+    const path = assertManagedPath(dir, join(dir, relative))
+    await mkdir(path, { recursive: true })
+    assertManagedPath(dir, path)
+  }
 }
 
 /** Blob location relative to the project dir: assets/<h[0:2]>/<hash>. */
@@ -72,7 +75,8 @@ export async function moveIntoStore(
   hash: string,
 ): Promise<{ deduplicated: boolean; storagePath: string }> {
   const storagePath = blobRelativePath(hash)
-  const target = join(dir, storagePath)
+  const target = assertManagedPath(dir, join(dir, storagePath))
+  assertManagedPath(dir, tempFile)
   const exists = await stat(target).then(
     () => true,
     () => false,
@@ -82,11 +86,15 @@ export async function moveIntoStore(
     return { deduplicated: true, storagePath }
   }
   await mkdir(dirname(target), { recursive: true })
+  assertManagedPath(dir, target)
   await rename(tempFile, target)
   return { deduplicated: false, storagePath }
 }
 
 /** Removes an import's staging directory and everything in it. */
 export async function cleanImportTemp(dir: string, importId: string): Promise<void> {
-  await rm(importTempDir(dir, importId), { recursive: true, force: true })
+  await rm(assertManagedPath(dir, importTempDir(dir, importId)), {
+    recursive: true,
+    force: true,
+  })
 }

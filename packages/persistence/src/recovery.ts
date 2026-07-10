@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { Db } from './db'
 import { blobPath, IMPORT_TMP_DIR } from './import/store'
 import { rebuildSearchIndex } from './search'
+import { assertManagedPath } from './path-safety'
 
 /**
  * Startup recovery per RFC-0001 §11.4, run when a project opens and
@@ -74,7 +75,7 @@ function reconcilePendingImports(ctx: RecoveryCtx, report: RecoveryReport): void
     ctx.projectId,
   )
   for (const row of rows) {
-    const temp = join(ctx.dir, IMPORT_TMP_DIR, row.id)
+    const temp = assertManagedPath(ctx.dir, join(ctx.dir, IMPORT_TMP_DIR, row.id))
     if (existsSync(temp)) {
       rmSync(temp, { recursive: true, force: true })
     }
@@ -90,12 +91,12 @@ function reconcilePendingImports(ctx: RecoveryCtx, report: RecoveryReport): void
 /** Temp dirs with no pending row (crash between fs and db writes). */
 function sweepImportTemp(ctx: RecoveryCtx, report: RecoveryReport): void {
   report.checksRun.push('import-temp-sweep')
-  const tmpRoot = join(ctx.dir, IMPORT_TMP_DIR)
+  const tmpRoot = assertManagedPath(ctx.dir, join(ctx.dir, IMPORT_TMP_DIR))
   if (!existsSync(tmpRoot)) return
   // All pending rows were just reconciled away, so anything left in
   // the staging root is orphaned by definition.
   for (const entry of readdirSync(tmpRoot)) {
-    rmSync(join(tmpRoot, entry), { recursive: true, force: true })
+    rmSync(assertManagedPath(ctx.dir, join(tmpRoot, entry)), { recursive: true, force: true })
     report.repairs.push(`swept orphaned import temp ${entry}`)
   }
 }
@@ -108,7 +109,8 @@ function verifyCanonicalBlobs(ctx: RecoveryCtx, report: RecoveryReport): void {
     ctx.projectId,
   )
   for (const { content_hash } of hashes) {
-    if (!existsSync(blobPath(ctx.dir, content_hash))) {
+    const path = assertManagedPath(ctx.dir, blobPath(ctx.dir, content_hash))
+    if (!existsSync(path)) {
       report.integrityErrors.push(`missing canonical original for hash ${content_hash}`)
     }
   }
@@ -122,7 +124,7 @@ function verifyCanonicalBlobs(ctx: RecoveryCtx, report: RecoveryReport): void {
  */
 function removeOrphanBlobs(ctx: RecoveryCtx, report: RecoveryReport): void {
   report.checksRun.push('orphan-blobs')
-  const assetsRoot = join(ctx.dir, 'assets')
+  const assetsRoot = assertManagedPath(ctx.dir, join(ctx.dir, 'assets'))
   if (!existsSync(assetsRoot)) return
   const referenced = new Set(
     ctx.db
@@ -130,7 +132,7 @@ function removeOrphanBlobs(ctx: RecoveryCtx, report: RecoveryReport): void {
       .map((r) => r.content_hash),
   )
   for (const shard of readdirSync(assetsRoot)) {
-    const shardDir = join(assetsRoot, shard)
+    const shardDir = assertManagedPath(ctx.dir, join(assetsRoot, shard))
     let entries: string[]
     try {
       entries = readdirSync(shardDir)
@@ -139,7 +141,7 @@ function removeOrphanBlobs(ctx: RecoveryCtx, report: RecoveryReport): void {
     }
     for (const hash of entries) {
       if (!referenced.has(hash)) {
-        rmSync(join(shardDir, hash), { force: true })
+        rmSync(assertManagedPath(ctx.dir, join(shardDir, hash)), { force: true })
         report.repairs.push(`removed orphan blob ${hash}`)
       }
     }

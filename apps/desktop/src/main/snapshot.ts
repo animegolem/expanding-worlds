@@ -26,6 +26,7 @@ import {
   type SnapshotStatus,
   type SnapshotTestConnectionResult,
 } from '@ew/protocol'
+import { assertManagedPath } from '@ew/persistence'
 
 export type SnapshotMaterializeResult =
   | { ok: true; dir: string }
@@ -237,7 +238,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   const NO_PROMPT_ENV: NodeJS.ProcessEnv = { GIT_TERMINAL_PROMPT: '0' }
 
   function seedGitignore(dir: string): void {
-    const path = join(dir, '.gitignore')
+    const path = assertManagedPath(dir, join(dir, '.gitignore'))
     try {
       if (!existsSync(path)) {
         writeFileSync(path, GITIGNORE_BODY, 'utf8')

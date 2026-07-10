@@ -1,4 +1,13 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { uuidv7 } from '@ew/domain'
@@ -171,4 +180,24 @@ describe('writeNotesTree', () => {
     writeNotesTree(ctx, dir)
     expect(listNotesDir()).toEqual(['Keep.md'])
   })
+
+  it.runIf(process.platform !== 'win32')(
+    'refuses a note file symlink without modifying its external target',
+    () => {
+      createNote('Guarded', 'managed body')
+      writeNotesTree(ctx, dir)
+      const managed = join(dir, 'notes', 'Guarded.md')
+      unlinkSync(managed)
+      const outside = mkdtempSync(join(tmpdir(), 'ew-notes-outside-'))
+      const target = join(outside, 'external.md')
+      writeFileSync(target, 'external body')
+      symlinkSync(target, managed)
+      try {
+        expect(() => writeNotesTree(ctx, dir)).toThrow(/symbolic links are not allowed/)
+        expect(readFileSync(target, 'utf8')).toBe('external body')
+      } finally {
+        rmSync(outside, { recursive: true, force: true })
+      }
+    },
+  )
 })
