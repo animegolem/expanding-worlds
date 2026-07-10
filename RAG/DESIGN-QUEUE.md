@@ -136,6 +136,40 @@ all moved into the RFC.
   of the board" — a second text-only zoom axis; decide whether the
   camera-verb ruling makes it unnecessary.
 
+- **Tag categories — the missing primitive (RATIFIED 2026-07-09,
+  owner + alph, Discord; awaiting epic cut + RFC fold-in):** typed
+  tag categories as the ONLY level of tag nesting — the booru
+  namespace pattern (`creator: Matthieu Bonhomme`,
+  `source: instagram.com/…`), which alph speaks natively (his
+  Allusion history: nested only for lack of better, happy flat).
+  The model: a category is a TYPE on the tag row, not a tree — no
+  parent pointers, no folder UI; categories are USER-DEFINED per
+  project ("the general design structures you can draw meaning out
+  of, but not telling you what meaning to put in it" — the owner's
+  photographer example: shoot location / camera / lens / date).
+  Rulings locked: (1) NOT mandatory — alph: "optional to fill in";
+  first-classness (structured import fields, namespace prefix,
+  facet priority) is the point; required-ness at most a future
+  per-category setting, default off. (2) Filename rewriting works
+  at EGRESS, never in the store — the content-addressed blob store
+  is untouched; a derived display filename
+  (`creator tags date-retrieved.ext`) is computed from fields and
+  applied on export/drag-out/reveal/vault-mirror ("filename on
+  export is what matters" — owner). Date-retrieved = the filename
+  uniquifier; content hash stays the true dedupe (recognition
+  chip). (3) Alph's canonical categories: creator + source — and
+  `source` ALREADY EXISTS as a field (rev 0.53); it needs the
+  entry surface and category presentation, not a schema birth.
+  Also noted from alph: original filenames carry data (his VLC
+  screencaps' names hold the timestamp) — the import surface may
+  offer filename-derived prefills someday; capture only.
+  Convergences: supplies 204's provenance fields, gives the
+  gallery facets/views teeth (creator:X as a filter), EPIC-014
+  input. Schema note for the epic: category validated in COMMAND
+  HANDLERS, never SQLite CHECK IN (user-defined domain). Epic cut
+  + RFC rev pending the owner's build-slot call (vs EPIC-025
+  palette picker).
+
 - **Right-rail membership** (alph's stacking screenshot + owner
   diagnosis, 2026-07-08 — blocks AI-IMP-207 half 2): the rail's
   surfaces are different kinds of thing (full-screen lens, overlay,
