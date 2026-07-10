@@ -105,7 +105,7 @@ builder verifies before repairing.
       committed-prefix-then-fail.
 - [ ] FR-10 (C10-010, P2): snapshot aborts/defers on a typed
       CHECKPOINT_FAILED instead of committing a stale db.
-- [ ] FR-11 (C10-011, P2): project-setting writes are result-aware;
+- [x] FR-11 (C10-011, P2): project-setting writes are result-aware;
       backup/remote UI never claims success on an unsaved draft
       (the 237 pattern extended to project settings).
 - [ ] FR-12 (C10-012, P2): BackgroundSync owns and destroys its
@@ -118,13 +118,13 @@ builder verifies before repairing.
 - [ ] FR-14 (HC-001, P2): E2E launcher adoption — migrate the 12
       raw-launch specs to the isolated launcher; guard scan against
       new bare electron.launch.
-- [ ] FR-15 (HC-002, P2): the §8.8 ONE anchored-surface clamp helper
+- [x] FR-15 (HC-002, P2): the §8.8 ONE anchored-surface clamp helper
       (anchor, surface, free region/bands, side, gap); migrate all
       surfaces; undersized-host unit cases; guard scan.
-- [ ] FR-16 (HC-003, P2): project-setting codec — route storage
+- [x] FR-16 (HC-003, P2): project-setting codec — route storage
       through the safe helpers; key-specific decoder so invalid
       values fall back visibly (merge with FR-11).
-- [ ] FR-17 (HC-004, P2): node-appearance codec — one validate/encode/
+- [x] FR-17 (HC-004, P2): node-appearance codec — one validate/encode/
       decode used by CreatePin, SetNodeAppearance, UnplaceCard.
 - [ ] FR-18 (HC-005, P3): requireActive* record guards in one module.
 - [ ] FR-19 (HC-006, P3): tag resolver/completion exported separately
@@ -159,11 +159,11 @@ map 1:1 to FRs above.)
 
 **Wave 1 — function unification (cut 2026-07-10):**
 
-- [ ] AI-IMP-250 anchored-surface-placement (FR-15 / HC-002) —
+- [x] AI-IMP-250 anchored-surface-placement (FR-15 / HC-002) —
       core, assigned to Sol (xhigh)
-- [ ] AI-IMP-251 project-setting-codec (FR-16 + FR-11 merged /
+- [x] AI-IMP-251 project-setting-codec (FR-16 + FR-11 merged /
       HC-003 + C10-011) — core, assigned to Sol (xhigh)
-- [ ] AI-IMP-252 node-appearance-codec (FR-17 / HC-004) — core,
+- [x] AI-IMP-252 node-appearance-codec (FR-17 / HC-004) — core,
       assigned to Sol (xhigh)
 - [ ] AI-IMP-253 e2e-helper-adoption (FR-14 / HC-001) — mechanical,
       unassigned

@@ -12,11 +12,24 @@ annotations.
 
 ## [Unreleased]
 
+### For testers
+- Anchored popups and panels (tag panel, search, menus, chooser
+  chips) can no longer land partly off-screen in a narrow window —
+  one shared placement rule now clamps and flips all of them.
+- Settings changes that fail to save now say so and roll back,
+  instead of pretending they saved; the backup "Test" button waits
+  for the draft to actually save first.
+
 ### Under the hood
 - EPIC-027 opened: the two 2026-07-10 audits (control-flow
   correctness + helper consolidation) tracked as one
   hardening-and-consolidation epic; wave 1 tickets cut
   (AI-IMP-250–254).
+- EPIC-027 wave 1 landed (Sol): AI-IMP-250 §8.8 anchored-placement
+  helper across nine surfaces + guard scan; AI-IMP-251
+  corruption-contained project-setting codec with result-aware
+  renderer writes (merges C10-011); AI-IMP-252 node-appearance
+  codec closing the CreatePin/SetNodeAppearance validation drift.
 
 ## [v0.19.0] — 2026-07-09 — the closure wave
 
