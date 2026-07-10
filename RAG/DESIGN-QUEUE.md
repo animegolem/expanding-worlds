@@ -92,6 +92,51 @@ all moved into the RFC.
   collapses back to the card. OWNER IS DRAFTING the authoritative
   Note Lifecycle Document to work from; this capture is its input.
 
+- **The canonical projection (CONVERGED 2026-07-10, both Fables +
+  owner; awaiting formal §11/§16 ratification at the strategy
+  review):** a deterministic text serialization of the domain
+  becomes the canonical diff/sync/longevity artifact — the
+  DUAL-ARTIFACT ruling: projection as canonical text, SQLite as
+  runtime engine and restore fast-path. Git snapshots commit the
+  PROJECTION instead of the binary db (kills repo bloat, makes
+  history diffable, unlocks git-as-sync); the .ewproj ships BOTH
+  (VACUUM INTO + hash manifest undisturbed — the safety-critical
+  restore path pays no serialization tax). Design-Fable's three
+  conditions, ratified INTO the ruling, not as follow-ups:
+  (1) **Verified projection** — the dual-artifact failure mode is
+  silent disagreement; CI proves the round trip (db → projection →
+  rebuilt db → projection) byte-identical, and export REFUSES to
+  produce an archive whose db and projection disagree. (Lead note:
+  this is the 229 verify-before-rename idiom generalized — the
+  archive already refuses on hash mismatch; the projection joins
+  the same manifest discipline.)
+  (2) **Determinism is a specification** — pin: canonical float
+  formatting (SQLite REAL → JSON is the classic divergence),
+  Unicode normalization for note text, newline policy,
+  null-vs-absent policy, ordering WITHIN collections (UUIDv7
+  makes ID-order stable AND meaningful). Representation lean:
+  ONE RECORD PER FILE (sharded dirs by UUID, the blob-store
+  sharding pattern) over JSONL — in git, merge granularity equals
+  file granularity, so desktop-edits-A / iPad-edits-B never
+  textually conflict; that is most of the V2 sync battle. (Lead
+  note: notes/ already IS per-record files — the projection
+  extends the app's own precedent.)
+  (3) **Named open question, deferred EXPLICITLY:** text-mergeable
+  ≠ semantically mergeable. Same-field concurrent edits need a
+  domain merge policy someday (LWW-per-field / custom merge
+  driver / app-level three-way on pull) — deferred as a decision,
+  never resolved by accident by whatever git does; the design
+  side's trust grammar (GR-4) has jurisdiction over how a sync
+  merge accounts for itself to the user.
+  Far end-state, named but not taken: SQLite as fully DERIVED
+  (rebuildable like thumbnails) — that flips AUTHORITY (projection
+  = source of truth; conflict resolution, migration, and the Rust
+  port then live in projection space). The elegant endpoint; a
+  deliberate future §11/§16 bet. Convergence note: longevity,
+  git-sync, and the Rust seam analysis (the on-disk layout as
+  load-bearing contract) independently demanded this artifact —
+  the projection schema is the treaty between platforms.
+
 - **Lifecycle closure decisions** (Terra lifecycle review,
   2026-07-09 — RAG/LEAD-REVIEW-2026-07-09-lifecycle-and-testing-
   closure.md): six rulings gate the 218–224 wave. (1) index.lock:
