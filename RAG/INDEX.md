@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 202 |
-| **Total** | **25** | **237** |
+| **Total** | **25** | **241** |
 
 ## In Progress
 
@@ -85,6 +85,10 @@
 - [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
 - [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
 - [[AI-IMP-239-new-board-verb|IMP-239]] — planned, no epic dependency found
+- [[AI-IMP-240-tauri-shell-spike|IMP-240]] — planned, no epic dependency found
+- [[AI-IMP-241-texture-budget-tiers|IMP-241]] — planned, no epic dependency found
+- [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
+- [[AI-IMP-243-rust-persistence-seam-analysis|IMP-243]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
