@@ -383,15 +383,24 @@ export function registerNoteHandlers(registry: CommandRegistry<CommandContext>):
       inverse: {
         commandType: COMMAND_BREAK_NOTE_LINKS,
         commandVersion: 1,
+        // AI-IMP-233 / CA-008: when we CREATED the target note here, the
+        // inverse must be able to also remove it (when still safe) so undo
+        // leaves no orphan note + unique-title reservation. Carry the
+        // created id + title; the plain (target-branch) relink has neither.
         payload: {
           linkIds: broken.map((row) => row.id),
           displayTitle: broken[0]!.display_text,
+          ...(payload.create
+            ? { removeCreatedNoteId: payload.create.noteId, createdTitle: payload.create.title }
+            : {}),
         } satisfies BreakNoteLinksPayload,
       },
     }
   })
 
-  // Internal inverse of RelinkBrokenLinks (undo path only).
+  // Internal inverse of RelinkBrokenLinks (undo path only). When the
+  // forward relink CREATED its target note, this also removes that note on
+  // undo — but only when it is still safe to (AI-IMP-233 / CA-008).
   registry.register<BreakNoteLinksPayload>(COMMAND_BREAK_NOTE_LINKS, 1, (ctx, payload) => {
     if (!Array.isArray(payload?.linkIds) || typeof payload?.displayTitle !== 'string') {
       throw new DomainError(
@@ -422,6 +431,53 @@ export function registerNoteHandlers(registry: CommandRegistry<CommandContext>):
       )
       affected.push({ kind: 'link', id: linkId })
     }
+
+    // Compound half: remove the note the forward relink created, so undo of
+    // a relink-CREATE erases the note too — but ONLY when it is safe. Unsafe
+    // if the note was edited since create (non-empty body) or if ANY bound
+    // link still points at it (e.g. the create-time sweep bound another
+    // source's token to it). In the unsafe case we LEAVE the note and let
+    // redo re-bind to it (targetNoteId) rather than re-create it — the
+    // now-broken links above are the only user-visible change.
+    if (payload.removeCreatedNoteId) {
+      const created = ctx.db.get<{ id: string; body: string }>(
+        "SELECT id, body FROM note WHERE id = ? AND lifecycle_state = 'active'",
+        payload.removeCreatedNoteId,
+      )
+      const otherBound = ctx.db.get<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM link WHERE target_note_id = ? AND state = 'bound'",
+        payload.removeCreatedNoteId,
+      )
+      const safeToRemove = created !== undefined && created.body === '' && (otherBound?.n ?? 0) === 0
+      if (safeToRemove) {
+        // Symmetric with the relink `create` branch: redo re-inserts the
+        // note and re-binds via `create`, so the note's own inverse is a
+        // relink that RE-creates it.
+        ctx.db.run('DELETE FROM link WHERE source_note_id = ?', payload.removeCreatedNoteId)
+        ctx.db.run('DELETE FROM note WHERE id = ?', payload.removeCreatedNoteId)
+        affected.push({ kind: 'note', id: payload.removeCreatedNoteId })
+        return {
+          affected,
+          inverse: {
+            commandType: COMMAND_RELINK_BROKEN_LINKS,
+            commandVersion: 1,
+            payload: {
+              sourceNoteId: relink.sourceNoteId,
+              displayTitle: payload.displayTitle,
+              create: {
+                noteId: payload.removeCreatedNoteId,
+                title: payload.createdTitle ?? payload.displayTitle,
+              },
+            } satisfies RelinkBrokenLinksPayload,
+          },
+        }
+      }
+      // Unsafe: the note stays. Redo re-binds the links to the surviving
+      // note (target branch), documented behavior for the edited /
+      // still-referenced case.
+      relink.targetNoteId = payload.removeCreatedNoteId
+    }
+
     return {
       affected,
       inverse: {

@@ -493,6 +493,101 @@ describe('RelinkBrokenLinks / BreakNoteLinks (§7.1, AI-IMP-048)', () => {
     expect(linkStates(otherId)).toEqual([{ state: 'bound', target_note_id: newNoteId }])
   })
 
+  it('relink-CREATE undo removes the created note when safe, redo re-creates it (CA-008)', () => {
+    const oldId = createNote('Doomed')
+    const sourceId = createNote('Log', 'see [[Doomed]] and [[Doomed|again]]')
+    breakLinks(sourceId, 'Doomed')
+    committed('PurgeDraftNote', { noteId: oldId })
+
+    const newNoteId = uuidv7()
+    const relink = committed('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Doomed',
+      create: { noteId: newNoteId, title: 'Doomed' },
+    })
+    expect(noteRow(newNoteId)).toBeDefined()
+    expect(linkStates(sourceId).every((l) => l.state === 'bound')).toBe(true)
+
+    // The inverse carries the created id/title so undo can also remove it.
+    expect(relink.inverse).toMatchObject({
+      commandType: 'BreakNoteLinks',
+      payload: { removeCreatedNoteId: newNoteId, createdTitle: 'Doomed' },
+    })
+
+    // Undo: links re-broken AND the created note (untouched, empty body) is
+    // gone — no orphan note, no lingering unique-title reservation.
+    const broke = committed(relink.inverse!.commandType, relink.inverse!.payload)
+    expect(linkStates(sourceId).every((l) => l.state === 'broken')).toBe(true)
+    expect(noteRow(newNoteId)).toBeUndefined()
+    expect(broke.affected).toContainEqual({ kind: 'note', id: newNoteId })
+
+    // Redo re-creates the note via the relink `create` branch and re-binds.
+    expect(broke.inverse).toMatchObject({
+      commandType: 'RelinkBrokenLinks',
+      payload: { create: { noteId: newNoteId, title: 'Doomed' } },
+    })
+    committed(broke.inverse!.commandType, broke.inverse!.payload)
+    expect(noteRow(newNoteId)).toBeDefined()
+    expect(linkStates(sourceId).every((l) => l.state === 'bound')).toBe(true)
+  })
+
+  it('relink-CREATE undo LEAVES the note when it was edited since create (unsafe)', () => {
+    const oldId = createNote('Doomed')
+    const sourceId = createNote('Log', 'see [[Doomed]]')
+    breakLinks(sourceId, 'Doomed')
+    committed('PurgeDraftNote', { noteId: oldId })
+
+    const newNoteId = uuidv7()
+    committed('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Doomed',
+      create: { noteId: newNoteId, title: 'Doomed' },
+    })
+    // The user starts writing in the freshly-created note.
+    committed('UpdateNote', { noteId: newNoteId, body: 'real content now' })
+
+    // Undo breaks the links but must NOT delete the edited note.
+    const broke = committed('BreakNoteLinks', {
+      linkIds: linksOf(sourceId).map((l) => l.id),
+      displayTitle: 'Doomed',
+      removeCreatedNoteId: newNoteId,
+      createdTitle: 'Doomed',
+    })
+    expect(linkStates(sourceId).every((l) => l.state === 'broken')).toBe(true)
+    expect(noteRow(newNoteId)).toBeDefined()
+    expect(noteRow(newNoteId)!.body).toBe('real content now')
+    // Redo re-binds to the surviving note (target branch), not re-create.
+    expect(broke.inverse).toMatchObject({
+      commandType: 'RelinkBrokenLinks',
+      payload: { targetNoteId: newNoteId },
+    })
+  })
+
+  it('relink-CREATE undo LEAVES the note when the sweep bound another source (unsafe)', () => {
+    const oldId = createNote('Doomed')
+    const sourceId = createNote('Log', 'see [[Doomed]]')
+    const otherId = createNote('Other', 'more [[Doomed]]')
+    breakLinks(sourceId, 'Doomed')
+    handle.db.run('DELETE FROM link WHERE source_note_id = ?', otherId)
+    committed('PurgeDraftNote', { noteId: oldId })
+    committed('UpdateNote', { noteId: otherId, body: 'more [[Doomed]]' })
+
+    const newNoteId = uuidv7()
+    const relink = committed('RelinkBrokenLinks', {
+      sourceNoteId: sourceId,
+      displayTitle: 'Doomed',
+      create: { noteId: newNoteId, title: 'Doomed' },
+    })
+    // The sweep bound Other's token to the new note.
+    expect(linkStates(otherId)).toEqual([{ state: 'bound', target_note_id: newNoteId }])
+
+    // Undo re-breaks source's links, but the note stays because Other still
+    // binds to it — removing it would orphan Other's link.
+    committed(relink.inverse!.commandType, relink.inverse!.payload)
+    expect(noteRow(newNoteId)).toBeDefined()
+    expect(linkStates(otherId)).toEqual([{ state: 'bound', target_note_id: newNoteId }])
+  })
+
   it('rejects key mismatches, missing broken records, and ambiguous payloads', () => {
     const sourceId = createNote('Log', 'see [[Doomed]]')
     const strangerId = createNote('Stranger')

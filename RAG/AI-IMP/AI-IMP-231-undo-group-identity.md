@@ -81,3 +81,57 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**STOPPED — mechanism blocked within this wave's fence.** The ticket
+required probing the two named mechanisms and STOPPING "if neither can
+cover the import path without distortion." Neither can:
+
+1. **AsyncLocalStorage — UNAVAILABLE.** The renderer window is
+   `sandbox: true, contextIsolation: true, nodeIntegration: false`
+   (`apps/desktop/src/main/index.ts:740-744`). `node:async_hooks` /
+   `AsyncLocalStorage` is a Node API not exposed to the sandboxed
+   renderer; the undo store runs in the renderer. No ALS to scope a
+   group token across awaits.
+
+2. **Explicit token threading — requires distorting ~15 fenced call
+   sites.** Commits are attributed to a group by a MODULE-LEVEL listener
+   (`onCommittedAnywhere`), decoupled from the `runAsUndoGroup` call. To
+   attribute correctly, the group token must reach each `execute` call,
+   i.e. every `runAsUndoGroup` site must thread the token into its
+   commands AND the gateway/`CommittedNotice` must carry it. There are
+   ~15 `runAsUndoGroup` sites — `canvas/import-surfaces.ts` (the CA-006
+   caller), `canvas/host.ts`, `canvas/board-tooling.ts`,
+   `canvas/charms-ui.ts`, `canvas/decorations-ui.ts`,
+   `canvas/crop-editor.ts`, `note/NotePanel.svelte`, `note/panels.ts`,
+   `note/note-editor.ts`, `tags/TagPanel.svelte`, `tags/TagAddField.svelte`,
+   `chrome/BookmarkMenu.svelte`, `chrome/bookmarks.ts`,
+   `menus/ContextMenu.ts`. The import path itself lives in
+   `import-surfaces.ts`, which this wave's fence forbids touching — so
+   threading cannot cover the import path at all here.
+
+**Why no in-fence partial fix.** The hard requirement is "temporal
+overlap NEVER merges; nested same-token joins." Distinguishing a NESTED
+`runAsUndoGroup` (called from within the outer's fn — must join) from a
+TEMPORALLY-OVERLAPPING one (called from an independent event turn while
+the outer is parked at an await — must NOT join) requires knowing the
+async call-tree across awaits. That is exactly what ALS provides and a
+synchronous global cannot. A LIFO group-stack was considered: it fixes
+the overlap case for two properly-wrapped groups (each commits while its
+own frame is on top), but it turns genuine NESTED calls into separate
+entries — violating "nested joins" and regressing existing single-entry
+compositions (`host.ts` move-and-frame relies on nested-inline join). It
+also still merges a BARE captured commit issued during a long import.
+Shipping it would trade one wrong behavior for another and break a
+ratified invariant — not acceptable as "done," and unratified.
+
+**Left in place:** the global `pendingGroup` (unchanged) and a SKIPPED
+executable spec `it.skip('overlapping groups stay separate ... (CA-006)')`
+in `undo-store.test.ts` — Sol's CA-006 probe, ported, asserting the
+DESIRED two-entries outcome, ready to un-skip when the mechanism lands.
+
+**Recommended path (lead decision):** widen a future ticket's fence to
+thread an explicit group token through the `runAsUndoGroup` sites and add
+`groupToken` to `CommandGateway.execute` + `CommittedNotice` (the honest
+mechanism given the renderer's explicit style and the sandbox), OR gate
+this on AI-IMP-232 first (its bounded waits shrink the overlap window,
+though they do not close it). No code from this ticket was committed.

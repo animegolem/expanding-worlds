@@ -18,82 +18,166 @@ import { UndoStack, type CapturedCommand } from './undo-stack'
  * is deliberately conservative for v1; §10.2's broader "all structural
  * commands" is a superset later commands opt into by name.
  */
-const CAPTURED_COMMANDS = new Set<string>([
-  'TransformContent', // move / resize / rotate / align / distribute
-  'FlipPlacement', // §8.4 flip
-  'ReorderContent', // z-order
-  'CreateDecoration', // draw tools
-  'DeleteContent', // §9.2 delete (batch = one entry)
-  'CreatePlacement', // place a node
-  'CreatePin', // §6.10 / §7.2 create-and-place materialization
-  'PlaceAsCard', // §8.5 place-on-board
-  // §8.4 rev 0.55: "every verb = one undoable command" — the menu
-  // grammar obligates these four the moment they became menu verbs
-  // (AI-IMP-136). All four handlers emit tested inverses.
-  'SetPlacementLock',
-  'SetPlacementLabelVisibility',
-  'SetCanvasBackground',
-  'SetCanvasBackgroundColor',
-])
+/** The undo class of a durable command (AI-IMP-233 / Sol CA-008). */
+export type UndoClass = 'captured' | 'group-only' | 'exempt'
+
+/** One row of the {@link UNDO_POLICY} matrix: the class plus the reason,
+ * so the table itself documents WHY a command is (or is not) undoable. */
+export interface UndoPolicyEntry {
+  class: UndoClass
+  why: string
+}
 
 /**
- * Commands captured ONLY inside a runAsUndoGroup window — never
- * standalone-undoable, so they stay out of CAPTURED_COMMANDS, but ARE
- * captured while a group is open. Two reasons a command lands here:
+ * The command→undo policy MATRIX (RFC §10.2, AI-IMP-233, Sol CA-008).
  *
- *  - §4.9 frame commands (AI-IMP-127): only ever issued inside a group,
- *    so the whole frame edit (create composite, or move + capture/
- *    release) collapses to one Mod+Z.
- *  - `UpdateDecoration` is POLYSEMOUS (AI-IMP-154): the §8.4 discrete
- *    verbs (Lock/Unlock, Hide, Show) commit it, but so do live Dock
- *    style drags and text commits. Allowlisting the bare type would put
- *    one undo entry per intermediate style drag on the stack. Capturing
- *    at the GESTURE instead (the verb handlers wrap their commit in
- *    runAsUndoGroup — a group of one) enters exactly one entry per verb
- *    and leaves the ungrouped Dock/text-entry traffic untouched.
+ * The owner's ratified rule (AI-IMP-182, 2026-07-08): every DELIBERATE
+ * verb joins Mod+Z EXCEPT node-trash. This literal table is the ONE place
+ * that rule is encoded. The coordinator below consults it; `undo-policy.
+ * test.ts` diffs it against the authoritative persistence command registry
+ * so a command can never ship unclassified (a registry entry with no row =
+ * red) and the table can never keep a stale row (a matrix key that is not a
+ * real command = red). Every future command must declare its class here.
  *
- * Restricting the group to this set (plus the standing allowlist) keeps
- * an interleaved autosave from being swept in.
+ * Three classes:
+ *  - 'captured'   — a deliberate standalone verb: captured by BARE TYPE
+ *                   from any gateway (one commit = one undo entry), and
+ *                   folded into a surrounding runAsUndoGroup when one
+ *                   gesture emits several. Requires a real (non-null)
+ *                   inverse; a null-inverse commit is skipped by `record`.
+ *  - 'group-only' — captured ONLY inside a runAsUndoGroup window, never by
+ *                   bare type: polysemous types (UpdateDecoration also
+ *                   carries live Dock drags), §4.9 frame primitives, or a
+ *                   verb whose UI gesture already wraps its commit so a
+ *                   programmatic/import emission of the same type stays out
+ *                   of undo (AI-IMP-154/182).
+ *  - 'exempt'     — never enters Mod+Z; `why` names the carve-out
+ *                   (node-trash · trash-is-recovery-home · editor-owned ·
+ *                   internal-inverse · destructive-purge · not-a-renderer-
+ *                   verb · deferred).
  */
-const GROUP_ONLY_COMMANDS = new Set<string>([
-  'CreateNode',
-  'SetNodeAppearance',
-  // AI-IMP-239 (§8.4 New board): the create-board composition wraps
-  // CreateNode + CreateNoteAndAttach + CreateCanvas + CreatePlacement in
-  // one runAsUndoGroup so a single Mod+Z reverses the whole act (the
-  // placement is issued LAST, so the group fences to the ORIGIN board it
-  // lives on). Both commands below are captured ONLY inside a group —
-  // their tested inverses are DeleteDraftCanvas and DetachAndTrashNote —
-  // so the ungrouped make-canvas charm, on-demand open-as-board, and the
-  // "Attach New Note…" prompt (none wrapped in a group) stay exactly as
-  // they were; only a deliberate grouped composition opts them in by name
-  // (the §10.2 "structural commands opt in by name" extension the header
-  // notes).
-  'CreateCanvas',
-  'CreateNoteAndAttach',
-  'CaptureInFrame',
-  'ReleaseFromFrame',
-  'UpdateDecoration',
-  // AI-IMP-182 breadth (owner ruling 2026-07-08: every deliberate verb
-  // joins Mod+Z EXCEPT node-trash). Each is captured ONLY at its gesture
-  // (the UI site wraps the commit in runAsUndoGroup), never by bare type,
-  // so programmatic/import commits of the same command stay out of undo
-  // and a create-and-assign gesture (CreateTag + AssignTagToNode) folds
-  // into one entry. TrashNode/purge are deliberately ABSENT — the Trash
-  // is a trashed node's recovery home. Every command below has a tested
-  // inverse (RenameNote↔RenameNote, AssignTagToNode↔UnassignTagFromNode,
-  // CreateTag↔DeleteDraftTag, RenameTag↔RenameTag, DetachNoteFromNode↔
-  // AttachNoteToNode, Create/RemoveBookmark reciprocal, ReorderBookmark↔
-  // ReorderBookmark).
-  'RenameNote',
-  'AssignTagToNode',
-  'CreateTag',
-  'RenameTag',
-  'DetachNoteFromNode',
-  'CreateBookmark',
-  'RemoveBookmark',
-  'ReorderBookmark',
-])
+export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
+  // ── captured: deliberate standalone verbs (bare-type) ──────────────
+  TransformContent: { class: 'captured', why: 'move / resize / rotate / align / distribute (§6.9)' },
+  FlipPlacement: { class: 'captured', why: '§8.4 flip' },
+  ReorderContent: { class: 'captured', why: 'z-order (§6.8)' },
+  CreateDecoration: { class: 'captured', why: 'draw tools' },
+  DeleteContent: { class: 'captured', why: '§9.2 delete (batch = one entry)' },
+  CreatePlacement: { class: 'captured', why: 'place a node' },
+  CreatePin: { class: 'captured', why: '§6.10 / §7.2 create-and-place materialization' },
+  PlaceAsCard: { class: 'captured', why: '§8.5 place-on-board' },
+  // §8.4 rev 0.55: "every verb = one undoable command" (AI-IMP-136).
+  SetPlacementLock: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
+  SetPlacementLabelVisibility: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
+  SetCanvasBackground: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
+  SetCanvasBackgroundColor: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
+  // AI-IMP-233 / CA-008: the deliberate verbs the ruling required but that
+  // were still uncaptured. Their UI sites (note/menus/decorations) are not
+  // wrapped in a group, so they are captured by BARE TYPE — safe because
+  // none is emitted programmatically in a burst (import emits none of
+  // them). Each has a tested inverse; relink-create's compound inverse is
+  // fixed in persistence/handlers/notes.ts (this ticket).
+  AttachNoteToNode: { class: 'captured', why: 'CA-008 verb; inverse DetachNoteFromNode' },
+  CreateNoteAndAttach: { class: 'captured', why: 'CA-008 verb; inverse removes note + attachment' },
+  MakeNoteIndependent: { class: 'captured', why: 'CA-008 verb; inverse UnmakeNoteIndependent' },
+  RelinkBrokenLinks: { class: 'captured', why: 'CA-008 verb; compound inverse (BreakNoteLinks + safe created-note removal)' },
+  GroupDecorations: { class: 'captured', why: 'CA-008 verb; inverse UngroupDecorations' },
+  UngroupDecorations: { class: 'captured', why: 'CA-008 verb; inverse GroupDecorations' },
+  CreateCanvas: { class: 'captured', why: 'CA-008 verb; open-as-board / new board; inverse DeleteDraftCanvas' },
+
+  // ── group-only: captured only inside a runAsUndoGroup window ────────
+  // §4.9 frame primitives — only ever issued inside a group (AI-IMP-127).
+  CreateNode: { class: 'group-only', why: '§4.9 frame/create composite member' },
+  SetNodeAppearance: { class: 'group-only', why: '§4.9 create composite member' },
+  CaptureInFrame: { class: 'group-only', why: '§4.9 frame membership; group member' },
+  ReleaseFromFrame: { class: 'group-only', why: '§4.9 frame membership; group member' },
+  // Polysemous: verbs (Lock/Hide/Show) AND live Dock drags / text commits
+  // all commit UpdateDecoration; bare-type capture would spam entries per
+  // drag, so capture at the gesture window only (AI-IMP-154).
+  UpdateDecoration: { class: 'group-only', why: 'polysemous: §8.4 verbs share the type with live Dock drags (AI-IMP-154)' },
+  // AI-IMP-182 breadth: captured at their gesture (the UI site wraps the
+  // commit in runAsUndoGroup) so a programmatic/import emission stays out
+  // and a create-and-assign gesture folds into one entry.
+  RenameNote: { class: 'group-only', why: 'AI-IMP-182 verb; gesture-wrapped; inverse RenameNote' },
+  AssignTagToNode: { class: 'group-only', why: 'AI-IMP-182 verb; inverse UnassignTagFromNode' },
+  CreateTag: { class: 'group-only', why: 'AI-IMP-182 verb; inverse DeleteDraftTag' },
+  RenameTag: { class: 'group-only', why: 'AI-IMP-182 verb; inverse RenameTag' },
+  DetachNoteFromNode: { class: 'group-only', why: 'AI-IMP-182 verb; inverse AttachNoteToNode' },
+  CreateBookmark: { class: 'group-only', why: 'AI-IMP-182 verb; inverse RemoveBookmark' },
+  RemoveBookmark: { class: 'group-only', why: 'AI-IMP-182 verb; inverse CreateBookmark' },
+  ReorderBookmark: { class: 'group-only', why: 'AI-IMP-182 verb; inverse ReorderBookmark' },
+
+  // ── exempt: never enters Mod+Z ─────────────────────────────────────
+  // Editor / persistence surfaces own their own history.
+  UpdateNote: { class: 'exempt', why: 'editor-owned: CodeMirror owns note-body text history (§10.2 boundary)' },
+  SetCanvasCamera: { class: 'exempt', why: 'camera persistence: null inverse, not a structural edit' },
+  CommitAssetImport: { class: 'exempt', why: 'asset-import pipeline: programmatic materialization, not a verb' },
+  // Trash is a record's recovery home (owner ruling: node-trash excepted;
+  // the same rationale covers the note/canvas trash verbs).
+  TrashNode: { class: 'exempt', why: 'node-trash: THE ratified exception; recovered from the Trash' },
+  TrashNote: { class: 'exempt', why: 'trash-is-recovery-home: recovered from the Trash, not Mod+Z' },
+  TrashCanvas: { class: 'exempt', why: 'trash-is-recovery-home: recovered from the Trash, not Mod+Z' },
+  DetachAndTrashNote: { class: 'exempt', why: 'trash-is-recovery-home: sends a note to the Trash' },
+  // Destructive/irreversible by design.
+  PurgeRecord: { class: 'exempt', why: 'destructive-purge: permanent removal by design (invariant)' },
+  PurgeDraftNote: { class: 'exempt', why: 'draft cleanup: removes an abandoned draft, not a durable verb' },
+  // Internal inverses / draft rollback — only ever issued AS an inverse or
+  // an internal composite step, never as a standalone deliberate verb.
+  BreakNoteLinks: { class: 'exempt', why: 'internal-inverse of RelinkBrokenLinks (undo path only)' },
+  DeleteDraftNode: { class: 'exempt', why: 'internal-inverse: CreateNode draft rollback' },
+  DeleteDraftPlacement: { class: 'exempt', why: 'internal-inverse: CreatePlacement draft rollback' },
+  DeleteDraftPin: { class: 'exempt', why: 'internal-inverse: CreatePin draft rollback' },
+  DeleteDraftCanvas: { class: 'exempt', why: 'internal-inverse: CreateCanvas draft rollback' },
+  DeleteDraftTag: { class: 'exempt', why: 'internal-inverse: CreateTag draft rollback' },
+  UnplaceCard: { class: 'exempt', why: 'internal-inverse of PlaceAsCard' },
+  UnmakeNoteIndependent: { class: 'exempt', why: 'internal-inverse of MakeNoteIndependent' },
+  UnmergeTag: { class: 'exempt', why: 'internal-inverse of MergeTag' },
+  UnassignTagFromNode: { class: 'exempt', why: 'internal-inverse of AssignTagToNode' },
+  RestoreContent: { class: 'exempt', why: 'internal-inverse: DeleteContent undo path' },
+  RestorePlacement: { class: 'exempt', why: 'internal-inverse: placement delete undo path' },
+  RestoreRecord: { class: 'exempt', why: 'restore-from-Trash / internal inverse' },
+  RestoreTag: { class: 'exempt', why: 'internal-inverse: tag delete undo path' },
+  RestoreFrameMembership: { class: 'exempt', why: 'internal-inverse: frame release/capture undo path' },
+  // Registered but not issued from the renderer as a deliberate gesture
+  // today (internal / lifecycle / superseded paths). If any becomes a UI
+  // verb it must move to 'captured'/'group-only' — the diff test forces
+  // the author to revisit this row.
+  MovePlacement: { class: 'exempt', why: 'not-a-renderer-verb: board moves go through TransformContent' },
+  DeletePlacement: { class: 'exempt', why: 'not-a-renderer-verb: deletion goes through DeleteContent' },
+  DeleteDecoration: { class: 'exempt', why: 'not-a-renderer-verb: deletion goes through DeleteContent' },
+  DeleteTag: { class: 'exempt', why: 'not-a-renderer-verb: tag-deletion lifecycle path' },
+  MergeTag: { class: 'exempt', why: 'deferred: no renderer gesture yet (flagged for owner ratification)' },
+  SetTagAppearance: { class: 'exempt', why: 'deferred: no renderer gesture yet (flagged for owner ratification)' },
+  SetTrashRetention: { class: 'exempt', why: 'settings verb: changed/reverted via Settings, not Mod+Z' },
+  // CreateNote (loose-note creation, NotePanel) is a deliberate verb, but
+  // capturing it shares relink-create's created-note-residue hazard (undo
+  // would delete a note the user may have started editing). Capture is
+  // DEFERRED pending owner ratification of the safe-removal rule (CA-008).
+  CreateNote: { class: 'exempt', why: 'deferred: deliberate loose-note create; created-note-residue hazard, owner to ratify' },
+}
+
+/**
+ * Commands captured standalone by bare type, derived from the matrix.
+ * The coordinator records one undo entry per such commit (or folds it into
+ * an open group).
+ */
+const CAPTURED_COMMANDS = new Set<string>(
+  Object.entries(UNDO_POLICY)
+    .filter(([, entry]) => entry.class === 'captured')
+    .map(([type]) => type),
+)
+
+/**
+ * Commands captured ONLY inside a runAsUndoGroup window (never by bare
+ * type), derived from the matrix. A group collects both these and the
+ * standing `captured` allowlist, provided the commit is invertible; this
+ * keeps an interleaved autosave from being swept in.
+ */
+const GROUP_ONLY_COMMANDS = new Set<string>(
+  Object.entries(UNDO_POLICY)
+    .filter(([, entry]) => entry.class === 'group-only')
+    .map(([type]) => type),
+)
 
 /** Commits accumulate here while a group window is open (see runAsUndoGroup). */
 let pendingGroup: CapturedCommand[] | null = null
@@ -219,6 +303,13 @@ export function attachUndo(): () => void {
     offCommitted = onCommittedAnywhere((notice) => {
       // Ignore commits produced by the stack's own inverse/redo runs.
       if (!stack || stack.applying) return
+      // §10.2 universal redo invalidation (AI-IMP-230 / Sol CA-005): a
+      // new durable, non-undo/non-redo commit ALWAYS clears redo, decided
+      // here — before capture — so it covers uncaptured commits (note
+      // autosave, project verbs), null-inverse commits, and commits that
+      // land inside a group but are never recorded. Capture (below) then
+      // decides only whether this commit ALSO becomes an undo entry.
+      stack.invalidateRedo()
       const payload = notice.payload as { canvasId?: unknown }
       const canvasId =
         typeof payload?.canvasId === 'string' && payload.canvasId.length > 0

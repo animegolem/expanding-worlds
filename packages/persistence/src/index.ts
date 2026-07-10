@@ -84,6 +84,11 @@ export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/p
 export { registerTagHandlers } from './handlers/tags'
 export { registerDecorationHandlers } from './handlers/decorations'
 export { registerPinHandlers } from './handlers/pin'
+// AI-IMP-233: the barrel omitted bookmarks (service.ts imports it
+// directly); the undo policy-matrix registry-diff test needs every
+// command-handler group reachable from the package root to enumerate
+// the authoritative command set.
+export { registerBookmarkHandlers } from './handlers/bookmarks'
 export {
   compareOrder,
   nextRenderOrder,
