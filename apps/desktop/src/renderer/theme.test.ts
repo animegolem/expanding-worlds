@@ -38,7 +38,8 @@ describe('renderer theme tokens', () => {
     const reference = /var\(\s*(--ew-[a-z0-9-]+)/g
     const failures: string[] = []
     for (const file of filesUnder(rendererDir)) {
-      const rel = relative(rendererDir, file)
+      // Windows yields backslash separators; the allowlists are posix.
+      const rel = relative(rendererDir, file).replaceAll('\\', '/')
       if (rel === 'theme.css') continue
       const text = readFileSync(file, 'utf8')
       for (const match of text.matchAll(reference)) {
@@ -116,7 +117,8 @@ describe('renderer theme tokens', () => {
     const failures: string[] = []
 
     for (const file of filesUnder(rendererDir)) {
-      const rel = relative(rendererDir, file)
+      // Windows yields backslash separators; the allowlists are posix.
+      const rel = relative(rendererDir, file).replaceAll('\\', '/')
       if (allowedFiles.has(rel)) continue
       const text = readFileSync(file, 'utf8')
       for (const match of text.matchAll(rawColor)) {
