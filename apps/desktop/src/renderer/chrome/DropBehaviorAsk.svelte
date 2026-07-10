@@ -9,6 +9,11 @@
   choice lands as one compound undo.
 -->
 <script lang="ts">
+  import { pointAnchor } from './anchored-placement'
+  import {
+    placeAnchoredElement,
+    type AnchoredElementOptions,
+  } from './anchored-placement-dom'
   import {
     answerDropBehavior,
     dismissDropAsk,
@@ -33,11 +38,15 @@
     { choice: 'group-and-sort', label: 'Group & sort', testid: 'drop-ask-group-sort' },
   ]
 
-  /** Clamp the anchor so the panel never leaves the window. */
-  function panelStyle(at: DropAskState): string {
-    const x = Math.max(12, Math.min(at.x + 16, window.innerWidth - 320))
-    const y = Math.max(12, Math.min(at.y + 16, window.innerHeight - 150))
-    return `left: ${x}px; top: ${y}px;`
+  function placement(at: DropAskState): AnchoredElementOptions {
+    return {
+      anchor: pointAnchor(at.x, at.y),
+      host: { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight },
+      x: { preferred: 'after', fallback: 'before' },
+      y: { preferred: 'after', fallback: 'before' },
+      gap: 16,
+      margin: 12,
+    }
   }
 
   function onKeydown(event: KeyboardEvent): void {
@@ -51,7 +60,12 @@
 <svelte:window on:keydown={onKeydown} />
 
 {#if ask}
-  <div class="drop-ask" style={panelStyle(ask)} role="dialog" data-testid="drop-ask">
+  <div
+    class="drop-ask"
+    use:placeAnchoredElement={() => placement(ask)}
+    role="dialog"
+    data-testid="drop-ask"
+  >
     <span class="question">
       {#if ask.source === 'paste'}
         Paste {ask.count} images as separate images or an arranged frame?

@@ -9,6 +9,11 @@
 -->
 <script lang="ts">
   import type { CanvasHostHandle } from '../canvas/host'
+  import { pointAnchor } from './anchored-placement'
+  import {
+    placeAnchoredElement,
+    type AnchoredElementOptions,
+  } from './anchored-placement-dom'
   import {
     applyMirrorChipTags,
     dismissMirrorChip,
@@ -21,11 +26,17 @@
   let chips = $state<readonly MirrorChip[]>([])
   $effect(() => onMirrorUiChanged((ui) => (chips = ui.chips)))
 
-  function chipStyle(chip: MirrorChip): string {
-    if (chip.kind === 'summary') return ''
-    const x = Math.max(12, Math.min(chip.x + 16, window.innerWidth - 320))
-    const y = Math.max(12, Math.min(chip.y + 16, window.innerHeight - 80))
-    return `left: ${x}px; top: ${y}px;`
+  function placement(
+    chip: Extract<MirrorChip, { kind: 'recognition' }>,
+  ): AnchoredElementOptions {
+    return {
+      anchor: pointAnchor(chip.x, chip.y),
+      host: { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight },
+      x: { preferred: 'after', fallback: 'before' },
+      y: { preferred: 'after', fallback: 'before' },
+      gap: 16,
+      margin: 12,
+    }
   }
 
   function apply(id: number): void {
@@ -37,7 +48,12 @@
 
 {#each chips as chip (chip.id)}
   {#if chip.kind === 'recognition'}
-    <div class="chip anchored" style={chipStyle(chip)} role="status" data-testid="mirror-chip">
+    <div
+      class="chip anchored"
+      use:placeAnchoredElement={() => placement(chip)}
+      role="status"
+      data-testid="mirror-chip"
+    >
       <span class="message">
         {chip.tagNames.length > 0
           ? 'In your library — apply its tags?'

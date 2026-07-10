@@ -31,6 +31,7 @@ import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from '../canvas/host'
 import type { BoardTooling } from '../canvas/board-tooling'
+import { placeAnchored, pointAnchor } from '../chrome/anchored-placement'
 import { navigateTo } from '../chrome/navigation'
 import { applyMenuCascade } from '../chrome/menu-cascade'
 import { runAsUndoGroup } from '../undo/undo-store'
@@ -436,22 +437,20 @@ export function attachContextMenu(
     // in staggered top-to-bottom on open. One-shot per fresh render;
     // opacity only, so every row stays clickable through the fade.
     applyMenuCascade(menu)
-    clampInto(menu, at)
+    const size = menu.getBoundingClientRect()
+    const bounds = element.getBoundingClientRect()
+    const placed = placeAnchored({
+      anchor: pointAnchor(at.x, at.y),
+      surface: size,
+      host: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+      x: { preferred: 'start', fallback: 'before' },
+      y: { preferred: 'start', fallback: 'before' },
+      margin: 4,
+    })
+    menu.style.left = `${placed.x}px`
+    menu.style.top = `${placed.y}px`
     document.addEventListener('pointerdown', onOutsidePointer, true)
     document.addEventListener('keydown', onMenuKeyDown, true)
-  }
-
-  /** §8.8: clamp-and-flip into the host's free region (the tooltip's
-   * logic generalized) so the menu never spills past an edge. */
-  function clampInto(node: HTMLDivElement, at: { x: number; y: number }): void {
-    const host = element.getBoundingClientRect()
-    const size = node.getBoundingClientRect()
-    let x = at.x
-    let y = at.y
-    if (x + size.width > host.width - 4) x = Math.max(4, at.x - size.width)
-    if (y + size.height > host.height - 4) y = Math.max(4, host.height - size.height - 4)
-    node.style.left = `${x}px`
-    node.style.top = `${y}px`
   }
 
   // ---------------------------------------------------- actions

@@ -8,7 +8,6 @@ import {
   type CommandRegistry,
   type CreatePinPayload,
   type DeleteDraftPinPayload,
-  type NodeAppearance,
   type PlaceAsCardPayload,
   type UnplaceCardPayload,
 } from '@ew/commands'
@@ -16,8 +15,24 @@ import { titleKey } from '@ew/domain'
 import type { CommandContext } from '../dispatcher'
 import { bindUnresolvedMatching, refreshNoteLinks } from '../links'
 import { nextRenderOrder } from '../render-order'
+import {
+  decodeAppearanceColumns,
+  prepareNodeAppearance,
+  updateNodeAppearance,
+  type AppearanceColumns,
+  type NodeAppearanceKind,
+  type PreparedAppearance,
+} from './node-appearance'
 import { requireLinkableTitle, requireTitleFree } from './notes'
 import { releaseConnectorAnchors } from './placements'
+
+const CREATE_PIN_APPEARANCE_KINDS: ReadonlySet<NodeAppearanceKind> = new Set([
+  'dot',
+  'icon',
+  'image',
+])
+const CARD_APPEARANCE_KIND: ReadonlySet<NodeAppearanceKind> = new Set(['card'])
+const UNPLACE_PRIOR_APPEARANCE_KINDS: ReadonlySet<NodeAppearanceKind> = new Set(['dot'])
 
 /**
  * CreatePin composite handler (RFC-0001 §6.2, AI-IMP-020): one
@@ -47,45 +62,21 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
     )
     if (!canvas) throw new DomainError('CANVAS_NOT_FOUND', `no active canvas ${payload.canvasId}`)
 
-    // §4.6 appearance validation. Image appearances must reference an
-    // existing active asset; its natural dimensions size the placement
-    // (§6.1 aspect preserved). Crop is non-destructive framing state.
-    const appearance = payload.appearance
-    let color: string | null = null
-    let icon: string | null = null
-    let assetId: string | null = null
-    let crop: string | null = null
-    let naturalWidth: number | null = null
-    let naturalHeight: number | null = null
-    if (appearance?.kind === 'dot') {
-      if (typeof appearance.color !== 'string' || appearance.color.length === 0) {
-        throw new DomainError('VALIDATION_FAILED', 'dot appearance requires a color')
-      }
-      color = appearance.color
-    } else if (appearance?.kind === 'icon') {
-      if (typeof appearance.icon !== 'string' || appearance.icon.length === 0) {
-        throw new DomainError('VALIDATION_FAILED', 'icon appearance requires an icon name')
-      }
-      icon = appearance.icon
-    } else if (appearance?.kind === 'image') {
-      const asset = ctx.db.get<{ id: string; width: number | null; height: number | null }>(
-        `SELECT id, width, height FROM asset
-         WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
-        appearance.assetId,
-        ctx.projectId,
-      )
-      if (!asset) {
-        throw new DomainError('ASSET_NOT_FOUND', `no active asset ${appearance.assetId}`)
-      }
-      assetId = asset.id
-      crop = appearance.crop === null || appearance.crop === undefined
-        ? null
-        : JSON.stringify(appearance.crop)
-      naturalWidth = asset.width
-      naturalHeight = asset.height
-    } else {
+    // §4.6 appearance validation and fixed-column encoding. Image
+    // appearances resolve their active asset here too; its natural
+    // dimensions size the placement (§6.1 aspect preserved).
+    const preparedAppearance = prepareNodeAppearance(ctx, payload.appearance, {
+      allowedKinds: CREATE_PIN_APPEARANCE_KINDS,
+      allowNull: false,
+      kindMessage: 'appearance kind must be dot, icon, or image',
+    })
+    const appearance = preparedAppearance.appearance
+    if (appearance === null) {
       throw new DomainError('VALIDATION_FAILED', 'appearance kind must be dot, icon, or image')
     }
+    const appearanceColumns = preparedAppearance.columns
+    const naturalWidth = preparedAppearance.asset?.width ?? null
+    const naturalHeight = preparedAppearance.asset?.height ?? null
 
     // Note branch validation (§4.2/§7.7 for create, §6.10 for attach).
     const note = payload.note
@@ -168,11 +159,11 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
       payload.nodeId,
       ctx.projectId,
       noteId,
-      appearance.kind,
-      color,
-      icon,
-      assetId,
-      crop,
+      appearanceColumns.kind,
+      appearanceColumns.color,
+      appearanceColumns.icon,
+      appearanceColumns.assetId,
+      appearanceColumns.crop,
       now,
       now,
     )
@@ -377,8 +368,11 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
       ctx.projectId,
     )
     if (!canvas) throw new DomainError('CANVAS_NOT_FOUND', `no active canvas ${payload.canvasId}`)
-    const node = ctx.db.get<{ appearance_kind: string | null; appearance_color: string | null }>(
-      `SELECT appearance_kind, appearance_color FROM node
+    const node = ctx.db.get<AppearanceColumns>(
+      `SELECT appearance_kind AS kind, appearance_color AS color,
+              appearance_icon AS icon, appearance_asset_id AS assetId,
+              appearance_crop AS crop
+       FROM node
        WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
       payload.nodeId,
       ctx.projectId,
@@ -390,16 +384,15 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
     // AI-IMP-084 rule, verbatim: dots (and appearance-less nodes)
     // flip to the §4.6 card; icon/image nodes place as-is — their
     // look already represents them.
-    const flips = node.appearance_kind === 'dot' || node.appearance_kind === null
+    const flips = node.kind === 'dot' || node.kind === null
+    const priorAppearance = flips ? decodeAppearanceColumns(node) : null
     if (flips) {
-      ctx.db.run(
-        `UPDATE node SET appearance_kind = 'card', appearance_color = NULL,
-                appearance_icon = NULL, appearance_asset_id = NULL,
-                appearance_crop = NULL, updated_at = ?
-         WHERE id = ?`,
-        now,
-        payload.nodeId,
-      )
+      const card = prepareNodeAppearance(ctx, { kind: 'card' }, {
+        allowedKinds: CARD_APPEARANCE_KIND,
+        allowNull: false,
+        kindMessage: 'appearance kind must be card',
+      })
+      updateNodeAppearance(ctx, payload.nodeId, card.columns, now)
       affected.push({ kind: 'node', id: payload.nodeId })
     }
 
@@ -421,11 +414,6 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
     )
     affected.push({ kind: 'placement', id: payload.placementId })
 
-    // The pre-flip appearance is dot or unset by construction.
-    const priorAppearance: NodeAppearance | null =
-      node.appearance_kind === 'dot' && node.appearance_color !== null
-        ? { kind: 'dot', color: node.appearance_color }
-        : null
     return {
       affected,
       inverse: {
@@ -474,36 +462,23 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
       )
     }
 
+    let priorAppearance: PreparedAppearance | null = null
+    if (payload.appearanceChanged) {
+      priorAppearance = prepareNodeAppearance(ctx, payload.priorAppearance, {
+        allowedKinds: UNPLACE_PRIOR_APPEARANCE_KINDS,
+        allowNull: true,
+        kindMessage: 'prior appearance must be dot or null',
+      })
+    }
+
     const affected: AffectedRecord[] = []
     const freed = releaseConnectorAnchors(ctx, payload.placementId)
     ctx.db.run('DELETE FROM placement WHERE id = ?', payload.placementId)
     affected.push({ kind: 'placement', id: payload.placementId })
     affected.push(...freed.map((id) => ({ kind: 'decoration' as const, id })))
 
-    if (payload.appearanceChanged) {
-      const prior = payload.priorAppearance
-      let color: string | null = null
-      let icon: string | null = null
-      let assetId: string | null = null
-      let crop: string | null = null
-      if (prior?.kind === 'dot') color = prior.color
-      else if (prior?.kind === 'icon') icon = prior.icon
-      else if (prior?.kind === 'image') {
-        assetId = prior.assetId
-        crop = prior.crop === null ? null : JSON.stringify(prior.crop)
-      }
-      ctx.db.run(
-        `UPDATE node SET appearance_kind = ?, appearance_color = ?, appearance_icon = ?,
-                appearance_asset_id = ?, appearance_crop = ?, updated_at = ?
-         WHERE id = ?`,
-        prior?.kind ?? null,
-        color,
-        icon,
-        assetId,
-        crop,
-        ctx.now(),
-        payload.nodeId,
-      )
+    if (priorAppearance) {
+      updateNodeAppearance(ctx, payload.nodeId, priorAppearance.columns)
       affected.push({ kind: 'node', id: payload.nodeId })
     }
 

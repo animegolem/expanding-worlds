@@ -18,6 +18,11 @@
   import NodeRow from '../rows/NodeRow.svelte'
   import TextInput from '../ui/TextInput.svelte'
   import type { CanvasHostHandle } from '../canvas/host'
+  import { pointAnchor } from '../chrome/anchored-placement'
+  import {
+    placeAnchoredElement,
+    type AnchoredElementOptions,
+  } from '../chrome/anchored-placement-dom'
   import { navigateTo } from '../chrome/navigation'
   import { toast } from '../chrome/status'
   import { tooltip } from '../chrome/tooltip'
@@ -75,14 +80,20 @@
   let renameInput = $state<HTMLInputElement | null>(null)
 
   // Same §8.5 point grammar as the location chooser: client coords of
-  // the summoning control, clamped into the host.
-  const pos = $derived.by(() => {
+  // the summoning control, placed from the panel's measured dimensions.
+  function placement(current: TagPanelState): AnchoredElementOptions {
     const bounds = hostElement.getBoundingClientRect()
-    if (!panel.anchor) return { x: bounds.width / 2 - 160, y: 80 }
-    const x = Math.min(Math.max(8, panel.anchor.x - bounds.left), bounds.width - 330)
-    const y = Math.min(Math.max(8, panel.anchor.y - bounds.top + 6), bounds.height - 300)
-    return { x, y }
-  })
+    return {
+      anchor: current.anchor
+        ? pointAnchor(current.anchor.x - bounds.left, current.anchor.y - bounds.top)
+        : pointAnchor(bounds.width / 2, 80),
+      host: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+      x: { preferred: current.anchor ? 'start' : 'center' },
+      y: { preferred: current.anchor ? 'after' : 'start', fallback: 'before' },
+      gap: { y: current.anchor ? 6 : 0 },
+      margin: 8,
+    }
+  }
 
   async function runQuery<T>(name: string, args?: unknown): Promise<T> {
     const response = await window.ew.project.query(name, args)
@@ -309,7 +320,7 @@
 <div
   class="tag-panel"
   data-testid="tag-panel"
-  style={`left:${pos.x}px;top:${pos.y}px`}
+  use:placeAnchoredElement={() => placement(panel)}
 >
   <header>
     <span class="hash">#</span>

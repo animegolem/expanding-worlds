@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { uuidv7 } from '@ew/domain'
 import { CommandRegistry, type CommandResult, type CommittedResult, type InverseCommand } from '@ew/commands'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Dispatcher, type CommandContext } from '../dispatcher'
 import { computeGcEligibleBlobs } from '../gc'
 import { createProject, type ProjectHandle } from '../project'
@@ -48,6 +48,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   handle.close()
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
@@ -751,6 +752,17 @@ describe('SetTrashRetention (§9.1)', () => {
       status: 'error',
       code: 'VALIDATION_FAILED',
     })
+  })
+
+  it('uses never for an invalid prior row when building the inverse', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    handle.db.run(
+      "UPDATE settings SET value = ? WHERE project_id = ? AND key = 'trash_retention'",
+      JSON.stringify('weekly'),
+      handle.projectId,
+    )
+    const set = committed('SetTrashRetention', { retention: '30d' })
+    expect(set.inverse).toMatchObject({ payload: { retention: 'never' } })
   })
 })
 

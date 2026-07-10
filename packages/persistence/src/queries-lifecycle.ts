@@ -1,5 +1,10 @@
 import type { TrashRetention } from '@ew/commands'
 import type { QueryRegistry } from './queries'
+import {
+  decodeTrashRetention,
+  getProjectSetting,
+  TRASH_RETENTION_KEY,
+} from './settings'
 
 /**
  * Lifecycle read models (RFC-0001 §9, AI-IMP-013): the Trash view
@@ -231,10 +236,12 @@ export function registerLifecycleQueries(registry: QueryRegistry): void {
   // §9.1: automatic permanent deletion defaults to Never; written via
   // the SetTrashRetention command.
   registry.register('getTrashRetention', (ctx): TrashRetention => {
-    const row = ctx.db.get<{ value: string }>(
-      "SELECT value FROM settings WHERE project_id = ? AND key = 'trash_retention'",
+    return getProjectSetting(
+      ctx.db,
       ctx.projectId,
+      TRASH_RETENTION_KEY,
+      'never',
+      decodeTrashRetention,
     )
-    return row ? (JSON.parse(row.value) as TrashRetention) : 'never'
   })
 }

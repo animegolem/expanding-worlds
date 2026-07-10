@@ -1,5 +1,57 @@
+import type { TrashRetention } from '@ew/commands'
 import type { Db } from './db'
 import type { QueryRegistry } from './queries'
+
+export const TRASH_RETENTION_KEY = 'trash_retention'
+
+export type ProjectSettingDecoder<T> = (raw: unknown) => T | undefined
+
+const TRASH_RETENTIONS: ReadonlySet<TrashRetention> = new Set(['never', '30d', '60d', '90d'])
+
+export const decodeTrashRetention: ProjectSettingDecoder<TrashRetention> = (raw) =>
+  TRASH_RETENTIONS.has(raw as TrashRetention) ? (raw as TrashRetention) : undefined
+
+interface SettingPolicy {
+  fallback: unknown
+  decode: ProjectSettingDecoder<unknown>
+}
+
+const SETTING_POLICIES: Readonly<Record<string, SettingPolicy>> = {
+  [TRASH_RETENTION_KEY]: { fallback: 'never', decode: decodeTrashRetention },
+}
+
+function warnInvalidSetting(key: string, reason: 'malformed JSON' | 'invalid value'): void {
+  // Project files are user data. Keep the fallback visible to developers
+  // without logging the persisted value (which may contain private paths).
+  console.warn(`[settings] ${key}: ${reason}; using the per-key fallback`)
+}
+
+function parseSetting<T>(
+  key: string,
+  stored: string,
+  fallback: T,
+  decoder?: ProjectSettingDecoder<T>,
+): T {
+  let raw: unknown
+  try {
+    raw = JSON.parse(stored) as unknown
+  } catch {
+    warnInvalidSetting(key, 'malformed JSON')
+    return fallback
+  }
+  if (!decoder) return raw as T
+  let decoded: T | undefined
+  try {
+    decoded = decoder(raw)
+  } catch {
+    decoded = undefined
+  }
+  if (decoded === undefined) {
+    warnInvalidSetting(key, 'invalid value')
+    return fallback
+  }
+  return decoded
+}
 
 /**
  * §11.5 project-tier settings (AI-IMP-074): plain key/value JSON in
@@ -36,18 +88,20 @@ export function setProjectSetting(
  * (persisted values are user files — trust nothing). Used by system
  * code that needs a single key inside a command transaction (§7.8
  * metadata gating) rather than the whole getSettings map. */
-export function getProjectSetting<T>(db: Db, projectId: string, key: string, fallback: T): T {
+export function getProjectSetting<T>(
+  db: Db,
+  projectId: string,
+  key: string,
+  fallback: T,
+  decoder?: ProjectSettingDecoder<T>,
+): T {
   const row = db.get<{ value: string }>(
     'SELECT value FROM settings WHERE project_id = ? AND key = ?',
     projectId,
     key,
   )
   if (!row) return fallback
-  try {
-    return JSON.parse(row.value) as T
-  } catch {
-    return fallback
-  }
+  return parseSetting(key, row.value, fallback, decoder)
 }
 
 export function registerSettingsQueries(registry: QueryRegistry): void {
@@ -58,7 +112,20 @@ export function registerSettingsQueries(registry: QueryRegistry): void {
       ctx.projectId,
     )
     const settings: Record<string, unknown> = {}
-    for (const row of rows) settings[row.key] = JSON.parse(row.value)
+    for (const row of rows) {
+      const policy = SETTING_POLICIES[row.key]
+      const absent = Symbol(row.key)
+      const value = parseSetting(
+        row.key,
+        row.value,
+        policy?.fallback ?? absent,
+        policy?.decode,
+      )
+      // Unknown malformed keys have no authoritative default. Omitting
+      // only that row lets each extensible-key consumer use its existing
+      // absence fallback while every healthy setting remains available.
+      if (value !== absent) settings[row.key] = value
+    }
     return settings
   })
 }

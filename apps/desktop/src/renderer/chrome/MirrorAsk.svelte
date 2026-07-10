@@ -7,21 +7,35 @@
   unanswered ask at the next idle (it simply rides the next drop).
 -->
 <script lang="ts">
+  import { pointAnchor } from './anchored-placement'
+  import {
+    placeAnchoredElement,
+    type AnchoredElementOptions,
+  } from './anchored-placement-dom'
   import { answerMirrorAsk, onMirrorUiChanged, type MirrorAskState } from './mirror'
 
   let ask = $state<MirrorAskState | null>(null)
   $effect(() => onMirrorUiChanged((ui) => (ask = ui.ask)))
 
-  /** Clamp the anchor so the panel never leaves the window. */
-  function panelStyle(at: MirrorAskState): string {
-    const x = Math.max(12, Math.min(at.x + 16, window.innerWidth - 280))
-    const y = Math.max(12, Math.min(at.y + 16, window.innerHeight - 96))
-    return `left: ${x}px; top: ${y}px;`
+  function placement(at: MirrorAskState): AnchoredElementOptions {
+    return {
+      anchor: pointAnchor(at.x, at.y),
+      host: { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight },
+      x: { preferred: 'after', fallback: 'before' },
+      y: { preferred: 'after', fallback: 'before' },
+      gap: 16,
+      margin: 12,
+    }
   }
 </script>
 
 {#if ask}
-  <div class="mirror-ask" style={panelStyle(ask)} role="dialog" data-testid="mirror-ask">
+  <div
+    class="mirror-ask"
+    use:placeAnchoredElement={() => placement(ask)}
+    role="dialog"
+    data-testid="mirror-ask"
+  >
     <span class="question">Also add drops to your library?</span>
     <div class="buttons">
       <button type="button" data-testid="mirror-ask-yes" onclick={() => answerMirrorAsk(true)}>

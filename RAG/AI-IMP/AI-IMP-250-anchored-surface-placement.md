@@ -60,6 +60,38 @@ PRE-IMPLEMENTATION REVIEW (standing process): verify every cited
 line against current source before writing code; record
 corrections here.
 
+### Pre-implementation review — 2026-07-10 (`5fceb908`)
+
+The audit diagnosis holds, with four scope corrections:
+
+- The RFC contract is current at
+  `RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md:2399-2407`:
+  one clamp-and-flip helper plus named reserved chrome bands.
+- The format-bar implementation is under `renderer/note`, not the
+  ticket's listed `renderer/canvas` path (`note/format-bar.ts:87-104`).
+  `LocationChooser.svelte` is likewise under `renderer/note`, not
+  `renderer/chrome` (`note/LocationChooser.svelte:14-20`).
+- The audit's eight cited families are present at the cited symbols,
+  but `chrome/tooltip.ts:48-56` is a ninth intermittent use site and
+  is the RFC's stated precedent. Leaving it local would immediately
+  violate the unification this ticket introduces, so it is included.
+- `note/NotePanel.svelte:724-725,746-747,846-847` and
+  `note/NotePanels.svelte:227-235` also contain clamp-shaped math, but
+  they are deliberate exemptions: scaled/tethered panel lifecycle,
+  tear-out placement, and directional edge-chip projection are not
+  ordinary measured anchored surfaces. Migrating them would not be
+  mechanical and is outside this geometry-only ticket.
+
+The listed algorithms also encode mixed-axis intent (for example,
+SearchPanel is left of its anchor while sharing its vertical start),
+so a single `side` value cannot preserve behavior. The repair will use
+typed per-axis preferences/fallbacks, a measured surface, an optional
+band inset on each edge, and one pure placement result. There is no
+current authoritative runtime chrome-band registry to consume; this
+ticket supplies the band-aware contract and tests without inventing a
+new ownership model. A small DOM adapter may measure Svelte surfaces,
+but all geometry remains in the pure helper.
+
 ### Files to Touch
 
 - `apps/desktop/src/renderer/chrome/anchored-placement.ts` (new):
@@ -83,18 +115,18 @@ corrections here.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pre-implementation review: audit citations verified against
+- [x] Pre-implementation review: audit citations verified against
       current source; corrections recorded in this ticket.
-- [ ] `anchored-placement.ts` helper with unit tests: normal fit,
+- [x] `anchored-placement.ts` helper with unit tests: normal fit,
       flip, band-reduced region, oversize surface (pins to margin,
       never negative), zero-size host.
-- [ ] All eight audit-cited surfaces migrated; each surface's
+- [x] All eight audit-cited surfaces migrated; each surface's
       previous preferred side/gap preserved.
-- [ ] Undersized-host regression: a host narrower than TagPanel's
+- [x] Undersized-host regression: a host narrower than TagPanel's
       surface yields an on-screen (≥ margin) x.
-- [ ] Guard scan fails on a new hand-rolled clamp; exemption list
+- [x] Guard scan fails on a new hand-rolled clamp; exemption list
       documents any deliberate holdouts.
-- [ ] `pnpm -r build`, package units, desktop `npx vitest run`
+- [x] `pnpm -r build`, package units, desktop `npx vitest run`
       green. (Electron e2e supplied by the lead at merge.)
 
 ### Acceptance Criteria
@@ -115,3 +147,17 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The original one-value `side` sketch could not preserve mixed-axis
+  placement. The implementation uses typed x/y preferences and reports
+  one aggregate `flipped` result; normal, fallback, band, oversize,
+  zero-host, and undersized-TagPanel cases are pinned in unit tests.
+- The measured Svelte call sites share a small ResizeObserver/window-
+  resize action; it performs no placement math and delegates every
+  update to the pure helper.
+- `pnpm -r build`, all package units (1,050 tests), desktop vitest
+  (377 passed, 1 skipped), and lint passed. The build retains existing
+  Svelte warnings; desktop vitest retains the non-fatal jsdom canvas
+  diagnostics.
+- Electron e2e was intentionally not run in this sandbox per the lead's
+  assignment (known SIGABRT); the lead supplies it at merge.

@@ -5,6 +5,7 @@ import { Db } from './db'
 import { type LockOptions, ProjectLock } from './lock'
 import { migrate } from './migrate'
 import { LATEST_SCHEMA_VERSION } from './migrations/index'
+import { setProjectSetting, TRASH_RETENTION_KEY } from './settings'
 
 export const DB_FILENAME = 'project.sqlite'
 
@@ -90,12 +91,7 @@ export function createProject(
         now,
         now,
       )
-      db.run(
-        `INSERT INTO settings (project_id, key, value) VALUES (?, ?, ?)`,
-        projectId,
-        'trash_retention',
-        JSON.stringify('never'),
-      )
+      setProjectSetting(db, projectId, TRASH_RETENTION_KEY, 'never')
     })
 
     return makeHandle(db, lock, dir)
