@@ -136,6 +136,38 @@ all moved into the RFC.
   expand to reading (the zoom experiment / floating window) → 
   collapses back to the card. OWNER IS DRAFTING the authoritative
   Note Lifecycle Document to work from; this capture is its input.
+  **THE DEEPER CUT (2026-07-10, third Discord pass — the caption's
+  domain identity):** alph's real hangup is IDENTITY-FORCING, not
+  rendering: "creating a note means registering a full blown
+  concept/idea… I couldn't write 'I like the blue' 'I like the
+  purple' 'I like the red' without attaching a new note to every
+  single image and giving it a title… hardly an idea worth
+  registering"; "eventually the outline is full of 'nice contrast
+  here' 'reference this logo'… that kind of clutter would really
+  bother me"; "exhausted at the thought of having to title every
+  single one of my thoughts." He named the fix himself: caption
+  vs note as a real distinction, promotion later ("maybe you can
+  turn it into a note later and give it a title then"). LEAD
+  PROPOSAL (2026-07-10, relayed to owner): the CAPTION as
+  subordinate text ON A PLACEMENT — created by a verb on the
+  image, renders under/with it (the 07-09 card mat), moves and
+  deletes with it; NO title, NO node, NO note, NO outline row;
+  FTS-indexed scoped to the image (search finds "borrow for
+  scars"; the tree never shows it — answers his archiveability
+  worry and the owner's auditable-data principle at once); a
+  Promote-to-note verb completes the escalation ladder (phantom →
+  note; caption → note), title asked at promotion. REFUSED at
+  proposal: the node-gets-title/note-is-body restructure (alph's
+  alternate framing "make the image itself the title" — core-model
+  surgery that solves where titles LIVE when the pain is that a
+  thought is FORCED to have one) and sentences-in-the-title-bar
+  (kills outline/graph for him, he sees it). Overlaps to settle
+  in the session: caption vs the §4.6 card appearance (likely the
+  SAME object — the card's bottom band IS the caption), caption
+  vs title label (a caption REPLACES the label, never stack —
+  already captured above), one-per-placement vs many, and the
+  schema home (placement property vs anchored decoration). Needs
+  an RFC section before build; migration number reserved at cut.
 
 - **The canonical projection (CONVERGED 2026-07-10, both Fables +
   owner; awaiting formal §11/§16 ratification at the strategy
@@ -252,7 +284,13 @@ all moved into the RFC.
   Placement-determinant tags PARKED as a named question — third
   scope, all consumers assume node binding, frames/boards already
   carry instance meaning; revisit only with a driving case from
-  the field.
+  the field. **ALPH TENTATIVELY ABOARD (2026-07-10 Discord): "i'm
+  okay trying claudes shape + a wizard and seeing how that feels"
+  — build-and-feel accepted over further debate. His wizard
+  addition: tag CREATION should offer the namespaced categories
+  with per-category REQUIRED fields ("artist and source are
+  required but date saved is not") — see the tag-categories entry
+  for the required-ness revision this implies.**
 
 - **Tag categories — the missing primitive (RATIFIED 2026-07-09,
   owner + alph, Discord; awaiting epic cut + RFC fold-in):** typed
@@ -268,7 +306,12 @@ all moved into the RFC.
   Rulings locked: (1) NOT mandatory — alph: "optional to fill in";
   first-classness (structured import fields, namespace prefix,
   facet priority) is the point; required-ness at most a future
-  per-category setting, default off. (2) Filename rewriting works
+  per-category setting, default off. REVISED 2026-07-10 (alph, at
+  the traveling-tags wizard talk): the per-category required
+  setting is WANTED AT BIRTH, not future — a tag-creation wizard
+  where "artist and source are required but date saved is not";
+  still per-category and user-defined, still default-off for new
+  categories, but the setting ships with the epic. (2) Filename rewriting works
   at EGRESS, never in the store — the content-addressed blob store
   is untouched; a derived display filename
   (`creator tags date-retrieved.ext`) is computed from fields and
