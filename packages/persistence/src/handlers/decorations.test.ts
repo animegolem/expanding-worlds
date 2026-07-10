@@ -6,6 +6,7 @@ import { CommandRegistry, type CommittedResult, type InverseCommand } from '@ew/
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from '../dispatcher'
 import { createProject, type ProjectHandle } from '../project'
+import { registerCanvasHandlers } from './canvases'
 import { registerDecorationHandlers } from './decorations'
 import { registerNodeHandlers } from './nodes'
 import { registerPlacementHandlers } from './placements'
@@ -20,6 +21,7 @@ beforeEach(() => {
   handle = createProject(dir, 'Decoration Test')
   const registry = new CommandRegistry<CommandContext>()
   registerNodeHandlers(registry)
+  registerCanvasHandlers(registry)
   registerPlacementHandlers(registry)
   registerDecorationHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
@@ -64,14 +66,23 @@ function createDecoration(overrides: Record<string, unknown> = {}): string {
   return decorationId
 }
 
-function createPlacement(): string {
+function createPlacement(canvasId: string = handle.rootCanvasId): string {
   const placementId = uuidv7()
   committed('CreatePlacement', {
     placementId,
-    canvasId: handle.rootCanvasId,
+    canvasId,
     nodeId: handle.rootNodeId,
   })
   return placementId
+}
+
+/** A second, distinct canvas (own node) for cross-canvas anchor tests. */
+function createOtherCanvas(): string {
+  const nodeId = uuidv7()
+  committed('CreateNode', { nodeId })
+  const canvasId = uuidv7()
+  committed('CreateCanvas', { canvasId, nodeId })
+  return canvasId
 }
 
 function decorationRow(id: string) {
@@ -244,6 +255,98 @@ describe('decoration groups (§6.8, canvas-local movement aid)', () => {
       status: 'error',
       code: 'GROUP_NOT_FOUND',
     })
+  })
+})
+
+describe('CA-012: anchor canvas equality', () => {
+  it('refuses CreateDecoration when the start anchor placement is on another canvas', () => {
+    const otherCanvasId = createOtherCanvas()
+    const offCanvasPlacement = createPlacement(otherCanvasId)
+    expect(
+      exec('CreateDecoration', {
+        decorationId: uuidv7(),
+        canvasId: handle.rootCanvasId,
+        kind: 'connector',
+        data: {},
+        anchorStartPlacementId: offCanvasPlacement,
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
+
+  it('refuses CreateDecoration when the end anchor placement is on another canvas', () => {
+    const otherCanvasId = createOtherCanvas()
+    const offCanvasPlacement = createPlacement(otherCanvasId)
+    expect(
+      exec('CreateDecoration', {
+        decorationId: uuidv7(),
+        canvasId: handle.rootCanvasId,
+        kind: 'connector',
+        data: {},
+        anchorEndPlacementId: offCanvasPlacement,
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+  })
+
+  it('refuses UpdateDecoration when anchoring to a placement on another canvas', () => {
+    const otherCanvasId = createOtherCanvas()
+    const offCanvasPlacement = createPlacement(otherCanvasId)
+    const id = createDecoration({ kind: 'connector', data: {} })
+    expect(
+      exec('UpdateDecoration', {
+        decorationId: id,
+        set: { anchorStartPlacementId: offCanvasPlacement },
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(decorationRow(id)!.anchor_start_placement_id).toBeNull()
+  })
+
+  it('refuses re-anchoring an already-anchored connector to a placement on another canvas', () => {
+    const onCanvasPlacement = createPlacement()
+    const otherCanvasId = createOtherCanvas()
+    const offCanvasPlacement = createPlacement(otherCanvasId)
+    const id = createDecoration({
+      kind: 'connector',
+      data: {},
+      anchorStartPlacementId: onCanvasPlacement,
+    })
+    expect(
+      exec('UpdateDecoration', {
+        decorationId: id,
+        set: { anchorStartPlacementId: offCanvasPlacement },
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    // The refused re-anchor must not have disturbed the prior, valid anchor.
+    expect(decorationRow(id)!.anchor_start_placement_id).toBe(onCanvasPlacement)
+  })
+
+  it('holds no cross-canvas anchor rows across the fixtures built by this spec', () => {
+    // Build a representative mix of same-canvas anchors (the only shape
+    // CreateDecoration/UpdateDecoration can ever persist) and assert the
+    // authoritative store never actually holds a decoration whose anchor
+    // placement disagrees with the decoration's own canvas.
+    const start = createPlacement()
+    const end = createPlacement()
+    createDecoration({
+      kind: 'connector',
+      data: {},
+      anchorStartPlacementId: start,
+      anchorEndPlacementId: end,
+    })
+    const otherCanvasId = createOtherCanvas()
+    createPlacement(otherCanvasId)
+
+    const crossStart = handle.db.all(
+      `SELECT d.id FROM decoration d
+       JOIN placement p ON p.id = d.anchor_start_placement_id
+       WHERE p.canvas_id <> d.canvas_id`,
+    )
+    const crossEnd = handle.db.all(
+      `SELECT d.id FROM decoration d
+       JOIN placement p ON p.id = d.anchor_end_placement_id
+       WHERE p.canvas_id <> d.canvas_id`,
+    )
+    expect(crossStart).toEqual([])
+    expect(crossEnd).toEqual([])
   })
 })
 
