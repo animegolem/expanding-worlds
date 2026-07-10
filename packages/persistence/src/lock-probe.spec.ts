@@ -21,6 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const WORKERS = 16
 const ROUNDS = 5
+const RECYCLED_CORPSE_RETRIES = 1
 // The winner holds well past every loser's convergence to LOCKED, so a
 // release can never hand off a spurious second WIN.
 const HOLD_MS = 400
@@ -50,10 +51,45 @@ afterAll(() => {
   rmSync(bundleDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
-/** A guaranteed-dead same-host pid: a child that has already exited. */
+type PidState = { provablyDead: boolean; diagnostic: string }
+
+function pidState(pid: number): PidState {
+  try {
+    process.kill(pid, 0)
+    return { provablyDead: false, diagnostic: 'live' }
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code ?? 'unknown'
+    return { provablyDead: code === 'ESRCH', diagnostic: `error(${code})` }
+  }
+}
+
+function shouldRetryRecycledCorpse(
+  winners: number,
+  plantedCorpseSurvived: boolean,
+  corpseAfter: PidState,
+  retry: number,
+): boolean {
+  return (
+    winners === 0 &&
+    plantedCorpseSurvived &&
+    !corpseAfter.provablyDead &&
+    retry < RECYCLED_CORPSE_RETRIES
+  )
+}
+
+/** A same-host child pid verified dead immediately before it is returned. */
 function deadSameHostPid(): number {
-  const child = spawnSync(process.execPath, ['-e', ''])
-  return child.pid!
+  for (let attempt = 1; attempt <= 10; attempt++) {
+    const child = spawnSync(process.execPath, ['-e', ''])
+    if (child.error) throw child.error
+    if (child.status !== 0 || child.pid === undefined) {
+      throw new Error(
+        `dead-pid child failed: status=${String(child.status)} pid=${String(child.pid)}`,
+      )
+    }
+    if (pidState(child.pid).provablyDead) return child.pid
+  }
+  throw new Error('could not obtain a child pid that remained provably dead')
 }
 
 function plantCorpse(dir: string, deadPid: number): void {
@@ -91,7 +127,7 @@ function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promi
     // which the collected protocol line is authoritative.
     proc.on('close', () => {
       const line = out.trim().split('\n').pop() ?? ''
-      if (line === 'WIN') resolve({ kind: 'WIN', diagnostic: line })
+      if (line.startsWith('WIN ')) resolve({ kind: 'WIN', diagnostic: line })
       else if (line.startsWith('LOCKED ')) resolve({ kind: 'LOCKED', diagnostic: line })
       else reject(new Error(`worker produced "${out.trim()}" (stderr: ${err.trim()})`))
     })
@@ -121,23 +157,60 @@ async function runRound(dir: string, staleAfterMs: number, deadPid: number): Pro
   }
 }
 
+describe('lock probe recycled-corpse retry policy', () => {
+  it('retries only the first zero-winner round whose planted corpse turned live', () => {
+    const live = { provablyDead: false, diagnostic: 'live' }
+    const dead = { provablyDead: true, diagnostic: 'error(ESRCH)' }
+
+    expect(shouldRetryRecycledCorpse(0, true, live, 0)).toBe(true)
+    expect(shouldRetryRecycledCorpse(0, true, live, 1)).toBe(false)
+    expect(shouldRetryRecycledCorpse(0, true, dead, 0)).toBe(false)
+    expect(shouldRetryRecycledCorpse(0, false, live, 0)).toBe(false)
+    expect(shouldRetryRecycledCorpse(1, true, live, 0)).toBe(false)
+  })
+})
+
 describe('single-writer lock under multi-process contention (AI-IMP-226 / CA-001)', () => {
   for (const staleAfterMs of [0, 30_000]) {
     it(
       `admits exactly one live winner per round at staleAfterMs ${staleAfterMs}`,
       async () => {
         const dir = mkdtempSync(join(tmpdir(), 'ew-lock-probe-'))
-        const deadPid = deadSameHostPid()
+        const history: string[] = []
         try {
           for (let round = 0; round < ROUNDS; round++) {
-            const outcomes = await runRound(dir, staleAfterMs, deadPid)
-            const winners = outcomes.filter((outcome) => outcome.kind === 'WIN').length
-            expect(
-              winners,
-              `round ${round} at staleAfterMs ${staleAfterMs}: ${outcomes
-                .map((outcome) => outcome.diagnostic)
-                .join(' | ')}`,
-            ).toBe(1)
+            for (let retry = 0; ; retry++) {
+              // A corpse pid is fresh for every round/attempt. Reusing one
+              // across rounds let Windows recycle it into an unrelated live
+              // process, making the probe lie about the planted holder.
+              const deadPid = deadSameHostPid()
+              const outcomes = await runRound(dir, staleAfterMs, deadPid)
+              const winners = outcomes.filter((outcome) => outcome.kind === 'WIN').length
+              const corpseAfter = pidState(deadPid)
+              const plantedCorpseSurvived = outcomes.every(
+                (outcome) =>
+                  outcome.kind === 'LOCKED' && outcome.diagnostic.includes('token=probe-corpse)'),
+              )
+              history.push(
+                `round ${round} retry=${retry}/${RECYCLED_CORPSE_RETRIES} ` +
+                  `plantedCorpsePid=${deadPid} corpseAfter=${corpseAfter.diagnostic} ` +
+                  `plantedCorpseSurvived=${String(plantedCorpseSurvived)}: ` +
+                  outcomes.map((outcome) => outcome.diagnostic).join(' | '),
+              )
+
+              if (shouldRetryRecycledCorpse(winners, plantedCorpseSurvived, corpseAfter, retry)) {
+                history.push(
+                  `round ${round} retrying: corpse pid ${deadPid} is no longer provably dead`,
+                )
+                continue
+              }
+
+              expect(
+                winners,
+                `staleAfterMs ${staleAfterMs} history:\n${history.join('\n')}`,
+              ).toBe(1)
+              break
+            }
           }
         } finally {
           rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
