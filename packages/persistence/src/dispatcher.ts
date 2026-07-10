@@ -82,6 +82,7 @@ export class Dispatcher {
     try {
       const resolved = this.#registry.resolve(envelope.commandType, envelope.commandVersion)
       const payload = resolved.upcast(envelope.payload)
+      resolved.validate(payload)
       const ctx: CommandContext = {
         db: this.#handle.db,
         projectId: this.#handle.projectId,

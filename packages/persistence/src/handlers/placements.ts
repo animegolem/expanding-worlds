@@ -46,6 +46,118 @@ interface PlacementRow {
   locked: number
 }
 
+function payloadRecord(payload: unknown, command: string): Record<string, unknown> {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new DomainError('VALIDATION_FAILED', `${command} payload must be an object`)
+  }
+  return payload as Record<string, unknown>
+}
+
+function requireId(payload: Record<string, unknown>, key: string, command: string): void {
+  if (typeof payload[key] !== 'string' || payload[key].length === 0) {
+    throw new DomainError('VALIDATION_FAILED', `${command} ${key} must be a non-empty string`)
+  }
+}
+
+function finiteNumber(value: unknown, label: string, optional = false): void {
+  if (optional && value === undefined) return
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new DomainError('VALIDATION_FAILED', `${label} must be a finite number`)
+  }
+}
+
+function positiveDimension(value: unknown, label: string, optional = false): void {
+  if (value === null || optional && value === undefined) return
+  finiteNumber(value, label)
+  if ((value as number) <= 0) {
+    throw new DomainError('VALIDATION_FAILED', `${label} must be positive or null`)
+  }
+}
+
+function positiveScale(value: unknown, label: string, optional = false): void {
+  finiteNumber(value, label, optional)
+  if (value !== undefined && (value as number) <= 0) {
+    throw new DomainError('VALIDATION_FAILED', `${label} must be positive`)
+  }
+}
+
+function optionalBoolean(value: unknown, label: string): void {
+  if (value !== undefined && typeof value !== 'boolean') {
+    throw new DomainError('VALIDATION_FAILED', `${label} must be a boolean`)
+  }
+}
+
+function validateCreatePlacement(payload: unknown): void {
+  const record = payloadRecord(payload, 'CreatePlacement')
+  for (const key of ['placementId', 'canvasId', 'nodeId']) requireId(record, key, 'CreatePlacement')
+  finiteNumber(record.x, 'CreatePlacement x', true)
+  finiteNumber(record.y, 'CreatePlacement y', true)
+  positiveDimension(record.width, 'CreatePlacement width', true)
+  positiveDimension(record.height, 'CreatePlacement height', true)
+  positiveScale(record.scale, 'CreatePlacement scale', true)
+  finiteNumber(record.rotation, 'CreatePlacement rotation', true)
+  finiteNumber(record.renderOrder, 'CreatePlacement renderOrder', true)
+  for (const key of ['labelVisible', 'flipX', 'flipY', 'locked']) {
+    optionalBoolean(record[key], `CreatePlacement ${key}`)
+  }
+}
+
+function validatePlacementTransform(
+  payload: Record<string, unknown>,
+  command: string,
+  idKey: string,
+): void {
+  requireId(payload, idKey, command)
+  finiteNumber(payload.x, `${command} x`)
+  finiteNumber(payload.y, `${command} y`)
+  positiveDimension(payload.width, `${command} width`)
+  positiveDimension(payload.height, `${command} height`)
+  positiveScale(payload.scale, `${command} scale`)
+  finiteNumber(payload.rotation, `${command} rotation`)
+}
+
+function validateMovePlacement(payload: unknown): void {
+  validatePlacementTransform(payloadRecord(payload, 'MovePlacement'), 'MovePlacement', 'placementId')
+}
+
+function validateTransformContent(payload: unknown): void {
+  const record = payloadRecord(payload, 'TransformContent')
+  requireId(record, 'canvasId', 'TransformContent')
+  if (!Array.isArray(record.items)) {
+    throw new DomainError('VALIDATION_FAILED', 'TransformContent items must be an array')
+  }
+  for (const raw of record.items) {
+    const item = payloadRecord(raw, 'TransformContent item')
+    if (item.kind === 'placement') {
+      validatePlacementTransform(item, 'TransformContent placement', 'placementId')
+    } else if (item.kind === 'decoration') {
+      requireId(item, 'decorationId', 'TransformContent decoration')
+      assertFiniteJson(item.data, 'TransformContent decoration data')
+    } else {
+      throw new DomainError('VALIDATION_FAILED', 'TransformContent item kind is invalid')
+    }
+  }
+}
+
+function assertFiniteJson(value: unknown, label: string): void {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return
+  if (typeof value === 'number') {
+    finiteNumber(value, label)
+    return
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) assertFiniteJson(entry, label)
+    return
+  }
+  if (typeof value === 'object') {
+    for (const entry of Object.values(value as Record<string, unknown>)) {
+      assertFiniteJson(entry, label)
+    }
+    return
+  }
+  throw new DomainError('VALIDATION_FAILED', `${label} must be JSON-compatible`)
+}
+
 function requirePlacement(ctx: CommandContext, placementId: string): PlacementRow {
   const row = ctx.db.get<PlacementRow>(
     `SELECT id, canvas_id, node_id, x, y, width, height, scale, rotation,
@@ -194,7 +306,7 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
         payload: { placementId: payload.placementId } satisfies DeleteDraftPlacementPayload,
       },
     }
-  })
+  }, validateCreatePlacement)
 
   registry.register<DeleteDraftPlacementPayload>(
     COMMAND_DELETE_DRAFT_PLACEMENT,
@@ -265,7 +377,7 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
         } satisfies MovePlacementPayload,
       },
     }
-  })
+  }, validateMovePlacement)
 
   registry.register<SetPlacementLabelVisibilityPayload>(
     COMMAND_SET_PLACEMENT_LABEL_VISIBILITY,
@@ -531,5 +643,5 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
         } satisfies TransformContentPayload,
       },
     }
-  })
+  }, validateTransformContent)
 }

@@ -19,6 +19,7 @@ export type CommandHandler<Ctx, P = unknown> = (
 
 /** Translates a payload from `fromVersion` to `fromVersion + 1`. */
 export type Upcaster = (payload: unknown) => unknown
+export type PayloadValidator = (payload: unknown) => void
 
 export interface ResolvedCommand<Ctx> {
   handler: CommandHandler<Ctx>
@@ -26,6 +27,8 @@ export interface ResolvedCommand<Ctx> {
   targetVersion: number
   /** Applies the upcaster chain from the envelope's version. */
   upcast: (payload: unknown) => unknown
+  /** Runtime schema check applied after upcasting, before persistence. */
+  validate: PayloadValidator
 }
 
 /**
@@ -36,15 +39,25 @@ export interface ResolvedCommand<Ctx> {
  * context type.
  */
 export class CommandRegistry<Ctx> {
-  #handlers = new Map<string, Map<number, CommandHandler<Ctx>>>()
+  #handlers = new Map<
+    string,
+    Map<number, { handler: CommandHandler<Ctx>; validate: PayloadValidator }>
+  >()
   #upcasters = new Map<string, Map<number, Upcaster>>()
 
-  register<P>(type: string, version: number, handler: CommandHandler<Ctx, P>): this {
-    const versions = this.#handlers.get(type) ?? new Map<number, CommandHandler<Ctx>>()
+  register<P>(
+    type: string,
+    version: number,
+    handler: CommandHandler<Ctx, P>,
+    validate: PayloadValidator = requireObjectPayload,
+  ): this {
+    const versions =
+      this.#handlers.get(type) ??
+      new Map<number, { handler: CommandHandler<Ctx>; validate: PayloadValidator }>()
     if (versions.has(version)) {
       throw new Error(`duplicate handler for ${type} v${version}`)
     }
-    versions.set(version, handler as CommandHandler<Ctx>)
+    versions.set(version, { handler: handler as CommandHandler<Ctx>, validate })
     this.#handlers.set(type, versions)
     return this
   }
@@ -74,10 +87,11 @@ export class CommandRegistry<Ctx> {
     let v = version
     // Walk upcasters until a handler version is found.
     for (;;) {
-      const handler = versions.get(v)
-      if (handler) {
+      const registered = versions.get(v)
+      if (registered) {
         return {
-          handler,
+          handler: registered.handler,
+          validate: registered.validate,
           targetVersion: v,
           upcast: (payload) => chain.reduce((p, step) => step(p), payload),
         }
@@ -93,5 +107,11 @@ export class CommandRegistry<Ctx> {
       chain.push(step)
       v += 1
     }
+  }
+}
+
+function requireObjectPayload(payload: unknown): void {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new DomainError('VALIDATION_FAILED', 'command payload must be an object')
   }
 }

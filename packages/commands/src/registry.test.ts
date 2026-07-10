@@ -11,6 +11,8 @@ describe('CommandRegistry', () => {
     const resolved = registry.resolve('CreateNode', 1)
     expect(resolved.targetVersion).toBe(1)
     expect(resolved.upcast({ a: 1 })).toEqual({ a: 1 })
+    expect(() => resolved.validate({ a: 1 })).not.toThrow()
+    expect(() => resolved.validate(null)).toThrowError(DomainError)
   })
 
   it('upcasts an old payload version to the handler version', () => {
@@ -28,6 +30,22 @@ describe('CommandRegistry', () => {
     const resolved = registry.resolve('MovePlacement', 1)
     expect(resolved.targetVersion).toBe(3)
     expect(resolved.upcast({ x: 5 })).toEqual({ x: 5, rotation: 0, scale: 1 })
+  })
+
+  it('runs a command-specific validator after upcasting', () => {
+    const registry = new CommandRegistry<null>()
+    registry.register('MovePlacement', 2, () => outcome, (payload) => {
+      if ((payload as { scale?: unknown }).scale !== 1) {
+        throw new DomainError('VALIDATION_FAILED', 'scale required')
+      }
+    })
+    registry.registerUpcaster('MovePlacement', 1, (payload) => ({
+      ...(payload as object),
+      scale: 1,
+    }))
+    const resolved = registry.resolve('MovePlacement', 1)
+    const payload = resolved.upcast({ x: 2 })
+    expect(() => resolved.validate(payload)).not.toThrow()
   })
 
   it('throws UNKNOWN_COMMAND for an unregistered type', () => {

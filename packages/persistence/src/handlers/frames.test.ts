@@ -222,6 +222,42 @@ describe('CaptureInFrame / ReleaseFromFrame', () => {
     expect(parentOf(a.placementId)).toBe(f.placementId)
   })
 
+  it('refuses a forged restore to a non-frame or cross-canvas parent', () => {
+    const member = item()
+    const notFrame = item()
+    expect(
+      exec('RestoreFrameMembership', {
+        targets: [
+          { memberPlacementId: member.placementId, framePlacementId: notFrame.placementId },
+        ],
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(parentOf(member.placementId)).toBeNull()
+
+    const elsewhere = frame(secondCanvas())
+    expect(
+      exec('RestoreFrameMembership', {
+        targets: [
+          { memberPlacementId: member.placementId, framePlacementId: elsewhere.placementId },
+        ],
+      }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(parentOf(member.placementId)).toBeNull()
+  })
+
+  it('validates the intended restore graph as a whole before writing', () => {
+    const a = frame()
+    const b = frame()
+    const result = exec('RestoreFrameMembership', {
+      targets: [
+        { memberPlacementId: a.placementId, framePlacementId: b.placementId },
+        { memberPlacementId: b.placementId, framePlacementId: a.placementId },
+      ],
+    })
+    expect(result).toMatchObject({ status: 'error', code: 'FRAME_CYCLE' })
+    expect(memberRowCount()).toBe(0)
+  })
+
   it('rejects capture into a non-frame placement', () => {
     const notAFrame = item()
     const a = item()
