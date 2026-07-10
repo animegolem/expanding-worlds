@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 224 |
-| **Total** | **27** | **258** |
+| **Total** | **27** | **259** |
 
 ## In Progress
 
@@ -103,6 +103,7 @@
 - [[AI-IMP-260-delete-loose-notes|IMP-260]] — planned, no epic dependency found
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
 - [[AI-IMP-264-lock-protocol-composite-hardening|IMP-264]] — planned, no epic dependency found
+- [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
