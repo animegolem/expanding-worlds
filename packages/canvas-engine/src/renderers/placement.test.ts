@@ -13,6 +13,7 @@ import {
   SELECTION_OUTLINE_STROKE_PX,
   cssColorToNumber,
   cropFillMatrix,
+  labelTextResolution,
   labelZoomOpacity,
   parsePlacementCrop,
   placementRenderedMaxEdge,
@@ -660,6 +661,88 @@ describe('label zoom ceiling (§8.2, AI-IMP-216)', () => {
     const item = makePlacement({ noteTitle: null })
     const object = placementRenderer.create(item, resourcesAtZoom(1))
     expect(() => syncPlacementLabelOffset(object, item, 0.001)).not.toThrow()
+  })
+})
+
+describe('label raster resolution (AI-IMP-262)', () => {
+  function resourcesAtZoom(zoom: number): RendererResources {
+    return { ...fakeResources(), getZoom: () => zoom }
+  }
+
+  // The New-board verb mints CreatePlacement with no width/height/
+  // appearance (NewBoardPalette.svelte), so a board pin's label basis
+  // falls to the bare-node ring's own DEFAULT_DOT_RADIUS×2 = 24 world
+  // units → fontSize 3.36 — the raster this ticket keeps crisp.
+  const PIN_FONT = DEFAULT_DOT_RADIUS * 2 * LABEL_HEIGHT_RATIO
+
+  it('labelTextResolution rasters at least the on-screen scale (never an upscale)', () => {
+    for (const zoom of [1.2, 3, 8, 20]) {
+      for (const dpr of [1, 2]) {
+        const resolution = labelTextResolution(PIN_FONT, zoom, dpr)
+        // Raster glyph em (fontSize × resolution device px) covers the
+        // on-screen em (fontSize × zoom × dpr) — blur-free by construction.
+        expect(PIN_FONT * resolution).toBeGreaterThanOrEqual(PIN_FONT * zoom * dpr - 1e-6)
+        // Quantized: over-raster stays under one bucket (×1.5 waste max).
+        expect(resolution).toBeLessThanOrEqual(zoom * dpr * 1.5 + 1e-6)
+      }
+    }
+  })
+
+  it('labelTextResolution floors at the DPR (zoom-out never rasters below the static default)', () => {
+    expect(labelTextResolution(PIN_FONT, 0.25, 2)).toBe(2)
+    expect(labelTextResolution(PIN_FONT, 1, 1)).toBe(1)
+    // Degenerate inputs keep the auto default rather than exploding.
+    expect(labelTextResolution(0, 8, 2)).toBe(2)
+    expect(labelTextResolution(PIN_FONT, 8, 0)).toBeGreaterThan(0)
+  })
+
+  it('labelTextResolution lands exactly on a bucket at a bucket-exact scale (epsilon guard)', () => {
+    // 2.25 = 1.5² must not ceil past itself to 1.5³.
+    expect(labelTextResolution(PIN_FONT, 2.25, 1)).toBeCloseTo(2.25)
+  })
+
+  it('labelTextResolution caps large-label rasters at their DPR floor (no memory blowup)', () => {
+    // A big image body: fontSize 280 world already rasters a 280×dpr px
+    // em today — deep zoom must not multiply that further.
+    expect(labelTextResolution(280, 8, 2)).toBe(2)
+    expect(labelTextResolution(280, 64, 2)).toBe(2)
+  })
+
+  it('the cull-pass hook tracks zoom buckets on a board pin and re-rasters only on change', () => {
+    const item = makePlacement({ noteTitle: 'Harbor World' }) // bare-node pin
+    const object = placementRenderer.create(item, resourcesAtZoom(1))
+    const label = labelOf(object)!
+    expect(Number(label.style.fontSize)).toBeCloseTo(PIN_FONT)
+
+    // Node test env has no devicePixelRatio → the hook computes dpr 1.
+    syncPlacementLabelOffset(object, item, 3)
+    const atThree = label.resolution
+    expect(atThree).toBeCloseTo(labelTextResolution(PIN_FONT, 3, 1))
+    expect(atThree).toBeGreaterThanOrEqual(3)
+
+    // A glide within the same bucket keeps the SAME value — no re-raster.
+    syncPlacementLabelOffset(object, item, 3.2)
+    expect(label.resolution).toBe(atThree)
+
+    // Crossing buckets re-derives upward; the raster keeps pace.
+    syncPlacementLabelOffset(object, item, 8)
+    expect(label.resolution).toBeGreaterThanOrEqual(8)
+  })
+
+  it('a hidden label (below the furniture floor) is left alone until it resurrects', () => {
+    const item = makePlacement({ noteTitle: 'Harbor World' })
+    const object = placementRenderer.create(item, resourcesAtZoom(1))
+    const label = labelOf(object)!
+    syncPlacementLabelOffset(object, item, 3)
+    const visibleResolution = label.resolution
+    // Deep zoom-out: 24 × 0.1 = 2.4px rendered — hidden, resolution untouched.
+    syncPlacementLabelOffset(object, item, 0.1)
+    expect(label.visible).toBe(false)
+    expect(label.resolution).toBe(visibleResolution)
+    // Resurrection re-derives on the same hook.
+    syncPlacementLabelOffset(object, item, 3)
+    expect(label.visible).toBe(true)
+    expect(label.resolution).toBe(visibleResolution)
   })
 })
 
