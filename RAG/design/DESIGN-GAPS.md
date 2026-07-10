@@ -8,6 +8,18 @@ kit/mockups, gets its box checked with a one-line pointer to where
 it landed, and the lead folds any behavior ruling back into an
 implementation ticket.*
 
+> **FORMAT RULING (owner, 2026-07-09): the design push's focus is
+> ONE "document of actions" — drawn UI lifecycles.** Not a stack of
+> per-widget documents: for each user action, the full drawn arc —
+> trigger surface → intermediate states → resting state → exit/undo
+> (the beat the app plays at each step). The note lifecycle (caption
+> card → reading → close) and the boards-being-born family (New
+> board / Make-canvas) are the first two lifecycles; the checklist
+> below is INPUT to that document — each item names the lifecycle it
+> belongs to rather than earning its own doc. Prototypes like the
+> Pin & Menu Motion Prototype remain the format for anything that
+> moves.
+
 Dear design session,
 
 The app has been shipping faster than the kit. The result is a
