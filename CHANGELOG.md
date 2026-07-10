@@ -25,7 +25,24 @@ annotations.
   instead of pretending they saved; the backup "Test" button waits
   for the draft to actually save first.
 
+### For testers (hardening — mostly invisible, deliberately)
+- Notes can no longer lose text when a save fails during a
+  board switch, close, or quit — the draft stays and retries.
+- Failed saves, failed backups, and failed snapshots now say so
+  honestly instead of pretending they worked.
+- Importing two things at once can't collide anymore; interrupted
+  undo of a grouped action no longer half-applies.
+
 ### Under the hood
+- All 14 control-flow audit findings resolved (C10-001..014,
+  merge 4ad2f197, review record AI-IMP-256): capability-bound
+  restore/import open, symlink-safe managed paths, IANA-complete
+  net-guard, request-owned import staging, correlated flush acks,
+  honest tx-depth recovery, atomic grouped undo repair state,
+  checkpoint-gated snapshots, bounded background textures,
+  latest-wins theme/background application.
+- AI-IMP-255: the OS-owned title band no longer blanks chrome
+  (see For testers above).
 - EPIC-027 opened: the two 2026-07-10 audits (control-flow
   correctness + helper consolidation) tracked as one
   hardening-and-consolidation epic; wave 1 tickets cut

@@ -16,6 +16,7 @@ AI_IMP_spawned:
   - AI-IMP-252
   - AI-IMP-253
   - AI-IMP-254
+  - AI-IMP-256
 ---
 
 # AI-EPIC-027-hardening-and-consolidation
@@ -77,40 +78,40 @@ builder verifies before repairing.
 
 ### Functional Requirements — Codex control-flow (correctness)
 
-- [ ] FR-1 (C10-001, P1): a failed note flush never loses the draft;
+- [x] FR-1 (C10-001, P1): a failed note flush never loses the draft;
       destructive callers (switch/close/quit) retain the buffer on
       non-commit; main flush ack carries success.
-- [ ] FR-2 (C10-002, P1): restore/open fuses selection+execution in
+- [x] FR-2 (C10-002, P1): restore/open fuses selection+execution in
       main (or an opaque sender-bound capability); no raw renderer
       directory path reaches the privileged open — the 229 pattern
       applied to restore.
-- [ ] FR-3 (C10-003, P1): managed roots/files reject symlinks;
+- [x] FR-3 (C10-003, P1): managed roots/files reject symlinks;
       realpath containment before every read/write/protocol/delete.
-- [ ] FR-4 (C10-004, P1): net-guard classifies literal AND resolved
+- [x] FR-4 (C10-004, P1): net-guard classifies literal AND resolved
       addresses against a complete special-purpose/global-reachable
       set (100.64.0.0/10 incl. 100.100.100.200); deny non-global.
-- [ ] FR-5 (C10-005, P1): imports reserve the final destination
+- [x] FR-5 (C10-005, P1): imports reserve the final destination
       atomically pre-await, use request-owned staging, promote
       exclusively; concurrent-import regression.
-- [ ] FR-6 (C10-006, P2): flush acks are request-ID'd, sender-bound,
+- [x] FR-6 (C10-006, P2): flush acks are request-ID'd, sender-bound,
       success-carrying; per-renderer serialize/supersede.
-- [ ] FR-7 (C10-007, P2): tx depth updates only after successful
+- [x] FR-7 (C10-007, P2): tx depth updates only after successful
       commit/release; outer-commit failure does plain ROLLBACK.
-- [ ] FR-8 (C10-008, P2): runtime payload schemas at the command
+- [x] FR-8 (C10-008, P2): runtime payload schemas at the command
       registry boundary; inverse handlers enforce the same domain
       invariants (finite geometry, frame membership) — or inverses
       become server-issued opaque capabilities.
-- [ ] FR-9 (C10-009, P2): grouped undo executes atomically in the
+- [x] FR-9 (C10-009, P2): grouped undo executes atomically in the
       command service (or preserves an explicit repair state); no
       committed-prefix-then-fail.
-- [ ] FR-10 (C10-010, P2): snapshot aborts/defers on a typed
+- [x] FR-10 (C10-010, P2): snapshot aborts/defers on a typed
       CHECKPOINT_FAILED instead of committing a stale db.
 - [x] FR-11 (C10-011, P2): project-setting writes are result-aware;
       backup/remote UI never claims success on an unsaved draft
       (the 237 pattern extended to project settings).
-- [ ] FR-12 (C10-012, P2): BackgroundSync owns and destroys its
+- [x] FR-12 (C10-012, P2): BackgroundSync owns and destroys its
       textures+sources (stale, replaced, teardown) under a budget.
-- [ ] FR-13 (C10-013/014, P3): theme application and background
+- [x] FR-13 (C10-013/014, P3): theme application and background
       re-apply are latest-wins (generation token).
 
 ### Functional Requirements — helper consolidation
@@ -170,7 +171,12 @@ map 1:1 to FRs above.)
 - [ ] AI-IMP-254 persistence-test-temp-cleanup (FR-24) —
       mechanical, unassigned
 
-Codex P1 correctness tickets (FR-1..5) are the next cut. The P3
-helper tail (FR-18..22) and the FR-23 merged items stay here until
-a slot opens; FR-23's envelope-views half additionally waits on
-FR-1's flush correlation.
+**Codex resolutions batch (2026-07-10):** FR-1..13 closed in one
+reviewed merge (`4ad2f197`) — the in-context Codex resolved all 14
+C10 findings atomically; AI-IMP-256 is the review/merge record.
+C10-011 was built twice (wave-1 race); AI-IMP-251's implementation
+stands, the duplicate was dropped at merge.
+
+Remaining: AI-IMP-253/254 (cut, unassigned), the P3 helper tail
+(FR-18..22), and the FR-23 merged items; FR-23's envelope-views
+half waits on the now-landed FR-1 flush correlation.
