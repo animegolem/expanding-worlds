@@ -108,7 +108,7 @@ describe('anchored-surface adoption guard', () => {
 
     const offenders = files
       .filter((path) => patterns.some((pattern) => pattern.test(readFileSync(path, 'utf8'))))
-      .map((path) => relative(renderer, path))
+      .map((path) => relative(renderer, path).split('\\').join('/'))
       .filter((path) => !exemptions.has(path))
     expect(offenders).toEqual([])
   })

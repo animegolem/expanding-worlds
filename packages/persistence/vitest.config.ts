@@ -9,5 +9,11 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     testTimeout: process.env['CI'] ? 30_000 : 5_000,
+    // beforeEach hooks doing the same real IO (fixture project
+    // creation) hit vitest's SEPARATE 10s hook default on the same
+    // slow runners — two Windows-only hook timeouts in run
+    // 29094024841 (surfaced by AI-IMP-263's review; invariants.spec
+    // and queries-structure). Same policy, same reasoning as above.
+    hookTimeout: process.env['CI'] ? 30_000 : 10_000,
   },
 })
