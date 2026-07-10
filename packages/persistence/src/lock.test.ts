@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   LOCK_FILENAME,
   ProjectLock,
@@ -11,6 +11,28 @@ import {
   type LockHolder,
 } from './lock'
 
+// The Windows runner can report EPERM from O_EXCL while a just-released
+// handle drains. Inject that exact filesystem response once; every other
+// write delegates to Node so this remains an integration-level lock test.
+const faults = vi.hoisted(() => ({ failNextExclusiveCreate: false }))
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return {
+    ...actual,
+    writeFileSync: (...args: Parameters<typeof actual.writeFileSync>) => {
+      const [, , options] = args
+      if (faults.failNextExclusiveCreate && options?.flag === 'wx') {
+        faults.failNextExclusiveCreate = false
+        const err = new Error('injected transient O_EXCL failure') as NodeJS.ErrnoException
+        err.code = 'EPERM'
+        throw err
+      }
+      return actual.writeFileSync(...args)
+    },
+  }
+})
+
 let dir: string
 
 beforeEach(() => {
@@ -18,6 +40,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  faults.failNextExclusiveCreate = false
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
@@ -42,6 +65,16 @@ describe('ProjectLock', () => {
     ProjectLock.acquire(dir).release()
     const again = ProjectLock.acquire(dir)
     again.release()
+  })
+
+  it('retries a transient O_EXCL EPERM without claiming the path (AI-IMP-249)', () => {
+    faults.failNextExclusiveCreate = true
+    const lock = ProjectLock.acquire(dir)
+    try {
+      expect(existsSync(join(dir, LOCK_FILENAME))).toBe(true)
+    } finally {
+      lock.release()
+    }
   })
 
   it('reclaims a stale lock', () => {

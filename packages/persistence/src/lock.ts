@@ -133,7 +133,16 @@ export class ProjectLock {
         writeFileSync(path, JSON.stringify(payload), { flag: 'wx' })
         return new ProjectLock(path, token, heartbeatMs)
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
+        const code = (err as NodeJS.ErrnoException).code
+        if (code === 'EPERM') {
+          // Windows can reject an O_EXCL create for a just-released file
+          // while the previous process's handle is still draining. We own
+          // nothing in that state and must not inspect or reclaim the path;
+          // a bounded backoff lets the kernel settle before re-racing it.
+          backoff(attempt)
+          continue
+        }
+        if (code !== 'EEXIST') throw err
       }
 
       // 2. Owner file present. A holder we cannot justify removing wins.
