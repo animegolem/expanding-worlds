@@ -11,7 +11,8 @@ depends_on: []
 parent_epic:
 confidence_score: 0.5
 date_created: 2026-07-10
-date_completed: 2026-07-10---
+date_completed: 2026-07-10
+---
 
 
 # AI-IMP-262-board-pin-label-legibility
