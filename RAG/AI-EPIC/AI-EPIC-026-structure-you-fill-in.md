@@ -129,9 +129,9 @@ ruled: appending the content hash to egress filenames.
 ## Implementation Breakdown
 
 - AI-IMP-239 — New-board verb (functional surface). IN FLIGHT.
-- AI-IMP-244 (number reserved) — schema + commands + RFC fold-in (lead or senior
+- AI-IMP-245 (number reserved) — schema + commands + RFC fold-in (lead or senior
   agent; interface-defining).
-- AI-IMP-245 (number reserved) — entry surfaces: import fields + tag panel/charm
+- AI-IMP-246 (number reserved) — entry surfaces: import fields + tag panel/charm
   category grammar.
-- AI-IMP-246 (number reserved) — gallery facets/search integration.
-- AI-IMP-247 (number reserved) — egress filename derivation (export + drag-out).
+- AI-IMP-247 (number reserved) — gallery facets/search integration.
+- AI-IMP-248 (number reserved) — egress filename derivation (export + drag-out).
