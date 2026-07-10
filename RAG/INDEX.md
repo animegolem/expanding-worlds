@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 222 |
-| **Total** | **27** | **250** |
+| **Total** | **27** | **255** |
 
 ## In Progress
 
@@ -97,6 +97,11 @@
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
 - [[AI-IMP-255-title-band-native-drag-blackout|IMP-255]] — in-progress, no epic dependency found
+- [[AI-IMP-257-top-band-click-delivery|IMP-257]] — in-progress, no epic dependency found
+- [[AI-IMP-258-loose-note-panel-mount|IMP-258]] — planned, no epic dependency found
+- [[AI-IMP-259-path-bar-containment|IMP-259]] — planned, no epic dependency found
+- [[AI-IMP-260-delete-loose-notes|IMP-260]] — planned, no epic dependency found
+- [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -210,6 +215,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (386 LOC)
 - spike/webkit-renderer/src/main.ts (385 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (385 LOC)
+- RAG/DESIGN-QUEUE.md (384 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (380 LOC)
 - apps/desktop/src/renderer/undo/undo-store.ts (375 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (374 LOC)
@@ -219,7 +225,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-gallery.test.ts (361 LOC)
 - packages/canvas-engine/src/hit-test.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (361 LOC)
-- RAG/DESIGN-QUEUE.md (359 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)

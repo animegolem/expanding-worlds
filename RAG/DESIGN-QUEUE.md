@@ -14,6 +14,31 @@ all moved into the RFC.
 
 ## Blocking planned work
 
+- **Home, board identity, and the launcher question** (alph + owner,
+  2026-07-10, ACTIVE DEBATE — parked mid-conversation; blocks the
+  display half of AI-IMP-259 and any board-naming work). One
+  cluster, four faces: (1) should Home be a board at all? alph's
+  PureRef instinct: home is a launcher — drop zone + recents —
+  that "becomes a board when you interact and you name it when you
+  save." Owner's counter-shape, alph-endorsed as fair: don't SHOW
+  Home; each canvas on Home is the root of its own tree ("this
+  town with these places and these people"). Lead position
+  (2026-07-10): the tree model is load-bearing for recursion and
+  should not unwind — this is a PRESENTATION question; launcher
+  affordances can be Home's empty state while spatial Home remains
+  once content exists. (2) The no-slug display rule: no surface
+  ever shows a raw id (`2xajxshy` sightings in outline + path);
+  root renders as ⌂/Home; untitled boards need a display fallback —
+  owner floated "numbered until a name is set in the node's note."
+  (3) Where board names LIVE (the node's note title?) and the
+  naming gesture on save. (4) alph's scaling worry: "a few dozen
+  boards... maybe we need more of a grid view" — Home's density
+  story. Also note alph's layer-mapping: his "home common to all
+  worlds" is our PROJECT PICKER, not the root canvas — the recents
+  strip may belong at the app tier, not in-project. Resolve
+  together; pieces land in RFC §4/§8 and unblock 259's display
+  half.
+
 - **Reading a note on the board — the open-verb as a camera verb**
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
   you're right"; the detailed ruling below still needs its answers
