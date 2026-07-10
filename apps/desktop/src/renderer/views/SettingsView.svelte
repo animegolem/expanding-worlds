@@ -33,11 +33,21 @@
     setAppSetting,
     type AppSettings,
   } from '../settings/settings'
+  import { ProjectSettingWriter } from '../settings/project-setting-writer'
 
   let settings = $state<AppSettings>({ ...APP_SETTING_DEFAULTS })
   let retention = $state<TrashRetention>('never')
   let projectId = $state<string | null>(null)
   let projectSettings = $state<Record<string, unknown>>({})
+  const projectSettingWriter = new ProjectSettingWriter({
+    current: () => projectSettings,
+    replace: (next) => (projectSettings = next),
+    persist: async (key, value) => {
+      const result = await window.ew.settings.setProject(key, value)
+      return result.ok ? { ok: true } : { ok: false, message: result.message }
+    },
+    report: (message) => void toast(message, { kind: 'error' }),
+  })
 
   $effect(() => onAppSettingsChanged((next) => (settings = { ...next })))
 
@@ -105,8 +115,7 @@
       timestamps: metadataDefault('timestamps'),
       [key]: value,
     }
-    projectSettings = { ...projectSettings, note_metadata_defaults: next }
-    await window.ew.settings.setProject('note_metadata_defaults', next)
+    await projectSettingWriter.write('note_metadata_defaults', next, 'note metadata defaults')
   }
 
   // §11.4 session snapshots (AI-IMP-120): the per-project mode enum is
@@ -159,8 +168,11 @@
     }
     if (exportNeedsAck) {
       exportNeedsAck = false
-      projectSettings = { ...projectSettings, export_size_acknowledged: true }
-      await window.ew.settings.setProject('export_size_acknowledged', true)
+      await projectSettingWriter.write(
+        'export_size_acknowledged',
+        true,
+        'export acknowledgement',
+      )
     }
     exportProgress = { bytesWritten: 0, bytesTotal: exportEstimate ?? 0 }
     try {
@@ -214,8 +226,7 @@
     return raw === 'commit' || raw === 'commit-push' ? raw : 'off'
   }
   async function setSnapshotMode(mode: SnapshotMode): Promise<void> {
-    projectSettings = { ...projectSettings, snapshot_mode: mode }
-    await window.ew.settings.setProject('snapshot_mode', mode)
+    await projectSettingWriter.write('snapshot_mode', mode, 'backup mode')
   }
   function formatBackupSize(bytes: number | null): string {
     if (bytes === null) return 'no snapshots yet'
@@ -247,16 +258,20 @@
   $effect(() => {
     remoteDraft = storedRemote()
   })
-  async function saveRemote(url: string): Promise<void> {
+  async function saveRemote(url: string): Promise<boolean> {
     const trimmed = url.trim()
-    if (trimmed === storedRemote()) return
-    projectSettings = { ...projectSettings, snapshot_remote: trimmed }
+    if (trimmed === storedRemote()) return true
     remoteTest = { state: 'idle' } // the target changed; a prior result is stale
-    await window.ew.settings.setProject('snapshot_remote', trimmed)
+    return projectSettingWriter.write('snapshot_remote', trimmed, 'backup remote')
   }
   async function testRemote(url: string): Promise<void> {
+    const trimmed = url.trim()
+    if (!(await saveRemote(trimmed))) {
+      remoteTest = { state: 'fail', message: 'The remote could not be saved.' }
+      return
+    }
     remoteTest = { state: 'testing' }
-    const result = await window.ew.snapshot.testConnection(url.trim())
+    const result = await window.ew.snapshot.testConnection(trimmed)
     remoteTest = result.ok ? { state: 'ok' } : { state: 'fail', message: result.message }
   }
 
@@ -275,8 +290,7 @@
     return raw === 'sort' || raw === 'group' || raw === 'group-and-sort' ? raw : 'ask'
   }
   async function setDropBehavior(value: DropBehavior): Promise<void> {
-    projectSettings = { ...projectSettings, [DROP_BEHAVIOR_KEY]: value }
-    await window.ew.settings.setProject(DROP_BEHAVIOR_KEY, value)
+    await projectSettingWriter.write(DROP_BEHAVIOR_KEY, value, 'drop behavior')
   }
 
   const FLAT_SWATCHES = [1, 2, 3, 4, 5, 6].map((n) => `--ew-canvas-flat-${n}`)
