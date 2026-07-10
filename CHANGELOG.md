@@ -10,7 +10,7 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
-## [Unreleased]
+## [v0.21.0] — 2026-07-10 — the field-report build
 
 ### For testers
 - Fixed: board-pin names on Home (and every placement label) were a
