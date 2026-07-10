@@ -168,6 +168,20 @@ all moved into the RFC.
   already captured above), one-per-placement vs many, and the
   schema home (placement property vs anchored decoration). Needs
   an RFC section before build; migration number reserved at cut.
+  OUTLINE FACT-CHECK (2026-07-10, lead, against getOutlineTree /
+  queries-structure.ts:656): the outline surfaces ONLY canvases,
+  placed nodes (placement JOIN node), unplaced nodes, and loose
+  notes — DECORATIONS NEVER APPEAR, and they are absent from
+  search too. So the TEXT TOOL already has the no-registration
+  property alph wants (the owner's in-thread "the outline is
+  tracking everything so the text tool would just also be there"
+  was wrong); what paint lacks is BELONGING — attachment to the
+  image, search visibility, promotion. The caption is the text
+  tool growing a spine, not a new register. Named tension for the
+  session: a searchable caption is the app's first searchable-
+  but-not-outlined text — deliberate, but §11/§14 must say it out
+  loud (a search hit on a caption points at the IMAGE, implying
+  no tree location).
 
 - **The canonical projection (CONVERGED 2026-07-10, both Fables +
   owner; awaiting formal §11/§16 ratification at the strategy
