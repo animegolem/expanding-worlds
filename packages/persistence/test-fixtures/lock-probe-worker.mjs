@@ -6,7 +6,7 @@
 // A winner HOLDS the lock past every sibling's attempt so a fast release
 // cannot hand a second WIN to a loser — the probe asserts exactly one
 // winner is live per round.
-import { existsSync, writeFileSync } from 'node:fs'
+import { existsSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { setTimeout } from 'node:timers'
 
@@ -15,6 +15,14 @@ const { ProjectLock, ProjectLockedError } = await import('../dist/index.js')
 
 const staleAfterMs = Number(staleStr)
 const holdMs = Number(holdStr)
+
+function pathState(path) {
+  try {
+    return `present(ageMs=${Math.round(Date.now() - statSync(path).mtimeMs)})`
+  } catch (err) {
+    return `absent(${err?.code ?? 'unknown'})`
+  }
+}
 
 // Announce readiness, then spin until the parent drops the "go" file —
 // the parent only drops it once every worker is ready.
@@ -32,7 +40,10 @@ try {
   process.exit(0)
 } catch (err) {
   if (err instanceof ProjectLockedError) {
-    process.stdout.write('LOCKED\n')
+    process.stdout.write(
+      `LOCKED lock=${pathState(join(dir, 'project.lock'))} ` +
+        `guard=${pathState(join(dir, 'project.lock.reclaim'))}\n`,
+    )
     process.exit(3)
   }
   process.stdout.write(`ERR ${err?.stack ?? err}\n`)

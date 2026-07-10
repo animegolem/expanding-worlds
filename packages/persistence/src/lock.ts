@@ -44,7 +44,7 @@ export const LOCK_FILENAME = 'project.lock'
  * owner file. `mkdir` is atomic and single-winner on every filesystem, so
  * it grants at most one reclaimer the right to remove a stale owner file.
  */
-const RECLAIM_GUARD_DIRNAME = 'project.lock.reclaim'
+export const RECLAIM_GUARD_DIRNAME = 'project.lock.reclaim'
 
 /**
  * A reclaimer holds the guard for a handful of non-blocking syscalls
@@ -66,12 +66,13 @@ const RECLAIM_GUARD_STALE_MS = 10_000
 const UNREADABLE_GRACE_MS = 1_000
 
 /**
- * Bound the reclaim retry loop. Progress is guaranteed — the guard holder
- * always removes the corpse and releases, after which some `O_EXCL` create
- * wins — so contenders converge in a few iterations; the cap only stops a
- * pathological spin.
+ * A failed Windows unlink/rmdir can leak the reclaim guard. Retrying by a
+ * small attempt count then gives up before the guard's stale lease expires,
+ * so a stale corpse can leave every contender locked out. Keep retrying long
+ * enough to re-take one abandoned guard, with a small margin for the winning
+ * reclaimer to clear the owner file.
  */
-const MAX_ACQUIRE_ATTEMPTS = 200
+const RECLAIM_RETRY_WINDOW_MS = RECLAIM_GUARD_STALE_MS + 2_000
 
 export interface LockHolder {
   pid: number
@@ -117,7 +118,8 @@ export class ProjectLock {
     const guardPath = join(projectDir, RECLAIM_GUARD_DIRNAME)
     const token = crypto.randomUUID()
 
-    for (let attempt = 0; attempt < MAX_ACQUIRE_ATTEMPTS; attempt++) {
+    const retryDeadline = Date.now() + RECLAIM_RETRY_WINDOW_MS
+    for (let attempt = 0; Date.now() <= retryDeadline; attempt++) {
       // 1. Single-winner acquisition: O_EXCL create of the owner file.
       const now = new Date().toISOString()
       const payload: LockHolder = {
@@ -219,13 +221,7 @@ function reclaimUnderGuard(path: string, guardPath: string, staleAfterMs: number
     if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
     // Guard is held. If it is itself abandoned (a reclaimer crashed
     // mid-swap), steal it; mkdir re-arbitrates the retake next pass.
-    if (guardIsStale(guardPath)) {
-      try {
-        rmdirSync(guardPath)
-      } catch {
-        // Another stealer won, or the holder released; either is fine.
-      }
-    }
+    if (guardIsStale(guardPath)) removeGuard(guardPath)
     return false
   }
   try {
@@ -245,17 +241,45 @@ function reclaimUnderGuard(path: string, guardPath: string, staleAfterMs: number
     // judged (a confirmed corpse, or a durably-unreadable corrupt file).
     try {
       unlinkSync(path)
-    } catch {
-      // Already gone (released concurrently); the create race is open.
+      return true
+    } catch (err) {
+      // A concurrent release makes the O_EXCL create race open. A Windows
+      // EPERM/EBUSY leaves the owner in place, so reporting "cleared" here
+      // would burn the retry budget without making any progress.
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return true
+      if (isRetryableRemovalError(err)) return false
+      throw err
     }
-    return true
   } finally {
+    // A transient Windows EPERM may leave this guard behind. Its eventual
+    // stale takeover is safe, and acquire() waits through that lease.
+    removeGuard(guardPath)
+  }
+}
+
+/**
+ * Remove an empty reclaim guard without pretending a failed removal worked.
+ * A concurrent releaser/stealer is harmless (`ENOENT`); Windows may briefly
+ * reject a directory removal while its own handles drain, so give that a few
+ * jittered retries. Other filesystem failures are real and must surface.
+ */
+function removeGuard(guardPath: string): boolean {
+  for (let attempt = 0; attempt < 5; attempt++) {
     try {
       rmdirSync(guardPath)
-    } catch {
-      // Guard already stolen or removed; release is best-effort.
+      return true
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return true
+      if (!isRetryableRemovalError(err)) throw err
+      backoff(attempt)
     }
   }
+  return false
+}
+
+function isRetryableRemovalError(err: unknown): boolean {
+  const code = (err as NodeJS.ErrnoException).code
+  return code === 'EPERM' || code === 'EBUSY' || code === 'ENOTEMPTY'
 }
 
 function guardIsStale(guardPath: string): boolean {
