@@ -22,27 +22,37 @@ Windows-leg run 29063091560 (after the fsync fix cleared all 11
 export/import failures): three survivors, each needing real
 Windows-semantics work — retries alone did not cure them.
 
-1. **invariants.spec "persists command metadata across reopen" —
-   rm EPERM despite maxRetries.** A handle is genuinely held at
-   cleanup: the test reopens the service mid-test; audit whether
-   the REOPENED handle (or the raw `reader` Db) escapes the
-   afterEach close (a leak invisible on POSIX, blocking on
-   Windows).
-2. **project.test "releases the lock when opening fails after
-   acquisition" — rm EPERM.** The 227 guard closes the Db on
-   failure — verify the FAILED open's -wal/-shm sidecars and the
-   fault-injection artifact release their handles on Windows;
-   node:sqlite may hold mappings briefly after close.
-3. **lock-probe "exactly one live winner at staleAfterMs 0" —
-   round 2 produced ZERO winners** (not two — zero; single-writer
-   held, liveness failed). Hypothesis to verify first: a leaked
-   reclaim-guard dir from round 1 (its holder EPERM'd mid-swap on
-   Windows) blocks round 2's reclaim for RECLAIM_GUARD_STALE_MS
-   (10s) while contenders exhaust MAX_ACQUIRE_ATTEMPTS spinning
-   without sleep → everyone reports LOCKED. Check: does the
-   acquire retry loop sleep between attempts? Does guard
-   steal-then-remake handle EPERM on rmdir? Also verify
-   holderIsDead's kill(pid,0) semantics on Windows.
+CAUSES CONFIRMED by Codex source review (2026-07-10, supersedes
+the lead's initial hypotheses — two corrected with citations):
+
+1. **Definite test-handle leak** — invariants.spec.ts:571 opens a
+   SECOND Db mid-test to query command_log and never closes it;
+   Windows correctly refuses the fixture rm. Fix: close the
+   temporary reader explicitly.
+2. **Definite construction-path leak in PRODUCT code** —
+   `Db.open` (db.ts:28) creates `DatabaseSync`, then the initial
+   pragmas can throw BEFORE the wrapper exists; the raw connection
+   stays open (surfaced by the invalid-database test). Fix:
+   Db.open gets its own try/catch closing the raw handle before
+   rethrowing. (Also retires the 227 agent's flagged db.ts
+   close-idempotency debt — same family.)
+3. **Lock liveness defect, corrected diagnosis** — the acquire
+   loop ALREADY has 1-6ms jitter (lead's "unpaced" claim wrong);
+   the real flaw is `reclaimUnderGuard()` catching a failed
+   `unlinkSync` yet RETURNING SUCCESS — callers burn the
+   200-attempt budget with no progress signal; failed guard
+   removal is likewise suppressed, and a leaked guard's 10s
+   staleness window far exceeds the budget. Fix: model reclaim
+   outcomes honestly (failed unlink = retryable, never "cleared");
+   retry long enough to outlive a leaked-guard stale window;
+   diagnostics that dump lock/guard state on probe failure.
+   EXPLICITLY REJECTED: swallowing EPERM or shortening the stale
+   interval — no weakening of the protocol.
+4. **Stale-guard liveness regression test** joins the suite; done
+   requires THREE consecutive green Windows-leg runs.
+
+The Windows runner's duplicate src/dist failures are the same two
+cleanup roots, not extra defects.
 
 Done means the Windows leg (branch ci/windows-leg) runs green and
 merges to main, closing AI-IMP-242's last item — with each
