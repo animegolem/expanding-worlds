@@ -36,6 +36,10 @@ where users look for it.
 
 ### Out of Scope
 
+- OWNER RULING 2026-07-09: build the FUNCTIONAL surface now — plain
+  kit presentation, no bespoke visuals; the boards-being-born design
+  push (DESIGN-GAPS) restyles later. Do not wait on drawings.
+
 - Any schema/invariant change (none needed — this composes
   existing commands: CreateNode/name path + CreateCanvas +
   CreatePlacement).
