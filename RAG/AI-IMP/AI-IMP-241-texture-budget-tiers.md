@@ -6,11 +6,12 @@ tags:
   - spike
   - performance
   - canvas
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.6
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -66,12 +67,12 @@ texture-budget-tiers.md`, this ticket.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Tiering mode in the harness; ladder + eviction + re-acquire
+- [x] Tiering mode in the harness; ladder + eviction + re-acquire
       instrumented.
-- [ ] Both modes × 100/300/500 measured in Chromium; table in the
+- [x] Both modes × 100/300/500 measured in Chromium; table in the
       report.
-- [ ] Verdict vs the named budget + engine-seam list.
-- [ ] Repo untouched outside spike/ + report + this ticket.
+- [x] Verdict vs the named budget + engine-seam list.
+- [x] Repo untouched outside spike/ + report + this ticket.
 
 ### Acceptance Criteria
 
@@ -88,3 +89,66 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **Verdict: ACQUIT, decisively.** Tiered 500 images = **~136 MB peak
+  resident** vs the `off` baseline **4498 MB** — an order of magnitude
+  under the 1.5 GB target. Peak resident came out **decoupled from
+  board size** (151 / 146 / 136 MB at 100 / 300 / 500), governed by the
+  on-screen working set, not the hoard. Full report + mode×size table +
+  engine-seam list in `RAG/spike-reports/texture-budget-tiers.md`.
+
+- **Additive to the 217 harness (sibling-copy safe):** all tier logic
+  is a NEW module `spike/webkit-renderer/src/tiering.ts`
+  (`TieredTextureBudget`) + a NEW driver `sweep-tiers.mjs`; existing
+  files got flag-only edits (`?mode=/&budget=` query + UI dropdown in
+  `main.ts`/`index.html`, one additive export in `textures.ts`). The
+  `off` path — what the Tauri sibling copies — is byte-for-byte the 217
+  baseline. `packages/**` untouched.
+
+- **Swap-latency bug caught mid-spike:** the first run reported
+  `swapWorstMs = 0` because the completion timestamp reused the
+  request-time `now` (measuring request→request-detection ≈ 0). Fixed to
+  stamp `performance.now()` when the higher tier actually lands
+  on-screen; re-ran. Honest worst was then 5.5 ms (100 imgs) to ~120 ms
+  (500 imgs) — but that tail is **load-inflated** (see below).
+
+- **Measurement environment (LOAD-SUPPRESSED frame times):** ~10 sibling
+  agents were building/testing on the same M1 Pro during the sweep —
+  `loadavg` 104–131 on 10 cores. Per the coordinator note, `loadavg` is
+  recorded beside every row and **fps/p95/p99/long rows are marked
+  LOAD-SUPPRESSED** (undercount headroom; lead to re-run quiet before any
+  frame-rate verdict). `swapWorstMs` is likewise **load-inflated** (it
+  includes CPU-bound `createImageBitmap` resizing). **`peakResidentBytes`
+  and `tierHistogram` are load-insensitive and are the decisive,
+  trusted output.**
+
+- **Owner focus-steal fix applied:** driver launches headed Chrome
+  parked off-screen (`--window-position=4000,200`) and never calls
+  `bringToFront`. Validated silence keeps numbers honest — `gl.renderer`
+  stayed real `ANGLE Metal Renderer: Apple M1 Pro`, mean fps 85–118 (no
+  ~1 Hz background-throttle), thanks to the 217 throttling-disable flags.
+
+- **The LRU byte-budget eviction was implemented but NOT stressed:** the
+  rendered-px cap alone kept peak resident at ~9% of the 1536 MB budget,
+  so the eviction backstop never fired in these scenes. It remains
+  necessary for pathological cases (a wall of images all at full res)
+  and should ship with the engine landing, validated separately.
+
+- **Full-res re-acquire path exercised but rarely demanded at density:**
+  at 100 images 8% of observations reached the 1024 tier and 0.4% full;
+  at 500 images 96% sat at the 256 floor and `full` was effectively never
+  demanded — because even the sweep's closest zoom keeps ~320-world
+  images at ≤512 device px on a dense board. A genuine finding, not a
+  gap: the memory a board needs is set by on-screen legible-size working
+  set, which is small and roughly constant.
+
+- **Visual cost: none at steady state** (off vs tiered screenshots at an
+  identical mid-zoom viewport are indistinguishable — same crispness,
+  1191 MB vs 75 MB live), because the ladder only ever caps a texture at
+  a tier ≥ its rendered size. Transient one-rung softening during an
+  active zoom-in only. DPR factor is load-bearing for tier selection
+  (interacts with §195 crispness — flagged in the report, out of scope).
+
+- **Validation run:** `pnpm -r build` green; harness `npx tsc --noEmit`
+  clean; `vite build` green (769 modules); both-mode × three-size sweep
+  emitted valid JSON with real-GPU `gl.renderer` on every row.

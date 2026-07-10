@@ -72,6 +72,14 @@ function paintCanvas(hash: string): HTMLCanvasElement {
   return canvas
 }
 
+/** AI-IMP-241: the full-res source canvas for a synthetic asset, exposed
+ * so the tier ladder can downscale from it (createImageBitmap resize).
+ * Additive — loadSyntheticTexture below is unchanged (the off-mode /
+ * sibling-copy path). */
+export function renderAssetCanvas(url: string): HTMLCanvasElement {
+  return paintCanvas(url)
+}
+
 /** Host texture loader handed to the engine's RendererResources /
  * TextureBudget. Matches host.ts: decode off the canvas, mipmaps on. */
 export async function loadSyntheticTexture(url: string): Promise<Texture> {

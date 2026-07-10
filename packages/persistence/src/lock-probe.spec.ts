@@ -47,7 +47,7 @@ beforeAll(async () => {
 })
 
 afterAll(() => {
-  rmSync(bundleDir, { recursive: true, force: true })
+  rmSync(bundleDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 /** A guaranteed-dead same-host pid: a child that has already exited. */
@@ -82,7 +82,12 @@ function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promi
     proc.stdout.on('data', (c: Buffer) => (out += c.toString()))
     proc.stderr.on('data', (c: Buffer) => (err += c.toString()))
     proc.on('error', reject)
-    proc.on('exit', () => {
+    // `exit` can arrive before the stdout/stderr pipes finish draining.
+    // Under Linux CI's 16-process contention burst that raced this callback
+    // ahead of a worker's final WIN/LOCKED write, producing a false empty
+    // outcome. `close` follows stream closure, so it is the first point at
+    // which the collected protocol line is authoritative.
+    proc.on('close', () => {
       const line = out.trim().split('\n').pop() ?? ''
       if (line === 'WIN' || line === 'LOCKED') resolve(line)
       else reject(new Error(`worker produced "${out.trim()}" (stderr: ${err.trim()})`))
@@ -109,7 +114,7 @@ async function runRound(dir: string, staleAfterMs: number, deadPid: number): Pro
     writeFileSync(join(barrierDir, 'go'), '')
     return (await outcomes).filter((o) => o === 'WIN').length
   } finally {
-    rmSync(barrierDir, { recursive: true, force: true })
+    rmSync(barrierDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 }
 
@@ -126,7 +131,7 @@ describe('single-writer lock under multi-process contention (AI-IMP-226 / CA-001
             expect(winners, `round ${round} at staleAfterMs ${staleAfterMs}`).toBe(1)
           }
         } finally {
-          rmSync(dir, { recursive: true, force: true })
+          rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
         }
       },
       120_000,

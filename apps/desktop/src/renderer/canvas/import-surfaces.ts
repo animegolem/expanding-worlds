@@ -107,14 +107,28 @@ async function createImagePin(
 ): Promise<{ nodeId: string; placementId: string } | null> {
   const nodeId = uuidv7()
   const placementId = uuidv7()
-  const result = await host.gateway.execute('CreatePin', {
-    nodeId,
-    canvasId,
-    placementId,
-    x: world.x,
-    y: world.y,
-    appearance: { kind: 'image', assetId, crop: null },
-  })
+  // checkRevision off (AI-IMP-238, per the gateway's standing
+  // inter-instance rule): the importAsset that just resolved committed
+  // CommitAssetImport inside the UTILITY process, bumping the project
+  // revision out of band — the gateway learns it only via the ASYNC
+  // project-changed push. When that push loses the race to this
+  // CreatePin, the optimistic check false-conflicts and the file
+  // reports "failed" with its asset committed but pinless (the batch
+  // flake's root cause, convicted deterministically). This CreatePin
+  // creates only fresh-id records, so a stale project revision is
+  // never a real conflict for it.
+  const result = await host.gateway.execute(
+    'CreatePin',
+    {
+      nodeId,
+      canvasId,
+      placementId,
+      x: world.x,
+      y: world.y,
+      appearance: { kind: 'image', assetId, crop: null },
+    },
+    { checkRevision: false },
+  )
   if (result.status !== 'committed') {
     onError(describeFailure('CreatePin', result))
     return null
@@ -290,17 +304,29 @@ async function applyDropChoice(
     }
     if (placementIds.length === 0) return
     const wanted = new Set(placementIds)
-    const readItems = async (): Promise<SceneItem[]> => {
-      await host.waitForItems(placementIds)
+    const readItems = async (): Promise<SceneItem[] | null> => {
+      // AI-IMP-232 (CA-007): bounded — if the imports never apply, STOP
+      // (null) rather than sort/frame an empty read.
+      if (!(await host.waitForItems(placementIds))) return null
       return host.controller.items().filter((item) => wanted.has(item.id))
     }
     let items = await readItems()
+    if (items === null) return
     if (wantSort) {
       const arrange = arrangePayload(canvasId, items, 'default', { origin: world })
       if (arrange) {
-        await host.gateway.execute('TransformContent', arrange)
+        // Fail-stop: the arrange result used to be ignored and then a
+        // BARE whenSceneApplied() awaited the next unqualified refresh —
+        // a failed transform hung the import and its undo group forever
+        // (CA-007). Inspect, surface, and stop on refusal; otherwise
+        // wait for the scene to reflect THIS transform's revision.
+        const arranged = await host.gateway.execute('TransformContent', arrange)
+        if (arranged.status !== 'committed') {
+          onError(describeFailure('TransformContent', arranged))
+          return
+        }
         // Read the packed geometry so a frame wraps the tiled block.
-        await host.whenSceneApplied()
+        await host.whenSceneApplied({ revision: arranged.revision })
         items = host.controller.items().filter((item) => wanted.has(item.id))
       }
     }
@@ -309,10 +335,11 @@ async function applyDropChoice(
       if (region) {
         const framePlacementId = await host.commitFrame(region)
         if (framePlacementId) {
-          await host.gateway.execute('CaptureInFrame', {
+          const captured = await host.gateway.execute('CaptureInFrame', {
             framePlacementId,
             memberPlacementIds: placementIds,
           })
+          if (captured.status !== 'committed') onError(describeFailure('CaptureInFrame', captured))
         }
       }
     }

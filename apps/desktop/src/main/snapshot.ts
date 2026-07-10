@@ -61,10 +61,47 @@ const IDLE_MS = (() => {
   return Number.isFinite(n) && n >= 0 ? n : 10 * 60 * 1000
 })()
 
+/** A `.git/index.lock` older than this is an orphan from an abandoned
+ * commit (safe to sweep); a younger one may be a LIVE git operation and
+ * defers the snapshot instead (AI-IMP-218). ~10 min is generous over any
+ * real commit — even a first-ever multi-GB one finishes well inside it —
+ * so an orphan always ages past the gate. */
+const STALE_LOCK_MS = 10 * 60 * 1000
+
 /** The lock/heartbeat, WAL/journal sidecars, and regenerable
  * derivative/cache trees never belong in history — a snapshot commits
- * project.sqlite (checkpointed), assets/, and notes/ only. */
-const GITIGNORE_BODY = `# Expanding Worlds — session snapshots (RFC-0001 §11.4)
+ * project.sqlite (checkpointed), assets/, and notes/ only.
+ *
+ * The block is delimited by explicit BEGIN/END sentinels carrying a
+ * version (AI-IMP-223 / Sol CA-010): {@link seedGitignore} rewrites the
+ * managed block in place when it finds an older version, so EXISTING
+ * projects gain new exclusions — a template edit alone left them
+ * unmigrated because the old seed early-returned on the marker. Bump
+ * {@link GITIGNORE_VERSION} whenever the managed lines change. */
+const GITIGNORE_VERSION = 'v2'
+const GITIGNORE_BEGIN = `# >>> Expanding Worlds — session snapshots (managed ${GITIGNORE_VERSION}) >>>`
+const GITIGNORE_END = '# <<< Expanding Worlds — session snapshots (managed) <<<'
+const GITIGNORE_BODY = `${GITIGNORE_BEGIN}
+# RFC-0001 §11.4 — regenerated on every seed; edit ABOVE or BELOW the
+# markers, never between them (this block is rewritten on version bump).
+# The single-writer lock + heartbeat.
+project.lock
+# SQLite sidecars: the WAL is truncated into project.sqlite at every
+# snapshot, so only the sealed .sqlite is committed.
+project.sqlite-wal
+project.sqlite-shm
+project.sqlite-journal
+# Regenerable — thumbnails rebuild lazily, staging is transient.
+derivatives/
+cache/
+${GITIGNORE_END}
+`
+
+/** The v1 managed block (no sentinels) as older projects carry it, for
+ * detection and one-time replacement during migration. Its first line
+ * is also the substring that identifies an unmigrated block. */
+const GITIGNORE_V1_MARKER = '# Expanding Worlds — session snapshots (RFC-0001 §11.4)'
+const GITIGNORE_BODY_V1 = `# Expanding Worlds — session snapshots (RFC-0001 §11.4)
 # The single-writer lock + heartbeat.
 project.lock
 # SQLite sidecars: the WAL is truncated into project.sqlite at every
@@ -77,7 +114,28 @@ derivatives/
 cache/
 `
 
-const GITIGNORE_MARKER = '# Expanding Worlds — session snapshots'
+/** The ONLY top-level entries a snapshot commits (RFC-0001 §11.2 +
+ * §11.4): the checkpointed database, the readable notes tree, the
+ * content-addressed originals, and the managed ignore file itself.
+ * Staged explicitly instead of via `git add -A` (Sol CA-010) — the
+ * blanket add could sweep an in-progress export's staging or any stray a
+ * tool/stopgap dropped in the project dir into history, duplicating the
+ * whole project inside its own backup. */
+const SNAPSHOT_ALLOWLIST = ['project.sqlite', 'notes', 'assets', '.gitignore'] as const
+
+/** Top-level entries that legitimately exist beside the allowlist and
+ * must be neither committed (they are gitignored) nor flagged as strays:
+ * the git dir, the lock, the SQLite sidecars, and the regenerable
+ * derivative/cache trees. Anything ELSE is logged as unexpected. */
+const SNAPSHOT_EXPECTED_UNCOMMITTED = new Set([
+  '.git',
+  'project.lock',
+  'project.sqlite-wal',
+  'project.sqlite-shm',
+  'project.sqlite-journal',
+  'derivatives',
+  'cache',
+])
 
 export interface SnapshotDeps {
   /** Round-trips a request through main → utility → project service. */
@@ -177,15 +235,27 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   function seedGitignore(dir: string): void {
     const path = join(dir, '.gitignore')
     try {
-      if (existsSync(path)) {
-        // Respect a user-authored ignore; append our block once.
-        const existing = readFileSync(path, 'utf8')
-        if (existing.includes(GITIGNORE_MARKER)) return
-        const sep = existing.endsWith('\n') ? '\n' : '\n\n'
-        writeFileSync(path, existing + sep + GITIGNORE_BODY, 'utf8')
+      if (!existsSync(path)) {
+        writeFileSync(path, GITIGNORE_BODY, 'utf8')
         return
       }
-      writeFileSync(path, GITIGNORE_BODY, 'utf8')
+      const existing = readFileSync(path, 'utf8')
+      // Already carries the CURRENT managed block — nothing to do.
+      if (existing.includes(GITIGNORE_BEGIN)) return
+      // An older managed block (v1: no sentinels) — rewrite it in place
+      // so EXISTING projects gain the versioned exclusions (Sol CA-010).
+      if (existing.includes(GITIGNORE_V1_MARKER)) {
+        // Strip the exact v1 body wherever it sits (whole-file, or
+        // appended after user-authored content), collapse the seam, and
+        // re-append the current block; user lines outside it are kept.
+        let userPart = existing.split(GITIGNORE_BODY_V1).join('')
+        userPart = userPart.replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '')
+        writeFileSync(path, userPart.length === 0 ? GITIGNORE_BODY : `${userPart}\n\n${GITIGNORE_BODY}`, 'utf8')
+        return
+      }
+      // Purely user-authored — append our block once.
+      const sep = existing.endsWith('\n') ? '\n' : '\n\n'
+      writeFileSync(path, existing + sep + GITIGNORE_BODY, 'utf8')
     } catch (err) {
       console.error('[snapshot] failed to seed .gitignore:', err)
     }
@@ -214,25 +284,58 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   /** A quit that abandons an in-flight `git add`/`commit` (the ritual
    * is time-bounded; a first-ever multi-GB commit can exceed it) orphans
    * `.git/index.lock`, after which every later snapshot fails with only a
-   * logged error — the worst failure mode for a backup. The engine
-   * serializes its OWN git ops and the project dir is app-managed, so a
-   * lock present at snapshot start is stale by construction: sweep it
-   * (carried from the AI-IMP-120 review). */
-  function sweepStaleIndexLock(dir: string): void {
+   * logged error — the worst failure mode for a backup.
+   *
+   * AI-IMP-120's original rationale — "the engine serializes its OWN git
+   * ops and the project dir is app-managed, so a lock at snapshot start
+   * is stale by construction" — holds ONLY while nothing external touches
+   * the repo. But snapshot-push invites exactly that: a user inspecting
+   * the backup repo, a GUI git tool pointed at it. Sweeping a LIVE lock
+   * would permit a concurrent index write — corruption in the one place
+   * it must never reach (AI-IMP-218). So the sweep is AGE-GATED: a lock
+   * older than {@link STALE_LOCK_MS} is an orphan (an abandoned commit
+   * ages well past it) and is swept; a YOUNGER lock DEFERS this snapshot
+   * (returns false — the next episode retries once it ages out). The lead
+   * ruled the age-gate plus its documented RESIDUAL RISK acceptable: a
+   * genuinely wedged lock younger than the threshold stalls backups for
+   * up to STALE_LOCK_MS before it ages past the gate and is swept — a
+   * bounded delay, traded against ever corrupting the backup index.
+   * Returns true when the index is free to use, false to defer. */
+  function sweepStaleIndexLock(dir: string): boolean {
     const lock = join(dir, '.git', 'index.lock')
-    if (!existsSync(lock)) return
+    let mtimeMs: number
+    try {
+      mtimeMs = statSync(lock).mtimeMs
+    } catch {
+      return true // no lock (ENOENT) — the index is free
+    }
+    if (Date.now() - mtimeMs < STALE_LOCK_MS) {
+      console.warn(
+        '[snapshot] .git/index.lock present and fresh; deferring this snapshot ' +
+          '(an external git operation may hold it — the next episode retries)',
+      )
+      return false
+    }
     try {
       rmSync(lock)
       console.warn('[snapshot] removed a stale .git/index.lock before committing')
+      return true
     } catch (err) {
+      // Could not clear it — defer rather than commit against a lock we
+      // do not control.
       console.error('[snapshot] failed to remove stale index.lock:', err)
+      return false
     }
   }
 
-  async function ensureGitReady(dir: string): Promise<void> {
+  /** Prepare the repo and report whether a commit may proceed. A fresh
+   * index.lock returns false — the caller logs a skipped episode and the
+   * next snapshot retries (AI-IMP-218). */
+  async function ensureGitReady(dir: string): Promise<boolean> {
     seedGitignore(dir)
-    if (existsSync(join(dir, '.git'))) sweepStaleIndexLock(dir)
-    if (!existsSync(join(dir, '.git'))) {
+    if (existsSync(join(dir, '.git'))) {
+      if (!sweepStaleIndexLock(dir)) return false
+    } else {
       await git(dir, ['init', '-q'])
       // A stable default branch name regardless of the machine's
       // init.defaultBranch.
@@ -251,6 +354,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     // Never let a machine-global commit.gpgsign wedge an unattended
     // snapshot on a passphrase prompt.
     await git(dir, ['config', 'commit.gpgsign', 'false']).catch(() => undefined)
+    return true
   }
 
   function commitMessage(trigger: SnapshotTrigger, notes: number, assets: number): string {
@@ -262,17 +366,49 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     } — ${when}`
   }
 
+  /** Log — never commit — anything in the project dir outside the
+   * allowlist and the known regenerable/ignored set. A stray here means a
+   * tool or a bug dropped a file among the managed contents; surfacing it
+   * (rather than silently sweeping it into history via `git add -A`) is
+   * the point of the allowlist (Sol CA-010). Best-effort. */
+  function logUnexpectedEntries(dir: string): void {
+    let names: string[]
+    try {
+      names = readdirSync(dir)
+    } catch {
+      return
+    }
+    const allow = new Set<string>(SNAPSHOT_ALLOWLIST)
+    const unexpected = names.filter(
+      (n) => !allow.has(n) && !SNAPSHOT_EXPECTED_UNCOMMITTED.has(n),
+    )
+    if (unexpected.length > 0) {
+      console.warn(
+        `[snapshot] unexpected project entries left uncommitted: ${unexpected.join(', ')}`,
+      )
+    }
+  }
+
   async function commitIfChanged(
     dir: string,
     trigger: SnapshotTrigger,
     notes: number,
     assets: number,
   ): Promise<void> {
-    await git(dir, ['add', '-A'])
+    // Stage EXACTLY the allowlist, never `git add -A`. Passing each path
+    // as a pathspec still records additions, modifications, AND deletions
+    // of tracked files under it (a removed note/asset commits), but leaves
+    // strays and staging untouched (Sol CA-010).
+    const present = SNAPSHOT_ALLOWLIST.filter((entry) => existsSync(join(dir, entry)))
+    if (present.length > 0) await git(dir, ['add', '--', ...present])
+    logUnexpectedEntries(dir)
     // Empty-diff guard: a checkpoint with nothing new since the last
-    // snapshot creates NO commit (RFC-0001 §11.4).
-    const status = await git(dir, ['status', '--porcelain'])
-    if (status.trim().length === 0) return
+    // snapshot creates NO commit (RFC-0001 §11.4). Measured on the STAGED
+    // set only — an untracked stray must neither be committed nor provoke
+    // an empty `git commit` (which exits non-zero and logs a false
+    // failure), which a `git status --porcelain` check would have.
+    const staged = await git(dir, ['diff', '--cached', '--name-only'])
+    if (staged.trim().length === 0) return
     await git(dir, ['commit', '-q', '-m', commitMessage(trigger, notes, assets)])
   }
 
@@ -397,7 +533,10 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     if (!enabled || !hasGit) return
 
     const dir = deps.projectDir()
-    await ensureGitReady(dir)
+    // A fresh .git/index.lock (a possible LIVE external git op) defers
+    // this snapshot — a logged skip; the next episode retries once the
+    // lock ages out (AI-IMP-218).
+    if (!(await ensureGitReady(dir))) return
     await commitIfChanged(dir, trigger, notes, assets)
 
     // §11.4 remote push (AI-IMP-122): commit-push mode with a configured

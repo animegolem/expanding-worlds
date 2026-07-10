@@ -44,12 +44,17 @@ export function requireDecoration(ctx: CommandContext, decorationId: string): De
   return row
 }
 
-/** §4.9: anchors are a connector capability referencing placements. */
+/** §4.9: anchors are a connector capability referencing placements.
+ * `canvasId` is the decoration's own (stored, never payload-claimed)
+ * canvas — an anchor is only valid if the placement lives on that
+ * same canvas (CA-012: the scene has no way to draw a cross-canvas
+ * anchor, so authoritative state must refuse to hold one). */
 function validateAnchor(
   ctx: CommandContext,
   kind: string,
   placementId: string | null | undefined,
   which: 'start' | 'end',
+  canvasId: string,
 ): void {
   if (placementId === null || placementId === undefined) return
   if (kind !== 'connector') {
@@ -58,8 +63,8 @@ function validateAnchor(
       `only connector decorations may anchor endpoints (got kind "${kind}")`,
     )
   }
-  const placement = ctx.db.get<{ id: string }>(
-    `SELECT id FROM placement
+  const placement = ctx.db.get<{ id: string; canvas_id: string }>(
+    `SELECT id, canvas_id FROM placement
      WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
     placementId,
     ctx.projectId,
@@ -69,6 +74,13 @@ function validateAnchor(
       anchor: which,
       placementId,
     })
+  }
+  if (placement.canvas_id !== canvasId) {
+    throw new DomainError(
+      'VALIDATION_FAILED',
+      `anchor placement ${placementId} is on a different canvas than the decoration`,
+      { anchor: which, placementId, placementCanvasId: placement.canvas_id, canvasId },
+    )
   }
 }
 
@@ -91,8 +103,8 @@ export function insertDecoration(ctx: CommandContext, payload: CreateDecorationP
     ctx.projectId,
   )
   if (!canvas) throw new DomainError('CANVAS_NOT_FOUND', `no active canvas ${payload.canvasId}`)
-  validateAnchor(ctx, payload.kind, payload.anchorStartPlacementId, 'start')
-  validateAnchor(ctx, payload.kind, payload.anchorEndPlacementId, 'end')
+  validateAnchor(ctx, payload.kind, payload.anchorStartPlacementId, 'start', payload.canvasId)
+  validateAnchor(ctx, payload.kind, payload.anchorEndPlacementId, 'end', payload.canvasId)
   if (payload.groupId !== undefined && payload.groupId !== null) {
     const group = ctx.db.get<{ id: string }>(
       'SELECT id FROM decoration_group WHERE id = ? AND canvas_id = ?',
@@ -184,13 +196,17 @@ export function registerDecorationHandlers(registry: CommandRegistry<CommandCont
       priorSet.hidden = prior.hidden === 1
     }
     if (set.anchorStartPlacementId !== undefined) {
-      validateAnchor(ctx, prior.kind, set.anchorStartPlacementId, 'start')
+      // Validate against the decoration's stored canvas (prior.canvas_id),
+      // never a payload claim — UpdateDecorationPayload carries no
+      // canvasId, but re-anchoring must still be pinned to where the
+      // decoration actually lives (CA-012).
+      validateAnchor(ctx, prior.kind, set.anchorStartPlacementId, 'start', prior.canvas_id)
       assignments.push('anchor_start_placement_id = ?')
       params.push(set.anchorStartPlacementId)
       priorSet.anchorStartPlacementId = prior.anchor_start_placement_id
     }
     if (set.anchorEndPlacementId !== undefined) {
-      validateAnchor(ctx, prior.kind, set.anchorEndPlacementId, 'end')
+      validateAnchor(ctx, prior.kind, set.anchorEndPlacementId, 'end', prior.canvas_id)
       assignments.push('anchor_end_placement_id = ?')
       params.push(set.anchorEndPlacementId)
       priorSet.anchorEndPlacementId = prior.anchor_end_placement_id

@@ -26,7 +26,7 @@ describe('fresh database', () => {
 
   afterEach(() => {
     project.close()
-    rmSync(dir, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('creates the rebuilt bookmark table with the target-kind seam', () => {
@@ -99,7 +99,7 @@ describe('existing database (schema 3 with legacy placeholder rows)', () => {
 
   afterEach(() => {
     db.close()
-    rmSync(dir, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('carries rows over: name→label, created_at order, GAP-spaced keys', () => {

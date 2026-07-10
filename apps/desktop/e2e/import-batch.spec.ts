@@ -105,8 +105,55 @@ function uniqueFiles(from: number, count: number): BatchFile[] {
   }))
 }
 
+/**
+ * AI-IMP-238 diagnostic capture: every import failure funnels through
+ * the surfaces' onError, but the count alone ("1 failed") never names
+ * the cause. Wrap the two IPC calls a batch task makes — importAsset
+ * (stage/sniff/hash/commit) and execute (CreatePin) — and record any
+ * non-success so a failed batch reports the ACTUAL error, not a bare
+ * count. Installed after launch, drained by capturedFailures().
+ */
+function installFailureCapture(win: Page): Promise<void> {
+  return win.evaluate(() => {
+    const w = window as unknown as {
+      __ewImportFailures?: string[]
+      ew: {
+        project: {
+          importAsset: (input: unknown) => Promise<{ ok: boolean; message?: string }>
+          execute: (envelope: { commandType?: string }) => Promise<{ status: string; message?: string; code?: string }>
+        }
+      }
+    }
+    w.__ewImportFailures = []
+    const failures = w.__ewImportFailures
+    const realImport = w.ew.project.importAsset.bind(w.ew.project)
+    w.ew.project.importAsset = async (input) => {
+      const res = await realImport(input)
+      if (!res.ok) failures.push(`importAsset !ok: ${res.message ?? '(no message)'}`)
+      return res
+    }
+    const realExecute = w.ew.project.execute.bind(w.ew.project)
+    w.ew.project.execute = async (envelope) => {
+      const res = await realExecute(envelope)
+      if (res.status !== 'committed') {
+        failures.push(
+          `${envelope.commandType ?? '(cmd)'} ${res.status}: ${res.code ?? ''} ${res.message ?? ''}`.trim(),
+        )
+      }
+      return res
+    }
+  })
+}
+
+function capturedFailures(win: Page): Promise<string[]> {
+  return win.evaluate(
+    () => (window as unknown as { __ewImportFailures?: string[] }).__ewImportFailures ?? [],
+  )
+}
+
 test('batch strip: threshold, live dedupe count, second drop queues (§14.4)', async () => {
   const { app, win } = await launchApp('ew-e2e-import-batch-')
+  await installFailureCapture(win)
 
   // -- ≤ threshold: the quiet small-drop path is unchanged — no
   // strip, no summary toast, just the placed pins.
@@ -145,6 +192,9 @@ test('batch strip: threshold, live dedupe count, second drop queues (§14.4)', a
   await allowImports(win, 'all')
   await expect(win.getByTestId('import-progress-strip')).toHaveCount(0, { timeout: 15_000 })
   await expect(win.getByTestId('import-summary')).toBeVisible()
+  // AI-IMP-238: no import may drop under burst. If one did, name it —
+  // the captured onError is the verdict, not the bare "N failed" count.
+  expect(await capturedFailures(win), 'an import failed under batch burst').toEqual([])
   await expect(win.getByTestId('import-summary')).toContainText(
     'Import finished: 9 imported · 3 deduplicated',
   )
@@ -155,6 +205,7 @@ test('batch strip: threshold, live dedupe count, second drop queues (§14.4)', a
 
 test('cancel mid-run keeps committed imports and reports skipped (§14.4)', async () => {
   const { app, win } = await launchApp('ew-e2e-import-cancel-')
+  await installFailureCapture(win)
 
   // Two files may start; the pump then waits at the gate — a stable
   // mid-run point for the ✕ click.
@@ -166,6 +217,9 @@ test('cancel mid-run keeps committed imports and reports skipped (§14.4)', asyn
   await win.getByTestId('import-progress-cancel').click()
   await expect(win.getByTestId('import-progress-strip')).toHaveCount(0, { timeout: 10_000 })
   await expect(win.getByTestId('import-summary')).toBeVisible()
+  // AI-IMP-238: the two allowed files must both land; a failure here
+  // names its actual cause instead of a bare count.
+  expect(await capturedFailures(win), 'an import failed under batch burst').toEqual([])
   await expect(win.getByTestId('import-summary')).toContainText(
     'Import cancelled: 2 imported · 6 skipped',
   )

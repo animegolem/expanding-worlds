@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -38,8 +39,8 @@ beforeEach(() => {
 
 afterEach(() => {
   service.close()
-  rmSync(dir, { recursive: true, force: true })
-  rmSync(outDir, { recursive: true, force: true })
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  rmSync(outDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 /** Reach the live connection the way the service's own modules do —
@@ -375,6 +376,36 @@ describe('exportProject (§16, container rev 0.57)', () => {
     // ...and no partial sibling survived the failure.
     const strays = readdirSync(outDir).filter((f) => f.startsWith('backup.ewproj.partial'))
     expect(strays).toEqual([])
+  })
+
+  it('two concurrent exports both produce valid archives — no shared staging (AI-IMP-223)', async () => {
+    seedAsset(Buffer.from('concurrent export media that must survive both runs'))
+    const destA = join(outDir, 'concurrent-a.ewproj')
+    const destB = join(outDir, 'concurrent-b.ewproj')
+
+    // Separate live connections so the two exports interleave; per-request
+    // OS-temp staging (mkdtemp) means neither can rm+recreate the other's
+    // frozen copy — the shared `.tmp-export` clobber this ticket kills.
+    const dbA = Db.open(join(dir, 'project.sqlite'))
+    const dbB = Db.open(join(dir, 'project.sqlite'))
+    try {
+      await Promise.all([
+        exportProject({ db: dbA, dir }, destA, { activeOnly: false }),
+        exportProject({ db: dbB, dir }, destB, { activeOnly: false }),
+      ])
+    } finally {
+      dbA.close()
+      dbB.close()
+    }
+
+    // Both archives pass exportProject's own manifest verification AND
+    // re-import cleanly end to end — the loser of a shared-staging clobber
+    // would have been truncated and refused here.
+    await expect(importProject(destA, join(outDir, 'reimport-a'))).resolves.toBeTruthy()
+    await expect(importProject(destB, join(outDir, 'reimport-b'))).resolves.toBeTruthy()
+
+    // Staging left nothing behind in the PROJECT dir — it lives in OS temp.
+    expect(existsSync(join(dir, '.tmp-export'))).toBe(false)
   })
 
   it('estimates source size by stat and fails loudly on a missing blob', async () => {

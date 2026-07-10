@@ -19,6 +19,11 @@ implementation ticket.*
 > belongs to rather than earning its own doc. Prototypes like the
 > Pin & Menu Motion Prototype remain the format for anything that
 > moves.
+>
+> **The worklist:** `LIFECYCLE-INVENTORY.md` (beside this file) is
+> the full 40-lifecycle code sweep — graded COMPLETE/FUNCTIONAL/
+> BROKEN-ARC/UNDESIGNED, holes cited file:line, top-10 ranked. The
+> document of actions draws that list down: BROKEN-ARC first.
 
 Dear design session,
 

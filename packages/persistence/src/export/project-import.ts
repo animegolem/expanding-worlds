@@ -5,6 +5,12 @@ import yauzl from 'yauzl'
 import { Db } from '../db'
 import { blobRelativePath } from '../import/store'
 import { LATEST_SCHEMA_VERSION } from '../migrations/index'
+import {
+  checkEntryDeclaredSize,
+  IMPORT_LIMITS,
+  isFiniteNonNegativeInteger,
+  type ImportLimits,
+} from './import-limits'
 import { DB_ENTRY, MANIFEST_ENTRY, parseManifest, type ExportManifest } from './manifest'
 
 /**
@@ -47,16 +53,58 @@ interface OpenZip {
 
 /** Read the full central directory once; every lookup after this is
  * by name. Rejects duplicate entry names outright (a crafted archive
- * could otherwise shadow a verified file with an unverified twin). */
-function openArchive(path: string): Promise<OpenZip> {
+ * could otherwise shadow a verified file with an unverified twin).
+ *
+ * CA-011: the central directory is attacker-declared, so every budget
+ * we can check from it is checked HERE, during the scan, before the
+ * entry map is fully built and before a single byte extracts — entry
+ * count, per-entry uncompressed size, compression ratio, and the
+ * running aggregate. The first violation aborts the scan; nothing has
+ * touched disk. `validateEntrySizes` (yauzl default true) additionally
+ * asserts the local-header sizes agree with the central directory as
+ * each entry inflates, and the importer stream-counts on top of that. */
+function openArchive(path: string, limits: ImportLimits): Promise<OpenZip> {
   return new Promise((resolve, reject) => {
     // autoClose:false — the default closes the fd when the entry scan
     // ends, killing every later openReadStream; we close explicitly.
     yauzl.open(path, { lazyEntries: true, autoClose: false }, (err, zip) => {
       if (err || !zip) return reject(refuse('BAD_ARCHIVE', 'not a readable .ewproj archive'))
       const entries = new Map<string, yauzl.Entry>()
+      let count = 0
+      let aggregate = 0
       zip.on('entry', (entry: yauzl.Entry) => {
         if (!entry.fileName.endsWith('/')) {
+          count += 1
+          if (count > limits.maxEntries) {
+            zip.close()
+            return reject(
+              refuse(
+                'TOO_MANY_ENTRIES',
+                `this archive has more entries than can be imported (limit ${limits.maxEntries})`,
+              ),
+            )
+          }
+          const violation = checkEntryDeclaredSize(
+            entry.fileName,
+            entry.uncompressedSize,
+            entry.compressedSize,
+            limits,
+          )
+          if (violation) {
+            zip.close()
+            return reject(refuse(violation.code, violation.message))
+          }
+          aggregate += entry.uncompressedSize
+          if (aggregate > limits.maxAggregateUncompressedBytes) {
+            zip.close()
+            return reject(
+              refuse(
+                'ARCHIVE_TOO_LARGE',
+                `this archive expands to more than can be imported ` +
+                  `(over ${limits.maxAggregateUncompressedBytes} bytes)`,
+              ),
+            )
+          }
           if (entries.has(entry.fileName)) {
             zip.close()
             return reject(refuse('BAD_ARCHIVE', `duplicate entry: ${entry.fileName}`))
@@ -72,30 +120,80 @@ function openArchive(path: string): Promise<OpenZip> {
   })
 }
 
-function readEntryBuffer(zip: yauzl.ZipFile, entry: yauzl.Entry): Promise<Buffer> {
+/** Buffer one entry into memory, aborting the moment the streamed byte
+ * count passes `maxBytes` (CA-011: a lying manifest entry could declare
+ * a small size and then inflate past it — the buffer must never grow
+ * unbounded, even if `validateEntrySizes` would eventually catch it). */
+function readEntryBuffer(
+  zip: yauzl.ZipFile,
+  entry: yauzl.Entry,
+  maxBytes: number,
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     zip.openReadStream(entry, (err, stream) => {
       if (err || !stream) return reject(refuse('BAD_ARCHIVE', 'archive entry unreadable'))
       const chunks: Buffer[] = []
-      stream.on('data', (c: Buffer) => chunks.push(c))
+      let seen = 0
+      stream.on('data', (c: Buffer) => {
+        seen += c.length
+        if (seen > maxBytes) {
+          stream.destroy()
+          reject(refuse('ENTRY_TOO_LARGE', 'an archive entry is larger than declared'))
+          return
+        }
+        chunks.push(c)
+      })
       stream.on('end', () => resolve(Buffer.concat(chunks)))
       stream.on('error', () => reject(refuse('BAD_ARCHIVE', 'archive entry unreadable')))
     })
   })
 }
 
-/** Stream one entry to disk, hashing as it flows; resolves the hex. */
-function extractEntry(zip: yauzl.ZipFile, entry: yauzl.Entry, dest: string): Promise<string> {
+/** Stream one entry to disk, hashing and counting as it flows. Aborts
+ * immediately if the streamed byte count passes the entry's declared
+ * uncompressed size (CA-011: the declared size was budget-validated at
+ * scan time, so streaming past it means the entry lied — abort before
+ * the extra bytes reach disk). Resolves the hex hash and the actual
+ * byte count for the caller's declared-vs-actual reconciliation. */
+function extractEntry(
+  zip: yauzl.ZipFile,
+  entry: yauzl.Entry,
+  dest: string,
+): Promise<{ hash: string; bytes: number }> {
   return new Promise((resolve, reject) => {
     zip.openReadStream(entry, (err, stream) => {
       if (err || !stream) return reject(refuse('BAD_ARCHIVE', 'archive entry unreadable'))
       mkdirSync(dirname(dest), { recursive: true })
       const hash = createHash('sha256')
       const out = createWriteStream(dest)
-      stream.on('data', (c: Buffer) => hash.update(c))
-      stream.on('error', () => reject(refuse('BAD_ARCHIVE', 'archive entry unreadable')))
-      out.on('error', (e) => reject(refuse('WRITE_FAILED', e.message)))
-      out.on('close', () => resolve(hash.digest('hex')))
+      let seen = 0
+      let aborted = false
+      stream.on('data', (c: Buffer) => {
+        if (aborted) return
+        seen += c.length
+        if (seen > entry.uncompressedSize) {
+          aborted = true
+          stream.destroy()
+          out.destroy()
+          reject(
+            refuse(
+              'SIZE_MISMATCH',
+              `${entry.fileName} streamed more bytes than it declared — the archive is damaged`,
+            ),
+          )
+          return
+        }
+        hash.update(c)
+      })
+      stream.on('error', () => {
+        if (!aborted) reject(refuse('BAD_ARCHIVE', 'archive entry unreadable'))
+      })
+      out.on('error', (e) => {
+        if (!aborted) reject(refuse('WRITE_FAILED', e.message))
+      })
+      out.on('close', () => {
+        if (!aborted) resolve({ hash: hash.digest('hex'), bytes: seen })
+      })
       stream.pipe(out)
     })
   })
@@ -104,15 +202,33 @@ function extractEntry(zip: yauzl.ZipFile, entry: yauzl.Entry, dest: string): Pro
 /** Parse + validate the manifest without extracting anything else.
  * Exposed for the import surface's preflight (show the user what the
  * archive claims before choosing a destination). */
-export async function readArchiveManifest(archivePath: string): Promise<ExportManifest> {
-  const { zip, entries } = await openArchive(archivePath)
+export async function readArchiveManifest(
+  archivePath: string,
+  limits: ImportLimits = IMPORT_LIMITS,
+): Promise<ExportManifest> {
+  const { zip, entries } = await openArchive(archivePath, limits)
   try {
     const entry = entries.get(MANIFEST_ENTRY)
     if (!entry) throw refuse('BAD_ARCHIVE', 'manifest.json missing from archive')
+    // The manifest gets a TIGHTER cap than a generic entry: it is held
+    // whole in memory and parsed as JSON, so bound it to maxManifestBytes
+    // by its declared size before buffering and by the streamed count
+    // while buffering (CA-011).
+    if (
+      !isFiniteNonNegativeInteger(entry.uncompressedSize) ||
+      entry.uncompressedSize > limits.maxManifestBytes
+    ) {
+      throw refuse('MANIFEST_TOO_LARGE', 'manifest.json is too large to trust')
+    }
     let manifest: ExportManifest
     try {
-      manifest = parseManifest((await readEntryBuffer(zip, entry)).toString('utf8'))
+      manifest = parseManifest(
+        (await readEntryBuffer(zip, entry, limits.maxManifestBytes)).toString('utf8'),
+      )
     } catch (err) {
+      if (err instanceof Error && 'code' in err && (err as ImportRefusal).code === 'ENTRY_TOO_LARGE') {
+        throw refuse('MANIFEST_TOO_LARGE', 'manifest.json is too large to trust')
+      }
       throw refuse('BAD_MANIFEST', err instanceof Error ? err.message : String(err))
     }
     if (manifest.schemaVersion !== LATEST_SCHEMA_VERSION) {
@@ -133,24 +249,38 @@ export async function readArchiveManifest(archivePath: string): Promise<ExportMa
  * Everything lands in `<destDir>.partial` first and renames into
  * place only after the last verification passes.
  */
-export async function importProject(archivePath: string, destDir: string): Promise<ImportResult> {
+export async function importProject(
+  archivePath: string,
+  destDir: string,
+  limits: ImportLimits = IMPORT_LIMITS,
+): Promise<ImportResult> {
   // Enforce our own contract (Codex round 3, P3): POSIX rename happily
   // replaces an existing EMPTY directory, so the app caller's
   // collision-safe naming must not be the only line of defense.
   if (existsSync(destDir)) {
     throw refuse('DEST_EXISTS', `the destination already exists: ${destDir}`)
   }
-  const manifest = await readArchiveManifest(archivePath)
+  const manifest = await readArchiveManifest(archivePath, limits)
   const partial = `${destDir}.partial`
   rmSync(partial, { recursive: true, force: true })
 
-  const { zip, entries } = await openArchive(archivePath)
+  const { zip, entries } = await openArchive(archivePath, limits)
   try {
-    // Every inventoried entry must exist; nothing outside the
-    // inventory extracts (a stowaway entry never reaches disk).
+    // Every inventoried entry must exist AND must be one of the budget-
+    // validated entries the scan admitted (CA-011: bind the inventory to
+    // the allowed set, and reconcile each declared manifest size against
+    // the central-directory size before extraction — the streamed count
+    // is then reconciled against both after).
     for (const item of manifest.inventory) {
-      if (!entries.has(item.path)) {
+      const entry = entries.get(item.path)
+      if (!entry) {
         throw refuse('INCOMPLETE_ARCHIVE', `archive is missing ${item.path}`)
+      }
+      if (item.bytes !== entry.uncompressedSize) {
+        throw refuse(
+          'SIZE_MISMATCH',
+          `${item.path} disagrees with the archive on its size — the archive is damaged`,
+        )
       }
     }
     for (const item of manifest.inventory) {
@@ -161,7 +291,16 @@ export async function importProject(archivePath: string, destDir: string): Promi
       if (!dest.startsWith(partial + sep)) {
         throw refuse('BAD_MANIFEST', `entry path escapes the project: ${item.path}`)
       }
-      const hash = await extractEntry(zip, entry, dest)
+      const { hash, bytes } = await extractEntry(zip, entry, dest)
+      // Reconcile the actual streamed count against the declared size —
+      // extractEntry already aborted on an overrun, so this closes the
+      // remaining gap: a SHORT entry (fewer bytes than declared).
+      if (bytes !== item.bytes) {
+        throw refuse(
+          'SIZE_MISMATCH',
+          `${item.path} does not match its declared size — the archive is damaged`,
+        )
+      }
       if (hash !== item.sha256) {
         throw refuse(
           'HASH_MISMATCH',

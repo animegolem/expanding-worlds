@@ -10,6 +10,83 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Compound gestures fail whole** (AI-IMP-232, 2026-07-09,
+  Sol P2): drag items into a frame under a forced refusal (dev:
+  __ewDebug.failNextCommand("TransformContent")) — items snap back,
+  NO membership change, and the next normal drag still captures.
+  Group-and-sort a multi-drop whose sort refuses: imports land, no
+  frame appears, one Mod+Z removes them all, nothing hangs.
+
+- [ ] **Batch drops never lose a file** (AI-IMP-238, 2026-07-09 —
+  the flake was REAL: files failing under burst, hidden by
+  retries): drop 10+ mixed images in quick overlapping drops — the
+  summary must never report a failed file; every image lands as a
+  pin.
+
+- [ ] **RATIFY THE UNDO MATRIX** (AI-IMP-233, 2026-07-09 — your
+  ruling, your sign-off): every deliberate verb now answers Mod+Z —
+  attach note, create-and-attach, make independent, relink, group/
+  ungroup decorations, create canvas; batch keyboard gestures (flip
+  3 items) = ONE undo; relink-then-undo removes the note it created
+  IF untouched (edited notes survive). CONFIRM the exempt calls:
+  CreateNote (residue hazard), MergeTag/SetTagAppearance (no
+  gesture yet), SetTrashRetention (a Settings verb), and note/
+  canvas trash staying out of Mod+Z (the node-trash rationale,
+  extended — your call whether that extension holds).
+
+- [ ] **Redo can't lie anymore** (AI-IMP-230, 2026-07-09, Sol P2):
+  move a card, Mod+Z, then type in any note — Redo goes dead
+  (the old bug: it would replay onto the changed world).
+
+- [ ] **Settings survive crashes** (AI-IMP-237, 2026-07-09, Sol
+  P3): kill -9 the app mid-settings-change a few times, relaunch —
+  settings are never silently reset; if a corrupt file ever
+  appears, the reset toast should read clearly, not alarm.
+
+- [ ] **Snapshots vs your git tools** (AI-IMP-223/218, 2026-07-09,
+  Sol P2 + Terra P1): export twice in quick succession — both
+  archives import cleanly, nothing left inside the project dir;
+  open a pre-existing project, let a snapshot fire, confirm its
+  .gitignore now carries "(managed v2)" with your own lines
+  intact; hold a git GUI open on the backup repo during a snapshot
+  — it defers politely ("present and fresh") and commits later.
+
+- [ ] **A board from nothing** (AI-IMP-239, 2026-07-09 — the
+  build's headline; alph first pass): right-click empty board →
+  "New board…", name it, Enter — you land inside (path bar shows
+  it); back on the origin board the board-object carries the name
+  and dive chip; ONE Mod+Z from the origin board removes it all.
+  Known limit, deliberate: Mod+Z from INSIDE the new board
+  declines with the cross-board toast instead of deleting the
+  floor under you.
+
+- [ ] **Gallery scope flips** (AI-IMP-236, 2026-07-09, Sol P3):
+  rapidly flip everything ⇄ this world (especially right after
+  designating a library) — the everything side always loads, never
+  wedges on "Opening the library…" or an empty grid; a source
+  panel opened after still works.
+
+- [ ] **Hostile imports refuse politely** (AI-IMP-234, 2026-07-09,
+  Sol P2): import a real large .ewproj — clean; import an
+  obviously junk/truncated one — understandable refusal, no
+  half-project left on disk.
+
+- [ ] **Tauri shell — quiet-machine rerun** (AI-IMP-240,
+  2026-07-09): all timing rows were taken under ~10-agent load
+  (loadavg 69-114!) and are marked LOAD-SUPPRESSED. When the
+  machine is quiet: `cd spike/tauri-shell && npm install &&
+  (cd ../.. && pnpm -r build) && EW_SPIKE_IMAGES=100 pnpm tauri
+  dev` (auto-runs, writes results/sweep-100.json), repeat at 500.
+  Note WKWebView caps rAF at 60Hz — p50 ~17ms is the display
+  link, not a regression. The load-immune number already stands:
+  4.39GB resident  images.
+
+- [ ] **Connectors stay honest** (AI-IMP-235, 2026-07-09, Sol
+  P2): draw a connector anchored to two images, delete/undo and
+  move the anchored images — anchors track exactly; nothing about
+  drawing should feel changed (the fix refuses a state the UI
+  could never legitimately create).
+
 - [ ] **One writer, always** (AI-IMP-226, 2026-07-09, Sol P1 —
   the wave headline): force-quit mid-session, relaunch immediately
   — reopens promptly (dead-pid reclaim). Then stall the app with a

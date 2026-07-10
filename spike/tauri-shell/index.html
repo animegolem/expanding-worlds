@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Tauri Shell Spike — expanding-worlds</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body { margin: 0; height: 100%; overflow: hidden; }
+      body { font: 13px/1.4 system-ui, -apple-system, sans-serif; background: #16181c; color: #e6e8ea; }
+      #host { position: absolute; inset: 0; touch-action: none; background: #1e1e22; }
+      #host canvas { position: absolute; inset: 0; display: block; }
+
+      #overlay {
+        position: absolute; top: 8px; left: 8px; z-index: 10;
+        background: rgba(20, 22, 26, 0.86); border: 1px solid #333a44;
+        border-radius: 8px; padding: 10px 12px; max-width: 340px;
+        backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      }
+      #overlay h1 { font-size: 13px; margin: 0 0 6px; font-weight: 600; }
+      .metrics { font-variant-numeric: tabular-nums; line-height: 1.6; }
+      .metrics b { display: inline-block; min-width: 118px; color: #9aa4b0; font-weight: 400; }
+      .metrics span { font-weight: 600; }
+      #fps.good { color: #4ad07a; } #fps.warn { color: #d0b84a; } #fps.bad { color: #d0574a; }
+      .row { margin-top: 8px; }
+      button, select, input {
+        font: inherit; color: inherit; background: #2a2f38; border: 1px solid #3a424e;
+        border-radius: 6px; padding: 5px 9px; margin: 2px 4px 2px 0; cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; cursor: default; }
+      button.primary { background: #2f6fd0; border-color: #3f7fe0; }
+      label.inline { color: #9aa4b0; }
+      input[type="number"] { width: 64px; cursor: text; }
+      #sweep-status { margin-top: 6px; min-height: 16px; color: #d0b84a; }
+      #json {
+        width: 100%; box-sizing: border-box; height: 150px; margin-top: 6px;
+        font: 11px/1.4 ui-monospace, Menlo, monospace; background: #101216;
+        border: 1px solid #333a44; border-radius: 6px; color: #cdd3da; padding: 6px;
+        white-space: pre; overflow: auto; display: none;
+      }
+      .hint { color: #6b7480; margin-top: 8px; font-size: 11px; }
+    </style>
+  </head>
+  <body>
+    <div id="host"></div>
+    <div id="overlay">
+      <h1>Tauri shell spike</h1>
+      <div class="metrics">
+        <div><b>FPS (rolling)</b><span id="fps">—</span></div>
+        <div><b>Frame p95</b><span id="p95">—</span> ms</div>
+        <div><b>Frame p50</b><span id="p50">—</span> ms</div>
+        <div><b>DPR</b><span id="dpr">—</span></div>
+        <div><b>Texture mem</b><span id="texmem">—</span></div>
+        <div><b>Resident / total</b><span id="resident">—</span></div>
+        <div><b>GL renderer</b><span id="gl">—</span></div>
+      </div>
+      <div class="row">
+        <label class="inline">Images
+          <input id="count" type="number" min="1" max="2000" step="10" value="100" />
+        </label>
+        <button id="rebuild">Rebuild scene</button>
+      </div>
+      <div class="row">
+        <button id="run" class="primary">Run suite (asset · IPC · 30s sweep)</button>
+        <button id="copy" disabled>Copy JSON</button>
+      </div>
+      <div id="sweep-status"></div>
+      <textarea id="json" readonly spellcheck="false"></textarea>
+      <div class="hint">
+        Drag = pan · wheel/two-finger = pan · ctrl/⌘+wheel or pinch = zoom.
+        Textures stream through Tauri's asset protocol.
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -22,6 +22,7 @@ import { takeoverActive } from '../chrome/takeover'
 import { navigateTo } from '../chrome/navigation'
 import { KEY } from '../keys/bindings'
 import { matches } from '../keys/registry'
+import { runAsUndoGroup } from '../undo/undo-store'
 import type { CanvasHostHandle } from './host'
 
 /**
@@ -211,17 +212,25 @@ export function attachGesturesUI(
   }
 
   async function flipSelection(axis: 'x' | 'y'): Promise<void> {
-    // §6.9: flips are instantaneous acts — one command per placement.
-    for (const p of selectedPlacements()) {
-      await gateway.execute('FlipPlacement', { placementId: p.id, axis })
-    }
+    // §6.9: flips are instantaneous acts — one command per placement. One
+    // keyboard chord is ONE gesture, so the whole multi-selection flip is
+    // ONE undo entry (AI-IMP-233): wrap the per-item loop in a group so
+    // Mod+Z reverses the flip of all N, not N separate undos.
+    await runAsUndoGroup(async () => {
+      for (const p of selectedPlacements()) {
+        await gateway.execute('FlipPlacement', { placementId: p.id, axis })
+      }
+    })
   }
 
   async function reorderSelection(op: ReorderOp): Promise<void> {
     const payloads = reorderPayloads(handle.canvasId, controller.items(), controller.selection.ids(), op)
-    for (const payload of payloads) {
-      await gateway.execute('ReorderContent', payload)
-    }
+    // One reorder chord = one undo entry across every affected item.
+    await runAsUndoGroup(async () => {
+      for (const payload of payloads) {
+        await gateway.execute('ReorderContent', payload)
+      }
+    })
   }
 
   /** Delete/Backspace: one DeleteContent command for the whole
@@ -269,9 +278,12 @@ export function attachGesturesUI(
     const placements = selectedPlacements()
     if (placements.length === 0) return
     const nextLocked = placements.some((p) => p.locked !== 1)
-    for (const p of placements) {
-      await gateway.execute('SetPlacementLock', { placementId: p.id, locked: nextLocked })
-    }
+    // One ⇧⌘L chord = one undo entry across every selected placement.
+    await runAsUndoGroup(async () => {
+      for (const p of placements) {
+        await gateway.execute('SetPlacementLock', { placementId: p.id, locked: nextLocked })
+      }
+    })
   }
 
   /** ⏎: dive into the single selected placement's board — its nested

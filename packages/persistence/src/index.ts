@@ -76,12 +76,19 @@ export {
   type ImportResult as ProjectImportResult,
   type ImportRefusal,
 } from './export/project-import'
+// CA-011 import resource budgets (AI-IMP-234).
+export { IMPORT_LIMITS, type ImportLimits } from './export/import-limits'
 export { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 export { registerCanvasHandlers } from './handlers/canvases'
 export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'
 export { registerTagHandlers } from './handlers/tags'
 export { registerDecorationHandlers } from './handlers/decorations'
 export { registerPinHandlers } from './handlers/pin'
+// AI-IMP-233: the barrel omitted bookmarks (service.ts imports it
+// directly); the undo policy-matrix registry-diff test needs every
+// command-handler group reachable from the package root to enumerate
+// the authoritative command set.
+export { registerBookmarkHandlers } from './handlers/bookmarks'
 export {
   compareOrder,
   nextRenderOrder,

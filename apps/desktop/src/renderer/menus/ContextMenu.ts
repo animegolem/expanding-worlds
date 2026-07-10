@@ -44,6 +44,7 @@ import { openCornerPanel } from '../note/panels'
 import { formatBinding } from '../keys/registry'
 import { themeTokenValue } from '../theme'
 import { createOpenGeneration } from './open-generation'
+import { requestNewBoard } from './new-board'
 import {
   menuFor,
   type BoardSubject,
@@ -486,6 +487,7 @@ export function attachContextMenu(
       openAsBoard: noop,
       reorder: noop,
       deleteItem: noop,
+      newBoard: noop,
       selectAll: noop,
       zoomToFit: noop,
       setBackdropFromFile: noop,
@@ -594,9 +596,13 @@ export function attachContextMenu(
     }
   }
 
-  function boardActions(): MenuActions {
+  function boardActions(world: { x: number; y: number }): MenuActions {
     return {
       ...baseStubActions(),
+      // §8.4 (AI-IMP-239): hand the naming prompt (the command palette)
+      // the WORLD position of the right-click, so the seeded board-object
+      // lands exactly where the menu was opened.
+      newBoard: () => requestNewBoard(world),
       selectAll: () => selectAllBoard(),
       zoomToFit: () => tooling.zoomToFit(),
       setBackdropFromFile: () => fileInput.click(),
@@ -825,7 +831,7 @@ export function attachContextMenu(
         hasBackgroundImage: bg?.assetId != null,
         hasColor: bg?.color != null,
       }
-      render('board', menuFor(subject, boardActions()), at)
+      render('board', menuFor(subject, boardActions(world)), at)
       return
     }
 

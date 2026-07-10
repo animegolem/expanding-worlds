@@ -52,7 +52,7 @@ describe('migration 0007: frame membership', () => {
 
   afterEach(() => {
     project.close()
-    rmSync(dir, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('accepts the new frame appearance kind AND any string (CHECK dropped)', () => {
@@ -211,7 +211,7 @@ describe('migration 0007: frame membership', () => {
       ).not.toThrow()
     } finally {
       db.close()
-      rmSync(dir2, { recursive: true, force: true })
+      rmSync(dir2, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
     }
   })
 })

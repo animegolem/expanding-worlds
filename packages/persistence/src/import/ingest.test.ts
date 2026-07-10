@@ -110,8 +110,8 @@ describe('ingestFromSource (§14.4 ingest-by-copy with the tag border)', () => {
     dest.close()
     source.close()
     sourceOwner.close()
-    rmSync(sourceDir, { recursive: true, force: true })
-    rmSync(destDir, { recursive: true, force: true })
+    rmSync(sourceDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+    rmSync(destDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('border=all: copies bytes, creates an unplaced image node, recreates tags, records provenance', async () => {
@@ -239,7 +239,7 @@ describe('ingestFromSource (§14.4 ingest-by-copy with the tag border)', () => {
     // Remove the source entirely: the destination must stand alone.
     source.close()
     sourceOwner.close()
-    rmSync(sourceDir, { recursive: true, force: true })
+    rmSync(sourceDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
     sourceOwner = openProjectService(sourceDir, { createIfMissing: true, title: 'placeholder' })
     source = openProjectService(sourceDir, { readOnly: true }) // keep afterEach's handles live
 

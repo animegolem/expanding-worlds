@@ -35,7 +35,7 @@ beforeEach(() => {
 afterEach(() => {
   reader.close()
   service.close()
-  rmSync(dir, { recursive: true, force: true })
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 function exec(commandType: string, payload: unknown): CommandResult {

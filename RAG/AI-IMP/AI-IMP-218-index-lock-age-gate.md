@@ -5,11 +5,12 @@ tags:
   - Implementation
   - snapshots
   - main
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.85
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -57,12 +58,12 @@ branches with a temp dir (touch a lock, backdate via utimesSync).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Age gate with named constant; fresh lock defers (episode
+- [x] Age gate with named constant; fresh lock defers (episode
       retries), old lock sweeps; comment tells the truth.
-- [ ] Unit tests: fresh-defers, aged-sweeps.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
-      shards (snapshots specs especially).
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] Unit tests: fresh-defers, aged-sweeps.
+- [x] Gates: build, per-package units, lint, e2e in 4 foreground
+      shards (snapshots + snapshot-push in the [s-z] shard, both green).
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -80,3 +81,33 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Implementation.** `STALE_LOCK_MS = 10 * 60 * 1000` named beside the
+gitignore constants. `sweepStaleIndexLock` now returns `boolean` (true =
+index free / swept, false = defer): it `statSync`es the lock, treats
+ENOENT as "no lock → proceed", sweeps a lock older than the threshold
+(logging the orphan removal), and DEFERS on a fresh lock
+(`console.warn` "…present and fresh; deferring this snapshot…"). A lock
+it fails to `rmSync` also defers rather than committing against an
+uncontrolled lock. `ensureGitReady` propagates the boolean; `doSnapshot`
+returns early on a defer — the existing logged-skip path, so the next
+episode retries once the lock ages past the gate. The rationale comment
+now names the external-git caveat (snapshot-push invites a user/GUI git
+tool against the backup repo, so a live lock is real) and WRITES IN the
+lead's ruling: the age-gate plus its documented residual risk — a
+genuinely wedged lock younger than the threshold stalls backups for up
+to STALE_LOCK_MS before it ages out and is swept — is accepted as the
+bounded trade against ever corrupting the backup index.
+
+**Tests.** Rewrote the existing wedged-repo test to backdate the lock
+via `utimesSync` (20 min) so the age-gate sweeps it and still commits;
+added a fresh-lock test proving the lock is left untouched and NO new
+commit is recorded that episode. Both branches covered.
+
+**Findings / friction.** None material. The orphan-recovery goal
+(multi-GB first commit killed by quit) is preserved because such an
+orphan ages far past 10 min. This ticket's snapshot.ts hunks are
+disjoint from AI-IMP-223's (allowlist/gitignore) in the same file, so
+the two commits split cleanly. Same PRE-EXISTING, environment-only e2e
+failure noted in AI-IMP-223 (`decorations.spec.ts` font enumeration) —
+unrelated to snapshots.

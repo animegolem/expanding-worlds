@@ -6,11 +6,12 @@ tags:
   - persistence
   - decorations
   - P2
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.85
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -56,12 +57,12 @@ schema migration).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Exact canvas equality enforced on create/update/re-anchor;
+- [x] Exact canvas equality enforced on create/update/re-anchor;
       typed refusal.
-- [ ] Cross-canvas tests for all three paths.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Cross-canvas tests for all three paths.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -78,3 +79,27 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- No pre-existing typed refusal code fit exactly; used
+  `VALIDATION_FAILED` (the handlers' grammar for domain-rule
+  refusals, matching the existing cross-canvas group refusal in the
+  same file) with structured details `{ anchor, placementId,
+  placementCanvasId, canvasId }`.
+- The "seed/fixture SELECT" was interpreted as a spec-level
+  assertion: the ticket's own fixtures (mixed same-canvas anchors +
+  a second canvas with a placement) are built and the DB is
+  SELECT-audited for cross-canvas anchor rows on both endpoints.
+  The shipped first-open seed (apps/desktop/resources/seed) contains
+  images only — no decorations — so no wild data could violate the
+  invariant; no schema migration needed, as designed.
+- The update path validates against `prior.canvas_id` (the
+  decoration's stored row); `UpdateDecorationPayload` carries no
+  canvasId, so no payload claim exists to trust anyway — the risk
+  was purely in validateAnchor never checking canvas at all.
+- decorations.test.ts needed `registerCanvasHandlers` added to its
+  registry to create a second canvas for cross-canvas fixtures.
+- e2e ran as SIX foreground shards (a-d / e-g / h-i / j-n / o-r /
+  s-u+v-z split): 45+48+18+45+30+46+4 = 236, full coverage verified
+  via --list. One flake: perf.spec.ts "150 visible images … memory
+  releases on swap" failed once and passed on retry (memory-release
+  timing; unrelated to this persistence-handler change).

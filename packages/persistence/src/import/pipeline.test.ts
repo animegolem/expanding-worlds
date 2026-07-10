@@ -40,7 +40,7 @@ beforeEach(() => {
 
 afterEach(() => {
   project.close()
-  rmSync(dir, { recursive: true, force: true })
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 // Minimal byte-built fixtures (parsers are covered in sniff.test.ts).

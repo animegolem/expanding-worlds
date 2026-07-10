@@ -6,11 +6,12 @@ tags:
   - gallery
   - chrome
   - P3
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -60,14 +61,14 @@ gallery e2e.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pending acquisition releasable; superseded opens
+- [x] Pending acquisition releasable; superseded opens
       self-close; no leaked handles under open→close races.
-- [ ] Gallery epoch-rechecks after every await; sourceOpen
+- [x] Gallery epoch-rechecks after every await; sourceOpen
       derived, not assumed.
-- [ ] Interleaving tests for both defects.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Interleaving tests for both defects.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -83,3 +84,43 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- **The transport is a singleton, so a superseded open cannot close
+  blindly.** `ew.secondary.close('source')` closes whatever source is
+  open, not a per-call handle. Closing on every supersede would stomp a
+  NEWER acquire whose `open` already replaced the transport
+  (replace-on-open at the utility). Resolved by a `lastAcquireEpoch`
+  guard: a superseded successful open closes only when no acquire
+  followed it (i.e. only releases advanced the epoch) — otherwise the
+  newer owner's transport is left alone. `closeSecondary` is idempotent
+  (`?.close()` + null), so the residual double-close in same-owner
+  re-acquire+release races is harmless.
+- **The pending-only release deliberately does NOT close.** It bumps the
+  epoch and drops the pending record; the in-flight open's own
+  continuation performs the close (it alone knows whether a newer
+  acquire replaced it via the guard above). This keeps the leaked-handle
+  close in exactly one place.
+- **Gallery: the stale-continuation recheck returns WITHOUT releasing.**
+  `SLOT_OWNER` is the constant `'gallery'`, so `sourceSlotHolder()`
+  cannot distinguish this acquire's holder from a re-entered
+  everything's fresh gallery-owned holder. Releasing on the stale path
+  would stomp that re-entered slot; instead `leaveEverything` already
+  released ours, so the continuation just returns. `sourceOpen` is
+  derived from `sourceSlotHolder()?.ownerId === SLOT_OWNER` rather than
+  asserted true.
+- **Interleavings pinned by 6 unit tests** (`source-slot.test.ts`) with a
+  hand-resolved open/close mock: plain acquire/release, CA-013 (release
+  during the pending first acquire → the late open closes and installs
+  no holder), superseded-failed-open closes nothing, a newer acquire
+  superseding an older pending open (no close — replace-on-open owns it),
+  cross-owner eviction + no-stomp release, and release-then-reacquire
+  under the same owner. One e2e (`gallery-scope.spec.ts`) races a
+  this-world flip against a store=true library open and asserts the
+  scope state stays honest.
+- **Pre-existing e2e noise, not from this ticket:** `decorations.spec.ts`
+  fails on `window.queryLocalFonts()` returning ≤3 fonts in the hidden-
+  window environment (AI-IMP-037 family picker) — unrelated modules.
+  `source-panel.spec.ts` flaked once on a drag-out place-point timing
+  then passed; a 3× no-retry re-run of the whole file (including the
+  gallery↔panel eviction case) was 6/6 green, so the slot changes did
+  not destabilise it.

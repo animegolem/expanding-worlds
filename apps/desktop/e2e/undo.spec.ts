@@ -57,6 +57,20 @@ async function readyUndo(win: Page): Promise<void> {
 }
 
 const depth = (win: Page) => win.evaluate(() => window.__ewUndo!.undoDepth())
+const redoDepth = (win: Page) => win.evaluate(() => window.__ewUndo!.redoDepth())
+
+/** flipX (0/1) for every placement on the active canvas, by id. */
+async function flipXs(win: Page): Promise<Record<string, number>> {
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const scene = await runQuery<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId,
+  })
+  const out: Record<string, number> = {}
+  for (const item of scene.items) {
+    if (item['itemKind'] === 'placement') out[item['id'] as string] = (item['flipX'] as number) ?? 0
+  }
+  return out
+}
 
 /** The scene item's appearance kind for a placement (null when unset). */
 async function appearanceKindOf(win: Page, placementId: string): Promise<string | null> {
@@ -541,6 +555,85 @@ test('a node-trash does NOT enter Mod+Z (the Trash is its recovery home)', async
     .toBe(Math.round(a.x))
   expect(await depth(win)).toBe(0)
   expect((await placements(win)).some((p) => p.id === bId)).toBe(false)
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-230 / Sol CA-005 (RFC §10.2): ANY new durable command after an
+ * undo invalidates redo — even an UNCAPTURED one. A note-body autosave
+ * (UpdateNote, uncaptured, note-pane gateway) committed after an undo must
+ * drop redo to 0 so Shift+Mod+Z can never replay onto a world that moved on.
+ */
+test('an uncaptured note-body edit after an undo invalidates redo (CA-005)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-redoinval-')
+  await readyUndo(win)
+  await seedPlacedNote(win, 'Driftwood', 'sea-worn', { x: 400, y: 300 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const before = (await placements(win))[0]!
+
+  // A captured structural entry: nudge the placement, then undo it so a
+  // redo is waiting.
+  await win.mouse.move(box.x + before.x, box.y + before.y)
+  await win.mouse.down()
+  await win.mouse.move(box.x + before.x + 90, box.y + before.y, { steps: 6 })
+  await win.mouse.up()
+  await expect.poll(async () => Math.round((await placements(win))[0]!.x)).toBe(
+    Math.round(before.x + 90),
+  )
+  await win.mouse.click(box.x + 60, box.y + 60)
+  await win.keyboard.press('Meta+z')
+  await expect.poll(() => redoDepth(win)).toBe(1)
+
+  // Now an UNCAPTURED durable commit: open the note, type, blur to autosave
+  // (one UpdateNote through the note-pane gateway). Redo must vanish.
+  await win.mouse.dblclick(box.x + before.x, box.y + before.y)
+  await expect(win.getByTestId('note-pane-title')).toHaveText(/Driftwood/)
+  await win.locator('[data-testid="note-editor-content"]').click()
+  await win.keyboard.type(' and salt')
+  await win.mouse.click(box.x + 60, box.y + 60) // blur → autosave commits
+  await expect.poll(() => redoDepth(win)).toBe(0)
+
+  // And the stale redo cannot replay: Shift+Mod+Z does nothing.
+  await win.keyboard.press('Meta+Shift+z')
+  expect(await redoDepth(win)).toBe(0)
+  expect(Math.round((await placements(win))[0]!.x)).toBe(Math.round(before.x))
+
+  await app.close()
+})
+
+/**
+ * AI-IMP-233 (CA-008): a keyboard multi-selection gesture emits one command
+ * PER ITEM but is ONE user gesture — so it is ONE undo entry. Flip three
+ * selected placements with a single ⇧H; Mod+Z reverses all three at once.
+ */
+test('batch flip of three placements is one undo entry (one gesture = one undo)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-batchflip-')
+  await readyUndo(win)
+  const a = await seedPlacement(win, { x: 150, y: 160 })
+  const b = await seedPlacement(win, { x: 320, y: 160 })
+  const c = await seedPlacement(win, { x: 490, y: 160 })
+  await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 3)
+  const ids = [a.placementId, b.placementId, c.placementId]
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  // Seeds go through the direct gateway (uncaptured): a clean baseline.
+  expect(await depth(win)).toBe(0)
+  for (const id of ids) expect((await flipXs(win))[id]).toBe(0)
+
+  // Select all, then ⇧H flips every selected placement — three
+  // FlipPlacement commits wrapped as ONE group entry.
+  await win.mouse.click(box.x + 60, box.y + 60)
+  await win.keyboard.press('Meta+a')
+  await win.keyboard.press('Shift+H')
+  await expect.poll(async () => Object.values(await flipXs(win)).every((f) => f === 1)).toBe(true)
+  for (const id of ids) expect((await flipXs(win))[id]).toBe(1)
+  expect(await depth(win)).toBe(1) // one gesture, one entry — not three
+
+  // One Mod+Z reverses the whole batch.
+  await win.keyboard.press('Meta+z')
+  await expect.poll(async () => Object.values(await flipXs(win)).every((f) => f === 0)).toBe(true)
+  expect(await depth(win)).toBe(0)
 
   await app.close()
 })

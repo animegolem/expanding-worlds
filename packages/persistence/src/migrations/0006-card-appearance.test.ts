@@ -40,7 +40,7 @@ describe('migration 0006: card appearance', () => {
 
   afterEach(() => {
     project.close()
-    rmSync(dir, { recursive: true, force: true })
+    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('accepts card (migration 0007 later drops the appearance CHECK)', () => {
@@ -182,7 +182,7 @@ describe('migration 0006 on a POPULATED schema-5 database', () => {
       ).not.toThrow()
     } finally {
       db.close()
-      rmSync(dir, { recursive: true, force: true })
+      rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
     }
   })
 })

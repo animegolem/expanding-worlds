@@ -1,6 +1,16 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { createReadStream, createWriteStream, mkdirSync, renameSync, rmSync, statSync } from 'node:fs'
+import {
+  createReadStream,
+  createWriteStream,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+} from 'node:fs'
 import { cp, open, readdir, stat } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import yauzl from 'yauzl'
 import { ZipFile } from 'yazl'
@@ -60,8 +70,8 @@ export interface ExportHooks {
   /** Awaited after the inventory is hashed and sealed, immediately
    * before the archive streams its entries. AI-IMP-179 uses it to
    * rewrite the LIVE notes tree at exactly the between-hash-and-stream
-   * moment and prove the stream reads the frozen `.tmp-export` copy,
-   * never the mutated live file. */
+   * moment and prove the stream reads the frozen staging copy, never the
+   * mutated live file. */
   beforeStream?: () => void | Promise<void>
   /** Awaited after the partial is written, fsynced, and verified but
    * BEFORE the atomic rename into place. AI-IMP-229 throws here to
@@ -78,6 +88,44 @@ interface ProjectRow {
 }
 
 const NOTES_DIR = 'notes'
+
+/** The OS-temp prefix for a single export's private staging dir
+ * (AI-IMP-223). Distinct from the persistence tests' own `ew-export-`
+ * fixture dirs so the orphan sweep below never mistakes a fixture (or a
+ * project) for staging. */
+const STAGING_PREFIX = 'ew-export-stage-'
+
+/** Staging older than this is an orphan a crashed export left behind
+ * before its `finally` could clean it; the next export sweeps it. A day
+ * is generous over any real export (even a multi-GB archive finishes in
+ * minutes) yet safely above a CONCURRENT export's fresh staging — that
+ * isolation is the whole point (Sol CA-010 / Terra P3). */
+const STAGING_ORPHAN_MS = 24 * 60 * 60 * 1000
+
+/** Reclaim aged staging dirs from exports that crashed past their
+ * `finally`. Best-effort: a dir that vanishes mid-walk or resists
+ * removal is skipped, never fatal to the export about to run. Only dirs
+ * older than {@link STAGING_ORPHAN_MS} are eligible, so a concurrent
+ * export's live staging is never touched. */
+function sweepOrphanStagingDirs(): void {
+  const root = tmpdir()
+  let names: string[]
+  try {
+    names = readdirSync(root)
+  } catch {
+    return
+  }
+  const cutoff = Date.now() - STAGING_ORPHAN_MS
+  for (const name of names) {
+    if (!name.startsWith(STAGING_PREFIX)) continue
+    const path = join(root, name)
+    try {
+      if (statSync(path).mtimeMs < cutoff) rmSync(path, { recursive: true, force: true })
+    } catch {
+      // Raced away or unreadable — nothing to reclaim here.
+    }
+  }
+}
 
 /** sha256 of a file, streamed. */
 function hashFile(path: string): Promise<string> {
@@ -205,9 +253,20 @@ export async function exportProject(
   // compact copy through SQLite itself. Everything the archive claims
   // (project row, asset set) is read from THIS copy, so the manifest
   // can never disagree with the database it ships beside.
-  const tempDir = join(dir, '.tmp-export')
-  rmSync(tempDir, { recursive: true, force: true })
-  mkdirSync(tempDir, { recursive: true })
+  //
+  // Staging is a PER-REQUEST dir in OS temp, OUTSIDE the project
+  // entirely (AI-IMP-223). Two concurrent exports get distinct mkdtemp
+  // dirs, so neither can rm+recreate the other's frozen copy mid-write
+  // (Terra P3); and a snapshot's `git add` can never sweep staging that
+  // no longer lives inside the project dir (Sol CA-010). VACUUM INTO and
+  // the notes `cp` below are real SQLite/filesystem WRITES, not renames,
+  // so staging on a different filesystem than the project is fine — the
+  // atomic `.partial` rename that finalizes the archive (AI-IMP-229)
+  // still lands beside destPath, unaffected. The `finally` removes this
+  // dir; a crash that skips the `finally` is reclaimed by the orphan
+  // sweep at the next export start.
+  sweepOrphanStagingDirs()
+  const tempDir = mkdtempSync(join(tmpdir(), STAGING_PREFIX))
   const tempDb = join(tempDir, DB_ENTRY)
 
   // Set once the partial archive exists; cleared only after it is
@@ -347,8 +406,12 @@ export async function exportProject(
     options.onProgress?.({ bytesWritten, bytesTotal })
 
     // Durability: force the archive bytes to stable storage before we
-    // promote it. fsync is per-inode, so a fresh read handle suffices.
-    const fh = await open(partialPath, 'r')
+    // promote it. fsync is per-inode, so a fresh handle suffices — but
+    // it must be opened WRITABLE ('r+'): Windows' FlushFileBuffers
+    // demands write access and rejects a read-only handle with EPERM
+    // (AI-IMP-242's leg caught export completely broken on Windows);
+    // POSIX doesn't care either way.
+    const fh = await open(partialPath, 'r+')
     try {
       await fh.sync()
     } finally {

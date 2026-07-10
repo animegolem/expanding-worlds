@@ -30,7 +30,7 @@ beforeEach(() => {
 afterEach(() => {
   handle.close()
   service.close()
-  rmSync(dir, { recursive: true, force: true })
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
 function envelope(overrides: Partial<CommandEnvelope> & { projectId: string }): CommandEnvelope {
