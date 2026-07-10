@@ -54,6 +54,23 @@ the lead's initial hypotheses — two corrected with citations):
 The Windows runner's duplicate src/dist failures are the same two
 cleanup roots, not extra defects.
 
+**ROUND 3 (gate run 29070089859, post-merge — 1 failure, gate
+reset):** a probe worker CRASHED (ERR, not LOCKED):
+`EPERM: operation not permitted, open 'project.lock'` thrown by
+`writeFileSync(path, …, { flag: 'wx' })` — the O_EXCL create
+itself. LEAD HYPOTHESIS (unverified; the pre-implementation
+review verifies before fixing): Windows DELETE_PENDING semantics —
+while another process is mid-unlink of the same path, a create
+reports EPERM/EACCES rather than EEXIST; acquire tolerates only
+EEXIST at that site, so the worker dies instead of retrying.
+Candidate fix if confirmed: treat EPERM/EBUSY on the O_EXCL create
+as "path contended, retry within the window" — this does NOT
+weaken single-winner (the create did not succeed; same disposition
+as EEXIST). Note the failing config was staleAfterMs=30000, so it
+is not stale-reclaim-specific; the unlink in play is likely the
+winner's RELEASE. Verify against libuv semantics and the probe's
+new diagnostics.
+
 Done means the Windows leg (branch ci/windows-leg) runs green and
 merges to main, closing AI-IMP-242's last item — with each
 survivor either fixed at the cause or documented as a
