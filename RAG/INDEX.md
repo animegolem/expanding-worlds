@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 6 | 1 |
+| In Progress | 2 | 0 |
+| Planned | 5 | 6 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 216 |
-| **Total** | **27** | **243** |
+| **Total** | **27** | **248** |
 
 ## In Progress
 
@@ -21,6 +21,18 @@
 **IMPs:**
 - [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
 - [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
+
+---
+
+### [[AI-EPIC-027-hardening-and-consolidation|EPIC-027: Hardening and consolidation]]
+> Two 2026-07-10 audits, verified against source, define the pre-1.0
+
+**IMPs:**
+- [[AI-IMP-250-anchored-surface-placement|IMP-250]] Anchored surface placement — planned
+- [[AI-IMP-251-project-setting-codec|IMP-251]] Project setting codec — planned
+- [[AI-IMP-252-node-appearance-codec|IMP-252]] Node appearance codec — planned
+- [[AI-IMP-253-e2e-helper-adoption|IMP-253]] E2e helper adoption — planned
+- [[AI-IMP-254-persistence-test-temp-cleanup|IMP-254]] Persistence test temp cleanup — planned
 
 ---
 
@@ -54,11 +66,6 @@
 
 **IMPs:**
 - [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — completed
-
----
-
-### [[AI-EPIC-027-hardening-and-consolidation|EPIC-027: Hardening and consolidation]]
-> Two 2026-07-10 audits, verified against source, define the pre-1.0
 
 ---
 
@@ -189,6 +196,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
 - RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - apps/desktop/src/renderer/canvas/crop-editor.ts (431 LOC)
+- RAG/CODE-AUDIT-2026-07-10-CODEX.md (426 LOC)
 - packages/persistence/src/export/project-export.test.ts (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)

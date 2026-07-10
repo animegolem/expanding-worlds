@@ -9,8 +9,13 @@ tags:
   - pre-1.0
 date_created: 2026-07-10
 date_completed:
-kanban_status: planned
-AI_IMP_spawned: []
+kanban_status: in-progress
+AI_IMP_spawned:
+  - AI-IMP-250
+  - AI-IMP-251
+  - AI-IMP-252
+  - AI-IMP-253
+  - AI-IMP-254
 ---
 
 # AI-EPIC-027-hardening-and-consolidation
@@ -151,3 +156,21 @@ builder verifies before repairing.
 per AGENTS.md. Recommended order: Codex P1s → Codex P2s → the
 anchored clamp + codecs → the mechanical helper tail. HC/C10 IDs
 map 1:1 to FRs above.)
+
+**Wave 1 — function unification (cut 2026-07-10):**
+
+- [ ] AI-IMP-250 anchored-surface-placement (FR-15 / HC-002) —
+      core, assigned to Sol (xhigh)
+- [ ] AI-IMP-251 project-setting-codec (FR-16 + FR-11 merged /
+      HC-003 + C10-011) — core, assigned to Sol (xhigh)
+- [ ] AI-IMP-252 node-appearance-codec (FR-17 / HC-004) — core,
+      assigned to Sol (xhigh)
+- [ ] AI-IMP-253 e2e-helper-adoption (FR-14 / HC-001) — mechanical,
+      unassigned
+- [ ] AI-IMP-254 persistence-test-temp-cleanup (FR-24) —
+      mechanical, unassigned
+
+Codex P1 correctness tickets (FR-1..5) are the next cut. The P3
+helper tail (FR-18..22) and the FR-23 merged items stay here until
+a slot opens; FR-23's envelope-views half additionally waits on
+FR-1's flush correlation.
