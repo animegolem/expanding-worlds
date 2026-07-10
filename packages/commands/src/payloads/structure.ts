@@ -145,6 +145,8 @@ export interface CreatePlacementPayload {
   rotation?: number
   renderOrder?: number
   labelVisible?: boolean
+  /** §4.5 rev 0.68: identity-free text local to this placement. */
+  caption?: string | null
   flipX?: boolean
   flipY?: boolean
   locked?: boolean
@@ -178,6 +180,12 @@ export interface MovePlacementPayload {
 export interface SetPlacementLabelVisibilityPayload {
   placementId: string
   visible: boolean
+}
+
+/** §4.5 rev 0.68: set, replace, or clear one placement's caption. */
+export interface SetPlacementCaptionPayload {
+  placementId: string
+  caption: string | null
 }
 
 /** Toggles one mirror axis; self-inverse. */
@@ -402,6 +410,7 @@ export const COMMAND_CREATE_PLACEMENT = 'CreatePlacement'
 export const COMMAND_DELETE_DRAFT_PLACEMENT = 'DeleteDraftPlacement'
 export const COMMAND_MOVE_PLACEMENT = 'MovePlacement'
 export const COMMAND_SET_PLACEMENT_LABEL_VISIBILITY = 'SetPlacementLabelVisibility'
+export const COMMAND_SET_PLACEMENT_CAPTION = 'SetPlacementCaption'
 export const COMMAND_FLIP_PLACEMENT = 'FlipPlacement'
 export const COMMAND_SET_PLACEMENT_LOCK = 'SetPlacementLock'
 export const COMMAND_REORDER_CONTENT = 'ReorderContent'

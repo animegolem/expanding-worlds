@@ -72,6 +72,8 @@ export interface RestorePlacementPayload {
   flipY: boolean
   renderOrder: number
   labelVisible: boolean
+  /** Optional for undo records created before migration 0008. */
+  caption?: string | null
   locked: boolean
   /** Set when DeletePlacement trashed the bare node (§9.2). */
   restoreNodeId?: string | null

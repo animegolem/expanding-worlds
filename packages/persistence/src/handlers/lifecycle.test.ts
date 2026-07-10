@@ -209,18 +209,36 @@ describe('DeletePlacement (§9.2, invariant 11)', () => {
     })
   })
 
-  it('undo restores a locked placement locked (0004 column in the inverse)', () => {
+  it('undo restores placement-local presentation fields exactly', () => {
     const nodeId = createNode()
     // A second placement keeps the node non-bare — this pins the
     // placement row itself, not the bare-trash path.
     place(handle.rootCanvasId, nodeId)
     const placementId = place(handle.rootCanvasId, nodeId)
     committed('SetPlacementLock', { placementId, locked: true })
+    committed('SetPlacementCaption', { placementId, caption: 'delete-safe thought' })
 
     const del = committed('DeletePlacement', { placementId })
-    expect(del.inverse).toMatchObject({ payload: { locked: true } })
+    expect(del.inverse).toMatchObject({
+      payload: { locked: true, caption: 'delete-safe thought' },
+    })
     undo(del.inverse)
-    expect(row('placement', placementId)).toMatchObject({ locked: 1 })
+    expect(row('placement', placementId)).toMatchObject({
+      locked: 1,
+      caption: 'delete-safe thought',
+    })
+  })
+
+  it('restores a pre-caption durable inverse with caption defaulted to null', () => {
+    const nodeId = createNode()
+    place(handle.rootCanvasId, nodeId)
+    const placementId = place(handle.rootCanvasId, nodeId)
+    const del = committed('DeletePlacement', { placementId })
+    const legacyPayload = { ...(del.inverse!.payload as Record<string, unknown>) }
+    delete legacyPayload.caption
+
+    committed('RestorePlacement', legacyPayload)
+    expect(row('placement', placementId)).toMatchObject({ caption: null })
   })
 
   it('does not bare-trash a node with tags or an owned canvas, and never the root node', () => {

@@ -69,6 +69,7 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   // §8.4 rev 0.55: "every verb = one undoable command" (AI-IMP-136).
   SetPlacementLock: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
   SetPlacementLabelVisibility: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
+  SetPlacementCaption: { class: 'captured', why: '§4.5 caption edit; tested inverse' },
   SetCanvasBackground: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
   SetCanvasBackgroundColor: { class: 'captured', why: '§8.4 menu verb; tested inverse' },
   // AI-IMP-233 / CA-008: the deliberate verbs the ruling required but that

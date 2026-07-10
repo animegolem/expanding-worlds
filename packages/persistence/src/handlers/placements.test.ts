@@ -141,7 +141,15 @@ describe('CreatePlacement', () => {
     const second = createPlacement()
     const a = placementRow(first)!
     const b = placementRow(second)!
-    expect(a).toMatchObject({ x: 10, y: 20, scale: 1, rotation: 0, label_visible: 1, flip_x: 0 })
+    expect(a).toMatchObject({
+      x: 10,
+      y: 20,
+      scale: 1,
+      rotation: 0,
+      label_visible: 1,
+      caption: null,
+      flip_x: 0,
+    })
     expect(b.render_order as number).toBeGreaterThan(a.render_order as number)
   })
 
@@ -242,6 +250,64 @@ describe('MovePlacement', () => {
 })
 
 describe('placement presentation state', () => {
+  it('sets, normalizes, clears, and round-trips a caption through its inverse', () => {
+    const placementId = createPlacement()
+    const set = committed('SetPlacementCaption', {
+      placementId,
+      caption: '  I like the blue  ',
+    })
+    expect(placementRow(placementId)!.caption).toBe('I like the blue')
+    expect(set.inverse).toMatchObject({
+      commandType: 'SetPlacementCaption',
+      payload: { placementId, caption: null },
+    })
+
+    const replace = committed('SetPlacementCaption', { placementId, caption: 'warmer' })
+    expect(replace.inverse).toMatchObject({ payload: { caption: 'I like the blue' } })
+    undo(replace.inverse)
+    expect(placementRow(placementId)!.caption).toBe('I like the blue')
+
+    const clear = committed('SetPlacementCaption', { placementId, caption: '  \n  ' })
+    expect(placementRow(placementId)!.caption).toBeNull()
+    undo(clear.inverse)
+    expect(placementRow(placementId)!.caption).toBe('I like the blue')
+  })
+
+  it('keeps captions local when the same node is placed more than once', () => {
+    const first = createPlacement()
+    const second = createPlacement()
+    committed('SetPlacementCaption', { placementId: first, caption: 'only here' })
+
+    expect(placementRow(first)!.caption).toBe('only here')
+    expect(placementRow(second)!.caption).toBeNull()
+  })
+
+  it('validates caption shape, target, and a 2000 Unicode-code-point ceiling', () => {
+    const placementId = createPlacement()
+    for (const payload of [
+      null,
+      { placementId },
+      { placementId, caption: 1 },
+      { placementId: '', caption: 'text' },
+    ]) {
+      expect(exec('SetPlacementCaption', payload)).toMatchObject({
+        status: 'error',
+        code: 'VALIDATION_FAILED',
+      })
+    }
+    expect(exec('SetPlacementCaption', { placementId: uuidv7(), caption: 'text' })).toMatchObject({
+      status: 'error',
+      code: 'PLACEMENT_NOT_FOUND',
+    })
+
+    committed('SetPlacementCaption', { placementId, caption: '😀'.repeat(2_000) })
+    expect(Array.from(placementRow(placementId)!.caption as string)).toHaveLength(2_000)
+    expect(
+      exec('SetPlacementCaption', { placementId, caption: '😀'.repeat(2_001) }),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(Array.from(placementRow(placementId)!.caption as string)).toHaveLength(2_000)
+  })
+
   it('toggles label visibility with inverse (§4.5 default visible)', () => {
     const placementId = createPlacement()
     expect(placementRow(placementId)!.label_visible).toBe(1)
@@ -301,6 +367,15 @@ describe('placement presentation state', () => {
     expect(placementRow(placementId)).toBeUndefined()
     undo(removed.inverse)
     expect(placementRow(placementId)!.locked).toBe(1)
+  })
+
+  it('DeleteDraftPlacement restores the placement-local caption on redo', () => {
+    const placementId = createPlacement()
+    committed('SetPlacementCaption', { placementId, caption: 'local thought' })
+    const removed = committed('DeleteDraftPlacement', { placementId })
+    expect(removed.inverse).toMatchObject({ payload: { caption: 'local thought' } })
+    undo(removed.inverse)
+    expect(placementRow(placementId)!.caption).toBe('local thought')
   })
 })
 

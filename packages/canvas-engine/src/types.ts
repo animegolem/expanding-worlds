@@ -37,6 +37,8 @@ export interface ScenePlacement {
   flipY: 0 | 1
   renderOrder: number
   labelVisible: 0 | 1
+  /** §4.5 rev 0.68: placement-local text that occupies the label slot. */
+  caption: string | null
   /** §6.9 rev 0.17: locked placements refuse move/resize/rotate. */
   locked: 0 | 1
   appearanceKind: 'dot' | 'icon' | 'image' | 'card' | 'frame' | null

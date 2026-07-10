@@ -11,6 +11,7 @@ import { registerDecorationHandlers } from './handlers/decorations'
 import { registerLifecycleHandlers } from './handlers/lifecycle'
 import { registerNodeHandlers } from './handlers/nodes'
 import { registerNoteHandlers } from './handlers/notes'
+import { registerPlacementHandlers } from './handlers/placements'
 import { registerTagHandlers } from './handlers/tags'
 import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry } from './queries'
@@ -36,6 +37,7 @@ beforeEach(() => {
   registerCanvasHandlers(registry)
   registerTagHandlers(registry)
   registerDecorationHandlers(registry)
+  registerPlacementHandlers(registry)
   registerLifecycleHandlers(registry)
   dispatcher = new Dispatcher(handle, registry)
   queries = new QueryRegistry()
@@ -122,6 +124,28 @@ function restore(table: 'note' | 'tag' | 'asset' | 'decoration', id: string): vo
 }
 
 describe('searchProject', () => {
+  it('keeps placement captions out of search and quick-open (§4.5 deferred scope)', () => {
+    const nodeId = createNode()
+    const placementId = uuidv7()
+    committed('CreatePlacement', {
+      placementId,
+      canvasId: handle.rootCanvasId,
+      nodeId,
+    })
+    committed('SetPlacementCaption', {
+      placementId,
+      caption: 'ultravioletcaptiontoken',
+    })
+
+    expect(search('ultravioletcaptiontoken')).toEqual({
+      notes: [],
+      tags: [],
+      assets: [],
+      canvasText: [],
+    })
+    expect(quickOpen('ultravioletcaptiontoken')).toEqual([])
+  })
+
   it('meets the AI-IMP-015 acceptance scenario (RFC slice item 12, search half)', () => {
     // GIVEN
     const noteId = createNote('Harbor Wall', 'granite base under the lighthouse beam')

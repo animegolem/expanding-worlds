@@ -196,8 +196,11 @@ describe('migration 0007: frame membership', () => {
       })
 
       const ran = migrate(db)
-      expect(ran).toEqual([7])
+      expect(ran).toEqual([7, 8])
       expect(db.get<{ n: number }>('SELECT count(*) AS n FROM node')!.n).toBe(2)
+      expect(
+        db.get<{ caption: string | null }>("SELECT caption FROM placement WHERE id = 'pl-1'"),
+      ).toEqual({ caption: null })
       expect(db.all('PRAGMA foreign_key_check')).toEqual([])
       expect(db.pragma('foreign_keys')).toBe(1)
       // frame appearance now inserts freely (CHECK gone).

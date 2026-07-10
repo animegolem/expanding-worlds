@@ -335,7 +335,11 @@ describe('getOutlineTree / listLooseNotes (§14.1, AI-IMP-069)', () => {
     // canvas holds one child. A second canvas rides an UNPLACED node
     // and must surface as root-level.
     const image = createNode()
-    createPlacement(image)
+    const imagePlacement = createPlacement(image)
+    committed('SetPlacementCaption', {
+      placementId: imagePlacement,
+      caption: 'outline-blind private observation',
+    })
     const boardNode = createNode()
     const boardNoteId = insertNote('Ruins Board')
     committed('AttachNoteToNode', { nodeId: boardNode, noteId: boardNoteId })
@@ -352,6 +356,13 @@ describe('getOutlineTree / listLooseNotes (§14.1, AI-IMP-069)', () => {
     committed('AssignTagToNode', { tagId, nodeId: image })
 
     const rows = query<Array<Record<string, unknown>>>('getOutlineTree')
+    expect(JSON.stringify(rows)).not.toContain('outline-blind private observation')
+    for (const row of rows) {
+      expect(row).not.toHaveProperty('caption')
+      for (const child of row.children as Array<Record<string, unknown>>) {
+        expect(child).not.toHaveProperty('caption')
+      }
+    }
     const byCanvas = new Map(rows.map((row) => [row.canvasId as string, row]))
     expect(rows[0]).toMatchObject({ canvasId: handle.rootCanvasId, isRoot: true, isRootLevel: true })
 
@@ -533,6 +544,7 @@ describe('getCanvasScene', () => {
     const noteId = insertNote('Harbor Study')
     handle.db.run('UPDATE node SET note_id = ? WHERE id = ?', noteId, nodeId)
     const placementId = createPlacement(nodeId)
+    committed('SetPlacementCaption', { placementId, caption: 'Local observation' })
 
     const scene = query<CanvasScene>('getCanvasScene', { canvasId: handle.rootCanvasId })
     expect(scene.canvasId).toBe(handle.rootCanvasId)
@@ -544,6 +556,7 @@ describe('getCanvasScene', () => {
       appearanceKind: 'image',
       appearanceAssetId: assetId,
       noteTitle: 'Harbor Study',
+      caption: 'Local observation',
       assetContentHash: 'a'.repeat(64),
       assetMimeType: 'image/png',
       assetWidth: 800,

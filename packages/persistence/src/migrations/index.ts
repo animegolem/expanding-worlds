@@ -5,6 +5,7 @@ import * as m0004 from './0004-placement-lock'
 import * as m0005 from './0005-bookmarks'
 import * as m0006 from './0006-card-appearance'
 import * as m0007 from './0007-frame-membership'
+import * as m0008 from './0008-placement-caption'
 
 export interface Migration {
   id: number
@@ -26,6 +27,7 @@ export const MIGRATIONS: readonly Migration[] = [
   m0005,
   m0006,
   m0007,
+  m0008,
 ]
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.id
