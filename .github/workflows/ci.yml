@@ -101,11 +101,11 @@ jobs:
         run: pnpm -r build
 
       - name: Package units (includes the lock probe)
-        # Windows runners are slow, shared, and AV-scanned — integration
-        # tests doing real IO legitimately exceed vitest's 5s default
-        # under load (AI-IMP-249 round 4: 8-15s on tests that pass in
-        # 1-3s elsewhere). Timeout raised on THIS platform only.
-        run: pnpm --filter='./packages/*' test -- --testTimeout=20000
+        # Timeout policy lives in packages/persistence/vitest.config.ts
+        # (CI-conditional): the pnpm '--' pass-through proved unreliable
+        # through pwsh (AI-IMP-249 round 6 still timed out at the 5s
+        # default), so the config owns it where quoting can't eat it.
+        run: pnpm --filter='./packages/*' test
 
       - name: Desktop units
         working-directory: apps/desktop
