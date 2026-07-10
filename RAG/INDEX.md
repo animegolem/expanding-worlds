@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 0 |
-| Planned | 5 | 2 |
+| In Progress | 1 | 1 |
+| Planned | 5 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 205 |
@@ -53,7 +53,7 @@
 > Two missing primitives surfaced in the first tester's week, both
 
 **IMPs:**
-- [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — planned
+- [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — in-progress
 
 ---
 
@@ -127,7 +127,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/renderers/placement.test.ts (982 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (976 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (947 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (932 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (938 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
 - apps/desktop/src/renderer/note/panels.ts (865 LOC)
@@ -139,7 +139,7 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
 - RAG/HUMAN-TESTING.md (711 LOC)
-- apps/desktop/src/renderer/menus/inventory.ts (699 LOC)
+- apps/desktop/src/renderer/menus/inventory.ts (709 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (657 LOC)
@@ -219,10 +219,10 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/format-bar.ts (347 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
+- apps/desktop/src/renderer/menus/inventory.test.ts (345 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (344 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
-- apps/desktop/src/renderer/menus/inventory.test.ts (337 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/persistence/src/handlers/decorations.ts (333 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)

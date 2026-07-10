@@ -58,6 +58,19 @@ const CAPTURED_COMMANDS = new Set<string>([
 const GROUP_ONLY_COMMANDS = new Set<string>([
   'CreateNode',
   'SetNodeAppearance',
+  // AI-IMP-239 (§8.4 New board): the create-board composition wraps
+  // CreateNode + CreateNoteAndAttach + CreateCanvas + CreatePlacement in
+  // one runAsUndoGroup so a single Mod+Z reverses the whole act (the
+  // placement is issued LAST, so the group fences to the ORIGIN board it
+  // lives on). Both commands below are captured ONLY inside a group —
+  // their tested inverses are DeleteDraftCanvas and DetachAndTrashNote —
+  // so the ungrouped make-canvas charm, on-demand open-as-board, and the
+  // "Attach New Note…" prompt (none wrapped in a group) stay exactly as
+  // they were; only a deliberate grouped composition opts them in by name
+  // (the §10.2 "structural commands opt in by name" extension the header
+  // notes).
+  'CreateCanvas',
+  'CreateNoteAndAttach',
   'CaptureInFrame',
   'ReleaseFromFrame',
   'UpdateDecoration',

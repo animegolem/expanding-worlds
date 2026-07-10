@@ -109,9 +109,17 @@ describe('menuFor — item inventory (§8.4)', () => {
 describe('menuFor — board inventory (§8.4)', () => {
   const EMPTY_BOARD: BoardSubject = { kind: 'board', hasBackgroundImage: false, hasColor: false }
 
-  it('emits paste / select-all / fit, backdrop family, color row, board note', () => {
+  it('leads with New board, then paste / select-all / fit, backdrop family, color row, board note', () => {
     const groups = menuFor(EMPTY_BOARD, stubActions())
-    expect(groups.map((g) => g.id)).toEqual(['board-actions', 'backdrop', 'color', 'board-note'])
+    expect(groups.map((g) => g.id)).toEqual([
+      'create',
+      'board-actions',
+      'backdrop',
+      'color',
+      'board-note',
+    ])
+    // §8.4 (AI-IMP-239): the create verb leads the menu and dispatches.
+    expect(byId(groups, 'new-board')!.run).toBeDefined()
     expect(byId(groups, 'select-all')!.shortcutId).toBe('board-select-all')
     expect(byId(groups, 'zoom-to-fit')!.shortcutId).toBe('board-zoom-fit')
     expect(byId(groups, 'paste')!.disabledReason).toBeTruthy()

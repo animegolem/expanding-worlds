@@ -12,6 +12,8 @@
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
   import { attachContextMenu, type ContextMenuHandle } from './menus/ContextMenu'
+  import { onNewBoard, type NewBoardAt } from './menus/new-board'
+  import NewBoardPalette from './note/NewBoardPalette.svelte'
   import { attachPinTool, type PinToolHandle } from './canvas/pin-tool'
   import { attachPlaceMode, type PlaceModeHandle } from './canvas/place-mode'
   import { attachTextEntry, type TextEntryController } from './canvas/text-entry'
@@ -35,6 +37,10 @@
   let tooling = $state<BoardTooling | null>(null)
   // §6.6 attach-note picker target (AI-IMP-049).
   let attachTarget = $state<string | null>(null)
+  // §8.4 new-board naming prompt target (AI-IMP-239): the world position
+  // the board-object lands at, set by the empty-board context menu verb.
+  let newBoardAt = $state<NewBoardAt | null>(null)
+  $effect(() => onNewBoard((at) => (newBoardAt = at)))
   // §4.8 tag panel (AI-IMP-071): the one instance, store-driven.
   let tagPanel = $state<TagPanelState | null>(null)
   $effect(() => onTagPanelChanged((next) => (tagPanel = next)))
@@ -140,6 +146,9 @@
   {/if}
   {#if attachTarget && handle}
     <AttachNotePicker {handle} nodeId={attachTarget} onclose={() => (attachTarget = null)} />
+  {/if}
+  {#if newBoardAt && handle}
+    <NewBoardPalette {handle} at={newBoardAt} onclose={() => (newBoardAt = null)} />
   {/if}
   {#if tagPanel && handle}
     <TagPanel {handle} hostElement={element} panel={tagPanel} />
