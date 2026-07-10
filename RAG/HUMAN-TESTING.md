@@ -792,3 +792,17 @@ back/forward arrows, and the bookmark pin. Before: every one of
 them dragged the window or did nothing. Expected now: each
 navigates/acts; dragging the window still works from empty strip
 space (the title text area).
+
+## AI-IMP-262 — board-pin label crispness (2026-07-10)
+
+**Build:** next tagged build after this ticket merges (or a reloaded
+`pnpm dev` window after `pnpm -r build`).
+**Try (owner mac AND alph's Windows box with display scaling):** on
+Home, make a couple of boards via right-click → "New board…", then
+zoom from fit-view in to a single pin filling much of the window.
+Before: the name under the ring was a small blurry smudge at any
+real zoom. Expected now: the name stays crisp at every zoom level —
+glyph edges sharpen as you zoom in instead of turning to mush (the
+label re-rasters as you cross zoom steps; no visible pop expected).
+Also worth a glance on a large image placement: its title should
+look exactly as before (no regression at 100%+ display scaling).

@@ -674,6 +674,53 @@ function labelBasis(item: ScenePlacement): { height: number } {
  */
 export const LABEL_TEXT_HEIGHT_RATIO = 1.3
 
+/**
+ * AI-IMP-262 label re-raster buckets. A label is a Text rasterized at
+ * fontSize × Text.resolution device px; pixi re-rasters only when the
+ * style or resolution changes (CanvasTextPipe keys on
+ * text:styleKey:resolution) and auto-resolution is the renderer's DPR
+ * — camera zoom enters neither, so a zoom glide upscales one fixed
+ * raster indefinitely. A New-board pin makes that catastrophic: its
+ * bare-node body defaults to 24 world units, the §4.5 ratio puts the
+ * label at ~3.4 world units, and Home's fit-view zooms magnify that
+ * ~7-device-px raster 8-20× into mush (the field report this ticket
+ * answers). labelTextResolution picks the resolution the raster
+ * SHOULD have for the current effective scale (zoom × |placement
+ * scale| × DPR), quantized UP to the next power of the bucket base so
+ * glyphs are only ever downscaled (< one bucket, invisible under
+ * linear filtering) and a glide re-rasters at most once per bucket
+ * crossing — ~10 crossings over the full MIN..MAX_ZOOM range.
+ * Floored at the DPR (today's auto value: zooming OUT never rasters
+ * below what a static scene gets) and capped so one label's glyph em
+ * never exceeds LABEL_MAX_RASTER_EM_PX device px however deep
+ * MAX_ZOOM (64×) is pushed — already-large labels (big image bodies)
+ * hit the cap at their DPR floor and keep today's raster exactly.
+ */
+const LABEL_RESOLUTION_BUCKET_BASE = 1.5
+const LABEL_MAX_RASTER_EM_PX = 192
+
+export function labelTextResolution(
+  fontSize: number,
+  effectiveZoom: number,
+  dpr: number = (globalThis as { devicePixelRatio?: number }).devicePixelRatio ?? 1,
+): number {
+  const safeDpr = dpr > 0 ? dpr : 1
+  if (!(fontSize > 0)) return safeDpr
+  const needed = Math.max(effectiveZoom, 0) * safeDpr
+  const stepped =
+    needed <= safeDpr
+      ? safeDpr
+      : Math.pow(
+          LABEL_RESOLUTION_BUCKET_BASE,
+          // Epsilon so an exact bucket value does not ceil past itself.
+          Math.ceil(
+            Math.log(needed) / Math.log(LABEL_RESOLUTION_BUCKET_BASE) - 1e-9,
+          ),
+        )
+  const cap = Math.max(safeDpr, LABEL_MAX_RASTER_EM_PX / fontSize)
+  return Math.min(stepped, cap)
+}
+
 /** True when syncLabel would draw an under-body label for this item. */
 function hasUnderBodyLabel(item: ScenePlacement): boolean {
   // Mirrors syncLabel's guard (title/visibility/§4.6 card) plus flipY:
@@ -802,7 +849,7 @@ export function syncPlacementLabelOffset(
   item: ScenePlacement,
   zoom: number,
 ): void {
-  const label = object.children.find((child) => child.label === 'label')
+  const label = object.children.find((child) => child.label === 'label') as Text | undefined
   if (!label) return
   const scale = Math.abs(item.scale) || 1
   const safeZoom = zoom > 0 ? zoom : 1
@@ -819,6 +866,15 @@ export function syncPlacementLabelOffset(
   // to a zero rect — the observable "the label is gone" the e2e/debug
   // seam (labelBounds) polls for, and a small render-cost saving.
   label.visible = opacity > 0
+  // AI-IMP-262: keep the glyph raster tracking the effective scale so
+  // zooming in never upscales a small texture into blur. Guarded —
+  // the resolution setter re-rasters unconditionally, so assign only
+  // on a bucket change, and never for a hidden label (it re-derives
+  // the moment visibility returns, on this same cull-pass hook).
+  if (label.visible) {
+    const next = labelTextResolution(Number(label.style.fontSize), safeZoom * scale)
+    if (label.resolution !== next) label.resolution = next
+  }
 }
 
 /**

@@ -12,12 +12,22 @@ annotations.
 
 ## [Unreleased]
 
+### For testers
+- Fixed: board-pin names on Home (and every placement label) were a
+  blurry smudge once you zoomed in — labels now re-sharpen as you
+  zoom, so a board's name is readable at the zooms Home is actually
+  used at.
+
 ### Under the hood
 - The Windows CI leg is standing and green (AI-IMP-242/249,
   three consecutive runs): full units + the 16-process lock probe
   + smoke e2e on every push. Six rounds of real Windows findings
   closed en route — fsync semantics, handle leaks, DELETE_PENDING
   on create and mkdir, the cross-platform pnpm electron husk.
+- Placement labels re-raster at a quantized effective-zoom bucket in
+  the cull pass instead of stretching one DPR-sized texture forever
+  (AI-IMP-262) — convicted by a runtime repro: a New-board pin's
+  label rasters at ~7 device px and Home zooms magnified it 8-20×.
 
 ## [v0.20.0] — 2026-07-10 — the hardening build
 
