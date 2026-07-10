@@ -9,7 +9,7 @@ tags:
 kanban_status: planned
 depends_on: [AI-IMP-249]
 parent_epic:
-confidence_score: 0.5
+confidence_score: 0.95
 date_created: 2026-07-10
 date_completed:
 ---
@@ -19,28 +19,68 @@ date_completed:
 
 ## Summary of Issue #1
 
-Since the Windows leg merged to main, all four main pushes have
-failed the Windows job at the lock probe (runs 29092991723,
-29093719134, 29094024841, 29094412192) — while the SAME lock.ts
-was 3/3 green on the leg pre-merge. NEW failure signature, not the
-round-3 ERR crash: in round 2, all 16 workers report an HONEST
-`LOCKED` — lock file present at ~500–650ms age, guard absent
-(ENOENT) — under BOTH staleAfterMs 0 and 30000; assertion
-`expected 0 to be 1` winners (lock-probe.spec.ts:140). LEAD
-HYPOTHESIS (unverified; the session's pre-implementation review
-supersedes): a probe-orchestration race, not a protocol break —
-round N's winner has not yet released/exited when round N+1's
-workers sample, so its live same-host pid correctly refuses every
-reclaim (staleAfterMs 0 still respects a live pid by design,
-AI-IMP-226). Merged main runs a larger persistence suite before
-the probe (the C10 batch + codec tests), shifting timing/load
-enough to surface it. Counter-hypothesis to rule out: the winner's
-release genuinely failing on Windows (unlink swallowed in
-`ProjectLock.release`), stranding a live-pid lock. Done means: the
-cause is convicted with probe diagnostics, fixed at the cause
-(probe orchestration OR release path — never by weakening
-reclaim), and the Windows job is green on main across 3
-consecutive pushes.
+Two of the four initially cited post-merge Windows runs failed the
+lock probe, not four. The corrected evidence table is normative:
+
+| Run | Actual Windows failure |
+| --- | --- |
+| 29092991723 | Package units green (55 files / 600 tests); desktop `anchored-placement.test.ts` adoption guard failed on Windows path separators. |
+| 29093719134 | Lock probe zero-winner: round 4, `staleAfterMs=0`, all 16 honestly `LOCKED`. |
+| 29094024841 | No probe failure; `invariants.spec.ts` and `queries-structure.test.ts` setup hooks timed out at 10s. |
+| 29094412192 | Lock probe zero-winner: round 2 in dist at `staleAfterMs=0` and source at `30000`; all 16 honestly `LOCKED`. |
+
+The genuine signature is a lock present at ~500–760ms age with no
+guard, under either staleness configuration. The same lock/probe/
+worker files were 3/3 green on pre-merge leg runs 29085480598,
+29088182117, and 29090452643.
+
+## Pre-implementation review correction (2026-07-10)
+
+The lead's prior-winner orchestration hypothesis is contradicted by
+the current probe. `runWorker` resolves only on child `close`, the
+winner calls `release()` before `process.exit()`, and `runRound`
+awaits all 16 outcomes before returning (`lock-probe.spec.ts:75-118`,
+`lock-probe-worker.mjs:35-40`). A new round also synchronously
+overwrites `project.lock` with its planted corpse before spawning the
+race (`lock-probe.spec.ts:59-70,103-108`), so a prior winner's file
+cannot directly explain the next round.
+
+The diagnostic target from pre-implementation review was fixture PID
+reuse. Each staleness test created one dead same-host PID and reused it
+across all five rounds while each round started 16 new processes
+(`lock-probe.spec.ts:22-23,129-133` at the diagnostic commit). Windows
+could recycle that PID into another runner process, at which point every
+contender correctly refused the apparently-live same-host
+`probe-corpse`. The original diagnostic omitted holder token/PID, so the
+first round added that evidence before any behavior change; the result
+below convicted this target.
+
+`ProjectLock.release` swallowing unlink failures is a separately
+convicted full-file-review defect (`lock.ts:206-216`), but it is not
+yet the probe diagnosis. Done means the probe evidence convicts the
+surviving holder, the fix lands at that cause without weakening
+reclaim, and the Windows job is green on main across 3 consecutive
+pushes.
+
+## Convicted cause (Windows run 29105643600)
+
+The diagnostic run convicted fixture PID reuse and exonerated the lock
+protocol. In round 0 at `staleAfterMs=0`, worker 8244 won and reported
+`postReleaseLock=unavailable(ENOENT)`, proving release removed its lock.
+In round 1, all 16 workers reported the still-planted
+`token=probe-corpse`, `holderPid=3568`, at ~724-791ms with no guard.
+PID 3568 matched none of those workers: another runner process had
+recycled the fixture's once-dead PID. Every contender then correctly
+refused a genuinely live same-host PID as AI-IMP-226 requires.
+
+The fixture now obtains and verifies a fresh exited-child PID for every
+round. Because Windows can recycle even that PID between verification
+and acquisition, a zero-winner round rechecks it. The round is replanted
+and retried once only when the planted `probe-corpse` lock survived and
+its PID is no longer provably dead. A random surviving token, a corpse
+still returning `ESRCH`, any split-winner result, or a second zero-winner
+fails loudly with attempt history. An impossible PID was rejected because
+it would stop exercising the real provably-dead same-host path.
 
 ### Out of Scope
 
@@ -51,22 +91,22 @@ consecutive pushes.
 
 ### Design/Approach
 
-Reproduce/diagnose from CI (the probe already dumps lock/guard
-state on failure — extend if the winner's release outcome isn't
-visible). Establish: does round N's winner exit before round N+1
-opens, and is its release unlink succeeding on Windows? If
-orchestration: make the probe's round boundary wait for the prior
-winner's release/exit (deterministic join, not sleep). If release:
-fix the release path honestly (surface the unlink failure,
-retry-within-window like acquire). Iterate on a `ci/` branch; the
-windows job runs on every branch push.
+Diagnostics report worker PID plus holder PID/token on every `LOCKED`
+outcome, post-release lock/guard state on every `WIN`, and prior-round
+history on failure. Run 29105643600 convicted the planted corpse rather
+than release. Use a freshly verified exited-child PID per round and the
+single invalid-round retry described above. No reclaim-policy change is
+permitted.
 
 ### Files to Touch
 
 - `packages/persistence/src/lock-probe.spec.ts` (orchestration /
   diagnostics).
+- `packages/persistence/test-fixtures/lock-probe-worker.mjs`
+  (holder/release diagnostics).
+- `RAG/AI-IMP/AI-IMP-263-lock-probe-zero-winner-main.md`
+  (evidence and convicted cause).
 - `packages/persistence/src/lock.ts` ONLY if release is convicted.
-- Nothing else.
 
 ### Implementation Checklist
 
@@ -74,9 +114,11 @@ windows job runs on every branch push.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Cause convicted with cited probe evidence (orchestration vs
-      release), recorded here.
-- [ ] Fix at the cause; reclaim policy untouched.
+- [x] Diagnostic branch reports planted holder identity, worker
+      identities, and prior winner post-release state on Windows.
+- [x] Cause convicted with cited probe evidence (fixture vs release),
+      recorded here.
+- [x] Fix at the cause; reclaim policy untouched.
 - [ ] Windows job green on the working branch, then 3 consecutive
       green main pushes after merge.
 - [ ] macOS/Linux persistence suite stays green.
@@ -97,3 +139,13 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+The lead's initial orchestration diagnosis and four-identical-failures
+premise were both corrected during pre-implementation review. The first
+diagnostic Windows run then showed the fixture's reused corpse PID had
+become live in an unrelated runner process; release was clean. The lead
+withdrew an impossible-PID suggestion because it would evade the path the
+probe exists to test. Round 2 instead uses a fresh real exited PID per
+round plus one bounded retry when post-round evidence proves the fixture
+became invalid. Local pnpm initially hit its documented no-TTY modules
+purge guard after rebase; validation was rerun with `CI=true`.
