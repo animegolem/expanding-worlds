@@ -77,9 +77,10 @@ migration) + its spec.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Per-request staging; finally-cleanup; orphan sweep.
-- [ ] Concurrent-export unit test: both archives valid.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Per-request staging; finally-cleanup; orphan sweep.
+- [x] Snapshot allowlist replaces `git add -A`; gitignore v2 migration.
+- [x] Concurrent-export unit test: both archives valid.
+- [x] Gates: build, per-package units, lint, e2e in 4 foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -97,3 +98,61 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**Snapshot allowlist derived (cited).** The canonical committed set is
+snapshot.ts's own `GITIGNORE_BODY` comment ("a snapshot commits
+project.sqlite (checkpointed), assets/, and notes/ only") crossed with
+RFC-0001 §11.2 (the `project.sqlite` / `assets/` / `derivatives/` /
+`cache/` layout, RFC lines 2743-2751) and §16 (RFC lines 3504-3505:
+"Caches, search indexes, thumbnails, and map tiles are regenerable and
+need not be canonical export content"). The allowlist is therefore
+`['project.sqlite', 'notes', 'assets', '.gitignore']` — the three §16
+canonical contents plus the managed ignore file itself (it was already
+tracked under `git add -A`; keeping it in the allowlist preserves that
+so restored/pushed repos carry the exclusions). Deliberately EXCLUDED
+and treated as "expected uncommitted" (never flagged as strays):
+`.git`, `project.lock`, the three SQLite sidecars
+(`project.sqlite-wal/-shm/-journal`), `derivatives/`, `cache/` — the
+exact set the gitignore excludes. Anything else at top level is logged
+(`[snapshot] unexpected project entries left uncommitted: …`) and never
+committed.
+
+**Deviations / findings.**
+- Staging prefix is `ew-export-stage-`, not the ticket's bare
+  `ew-export-`, because the persistence suite creates its own
+  `ew-export-` / `ew-export-out-` fixture dirs in the same OS tmp; a
+  bare-prefix orphan sweep could confuse a fixture (or, in principle, a
+  project) for staging. The distinct prefix scopes the sweep to exactly
+  what this module creates. Sweep age gate is 24h — far above any
+  concurrent export's fresh staging, so concurrency is never swept.
+- The empty-diff guard moved from `git status --porcelain` to
+  `git diff --cached --name-only`: with an allowlist add, an untracked
+  stray makes `status --porcelain` non-empty, which would drive a
+  `git commit` with nothing staged (exits non-zero → a spurious logged
+  failure). Measuring the STAGED set is the correct guard and stays
+  empty-diff-clean.
+- `git add -- <pathspec>` still records deletions of tracked files under
+  each allowlisted path (a removed note/asset commits), so dropping
+  `-A` loses no delete-tracking.
+- VACUUM INTO and the notes `cp` are real SQLite/filesystem writes (no
+  rename), so cross-filesystem staging in OS temp is safe; assets stream
+  from the LIVE project dir (never staged), and the `.partial` atomic
+  finalization (AI-IMP-229) still lands beside destPath — the staging
+  move composes with it untouched.
+- Gitignore v2 migration wraps the managed block in versioned
+  BEGIN/END sentinels; `seedGitignore` rewrites an old v1 block in place
+  (user-authored lines outside it preserved) and is idempotent on a v2
+  file. Existing projects thus gain the versioned exclusions — the old
+  seed early-returned on the marker and left them stale (the CA-010
+  hazard).
+- Updated the existing restore e2e/unit fixtures that committed a
+  top-level `marker.txt` to use `notes/marker.md` (an allowlisted path),
+  since a top-level stray is now correctly NOT committed.
+
+**Validation.** `pnpm -r build` clean; persistence units 555 passed
+(incl. new concurrent-export test); desktop units 338 passed (incl. new
+allowlist + v2-migration tests); `pnpm lint` clean; e2e all four shards
+green except one PRE-EXISTING, environment-only failure
+(`decorations.spec.ts` font-family enumeration expects >3 installed
+system fonts — unrelated to export/snapshot; fails identically on
+retry, zero overlap with the diff).
