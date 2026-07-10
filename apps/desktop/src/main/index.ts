@@ -7,6 +7,7 @@ import { blobRelativePath, thumbnailRelativePath } from '@ew/persistence'
 import { loadAppSettingsFile, writeAppSettingsFile } from './app-settings'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import { createSnapshotEngine } from './snapshot'
+import { MaterializedProjectOpenRegistry } from './open-capability'
 import type {
   ProjectRequest,
   ProjectResponse,
@@ -720,6 +721,7 @@ const snapshots = createSnapshotEngine({
   // once-per-episode failure toast live renderer-side (chrome/status).
   onPushState: (state) => broadcastPushState(state),
 })
+const materializedProjectOpens = new MaterializedProjectOpenRegistry()
 
 // Last push state, retained so a window created after a push began can
 // catch up on attach (the same cold-boot race the service event has).
@@ -865,16 +867,24 @@ void app.whenReady().then(() => {
   // Restore NEVER writes inside the source project (destroy-nothing
   // applies to time travel); it returns the NEW directory's path.
   ipcMain.handle('snapshot:list', () => snapshots.listSnapshots())
-  ipcMain.handle('snapshot:restore', (_event, sha: string) => snapshots.restore(String(sha)))
-  // Open Restored Project: relaunch on the restored directory (the
-  // standard cold-boot open path — §11.2 recovery rebuilds derivatives
-  // lazily). app.quit runs the clean-close ritual first so the current
-  // project's writer lock releases (§11.1) before the reboot lands.
-  ipcMain.handle('restore:open', (_event, dir: string) => {
+  ipcMain.handle('snapshot:restore', async (event, sha: string) => {
+    const result = await snapshots.restore(String(sha))
+    return result.ok
+      ? { ...result, openToken: materializedProjectOpens.issue(event.sender, result.dir) }
+      : result
+  })
+  // Open Restored/Imported Project: consume the one-use authority main
+  // issued when it materialized the directory. The renderer can display
+  // the path but cannot aim relaunch at an arbitrary writable directory.
+  // app.quit runs the clean-close ritual first so the current project's
+  // writer lock releases (§11.1) before the reboot lands.
+  ipcMain.handle('restore:open', (event, openToken: unknown) => {
+    const dir = materializedProjectOpens.consume(event.sender, openToken)
+    if (!dir) return false
     const args = process.argv
       .slice(1)
       .filter((a) => !a.startsWith(OPEN_DIR_ARG))
-      .concat([`${OPEN_DIR_ARG}${String(dir)}`])
+      .concat([`${OPEN_DIR_ARG}${dir}`])
     app.relaunch({ args })
     app.quit()
     return true
@@ -928,7 +938,7 @@ void app.whenReady().then(() => {
     })
     return picked.canceled || picked.filePaths.length === 0 ? null : picked.filePaths[0]
   })
-  ipcMain.handle('import:run', (_event, archivePath: string) => {
+  ipcMain.handle('import:run', async (event, archivePath: string) => {
     const parent = dirname(projectDir())
     const stem = basename(String(archivePath)).replace(/\.ewproj$/i, '') || 'project'
     const date = new Date().toISOString().slice(0, 10)
@@ -936,7 +946,14 @@ void app.whenReady().then(() => {
     for (let n = 2; existsSync(destDir) || existsSync(`${destDir}.partial`); n += 1) {
       destDir = join(parent, `${stem}-imported-${date} (${n})`)
     }
-    return callUtility({ type: 'import-project', archivePath: String(archivePath), destDir })
+    const result = await callUtility({
+      type: 'import-project',
+      archivePath: String(archivePath),
+      destDir,
+    })
+    return 'type' in result && result.type === 'import-project' && result.ok
+      ? { ...result, openToken: materializedProjectOpens.issue(event.sender, result.dir) }
+      : result
   })
   ipcMain.handle('app:get-version', () => app.getVersion())
 

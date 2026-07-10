@@ -15,17 +15,21 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { promisify } from 'node:util'
-import type {
-  ProjectRequest,
-  ProjectResponse,
-  RestoreResult,
-  SnapshotEntry,
-  SnapshotMode,
-  SnapshotPushState,
-  SnapshotStatus,
-  SnapshotTestConnectionResult,
+import {
+  SNAPSHOT_MODE_KEY,
+  SNAPSHOT_REMOTE_KEY,
+  type ProjectRequest,
+  type ProjectResponse,
+  type SnapshotEntry,
+  type SnapshotMode,
+  type SnapshotPushState,
+  type SnapshotStatus,
+  type SnapshotTestConnectionResult,
 } from '@ew/protocol'
-import { SNAPSHOT_MODE_KEY, SNAPSHOT_REMOTE_KEY } from '@ew/protocol'
+
+export type SnapshotMaterializeResult =
+  | { ok: true; dir: string }
+  | { ok: false; code: string; message: string }
 
 /**
  * Session snapshot engine (RFC-0001 §11.4, AI-IMP-120). Lives in the
@@ -170,7 +174,7 @@ export interface SnapshotEngine {
    * NEW sibling directory `<project>-restored-<date>` (collision-
    * suffixed), never in-place, then validate the extracted db opens.
    * The source project directory is never written. */
-  restore: (sha: string) => Promise<RestoreResult>
+  restore: (sha: string) => Promise<SnapshotMaterializeResult>
   /** §11.4 remote push (AI-IMP-122): the deliberate Test connection
    * action — `git ls-remote <url>` with the terminal prompt disabled so
    * a missing credential fails fast instead of hanging on a hidden
@@ -688,7 +692,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     }
   }
 
-  async function restore(sha: string): Promise<RestoreResult> {
+  async function restore(sha: string): Promise<SnapshotMaterializeResult> {
     const sourceDir = deps.projectDir()
     if (!existsSync(join(sourceDir, '.git'))) {
       return { ok: false, code: 'NO_HISTORY', message: 'this project has no snapshot history' }
