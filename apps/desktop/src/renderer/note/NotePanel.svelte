@@ -297,6 +297,35 @@
     returnNoteId = null
   }
 
+  /** §9.2 the loose-note exit (AI-IMP-260): a note living NOWHERE
+   * offers Trash where it confesses that — the unfolded "0 places"
+   * list. TrashNote is undo-EXEMPT (AI-IMP-233 trash-is-recovery-
+   * home); the Trash view is the way back. The panel closes through
+   * the ordinary path so the §7.1 flush contract holds. */
+  let trashing = $state(false)
+  async function trashLooseNote(): Promise<void> {
+    const project = paneProject
+    const current = note
+    if (!project || !current || trashing) return
+    trashing = true
+    try {
+      const result = await project.execute('TrashNote', { noteId: current.id })
+      if (result.status !== 'committed') {
+        error =
+          result.status === 'error' ? result.message : 'the project changed underneath (retry)'
+        return
+      }
+      window.dispatchEvent(
+        new CustomEvent('ew-board-notice', {
+          detail: { message: `“${current.title}” moved to Trash` },
+        }),
+      )
+      closePanel(record.key)
+    } finally {
+      trashing = false
+    }
+  }
+
   /** Materialize via CreateNote (§7.2 items 1–2). */
   async function materialize(body: string): Promise<void> {
     const project = paneProject
@@ -1480,6 +1509,22 @@
       {activeCanvasId}
       herePlacementId={record.anchor.kind === 'placement' ? record.anchor.placementId : null}
     />
+    {#if uses.totalPlacements === 0}
+      <!-- §9.2 (AI-IMP-260): the loose note's exit lives where its
+           looseness shows. Destructive-last-alone (§16 grammar). -->
+      <div class="loose-exit">
+        <button
+          type="button"
+          class="trash-note"
+          data-testid="panel-trash-note"
+          disabled={trashing}
+          onclick={() => void trashLooseNote()}
+          use:tooltip={{ name: 'Trash — recover from the Trash view' }}
+        >
+          Trash this note
+        </button>
+      </div>
+    {/if}
   {/if}
   {#if conflict}
     <TitleConflictDialog
@@ -1763,6 +1808,28 @@
     font-size: 0.65rem;
     cursor: grab;
     user-select: none;
+  }
+
+  /* §9.2 (AI-IMP-260): the loose note's Trash row under the unfolded
+     empty uses list — destructive-last-alone, quiet until hovered. */
+  .loose-exit {
+    padding: 0.15rem 0.45rem 0.3rem;
+  }
+
+  .trash-note {
+    padding: 0.1rem 0.45rem;
+    border: 1px solid var(--ew-paper-border-strong);
+    border-radius: 5px;
+    background: transparent;
+    color: var(--ew-danger);
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+  }
+
+  .trash-note:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 
   .chrome-btn {

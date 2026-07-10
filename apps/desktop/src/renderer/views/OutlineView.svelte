@@ -21,8 +21,11 @@
   import { NODE_DRAG_MIME, NOTE_DRAG_MIME } from '../canvas/import-surfaces'
   import { closeTakeover } from '../chrome/takeover'
   import { navigateTo } from '../chrome/navigation'
+  import { toast } from '../chrome/status'
   import { tooltip } from '../chrome/tooltip'
   import { requestOpenNote, requestPlaceNode, requestPlaceNote } from '../note/open-note'
+  import { createNoteProjectPort } from '../note/project-port'
+  import type { ProjectPort } from '../note/note-editor'
 
   interface OutlineChildRow {
     placementId: string
@@ -115,6 +118,32 @@
     void refresh()
     return window.ew.project.onChanged(() => void refresh())
   })
+
+  // §9.2 the loose-note exit (AI-IMP-260): Trash on a loose bin row.
+  // The outline owns no canvas gateway, so the verb goes through a
+  // lazily-created note project port — the CommandGateway seam, never
+  // a hand-rolled envelope (FR-23 direction). TrashNote is undo-EXEMPT
+  // (AI-IMP-233: trash-is-recovery-home); recovery is the Trash view.
+  // The refresh above hears the commit and the row leaves the list.
+  let trashPort: ProjectPort | null = null
+  let disposeTrashPort: (() => void) | null = null
+  $effect(() => () => {
+    disposeTrashPort?.()
+    disposeTrashPort = null
+    trashPort = null
+  })
+
+  async function trashLooseNote(note: { id: string; title: string }): Promise<void> {
+    if (!trashPort) {
+      const { port, dispose } = await createNoteProjectPort()
+      trashPort = port
+      disposeTrashPort = dispose
+    }
+    const result = await trashPort.execute('TrashNote', { noteId: note.id })
+    if (result.status === 'committed') toast(`“${note.title}” moved to Trash`)
+    else if (result.status === 'error') toast(result.message, { kind: 'error' })
+    else toast('the project changed underneath (retry)', { kind: 'error' })
+  }
 
   function childTitle(child: OutlineChildRow): string {
     return child.noteTitle ?? shortCode(child.nodeId)
@@ -493,6 +522,15 @@
                 >
                   Place
                 </button>
+                <button
+                  type="button"
+                  class="row-action destructive"
+                  data-testid="outline-trash-note"
+                  onclick={() => void trashLooseNote(note)}
+                  use:tooltip={{ name: 'Trash — recover from the Trash view' }}
+                >
+                  Trash
+                </button>
               </div>
             </li>
           {/each}
@@ -639,6 +677,12 @@
   .row:hover .row-action,
   .row:focus-within .row-action {
     opacity: 1;
+  }
+
+  /* §16 grammar: destructive reads as destructive, even as a row
+     action (AI-IMP-260 — the loose bin's Trash). */
+  .row-action.destructive {
+    color: var(--ew-danger);
   }
 
   .outline :global(.flash) {

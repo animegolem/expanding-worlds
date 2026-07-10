@@ -20,6 +20,14 @@ tickets.
   it. A placed note's panel is unchanged (glued to its node until
   pinned).
 
+- [ ] **Loose notes can be trashed** (AI-IMP-260, 2026-07-10 —
+  alph's ask): in the outline's loose bin, hover a loose note row —
+  a red Trash action sits beside Place; or open the note and unfold
+  "⌖ 0 places" — "Trash this note" lives there. Either way it lands
+  in ☰ → Trash…, and restore from there brings it back loose.
+  Mod+Z deliberately does NOT undo a trash (the Trash view is the
+  recovery home) — flag if that surprises you in practice.
+
 - [ ] **Compound gestures fail whole** (AI-IMP-232, 2026-07-09,
   Sol P2): drag items into a frame under a forced refusal (dev:
   __ewDebug.failNextCommand("TransformContent")) — items snap back,

@@ -22,6 +22,10 @@ annotations.
   secretly clicked the search charm, and the panel could never be
   moved. It now spawns clear of the rail, close closes, and a new ⠿
   grip on the header drags it anywhere without pinning first.
+- New: loose notes can finally be deleted — a red Trash action on
+  the outline's loose-bin rows, and "Trash this note" inside an open
+  loose note's "0 places" list. Recovery is the Trash view (Mod+Z
+  deliberately doesn't undo a trash).
 
 ### Under the hood
 - The Windows CI leg is standing and green (AI-IMP-242/249,
@@ -39,6 +43,11 @@ annotations.
   default clears the charm-rail column, and a ⠿ grip marks the
   grab area. Review corrected the ticket: no regression existed —
   the collision and the grab-area gap shipped identically in v0.16.
+- The loose-note exit (AI-IMP-260): TrashNote existed with zero
+  dispatchers; the outline loose bin and the panel's empty uses list
+  now dispatch it through the gateway-backed note project port (no
+  new hand-rolled envelopes). Acceptance corrected at review to the
+  ratified undo matrix: recovery is the Trash view, not Mod+Z.
 - The Windows lock-probe zero-winner convicted as fixture PID reuse
   and fixed in the fixture (AI-IMP-263, Codex): the planted corpse
   pid was recycled into a live runner process and every worker
