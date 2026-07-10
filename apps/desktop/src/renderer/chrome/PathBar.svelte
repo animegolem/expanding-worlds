@@ -247,6 +247,15 @@
   }
 
   .path-bar {
+    /* AI-IMP-257: the bar lives INSIDE the OS-owned title band (mac
+       hidden titlebar / Windows titleBarOverlay), which is a native
+       drag region — clicks there move the window unless carved out.
+       The AI-IMP-165 pin carve-out was a class with no backing rule
+       (Svelte scoping: TitleStrip's .no-drag never reached this DOM),
+       so the WHOLE bar was click-dead on packaged builds (alph,
+       v0.20.0). Carve the container so every present and future
+       child is born clickable; empty band space stays draggable. */
+    -webkit-app-region: no-drag;
     width: fit-content;
     display: flex;
     align-items: center;

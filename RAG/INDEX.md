@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 222 |
-| **Total** | **27** | **255** |
+| **Total** | **27** | **256** |
 
 ## In Progress
 
@@ -102,6 +102,7 @@
 - [[AI-IMP-259-path-bar-containment|IMP-259]] — planned, no epic dependency found
 - [[AI-IMP-260-delete-loose-notes|IMP-260]] — planned, no epic dependency found
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
+- [[AI-IMP-262-board-pin-label-legibility|IMP-262]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -142,8 +143,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
+- RAG/HUMAN-TESTING.md (794 LOC)
 - apps/desktop/src/main/snapshot.ts (791 LOC)
-- RAG/HUMAN-TESTING.md (784 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (782 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
@@ -211,11 +212,11 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/lock.ts (401 LOC)
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
+- RAG/DESIGN-QUEUE.md (389 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (386 LOC)
 - spike/webkit-renderer/src/main.ts (385 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (385 LOC)
-- RAG/DESIGN-QUEUE.md (384 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (380 LOC)
 - apps/desktop/src/renderer/undo/undo-store.ts (375 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (374 LOC)
@@ -225,13 +226,13 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-gallery.test.ts (361 LOC)
 - packages/canvas-engine/src/hit-test.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (361 LOC)
+- apps/desktop/src/renderer/chrome/PathBar.svelte (360 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
 - apps/desktop/src/renderer/note/format-bar.ts (353 LOC)
-- apps/desktop/src/renderer/chrome/PathBar.svelte (351 LOC)
 - spike/tauri-shell/src/main.ts (350 LOC)
 - packages/persistence/src/queries-lifecycle.test.ts (346 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)

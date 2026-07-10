@@ -782,3 +782,13 @@ sits in the band; moving below the band lowers the strip and normal
 fade cadence resumes; clicking away to another app still fades chrome.
 Worth checking on alph's Windows build too — the native band there is
 the 34px titleBarOverlay, same mechanism.
+
+## AI-IMP-257 — top-band clicks (2026-07-10)
+
+**Build:** next tagged build after 3659ccaf (or reloaded dev).
+**Try (owner mac + alph Windows):** hover the top to reveal the
+strip, then click each breadcrumb segment, the ⌂ home button, the
+back/forward arrows, and the bookmark pin. Before: every one of
+them dragged the window or did nothing. Expected now: each
+navigates/acts; dragging the window still works from empty strip
+space (the title text area).

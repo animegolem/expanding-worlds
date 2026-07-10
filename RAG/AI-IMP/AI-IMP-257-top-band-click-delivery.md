@@ -71,15 +71,25 @@ sits inside a no-drag ancestor. E2E cannot prove the OS layer
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Pre-implementation review: packaged-build dead-element census
-      recorded here; mechanism confirmed.
-- [ ] Structural no-drag: interactive band content clickable, drag
-      confined to explicit handle rects; window still draggable by
-      the strip's empty regions.
-- [ ] Guard test fails on a focusable band element outside a
-      no-drag ancestor.
-- [ ] Desktop vitest + shell e2e green (contract regression only).
-- [ ] HUMAN-TESTING entries (owner mac / alph Windows).
+- [x] Pre-implementation review: SOURCE census superseded the
+      hypothesis with a sharper cause — `-webkit-app-region` exists
+      ONLY in TitleStrip.svelte's scoped styles; PathBar's
+      `class="pin no-drag"` (AI-IMP-165) had NO backing rule, so
+      the ENTIRE bar (pin included) was click-dead in the band,
+      matching alph's "can't click anything" exactly. Svelte style
+      scoping is the mechanism: a borrowed no-drag class is a
+      carve-out that does not exist.
+- [x] Structural no-drag: `.path-bar` container carries the rule
+      (PathBar.svelte) — home, arrows, crumbs, pin, and all future
+      children carved; empty band space still drags the window.
+- [x] Guard test (drag-region-guard.test.ts): fails on any chrome
+      component using a no-drag class without a backing rule in
+      its OWN file (the exact failure mode), and pins both known
+      band residents' rules. 3/3 green.
+- [x] Desktop vitest 404 green + shell e2e 7/7 green.
+- [ ] HUMAN-TESTING entries (owner mac / alph Windows) — the OS
+      layer is unprovable from the suite; the packaged-build click
+      is the real proof.
 
 ### Acceptance Criteria
 

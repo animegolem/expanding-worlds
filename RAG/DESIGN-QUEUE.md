@@ -37,7 +37,12 @@ all moved into the RFC.
   worlds" is our PROJECT PICKER, not the root canvas — the recents
   strip may belong at the app tier, not in-project. Resolve
   together; pieces land in RFC §4/§8 and unblock 259's display
-  half.
+  half. UPDATE (same day, after alph clicked a board ring and
+  understood it): "home can stay the way it is... I'd like this as
+  a way to view the different starting worlds" — SPATIAL HOME IS
+  ENDORSED by the tester; the launcher question narrows to Home's
+  empty-state affordances and the naming/display rules. The
+  blocking bug he hit instead is label legibility (AI-IMP-262).
 
 - **Reading a note on the board — the open-verb as a camera verb**
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
