@@ -5,6 +5,7 @@ import { uuidv7 } from '@ew/domain'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Db } from '../db'
 import { openProjectService, type ProjectService } from '../service'
+import { IMPORT_LIMITS } from './import-limits'
 import { importProject, readArchiveManifest } from './project-import'
 
 /**
@@ -294,5 +295,169 @@ describe('importProject (§16 roundtrip, AI-IMP-158)', () => {
     const junk = join(outDir, 'junk.ewproj')
     writeFileSync(junk, 'not a zip at all')
     await expect(readArchiveManifest(junk)).rejects.toMatchObject({ code: 'BAD_ARCHIVE' })
+  })
+})
+
+/** Build a raw ZIP straight from buffers — bypasses the exporter so a
+ * test can craft a hostile archive (bomb, over-count, lie). */
+async function writeRawZip(
+  path: string,
+  members: { name: string; buf: Buffer; compress: boolean }[],
+): Promise<void> {
+  const { ZipFile } = await import('yazl')
+  const zip = new ZipFile()
+  const out = createWriteStream(path)
+  const done = new Promise<void>((resolve) => zip.outputStream.pipe(out).on('close', resolve))
+  for (const m of members) zip.addBuffer(m.buf, m.name, { compress: m.compress })
+  zip.end()
+  await done
+}
+
+/** Re-emit an honest export, letting `mutate` rewrite the parsed
+ * manifest object before it is re-serialized. Everything else is copied
+ * byte-for-byte, so the result is a plausible archive that lies only
+ * where the test asks. */
+async function rebuildWithManifest(
+  src: string,
+  dest: string,
+  mutate: (m: Record<string, unknown>) => void,
+): Promise<void> {
+  const yazlMod = await import('yazl')
+  const yauzlMod = (await import('yauzl')).default
+  await new Promise<void>((resolve, reject) => {
+    yauzlMod.open(src, { lazyEntries: true, autoClose: false }, (err, zipIn) => {
+      if (err || !zipIn) return reject(err)
+      const zipOut = new yazlMod.ZipFile()
+      const out = createWriteStream(dest)
+      zipOut.outputStream.pipe(out).on('close', () => resolve())
+      zipIn.on('entry', (entry) => {
+        zipIn.openReadStream(entry, (e2, stream) => {
+          if (e2 || !stream) return reject(e2)
+          const chunks: Buffer[] = []
+          stream.on('data', (c: Buffer) => chunks.push(c))
+          stream.on('end', () => {
+            let buf = Buffer.concat(chunks)
+            if (entry.fileName === 'manifest.json') {
+              const m = JSON.parse(buf.toString('utf8'))
+              mutate(m)
+              buf = Buffer.from(JSON.stringify(m), 'utf8')
+            }
+            zipOut.addBuffer(buf, entry.fileName)
+            zipIn.readEntry()
+          })
+        })
+      })
+      zipIn.on('end', () => {
+        zipIn.close()
+        zipOut.end()
+      })
+      zipIn.readEntry()
+    })
+  })
+}
+
+describe('importProject resource budgets (CA-011, AI-IMP-234)', () => {
+  it('refuses a zip-bomb entry (high compression ratio) with nothing on disk', async () => {
+    // 4 MiB of zeros deflates to a few KB — a ratio far past 200:1 and
+    // well above the 1 MiB floor, so the central-directory scan refuses
+    // it before a byte extracts.
+    const bomb = join(outDir, 'bomb.ewproj')
+    await writeRawZip(bomb, [
+      { name: 'project.sqlite', buf: Buffer.alloc(4 * 1024 * 1024, 0), compress: true },
+    ])
+    const destDir = join(outDir, 'never-bombs')
+    await expect(importProject(bomb, destDir)).rejects.toMatchObject({
+      code: 'COMPRESSION_RATIO_EXCEEDED',
+    })
+    expect(existsSync(destDir)).toBe(false)
+    expect(existsSync(`${destDir}.partial`)).toBe(false)
+  })
+
+  it('refuses an archive with more entries than the budget allows', async () => {
+    const many = join(outDir, 'many.ewproj')
+    await writeRawZip(
+      many,
+      Array.from({ length: 5 }, (_, i) => ({
+        name: `notes/n${i}.md`,
+        buf: Buffer.from(`note ${i}`),
+        compress: true,
+      })),
+    )
+    const destDir = join(outDir, 'never-counts')
+    await expect(
+      importProject(many, destDir, { ...IMPORT_LIMITS, maxEntries: 3 }),
+    ).rejects.toMatchObject({ code: 'TOO_MANY_ENTRIES' })
+    expect(existsSync(destDir)).toBe(false)
+    expect(existsSync(`${destDir}.partial`)).toBe(false)
+  })
+
+  it('refuses a manifest that lies about an entry size, with nothing on disk', async () => {
+    exec('CreateNote', { noteId: uuidv7(), title: 'Sizey', body: 'a body' })
+    const honest = join(outDir, 'honest-size.ewproj')
+    await service.exportProject(honest, { activeOnly: false })
+
+    const liar = join(outDir, 'liar.ewproj')
+    await rebuildWithManifest(honest, liar, (m) => {
+      const inv = m['inventory'] as { path: string; bytes: number }[]
+      const db = inv.find((e) => e.path === 'project.sqlite')!
+      db.bytes = db.bytes + 1 // declare one more byte than the archive holds
+    })
+
+    const destDir = join(outDir, 'never-lies')
+    await expect(importProject(liar, destDir)).rejects.toMatchObject({ code: 'SIZE_MISMATCH' })
+    expect(existsSync(destDir)).toBe(false)
+    expect(existsSync(`${destDir}.partial`)).toBe(false)
+  })
+
+  it('refuses a manifest with duplicate inventory paths', async () => {
+    exec('CreateNote', { noteId: uuidv7(), title: 'Dupe', body: 'a body' })
+    const honest = join(outDir, 'honest-dupe.ewproj')
+    await service.exportProject(honest, { activeOnly: false })
+
+    const dupe = join(outDir, 'dupe.ewproj')
+    await rebuildWithManifest(honest, dupe, (m) => {
+      const inv = m['inventory'] as unknown[]
+      inv.push({ ...(inv[0] as object) }) // repeat the first entry's path
+    })
+
+    const destDir = join(outDir, 'never-dupes')
+    await expect(importProject(dupe, destDir)).rejects.toMatchObject({ code: 'BAD_MANIFEST' })
+    expect(existsSync(destDir)).toBe(false)
+    expect(existsSync(`${destDir}.partial`)).toBe(false)
+  })
+
+  it('still imports a legitimate archive that carries an asset', async () => {
+    // A real blob + asset row: proves the budgets do not false-trip a
+    // normal media-bearing project under production limits.
+    const bytes = Buffer.from('a legitimate reference image body')
+    const { createHash } = await import('node:crypto')
+    const hash = createHash('sha256').update(bytes).digest('hex')
+    const { mkdirSync } = await import('node:fs')
+    const { dirname } = await import('node:path')
+    const { blobRelativePath } = await import('../import/store')
+    const blob = join(dir, blobRelativePath(hash))
+    mkdirSync(dirname(blob), { recursive: true })
+    writeFileSync(blob, bytes)
+    const writer = Db.open(join(dir, 'project.sqlite'))
+    const projectId = (writer.get<{ id: string }>('SELECT id FROM project') ?? { id: '' }).id
+    const now = new Date().toISOString()
+    writer.run(
+      `INSERT INTO asset (id, project_id, kind, content_hash, original_filename,
+         mime_type, storage_path, created_at, updated_at)
+       VALUES (?, ?, 'image', ?, 'ref.png', 'image/png', ?, ?, ?)`,
+      uuidv7(),
+      projectId,
+      hash,
+      blobRelativePath(hash),
+      now,
+      now,
+    )
+    writer.close()
+
+    const archive = join(outDir, 'legit-asset.ewproj')
+    await service.exportProject(archive, { activeOnly: false })
+    const destDir = join(outDir, 'legit-imported')
+    await expect(importProject(archive, destDir)).resolves.toMatchObject({ assets: 1 })
+    expect(existsSync(join(destDir, blobRelativePath(hash)))).toBe(true)
   })
 })

@@ -76,6 +76,8 @@ export {
   type ImportResult as ProjectImportResult,
   type ImportRefusal,
 } from './export/project-import'
+// CA-011 import resource budgets (AI-IMP-234).
+export { IMPORT_LIMITS, type ImportLimits } from './export/import-limits'
 export { registerAssetHandlers, registerAssetQueries } from './handlers/assets'
 export { registerCanvasHandlers } from './handlers/canvases'
 export { registerPlacementHandlers, releaseConnectorAnchors } from './handlers/placements'

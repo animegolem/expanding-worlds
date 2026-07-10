@@ -68,18 +68,34 @@ export function parseManifest(text: string): ExportManifest {
   }
   if (typeof m['activeOnly'] !== 'boolean') throw new Error('manifest activeOnly missing')
   if (!Array.isArray(m['inventory'])) throw new Error('manifest inventory missing')
+  const seenPaths = new Set<string>()
   for (const entry of m['inventory'] as unknown[]) {
     const e = entry as Record<string, unknown>
-    if (
-      typeof e['path'] !== 'string' ||
-      typeof e['sha256'] !== 'string' ||
-      typeof e['bytes'] !== 'number'
-    ) {
+    if (typeof e['path'] !== 'string' || typeof e['sha256'] !== 'string') {
       throw new Error('manifest inventory entry malformed')
+    }
+    // `bytes` (CA-011): the manifest is attacker-writable, so a bare
+    // `typeof === 'number'` is not enough — a NaN, fraction, negative,
+    // or 2^53-overflowing value must never be trusted as a byte count
+    // (it is later reconciled against the ZIP metadata and the streamed
+    // count, and those comparisons are only meaningful for a real int).
+    if (
+      typeof e['bytes'] !== 'number' ||
+      !Number.isSafeInteger(e['bytes']) ||
+      (e['bytes'] as number) < 0
+    ) {
+      throw new Error('manifest inventory entry has an invalid byte count')
     }
     if (e['path'].startsWith('/') || (e['path'] as string).split('/').includes('..')) {
       throw new Error(`manifest inventory path escapes the archive: ${String(e['path'])}`)
     }
+    // Unique paths (CA-011): a repeated inventory path could bind the
+    // same allowed entry twice or shadow a verified row with an
+    // unverified twin; the inventory is a set of distinct members.
+    if (seenPaths.has(e['path'])) {
+      throw new Error(`manifest inventory has a duplicate path: ${e['path']}`)
+    }
+    seenPaths.add(e['path'])
     // THE BINDING INVARIANT (Codex round 3, P1): an asset entry's
     // manifest hash must EQUAL its content-addressed basename. The
     // manifest is attacker-writable; the DB's content_hash is what the
