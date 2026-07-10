@@ -48,6 +48,30 @@ describe('BackgroundSync', () => {
     expect(same.scale.x).toBe(1)
   })
 
+  it('mounts with the latest settings applied while the texture is loading', async () => {
+    const plane = new Container()
+    let finishLoad!: (texture: Texture) => void
+    const resources = fakeResources()
+    resources.loadTexture = () =>
+      new Promise<Texture>((resolve) => {
+        finishLoad = resolve
+      })
+    const sync = new BackgroundSync(plane, resources)
+    const hash = 'f'.repeat(64)
+
+    sync.apply(background({ assetContentHash: hash, settings: { x: 10, scale: 2 } }))
+    sync.apply(
+      background({ assetContentHash: hash, settings: { x: 40, y: 25, scale: 0.5, opacity: 0.4 } }),
+    )
+    finishLoad(Texture.WHITE)
+    await settled()
+
+    const sprite = plane.children.find((c) => c.label === 'background-image') as Sprite
+    expect(sprite.position).toMatchObject({ x: 40, y: 25 })
+    expect(sprite.scale.x).toBe(0.5)
+    expect(sprite.alpha).toBe(0.4)
+  })
+
   it('removes the sprite when the background is cleared', async () => {
     const plane = new Container()
     const resources = fakeResources()

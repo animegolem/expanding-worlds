@@ -46,6 +46,7 @@ export class BackgroundSync {
   #resources: RendererResources
   #maxTextureSize: number
   #currentHash: string | null = null
+  #latestSettings: Record<string, unknown> | null = null
   #generation = 0
   #plainTexture: unknown | null = null
   // Tiled state (only while an oversized background is active).
@@ -63,6 +64,7 @@ export class BackgroundSync {
   /** Applies the image; returns the color the host should clear with. */
   apply(background: SceneBackground): string | null {
     const hash = background.assetContentHash
+    this.#latestSettings = background.settings
     if (hash !== this.#currentHash) {
       this.#currentHash = hash
       this.#generation += 1
@@ -73,22 +75,18 @@ export class BackgroundSync {
         const placeholder = new Graphics().rect(0, 0, 4, 4).fill({ color: 0x1e1e1e })
         placeholder.label = 'background-placeholder'
         this.#plane.addChild(placeholder)
-        void this.#mount(hash, generation, background.settings).catch(() => {
+        void this.#mount(hash, generation).catch(() => {
           /* missing blob leaves the placeholder; recovery owns repair */
         })
       }
     } else if (hash) {
       const root = this.#plane.children.find((c) => c.label === 'background-image')
-      if (root) this.#applySettings(root as Container, background.settings)
+      if (root) this.#applySettings(root as Container, this.#latestSettings)
     }
     return background.color
   }
 
-  async #mount(
-    hash: string,
-    generation: number,
-    settings: Record<string, unknown> | null,
-  ): Promise<void> {
+  async #mount(hash: string, generation: number): Promise<void> {
     const url = assetUrl(hash)
     if (this.#resources.loadTileSource) {
       const source = await this.#resources.loadTileSource(url)
@@ -97,7 +95,7 @@ export class BackgroundSync {
         return
       }
       if (Math.max(source.width, source.height) > this.#maxTextureSize) {
-        this.#mountTiled(source, settings)
+        this.#mountTiled(source)
         return
       }
       source.destroy()
@@ -112,10 +110,10 @@ export class BackgroundSync {
     sprite.label = 'background-image'
     this.#plane.addChild(sprite)
     this.#plainTexture = texture
-    this.#applySettings(sprite, settings)
+    this.#applySettings(sprite, this.#latestSettings)
   }
 
-  #mountTiled(source: TileTextureSource, settings: Record<string, unknown> | null): void {
+  #mountTiled(source: TileTextureSource): void {
     this.#plane.children.find((c) => c.label === 'background-placeholder')?.destroy()
     this.#source = source
     this.#topLevel = maxLevel(source.width, source.height)
@@ -123,7 +121,7 @@ export class BackgroundSync {
     const root = new Container()
     root.label = 'background-image'
     this.#plane.addChild(root)
-    this.#applySettings(root, settings)
+    this.#applySettings(root, this.#latestSettings)
     // Coarsest level first: cheap full coverage while finer tiles load
     // (2^-top zoom selects exactly the top level).
     this.updateView(2 ** -this.#topLevel, null)
