@@ -534,7 +534,18 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
         assets = written.assets
       }
     }
-    await deps.callUtility({ type: 'checkpoint-wal' })
+    const checkpoint = await deps.callUtility({ type: 'checkpoint-wal' })
+    if (
+      !('type' in checkpoint) ||
+      checkpoint.type !== 'checkpoint-wal' ||
+      !checkpoint.ok
+    ) {
+      const message =
+        'message' in checkpoint && typeof checkpoint.message === 'string'
+          ? checkpoint.message
+          : 'the project database could not be checkpointed'
+      throw new Error(`snapshot deferred: ${message}`)
+    }
     if (!enabled || !hasGit) return
 
     const dir = deps.projectDir()

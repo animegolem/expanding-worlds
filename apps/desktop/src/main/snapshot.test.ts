@@ -11,7 +11,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, sep } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProjectRequest, ProjectResponse } from '@ew/protocol'
 import { createSnapshotEngine, type SnapshotEngine } from './snapshot'
 
@@ -93,6 +93,37 @@ describe('snapshot engine (AI-IMP-121)', () => {
     await engine.runSnapshot('end-session')
     expect(existsSync(lock)).toBe(false)
     expect(commitCount(projectDir)).toBe(2)
+  })
+
+  it('does not create a snapshot after a typed WAL checkpoint failure', async () => {
+    const failed = createSnapshotEngine({
+      callUtility: async (request) =>
+        request.type === 'checkpoint-wal'
+          ? {
+              type: 'checkpoint-wal',
+              ok: false,
+              code: 'CHECKPOINT_FAILED',
+              message: 'database is busy',
+            }
+          : stubCallUtility(request),
+      flushRenderers: () => Promise.resolve(),
+      projectDir: () => projectDir,
+    })
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      writeDb(projectDir, 'UNSEALED')
+      await failed.runSnapshot('end-session')
+
+      expect(commitCount(projectDir)).toBe(0)
+      expect(existsSync(join(projectDir, '.git'))).toBe(false)
+      expect(logged).toHaveBeenCalledWith(
+        '[snapshot] end-session snapshot failed:',
+        expect.objectContaining({ message: 'snapshot deferred: database is busy' }),
+      )
+    } finally {
+      logged.mockRestore()
+      failed.dispose()
+    }
   })
 
   it('defers the snapshot when a FRESH index.lock is present (AI-IMP-218)', async () => {
