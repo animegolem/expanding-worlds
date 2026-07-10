@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 219 |
-| **Total** | **27** | **248** |
+| **Total** | **27** | **249** |
 
 ## In Progress
 
@@ -97,6 +97,7 @@
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
 - [[AI-IMP-249-windows-hardening-round-two|IMP-249]] — planned, no epic dependency found
+- [[AI-IMP-255-title-band-native-drag-blackout|IMP-255]] — in-progress, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
