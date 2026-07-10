@@ -10,6 +10,15 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
+## [Unreleased]
+
+### Under the hood
+- The Windows CI leg is standing and green (AI-IMP-242/249,
+  three consecutive runs): full units + the 16-process lock probe
+  + smoke e2e on every push. Six rounds of real Windows findings
+  closed en route — fsync semantics, handle leaks, DELETE_PENDING
+  on create and mkdir, the cross-platform pnpm electron husk.
+
 ## [v0.20.0] — 2026-07-10 — the hardening build
 
 ### For testers

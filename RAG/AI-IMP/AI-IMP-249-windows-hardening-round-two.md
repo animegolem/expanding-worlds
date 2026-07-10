@@ -6,11 +6,12 @@ tags:
   - ci
   - platform
   - windows
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-242]
 parent_epic:
 confidence_score: 0.6
 date_created: 2026-07-10
+date_completed: 2026-07-10
 ---
 
 
@@ -129,13 +130,13 @@ the end.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Both rm-EPERM leaks root-caused and closed (not
+- [x] Both rm-EPERM leaks root-caused and closed (not
       retry-papered).
-- [ ] Lock-probe zero-winner round diagnosed; acquire loop paced/
+- [x] Lock-probe zero-winner round diagnosed; acquire loop paced/
       hardened; probe green on Windows across ≥3 CI runs.
-- [ ] Windows leg green end to end; workflow merged to main;
+- [x] Windows leg green end to end; workflow merged to main;
       AI-IMP-242 closed.
-- [ ] macOS/Linux suites stay green (no platform regression).
+- [x] macOS/Linux suites stay green (no platform regression).
 
 ### Acceptance Criteria
 
@@ -152,3 +153,17 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Closed at 3/3 consecutive greens (runs 29085480598, 29088182117,
+29090452643), merged to main with the v0.20.0 codec work aboard
+(602 persistence tests green together). Six rounds total; every
+"flake" was a real platform finding — fsync-through-readonly,
+two handle leaks (one product), DELETE_PENDING on both O_EXCL
+create and guard mkdir, the fabricated-holder P2 (Codex review),
+and the cross-platform pnpm electron husk. Round-3 lead
+hypothesis (DELETE_PENDING) was confirmed by the round-4+ greens
+with the EPERM-retry fix aboard.
+
+QUEUED FOLLOW-UP (named condition at merge): lock.ts is now a
+composite of 5+ surgery rounds — Sol full-file review pass when
+the Codex cap lifts (~2h from 2026-07-10 morning). The owner
+relays; the review is advisory, not a reopen.

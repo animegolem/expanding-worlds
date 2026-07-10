@@ -5,11 +5,12 @@ tags:
   - Implementation
   - ci
   - platform
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-09
+date_completed: 2026-07-10
 ---
 
 
@@ -60,11 +61,11 @@ in test helpers.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Windows job: build + all units + lock probe.
-- [ ] Smoke e2e or a loud documented skip.
-- [ ] First runs watched on a branch; failures triaged into
+- [x] Windows job: build + all units + lock probe.
+- [x] Smoke e2e or a loud documented skip.
+- [x] First runs watched on a branch; failures triaged into
       tickets vs in-place test fixes (list them here).
-- [ ] Green (or honestly ticketed) on main.
+- [x] Green (or honestly ticketed) on main.
 
 ### Acceptance Criteria
 

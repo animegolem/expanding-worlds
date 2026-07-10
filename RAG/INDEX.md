@@ -10,7 +10,7 @@
 | Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 220 |
+| Completed | 19 | 222 |
 | **Total** | **27** | **250** |
 
 ## In Progress
@@ -95,9 +95,7 @@
 - [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
-- [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
-- [[AI-IMP-249-windows-hardening-round-two|IMP-249]] — planned, no epic dependency found
 - [[AI-IMP-255-title-band-native-drag-blackout|IMP-255]] — in-progress, no epic dependency found
 
 ### Status Mismatches
@@ -152,7 +150,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/tags/TagPanel.svelte (668 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
 - apps/desktop/src/renderer/canvas/board-tooling.ts (661 LOC)
-- packages/persistence/src/invariants.spec.ts (647 LOC)
+- packages/persistence/src/invariants.spec.ts (650 LOC)
 - packages/persistence/src/handlers/placements.ts (647 LOC)
 - packages/persistence/src/handlers/pin.test.ts (638 LOC)
 - packages/persistence/src/handlers/frames.test.ts (621 LOC)
@@ -205,6 +203,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)
 - packages/persistence/src/queries-search.test.ts (411 LOC)
 - packages/persistence/src/handlers/decorations.test.ts (402 LOC)
+- packages/persistence/src/lock.ts (401 LOC)
 - apps/desktop/e2e/outline.spec.ts (397 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
 - packages/persistence/src/handlers/tags.test.ts (388 LOC)
@@ -242,7 +241,6 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
 - apps/desktop/src/renderer/dev/feel-dial.ts (327 LOC)
 - apps/desktop/src/preload/index.ts (327 LOC)
-- packages/persistence/src/lock.ts (324 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.ts (318 LOC)
