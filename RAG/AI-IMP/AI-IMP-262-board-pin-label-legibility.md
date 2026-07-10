@@ -77,6 +77,19 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 
 - [ ] Pre-implementation review: reproduction + convicted cause
       (texture resolution / size mismatch / DPR) recorded here.
+      LEAD'S SOURCE PASS (2026-07-10, narrows but does not
+      convict): DPR is handled — the Pixi renderer takes
+      `devicePixelRatio` (host.ts:378), so pure display-scaling
+      blur is unlikely. Live suspects: (a) labels rasterize ONCE
+      at world-proportional fontSize (`labelBasis(item).height ×
+      LABEL_HEIGHT_RATIO`, placement.ts:771-781) and scale under
+      camera zoom with no re-raster bucket — upscale blur when
+      zoomed in past raster size; (b) `labelBasis` fallback chain
+      (`height ?? width ?? assetHeight ?? DEFAULT_DOT_RADIUS*2`,
+      placement.ts:661-665) vs whatever placement size the
+      New-board verb mints — if the ring draws large while the
+      basis lands on a small fallback, the label is tiny relative
+      to its ring. Runtime reproduction decides; both may hold.
 - [ ] Fix at the convicted cause; labels crisp at Home-use zooms.
 - [ ] Resolution-tracking regression test.
 - [ ] Full desktop units + relevant e2e shard green.
