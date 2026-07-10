@@ -63,8 +63,38 @@ const IDLE_MS = (() => {
 
 /** The lock/heartbeat, WAL/journal sidecars, and regenerable
  * derivative/cache trees never belong in history — a snapshot commits
- * project.sqlite (checkpointed), assets/, and notes/ only. */
-const GITIGNORE_BODY = `# Expanding Worlds — session snapshots (RFC-0001 §11.4)
+ * project.sqlite (checkpointed), assets/, and notes/ only.
+ *
+ * The block is delimited by explicit BEGIN/END sentinels carrying a
+ * version (AI-IMP-223 / Sol CA-010): {@link seedGitignore} rewrites the
+ * managed block in place when it finds an older version, so EXISTING
+ * projects gain new exclusions — a template edit alone left them
+ * unmigrated because the old seed early-returned on the marker. Bump
+ * {@link GITIGNORE_VERSION} whenever the managed lines change. */
+const GITIGNORE_VERSION = 'v2'
+const GITIGNORE_BEGIN = `# >>> Expanding Worlds — session snapshots (managed ${GITIGNORE_VERSION}) >>>`
+const GITIGNORE_END = '# <<< Expanding Worlds — session snapshots (managed) <<<'
+const GITIGNORE_BODY = `${GITIGNORE_BEGIN}
+# RFC-0001 §11.4 — regenerated on every seed; edit ABOVE or BELOW the
+# markers, never between them (this block is rewritten on version bump).
+# The single-writer lock + heartbeat.
+project.lock
+# SQLite sidecars: the WAL is truncated into project.sqlite at every
+# snapshot, so only the sealed .sqlite is committed.
+project.sqlite-wal
+project.sqlite-shm
+project.sqlite-journal
+# Regenerable — thumbnails rebuild lazily, staging is transient.
+derivatives/
+cache/
+${GITIGNORE_END}
+`
+
+/** The v1 managed block (no sentinels) as older projects carry it, for
+ * detection and one-time replacement during migration. Its first line
+ * is also the substring that identifies an unmigrated block. */
+const GITIGNORE_V1_MARKER = '# Expanding Worlds — session snapshots (RFC-0001 §11.4)'
+const GITIGNORE_BODY_V1 = `# Expanding Worlds — session snapshots (RFC-0001 §11.4)
 # The single-writer lock + heartbeat.
 project.lock
 # SQLite sidecars: the WAL is truncated into project.sqlite at every
@@ -77,7 +107,28 @@ derivatives/
 cache/
 `
 
-const GITIGNORE_MARKER = '# Expanding Worlds — session snapshots'
+/** The ONLY top-level entries a snapshot commits (RFC-0001 §11.2 +
+ * §11.4): the checkpointed database, the readable notes tree, the
+ * content-addressed originals, and the managed ignore file itself.
+ * Staged explicitly instead of via `git add -A` (Sol CA-010) — the
+ * blanket add could sweep an in-progress export's staging or any stray a
+ * tool/stopgap dropped in the project dir into history, duplicating the
+ * whole project inside its own backup. */
+const SNAPSHOT_ALLOWLIST = ['project.sqlite', 'notes', 'assets', '.gitignore'] as const
+
+/** Top-level entries that legitimately exist beside the allowlist and
+ * must be neither committed (they are gitignored) nor flagged as strays:
+ * the git dir, the lock, the SQLite sidecars, and the regenerable
+ * derivative/cache trees. Anything ELSE is logged as unexpected. */
+const SNAPSHOT_EXPECTED_UNCOMMITTED = new Set([
+  '.git',
+  'project.lock',
+  'project.sqlite-wal',
+  'project.sqlite-shm',
+  'project.sqlite-journal',
+  'derivatives',
+  'cache',
+])
 
 export interface SnapshotDeps {
   /** Round-trips a request through main → utility → project service. */
@@ -177,15 +228,27 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   function seedGitignore(dir: string): void {
     const path = join(dir, '.gitignore')
     try {
-      if (existsSync(path)) {
-        // Respect a user-authored ignore; append our block once.
-        const existing = readFileSync(path, 'utf8')
-        if (existing.includes(GITIGNORE_MARKER)) return
-        const sep = existing.endsWith('\n') ? '\n' : '\n\n'
-        writeFileSync(path, existing + sep + GITIGNORE_BODY, 'utf8')
+      if (!existsSync(path)) {
+        writeFileSync(path, GITIGNORE_BODY, 'utf8')
         return
       }
-      writeFileSync(path, GITIGNORE_BODY, 'utf8')
+      const existing = readFileSync(path, 'utf8')
+      // Already carries the CURRENT managed block — nothing to do.
+      if (existing.includes(GITIGNORE_BEGIN)) return
+      // An older managed block (v1: no sentinels) — rewrite it in place
+      // so EXISTING projects gain the versioned exclusions (Sol CA-010).
+      if (existing.includes(GITIGNORE_V1_MARKER)) {
+        // Strip the exact v1 body wherever it sits (whole-file, or
+        // appended after user-authored content), collapse the seam, and
+        // re-append the current block; user lines outside it are kept.
+        let userPart = existing.split(GITIGNORE_BODY_V1).join('')
+        userPart = userPart.replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '')
+        writeFileSync(path, userPart.length === 0 ? GITIGNORE_BODY : `${userPart}\n\n${GITIGNORE_BODY}`, 'utf8')
+        return
+      }
+      // Purely user-authored — append our block once.
+      const sep = existing.endsWith('\n') ? '\n' : '\n\n'
+      writeFileSync(path, existing + sep + GITIGNORE_BODY, 'utf8')
     } catch (err) {
       console.error('[snapshot] failed to seed .gitignore:', err)
     }
@@ -262,17 +325,49 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     } — ${when}`
   }
 
+  /** Log — never commit — anything in the project dir outside the
+   * allowlist and the known regenerable/ignored set. A stray here means a
+   * tool or a bug dropped a file among the managed contents; surfacing it
+   * (rather than silently sweeping it into history via `git add -A`) is
+   * the point of the allowlist (Sol CA-010). Best-effort. */
+  function logUnexpectedEntries(dir: string): void {
+    let names: string[]
+    try {
+      names = readdirSync(dir)
+    } catch {
+      return
+    }
+    const allow = new Set<string>(SNAPSHOT_ALLOWLIST)
+    const unexpected = names.filter(
+      (n) => !allow.has(n) && !SNAPSHOT_EXPECTED_UNCOMMITTED.has(n),
+    )
+    if (unexpected.length > 0) {
+      console.warn(
+        `[snapshot] unexpected project entries left uncommitted: ${unexpected.join(', ')}`,
+      )
+    }
+  }
+
   async function commitIfChanged(
     dir: string,
     trigger: SnapshotTrigger,
     notes: number,
     assets: number,
   ): Promise<void> {
-    await git(dir, ['add', '-A'])
+    // Stage EXACTLY the allowlist, never `git add -A`. Passing each path
+    // as a pathspec still records additions, modifications, AND deletions
+    // of tracked files under it (a removed note/asset commits), but leaves
+    // strays and staging untouched (Sol CA-010).
+    const present = SNAPSHOT_ALLOWLIST.filter((entry) => existsSync(join(dir, entry)))
+    if (present.length > 0) await git(dir, ['add', '--', ...present])
+    logUnexpectedEntries(dir)
     // Empty-diff guard: a checkpoint with nothing new since the last
-    // snapshot creates NO commit (RFC-0001 §11.4).
-    const status = await git(dir, ['status', '--porcelain'])
-    if (status.trim().length === 0) return
+    // snapshot creates NO commit (RFC-0001 §11.4). Measured on the STAGED
+    // set only — an untracked stray must neither be committed nor provoke
+    // an empty `git commit` (which exits non-zero and logs a false
+    // failure), which a `git status --porcelain` check would have.
+    const staged = await git(dir, ['diff', '--cached', '--name-only'])
+    if (staged.trim().length === 0) return
     await git(dir, ['commit', '-q', '-m', commitMessage(trigger, notes, assets)])
   }
 

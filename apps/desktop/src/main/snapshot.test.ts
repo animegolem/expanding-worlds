@@ -92,13 +92,78 @@ describe('snapshot engine (AI-IMP-121)', () => {
     expect(commitCount(projectDir)).toBe(2)
   })
 
-  it('lists snapshots newest-first and restores one to a sibling directory', async () => {
+  it('commits only the allowlist — strays and export staging stay out (AI-IMP-223)', async () => {
     writeDb(projectDir, 'ONE')
-    writeFileSync(join(projectDir, 'marker.txt'), 'first')
+    // Legitimate managed contents.
+    mkdirSync(join(projectDir, 'notes'), { recursive: true })
+    writeFileSync(join(projectDir, 'notes', 'a.md'), '# note a')
+    mkdirSync(join(projectDir, 'assets', 'ab'), { recursive: true })
+    writeFileSync(join(projectDir, 'assets', 'ab', 'abdeadbeef'), 'blob')
+    // A stray file and a stand-in for an in-project export staging dir —
+    // `git add -A` would have swept both into the backup.
+    writeFileSync(join(projectDir, 'stray.txt'), 'do not commit me')
+    mkdirSync(join(projectDir, '.tmp-export'), { recursive: true })
+    writeFileSync(join(projectDir, '.tmp-export', 'project.sqlite'), 'frozen copy')
+
+    await engine.runSnapshot('end-session')
+    expect(commitCount(projectDir)).toBe(1)
+
+    const tracked = execFileSync('git', ['ls-files'], { cwd: projectDir }).toString().split('\n')
+    expect(tracked).toContain('project.sqlite')
+    expect(tracked).toContain('notes/a.md')
+    expect(tracked).toContain('assets/ab/abdeadbeef')
+    expect(tracked).toContain('.gitignore')
+    // The stray and the staging copy are absent from history.
+    expect(tracked).not.toContain('stray.txt')
+    expect(tracked.some((p) => p.startsWith('.tmp-export/'))).toBe(false)
+  })
+
+  it('migrates an existing v1 managed .gitignore to v2 in place (AI-IMP-223)', () => {
+    // A user-authored line plus the OLD v1 managed block (no sentinels).
+    const v1 = `# my own ignores
+build/
+
+# Expanding Worlds — session snapshots (RFC-0001 §11.4)
+# The single-writer lock + heartbeat.
+project.lock
+# SQLite sidecars: the WAL is truncated into project.sqlite at every
+# snapshot, so only the sealed .sqlite is committed.
+project.sqlite-wal
+project.sqlite-shm
+project.sqlite-journal
+# Regenerable — thumbnails rebuild lazily, staging is transient.
+derivatives/
+cache/
+`
+    const path = join(projectDir, '.gitignore')
+    writeFileSync(path, v1, 'utf8')
+
+    engine.seedGitignore(projectDir)
+    const migrated = readFileSync(path, 'utf8')
+    // The user's own lines survive; the block is now the versioned v2.
+    expect(migrated).toContain('# my own ignores')
+    expect(migrated).toContain('build/')
+    expect(migrated).toContain('(managed v2)')
+    // No duplicated managed block, and the old unversioned first line is
+    // gone (replaced by the sentinel form).
+    expect(migrated.match(/project\.lock/g)!.length).toBe(1)
+    expect(migrated).not.toContain('session snapshots (RFC-0001 §11.4)')
+
+    // Idempotent: a second seed against the v2 file changes nothing.
+    engine.seedGitignore(projectDir)
+    expect(readFileSync(path, 'utf8')).toBe(migrated)
+  })
+
+  it('lists snapshots newest-first and restores one to a sibling directory', async () => {
+    // A committed second file must live under the allowlist (a top-level
+    // stray is no longer committed — AI-IMP-223); notes/ is committed.
+    mkdirSync(join(projectDir, 'notes'), { recursive: true })
+    writeDb(projectDir, 'ONE')
+    writeFileSync(join(projectDir, 'notes', 'marker.md'), 'first')
     await engine.runSnapshot('end-session')
 
     writeDb(projectDir, 'TWO')
-    writeFileSync(join(projectDir, 'marker.txt'), 'second')
+    writeFileSync(join(projectDir, 'notes', 'marker.md'), 'second')
     await engine.runSnapshot('end-session')
 
     const list = await engine.listSnapshots()
@@ -124,7 +189,7 @@ describe('snapshot engine (AI-IMP-121)', () => {
 
     // It holds the OLDER snapshot's content.
     expect(readFileSync(join(result.dir, 'project.sqlite')).toString('latin1')).toContain('ONE')
-    expect(readFileSync(join(result.dir, 'marker.txt')).toString()).toBe('first')
+    expect(readFileSync(join(result.dir, 'notes', 'marker.md')).toString()).toBe('first')
 
     // The source project is byte-for-byte and mtime untouched.
     expect(readFileSync(srcDbPath).equals(srcBefore)).toBe(true)
