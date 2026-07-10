@@ -13,6 +13,7 @@ import { loadSyntheticTexture } from './textures'
 import { buildScene, type BuiltScene } from './scene'
 import { FrameProbe, round, SweepAccumulator } from './metrics'
 import { runSweep } from './sweep'
+import { makeSyntheticRedraw, TieredTextureBudget } from './tiering'
 
 /**
  * AI-IMP-217 harness. Mounts the REAL @ew/canvas-engine render path
@@ -38,6 +39,8 @@ const els = {
   copy: document.getElementById('copy') as HTMLButtonElement,
   status: document.getElementById('sweep-status')!,
   json: document.getElementById('json') as HTMLTextAreaElement,
+  mode: document.getElementById('mode') as HTMLSelectElement,
+  budget: document.getElementById('budget') as HTMLInputElement,
 }
 
 function detectBrowser(): string {
@@ -68,18 +71,46 @@ async function main(): Promise<void> {
   hostEl.appendChild(app.canvas)
   ;(window as unknown as { __app: Application }).__app = app
 
+  // AI-IMP-241 mode flags (query string, so the driver can sweep both
+  // modes headless): ?mode=tiered|off & ?budget=<MB> & ?count=<N>. Off
+  // is the 217 baseline path, untouched — the sibling Tauri copy sees it
+  // unchanged.
+  const params = new URLSearchParams(location.search)
+  const mode: 'off' | 'tiered' = params.get('mode') === 'tiered' ? 'tiered' : 'off'
+  const budgetMB = Math.max(64, Number(params.get('budget') ?? 1536) || 1536)
+  const budgetBytes = budgetMB * 1024 * 1024
+  const dpr = window.devicePixelRatio || 1
+  const queryCount = Number(params.get('count'))
+  if (Number.isFinite(queryCount) && queryCount >= 1) els.count.value = String(Math.round(queryCount))
+  // Reflect the active mode/budget in the controls; changing them reloads
+  // with the new query (a fresh budget is cleanest for a comparison run).
+  els.mode.value = mode
+  els.budget.value = String(budgetMB)
+  const reloadWith = (): void => {
+    const next = new URLSearchParams(location.search)
+    next.set('mode', els.mode.value)
+    next.set('budget', els.budget.value)
+    next.set('count', els.count.value)
+    location.search = next.toString()
+  }
+  els.mode.addEventListener('change', reloadWith)
+  els.budget.addEventListener('change', reloadWith)
+
   const planes = createScenePlanes()
   app.stage.addChild(planes.world, planes.overlay)
   const registry = createDefaultRegistry()
   const textureBudget = new TextureBudget(loadSyntheticTexture)
+  const tiered = mode === 'tiered' ? new TieredTextureBudget(budgetBytes) : null
+  // Both budgets share acquire/release/stats/releaseAll shapes.
+  const budget = tiered ?? textureBudget
 
   // Same shape host.ts builds — the texture budget path (lazy residency)
   // is the interesting one for a large board, so we wire `textures`.
   const resources: RendererResources = {
     loadTexture: loadSyntheticTexture,
     textures: {
-      acquire: (hash, url) => textureBudget.acquire(hash, url),
-      release: (hash) => textureBudget.release(hash),
+      acquire: (hash, url) => budget.acquire(hash, url),
+      release: (hash) => budget.release(hash),
     },
     resolveObject: (id) => sync.get(id),
     getZoom: () => camera.zoom,
@@ -112,13 +143,32 @@ async function main(): Promise<void> {
   // storm during the sweep) corrupts Pixi's render-group state mid-frame
   // (isInteractive/updateRenderable throws). One cull per frame is what
   // the real host does and is plenty for residency tracking.
+  // AI-IMP-241: redraw a resident image body with a swapped tier texture
+  // (radius 0 / no crop for the synthetic scene).
+  const redraw = makeSyntheticRedraw((id) => sync.get(id))
+
   let cullQueued = false
   function scheduleCull(): void {
     if (cullQueued) return
     cullQueued = true
     requestAnimationFrame(() => {
       cullQueued = false
+      // Tiered mode: decide per-texture caps BEFORE the Culler fires its
+      // residency grants (so acquire reads the right tier), run the cull,
+      // then swap/evict + fold the metrics.
+      if (tiered) tiered.planTiers(built.items, camera, viewport(), dpr)
       culler.apply(built.items, viewport())
+      if (tiered) {
+        const resident: Array<{ id: string; hash: string }> = []
+        for (const item of built.items) {
+          if (item.itemKind !== 'placement' || !culler.isResident(item.id)) continue
+          const p = item as { appearanceKind?: string; assetContentHash?: string | null }
+          if (p.appearanceKind === 'image' && p.assetContentHash) {
+            resident.push({ id: item.id, hash: p.assetContentHash })
+          }
+        }
+        tiered.commit(resident, redraw, performance.now())
+      }
     })
   }
 
@@ -215,6 +265,7 @@ async function main(): Promise<void> {
   const gl = glInfo()
   els.gl.textContent = gl.renderer
   els.dpr.textContent = String(window.devicePixelRatio || 1)
+  els.status.textContent = `Mode: ${mode}${tiered ? ` · budget ${budgetMB} MB` : ''}`
 
   setInterval(() => {
     const r = probe.rolling()
@@ -222,8 +273,9 @@ async function main(): Promise<void> {
     els.fps.className = r.fps >= 55 ? 'good' : r.fps >= 30 ? 'warn' : 'bad'
     els.p95.textContent = r.p95.toFixed(1)
     els.p50.textContent = r.p50.toFixed(1)
-    const ts = textureBudget.stats()
-    els.texmem.textContent = `${fmtBytes(ts.residentBytes)} live · ${fmtBytes(ts.idleBytes)} idle`
+    const ts = budget.stats()
+    const tierNote = tiered ? ` · peak ${fmtBytes(tiered.metrics().peakResidentBytes)}` : ''
+    els.texmem.textContent = `${fmtBytes(ts.residentBytes)} live${tierNote}`
     const cs = culler.stats(built.items)
     els.resident.textContent = `${cs.resident} / ${cs.total} (rend ${cs.renderable})`
   }, 250)
@@ -236,7 +288,8 @@ async function main(): Promise<void> {
   els.rebuild.addEventListener('click', () => {
     sync.clear()
     culler.reset()
-    textureBudget.releaseAll()
+    budget.releaseAll()
+    tiered?.resetMetrics()
     loadScene(clampCount(Number(els.count.value)))
   })
 
@@ -246,8 +299,9 @@ async function main(): Promise<void> {
     els.copy.disabled = true
     els.json.style.display = 'none'
     sweepAcc.reset()
+    tiered?.resetMetrics()
     sweeping = true
-    const startStats = textureBudget.stats()
+    const startStats = budget.stats()
     const result = await runSweep({
       camera,
       bounds: built.bounds,
@@ -259,9 +313,21 @@ async function main(): Promise<void> {
     })
     sweeping = false
     const perf = sweepAcc.summary()
-    const endStats = textureBudget.stats()
+    const endStats = budget.stats()
+    // AI-IMP-241 tiering block. Off mode reports the baseline (everything
+    // full-res, no swaps) so the two rows compare directly.
+    const tierMetrics = tiered
+      ? tiered.metrics()
+      : {
+          peakResidentBytes: Math.max(startStats.residentBytes, endStats.residentBytes),
+          swapCount: 0,
+          swapWorstMs: 0,
+          tierHistogram: { full: 100, '1024': 0, '512': 0, '256': 0 },
+          budgetBytes: 0,
+        }
     const summary = {
-      spike: 'AI-IMP-217 webkit-renderer',
+      spike: 'AI-IMP-241 texture-budget-tiers',
+      mode,
       device: {
         browser: detectBrowser(),
         userAgent: navigator.userAgent,
@@ -285,6 +351,14 @@ async function main(): Promise<void> {
         endResidentBytes: endStats.residentBytes,
         endIdleBytes: endStats.idleBytes,
         endTextureCount: endStats.textures,
+      },
+      tiering: {
+        mode,
+        budgetMB: tiered ? budgetMB : null,
+        peakResidentBytes: tierMetrics.peakResidentBytes,
+        swapCount: tierMetrics.swapCount,
+        swapWorstMs: tierMetrics.swapWorstMs,
+        tierHistogram: tierMetrics.tierHistogram,
       },
       generatedAt: new Date().toISOString(),
     }

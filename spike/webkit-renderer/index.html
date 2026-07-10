@@ -61,6 +61,17 @@
         <button id="rebuild">Rebuild scene</button>
       </div>
       <div class="row">
+        <label class="inline">Textures
+          <select id="mode">
+            <option value="off">off (full-res)</option>
+            <option value="tiered">tiered</option>
+          </select>
+        </label>
+        <label class="inline">Budget MB
+          <input id="budget" type="number" min="64" max="8192" step="64" value="1536" />
+        </label>
+      </div>
+      <div class="row">
         <button id="run" class="primary">Run 30s sweep</button>
         <button id="copy" disabled>Copy JSON</button>
       </div>
