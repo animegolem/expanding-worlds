@@ -6,11 +6,12 @@ tags:
   - canvas
   - onboarding
   - ux
-kanban_status: in-progress
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-026-structure-you-fill-in]]
 confidence_score: 0.65
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -103,7 +104,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       (335), lint clean, e2e in 4 foreground shards
       (45+66+77+50 = 238). All New board tests green; one pre-existing
       environmental failure unrelated to this ticket (see below).
-- [ ] HUMAN-TESTING entry appended at merge by the lead (alph
+- [x] HUMAN-TESTING entry appended at merge by the lead (alph
       first pass — the "new user makes their first board" beat).
 
 ### Acceptance Criteria

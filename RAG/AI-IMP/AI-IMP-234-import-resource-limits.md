@@ -6,11 +6,12 @@ tags:
   - import
   - security
   - P2
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.8
 date_created: 2026-07-09
+date_completed: 2026-07-09
 ---
 
 
@@ -69,7 +70,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       refuse with clean disk.
 - [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 

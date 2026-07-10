@@ -54,6 +54,28 @@ whole act back (AI-IMP-239, functional surface per the owner's
 ruling — the boards-being-born lifecycle drawing restyles it
 later).
 
+**Scope growth (2026-07-09 evening, alph's library mental-model
+conversation — owner: "you'll understand what the next build
+target is"):** two additions ruled into this epic's family.
+(1) **Project as a tag namespace** — the owner's lean over
+watched-folders: a world/project tag auto-assigned to everything
+imported INTO that project ("project could be a tag assigned to
+all things upon import into that project"), making alph's
+worlds-scope-my-tags expectation true through the category
+system rather than folders. (2) **The inbox** — "these are your
+items you've not yet tagged": an untagged-items view (gallery
+facet or dedicated group) as the triage surface; alph confirmed
+it matches his Allusion muscle memory and "a better way of
+preventing 100 duplicates" than folder scanning. Recorded
+path-not-taken: watched folders / library-as-local-folders
+(alph's initial frame) — tractable but deferred; the app manages
+its own files for backup/sync/export integrity, and the
+tags+inbox shape serves the same need. His gallery-vs-library
+distinction (gallery = archive of everything ever imported;
+library = where things come from) is design vocabulary for the
+204 inspector and gallery scopes. Owner musing captured, not
+ruled: appending the content hash to egress filenames.
+
 ## Path(s) Not Taken
 
 - Arbitrary tag hierarchies / tag folders — rejected; one typed

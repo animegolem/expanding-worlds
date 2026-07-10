@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 1 | 1 |
+| In Progress | 1 | 0 |
 | Planned | 5 | 1 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 205 |
+| Completed | 19 | 211 |
 | **Total** | **26** | **241** |
 
 ## In Progress
@@ -53,7 +53,7 @@
 > Two missing primitives surfaced in the first tester's week, both
 
 **IMPs:**
-- [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — in-progress
+- [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — completed
 
 ---
 
@@ -75,21 +75,16 @@
 - [[AI-IMP-207-rail-surface-exclusivity|IMP-207]] — planned, no epic dependency found
 - [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
 - [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — in-progress, no epic dependency found
-- [[AI-IMP-218-index-lock-age-gate|IMP-218]] — planned, no epic dependency found
 - [[AI-IMP-219-destructive-gc|IMP-219]] — planned, no epic dependency found
 - [[AI-IMP-220-trash-retention-job|IMP-220]] — planned, no epic dependency found
 - [[AI-IMP-221-gallery-undo-coordination|IMP-221]] — planned, no epic dependency found
 - [[AI-IMP-222-import-streaming|IMP-222]] — planned, no epic dependency found
-- [[AI-IMP-223-export-staging-isolation|IMP-223]] — planned, no epic dependency found
 - [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 - [[AI-IMP-230-universal-redo-invalidation|IMP-230]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-232-compound-fail-stop|IMP-232]] — planned, no epic dependency found
 - [[AI-IMP-233-deliberate-verb-matrix|IMP-233]] — planned, no epic dependency found
-- [[AI-IMP-234-import-resource-limits|IMP-234]] — planned, no epic dependency found
-- [[AI-IMP-236-source-slot-epochs|IMP-236]] — planned, no epic dependency found
-- [[AI-IMP-237-atomic-app-settings|IMP-237]] — planned, no epic dependency found
 - [[AI-IMP-238-import-batch-flake|IMP-238]] — planned, no epic dependency found
 - [[AI-IMP-242-windows-ci-leg|IMP-242]] — planned, no epic dependency found
 - [[AI-IMP-243-rust-persistence-seam-analysis|IMP-243]] — planned, no epic dependency found
@@ -118,7 +113,7 @@ Generated from tracked files; binary assets excluded.
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (2085 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2057 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (1788 LOC)
+- apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1177 LOC)
 - apps/desktop/src/main/index.ts (1172 LOC)
 - packages/persistence/src/queries-structure.test.ts (1028 LOC)
@@ -137,9 +132,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/main/snapshot.ts (775 LOC)
 - packages/persistence/src/queries-structure.ts (773 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
+- RAG/HUMAN-TESTING.md (744 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (730 LOC)
-- RAG/HUMAN-TESTING.md (711 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (709 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -212,6 +207,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/MetadataCard.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
+- apps/desktop/e2e/gallery-scope.spec.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (353 LOC)
 - apps/desktop/src/renderer/chrome/PathBar.svelte (351 LOC)
@@ -236,7 +232,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/service.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
-- apps/desktop/e2e/gallery-scope.spec.ts (310 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)
 - apps/desktop/e2e/note-lifecycle.spec.ts (306 LOC)
 - apps/desktop/e2e/search.spec.ts (305 LOC)
@@ -247,7 +242,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>19 EPICs, 138 IMPs completed</summary>
+<summary>19 EPICs, 139 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed

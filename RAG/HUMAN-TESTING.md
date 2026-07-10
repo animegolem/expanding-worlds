@@ -10,6 +10,39 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **Settings survive crashes** (AI-IMP-237, 2026-07-09, Sol
+  P3): kill -9 the app mid-settings-change a few times, relaunch —
+  settings are never silently reset; if a corrupt file ever
+  appears, the reset toast should read clearly, not alarm.
+
+- [ ] **Snapshots vs your git tools** (AI-IMP-223/218, 2026-07-09,
+  Sol P2 + Terra P1): export twice in quick succession — both
+  archives import cleanly, nothing left inside the project dir;
+  open a pre-existing project, let a snapshot fire, confirm its
+  .gitignore now carries "(managed v2)" with your own lines
+  intact; hold a git GUI open on the backup repo during a snapshot
+  — it defers politely ("present and fresh") and commits later.
+
+- [ ] **A board from nothing** (AI-IMP-239, 2026-07-09 — the
+  build's headline; alph first pass): right-click empty board →
+  "New board…", name it, Enter — you land inside (path bar shows
+  it); back on the origin board the board-object carries the name
+  and dive chip; ONE Mod+Z from the origin board removes it all.
+  Known limit, deliberate: Mod+Z from INSIDE the new board
+  declines with the cross-board toast instead of deleting the
+  floor under you.
+
+- [ ] **Gallery scope flips** (AI-IMP-236, 2026-07-09, Sol P3):
+  rapidly flip everything ⇄ this world (especially right after
+  designating a library) — the everything side always loads, never
+  wedges on "Opening the library…" or an empty grid; a source
+  panel opened after still works.
+
+- [ ] **Hostile imports refuse politely** (AI-IMP-234, 2026-07-09,
+  Sol P2): import a real large .ewproj — clean; import an
+  obviously junk/truncated one — understandable refusal, no
+  half-project left on disk.
+
 - [ ] **Tauri shell — quiet-machine rerun** (AI-IMP-240,
   2026-07-09): all timing rows were taken under ~10-agent load
   (loadavg 69-114!) and are marked LOAD-SUPPRESSED. When the
