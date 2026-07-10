@@ -14,7 +14,11 @@ import {
 // The Windows runner can report EPERM from O_EXCL while a just-released
 // handle drains. Inject that exact filesystem response once; every other
 // write delegates to Node so this remains an integration-level lock test.
-const faults = vi.hoisted(() => ({ failNextExclusiveCreate: false }))
+const faults = vi.hoisted(() => ({
+  failNextExclusiveCreate: false,
+  failAllExclusiveCreate: false,
+  failAllGuardMkdir: false,
+}))
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>()
@@ -22,13 +26,21 @@ vi.mock('node:fs', async (importOriginal) => {
     ...actual,
     writeFileSync: (...args: Parameters<typeof actual.writeFileSync>) => {
       const [, , options] = args
-      if (faults.failNextExclusiveCreate && options?.flag === 'wx') {
+      if ((faults.failNextExclusiveCreate || faults.failAllExclusiveCreate) && options?.flag === 'wx') {
         faults.failNextExclusiveCreate = false
         const err = new Error('injected transient O_EXCL failure') as NodeJS.ErrnoException
         err.code = 'EPERM'
         throw err
       }
       return actual.writeFileSync(...args)
+    },
+    mkdirSync: (...args: Parameters<typeof actual.mkdirSync>) => {
+      if (faults.failAllGuardMkdir && String(args[0]).endsWith('project.lock.reclaim')) {
+        const err = new Error('injected persistent guard mkdir failure') as NodeJS.ErrnoException
+        err.code = 'EPERM'
+        throw err
+      }
+      return actual.mkdirSync(...args)
     },
   }
 })
@@ -41,6 +53,8 @@ beforeEach(() => {
 
 afterEach(() => {
   faults.failNextExclusiveCreate = false
+  faults.failAllExclusiveCreate = false
+  faults.failAllGuardMkdir = false
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
@@ -75,6 +89,42 @@ describe('ProjectLock', () => {
     } finally {
       lock.release()
     }
+  })
+
+  it('surfaces a PERSISTENT O_EXCL EPERM as itself, never a fabricated holder (AI-IMP-249 P2)', () => {
+    faults.failAllExclusiveCreate = true
+    let thrown: unknown
+    try {
+      ProjectLock.acquire(dir, { retryWindowMs: 200 })
+    } catch (err) {
+      thrown = err
+    }
+    // The honest diagnosis is the filesystem condition — NOT a
+    // ProjectLockedError synthesized from our own token.
+    expect((thrown as NodeJS.ErrnoException).code).toBe('EPERM')
+    expect(thrown).not.toBeInstanceOf(ProjectLockedError)
+  })
+
+  it('surfaces a persistent guard-mkdir EPERM over a dead corpse as the error (AI-IMP-249 P2)', () => {
+    // A reclaimable corpse exists, but the guard can never be taken:
+    // the truth is the permission failure, not "locked by a dead pid".
+    const corpse: LockHolder = {
+      pid: 999999,
+      hostname: hostname(),
+      token: 'corpse-token',
+      acquiredAt: new Date(0).toISOString(),
+      heartbeatAt: new Date(0).toISOString(),
+    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(corpse))
+    faults.failAllGuardMkdir = true
+    let thrown: unknown
+    try {
+      ProjectLock.acquire(dir, { retryWindowMs: 200 })
+    } catch (err) {
+      thrown = err
+    }
+    expect((thrown as NodeJS.ErrnoException).code).toBe('EPERM')
+    expect(thrown).not.toBeInstanceOf(ProjectLockedError)
   })
 
   it('reclaims a stale lock', () => {

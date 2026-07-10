@@ -96,6 +96,10 @@ export class ProjectLockedError extends Error {
 export interface LockOptions {
   heartbeatMs?: number
   staleAfterMs?: number
+  /** Test seam only: shrink the acquire retry window so persistent-
+   * failure regressions run in milliseconds. Production callers never
+   * pass it — the default is shaped to outlive a leaked guard lease. */
+  retryWindowMs?: number
 }
 
 export class ProjectLock {
@@ -118,7 +122,15 @@ export class ProjectLock {
     const guardPath = join(projectDir, RECLAIM_GUARD_DIRNAME)
     const token = crypto.randomUUID()
 
-    const retryDeadline = Date.now() + RECLAIM_RETRY_WINDOW_MS
+    // A transient Windows EPERM (DELETE_PENDING) retries — but if the
+    // SAME retryable error persists through the whole window, it was
+    // never contention: it is a real filesystem/permission condition,
+    // and reporting it as ProjectLockedError (worse: one synthesized
+    // from our own token) fabricates a diagnosis. Remember the last
+    // retryable error so the timeout can tell the truth.
+    let lastTransient: NodeJS.ErrnoException | null = null
+
+    const retryDeadline = Date.now() + (options.retryWindowMs ?? RECLAIM_RETRY_WINDOW_MS)
     for (let attempt = 0; Date.now() <= retryDeadline; attempt++) {
       // 1. Single-winner acquisition: O_EXCL create of the owner file.
       const now = new Date().toISOString()
@@ -139,6 +151,7 @@ export class ProjectLock {
           // while the previous process's handle is still draining. We own
           // nothing in that state and must not inspect or reclaim the path;
           // a bounded backoff lets the kernel settle before re-racing it.
+          lastTransient = err as NodeJS.ErrnoException
           backoff(attempt)
           continue
         }
@@ -150,18 +163,32 @@ export class ProjectLock {
       if (holder && !isReclaimable(holder, staleAfterMs)) {
         throw new ProjectLockedError(holder)
       }
+      // Reaching here means the path is genuinely contended (a corpse
+      // exists), not permission-broken: any earlier transient is stale.
+      lastTransient = null
 
       // 3. Corpse (or an unreadable/torn file): remove it under the guard,
       //    then loop to re-race the O_EXCL create. If the guard is
       //    contended, or a racer reinstalled a live holder, back off and
       //    re-evaluate from the top (a reinstalled live holder is refused
       //    on the next pass).
-      if (!reclaimUnderGuard(path, guardPath, staleAfterMs)) {
-        backoff(attempt)
-      }
+      const reclaim = reclaimUnderGuard(path, guardPath, staleAfterMs)
+      if (reclaim.transient) lastTransient = reclaim.transient
+      if (!reclaim.removed) backoff(attempt)
     }
 
-    throw new ProjectLockedError(readHolder(path) ?? synthHolder(token))
+    // Window exhausted. Diagnosis order: a LIVE holder is the truth
+    // regardless of any transient noise; a persisting retryable error
+    // is the honest answer otherwise (a dead corpse we could not
+    // reclaim BECAUSE of that error is a permission problem, not a
+    // lock problem); a reclaimable corpse with no error is unresolved
+    // contention; the synthesized holder is the last resort.
+    const finalHolder = readHolder(path)
+    if (finalHolder && !isReclaimable(finalHolder, staleAfterMs)) {
+      throw new ProjectLockedError(finalHolder)
+    }
+    if (lastTransient) throw lastTransient
+    throw new ProjectLockedError(finalHolder ?? synthHolder(token))
   }
 
   #beat(): void {
@@ -223,7 +250,11 @@ function isReclaimable(holder: LockHolder, staleAfterMs: number): boolean {
  * reclaimer, or because a racer already reinstalled a live holder (which
  * the caller then refuses on its next pass).
  */
-function reclaimUnderGuard(path: string, guardPath: string, staleAfterMs: number): boolean {
+function reclaimUnderGuard(
+  path: string,
+  guardPath: string,
+  staleAfterMs: number,
+): { removed: boolean; transient?: NodeJS.ErrnoException } {
   try {
     mkdirSync(guardPath)
   } catch (err) {
@@ -234,15 +265,16 @@ function reclaimUnderGuard(path: string, guardPath: string, staleAfterMs: number
       // than EEXIST (AI-IMP-249 round 4 — the same kernel semantics
       // the O_EXCL create hit in round 3). We created nothing and own
       // nothing; the disposition is identical to guard-held — report
-      // no progress and let the caller's bounded window re-race once
-      // the kernel settles.
-      return false
+      // no progress, PRESERVING the error so a PERSISTENT permission
+      // condition can surface truthfully at the window's end instead
+      // of masquerading as a lock holder.
+      return { removed: false, transient: err as NodeJS.ErrnoException }
     }
     if (code !== 'EEXIST') throw err
     // Guard is held. If it is itself abandoned (a reclaimer crashed
     // mid-swap), steal it; mkdir re-arbitrates the retake next pass.
     if (guardIsStale(guardPath)) removeGuard(guardPath)
-    return false
+    return { removed: false }
   }
   try {
     // Under the guard, re-read: a racer may have reclaimed already, or a
@@ -250,10 +282,10 @@ function reclaimUnderGuard(path: string, guardPath: string, staleAfterMs: number
     // have exited.
     const holder = readHolder(path)
     if (holder) {
-      if (!isReclaimable(holder, staleAfterMs)) return false
+      if (!isReclaimable(holder, staleAfterMs)) return { removed: false }
     } else if (!unreadableLongEnough(path)) {
       // Torn read of a live holder mid-write: leave it, retry a read.
-      return false
+      return { removed: false }
     }
     // The owner file cannot turn live under us here: O_EXCL create is
     // blocked while the corpse occupies the path, and a provably-dead
@@ -261,13 +293,14 @@ function reclaimUnderGuard(path: string, guardPath: string, staleAfterMs: number
     // judged (a confirmed corpse, or a durably-unreadable corrupt file).
     try {
       unlinkSync(path)
-      return true
+      return { removed: true }
     } catch (err) {
       // A concurrent release makes the O_EXCL create race open. A Windows
       // EPERM/EBUSY leaves the owner in place, so reporting "cleared" here
       // would burn the retry budget without making any progress.
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return true
-      if (isRetryableRemovalError(err)) return false
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { removed: true }
+      if (isRetryableRemovalError(err))
+        return { removed: false, transient: err as NodeJS.ErrnoException }
       throw err
     }
   } finally {
