@@ -10,6 +10,21 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **RATIFY THE UNDO MATRIX** (AI-IMP-233, 2026-07-09 — your
+  ruling, your sign-off): every deliberate verb now answers Mod+Z —
+  attach note, create-and-attach, make independent, relink, group/
+  ungroup decorations, create canvas; batch keyboard gestures (flip
+  3 items) = ONE undo; relink-then-undo removes the note it created
+  IF untouched (edited notes survive). CONFIRM the exempt calls:
+  CreateNote (residue hazard), MergeTag/SetTagAppearance (no
+  gesture yet), SetTrashRetention (a Settings verb), and note/
+  canvas trash staying out of Mod+Z (the node-trash rationale,
+  extended — your call whether that extension holds).
+
+- [ ] **Redo can't lie anymore** (AI-IMP-230, 2026-07-09, Sol P2):
+  move a card, Mod+Z, then type in any note — Redo goes dead
+  (the old bug: it would replay onto the changed world).
+
 - [ ] **Settings survive crashes** (AI-IMP-237, 2026-07-09, Sol
   P3): kill -9 the app mid-settings-change a few times, relaunch —
   settings are never silently reset; if a corrupt file ever
