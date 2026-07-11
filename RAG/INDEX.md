@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 20 | 236 |
-| **Total** | **28** | **271** |
+| **Total** | **28** | **272** |
 
 ## In Progress
 
@@ -104,6 +104,7 @@
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
 - [[AI-IMP-270-create-and-attach-redo|IMP-270]] — planned, no epic dependency found
+- [[AI-IMP-278-update-check-and-tray|IMP-278]] — backlog, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -150,8 +151,8 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/main/snapshot.ts (791 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (785 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
+- RAG/DESIGN-QUEUE.md (734 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (726 LOC)
-- RAG/DESIGN-QUEUE.md (709 LOC)
 - apps/desktop/src/utility/index.ts (709 LOC)
 - packages/persistence/src/handlers/placements.ts (704 LOC)
 - apps/desktop/e2e/undo.spec.ts (674 LOC)

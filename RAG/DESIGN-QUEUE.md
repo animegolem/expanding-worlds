@@ -73,6 +73,17 @@ all moved into the RFC.
   surfaced where covers surface (the picker, and the revamped
   outline showing the cover when hovering Home). Only the
   no-slug display rules remain from this cluster.
+  **NO-SLUG RULED (owner, 2026-07-11 — CLUSTER FULLY RESOLVED):**
+  the outliner grammar's naming fallback goes APP-WIDE as the one
+  rule — images show source filename (mono/muted), unnamed boards
+  read "unnamed · N items", root is ⌂/Home, raw ids never surface
+  anywhere (path crumbs, window title, gallery cells, search rows
+  alike). The "numbered until named" float is retired — "unnamed"
+  is honest and nags toward naming (the OCD loop working for us).
+  An artist-app principle underneath: never expose generated
+  identity; "why is it named like this?" is a question no tester
+  should ever have to ask. UNBLOCKS AI-IMP-259's display half;
+  the sweep ticket cites the grammar doc.
 
 - **Reading a note on the board — the open-verb as a camera verb**
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
@@ -402,6 +413,15 @@ all moved into the RFC.
   the review: the four-state integration status (Implemented /
   Integrated / Tester-validated / Deferred honestly) for epic
   closes and lead reviews.
+  **STATUS UPDATE (2026-07-11):** items (2)(3)(4) are RULED by the
+  lifecycles bundle (P2+P5+P1 session: retention after-reports via
+  the perch, GC at end-session with dry-run count, End Session
+  closes to the selector through the cover); item (5) is ruled by
+  GR-4/G2+G5. Item (6) resolved by owner ruling 2026-07-11: the
+  release gate is INFORMAL until 1.0 — owner + lead are the gate;
+  "the work that seems plausible to do is the work that's
+  plausible to release." A formal gate gets defined at the 1.0
+  conversation. Only item (1)'s owner-may-overrule stands.
 
 - **Gallery preview + inspector** (alph's first field report,
   2026-07-08 — blocks AI-IMP-204): he double-clicked a gallery tile
@@ -425,10 +445,14 @@ all moved into the RFC.
   unification pass." AI-IMP-211 rebuilds the note picker as a
   reusable palette (verbs injected) precisely so this conversation
   can rule "the pin wizard becomes the same surface" cheaply if it
-  wants to. Also from the same flush, tied to the reading ruling:
+  wants to. ~~Also from the same flush, tied to the reading ruling:
   "OS zoom controls within a note should resize text independently
   of the board" — a second text-only zoom axis; decide whether the
-  camera-verb ruling makes it unnecessary.
+  camera-verb ruling makes it unnecessary.~~ **SECOND ZOOM AXIS
+  KILLED (owner, 2026-07-11):** the camera-verb ruling makes the
+  camera the reading mechanism; a text-only axis dies. Cheap to
+  re-add if the feel pass demands it — the fix of first resort is
+  the reading-zoom target, not a new axis.
 
 - **Traveling tags — the library boundary (PROPOSED 2026-07-10,
   owner tentatively accepts, alph confirm pending).** alph tagged
@@ -697,13 +721,14 @@ the week's testing says so. Lands with the AI-IMP-173 fix wave.)
 (URL-as-tag vs source field RESOLVED 2026-07-06, rev 0.53: source
 field + domain tag-offer chip.)
 
-- **In-app update check (owner, 2026-07-11 pre-dawn — conversation
-  pending).** Testing cadence is now multiple tags per day and the
-  testers install by hand; an update function that reads the GitHub
-  releases page (latest tag vs running version → notice + download
-  link, or download-and-stage) would close the loop. Talk through:
-  polling vs check-at-launch, unsigned-build friction (the macOS
-  xattr note travels with any auto-download), electron-updater vs
-  a hand-rolled latest-release fetch against the public repo API
-  (no auth needed), and whether the notice belongs in the title
-  strip or the library activity log once that exists.
+- **In-app update check — RULED (owner, 2026-07-11; ticket
+  AI-IMP-278).** Check at LAUNCH (no polling), plus a Settings
+  "Check for updates" row, plus — the owner's preferred surface —
+  a TRAY icon (Windows tray / macOS menu bar) that indicates when
+  an update is detected and offers running it from its menu.
+  Hand-rolled fetch against the public releases API (no auth;
+  electron-updater buys nothing while builds are unsigned). No
+  macOS-side signing warning needed: the owner is the only mac
+  user and will buy the dev account before another one exists
+  ("I'm just gonna eat the $100 pre-1.0"). Notice migrates into
+  the library activity log when that surface lands.
