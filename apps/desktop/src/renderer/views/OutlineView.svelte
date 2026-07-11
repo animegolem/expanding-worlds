@@ -7,6 +7,7 @@
   retained while the surface adopts the outliner grammar.
 -->
 <script lang="ts">
+  import { tick } from 'svelte'
   import { NODE_DRAG_MIME, NOTE_DRAG_MIME } from '../canvas/import-surfaces'
   import { closeTakeover } from '../chrome/takeover'
   import { navigateTo } from '../chrome/navigation'
@@ -99,7 +100,11 @@
     selectedRow
       ? createOutlineActionDoors(actionBag(selectedRow, previewModel), (intent) => {
           if (intent === 'fold') toggle(selectedRow)
-          else closeTakeover()
+          else if (intent === 'return') closeTakeover()
+          else if (intent === 'cursor-up') moveCursor(-1)
+          else if (intent === 'cursor-down') moveCursor(1)
+          else if (intent === 'cursor-left') cursorLeft()
+          else if (intent === 'cursor-right') cursorRight()
         })
       : null,
   )
@@ -335,6 +340,11 @@
         lensTag = null
         return
       }
+      // Dialog gate (AI-IMP-277): while the trash confirm, row menu,
+      // or tag popover is open, that surface owns every key except the
+      // Escape closes above — this capture listener must not move the
+      // cursor or fire verbs at the row underneath.
+      if (trashImpact || menuPoint || tagging) return
       const result = actionDoors?.keyboard.handle(event)
       if (result?.handled) {
         event.stopImmediatePropagation()
@@ -355,6 +365,51 @@
   function toggle(row: OutlineViewRow): void {
     if (!row.branchKey || !row.canFold) return
     expanded[row.branchKey] = !row.expanded
+  }
+
+  function scrollCursorIntoView(): void {
+    void tick().then(() => {
+      document
+        .querySelector('[data-testid="outline-tree"] .tree-row.selected')
+        ?.scrollIntoView({ block: 'nearest' })
+    })
+  }
+
+  /** The deliberate cursor (AI-IMP-277): selection moves by key or
+   * click only — hover never drives the preview. */
+  function moveCursor(delta: -1 | 1): void {
+    if (rows.length === 0 || !selectedRow) return
+    const index = rows.findIndex((row) => row.key === selectedRow.key)
+    const next = rows[Math.min(rows.length - 1, Math.max(0, index + delta))]
+    if (!next || next.key === selectedRow.key) return
+    selectedKey = next.key
+    scrollCursorIntoView()
+  }
+
+  /** Org reading: ← folds, or jumps to the parent when already
+   * folded or unfoldable. Inert at depth 0 and in uniform-depth
+   * worklists, by construction. */
+  function cursorLeft(): void {
+    const row = selectedRow
+    if (!row) return
+    if (row.canFold && row.expanded) {
+      toggle(row)
+      return
+    }
+    const index = rows.findIndex((candidate) => candidate.key === row.key)
+    for (let i = index - 1; i >= 0; i -= 1) {
+      if (rows[i]!.depth < row.depth) {
+        selectedKey = rows[i]!.key
+        scrollCursorIntoView()
+        return
+      }
+    }
+  }
+
+  /** Org reading: → unfolds; it never doubles as dive (that is ↵). */
+  function cursorRight(): void {
+    const row = selectedRow
+    if (row?.canFold && !row.expanded) toggle(row)
   }
 
   /** Alias activation flies to the first real rendering. */
@@ -516,8 +571,10 @@
             if (row.note) beginRowDrag(event, NOTE_DRAG_MIME, row.note.id)
             else if (row.node) beginRowDrag(event, NODE_DRAG_MIME, 'id' in row.node ? row.node.id : row.node.nodeId)
           }}
-          onpointerenter={() => (selectedKey = row.key)}
-          onpointerdown={(event) => beginLongPress(event, row)}
+          onpointerdown={(event) => {
+            selectedKey = row.key
+            beginLongPress(event, row)
+          }}
           onpointerup={cancelLongPress}
           onpointercancel={cancelLongPress}
           onpointermove={cancelLongPress}

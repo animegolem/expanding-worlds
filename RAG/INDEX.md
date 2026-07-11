@@ -10,8 +10,8 @@
 | Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 20 | 235 |
-| **Total** | **28** | **270** |
+| Completed | 20 | 236 |
+| **Total** | **28** | **271** |
 
 ## In Progress
 
@@ -139,11 +139,11 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-structure.ts (1139 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (1103 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1053 LOC)
+- apps/desktop/src/renderer/views/OutlineView.svelte (1045 LOC)
 - apps/desktop/e2e/notes.spec.ts (1025 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (1022 LOC)
-- apps/desktop/src/renderer/views/OutlineView.svelte (988 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (963 LOC)
-- RAG/HUMAN-TESTING.md (889 LOC)
+- RAG/HUMAN-TESTING.md (902 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/note/panels.ts (880 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
@@ -156,8 +156,8 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (726 LOC)
 - apps/desktop/src/utility/index.ts (709 LOC)
+- RAG/DESIGN-QUEUE.md (707 LOC)
 - packages/persistence/src/handlers/placements.ts (704 LOC)
-- RAG/DESIGN-QUEUE.md (680 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - apps/desktop/e2e/undo.spec.ts (674 LOC)
 - spike/src/adapters/pixi/index.ts (664 LOC)
@@ -191,6 +191,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (537 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
 - packages/persistence/src/export/project-import.test.ts (513 LOC)
+- apps/desktop/e2e/outline.spec.ts (513 LOC)
 - apps/desktop/e2e/charms.spec.ts (513 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - packages/commands/src/payloads/structure.ts (503 LOC)
@@ -204,7 +205,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.ts (465 LOC)
 - spike/webkit-renderer/src/tiering.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
-- apps/desktop/e2e/outline.spec.ts (460 LOC)
 - packages/persistence/src/export/project-import.ts (459 LOC)
 - packages/persistence/src/export/project-export.ts (457 LOC)
 - RAG/design/outliner-kit-1.1/_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/_adherence.oxlintrc.json (446 LOC)
@@ -271,7 +271,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>20 EPICs, 147 IMPs completed</summary>
+<summary>20 EPICs, 148 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -434,5 +434,6 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-274-outliner-two-pane-shell|IMP-274]] Outliner two pane shell — completed
   - [[AI-IMP-275-outliner-preview-pane|IMP-275]] Outliner preview pane — completed
   - [[AI-IMP-276-outliner-verb-doors|IMP-276]] Outliner verb doors — completed
+  - [[AI-IMP-277-outline-deliberate-cursor|IMP-277]] Outline deliberate cursor — completed
 
 </details>

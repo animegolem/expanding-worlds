@@ -90,7 +90,7 @@ test('outliner grammar: tree, flattened cleanup, calm badges, lens, and fold sur
   await expect(bareRow).not.toContainText(/[0-9a-f]{8}-[0-9a-f-]{27}/i)
   const boardRow = tree.getByTestId('outline-child-row').filter({ hasText: 'Ruins Board' })
   await expect(boardRow).toHaveCount(1)
-  await boardRow.hover()
+  await boardRow.getByTestId('outline-row-activate').click()
   await expect(win.getByTestId('outline-filmstrip-glyph')).toBeVisible()
 
   // Unfold A, then B: B's child A is already on the expansion path
@@ -109,7 +109,7 @@ test('outliner grammar: tree, flattened cleanup, calm badges, lens, and fold sur
   await expect(tree.getByTestId('loose-node-row')).toHaveCount(1)
   await expect(tree.getByTestId('loose-node-row').getByTestId('badge-orphan')).toBeVisible()
   await expect(tree.getByTestId('loose-note-row')).toContainText('Adrift Thought')
-  await tree.getByTestId('loose-note-row').hover()
+  await tree.getByTestId('loose-note-row').getByTestId('outline-row-activate').click()
   const disabledFly = win.locator('[data-testid="outline-preview-verbs"] [data-verb-id="fly-to"]')
   await expect(disabledFly).toBeDisabled()
   await expect(win.getByTestId('outline-preview-verbs')).toContainText('no placements to fly to')
@@ -143,6 +143,59 @@ test('outliner grammar: tree, flattened cleanup, calm badges, lens, and fold sur
   await app.close()
 })
 
+test('outline deliberate cursor: hover inert, three dialects move it, org fold keys, dialog gate (AI-IMP-277)', async () => {
+  const { app, win } = await launchApp('ew-e2e-outline-cursor-')
+  const { rootCanvasId } = await seedWorld(win)
+
+  await win.getByTestId('charm-outline').click()
+  const tree = win.getByTestId('outline-tree')
+  const rootRow = tree.locator(`[data-canvas="${rootCanvasId}"]`).first()
+  const boardRow = tree.getByTestId('outline-child-row').filter({ hasText: 'Ruins Board' })
+
+  // Selection is deliberate: click selects; hovering another row
+  // afterwards changes NOTHING (alph's field report — the preview
+  // must not churn under pointer travel).
+  await boardRow.getByTestId('outline-row-activate').click()
+  await expect(boardRow).toHaveClass(/selected/)
+  await expect(win.getByTestId('outline-filmstrip-glyph')).toBeVisible()
+  await tree.getByTestId('loose-note-row').hover()
+  await expect(boardRow).toHaveClass(/selected/)
+  await expect(win.getByTestId('outline-filmstrip-glyph')).toBeVisible()
+
+  // All three vertical dialects walk the cursor and return it.
+  for (const [down, up] of [['ArrowDown', 'ArrowUp'], ['j', 'k'], ['s', 'w']] as const) {
+    await win.keyboard.press(down)
+    await expect(boardRow).not.toHaveClass(/selected/)
+    await win.keyboard.press(up)
+    await expect(boardRow).toHaveClass(/selected/)
+  }
+
+  // Org horizontal keys: → unfolds, ← folds, ← again jumps to parent.
+  await win.keyboard.press('ArrowRight')
+  await expect(boardRow.getByTestId('outline-expand')).toHaveAttribute('aria-expanded', 'true')
+  await win.keyboard.press('h')
+  await expect(boardRow.getByTestId('outline-expand')).toHaveAttribute('aria-expanded', 'false')
+  await expect(boardRow).toHaveClass(/selected/)
+  await win.keyboard.press('a')
+  await expect(rootRow).toHaveClass(/selected/)
+
+  // Dialog gate: with the trash confirm open, cursor keys and bare
+  // Enter never reach the outline map (the pre-277 Enter-under-dialog
+  // leak); Escape still closes.
+  await boardRow.getByTestId('outline-row-activate').click()
+  await win.keyboard.press('Delete')
+  await expect(win.getByTestId('outline-trash-confirm')).toBeVisible()
+  await win.keyboard.press('j')
+  await win.keyboard.press('Enter')
+  await expect(win.getByTestId('outline-trash-confirm')).toBeVisible()
+  await expect(win.getByTestId('takeover-outline')).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('outline-trash-confirm')).toHaveCount(0)
+  await expect(boardRow).toHaveClass(/selected/)
+
+  await app.close()
+})
+
 test('outliner preview capture and three doors share one shipped verb path', async () => {
   const { app, win } = await launchApp('ew-e2e-outline-control-')
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
@@ -156,7 +209,7 @@ test('outliner preview capture and three doors share one shipped verb path', asy
 
   await win.getByTestId('charm-outline').click()
   const row = win.locator(`[data-testid="outline-child-row"][data-node-id="${nodeId}"]`)
-  await row.hover()
+  await row.getByTestId('outline-row-activate').click()
   await expect(win.getByTestId('outline-preview')).toContainText('◯ pin')
   await expect(win.getByTestId('outline-note-capture')).toBeVisible()
 

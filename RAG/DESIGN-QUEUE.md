@@ -298,6 +298,22 @@ all moved into the RFC.
   surface is READY TO CUT as an epic (rebuild of OutlineView to
   the kit + grammar) whenever the owner assigns the build slot —
   the design conversation is DONE.
+  **FIELD REPORT №1 + THE CURSOR RULING (alph → owner → ruled,
+  2026-07-11, on v0.24.0).** "No click is disorienting rather
+  than helpful" — the shipped preview-follow rode HOVER
+  (`onpointerenter` → selection), and no cursor key existed at
+  all; "never a click cost" was the wrong reading of the grammar
+  (yazi/org/NLS follow a DELIBERATE cursor, not pointer travel).
+  RULED (owner cosign): hover never moves selection (visual
+  highlight only); click and keyboard do; THREE simultaneous
+  keyboard dialects, no setting — arrows + HJKL (owner's hand) +
+  WASD (pen-in-right-hand: the whole cleanup loop goes
+  left-handed with Space/Tab/#/n); org-standard Left/Right
+  (→ unfold; ← fold, or parent-jump when folded/leaf) over the
+  yazi dive/surface reading; `/` reserved for future search
+  focus, type-ahead deliberately off the table. Owner is folding
+  the ruling into the grammar doc rev; AI-IMP-277 builds the
+  delta (ticket normative until the grammar rev lands).
 
 - **The touch/pencil design pass (owner directive, 2026-07-10
   late — the frame for the NEXT design pass).** "All of our

@@ -10,11 +10,24 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **THE DELIBERATE CURSOR** (AI-IMP-277, 2026-07-11 — alph's
+  field report №1, same-day fix): in the outline, sweep the mouse
+  across the tree — the preview must NOT churn (hover only
+  highlights; this was the "disorienting" bit). Selection now
+  moves by click or keys, three dialects live at once: arrows,
+  HJKL (vim hands), WASD (pen in the right hand — try running the
+  whole cleanup loop left-handed: WASD to move, Space place, Tab
+  facets, # tag, N note). → unfolds a board, ← folds it, ← again
+  jumps to the parent. Feel questions: does deliberate selection
+  cure the disorientation, and which dialect do your hands
+  actually pick?
+
 - [ ] **THE OUTLINER IS A CONTROL PANEL** (EPIC-028, 2026-07-11 —
   your kit, built overnight): open ▤ in a populated project. Tree
-  left, live preview right following your cursor — never a click
-  cost. Try: the facet chips (untagged is new — the worklist
-  flattens with paths, fold state survives clearing it); hover a
+  left, live preview right following your selection (as of
+  AI-IMP-277: click or keys, never hover). Try: the facet chips
+  (untagged is new — the worklist
+  flattens with paths, fold state survives clearing it); select a
   board (truthful filmstrip — glyph chips for dots/notes, thumbs
   for images); an ORPHAN row → type in the preview's "add a
   note…" and hit ↵ (one command, the ·orphan badge clears — the

@@ -135,6 +135,42 @@ describe('outline keyboard door', () => {
     expect(h.navigation).toEqual(['fold', 'return'])
   })
 
+  it('moves the cursor through all three ruled dialects', () => {
+    const h = harness({})
+    for (const up of ['ArrowUp', 'k', 'w']) h.press(key(up))
+    for (const down of ['ArrowDown', 'j', 's']) h.press(key(down))
+    for (const left of ['ArrowLeft', 'h', 'a']) h.press(key(left))
+    for (const right of ['ArrowRight', 'l', 'd']) h.press(key(right))
+    expect(h.navigation).toEqual([
+      'cursor-up', 'cursor-up', 'cursor-up',
+      'cursor-down', 'cursor-down', 'cursor-down',
+      'cursor-left', 'cursor-left', 'cursor-left',
+      'cursor-right', 'cursor-right', 'cursor-right',
+    ])
+  })
+
+  it('cursor letters never shadow verbs or fire under modifiers', () => {
+    const run = vi.fn()
+    const navigation: string[] = []
+    const doors = createOutlineActionDoors({ dive: enabled(run) }, (intent) =>
+      navigation.push(intent),
+    )
+    // the cursor map is navigation, not a verb — parity stays untouched
+    expect(doors.keyboard.ids).not.toContain('cursor-up')
+    for (const chord of [
+      key('j', { ctrlKey: true }),
+      key('w', { metaKey: true }),
+      key('h', { altKey: true }),
+      key('ArrowDown', { shiftKey: true }),
+    ]) {
+      expect(doors.keyboard.handle(chord)).toEqual({ handled: false })
+    }
+    const target = { tagName: 'INPUT' } as unknown as EventTarget
+    expect(doors.keyboard.handle(key('j', { target }))).toEqual({ handled: false })
+    expect(navigation).toEqual([])
+    expect(run).not.toHaveBeenCalled()
+  })
+
   it('handles but never dispatches a disabled verb', () => {
     const doors = createOutlineActionDoors({ trash: disabled('root cannot be trashed') }, () => {})
     expect(doors.keyboard.handle(key('Backspace'))).toEqual({

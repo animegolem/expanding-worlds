@@ -10,7 +10,32 @@ import {
 } from './context-menu'
 
 export type OutlineDoor = 'preview' | 'context-menu' | 'keyboard'
-export type OutlineNavigationIntent = 'fold' | 'return'
+export type OutlineNavigationIntent =
+  | 'fold'
+  | 'return'
+  | 'cursor-up'
+  | 'cursor-down'
+  | 'cursor-left'
+  | 'cursor-right'
+
+/** The ruled cursor dialects (2026-07-11): arrows always, HJKL and
+ * WASD live simultaneously — WASD keeps the whole cleanup loop
+ * left-handed while a pen holds the right. Bare letters are safe
+ * because `/` is reserved for search focus; type-ahead is ruled out. */
+const CURSOR_KEYS: Record<string, OutlineNavigationIntent> = {
+  arrowup: 'cursor-up',
+  k: 'cursor-up',
+  w: 'cursor-up',
+  arrowdown: 'cursor-down',
+  j: 'cursor-down',
+  s: 'cursor-down',
+  arrowleft: 'cursor-left',
+  h: 'cursor-left',
+  a: 'cursor-left',
+  arrowright: 'cursor-right',
+  l: 'cursor-right',
+  d: 'cursor-right',
+}
 
 export interface OutlineKeyboardResult {
   handled: boolean
@@ -105,6 +130,12 @@ export function createOutlineActionDoors(
           event.preventDefault()
           navigate('return')
           return { handled: true, navigation: 'return' }
+        }
+        const cursor = CURSOR_KEYS[key]
+        if (cursor && !event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+          event.preventDefault()
+          navigate(cursor)
+          return { handled: true, navigation: cursor }
         }
 
         const verb = keyboardVerb(event, inventory)

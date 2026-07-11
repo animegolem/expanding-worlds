@@ -10,6 +10,21 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
+## [Unreleased]
+
+### For testers
+- Changed (your field report): the outline preview no longer chases the
+  mouse — hovering rows only highlights them. Selection is deliberate:
+  click a row, or drive the cursor from the keyboard with arrows, HJKL,
+  or WASD (all three work, no setting — WASD keeps your pen hand free).
+  → unfolds a board, ← folds it or jumps to the parent.
+
+### Under the hood
+- AI-IMP-277: hover-follow removed for a deliberate selection cursor;
+  twelve-key three-dialect navigation as outline navigation intents;
+  org-standard fold keys; dialog gate fencing keys (incl. a live
+  Enter-under-trash-confirm leak) while outline dialogs are open.
+
 ## [v0.24.0] — 2026-07-11 — the control-panel build
 
 ### For testers
