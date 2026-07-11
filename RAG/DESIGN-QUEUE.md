@@ -316,6 +316,32 @@ all moved into the RFC.
   with per-category REQUIRED fields ("artist and source are
   required but date saved is not") — see the tag-categories entry
   for the required-ness revision this implies.**
+  **REOPENED BY THE OWNER (2026-07-10 evening, post-caption):
+  the CAPTION changed the math.** World/board tags were doing two
+  jobs — annotation ("something extra about this entity here")
+  and query structure — and the shipped placement caption absorbs
+  the annotation job outright, more elegantly. The owner's
+  candidate ruling: drop category-carried travel and "bite the
+  bullet" toward ONE tag universe — no two sources of truth, sync
+  at proper close, one intro warning ("save your project or your
+  tags won't update"). LEAD REFINEMENT at capture: taken
+  literally "all tags backport" has a scoping hole (most world
+  tags sit on boards/dots/native notes the library has no copy
+  of) — the coherent rule is **MIRROR-EDGE SYNC**: tags sync
+  wherever a mirror relationship exists; elsewhere there is
+  nothing to sync to and no user-facing lane concept at all. The
+  user never files a tag; EPIC-026 categories return to pure
+  structure (travel stops being a category property). Agenda for
+  the alph conversation: (1) pollution vs provenance — project-
+  structural tags reaching the library; mitigate completion noise
+  by RANKING (this-project usage first), not lanes; (2) rename/
+  delete divergence must be RULED, not implied — last-settle-wins
+  + the deliberate push verb, same merge-policy family the
+  projection ruling deferred; (3) the opt-out — can alph name a
+  tag he'd want kept OUT of the library? If yes: a rare
+  per-tag/category "local only" exception flag; if no: ship
+  without one. Close-time inbox mechanics from the original
+  proposal carry over unchanged.
 
 - **Tag categories — the missing primitive (RATIFIED 2026-07-09,
   owner + alph, Discord; awaiting epic cut + RFC fold-in):** typed
