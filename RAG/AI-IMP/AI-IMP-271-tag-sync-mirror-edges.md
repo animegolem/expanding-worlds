@@ -7,12 +7,12 @@ tags:
   - library
   - tags
   - field-report
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.65
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-11
 ---
 
 
@@ -208,3 +208,18 @@ You MUST document any failed implementations, blockers or missing tests.
   its known Pixi canvas `getContext` warnings; they did not fail tests.
 - AI-IMP-270 was intentionally not started: 271 consumed the sitting's
   clean validation budget, and ticket fences remain intact.
+
+Built by the Codex wave (round-1 review corrected the ticket eight
+ways — all granted; round-2 implemented them exactly), lead-merged
+clean at the 271 merge commit. Validation: Windows oracle + all
+four e2e shards green on ci/imp-271; lead reproduced full check:ci
+(packages 1,116; desktop 427/1 skipped) in the worktree AND on the
+merged tree; tag-sync e2e 2/2 + tags/outline/loose-note shards
+15/15 post-merge. Notable architecture from the round-1 review:
+system writes via direct service envelopes (structurally
+unreachable by Mod+Z), narrow typed utility ops instead of any
+writable-secondary door, and the ratified cross-project undo
+boundary (local undo never crosses DBs; settle re-unions).
+Codex's boundary review also caught and removed a parallel
+draft's renderer-supplied library path before submission — main
+owns every filesystem target.

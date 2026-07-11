@@ -10,6 +10,21 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **ONE TAG UNIVERSE** (AI-IMP-271, 2026-07-11 — alph's
+  original surprise, fixed for real): with your library designated,
+  put the same image in the library and a project. Tag it in the
+  PROJECT, close normally, open the library — the tag is there. Add
+  a second tag in the LIBRARY, reopen the project — one quiet "N
+  tags arrived from the library" notice and the tag is on your
+  copy. Delete a tag (the tag panel grew its first delete button):
+  it asks "this project or also the library?" — try "this project,"
+  relaunch, confirm it STAYS gone (the library can't push it back).
+  Then try "project and library." Undo a delete — local only; the
+  library catches up at the next settle. Break it: make the library
+  unavailable (rename its folder), confirm opening stays calm and
+  quitting never hangs, and the library-delete choice shows an
+  honest disabled reason.
+
 - [ ] **The 46px axis** (AI-IMP-272, 2026-07-10 night — owner's
   own report): hover the top band — the smoky gradient should now
   visibly fill a 46px band dissolving into the board (it was a
