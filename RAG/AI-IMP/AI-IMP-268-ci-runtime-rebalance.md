@@ -111,3 +111,13 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- paths-ignore VERIFIED live: the ticket-close push 0fceb86c
+  (pure RAG/**) triggered no workflow run — `gh run list` still
+  heads at a8d02fb3's run after the push. Every prior doc-only
+  push ran the full 45-minute gate.
+- The oracle branch ci/imp-266 predates the sharding, so its
+  in-flight run still walks the old single-worker e2e — expected;
+  the 266 merge inherits the new shape on its post-merge main run.
+- Cancellation is config-proven only (standard mechanism); the
+  first real burst push demonstrates it in the wild.
