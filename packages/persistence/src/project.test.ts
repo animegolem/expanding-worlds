@@ -60,6 +60,21 @@ describe('createProject', () => {
     }
   })
 
+  it('migration 0008 adds a nullable caption with no schema constraint', () => {
+    const project = createProject(dir, 'Caption Schema')
+    try {
+      const caption = project.db
+        .all<{ name: string; type: string; notnull: number; dflt_value: unknown }>(
+          'PRAGMA table_info(placement)',
+        )
+        .find((column) => column.name === 'caption')
+      expect(caption).toMatchObject({ type: 'TEXT', notnull: 0, dflt_value: null })
+      expect(MIGRATIONS.find((migration) => migration.id === 8)?.sql).not.toMatch(/CHECK/i)
+    } finally {
+      project.close()
+    }
+  })
+
   it('refuses to create over an existing project', () => {
     createProject(dir, 'First').close()
     expect(() => createProject(dir, 'Second')).toThrow(/already exists/)

@@ -28,6 +28,7 @@ const IMAGE_ITEM: ItemSubject = {
   hasNote: false,
   locked: false,
   labelVisible: true,
+  hasCaption: false,
   isImage: true,
 }
 
@@ -92,6 +93,22 @@ describe('menuFor — item inventory (§8.4)', () => {
     expect(noted).toContain('detach-note')
     expect(noted).toContain('make-note-independent')
     expect(noted).not.toContain('attach-new-note')
+  })
+
+  it('offers the caption verb on ordinary placements but not frames', () => {
+    expect(byId(menuFor(IMAGE_ITEM, stubActions()), 'caption')!.run).toBeDefined()
+    expect(byId(menuFor(IMAGE_ITEM, stubActions()), 'caption')!.label).toBe('Add caption…')
+    expect(byId(menuFor(IMAGE_ITEM, stubActions()), 'remove-caption')).toBeUndefined()
+    const captioned = menuFor({ ...IMAGE_ITEM, hasCaption: true }, stubActions())
+    expect(byId(captioned, 'caption')!.label).toBe('Edit caption…')
+    expect(byId(captioned, 'remove-caption')!.run).toBeDefined()
+    const frame: FrameSubject = {
+      kind: 'frame',
+      locked: false,
+      hasNote: false,
+      sortOnDrop: true,
+    }
+    expect(byId(menuFor(frame, stubActions()), 'caption')).toBeUndefined()
   })
 
   it('reflects live state in the toggle labels and the backdrop gate', () => {

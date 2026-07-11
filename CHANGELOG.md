@@ -12,7 +12,18 @@ annotations.
 
 ## [Unreleased]
 
+### For testers
+- New: placements can carry a short caption without creating a note or
+  adding anything to the outline. Add or edit one from an item's menu,
+  or use the caption charm on an image; captions travel with their
+  placement and replace its ordinary title label.
+
 ### Under the hood
+- Placement captions (AI-IMP-266) are handler-validated, independently
+  undoable placement data. They use the existing world-scaled label
+  renderer and crispness buckets, survive export/import and placement
+  delete/restore, and stay deliberately absent from outline, gallery,
+  and search projections.
 - CI runtime rebalanced (AI-IMP-268): doc-only pushes skip the
   workflow, superseded runs cancel, and the 44-minute single-worker
   e2e step became four parallel shards — a code push gates in

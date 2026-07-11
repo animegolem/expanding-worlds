@@ -155,6 +155,38 @@ describe('adornedWorldAABB — charm-bar bounds (AI-IMP-161)', () => {
     expect(adorned.height).toBeGreaterThan(base.height)
   })
 
+  it('uses the shared clamped caption line count for adorned bounds', () => {
+    const item = makePlacement({
+      x: 0,
+      y: 0,
+      width: 70,
+      height: 100,
+      noteTitle: 'Title is replaced',
+      caption: 'alpha beta gamma delta epsilon zeta eta theta',
+      labelVisible: 1,
+    })
+    const adorned = adornedWorldAABB(item, ZOOM)!
+    const glyphs = 100 * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO * 3
+    expect(adorned.y + adorned.height).toBeCloseTo(
+      50 + LABEL_CLEARANCE_PX / ZOOM + glyphs,
+    )
+  })
+
+  it('extends below a card only when the card has a caption', () => {
+    const card = makePlacement({
+      width: 260,
+      height: 160,
+      noteTitle: 'Face title',
+      appearanceKind: 'card',
+      labelVisible: 1,
+    })
+    expect(adornedWorldAABB(card, ZOOM)).toEqual(itemWorldAABB(card))
+    const captioned = { ...card, caption: 'Under-card thought' }
+    expect(adornedWorldAABB(captioned, ZOOM)!.height).toBeGreaterThan(
+      itemWorldAABB(captioned)!.height,
+    )
+  })
+
   it('scales the label reach with placement scale (world units)', () => {
     const item = makePlacement({
       x: 0,
@@ -181,15 +213,17 @@ describe('adornedWorldAABB — charm-bar bounds (AI-IMP-161)', () => {
     expect(far.height - near.height).toBeCloseTo(LABEL_CLEARANCE_PX / 1 - LABEL_CLEARANCE_PX / 4)
   })
 
-  it('does not extend below a y-flipped placement (label sits above)', () => {
+  it('extends below a y-flipped placement because its counter-flipped label stays below', () => {
     const item = makePlacement({
       width: 100,
       height: 60,
-      noteTitle: 'Harbor',
+      caption: 'one two three four five six seven',
       labelVisible: 1,
       flipY: 1,
     })
-    expect(adornedWorldAABB(item, ZOOM)).toEqual(itemWorldAABB(item))
+    const body = itemWorldAABB(item)!
+    const adorned = adornedWorldAABB(item, ZOOM)!
+    expect(adorned.y + adorned.height).toBeGreaterThan(body.y + body.height)
   })
 })
 

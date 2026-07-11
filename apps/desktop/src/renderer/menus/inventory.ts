@@ -115,6 +115,7 @@ export interface ItemSubject {
   hasNote: boolean
   locked: boolean
   labelVisible: boolean
+  hasCaption: boolean
   /** Whether the node backs an image appearance (set-as-backdrop gate). */
   isImage: boolean
 }
@@ -175,6 +176,8 @@ export interface MenuActions {
   flip(axis: 'x' | 'y'): void
   openAppearance(): void
   openTags(): void
+  editCaption(): void
+  removeCaption(): void
   openNote(): void
   attachNewNote(): void
   attachExistingNote(): void
@@ -327,6 +330,10 @@ function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
         { id: 'flip-h', label: 'Flip horizontal', shortcutId: 'board-flip-h', run: () => a.flip('x') },
         { id: 'flip-v', label: 'Flip vertical', shortcutId: 'board-flip-v', run: () => a.flip('y') },
         { id: 'appearance', label: 'Appearance…', run: a.openAppearance },
+        { id: 'caption', label: subject.hasCaption ? 'Edit caption…' : 'Add caption…', run: a.editCaption },
+        ...(subject.hasCaption
+          ? [{ id: 'remove-caption', label: 'Remove caption', run: a.removeCaption }]
+          : []),
         ...noteRows(subject.hasNote, a),
         { id: 'tags', label: 'Tags…', run: a.openTags },
         {

@@ -8,6 +8,7 @@
   import { attachCharmsUi, type CharmsUiHandle } from './canvas/charms-ui'
   import { attachFramesFurniture, type FramesFurnitureHandle } from './canvas/frames-furniture'
   import { attachCropEditor, type CropEditorHandle } from './canvas/crop-editor'
+  import { attachCaptionEditor, type CaptionEditorHandle } from './canvas/caption-editor'
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
@@ -64,6 +65,7 @@
     let charms: CharmsUiHandle | null = null
     let framesFurniture: FramesFurnitureHandle | null = null
     let cropEditor: CropEditorHandle | null = null
+    let captionEditor: CaptionEditorHandle | null = null
     let pinTool: PinToolHandle | null = null
     let placeMode: PlaceModeHandle | null = null
     let detachPanels: (() => void) | null = null
@@ -107,6 +109,7 @@
         // §4.6 crop editor (AI-IMP-159): the takeover-family overlay the
         // charm-bar / context-menu Crop verbs open via requestCropEditor.
         cropEditor = attachCropEditor(h, element)
+        captionEditor = attachCaptionEditor(h, element, notify)
         pinTool = attachPinTool(h, element)
         placeMode = attachPlaceMode(h, element)
         handle = h
@@ -125,6 +128,7 @@
       charms?.destroy()
       framesFurniture?.destroy()
       cropEditor?.destroy()
+      captionEditor?.destroy()
       pinTool?.destroy()
       placeMode?.destroy()
       detachPanels?.()

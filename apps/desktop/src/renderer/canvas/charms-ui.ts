@@ -37,6 +37,7 @@ import { assignTagByName, filterTagCompletions } from '../tags/tag-assign'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { importErrorNotice } from './import-surfaces'
 import { requestCropEditor } from './crop-request'
+import { requestCaptionEditor } from './caption-request'
 import { themeTokenValue } from '../theme'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 import { ICON_SVG_DATA_URLS } from './icon-atlas.generated'
@@ -605,6 +606,17 @@ export function attachCharmsUi(
     cropButton.style.cursor = isImage ? 'pointer' : 'default'
     barTips.get(cropButton)?.update(isImage ? cropTipSpec : cropDisabledTipSpec)
   }
+  const captionButton = barButton('charm-caption', '✎', { name: 'Add caption' }, () => {
+    const placement = selectedPlacement()
+    if (placement?.appearanceKind === 'image') requestCaptionEditor(placement.id)
+  })
+  function syncCaptionButton(placement: ScenePlacement): void {
+    const isImage = placement.appearanceKind === 'image'
+    captionButton.style.display = isImage ? 'flex' : 'none'
+    const name = placement.caption === null ? 'Add caption' : 'Edit caption'
+    captionButton.setAttribute('aria-label', name)
+    barTips.get(captionButton)?.update({ name })
+  }
   barButton('charm-flip-h', '⇋', { name: 'Flip horizontal' }, () => {
     const placement = selectedPlacement()
     if (placement) void execute('FlipPlacement', { placementId: placement.id, axis: 'x' })
@@ -1078,6 +1090,7 @@ export function attachCharmsUi(
       // Toggle the §4.9 frame chip BEFORE measuring, so the bar width
       // (and thus its centering) accounts for it.
       syncFrameChip(selected)
+      syncCaptionButton(selected)
       const barWidth = bar.offsetWidth || 200
       bar.style.left = `${bottomCenter.x - barWidth / 2}px`
       bar.style.top = `${bottomCenter.y + 10}px`

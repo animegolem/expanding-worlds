@@ -155,6 +155,16 @@ describe('gallery read models (§14.4)', () => {
       nodeId: image,
       appearance: { kind: 'image', assetId, crop: null },
     })
+    const imagePlacement = uuidv7()
+    committed('CreatePlacement', {
+      placementId: imagePlacement,
+      canvasId: handle.rootCanvasId,
+      nodeId: image,
+    })
+    committed('SetPlacementCaption', {
+      placementId: imagePlacement,
+      caption: 'gallery-blind private observation',
+    })
 
     const board = createNode()
     const canvasId = uuidv7()
@@ -164,6 +174,8 @@ describe('gallery read models (§14.4)', () => {
     committed('AttachNoteToNode', { nodeId: board, noteId: boardNote })
 
     const items = query<GalleryItem[]>('getGalleryItems', { nodeIds: [board, image] })
+    expect(JSON.stringify(items)).not.toContain('gallery-blind private observation')
+    expect(items.every((item) => !('caption' in item))).toBe(true)
     expect(items.map((i) => i.nodeId)).toEqual([board, image])
     expect(items[0]).toMatchObject({
       kind: 'board',

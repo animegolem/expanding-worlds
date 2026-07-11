@@ -37,6 +37,7 @@ export function makePlacement(overrides: Partial<ScenePlacement> = {}): ScenePla
     flipY: 0,
     renderOrder: counter * 1024,
     labelVisible: 1,
+    caption: null,
     locked: 0,
     appearanceKind: null,
     appearanceColor: null,

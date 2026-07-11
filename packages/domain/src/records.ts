@@ -139,6 +139,8 @@ export interface PlacementRecord extends LifecycleFields, TimestampFields {
   flipY: boolean
   renderOrder: number
   labelVisible: boolean
+  /** §4.5 rev 0.68: identity-free, placement-local text. */
+  caption: string | null
 }
 
 /** §4.7: Phase 1 ships only 'image'; discriminator exists now. */

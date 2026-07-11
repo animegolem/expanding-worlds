@@ -9,8 +9,8 @@ import type { ImageTreatment, ItemRenderer, RendererResources } from './registry
  * (§4.6). Convention shared with hit-testing and gestures: placement
  * (x, y) is the CENTER of the body, and rotation/flip apply about it
  * — bodies are drawn centered on the local origin. The label (§4.5)
- * is a Text child under the body: it exists only when the node has a
- * note AND label visibility is on, and its size is proportional to
+ * is a Text child under the body: a placement caption occupies that
+ * slot ahead of the attached note title, and its size is proportional to
  * the placement's world size (rev 0.8 — labels are world content,
  * never screen-space overlays; the glyphs themselves are never
  * clamped). §8.2 label zoom ceiling (AI-IMP-216): the label's
@@ -24,6 +24,16 @@ export const DEFAULT_DOT_RADIUS = 12
 
 /** §4.5: label font size = body height × this single tuning ratio. */
 export const LABEL_HEIGHT_RATIO = 0.14
+
+/** §4.5 caption clamp. Kept beside the layout helper so render and
+ * adorned bounds cannot disagree about how many lines exist. */
+export const CAPTION_MAX_LINES = 3
+
+/** Deterministic wrapping estimate. Caption layout must also run in
+ * hit-testing, where no Pixi Text/canvas context exists. A conservative
+ * one-em cell keeps the explicit lines within Pixi's proportional-font
+ * wordWrapWidth so renderer and adorned bounds cannot diverge. */
+const CAPTION_CELL_WIDTH_RATIO = 1
 
 const LABEL_COLOR = 0xc8cfd8
 
@@ -664,6 +674,10 @@ function labelBasis(item: ScenePlacement): { height: number } {
   }
 }
 
+function labelWidth(item: ScenePlacement): number {
+  return item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2
+}
+
 /**
  * §4.5 label metric: Pixi lays a single-line label out in the font's
  * own line box, whose measured height is ~1.2×fontSize. This ratio
@@ -673,6 +687,85 @@ function labelBasis(item: ScenePlacement): { height: number } {
  * never re-derive text metrics in the desktop app.
  */
 export const LABEL_TEXT_HEIGHT_RATIO = 1.3
+
+export interface PlacementLabelLayout {
+  text: string
+  lineCount: number
+  wrapWidth: number | null
+}
+
+function appendWrappedWord(lines: string[], word: string, maxChars: number): void {
+  const remainder = Array.from(word)
+  while (remainder.length > maxChars) {
+    lines.push(remainder.splice(0, maxChars).join(''))
+  }
+  if (remainder.length > 0) lines.push(remainder.join(''))
+}
+
+/**
+ * Caption layout shared by Pixi rendering and adorned bounds. The wire
+ * has already been trimmed by SetPlacementCaption; whitespace is folded
+ * within a line while explicit newlines remain real line breaks. Long
+ * words split deterministically, and overflow is clamped to three lines
+ * with an ellipsis before Pixi sees it.
+ */
+export function placementLabelLayout(item: ScenePlacement): PlacementLabelLayout | null {
+  const caption = item.caption
+  if (caption === null) {
+    if (item.noteTitle === null || item.appearanceKind === 'card') return null
+    return { text: item.noteTitle, lineCount: 1, wrapWidth: null }
+  }
+
+  const wrapWidth = Math.max(1, labelWidth(item))
+  const fontSize = Math.max(1, labelBasis(item).height * LABEL_HEIGHT_RATIO)
+  const maxChars = Math.max(1, Math.floor(wrapWidth / (fontSize * CAPTION_CELL_WIDTH_RATIO)))
+  const lines: string[] = []
+
+  for (const paragraph of caption.replace(/\r\n?/g, '\n').split('\n')) {
+    const words = paragraph.trim().split(/\s+/u).filter(Boolean)
+    if (words.length === 0) {
+      lines.push('')
+      continue
+    }
+    let current = ''
+    for (const word of words) {
+      if (Array.from(word).length > maxChars) {
+        if (current) {
+          lines.push(current)
+          current = ''
+        }
+        const chunks: string[] = []
+        appendWrappedWord(chunks, word, maxChars)
+        current = chunks.pop() ?? ''
+        lines.push(...chunks)
+      } else if (!current) {
+        current = word
+      } else if (Array.from(current).length + 1 + Array.from(word).length <= maxChars) {
+        current += ` ${word}`
+      } else {
+        lines.push(current)
+        current = word
+      }
+    }
+    if (current) lines.push(current)
+  }
+
+  const overflow = lines.length > CAPTION_MAX_LINES
+  const visible = lines.slice(0, CAPTION_MAX_LINES)
+  if (overflow) {
+    const lastIndex = CAPTION_MAX_LINES - 1
+    const last = Array.from((visible[lastIndex] ?? '').trimEnd())
+    visible[lastIndex] =
+      maxChars === 1
+        ? '…'
+        : `${last.slice(0, Math.max(0, maxChars - 1)).join('').trimEnd()}…`
+  }
+  return {
+    text: visible.join('\n'),
+    lineCount: Math.max(1, visible.length),
+    wrapWidth,
+  }
+}
 
 /**
  * AI-IMP-262 label re-raster buckets. A label is a Text rasterized at
@@ -723,15 +816,9 @@ export function labelTextResolution(
 
 /** True when syncLabel would draw an under-body label for this item. */
 function hasUnderBodyLabel(item: ScenePlacement): boolean {
-  // Mirrors syncLabel's guard (title/visibility/§4.6 card) plus flipY:
-  // a y-flipped placement's label hangs ABOVE the body, so nothing
-  // reaches below the bottom edge.
-  return (
-    item.noteTitle !== null &&
-    item.labelVisible === 1 &&
-    item.appearanceKind !== 'card' &&
-    item.flipY !== 1
-  )
+  // syncPlacementLabelOffset counter-flips both position and glyphs, so
+  // the label remains below the body even when the placement is flipped.
+  return placementLabelLayout(item) !== null && item.labelVisible === 1
 }
 
 /**
@@ -739,8 +826,7 @@ function hasUnderBodyLabel(item: ScenePlacement): boolean {
  * syncLabel/syncPlacementLabelOffset exactly: the body's bottom edge,
  * a fixed LABEL_CLEARANCE_PX screen gap (→ world via zoom), then the
  * world-scaled glyph box. Null when no label reaches below the body
- * (no note, label hidden, a §4.6 card whose chrome carries the title,
- * or a y-flip that lifts the label above the body). Zoom enters only
+ * (no caption/note title or label hidden). Zoom enters only
  * through the screen-space clearance term.
  */
 export function placementLabelWorldBottom(item: ScenePlacement, zoom: number): number | null {
@@ -749,7 +835,8 @@ export function placementLabelWorldBottom(item: ScenePlacement, zoom: number): n
   const safeZoom = zoom > 0 ? zoom : 1
   const bodyBottom = item.y + basis / 2
   const clearanceWorld = LABEL_CLEARANCE_PX / safeZoom
-  const glyphWorld = basis * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO
+  const lineCount = placementLabelLayout(item)?.lineCount ?? 1
+  const glyphWorld = basis * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO * lineCount
   return bodyBottom + clearanceWorld + glyphWorld
 }
 
@@ -808,23 +895,35 @@ function syncLabel(container: Container, item: ScenePlacement, zoom: number): vo
   const existing = container.children.find((child) => child.label === 'label') as
     | Text
     | undefined
-  const title = item.noteTitle
-  // §4.6 card: the chrome's title line IS the label — an under-label
-  // would print the title twice.
-  if (title === null || item.labelVisible !== 1 || item.appearanceKind === 'card') {
+  const layout = placementLabelLayout(item)
+  if (layout === null || item.labelVisible !== 1) {
     existing?.destroy()
     return
   }
   const fontSize = labelBasis(item).height * LABEL_HEIGHT_RATIO
   let label = existing
   if (!label) {
-    label = new Text({ text: title, style: { fontSize, fill: LABEL_COLOR } })
+    label = new Text({
+      text: layout.text,
+      style: {
+        fontSize,
+        fill: LABEL_COLOR,
+        lineHeight: fontSize * LABEL_TEXT_HEIGHT_RATIO,
+        ...(layout.wrapWidth === null
+          ? {}
+          : { wordWrap: true, breakWords: true, wordWrapWidth: layout.wrapWidth }),
+      },
+    })
     label.label = 'label'
     label.anchor.set(0.5, 0)
     container.addChild(label)
   } else {
-    label.text = title
+    label.text = layout.text
     label.style.fontSize = fontSize
+    label.style.lineHeight = fontSize * LABEL_TEXT_HEIGHT_RATIO
+    label.style.wordWrap = layout.wrapWidth !== null
+    label.style.breakWords = layout.wrapWidth !== null
+    if (layout.wrapWidth !== null) label.style.wordWrapWidth = layout.wrapWidth
   }
   label.scale.set(item.flipX ? -1 : 1, item.flipY === 1 ? -1 : 1)
   syncPlacementLabelOffset(container, item, zoom)
@@ -983,6 +1082,7 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
       item.appearanceKind === 'card' &&
       (item.noteTitle !== previous.noteTitle ||
         (item.noteExcerpt ?? null) !== (previous.noteExcerpt ?? null) ||
+        item.caption !== previous.caption ||
         (item.noteId === null) !== (previous.noteId === null))
     if (identitySignature(item) !== identitySignature(previous) || cardContentChanged) {
       // buildBody clears ALL children (label included); syncLabel below

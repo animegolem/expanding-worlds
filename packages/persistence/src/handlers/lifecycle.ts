@@ -137,10 +137,11 @@ function deletePlacementRow(
     flip_y: number
     render_order: number
     label_visible: number
+    caption: string | null
     locked: number
   }>(
     `SELECT id, canvas_id, node_id, x, y, width, height, scale, rotation,
-            flip_x, flip_y, render_order, label_visible, locked
+            flip_x, flip_y, render_order, label_visible, caption, locked
      FROM placement
      WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
     placementId,
@@ -198,6 +199,7 @@ function deletePlacementRow(
     flipY: prior.flip_y === 1,
     renderOrder: prior.render_order,
     labelVisible: prior.label_visible === 1,
+    caption: prior.caption,
     locked: prior.locked === 1,
     restoreNodeId,
     releasedAnchors,
@@ -225,9 +227,9 @@ function restorePlacementRow(
   ctx.db.run(
     `INSERT INTO placement
        (id, project_id, canvas_id, node_id, x, y, width, height, scale,
-        rotation, flip_x, flip_y, render_order, label_visible, locked,
+        rotation, flip_x, flip_y, render_order, label_visible, caption, locked,
         created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     payload.placementId,
     ctx.projectId,
     payload.canvasId,
@@ -242,6 +244,7 @@ function restorePlacementRow(
     payload.flipY ? 1 : 0,
     payload.renderOrder,
     payload.labelVisible ? 1 : 0,
+    payload.caption ?? null,
     payload.locked ? 1 : 0,
     now,
     now,

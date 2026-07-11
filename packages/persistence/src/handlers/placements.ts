@@ -5,6 +5,7 @@ import {
   COMMAND_MOVE_PLACEMENT,
   COMMAND_REORDER_CONTENT,
   COMMAND_SET_PLACEMENT_LABEL_VISIBILITY,
+  COMMAND_SET_PLACEMENT_CAPTION,
   COMMAND_SET_PLACEMENT_LOCK,
   COMMAND_TRANSFORM_CONTENT,
   DomainError,
@@ -16,6 +17,7 @@ import {
   type ReleasedConnectorAnchor,
   type ReorderContentPayload,
   type SetPlacementLabelVisibilityPayload,
+  type SetPlacementCaptionPayload,
   type SetPlacementLockPayload,
   type TransformContentItem,
   type TransformContentPayload,
@@ -43,8 +45,11 @@ interface PlacementRow {
   flip_y: number
   render_order: number
   label_visible: number
+  caption: string | null
   locked: number
 }
+
+const CAPTION_MAX_CODE_POINTS = 2_000
 
 function payloadRecord(payload: unknown, command: string): Record<string, unknown> {
   if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -87,6 +92,22 @@ function optionalBoolean(value: unknown, label: string): void {
   }
 }
 
+function normalizeCaption(value: unknown, command: string, optional = false): string | null | undefined {
+  if (optional && value === undefined) return undefined
+  if (value !== null && typeof value !== 'string') {
+    throw new DomainError('VALIDATION_FAILED', `${command} caption must be a string or null`)
+  }
+  if (value === null) return null
+  const normalized = value.trim()
+  if (Array.from(normalized).length > CAPTION_MAX_CODE_POINTS) {
+    throw new DomainError(
+      'VALIDATION_FAILED',
+      `${command} caption must not exceed ${CAPTION_MAX_CODE_POINTS} characters`,
+    )
+  }
+  return normalized.length === 0 ? null : normalized
+}
+
 function validateCreatePlacement(payload: unknown): void {
   const record = payloadRecord(payload, 'CreatePlacement')
   for (const key of ['placementId', 'canvasId', 'nodeId']) requireId(record, key, 'CreatePlacement')
@@ -100,6 +121,13 @@ function validateCreatePlacement(payload: unknown): void {
   for (const key of ['labelVisible', 'flipX', 'flipY', 'locked']) {
     optionalBoolean(record[key], `CreatePlacement ${key}`)
   }
+  normalizeCaption(record.caption, 'CreatePlacement', true)
+}
+
+function validateSetPlacementCaption(payload: unknown): void {
+  const record = payloadRecord(payload, 'SetPlacementCaption')
+  requireId(record, 'placementId', 'SetPlacementCaption')
+  normalizeCaption(record.caption, 'SetPlacementCaption')
 }
 
 function validatePlacementTransform(
@@ -161,7 +189,7 @@ function assertFiniteJson(value: unknown, label: string): void {
 function requirePlacement(ctx: CommandContext, placementId: string): PlacementRow {
   const row = ctx.db.get<PlacementRow>(
     `SELECT id, canvas_id, node_id, x, y, width, height, scale, rotation,
-            flip_x, flip_y, render_order, label_visible, locked
+            flip_x, flip_y, render_order, label_visible, caption, locked
      FROM placement
      WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
     placementId,
@@ -276,9 +304,9 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
     ctx.db.run(
       `INSERT INTO placement
          (id, project_id, canvas_id, node_id, x, y, width, height, scale,
-          rotation, flip_x, flip_y, render_order, label_visible, locked,
+          rotation, flip_x, flip_y, render_order, label_visible, caption, locked,
           created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       payload.placementId,
       ctx.projectId,
       payload.canvasId,
@@ -294,6 +322,7 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
       payload.renderOrder ?? nextRenderOrder(ctx, payload.canvasId),
       // §4.5: label visibility defaults to visible.
       (payload.labelVisible ?? true) ? 1 : 0,
+      normalizeCaption(payload.caption, 'CreatePlacement', true) ?? null,
       payload.locked ? 1 : 0,
       now,
       now,
@@ -337,6 +366,7 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
             flipY: prior.flip_y === 1,
             renderOrder: prior.render_order,
             labelVisible: prior.label_visible === 1,
+            caption: prior.caption,
             locked: prior.locked === 1,
           } satisfies CreatePlacementPayload,
         },
@@ -402,6 +432,33 @@ export function registerPlacementHandlers(registry: CommandRegistry<CommandConte
         },
       }
     },
+  )
+
+  registry.register<SetPlacementCaptionPayload>(
+    COMMAND_SET_PLACEMENT_CAPTION,
+    1,
+    (ctx, payload) => {
+      const prior = requirePlacement(ctx, payload.placementId)
+      const caption = normalizeCaption(payload.caption, 'SetPlacementCaption') ?? null
+      ctx.db.run(
+        'UPDATE placement SET caption = ?, updated_at = ? WHERE id = ?',
+        caption,
+        ctx.now(),
+        payload.placementId,
+      )
+      return {
+        affected: [{ kind: 'placement', id: payload.placementId }],
+        inverse: {
+          commandType: COMMAND_SET_PLACEMENT_CAPTION,
+          commandVersion: 1,
+          payload: {
+            placementId: payload.placementId,
+            caption: prior.caption,
+          } satisfies SetPlacementCaptionPayload,
+        },
+      }
+    },
+    validateSetPlacementCaption,
   )
 
   registry.register<SetPlacementLockPayload>(COMMAND_SET_PLACEMENT_LOCK, 1, (ctx, payload) => {

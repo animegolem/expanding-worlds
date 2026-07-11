@@ -82,6 +82,16 @@ describe('importProject (§16 roundtrip, AI-IMP-158)', () => {
     exec('CreateNote', { noteId: keeperId, title: 'Keeper', body: 'links to [[Goner]]' })
     exec('CreateNote', { noteId: gonerId, title: 'Goner', body: 'trashed but travels' })
     exec('TrashNote', { noteId: gonerId })
+    const captionedPlacementId = uuidv7()
+    exec('CreatePlacement', {
+      placementId: captionedPlacementId,
+      canvasId: service.info().rootCanvasId,
+      nodeId: service.info().rootNodeId,
+    })
+    exec('SetPlacementCaption', {
+      placementId: captionedPlacementId,
+      caption: 'I like the blue',
+    })
 
     const archive = join(outDir, 'roundtrip.ewproj')
     await service.exportProject(archive, { activeOnly: false })
@@ -105,6 +115,7 @@ describe('importProject (§16 roundtrip, AI-IMP-158)', () => {
     // Table-by-table equality between source and imported databases.
     const source = dumpTables(join(dir, 'project.sqlite'))
     const copy = dumpTables(join(destDir, 'project.sqlite'))
+    expect(copy.placement).toContain('I like the blue')
     expect(Object.keys(copy)).toEqual(Object.keys(source))
     for (const table of Object.keys(source)) {
       expect(copy[table], `table ${table} differs`).toBe(source[table])
