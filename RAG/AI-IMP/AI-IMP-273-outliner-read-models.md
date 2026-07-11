@@ -93,3 +93,17 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+> **ROUND-1 RULINGS GOVERN (2026-07-11, .codex/outbox/epic-028.md):**
+> discriminated preview targets (node|note; alias resolves; bin from
+> census); separate getOutlineFacetCounts (never break
+> getOutlineTree's envelope); thumbnails are ew-asset://<hash>/thumb
+> (the ticket's "ew-thumb" was wrong), 404-tolerant; LRU keyed on
+> canvasId+projectRevision read once per changed event; the tree
+> projection grows filename/hash/child-count so every raw-id fallback
+> is REMOVED; the trash confirm is outline-owned on getNodeImpact
+> (no shipped pre-confirm exists; root+bin permanently disabled);
+> capture conflicts use the promotion-shaped no-Use-Existing variant
+> with the draft kept mounted; keyboard map ratified — ↵ ␣ ⌥↵ tab
+> # N Del/⌫ esc, inputs own their keys, trash confirms from every
+> door; the lens is outline-local state reusing the visual grammar.
