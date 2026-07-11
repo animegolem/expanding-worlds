@@ -111,6 +111,28 @@ describe('menuFor — item inventory (§8.4)', () => {
     expect(byId(menuFor(frame, stubActions()), 'caption')).toBeUndefined()
   })
 
+  it('offers promotion only for captions and disables it visibly when the node has a note', () => {
+    expect(byId(menuFor(IMAGE_ITEM, stubActions()), 'promote-caption')).toBeUndefined()
+
+    const captioned = menuFor({ ...IMAGE_ITEM, hasCaption: true }, stubActions())
+    const promote = byId(captioned, 'promote-caption')!
+    expect(promote.label).toBe('Promote to note')
+    expect(promote.run).toBeDefined()
+    expect(promote.disabledReason).toBeUndefined()
+
+    const noted = menuFor(
+      { ...IMAGE_ITEM, hasCaption: true, hasNote: true },
+      stubActions(),
+    )
+    const disabled = byId(noted, 'promote-caption')!
+    expect(disabled.run).toBeUndefined()
+    expect(disabled.disabledReason).toBe('This item already has a note')
+
+    const editItems = noted.find((group) => group.id === 'edit')!.items.map((item) => item.id)
+    expect(editItems.indexOf('promote-caption')).toBe(editItems.indexOf('caption') + 1)
+    expect(editItems.indexOf('promote-caption')).toBeLessThan(editItems.indexOf('remove-caption'))
+  })
+
   it('reflects live state in the toggle labels and the backdrop gate', () => {
     const locked = byId(menuFor({ ...IMAGE_ITEM, locked: true }, stubActions()), 'lock')!
     expect(locked.label).toBe('Unlock')

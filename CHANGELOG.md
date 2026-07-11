@@ -17,6 +17,9 @@ annotations.
   adding anything to the outline. Add or edit one from an item's menu,
   or use the caption charm on an image; captions travel with their
   placement and replace its ordinary title label.
+- New: when a caption grows into an idea, Promote to note can turn it
+  into the note title or body. The choice can be remembered, conflicts
+  keep the caption safe, and one undo restores the caption.
 
 ### Under the hood
 - Placement captions (AI-IMP-266) are handler-validated, independently
@@ -24,6 +27,9 @@ annotations.
   renderer and crispness buckets, survive export/import and placement
   delete/restore, and stay deliberately absent from outline, gallery,
   and search projections.
+- Caption promotion (AI-IMP-267) composes the existing atomic
+  CreateNoteAndAttach and caption-clear commands into one undo group,
+  with app-tier routing preferences and conflict-safe title handling.
 - CI runtime rebalanced (AI-IMP-268): doc-only pushes skip the
   workflow, superseded runs cancel, and the 44-minute single-worker
   e2e step became four parallel shards — a code push gates in

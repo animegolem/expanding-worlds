@@ -2,12 +2,14 @@
   NOTE_TITLE_CONFLICT dialog (RFC-0001 §7.7, AI-IMP-047). The user's
   draft is always retained — no action here redirects silently.
   Rename flows offer Open Conflicting Note; creation flows offer Use
-  Existing Note; a trashed conflict additionally offers Restore
-  Existing Note.
+  Existing Note; promotion deliberately follows the rename-shaped
+  Open/Restore path so caption body text can never be discarded by
+  attaching an existing note. A trashed conflict additionally offers
+  Restore Existing Note.
 -->
 <script module lang="ts">
   export interface TitleConflict {
-    flow: 'rename' | 'create'
+    flow: 'rename' | 'create' | 'promotion'
     requestedTitle: string
     existingNoteId: string
     conflictingLifecycle: 'active' | 'trashed'

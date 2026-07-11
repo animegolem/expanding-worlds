@@ -37,6 +37,7 @@ import { applyMenuCascade } from '../chrome/menu-cascade'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { requestCharmPopover } from '../canvas/charms-ui'
 import { requestCaptionEditor } from '../canvas/caption-request'
+import { requestCaptionPromotion } from '../canvas/caption-promotion'
 import {
   requestAttachNote,
   requestOpenNote,
@@ -185,7 +186,7 @@ export function attachContextMenu(
     root.setAttribute('role', 'menu')
     root.style.cssText =
       'position:absolute;z-index:' + Z.popover + ';display:flex;flex-direction:column;gap:0.2rem;' +
-      'min-width:190px;padding:0.35rem;background:var(--ew-surface-menu);' +
+      'min-width:190px;max-width:320px;padding:0.35rem;background:var(--ew-surface-menu);' +
       'border:1px solid var(--ew-border);border-radius:7px;white-space:nowrap;' +
       'box-shadow:0 6px 18px var(--ew-menu-shadow);pointer-events:auto;font-size:0.78rem;'
     return root
@@ -229,20 +230,32 @@ export function attachContextMenu(
       ';color:' +
       (item.danger ? 'var(--ew-danger-text)' : 'var(--ew-text)') +
       ';'
-    // §8.2: NO tooltip chip on menu rows. A disabled coming-soon row is
-    // greyed and names its reason only to assistive tech (aria-label).
+    // §8.2: NO tooltip chip on menu rows. A disabled row is greyed and
+    // prints its reason inline as well as exposing it to assistive tech.
     if (disabled) {
       button.style.opacity = '0.45'
       // The cascade fades to this resting opacity, so a disabled row
       // lands dimmed, never at full (AI-IMP-167).
       button.style.setProperty('--row-rest-opacity', '0.45')
       button.setAttribute('aria-disabled', 'true')
-      button.setAttribute('aria-label', item.disabledReason!)
+      button.setAttribute('aria-label', `${item.label}: ${item.disabledReason!}`)
     }
 
+    const labelWrap = document.createElement('span')
+    labelWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;min-width:0;'
     const label = document.createElement('span')
     label.textContent = item.label
-    button.appendChild(label)
+    labelWrap.appendChild(label)
+    if (disabled) {
+      const reason = document.createElement('span')
+      reason.dataset['testid'] = `${item.testid ?? `ctx-${item.id}`}-reason`
+      reason.textContent = item.disabledReason!
+      reason.style.cssText =
+        'max-width:260px;font-size:0.68rem;line-height:1.25;white-space:normal;' +
+        'overflow-wrap:anywhere;color:var(--ew-text-muted);'
+      labelWrap.appendChild(reason)
+    }
+    button.appendChild(labelWrap)
 
     if (item.submenu) {
       const marker = document.createElement('span')
@@ -476,6 +489,7 @@ export function attachContextMenu(
       openAppearance: noop,
       openTags: noop,
       editCaption: noop,
+      promoteCaption: noop,
       removeCaption: noop,
       openNote: noop,
       attachNewNote: noop,
@@ -564,6 +578,7 @@ export function attachContextMenu(
       openAppearance: () => requestCharmPopover(p.id, 'appearance'),
       openTags: () => requestCharmPopover(p.id, 'tags'),
       editCaption: () => requestCaptionEditor(p.id),
+      promoteCaption: () => requestCaptionPromotion(p.id),
       removeCaption: () => void execute('SetPlacementCaption', { placementId: p.id, caption: null }),
       toggleHideLabel: () =>
         void execute('SetPlacementLabelVisibility', {

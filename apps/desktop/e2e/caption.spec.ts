@@ -4,6 +4,14 @@ import { exec, launchApp, launchAppInDir, runQuery } from './helpers'
 interface PlacementRow {
   id: string
   caption: string | null
+  noteId: string | null
+}
+
+interface NoteRow {
+  id: string
+  title: string
+  body: string
+  lifecycleState: 'active' | 'trashed'
 }
 
 async function pngAsset(win: Page): Promise<string> {
@@ -33,6 +41,7 @@ async function scenePlacements(win: Page): Promise<PlacementRow[]> {
     .map((item) => ({
       id: item['id'] as string,
       caption: item['caption'] as string | null,
+      noteId: item['noteId'] as string | null,
     }))
 }
 
@@ -67,6 +76,67 @@ async function pinEngagement(win: Page): Promise<void> {
       new CustomEvent('ew-test-set-engagement', { detail: { engaged: true, hold: true } }),
     )
   })
+}
+
+async function seedCaptionedImage(
+  win: Page,
+  at: { x: number; y: number },
+  caption: string,
+  attached?: { noteId: string; title: string; body?: string },
+): Promise<{ nodeId: string; placementId: string }> {
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const assetId = await pngAsset(win)
+  await exec(win, 'CreateNode', { nodeId })
+  if (attached) {
+    await exec(win, 'CreateNote', {
+      noteId: attached.noteId,
+      title: attached.title,
+      body: attached.body ?? '',
+    })
+    await exec(win, 'AttachNoteToNode', { nodeId, noteId: attached.noteId })
+  }
+  await exec(win, 'SetNodeAppearance', {
+    nodeId,
+    appearance: { kind: 'image', assetId, crop: null },
+  })
+  await exec(win, 'CreatePlacement', {
+    placementId,
+    canvasId,
+    nodeId,
+    x: at.x,
+    y: at.y,
+    width: 240,
+    height: 160,
+  })
+  await exec(win, 'SetPlacementCaption', { placementId, caption })
+  await expect.poll(() => captionOf(win, placementId)).toBe(caption)
+  return { nodeId, placementId }
+}
+
+async function openPromoteFromMenu(
+  win: Page,
+  at: { x: number; y: number },
+): Promise<void> {
+  const host = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.click(host.x + at.x, host.y + at.y, { button: 'right' })
+  await win.getByTestId('ctx-promote-caption').click()
+}
+
+async function nodeNoteId(win: Page, nodeId: string): Promise<string | null> {
+  const node = await runQuery<{ noteId: string | null }>(win, 'getNode', { nodeId })
+  return node.noteId
+}
+
+async function note(win: Page, noteId: string): Promise<NoteRow> {
+  return runQuery<NoteRow>(win, 'getNote', { noteId })
+}
+
+async function openSettings(win: Page): Promise<void> {
+  await win.getByTestId('charm-menu').click()
+  await win.getByTestId('menu-settings').click()
+  await expect(win.getByTestId('settings-view')).toBeVisible()
 }
 
 test('caption is placement-local, replaces its title label, persists, stays out of outline, and is one undo', async () => {
@@ -168,5 +238,262 @@ test('caption is placement-local, replaces its title label, persists, stays out 
     expect(await captionOf(win, secondPlacementId)).toBeNull()
   } finally {
     await app.close().catch(() => undefined)
+  }
+})
+
+test('caption promotes as a title in one undo group and redo refuses cleanly', async () => {
+  const { app, win } = await launchApp('ew-e2e-caption-promote-title-')
+  const at = { x: 360, y: 280 }
+  const caption = 'hazy overgrown vines'
+
+  try {
+    await expect.poll(() => win.evaluate(() => window.__ewUndo !== undefined)).toBe(true)
+    const seeded = await seedCaptionedImage(win, at, caption)
+
+    await openPromoteFromMenu(win, at)
+    await expect(win.getByTestId('promote-caption-dialog')).toBeVisible()
+    await win.getByTestId('promote-caption-title').click()
+
+    await expect.poll(() => nodeNoteId(win, seeded.nodeId)).not.toBeNull()
+    const noteId = (await nodeNoteId(win, seeded.nodeId))!
+    expect(await note(win, noteId)).toMatchObject({
+      title: caption,
+      body: '',
+      lifecycleState: 'active',
+    })
+    await expect.poll(() => captionOf(win, seeded.placementId)).toBeNull()
+    await expect.poll(() => labels(win)).toContain(caption)
+    expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(1)
+
+    await win.evaluate(() => window.__ewUndo!.undo())
+    await expect.poll(() => nodeNoteId(win, seeded.nodeId)).toBeNull()
+    await expect.poll(() => captionOf(win, seeded.placementId)).toBe(caption)
+    await expect.poll(() => note(win, noteId)).toMatchObject({ lifecycleState: 'trashed' })
+    expect(await win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(1)
+
+    // The shipped DetachAndTrashNote inverse is intentionally null:
+    // the trashed note keeps its title reservation. Redo therefore
+    // declines before the caption-clear member — no partial world and
+    // no wedged stack entry. The report corrects 267's stale "redo
+    // replays" checklist line; changing that domain inverse is out of
+    // this ticket's fence.
+    await win.evaluate(() => window.__ewUndo!.redo())
+    await expect(win.getByTestId('undo')).toContainText('can no longer be undone')
+    await expect.poll(() => win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(0)
+    expect(await nodeNoteId(win, seeded.nodeId)).toBeNull()
+    expect(await captionOf(win, seeded.placementId)).toBe(caption)
+    expect(await note(win, noteId)).toMatchObject({ lifecycleState: 'trashed' })
+  } finally {
+    await app.close().catch(() => undefined)
+  }
+})
+
+test('body routing remembers the app-tier choice and skips the next routing choice', async () => {
+  const { app, win } = await launchApp('ew-e2e-caption-promote-body-')
+  const firstAt = { x: 320, y: 250 }
+  const secondAt = { x: 700, y: 250 }
+
+  try {
+    const first = await seedCaptionedImage(win, firstAt, 'blue against the moss')
+    await openPromoteFromMenu(win, firstAt)
+    await win.getByTestId('promote-caption-body').click()
+    await win.getByTestId('promote-caption-body-title').fill('Color study')
+    await win.getByTestId('promote-caption-remember').check()
+    await win.getByTestId('promote-caption-submit-body').click()
+
+    await expect.poll(() => nodeNoteId(win, first.nodeId)).not.toBeNull()
+    const firstNote = (await nodeNoteId(win, first.nodeId))!
+    expect(await note(win, firstNote)).toMatchObject({
+      title: 'Color study',
+      body: 'blue against the moss',
+    })
+    await expect.poll(() => captionOf(win, first.placementId)).toBeNull()
+
+    const stored = await win.evaluate(() => window.ew.settings.appAll())
+    expect(stored['captionPromotionRouting']).toBe('body')
+
+    const second = await seedCaptionedImage(win, secondAt, 'soft edge in the distance')
+    await pinEngagement(win)
+    const host = (await win.getByTestId('canvas-host').boundingBox())!
+    await win.mouse.click(host.x + secondAt.x, host.y + secondAt.y)
+    await expect(win.getByTestId('charm-promote-caption')).toBeVisible()
+    await win.getByTestId('charm-promote-caption').click()
+    await expect(win.getByTestId('promote-caption-body-title')).toBeVisible()
+    await expect(win.getByTestId('promote-caption-title')).toHaveCount(0)
+    await expect(win.getByTestId('promote-caption-body')).toHaveCount(0)
+    await win.getByTestId('promote-caption-body-title').fill('Distance study')
+    await win.getByTestId('promote-caption-submit-body').click()
+
+    await expect.poll(() => nodeNoteId(win, second.nodeId)).not.toBeNull()
+    const secondNote = (await nodeNoteId(win, second.nodeId))!
+    expect(await note(win, secondNote)).toMatchObject({
+      title: 'Distance study',
+      body: 'soft edge in the distance',
+    })
+
+    await win.getByTestId('charm-menu').click()
+    await win.getByTestId('menu-settings').click()
+    await expect(win.getByTestId('settings-row-caption-promotion-routing')).toBeVisible()
+    await expect(win.getByTestId('settings-caption-promotion-routing-body')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await win.getByTestId('settings-caption-promotion-routing-ask').click()
+    await expect(win.getByTestId('settings-caption-promotion-routing-ask')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  } finally {
+    await app.close().catch(() => undefined)
+  }
+})
+
+test('promotion prints its disabled reason and active conflicts retain the caption', async () => {
+  const { app, win } = await launchApp('ew-e2e-caption-promote-conflict-')
+  const notedAt = { x: 300, y: 250 }
+  const conflictAt = { x: 700, y: 250 }
+
+  try {
+    const attachedNoteId = crypto.randomUUID()
+    await seedCaptionedImage(win, notedAt, 'placement-local thought', {
+      noteId: attachedNoteId,
+      title: 'Already attached',
+    })
+    const host = (await win.getByTestId('canvas-host').boundingBox())!
+    await win.mouse.click(host.x + notedAt.x, host.y + notedAt.y, { button: 'right' })
+    const disabled = win.getByTestId('ctx-promote-caption')
+    await expect(disabled).toHaveAttribute('aria-disabled', 'true')
+    await expect(disabled).toHaveAttribute(
+      'aria-label',
+      'Promote to note: This item already has a note',
+    )
+    await expect(win.getByTestId('ctx-promote-caption-reason')).toHaveText(
+      'This item already has a note',
+    )
+    await expect(win.getByTestId('ctx-promote-caption-reason')).toBeVisible()
+    await win.keyboard.press('Escape')
+
+    const existingNoteId = crypto.randomUUID()
+    await exec(win, 'CreateNote', { noteId: existingNoteId, title: 'Taken title', body: '' })
+    const conflicted = await seedCaptionedImage(win, conflictAt, 'Taken title')
+    await openPromoteFromMenu(win, conflictAt)
+    await win.getByTestId('promote-caption-title').click()
+
+    await expect(win.getByTestId('title-conflict-dialog')).toBeVisible()
+    await expect(win.getByTestId('conflict-use-existing')).toHaveCount(0)
+    await expect(win.getByTestId('conflict-open-existing')).toBeVisible()
+    await win.getByTestId('conflict-choose-different').click()
+    await expect(win.getByTestId('caption-editor')).toBeVisible()
+    await expect(win.getByTestId('caption-editor')).toHaveValue('Taken title')
+    expect(await nodeNoteId(win, conflicted.nodeId)).toBeNull()
+    expect(await captionOf(win, conflicted.placementId)).toBe('Taken title')
+  } finally {
+    await app.close().catch(() => undefined)
+  }
+})
+
+test('body conflict restores the existing note, while an invalid title never clears', async () => {
+  const { app, win } = await launchApp('ew-e2e-caption-promote-recovery-')
+  const bodyAt = { x: 300, y: 250 }
+  const invalidAt = { x: 700, y: 250 }
+
+  try {
+    const trashedNoteId = crypto.randomUUID()
+    await exec(win, 'CreateNote', { noteId: trashedNoteId, title: 'Recovered title', body: '' })
+    await exec(win, 'TrashNote', { noteId: trashedNoteId })
+    const body = await seedCaptionedImage(win, bodyAt, 'caption remains on conflict')
+    await openPromoteFromMenu(win, bodyAt)
+    await win.getByTestId('promote-caption-body').click()
+    await win.getByTestId('promote-caption-body-title').fill('Recovered title')
+    await win.getByTestId('promote-caption-submit-body').click()
+    await expect(win.getByTestId('title-conflict-dialog')).toBeVisible()
+    await expect(win.getByTestId('conflict-use-existing')).toHaveCount(0)
+    await expect(win.getByTestId('conflict-restore-existing')).toBeVisible()
+    await win.getByTestId('conflict-choose-different').click()
+    await expect(win.getByTestId('promote-caption-body-title')).toHaveValue('Recovered title')
+    await win.getByTestId('promote-caption-submit-body').click()
+    await expect(win.getByTestId('title-conflict-dialog')).toBeVisible()
+    await win.getByTestId('conflict-restore-existing').click()
+    await expect.poll(() => note(win, trashedNoteId)).toMatchObject({ lifecycleState: 'active' })
+    expect(await nodeNoteId(win, body.nodeId)).toBeNull()
+    expect(await captionOf(win, body.placementId)).toBe('caption remains on conflict')
+    const panelClose = win.getByTestId('panel-close')
+    if (await panelClose.isVisible().catch(() => false)) await panelClose.click()
+
+    const invalidCaption = 'first line\nsecond line'
+    const invalid = await seedCaptionedImage(win, invalidAt, invalidCaption)
+    await openPromoteFromMenu(win, invalidAt)
+    await win.getByTestId('promote-caption-title').click()
+    await expect(win.getByTestId('promote-caption-error')).toContainText('title may not contain')
+    expect(await nodeNoteId(win, invalid.nodeId)).toBeNull()
+    expect(await captionOf(win, invalid.placementId)).toBe(invalidCaption)
+  } finally {
+    await app.close().catch(() => undefined)
+  }
+})
+
+test('remembered title routing skips the chooser and Settings can reset it', async () => {
+  const { app, win } = await launchApp('ew-e2e-caption-promote-remember-title-')
+  const firstAt = { x: 300, y: 250 }
+  const secondAt = { x: 700, y: 250 }
+  try {
+    const first = await seedCaptionedImage(win, firstAt, 'first remembered title')
+    await openPromoteFromMenu(win, firstAt)
+    await win.getByTestId('promote-caption-remember').check()
+    await win.getByTestId('promote-caption-title').click()
+    await expect.poll(() => nodeNoteId(win, first.nodeId)).not.toBeNull()
+
+    const second = await seedCaptionedImage(win, secondAt, 'second remembered title')
+    await openPromoteFromMenu(win, secondAt)
+    await expect(win.getByTestId('promote-caption-dialog')).toHaveCount(0)
+    await expect.poll(() => nodeNoteId(win, second.nodeId)).not.toBeNull()
+    await expect.poll(() => captionOf(win, second.placementId)).toBeNull()
+
+    await win.getByTestId('charm-menu').click()
+    await win.getByTestId('menu-settings').click()
+    await win.getByTestId('settings-caption-promotion-routing-ask').click()
+    await expect(win.getByTestId('settings-caption-promotion-routing-ask')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  } finally {
+    await app.close()
+  }
+})
+
+test('promotion is fail-stop at both command stages', async () => {
+  const { app, win } = await launchApp('ew-e2e-caption-promote-fail-stop-')
+  const createAt = { x: 300, y: 250 }
+  const clearAt = { x: 700, y: 250 }
+  try {
+    await expect.poll(() => win.evaluate(() => window.__ewUndo !== undefined)).toBe(true)
+    const createFailure = await seedCaptionedImage(win, createAt, 'create must refuse cleanly')
+    const beforeCreate = await win.evaluate(() => window.__ewUndo!.undoDepth())
+    await win.evaluate(() => window.__ewDebug!.failNextCommand('CreateNoteAndAttach'))
+    await openPromoteFromMenu(win, createAt)
+    await win.getByTestId('promote-caption-title').click()
+    await expect(win.getByTestId('promote-caption-error')).toBeVisible()
+    expect(await nodeNoteId(win, createFailure.nodeId)).toBeNull()
+    expect(await captionOf(win, createFailure.placementId)).toBe('create must refuse cleanly')
+    expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(beforeCreate)
+    await win.keyboard.press('Escape')
+
+    const clearFailure = await seedCaptionedImage(win, clearAt, 'clear must refuse cleanly')
+    const beforeClear = await win.evaluate(() => window.__ewUndo!.undoDepth())
+    await win.evaluate(() => window.__ewDebug!.failNextCommand('SetPlacementCaption'))
+    await openPromoteFromMenu(win, clearAt)
+    await win.getByTestId('promote-caption-title').click()
+    await expect(win.getByTestId('promote-caption-error')).toContainText(
+      'note was created, but its caption could not be cleared',
+    )
+    await expect.poll(() => nodeNoteId(win, clearFailure.nodeId)).not.toBeNull()
+    expect(await captionOf(win, clearFailure.placementId)).toBe('clear must refuse cleanly')
+    expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(beforeClear + 1)
+
+    await win.evaluate(() => window.__ewUndo!.undo())
+    await expect.poll(() => nodeNoteId(win, clearFailure.nodeId)).toBeNull()
+    expect(await captionOf(win, clearFailure.placementId)).toBe('clear must refuse cleanly')
+  } finally {
+    await app.close()
   }
 })

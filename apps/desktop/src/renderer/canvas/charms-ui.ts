@@ -38,6 +38,7 @@ import { runAsUndoGroup } from '../undo/undo-store'
 import { importErrorNotice } from './import-surfaces'
 import { requestCropEditor } from './crop-request'
 import { requestCaptionEditor } from './caption-request'
+import { requestCaptionPromotion } from './caption-promotion'
 import { themeTokenValue } from '../theme'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 import { ICON_SVG_DATA_URLS } from './icon-atlas.generated'
@@ -610,12 +611,40 @@ export function attachCharmsUi(
     const placement = selectedPlacement()
     if (placement?.appearanceKind === 'image') requestCaptionEditor(placement.id)
   })
+  const promoteCaptionButton = barButton(
+    'charm-promote-caption',
+    '↗',
+    { name: 'Promote caption to note' },
+    () => {
+      const placement = selectedPlacement()
+      if (
+        placement?.appearanceKind === 'image' &&
+        placement.caption !== null &&
+        placement.noteId === null
+      ) {
+        requestCaptionPromotion(placement.id)
+      }
+    },
+  )
   function syncCaptionButton(placement: ScenePlacement): void {
     const isImage = placement.appearanceKind === 'image'
     captionButton.style.display = isImage ? 'flex' : 'none'
     const name = placement.caption === null ? 'Add caption' : 'Edit caption'
     captionButton.setAttribute('aria-label', name)
     barTips.get(captionButton)?.update({ name })
+
+    const hasCaption = placement.caption !== null
+    const promotionDisabled = placement.noteId !== null
+    promoteCaptionButton.style.display = isImage && hasCaption ? 'flex' : 'none'
+    promoteCaptionButton.dataset['disabled'] = promotionDisabled ? 'true' : 'false'
+    promoteCaptionButton.style.opacity = promotionDisabled ? '0.4' : '1'
+    promoteCaptionButton.style.cursor = promotionDisabled ? 'default' : 'pointer'
+    const promoteName = promotionDisabled
+      ? 'Promote caption — this item already has a note'
+      : 'Promote caption to note'
+    promoteCaptionButton.setAttribute('aria-label', promoteName)
+    promoteCaptionButton.setAttribute('aria-disabled', String(promotionDisabled))
+    barTips.get(promoteCaptionButton)?.update({ name: promoteName })
   }
   barButton('charm-flip-h', '⇋', { name: 'Flip horizontal' }, () => {
     const placement = selectedPlacement()
