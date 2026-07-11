@@ -678,3 +678,14 @@ the week's testing says so. Lands with the AI-IMP-173 fix wave.)
 
 (URL-as-tag vs source field RESOLVED 2026-07-06, rev 0.53: source
 field + domain tag-offer chip.)
+
+- **In-app update check (owner, 2026-07-11 pre-dawn — conversation
+  pending).** Testing cadence is now multiple tags per day and the
+  testers install by hand; an update function that reads the GitHub
+  releases page (latest tag vs running version → notice + download
+  link, or download-and-stage) would close the loop. Talk through:
+  polling vs check-at-launch, unsigned-build friction (the macOS
+  xattr note travels with any auto-download), electron-updater vs
+  a hand-rolled latest-release fetch against the public repo API
+  (no auth needed), and whether the notice belongs in the title
+  strip or the library activity log once that exists.
