@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 229 |
-| **Total** | **27** | **264** |
+| **Total** | **27** | **265** |
 
 ## In Progress
 
@@ -104,6 +104,7 @@
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
 - [[AI-IMP-270-create-and-attach-redo|IMP-270]] — planned, no epic dependency found
+- [[AI-IMP-271-tag-sync-mirror-edges|IMP-271]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -125,7 +126,7 @@ Generated from tracked files; binary assets excluded.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4747 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4805 LOC)
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (2172 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC)
@@ -164,6 +165,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/frames.test.ts (621 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
 - packages/persistence/src/handlers/notes.test.ts (618 LOC)
+- RAG/DESIGN-QUEUE.md (617 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (601 LOC)
 
@@ -189,7 +191,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/export/project-import.test.ts (513 LOC)
 - apps/desktop/e2e/charms.spec.ts (513 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
-- RAG/DESIGN-QUEUE.md (500 LOC)
 - apps/desktop/e2e/caption.spec.ts (493 LOC)
 - packages/persistence/src/handlers/notes.ts (490 LOC)
 - packages/persistence/src/handlers/pin.ts (489 LOC)
