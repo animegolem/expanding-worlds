@@ -74,7 +74,7 @@ async function seedWorld(win: Page): Promise<{
   return { boardACanvasId, rootCanvasId }
 }
 
-test('outline: tree with alias rows, loose bin, and filter chips (§14.1)', async () => {
+test('outliner grammar: tree, flattened cleanup, calm badges, lens, and fold survival', async () => {
   const { app, win } = await launchApp('ew-e2e-outline-')
   const { rootCanvasId } = await seedWorld(win)
 
@@ -82,20 +82,21 @@ test('outline: tree with alias rows, loose bin, and filter chips (§14.1)', asyn
   const outline = win.getByTestId('outline-view')
   await expect(outline).toBeVisible()
 
-  // Root section renders expanded with both children: the bare node
-  // (short-code title, no glyphs) and Ruins Board (¶ + ⊡).
-  const rootSection = win.getByTestId(`outline-canvas-${rootCanvasId}`)
-  await expect(rootSection).toBeVisible()
-  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(2)
-  const boardRow = rootSection
-    .getByTestId('outline-child-row')
-    .filter({ hasText: 'Ruins Board' })
+  const tree = win.getByTestId('outline-tree')
+  const rootRow = tree.locator(`[data-canvas="${rootCanvasId}"]`).first()
+  await expect(rootRow).toContainText('Home')
+  const bareRow = tree.getByTestId('outline-child-row').filter({ hasText: 'untitled node' }).first()
+  await expect(bareRow).toContainText('·orphan')
+  await expect(bareRow).not.toContainText(/[0-9a-f]{8}-[0-9a-f-]{27}/i)
+  const boardRow = tree.getByTestId('outline-child-row').filter({ hasText: 'Ruins Board' })
   await expect(boardRow).toHaveCount(1)
+  await boardRow.hover()
+  await expect(win.getByTestId('outline-filmstrip-glyph')).toBeVisible()
 
   // Unfold A, then B: B's child A is already on the expansion path
   // and renders as an alias row, not another unfold.
   await boardRow.getByTestId('outline-expand').click()
-  const bRow = rootSection.getByTestId('outline-child-row').nth(2)
+  const bRow = tree.getByTestId('outline-child-row').filter({ hasText: 'unnamed · 1 items' })
   await bRow.getByTestId('outline-expand').click()
   const alias = win.getByTestId('outline-alias-row')
   await expect(alias).toHaveCount(1)
@@ -104,36 +105,100 @@ test('outline: tree with alias rows, loose bin, and filter chips (§14.1)', asyn
 
   // The loose bin holds the stashed node (loose + orphan) and the
   // unattached note (loose).
-  const bin = win.getByTestId('outline-loose-bin')
-  await expect(bin.getByTestId('loose-node-row')).toHaveCount(1)
-  await expect(bin.getByTestId('loose-node-row').getByTestId('badge-orphan')).toBeVisible()
-  await expect(bin.getByTestId('loose-note-row')).toHaveCount(1)
-  await expect(bin.getByTestId('loose-note-row')).toContainText('Adrift Thought')
+  await expect(win.getByTestId('outline-loose-bin')).toContainText('loose')
+  await expect(tree.getByTestId('loose-node-row')).toHaveCount(1)
+  await expect(tree.getByTestId('loose-node-row').getByTestId('badge-orphan')).toBeVisible()
+  await expect(tree.getByTestId('loose-note-row')).toContainText('Adrift Thought')
+  await tree.getByTestId('loose-note-row').hover()
+  const disabledFly = win.locator('[data-testid="outline-preview-verbs"] [data-verb-id="fly-to"]')
+  await expect(disabledFly).toBeDisabled()
+  await expect(win.getByTestId('outline-preview-verbs')).toContainText('no placements to fly to')
 
-  // hide content-less drops the bare image row, keeps Ruins Board.
-  await win.getByTestId('outline-filter-contentless').click()
-  await expect(rootSection.getByTestId('outline-child-row').first()).toContainText('Ruins Board')
-  await win.getByTestId('outline-filter-contentless').click()
-
-  // disconnected: in the tree only orphans remain (loose lives in
-  // the bin, which stays).
+  // Collapse the root, then enter a cleanup facet. Filtering flattens through
+  // the fold and prints paths; returning to all restores the fold unchanged.
+  await rootRow.getByTestId('outline-expand').click()
+  await expect(rootRow.getByTestId('outline-expand')).toHaveAttribute('aria-expanded', 'false')
   await win.getByTestId('outline-filter-disconnected').click()
-  for (const row of await rootSection.getByTestId('outline-child-row').all()) {
-    await expect(row).not.toContainText('Ruins Board')
-  }
-  await expect(bin.getByTestId('loose-node-row')).toHaveCount(1)
-  await win.getByTestId('outline-filter-disconnected').click()
+  await expect(tree.getByTestId('outline-row-meta').first()).not.toHaveText('')
+  await expect(tree.locator('.row-title').filter({ hasText: 'Ruins Board' })).toHaveCount(0)
+  await win.getByTestId('outline-filter-all').click()
+  await expect(rootRow.getByTestId('outline-expand')).toHaveAttribute('aria-expanded', 'false')
 
-  // one tag: type into the filter (completion offers the tag), pick
-  // it — only the tagged bare node survives, in tree and bin.
-  await win.getByTestId('outline-filter-tag').click()
-  await win.keyboard.type('ru')
-  await expect(win.getByTestId('outline-tag-option')).toHaveText('ruins')
-  await win.getByTestId('outline-tag-option').click()
-  await expect(win.getByTestId('outline-filter-tag')).toHaveValue('ruins')
-  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(1)
-  await expect(rootSection.getByTestId('outline-child-row')).not.toContainText('Ruins Board')
-  await expect(bin.getByTestId('loose-node-row')).toHaveCount(0)
+  // Untagged is independent, flattened, and only then shows its badge.
+  await win.getByTestId('outline-filter-untagged').click()
+  await expect(tree.getByTestId('badge-untagged')).toHaveCount(1)
+  await win.getByTestId('outline-filter-all').click()
+  await expect(tree.getByTestId('badge-untagged')).toHaveCount(0)
+
+  // The tag chip engages an outline-local lens; Escape peels it without
+  // closing the takeover or disturbing folds.
+  await rootRow.getByTestId('outline-expand').click()
+  await bareRow.getByRole('button', { name: '#ruins' }).click()
+  await expect(win.getByTestId('outline-lens-chip')).toContainText('#ruins')
+  await expect(boardRow).toHaveClass(/lens-miss/)
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('outline-lens-chip')).toHaveCount(0)
+  await expect(win.getByTestId('takeover-outline')).toBeVisible()
+
+  await app.close()
+})
+
+test('outliner preview capture and three doors share one shipped verb path', async () => {
+  const { app, win } = await launchApp('ew-e2e-outline-control-')
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const nodeId = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId,
+    nodeId,
+  })
+
+  await win.getByTestId('charm-outline').click()
+  const row = win.locator(`[data-testid="outline-child-row"][data-node-id="${nodeId}"]`)
+  await row.hover()
+  await expect(win.getByTestId('outline-preview')).toContainText('◯ pin')
+  await expect(win.getByTestId('outline-note-capture')).toBeVisible()
+
+  // N reaches the same add-note offer and focuses the one editable preview
+  // field; Enter commits one existing CreateNoteAndAttach command.
+  await win.keyboard.press('n')
+  await expect(win.getByTestId('outline-note-capture')).toBeFocused()
+  const before = await revision(win)
+  await win.getByTestId('outline-note-capture').fill('Field observations')
+  await win.getByTestId('outline-note-capture').press('Enter')
+  await expect
+    .poll(async () =>
+      runQuery<{ noteTitle: string | null }>(win, 'getOutlinePreview', { kind: 'node', nodeId }),
+    )
+    .toMatchObject({ noteTitle: 'Field observations' })
+  expect(await contentCommandsSince(win, before)).toEqual(['CreateNoteAndAttach'])
+  await expect(row.getByTestId('badge-orphan')).toHaveCount(0)
+  await expect(win.getByTestId('outline-preview-excerpt')).toHaveCount(0)
+
+  // Preview and right-click enumerate the same inventory IDs. Trash from the
+  // menu and keyboard both enter the same impact-confirm path.
+  await row.click({ button: 'right' })
+  const previewIds = await win
+    .locator('[data-testid="outline-preview-verbs"] [data-verb-id]')
+    .evaluateAll((items) => items.map((item) => item.getAttribute('data-verb-id')))
+  const menuIds = await win
+    .locator('[data-testid="outline-context-menu"] [data-verb-id]')
+    .evaluateAll((items) => items.map((item) => item.getAttribute('data-verb-id')))
+  expect(menuIds).toEqual(previewIds)
+  await win.locator('[data-testid="outline-context-menu"] [data-verb-id="trash"]').click()
+  await expect(win.getByTestId('outline-trash-confirm')).toBeVisible()
+  await win.getByTestId('outline-trash-confirm').getByRole('button', { name: 'Cancel' }).click()
+
+  await win.keyboard.press('Delete')
+  await expect(win.getByTestId('outline-trash-confirm')).toBeVisible()
+  await win.getByTestId('outline-trash-confirm').getByRole('button', { name: 'Cancel' }).click()
+
+  await win.keyboard.press('#')
+  await expect(win.getByTestId('outline-tag-editor')).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('outline-tag-editor')).toHaveCount(0)
+  await expect(win.getByTestId('takeover-outline')).toBeVisible()
 
   await app.close()
 })
@@ -224,7 +289,7 @@ test('outline placement flows: place, drag to board, dive, open note (§6.10)', 
   await win
     .locator(`[data-testid="outline-child-row"][data-node-id="${nodeA}"]`)
     .getByTestId('outline-row-activate')
-    .click()
+    .dblclick()
   await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.canvasId()))
@@ -305,7 +370,7 @@ test('outline placement flows: place, drag to board, dive, open note (§6.10)', 
   await win
     .locator(`[data-testid="loose-note-row"][data-note-id="${looseNoteId}"]`)
     .getByTestId('outline-row-activate')
-    .click()
+    .dblclick()
   await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
   await expect(win.getByTestId('note-pane')).toBeVisible()
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Adrift Thought/)
@@ -367,8 +432,9 @@ test('outline: trashed excluded by default, connectors never rows, restore retur
 
   // Both rows before the trash.
   await win.getByTestId('charm-outline').click()
-  const rootSection = win.getByTestId(`outline-canvas-${rootCanvasId}`)
-  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(2)
+  const tree = win.getByTestId('outline-tree')
+  await expect(tree.locator(`[data-node-id="${keeper.nodeId}"]`)).toHaveCount(1)
+  await expect(tree.locator(`[data-node-id="${doomed.nodeId}"]`)).toHaveCount(1)
 
   // The connector is a decoration, not a child: it has no row and its
   // id appears nowhere in the takeover's DOM.
@@ -380,18 +446,15 @@ test('outline: trashed excluded by default, connectors never rows, restore retur
   await win.keyboard.press('Escape')
   await exec(win, 'TrashNode', { nodeId: doomed.nodeId })
   await win.getByTestId('charm-outline').click()
-  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(1)
-  await expect(rootSection.getByTestId('outline-child-row')).toContainText('Keeper')
-  await expect(rootSection.getByTestId('outline-child-row')).not.toContainText('Doomed')
+  await expect(tree.locator(`[data-node-id="${keeper.nodeId}"]`)).toHaveCount(1)
+  await expect(tree.locator(`[data-node-id="${doomed.nodeId}"]`)).toHaveCount(0)
 
   // Restore brings the row back.
   await win.keyboard.press('Escape')
   await exec(win, 'RestoreRecord', { kind: 'node', id: doomed.nodeId })
   await win.getByTestId('charm-outline').click()
-  await expect(rootSection.getByTestId('outline-child-row')).toHaveCount(2)
-  await expect(
-    rootSection.getByTestId('outline-child-row').filter({ hasText: 'Doomed' }),
-  ).toHaveCount(1)
+  await expect(tree.locator(`[data-node-id="${keeper.nodeId}"]`)).toHaveCount(1)
+  await expect(tree.locator(`[data-node-id="${doomed.nodeId}"]`)).toContainText('Doomed')
 
   await app.close()
 })

@@ -243,18 +243,18 @@
 
 <style>
   .preview { flex:1 1 42%; min-width:0; overflow:auto; padding:1rem 1.1rem; }
-  .kind-line,.muted,.places { margin:0; color:var(--ew-text-subtle); font-family:var(--ew-font-mono); font-size:var(--ew-text-chip); }
+  .kind-line,.muted,.places { margin:0; color:var(--ew-text-subtle); font-family:ui-monospace, monospace; font-size:0.7rem; }
   h2 { margin:0.6rem 0; font-size:0.95rem; }
-  .identity-fallback { color:var(--ew-text-muted); font-family:var(--ew-font-mono); font-weight:400; }
+  .identity-fallback { color:var(--ew-text-muted); font-family:ui-monospace, monospace; font-weight:400; }
   .hero { max-height:13rem; overflow:hidden; border:1px solid var(--ew-border); border-radius:7px; }
   .hero img { display:block; width:100%; height:100%; max-height:13rem; object-fit:cover; }
   .filmstrip { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:0.35rem; margin:0.7rem 0; }
   .filmstrip img,.film-glyph,.film-more { width:100%; aspect-ratio:1; border:1px solid var(--ew-border); border-radius:5px; background:var(--ew-surface-raised); }
   .filmstrip img { display:block; object-fit:cover; }
-  .film-glyph,.film-more { display:flex; align-items:center; justify-content:center; color:var(--ew-text-muted); font-family:var(--ew-font-mono); }
+  .film-glyph,.film-more { display:flex; align-items:center; justify-content:center; color:var(--ew-text-muted); font-family:ui-monospace, monospace; }
   .tags { display:flex; flex-wrap:wrap; gap:0.3rem; margin:0.7rem 0; }
   .tag-chip,.verbs button { border:1px solid var(--ew-border-strong); background:var(--ew-surface-raised); color:var(--ew-text-muted); font:inherit; cursor:pointer; }
-  .tag-chip { padding:0 0.5rem; border-radius:999px; font-size:var(--ew-text-chip); }
+  .tag-chip { padding:0 0.5rem; border-radius:999px; font-size:0.7rem; }
   .excerpt { margin:0.8rem 0; color:var(--ew-text-soft); line-height:1.55; white-space:pre-wrap; }
   .note-capture { box-sizing:border-box; width:100%; margin:0.7rem 0; padding:0.55rem 0.65rem; border:1px solid var(--ew-border-strong); border-radius:6px; background:var(--ew-surface-raised); color:var(--ew-text); font:inherit; }
   .note-capture:focus { outline:2px solid var(--ew-focus-ring); outline-offset:1px; }
@@ -263,7 +263,7 @@
   .verbs button { min-height:1.9rem; padding:0.25rem 0.55rem; border-radius:5px; }
   .verbs button:disabled { cursor:not-allowed; opacity:0.55; }
   .verbs button.danger { color:var(--ew-danger); }
-  .shortcut { font-family:var(--ew-font-mono); }
-  small { max-width:11rem; color:var(--ew-text-subtle); font-size:var(--ew-text-chip); }
+  .shortcut { font-family:ui-monospace, monospace; }
+  small { max-width:11rem; color:var(--ew-text-subtle); font-size:0.7rem; }
   @media (pointer:coarse) { .verbs button { min-height:44px; padding-inline:0.75rem; } }
 </style>

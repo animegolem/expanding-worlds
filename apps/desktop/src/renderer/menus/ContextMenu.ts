@@ -33,6 +33,7 @@ import type { CanvasHostHandle } from '../canvas/host'
 import type { BoardTooling } from '../canvas/board-tooling'
 import { placeAnchored, pointAnchor } from '../chrome/anchored-placement'
 import { navigateTo } from '../chrome/navigation'
+import { takeoverActive } from '../chrome/takeover'
 import { applyMenuCascade } from '../chrome/menu-cascade'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { requestCharmPopover } from '../canvas/charms-ui'
@@ -836,6 +837,10 @@ export function attachContextMenu(
   // ---------------------------------------------------- routing
 
   const onContextMenu = (event: MouseEvent): void => {
+    // A takeover owns the window (§8.2). Its own surfaces (the outliner
+    // control panel included) must never also summon the obscured board's
+    // menu at the same screen coordinates.
+    if (takeoverActive()) return
     event.preventDefault()
     const bounds = element.getBoundingClientRect()
     const at = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }

@@ -6,12 +6,12 @@ tags:
   - renderer
   - outline
   - menus
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-274, AI-IMP-275]
 parent_epic: [[AI-EPIC-028-the-outliner-control-panel]]
 confidence_score: 0.7
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-11
 ---
 
 
@@ -70,16 +70,16 @@ existing platform/touch detection or a settings-tier flag
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] One actions bag; menu builder pure + unit-tested; PARITY
+- [x] One actions bag; menu builder pure + unit-tested; PARITY
       test asserting the three doors expose identical inventories
       per row kind.
-- [ ] Context menu per §16 grammar (danger last, shortcuts mono,
+- [x] Context menu per §16 grammar (danger last, shortcuts mono,
       long-press on touch).
-- [ ] Keyboard map = the teaching line; esc returns; tab folds.
-- [ ] Trash routes shipped commands only, with the §9 impact
+- [x] Keyboard map = the teaching line; esc returns; tab folds.
+- [x] Trash routes shipped commands only, with the §9 impact
       confirm on node rows; e2e round trip.
-- [ ] touchMode metrics behind the documented seam.
-- [ ] Full check:ci + outline e2e green (pipefail).
+- [x] touchMode metrics behind the documented seam.
+- [x] Full check:ci + outline e2e green (pipefail).
 
 ### Acceptance Criteria
 
@@ -93,6 +93,19 @@ on placed nodes and routes TrashNote on loose notes
 exactly as the teaching line promises.
 
 ### Issues Encountered
+
+- Pre-review found the keyboard map incomplete. Ratified additions are `N` for
+  open/add note and Delete/Backspace for trash; `#` admits its ordinary shifted
+  character while other modified chords remain untouched. Inputs own all keys.
+- The cited shipped node-trash confirm did not exist. The outliner now owns a
+  small `getNodeImpact` confirmation; root/bin remain visibly disabled. Preview,
+  context menu, and keyboard are projections of one action bag and unit tests
+  enumerate identical IDs per row kind.
+- Boundary review found right-click leaking through the takeover into the
+  obscured canvas board menu. The canvas context-menu router now refuses opens
+  while a takeover is active. Coarse-pointer CSS supplies 44px rows/chips and
+  long-press opens the same context menu without a settings flag. Hidden
+  outline/loose-note plus notes/tags/gallery shards passed 63/63.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
