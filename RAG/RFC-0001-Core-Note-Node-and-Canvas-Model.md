@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.68         | 10 July 2026     |
+| Accepted for Phase 1 | 0.69         | 10 July 2026     |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -859,6 +859,53 @@ a library's tags outgrow memory. If hierarchy ever returns it is a
 tags-domain question to reopen deliberately, not a surface to grow
 into. Tag aliases and tag-to-tag relationships remain deferred
 until concrete usage demonstrates a need.
+
+**Tags travel across mirror edges — one tag universe (rev 0.69,
+owner + first tester; supersedes the category-carried-travel
+proposal, which never shipped).** The first tester tagged
+library-imported images in his project and was surprised the
+library copies stayed untagged; the shipped §4.5 caption then
+absorbed the annotation role that project-local "board tags" were
+partly justified by. The ruling: there are no kinds of tags and
+no user-facing lanes — **tags synchronize wherever a §14.4 mirror
+relationship exists, and nowhere else** (a tag on a board, dot,
+or project-native note has no library counterpart and trivially
+stays home; the user never files a tag into a scope).
+
+- **Settle moments, bidirectional.** Proper CLOSE pushes a
+  project's tag state outward across its mirror edges; project
+  OPEN pulls the library's state inward. Inbound changes are
+  ANNOUNCED, never silent ("N tags updated from the library");
+  the announcements accumulate in an activity-log surface,
+  probably part of the library (shaped, deferred — visibility
+  into overall cross-project activity). A deliberate sync verb
+  exists for impatience and is a full QUIESCE: connections
+  dropped, sync run, app resumed.
+- **Divergence.** Rename is last-settle-wins, announced at the
+  losing end. DELETE offers a scope dialogue at the moment of
+  action — "delete from this project, or from the library?" —
+  because the blast radius is only knowable by the user, and only
+  then. Project-scope deletion writes a local TOMBSTONE (a
+  suppression record) so the next inbound sync cannot resurrect
+  what the user just removed; lifting a tombstone (a visible
+  "suppressed" row with an ×) means "let it come back," and the
+  tag returns at the next settle, announced. Library-scope
+  deletion propagates outward at settle moments, announced.
+  Nothing in the loop destroys data unrecoverably. (Shape built
+  opinionated for tester contact; the dialogue's final grammar
+  may be adjusted on his reaction.)
+- **Provenance is data.** A tag arriving at the library carries
+  its origin (which project pushed it); surfaces MAY rank and
+  filter by provenance — completion noise is a ranking problem,
+  never a lane. There is NO per-tag opt-out; one universe is the
+  point, and the field can demand an exception flag if it ever
+  earns one.
+- **Categories travel with their tags.** When typed categories
+  (the ratified booru-namespace model, EPIC-026) exist, a
+  category definition syncs across the same edges as its tags,
+  matched by name-key, created-if-missing — a `creator:` tag
+  cannot arrive uncategorized. Until categories ship, flat tag
+  names sync by name_key.
 
 ## 4.9 Decoration
 
@@ -4732,6 +4779,17 @@ Accepted for the Phase 1 prototype:
   is EPIC-021's, unshipped); items 27–30 join for the gallery,
   library, frames, and rich-note/backup surfaces Phase 1 grew. No
   criterion was weakened; the audit walks what ships.
+
+- One tag universe ratified (rev 0.69, owner + first tester):
+  tags sync wherever a mirror relationship exists — no kinds, no
+  lanes, no filing decision; bidirectional at settle moments
+  (close pushes, open pulls, announced never silent) with a
+  quiesce sync verb; rename last-settle-wins; delete scoped by
+  dialogue with project-side tombstones; provenance carried as
+  filterable data; categories travel with their tags when they
+  ship. Supersedes category-carried travel (never built). The
+  §4.5 caption absorbing the annotation role is what dissolved
+  the world-tag lane (§4.8).
 
 - The caption ratified (rev 0.68, owner + first tester): the
   identity-free text register between note and decoration —
