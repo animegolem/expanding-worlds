@@ -235,6 +235,31 @@ all moved into the RFC.
   TEXT-TOOL RULING (owner, same night): promotion is GO — "build
   it out of the assets we have now"; a special text-asset class
   is a possible LATER shape, not this build.
+  **KIT ARRIVED (owner, 2026-07-10 night — RAG/design/Outliner UI
+  Kit 1.0.zip: live component + wireframes on the design system's
+  tokens/components).** THE YAZI HYBRID chosen from six TUI
+  directions (org-outliner tree as master + miller-columns'
+  cursor-follow preview): two-pane takeover — tree left (~55%,
+  fold glyphs, kind glyphs ⌂⬚◯▣↗⊘, ·loose/·orphan warn badges,
+  clickable tag chips → lens, counts right), PREVIEW RIGHT that
+  follows selection with "never a click cost" (kind line, image
+  preview, FILMSTRIP of board children +N, note excerpt,
+  placed-N-× line, verb buttons: ↵ dive/␣ place · ⌖ fly to ·
+  ✎ open note — "no note — creates and attaches one"); facet
+  chips all/unplaced/orphans/disconnected; filter FLATTENS the
+  tree with path-in-meta; teaching footer ("N shown · N loose ·
+  N orphans" + keys); explicit TOUCH MODE prop (44px rows, verbs
+  as tap chips, iPad portrait = bottom-sheet preview) — the
+  touch/pencil directive made concrete on its first surface.
+  LEAD GAPS NAMED AT ABSORPTION (to settle before cutting):
+  (a) untagged-state visibility — the OCD frame wanted "what
+  isn't tagged" surfaced; the kit badges loose/orphan but has no
+  untagged badge/facet; (b) the Discord sketch's inline
+  add-comment/note from the row vs the kit's ✎-verb-only preview;
+  (c) "unnamed #1–6" numbering (kit shows orphan images by
+  filename — is filename the display fallback ruling?);
+  (d) filmstrip thumbnails need the board-children thumbnail
+  source (gallery thumbs exist; boards-as-children need a story).
 
 - **The touch/pencil design pass (owner directive, 2026-07-10
   late — the frame for the NEXT design pass).** "All of our
