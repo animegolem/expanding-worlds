@@ -68,6 +68,11 @@ all moved into the RFC.
   seed image LANDS in the new project (placed on Home vs inbox),
   and the no-slug display rules (now dovetailing with the
   control-panel outline's "unnamed #1–6" rendering).
+  SEED RULED (owner, same night): the image does NOT land in the
+  project at all — no placement anywhere; it lives as the COVER,
+  surfaced where covers surface (the picker, and the revamped
+  outline showing the cover when hovering Home). Only the
+  no-slug display rules remain from this cluster.
 
 - **Reading a note on the board — the open-verb as a camera verb**
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
