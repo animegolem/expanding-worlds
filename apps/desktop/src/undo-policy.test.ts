@@ -70,4 +70,10 @@ describe('undo policy matrix ↔ command registry (AI-IMP-233)', () => {
       expect(entry.why.length, `${type} needs a reason`).toBeGreaterThan(0)
     }
   })
+
+  it('keeps the tag delete and suppression pair inside the one delete-scope undo group', () => {
+    expect(UNDO_POLICY['DeleteTag']?.class).toBe('group-only')
+    expect(UNDO_POLICY['SuppressTagSync']?.class).toBe('group-only')
+    expect(UNDO_POLICY['LiftTagSuppression']?.class).toBe('group-only')
+  })
 })

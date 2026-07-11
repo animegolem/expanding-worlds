@@ -266,6 +266,22 @@ export interface DeleteTagPayload {
   tagId: string
 }
 
+/**
+ * Prevent additive mirror-edge sync from recreating this normalized
+ * tag name in the current project. The handler requires an already
+ * canonical, non-empty §4.8 name_key.
+ */
+export interface SuppressTagSyncPayload {
+  nameKey: string
+  /** Internal inverse field; omitted by the user-facing suppress verb. */
+  createdAt?: string
+}
+
+/** Internal exact inverse of SuppressTagSync (and future panel verb). */
+export interface LiftTagSuppressionPayload {
+  nameKey: string
+}
+
 /** One tag assignment carried across a delete/merge inverse. */
 export interface RestoredTagAssignment {
   nodeId: string
@@ -422,6 +438,8 @@ export const COMMAND_ASSIGN_TAG_TO_NODE = 'AssignTagToNode'
 export const COMMAND_UNASSIGN_TAG_FROM_NODE = 'UnassignTagFromNode'
 export const COMMAND_DELETE_TAG = 'DeleteTag'
 export const COMMAND_RESTORE_TAG = 'RestoreTag'
+export const COMMAND_SUPPRESS_TAG_SYNC = 'SuppressTagSync'
+export const COMMAND_LIFT_TAG_SUPPRESSION = 'LiftTagSuppression'
 export const COMMAND_MERGE_TAG = 'MergeTag'
 export const COMMAND_UNMERGE_TAG = 'UnmergeTag'
 export const COMMAND_SET_TAG_APPEARANCE = 'SetTagAppearance'

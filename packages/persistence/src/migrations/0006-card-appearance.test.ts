@@ -158,9 +158,9 @@ describe('migration 0006 on a POPULATED schema-5 database', () => {
         db.run(`INSERT INTO tag_assignment (tag_id, node_id, created_at) VALUES ('t-1', 'n-1', ?)`, t)
       })
 
-      // migrate() runs to HEAD, so a schema-5 db applies 6 through 8.
+      // migrate() runs to HEAD, including intentional reserved-id gaps.
       const ran = migrate(db)
-      expect(ran).toEqual([6, 7, 8])
+      expect(ran).toEqual([6, 7, 8, 10])
       expect(db.get<{ n: number }>('SELECT count(*) AS n FROM node')!.n).toBe(2)
       expect(db.all('PRAGMA foreign_key_check')).toEqual([])
       expect(db.pragma('foreign_keys')).toBe(1)

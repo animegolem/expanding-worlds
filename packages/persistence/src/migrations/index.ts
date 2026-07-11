@@ -6,6 +6,7 @@ import * as m0005 from './0005-bookmarks'
 import * as m0006 from './0006-card-appearance'
 import * as m0007 from './0007-frame-membership'
 import * as m0008 from './0008-placement-caption'
+import * as m0010 from './0010-tag-sync-tombstone'
 
 export interface Migration {
   id: number
@@ -28,6 +29,9 @@ export const MIGRATIONS: readonly Migration[] = [
   m0006,
   m0007,
   m0008,
+  // 0009 is reserved by AI-IMP-261. migrate() consults the ledger by
+  // id, so this intentional gap does not prevent 0009 landing later.
+  m0010,
 ]
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]!.id

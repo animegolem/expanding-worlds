@@ -103,6 +103,18 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   AssignTagToNode: { class: 'group-only', why: 'AI-IMP-182 verb; inverse UnassignTagFromNode' },
   CreateTag: { class: 'group-only', why: 'AI-IMP-182 verb; inverse DeleteDraftTag' },
   RenameTag: { class: 'group-only', why: 'AI-IMP-182 verb; inverse RenameTag' },
+  DeleteTag: {
+    class: 'group-only',
+    why: 'AI-IMP-271 delete-scope gesture member; inverse RestoreTag',
+  },
+  SuppressTagSync: {
+    class: 'group-only',
+    why: 'AI-IMP-271 delete-scope gesture member; inverse LiftTagSuppression',
+  },
+  LiftTagSuppression: {
+    class: 'group-only',
+    why: 'AI-IMP-271 suppression inverse / future gesture; inverse SuppressTagSync',
+  },
   DetachNoteFromNode: { class: 'group-only', why: 'AI-IMP-182 verb; inverse AttachNoteToNode' },
   CreateBookmark: { class: 'group-only', why: 'AI-IMP-182 verb; inverse RemoveBookmark' },
   RemoveBookmark: { class: 'group-only', why: 'AI-IMP-182 verb; inverse CreateBookmark' },
@@ -146,7 +158,6 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   MovePlacement: { class: 'exempt', why: 'not-a-renderer-verb: board moves go through TransformContent' },
   DeletePlacement: { class: 'exempt', why: 'not-a-renderer-verb: deletion goes through DeleteContent' },
   DeleteDecoration: { class: 'exempt', why: 'not-a-renderer-verb: deletion goes through DeleteContent' },
-  DeleteTag: { class: 'exempt', why: 'not-a-renderer-verb: tag-deletion lifecycle path' },
   MergeTag: { class: 'exempt', why: 'deferred: no renderer gesture yet (flagged for owner ratification)' },
   SetTagAppearance: { class: 'exempt', why: 'deferred: no renderer gesture yet (flagged for owner ratification)' },
   SetTrashRetention: { class: 'exempt', why: 'settings verb: changed/reverted via Settings, not Mod+Z' },
