@@ -14,9 +14,10 @@
 -->
 <script lang="ts">
   import { tick } from 'svelte'
-  import { shortCode } from '@ew/domain'
+  import { nameKey, shortCode } from '@ew/domain'
   import NodeRow from '../rows/NodeRow.svelte'
   import TextInput from '../ui/TextInput.svelte'
+  import Button from '../ui/Button.svelte'
   import type { CanvasHostHandle } from '../canvas/host'
   import { pointAnchor } from '../chrome/anchored-placement'
   import {
@@ -31,6 +32,7 @@
   import { closeTagPanel, openTagPanel, type TagPanelState } from './tag-panel'
   import { contextMenuOpen } from '../menus/ContextMenu'
   import { runAsUndoGroup } from '../undo/undo-store'
+  import { deleteLocalTag } from './tag-delete'
 
   interface TagViewPlacement {
     placementId: string
@@ -78,6 +80,16 @@
   let renameValue = $state('')
   let renameBusy = $state(false)
   let renameInput = $state<HTMLInputElement | null>(null)
+
+  // AI-IMP-271: explicit delete scope. Preflight may open the designated
+  // library slot but never syncs; an unavailable library stays a visible
+  // disabled reason instead of becoming an open-time error dialog.
+  let deleteOpen = $state(false)
+  let deleteBusy = $state(false)
+  let libraryChecking = $state(false)
+  let libraryReachable = $state(false)
+  let libraryReason = $state<string | null>(null)
+  let deleteCheck = 0
 
   // Same §8.5 point grammar as the location chooser: client coords of
   // the summoning control, placed from the panel's measured dimensions.
@@ -230,6 +242,98 @@
     // canvas — the SearchPanel:328 pattern).
   }
 
+  // ------------------------------------------------------ §4.8 delete
+  async function openDeleteDialog(): Promise<void> {
+    if (!view || deleteBusy) return
+    cancelRename()
+    deleteOpen = true
+    libraryChecking = true
+    libraryReachable = false
+    libraryReason = null
+    const check = ++deleteCheck
+    try {
+      const availability = await window.ew.tagSync.libraryAvailability()
+      if (!deleteOpen || check !== deleteCheck) return
+      libraryReachable = availability.available
+      libraryReason = availability.available ? null : availability.reason
+    } catch {
+      if (!deleteOpen || check !== deleteCheck) return
+      libraryReason = 'Library unavailable — try again after reopening it'
+    } finally {
+      if (deleteOpen && check === deleteCheck) libraryChecking = false
+    }
+  }
+
+  function closeDeleteDialog(): void {
+    if (deleteBusy) return
+    deleteOpen = false
+    deleteCheck += 1
+  }
+
+  function resultMessage(result: { status: string; message?: string }): string {
+    return result.status === 'error' && result.message
+      ? result.message
+      : result.status === 'conflict'
+        ? 'the project changed underneath (retry)'
+        : 'the tag could not be deleted'
+  }
+
+  function deleteNotice(message: string): void {
+    window.dispatchEvent(new CustomEvent('ew-board-notice', { detail: { message } }))
+  }
+
+  async function commitDelete(scope: 'project' | 'library'): Promise<void> {
+    if (deleteBusy || !view || (scope === 'library' && !libraryReachable)) return
+    deleteBusy = true
+    const tag = view.tag
+    const key = nameKey(tag.name)
+    try {
+      const local = await deleteLocalTag(
+        (type, payload) => handle.gateway.execute(type, payload),
+        runAsUndoGroup,
+        tag.id,
+        key,
+      )
+      if (local.deleted.status !== 'committed') {
+        toast(resultMessage(local.deleted), { kind: 'error' })
+        return
+      }
+      const suppressionAlreadyExisted =
+        local.suppressed?.status === 'error' &&
+        local.suppressed.code === 'TAG_SYNC_ALREADY_SUPPRESSED'
+      // Preserve a suppression that predates this gesture. The local undo
+      // correctly restores only the tag and does not erase that earlier state.
+      if (local.suppressed?.status !== 'committed' && !suppressionAlreadyExisted) {
+        deleteNotice(
+          `“${tag.name}” was deleted here, but sync suppression failed — it may return on the next sync`,
+        )
+        closeTagPanel()
+        return
+      }
+
+      // Close before the narrow cross-project write so live refresh cannot
+      // turn the panel into a stale "tag no longer exists" shell.
+      closeTagPanel()
+      if (scope === 'project') return
+
+      try {
+        const library = await window.ew.tagSync.deleteLibraryTag(key)
+        if (library.ok) return
+        deleteNotice(
+          `“${tag.name}” was deleted from this project, but not from the library — ${library.message}`,
+        )
+      } catch (err) {
+        deleteNotice(
+          `“${tag.name}” was deleted from this project, but not from the library — ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), { kind: 'error' })
+    } finally {
+      deleteBusy = false
+    }
+  }
+
   // ------------------------------------------------------ §4.8 lens
   const activePlacementIds = $derived(
     view?.nodes.flatMap((node) =>
@@ -284,6 +388,11 @@
       // AI-IMP-183 (M-28): consume with stopImmediatePropagation so a
       // sibling window-capture panel (search) does not ALSO close on the
       // same press — exactly one floating panel peels per Escape.
+      if (deleteOpen) {
+        event.stopImmediatePropagation()
+        closeDeleteDialog()
+        return
+      }
       if (editing) {
         event.stopImmediatePropagation()
         cancelRename()
@@ -397,6 +506,16 @@
     </button>
     <button
       type="button"
+      class="delete-toggle"
+      data-testid="tag-delete-open"
+      disabled={!view || deleteBusy}
+      onclick={() => void openDeleteDialog()}
+      use:tooltip={{ name: 'Delete tag…' }}
+    >
+      ⌫
+    </button>
+    <button
+      type="button"
       class="close"
       data-testid="tag-panel-close"
       aria-label="Close"
@@ -406,6 +525,43 @@
       ✕
     </button>
   </header>
+
+  {#if deleteOpen && view}
+    <div
+      class="delete-dialog"
+      role="dialog"
+      aria-label="Delete tag"
+      tabindex="-1"
+      data-testid="tag-delete-dialog"
+    >
+      <p>Delete <strong>#{view.tag.name}</strong> from:</p>
+      <div class="delete-actions">
+        <Button
+          variant="danger"
+          data-testid="tag-delete-project"
+          disabled={deleteBusy}
+          onclick={() => void commitDelete('project')}
+        >Delete from this project</Button>
+        <Button
+          variant="danger"
+          data-testid="tag-delete-library"
+          disabled={deleteBusy || libraryChecking || !libraryReachable}
+          onclick={() => void commitDelete('library')}
+        >Delete from project and library</Button>
+        {#if libraryChecking}
+          <span class="delete-reason" data-testid="tag-delete-library-reason">Checking library…</span>
+        {:else if libraryReason}
+          <span class="delete-reason" data-testid="tag-delete-library-reason">{libraryReason}</span>
+        {/if}
+        <Button
+          variant="secondary"
+          data-testid="tag-delete-cancel"
+          disabled={deleteBusy}
+          onclick={closeDeleteDialog}
+        >Cancel</Button>
+      </div>
+    </div>
+  {/if}
 
   {#if errorMessage}
     <p class="error" role="alert">{errorMessage}</p>
@@ -533,6 +689,7 @@
 
   .lens-toggle,
   .rename-toggle,
+  .delete-toggle,
   .close {
     flex: none;
     min-width: 22px;
@@ -554,7 +711,8 @@
   }
 
   .lens-toggle:disabled,
-  .rename-toggle:disabled {
+  .rename-toggle:disabled,
+  .delete-toggle:disabled {
     opacity: 0.4;
     cursor: default;
   }
@@ -563,6 +721,31 @@
     border: none;
     background: transparent;
     color: var(--ew-text-muted);
+  }
+
+  .delete-dialog {
+    margin-top: 0.45rem;
+    padding: 0.55rem;
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 7px;
+    background: var(--ew-surface-raised);
+  }
+
+  .delete-dialog p {
+    margin: 0 0 0.45rem;
+  }
+
+  .delete-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .delete-reason {
+    color: var(--ew-text-muted);
+    font-size: 0.7rem;
+    line-height: 1.25;
   }
 
   .error {
