@@ -194,6 +194,30 @@ all moved into the RFC.
   as part of the card/lifecycle rendering conversation above; the
   identity/register half leaves the queue.
 
+- **Text-tool promotion + the outline as a data control panel
+  (alph + owner, 2026-07-10 late — two asks, one loop).** (a)
+  alph: let TEXT-TOOL paint promote to a note, and let notes be
+  "their own asset on the board." Lead read at capture: the first
+  half completes the register ladder laterally — paint → note
+  joins caption → note, and AI-IMP-267's promotion machinery
+  (routing dialogue, remembered choice, conflict variant) is
+  built to be reused; the second half largely EXISTS as the §4.6
+  card appearance (a note as board content) — the ask may be a
+  discoverability/maturity gap, not a missing feature; verify
+  with him before building anything. (b) The owner's OCD-LOOP
+  framing, alph-endorsed ("that sounds awesome"): design for the
+  compulsion to clean up — surface incompleteness (untagged,
+  unnamed, uncommented) as visible, satisfying-to-clear state,
+  because that loop IS how people come to manage their stuff as
+  data. Concrete sketch from the Discord thread: the OUTLINE
+  revamped as a control panel of the open board — per-row
+  tagged/untagged state, a sidebar rendering the row's asset,
+  direct add-comment/note from the row (placeholders replaced),
+  unnamed things shown as "unnamed #1–6" (ties directly into the
+  no-slug display rules in the Home/launcher cluster). Wants a
+  design pass with the note-lifecycle work; the tagged-state
+  column also depends on the traveling-tags ruling landing first.
+
 - **The canonical projection (CONVERGED 2026-07-10, both Fables +
   owner; awaiting formal §11/§16 ratification at the strategy
   review):** a deterministic text serialization of the domain
