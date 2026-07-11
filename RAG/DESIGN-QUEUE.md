@@ -260,6 +260,23 @@ all moved into the RFC.
   filename — is filename the display fallback ruling?);
   (d) filmstrip thumbnails need the board-children thumbnail
   source (gallery thumbs exist; boards-as-children need a story).
+  ALL FOUR RESOLVED (design Fable positions, lead COSIGNED
+  2026-07-10 night): (a) untagged is a real third axis (orphan =
+  no words, loose = no place, untagged = no taxonomy) — facet
+  chip ALWAYS, ·untagged badge ONLY while a cleanup facet is
+  active (worklist itches, browsing tree stays calm); counts
+  scope-honest under the one-tag-universe; (b) rows are never
+  inputs — the preview's note-excerpt area becomes
+  EDITABLE-EMPTY ("add a note…", Enter = create-and-attach, one
+  command, the caption-register spirit); (c) filename fallback
+  RATIFIED for images (mono/muted provenance, kills unnamed-#N
+  for images); unnamed boards read "unnamed · N items" — the
+  real fix stays upstream at the B1 naming moment; (d) filmstrip
+  is a pure read projection: first 4-5 children by render_order,
+  076 thumbnail pipeline, glyph chips for non-image children
+  (the strip never lies), LRU keyed canvasId+revision. (a)+(b)
+  land as the kit's v1.1 pass with the grammar bible; none of it
+  blocks the build conversation.
 
 - **The touch/pencil design pass (owner directive, 2026-07-10
   late — the frame for the NEXT design pass).** "All of our
