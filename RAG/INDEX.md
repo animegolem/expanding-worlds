@@ -10,7 +10,7 @@
 | Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 228 |
+| Completed | 19 | 229 |
 | **Total** | **27** | **264** |
 
 ## In Progress
@@ -102,7 +102,6 @@
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
 - [[AI-IMP-264-lock-protocol-composite-hardening|IMP-264]] — planned, no epic dependency found
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
-- [[AI-IMP-267-caption-promotion|IMP-267]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
 - [[AI-IMP-270-create-and-attach-redo|IMP-270]] — planned, no epic dependency found
 
@@ -131,19 +130,19 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/host.ts (2172 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
+- apps/desktop/src/renderer/canvas/charms-ui.ts (1219 LOC)
 - apps/desktop/src/main/index.ts (1203 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (1190 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (1176 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (1103 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1053 LOC)
 - packages/persistence/src/queries-structure.test.ts (1041 LOC)
 - apps/desktop/e2e/notes.spec.ts (1025 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (1004 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (943 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (1022 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (958 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/note/panels.ts (880 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
-- RAG/HUMAN-TESTING.md (839 LOC)
+- RAG/HUMAN-TESTING.md (849 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
 - apps/desktop/src/main/snapshot.ts (791 LOC)
@@ -152,7 +151,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-structure.ts (773 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
-- apps/desktop/src/renderer/menus/inventory.ts (716 LOC)
+- apps/desktop/src/renderer/menus/inventory.ts (726 LOC)
 - packages/persistence/src/handlers/placements.ts (704 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - apps/desktop/e2e/undo.spec.ts (674 LOC)
@@ -191,6 +190,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/charms.spec.ts (513 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - RAG/DESIGN-QUEUE.md (500 LOC)
+- apps/desktop/e2e/caption.spec.ts (493 LOC)
 - packages/persistence/src/handlers/notes.ts (490 LOC)
 - packages/persistence/src/handlers/pin.ts (489 LOC)
 - apps/desktop/src/renderer/theme.css (487 LOC)
@@ -220,13 +220,13 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (386 LOC)
 - spike/webkit-renderer/src/main.ts (385 LOC)
 - apps/desktop/e2e/inbox-mirror.spec.ts (385 LOC)
+- apps/desktop/src/renderer/menus/inventory.test.ts (384 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (380 LOC)
 - apps/desktop/src/renderer/undo/undo-store.ts (376 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (374 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (374 LOC)
 - packages/persistence/src/queries-gallery.test.ts (373 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (364 LOC)
-- apps/desktop/src/renderer/menus/inventory.test.ts (362 LOC)
 - packages/canvas-engine/src/hit-test.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/PathBar.svelte (360 LOC)
@@ -248,6 +248,7 @@ Generated from tracked files; binary assets excluded.
 - packages/canvas-engine/src/controller.ts (332 LOC)
 - apps/desktop/src/renderer/chrome/status.ts (331 LOC)
 - apps/desktop/src/renderer/dev/feel-dial.ts (327 LOC)
+- apps/desktop/src/renderer/canvas/PromoteCaptionDialog.svelte (327 LOC)
 - apps/desktop/src/preload/index.ts (327 LOC)
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)

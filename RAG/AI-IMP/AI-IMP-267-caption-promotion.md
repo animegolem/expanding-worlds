@@ -6,12 +6,12 @@ tags:
   - renderer
   - notes
   - field-report
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-266]
 parent_epic:
 confidence_score: 0.7
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-10
 ---
 
 
@@ -119,23 +119,23 @@ matrix wins over inventing new inverse semantics.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Promote verb on captioned placements: context menu + a
+- [x] Promote verb on captioned placements: context menu + a
       Promote charm beside Edit when a COMMITTED caption exists
       (the dialog never promotes stale editor draft text);
       disabled-with-reason "This item already has a note"
       (captions are not image-only), reason rendered VISIBLY
       with bounded second-line layout and verb+reason in the
       accessible label.
-- [ ] Routing dialogue: Title / Body (+ title input on body
+- [x] Routing dialogue: Title / Body (+ title input on body
       routing), remember-choice toggle. Remember persists ONLY
       after both commands commit (never on conflict/cancel);
       remembered BODY skips the routing choice but still opens
       the title entry.
-- [ ] Setting `captionPromotionRouting` (ask/title/body) through
+- [x] Setting `captionPromotionRouting` (ask/title/body) through
       the app-tier AppSettings codec/sanitizer
       (renderer/settings/settings.ts) + Behavior UI row; 'ask'
       default.
-- [ ] Promotion executes as ONE undo group
+- [x] Promotion executes as ONE undo group
       (CreateNoteAndAttach → SetPlacementCaption null),
       FAIL-STOP (capture is not a transaction): a refused create
       never clears the caption; a clear failure leaves note
@@ -147,17 +147,17 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       stack) — full redo is AI-IMP-270's (the ruled-out
       inherited CreateNoteAndAttach redo defect; a trashed
       title-reserving row makes replay conflict by design).
-- [ ] Promotion title conflicts (BOTH routes) use the
+- [x] Promotion title conflicts (BOTH routes) use the
       no-Use-Existing dialog variant: Open Conflicting / Restore
       Existing / Choose Different — body returns to its title
       input, title returns to the caption surface; the caption
       is NEVER discarded by a conflict.
-- [ ] e2e: both routings, remembered title + remembered body +
+- [x] e2e: both routings, remembered title + remembered body +
       Settings reset, disabled-reason visible, undo state exact,
       stage-1/stage-2 fail-stop, conflict variant on active and
       trashed holders, honest redo refusal — green.
-- [ ] Full gates green with pipefail; counts read.
-- [ ] HUMAN-TESTING (lead-owned; suggest the entry) + CHANGELOG.
+- [x] Full gates green with pipefail; counts read.
+- [x] HUMAN-TESTING (lead-owned; suggest the entry) + CHANGELOG.
 
 ### Acceptance Criteria
 
@@ -186,3 +186,20 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Built by the Codex wave, round 4 on the round-3 rulings;
+lead-merged at the 267 merge commit with one lead fixup (a dead
+openSettings e2e helper — the single check-job lint error on
+ci/imp-267; removed post-merge, full check:ci green locally).
+Validation: Windows oracle + all four e2e shards green on
+ci/imp-267; lead re-ran build/packages/desktop/e2e in the
+worktree (1,100 / 422+1 / 48) and caption e2e 7/7 plus full
+check:ci on the merged tree. The round-3 review's blocking
+conviction (CreateNoteAndAttach redo rot, inherited from the
+086 era) is fenced as AI-IMP-270; this ticket ships honest redo
+refusal with a regression proving no partial state. Codex's
+friction notes surfaced and fixed a real focus-steal (Choose
+Different reopening the editor during button activation —
+deferred until the click completes). Lead procedure note: the
+lead's worktree gate had omitted lint/spike-typecheck; full
+check:ci is now the standing lead re-run.

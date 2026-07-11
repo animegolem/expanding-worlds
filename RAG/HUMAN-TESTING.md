@@ -21,7 +21,17 @@ tickets.
   conservative wrap — say if it bothers you), and does image +
   caption read connected enough, or do you still want the mat/
   polaroid look? Mod+Z removes a caption edit (it's one verb).
-  Promote-to-note arrives in the next build (AI-IMP-267).
+  PROMOTION shipped in the same build (AI-IMP-267): when a
+  caption grows into an idea, right-click → Promote to note (or
+  the promote charm beside ✎) — a small dialogue asks Title or
+  Body (body asks you for a title), with "remember this choice"
+  (changeable later in Settings → Behavior). Try both routes;
+  try promoting a caption whose title already exists (the
+  conflict never eats your caption); undo a promotion — the
+  caption comes back and the note lands in Trash; a redo after
+  that undo politely refuses (known, ticketed as AI-IMP-270).
+  Feel question: does the anchored dialogue + promote glyph read
+  right where it appears?
 
 - [ ] **Loose notes are real windows now** (AI-IMP-258,
   2026-07-10 — alph's report, alph should re-check): open a note
