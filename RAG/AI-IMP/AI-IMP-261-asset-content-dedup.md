@@ -30,7 +30,7 @@ is still created where the import asked for one); the library
 gains no duplicate row or blob; existing duplicate assets are left
 alone (no retroactive merge in this ticket).
 
-**MIGRATION 0008 RESERVED for this ticket** (content_hash column +
+**MIGRATION 0009 RESERVED for this ticket (was 0008; the lead swapped the two unlanded reservations at the AI-IMP-266 round-1 review — 266 needed a contiguous number first and 261 was unstarted)** (content_hash column +
 backfill + index). Growing-domain rule: no CHECK constraints.
 
 ### Out of Scope
@@ -48,7 +48,7 @@ AI-IMP-014 + the C10-005 reservation work) and record where bytes
 first land and where the asset row is minted; confirm the hash can
 be computed on the staged file BEFORE promotion so a match aborts
 staging cleanly under the request-owned staging model. Then:
-sha-256 over the original bytes at import; migration 0008 adds
+sha-256 over the original bytes at import; migration 0009 adds
 `content_hash` (nullable, backfilled for existing assets by
 hashing blobs — a startup/migration-time pass; verify blob-store
 access from migration context, else backfill lazily on first
@@ -66,7 +66,7 @@ missing the match.
 ### Files to Touch
 
 (Census in review; expected:)
-- `packages/persistence/src/migrations/0008-asset-content-hash.ts`.
+- `packages/persistence/src/migrations/0009-asset-content-hash.ts`.
 - `packages/persistence/src/import/ingest.ts` / pipeline: hash +
   match + typed outcome.
 - Handlers/protocol: the deduplicated outcome surfaced to the
@@ -83,7 +83,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 
 - [ ] Pre-implementation review: pipeline census; hash point,
       backfill feasibility, provenance shape recorded here.
-- [ ] Migration 0008: content_hash + index + backfill (or the
+- [ ] Migration 0009: content_hash + index + backfill (or the
       reviewed lazy variant); migration tests.
 - [ ] Import path: match-before-promote inside the reservation
       window; typed deduplicated outcome; staging cleaned.

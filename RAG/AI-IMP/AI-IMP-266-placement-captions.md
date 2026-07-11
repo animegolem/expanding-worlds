@@ -46,8 +46,12 @@ appears in the outline, and one Mod+Z removes it.
 
 ### Design/Approach
 
-**Schema (MIGRATION 0009 — reserved here, do not renumber):**
-nullable `caption` TEXT on `placement`. No CHECK constraints.
+**Schema (MIGRATION 0008 — renumbered by the lead at the round-1
+review):** nullable `caption` TEXT on `placement`. No CHECK
+constraints. The cut reserved 0009 with 0008 held for AI-IMP-261,
+but 261 is unstarted and the migration index ends at 0007 — a gap
+or a merge fence on unrelated work were both worse than swapping
+two unlanded reservations. 266 takes 0008; 261 now holds 0009.
 
 **Command:** `SetPlacementCaption { placementId, caption:
 string | null }` (set, replace, or clear in one verb) —
@@ -82,7 +86,7 @@ an existing caption pre-fills it.
 
 ### Files to Touch
 
-- `packages/persistence/src/migrations/0009-placement-caption.ts`
+- `packages/persistence/src/migrations/0008-placement-caption.ts`
   (+ test).
 - Persistence handler (placements/appearance family) + codec +
   handler tests: set/clear/trim/ceiling/inverse round-trip.
@@ -107,7 +111,7 @@ an existing caption pre-fills it.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Migration 0009: nullable caption on placement; migration
+- [ ] Migration 0008: nullable caption on placement; migration
       test green; no CHECK constraint anywhere near it.
 - [ ] SetPlacementCaption handler + typed codec: set/replace/
       clear, trim + empty→null, length ceiling in the handler,

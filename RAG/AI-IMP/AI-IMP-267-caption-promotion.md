@@ -34,7 +34,8 @@ placement's node already HAS a note the verb is disabled with its
 reason. Done means: a captioned image promotes in two clicks, the
 note carries the text where the user routed it, the caption is
 gone, the label now shows the note title, and one Mod+Z restores
-the pre-promotion world (note gone, caption back).
+the pre-promotion world per the shipped CreateNoteAndAttach
+inverse (note detached and trashed, caption back).
 
 ### Out of Scope
 
@@ -60,20 +61,39 @@ title-routing uses the caption as the title (body empty);
 body-routing prompts for a title in the same dialogue (one input
 appears, §7.7 conflict handling applies exactly as the phantom
 materialization path). Title conflicts route through the existing
-TitleConflictDialog machinery.
+TitleConflictDialog machinery — AMENDED at the 266 round-1
+review: the promotion variant OMITS "Use Existing" (it would
+discard the promotion body when the caption clears), keeping
+choose-different/restore-open.
+
+**Disabled reasons render visibly (added at the 266 round-1
+review):** ContextMenu currently carries disabled reasons only in
+aria-labels; §8.2's disabled-with-reason shape requires the
+reason to PRINT. A small ContextMenu change rendering the
+existing reason text is in-scope here.
 
 **Setting:** `captionPromotionRouting: 'ask' | 'title' | 'body'`
-(app tier, §11.5 — the settings codec from AI-IMP-251 makes this
-one enum field; validated in the handler/codec, never a CHECK).
-Settings view gains its row under the notes/board group.
+(app tier, §11.5). CORRECTED at the 266 round-1 review: AI-IMP-251's
+codec is PROJECT-tier and explicitly excludes app tier — the
+actual home is the AppSettings codec/sanitizer
+(renderer/settings/settings.ts) and its Behavior UI group.
+Validated in the codec, never a CHECK. Settings view gains its
+row there.
 
-**The command:** composition of EXISTING commands inside ONE undo
-group (runAsUndoGroup — the AI-IMP-182/233 pattern): CreateNote
-(+title per routing) → AttachNoteToNode → SetPlacementCaption
-null. No new domain command; the §7.2 CreateNote residue-hazard
-exemption does NOT apply because the group's inverse removes the
-note it created (the AI-IMP-233 relink precedent: created-and-
-untouched notes are removed by undo).
+**The command (CORRECTED at the 266 round-1 review — Codex's
+contradiction findings #1/#2 accepted):** ONE undo group of
+`CreateNoteAndAttach → SetPlacementCaption(null)`. The ticket's
+original CreateNote → AttachNoteToNode composition cannot undo
+cleanly: CreateNote is matrix-EXEMPT and group capture skips
+exempt commands, and its inverse (TrashNote) would strand a
+trashed loose note. CreateNoteAndAttach is the existing atomic
+command with body/title support, conflict handling, and a
+matrix-ratified DetachAndTrashNote inverse. Eyes open on the
+shipped semantics: undoing a promotion detaches AND TRASHES the
+created note (title reservation holds while trashed), so
+undo-then-repromote of the same title routes through the
+existing conflict machinery — consistency with the ratified
+matrix wins over inventing new inverse semantics.
 
 ### Files to Touch
 
@@ -88,7 +108,8 @@ untouched notes are removed by undo).
 - e2e: extend caption.spec.ts — promote-as-title, promote-as-body
   (title asked), remember-choice (dialogue skipped on the next
   promote; setting visible in Settings), disabled-with-reason on
-  noted nodes, single-undo restoration (note gone, caption back),
+  noted nodes, single-undo restoration (note detached+trashed
+  per the shipped inverse, caption back),
   title-conflict path.
 - `RAG/HUMAN-TESTING.md` + `CHANGELOG.md`.
 
@@ -106,8 +127,10 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [ ] Setting `captionPromotionRouting` (ask/title/body) through
       the 251 settings codec; Settings row present and live;
       'ask' default.
-- [ ] Promotion executes as ONE undo group of existing commands;
-      Mod+Z restores note-gone + caption-back; redo replays.
+- [ ] Promotion executes as ONE undo group
+      (CreateNoteAndAttach → SetPlacementCaption null); Mod+Z
+      restores caption-back + note detached-and-trashed per the
+      shipped inverse; redo replays.
 - [ ] e2e: both routings, remember-choice, disabled-reason,
       undo round-trip, conflict path — green.
 - [ ] Full gates green with pipefail; counts read.
@@ -124,8 +147,8 @@ attached, the caption clears, and the label shows the title
 caption text in the body
 **AND** saving the choice skips the dialogue on the next promote
 and surfaces as a changeable Settings row
-**AND** one Mod+Z restores the caption and removes the created
-note
+**AND** one Mod+Z restores the caption and detaches-and-trashes
+the created note (the shipped CreateNoteAndAttach inverse)
 **AND** the verb is disabled with a visible reason on a node that
 already has a note.
 
