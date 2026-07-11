@@ -125,20 +125,42 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [ ] Migration 0010 tombstone table; no CHECK; migration test.
 - [ ] SuppressTagSync/LiftTagSuppression handlers with verified
       inverses; undo-policy entries; handler tests.
-- [ ] tagSyncPlan delta computation: hash matching, tombstone
-      exclusion, already-assigned exclusion; unit tests with two
-      real project fixtures.
-- [ ] PULL on project ready: create+assign through the gateway,
-      exempt from user undo, ONE aggregate notice; skipped
-      cleanly (with notice) when no library is designated or the
-      slot fails to open.
-- [ ] PUSH at proper close: bounded like the end-session
-      snapshot; never traps quit; skipped cleanly when the
-      library is unreachable.
-- [ ] Delete scope dialogue on the tag panel's delete verb:
-      project scope = DeleteTag + SuppressTagSync (one undo
-      group); library scope additionally deletes the library
-      copy live (disabled-with-reason when unreachable).
+- [ ] The sync planner as a TWO-HANDLE persistence function hosted
+      by the utility (which owns primary + library services) —
+      an ordinary single-context query cannot compare projects
+      (round-1 correction); PULL/PUSH/library-delete exposed as
+      NARROW TYPED utility operations, never a generic writable-
+      secondary execute door. Delta rules: hash matching,
+      tombstone exclusion, already-assigned exclusion; unit tests
+      with two real project fixtures. Migration note: 0010 lands
+      over the reserved-0009 gap by design — the runner applies
+      registered missing ids from the ledger, so a later 0009
+      still runs; the gap is documented and tested.
+- [ ] PULL on project ready: applied INSIDE the narrow utility
+      operation via direct ProjectService envelopes (never
+      crossing onCommittedAnywhere — structurally unreachable by
+      Mod+Z, per the round-1 ruling superseding the gateway+
+      exempt sketch); ONE aggregate notice on a successful delta,
+      timed after chrome mount (or via the retained toast store);
+      automatic skip is SILENT (no library / unreachable /
+      same-dir library are clean no-ops — the round-1 ruling
+      superseding this item's earlier notice-on-skip wording).
+- [ ] PUSH at proper close: serialized BEFORE the end-session
+      snapshot INSIDE the same 15s quit budget (never a second
+      budget, never two concurrent utility writers); never traps
+      quit; silent skip when unreachable.
+- [ ] Delete scope dialogue on the tag panel's delete verb (the
+      FIRST DeleteTag affordance in the app — round-1 census):
+      project scope = DeleteTag + SuppressTagSync as one
+      fail-stop undo group (DeleteTag + both suppression commands
+      become group-only); library scope runs the narrow library
+      deletion AFTER the local group — on library failure the
+      safe local state stays, ONE honest partial-failure notice
+      shows, local undo still works, and a later settle re-unions
+      (the ratified cross-project undo boundary: local undo never
+      reaches across DBs). Panel closes on success. Tombstone
+      handlers are STATE-AWARE (refuse already-suppressed/lifted;
+      exact tested inverses — never a blind INSERT OR IGNORE).
 - [ ] e2e: the alph round trip (world tag → close → library has
       it; library tag → open → announced + assigned; deleted +
       tombstoned stays gone across a sync cycle).
