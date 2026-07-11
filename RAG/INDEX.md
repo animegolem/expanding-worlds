@@ -10,7 +10,7 @@
 | Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 226 |
+| Completed | 19 | 227 |
 | **Total** | **27** | **263** |
 
 ## In Progress
@@ -104,7 +104,6 @@
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 - [[AI-IMP-266-placement-captions|IMP-266]] — planned, no epic dependency found
 - [[AI-IMP-267-caption-promotion|IMP-267]] — planned, no epic dependency found
-- [[AI-IMP-268-ci-runtime-rebalance|IMP-268]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
 
 ### Status Mismatches

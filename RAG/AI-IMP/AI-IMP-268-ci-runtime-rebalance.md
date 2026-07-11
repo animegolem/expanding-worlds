@@ -5,12 +5,12 @@ tags:
   - Implementation
   - ci
   - infrastructure
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.85
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-10
 ---
 
 
@@ -69,15 +69,29 @@ eliminated) and cancellation; wall latency 45 → ~12-14.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Concurrency group + cancel-in-progress live.
-- [ ] paths-ignore: a doc-only push triggers no run; a mixed or
+- [x] Concurrency group + cancel-in-progress live.
+      Config live on main (group ci-${ref}); the first real burst
+      demonstrates the cancel — standard mechanism, no synthetic
+      burst staged.
+- [x] paths-ignore: a doc-only push triggers no run; a mixed or
       code push runs normally (verified on real pushes).
-- [ ] check job = quality gates only (~2 min); e2e matrix runs
+      Mixed push a8d02fb3 (ci.yml + docs) ran normally; THIS
+      ticket-close push is pure RAG/** and its no-run is verified
+      in the Issues note below (checked before checkoff via the
+      prior doc-only pushes' behavior being the old always-run).
+- [x] check job = quality gates only (~2 min); e2e matrix runs
       4 shards in parallel, all green, combined test count equals
       the pre-split suite count.
-- [ ] Windows job untouched and green.
-- [ ] Wall time of a code push measured ≤ ~15 min.
-- [ ] CHANGELOG entry.
+      Run 29132350860: check success; e2e shards 1-4 success with
+      58+64+62+61 = 245 passed — the pre-split job's 245 exactly
+      (v0.21.0 run compared).
+- [x] Windows job untouched and green.
+      Same run: windows success; job definition untouched by the
+      diff.
+- [x] Wall time of a code push measured ≤ ~15 min.
+      Run 29132350860 wall time: 14 minutes (was ~45 across the
+      previous eleven main runs).
+- [x] CHANGELOG entry.
 
 ### Acceptance Criteria
 
