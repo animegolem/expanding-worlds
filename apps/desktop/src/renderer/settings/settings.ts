@@ -19,6 +19,7 @@ export type FadeDelay = number | 'never'
 export type CharmCorner = 'lower-right' | 'upper-right'
 export type TitleStripMode = 'hover' | 'always' | 'never'
 export type MenuPlacement = 'rail' | 'system'
+export type CaptionPromotionRouting = 'ask' | 'title' | 'body'
 /** §6.9 (AI-IMP-205): mouse vs trackpad wheel muscle memory. Chromium
  * cannot tell a mouse wheel from a trackpad two-finger scroll — both
  * arrive as plain wheel events — so this is a deliberate choice, not a
@@ -40,6 +41,8 @@ export interface AppSettings {
   menuPlacement: MenuPlacement
   /** §6.9 (AI-IMP-205): plain-wheel muscle memory. Default trackpad. */
   navigationScheme: NavigationScheme
+  /** §4.5 (AI-IMP-267): where caption text goes when promoted to a note. */
+  captionPromotionRouting: CaptionPromotionRouting
 }
 
 export const APP_SETTING_DEFAULTS: AppSettings = {
@@ -51,6 +54,7 @@ export const APP_SETTING_DEFAULTS: AppSettings = {
   flatCanvasColor: 'off',
   menuPlacement: 'rail',
   navigationScheme: 'trackpad',
+  captionPromotionRouting: 'ask',
 }
 
 type Listener = (settings: AppSettings) => void
@@ -88,6 +92,10 @@ function sanitize(raw: Record<string, unknown>): AppSettings {
   if (menu === 'rail' || menu === 'system') next.menuPlacement = menu
   const nav = raw['navigationScheme']
   if (nav === 'trackpad' || nav === 'mouse') next.navigationScheme = nav
+  const captionRouting = raw['captionPromotionRouting']
+  if (captionRouting === 'ask' || captionRouting === 'title' || captionRouting === 'body') {
+    next.captionPromotionRouting = captionRouting
+  }
   return next
 }
 

@@ -177,6 +177,7 @@ export interface MenuActions {
   openAppearance(): void
   openTags(): void
   editCaption(): void
+  promoteCaption(): void
   removeCaption(): void
   openNote(): void
   attachNewNote(): void
@@ -332,7 +333,16 @@ function itemMenu(subject: ItemSubject, a: MenuActions): MenuGroup[] {
         { id: 'appearance', label: 'Appearance…', run: a.openAppearance },
         { id: 'caption', label: subject.hasCaption ? 'Edit caption…' : 'Add caption…', run: a.editCaption },
         ...(subject.hasCaption
-          ? [{ id: 'remove-caption', label: 'Remove caption', run: a.removeCaption }]
+          ? [
+              {
+                id: 'promote-caption',
+                label: 'Promote to note',
+                ...(subject.hasNote
+                  ? { disabledReason: 'This item already has a note' }
+                  : { run: a.promoteCaption }),
+              },
+              { id: 'remove-caption', label: 'Remove caption', run: a.removeCaption },
+            ]
           : []),
         ...noteRows(subject.hasNote, a),
         { id: 'tags', label: 'Tags…', run: a.openTags },

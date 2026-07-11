@@ -698,6 +698,24 @@
       )}
     </div>
 
+    <div class="row" data-testid="settings-row-caption-promotion-routing">
+      <span class="row-label">Caption promotion</span>
+      {@render segmented(
+        'settings-caption-promotion-routing',
+        [
+          { value: 'ask', label: 'Ask every time' },
+          { value: 'title', label: 'Title' },
+          { value: 'body', label: 'Body' },
+        ],
+        settings.captionPromotionRouting,
+        (value) =>
+          setAppSetting(
+            'captionPromotionRouting',
+            value as AppSettings['captionPromotionRouting'],
+          ),
+      )}
+    </div>
+
     <!-- §19 first-run guide (AI-IMP-145): replaying re-opens the
          walkthrough over the live board. Closing this takeover first
          lets the guide take the whole window, exactly as on first open;

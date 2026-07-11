@@ -9,6 +9,8 @@
   import { attachFramesFurniture, type FramesFurnitureHandle } from './canvas/frames-furniture'
   import { attachCropEditor, type CropEditorHandle } from './canvas/crop-editor'
   import { attachCaptionEditor, type CaptionEditorHandle } from './canvas/caption-editor'
+  import PromoteCaptionDialog from './canvas/PromoteCaptionDialog.svelte'
+  import { onCaptionPromotion } from './canvas/caption-promotion'
   import { createDecorationsUi, type DecorationsUi } from './canvas/decorations-ui'
   import { mountCanvasHost, type CanvasHostHandle } from './canvas/host'
   import { attachImportSurfaces, type ImportSurfacesHandle } from './canvas/import-surfaces'
@@ -42,6 +44,12 @@
   // the board-object lands at, set by the empty-board context menu verb.
   let newBoardAt = $state<NewBoardAt | null>(null)
   $effect(() => onNewBoard((at) => (newBoardAt = at)))
+  // §4.5 caption promotion: imperative menu/charm verbs request the one
+  // Svelte routing surface mounted by the canvas host.
+  let promoteCaptionPlacementId = $state<string | null>(null)
+  $effect(() =>
+    onCaptionPromotion(({ placementId }) => (promoteCaptionPlacementId = placementId)),
+  )
   // §4.8 tag panel (AI-IMP-071): the one instance, store-driven.
   let tagPanel = $state<TagPanelState | null>(null)
   $effect(() => onTagPanelChanged((next) => (tagPanel = next)))
@@ -153,6 +161,14 @@
   {/if}
   {#if newBoardAt && handle}
     <NewBoardPalette {handle} at={newBoardAt} onclose={() => (newBoardAt = null)} />
+  {/if}
+  {#if promoteCaptionPlacementId && handle}
+    <PromoteCaptionDialog
+      {handle}
+      hostElement={element}
+      placementId={promoteCaptionPlacementId}
+      onclose={() => (promoteCaptionPlacementId = null)}
+    />
   {/if}
   {#if tagPanel && handle}
     <TagPanel {handle} hostElement={element} panel={tagPanel} />

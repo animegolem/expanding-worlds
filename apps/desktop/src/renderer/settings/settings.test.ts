@@ -139,3 +139,41 @@ describe('initSettings — CA-015 corrupt-file recovery toast', () => {
     expect(toasts.current[0]?.kind).toBe('error')
   })
 })
+
+describe('caption promotion routing', () => {
+  it('defaults to asking every time', async () => {
+    stubWindow({
+      appAll: () => Promise.resolve({}),
+      setApp: () => Promise.resolve({ ok: true }),
+      onAppChanged: () => () => {},
+    })
+
+    await initSettings()
+
+    expect(appSettings().captionPromotionRouting).toBe('ask')
+  })
+
+  it.each(['ask', 'title', 'body'] as const)('accepts the persisted %s routing', async (routing) => {
+    stubWindow({
+      appAll: () => Promise.resolve({ captionPromotionRouting: routing }),
+      setApp: () => Promise.resolve({ ok: true }),
+      onAppChanged: () => () => {},
+    })
+
+    await initSettings()
+
+    expect(appSettings().captionPromotionRouting).toBe(routing)
+  })
+
+  it('rejects an unknown persisted routing', async () => {
+    stubWindow({
+      appAll: () => Promise.resolve({ captionPromotionRouting: 'append' }),
+      setApp: () => Promise.resolve({ ok: true }),
+      onAppChanged: () => () => {},
+    })
+
+    await initSettings()
+
+    expect(appSettings().captionPromotionRouting).toBe('ask')
+  })
+})
