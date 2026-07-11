@@ -13,9 +13,24 @@
 
 name: CI
 
+# AI-IMP-268 runtime rebalance: doc-only pushes (RAG/ tickets,
+# design queue, logs, changelogs — about half of all pushes) skip
+# the workflow entirely; a push superseding an in-flight run
+# cancels it (cancelled ≠ red); the e2e suite is sharded 4-way
+# below. Mixed doc+code pushes still run everything.
 on:
   push:
+    paths-ignore:
+      - 'RAG/**'
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - 'RAG/**'
+      - '**.md'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -43,17 +58,42 @@ jobs:
       - name: Quality gates (build, tests minus desktop e2e, lint, spike typecheck)
         run: pnpm check:ci
 
+  # AI-IMP-268: the full desktop e2e suite was one single-worker
+  # step inside `check` — 44 of the 45 minutes every push cost.
+  # Four Playwright shards quarter the wall time; fail-fast off so
+  # one red shard never hides the others' results. Combined test
+  # count across shards equals the old single job.
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      # vitest and the utility bundle resolve workspace deps through
+      # dist — e2e needs the packages built, but not lint/units.
+      - name: Build workspace
+        run: pnpm -r build
+
       # pnpm's postinstall for electron proved unreliable on the
       # runner (install finished in 5s with no binary; every launch
-      # then failed). `pnpm rebuild` re-runs the build script with
-      # the package's deps properly linked.
+      # then failed). install.js only fetches; we extract ourselves
+      # (extract-zip exits clean after one entry — the husk).
       - name: Ensure Electron binary
         working-directory: apps/desktop
         run: |
-          # install.js on the runner "succeeds" while extracting a
-          # single file (extract-zip exits clean after one entry).
-          # Use it only to fetch the archive, then extract with
-          # unzip ourselves and write path.txt (its whole job).
           rm -rf ~/.cache/electron node_modules/electron/dist node_modules/electron/path.txt
           node node_modules/electron/install.js 2>&1 || true
           zip_path=$(ls ~/.cache/electron/*/electron-v*-linux-x64.zip | head -1)
@@ -72,9 +112,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libnss3 libgtk-3-0 libgbm1 libasound2t64 libxss1 xvfb
 
-      - name: Desktop e2e (minus perf)
+      - name: Desktop e2e shard ${{ matrix.shard }}/4 (minus perf)
         working-directory: apps/desktop
-        run: xvfb-run --auto-servernum npx playwright test
+        run: xvfb-run --auto-servernum npx playwright test --shard=${{ matrix.shard }}/4
 
   # AI-IMP-242: the first tester lives on Windows daily; until this job
   # the whole test estate ran macOS-local + Linux-CI. Units + the

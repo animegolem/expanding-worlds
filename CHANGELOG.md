@@ -10,6 +10,14 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
+## [Unreleased]
+
+### Under the hood
+- CI runtime rebalanced (AI-IMP-268): doc-only pushes skip the
+  workflow, superseded runs cancel, and the 44-minute single-worker
+  e2e step became four parallel shards — a code push gates in
+  ~12-14 minutes instead of 45. No test changed.
+
 ## [v0.21.0] — 2026-07-10 — the field-report build
 
 ### For testers
