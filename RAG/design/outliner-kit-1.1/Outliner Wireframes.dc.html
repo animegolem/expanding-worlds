@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="stylesheet" href="_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/tokens/theme.css"><style>
+html,body{margin:0;background:#0e0f11;font-family:system-ui,sans-serif}
+a{color:#4a9df0}a:hover{color:#7db8f5}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(255,255,255,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#e8e8e8;color:#111;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#e8e8e8}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.12);color:#e8e8e8;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(255,255,255,.55)}
+.dv-opt:target .dv-oid{background:#4a9df0;color:#0e0f11}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(255,255,255,.5)}
+.tui{width:640px;background:#17191d;border:1px solid rgba(255,255,255,.14);border-radius:9px;box-shadow:0 6px 22px rgba(0,0,0,.5);overflow:hidden;font:12px/1.75 ui-monospace,Menlo,Consolas,monospace;color:#c8cdd4}
+.tbar{display:flex;flex-wrap:nowrap;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.1);color:#8b929c;white-space:nowrap;overflow:hidden}
+.tbar>*{flex:none}
+.tbar>.grow{flex:1 1 auto}
+.tbar b{color:#e8e8e8;font-weight:600}
+.chip{padding:0 8px;border:1px solid rgba(255,255,255,.16);border-radius:999px;color:#8b929c;line-height:1.5}
+.chip.on{background:#4a9df0;border-color:#4a9df0;color:#0e0f11}
+.trow{display:flex;align-items:baseline;gap:0;padding:0 12px;white-space:pre}
+.trow:hover{background:rgba(255,255,255,.05)}
+.trow.sel{background:rgba(74,157,240,.16);outline:1px solid #4a9df0;outline-offset:-1px}
+.dim{color:#5c636d}.ink{color:#e8e8e8}.acc{color:#4a9df0}.org{color:#e6b34a}.tag{color:#8b929c}
+.badge{color:#e6b34a}
+.grow{flex:1 1 auto;min-width:0}
+.status{display:flex;gap:14px;padding:6px 12px;border-top:1px solid rgba(255,255,255,.1);color:#5c636d}
+.th{display:flex;padding:2px 12px;color:#5c636d;border-bottom:1px solid rgba(255,255,255,.1);white-space:pre}
+.pane{border-right:1px solid rgba(255,255,255,.1)}
+.thumb{background:repeating-linear-gradient(45deg,#22252b 0 6px,#1a1d22 6px 12px);border:1px solid rgba(255,255,255,.12);border-radius:3px}
+</style></helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">The yazi hybrid — <a class="dv-oid" href="#1f">1f</a> org tree as master + <a class="dv-oid" href="#1b">1b</a> cursor-follow preview · desktop and iPad</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>desktop — tree master left, preview follows cursor; board rows preview as filmstrip</div>
+<div class="dv-card tui" style="width:780px">
+  <div class="tbar"><b>▤ outline</b><span class="chip on">all</span><span class="chip">unplaced</span><span class="chip">orphans</span><span class="chip">loose</span><span class="grow"></span><span class="dim">⌕ filter…</span><span class="chip">⊙ lens</span></div>
+  <div style="display:flex;min-height:260px">
+    <div class="pane" style="flex:1 1 55%;padding:8px 0">
+      <div class="trow"><span class="acc">▾ </span><span class="ink" style="font-weight:600">home</span><span class="grow"></span><span class="dim">12</span></div>
+      <div class="trow sel"><span class="dim">  </span><span class="acc">▾ </span><span class="ink" style="font-weight:600">the northern reach</span><span class="grow"></span><span class="tag">#region </span><span class="dim">8</span></div>
+      <div class="trow"><span class="dim">      ◯ yorren</span><span class="grow"></span><span class="tag">#chieftain </span></div>
+      <div class="trow"><span class="dim">      ▣ ridge-study-042</span><span class="grow"></span><span class="org">·orphan </span></div>
+      <div class="trow"><span class="dim">  </span><span class="acc">▸ </span><span class="ink" style="font-weight:600">the warren</span><span class="grow"></span><span class="dim">5</span></div>
+      <div class="trow"><span class="dim">  </span><span class="acc">▸ </span><span class="ink" style="font-weight:600">the southern march</span><span class="grow"></span><span class="dim">3</span></div>
+      <div class="trow"><span class="dim">  </span><span class="acc">↗ home</span><span class="dim"> — alias</span></div>
+      <div class="trow" style="margin-top:8px"><span class="acc">▸ </span><span class="ink" style="font-weight:600">loose</span><span class="grow"></span><span class="org">7 </span></div>
+    </div>
+    <div style="flex:1 1 45%;padding:12px 14px">
+      <div class="dim" style="margin-bottom:6px">⬚ board · 8 children · 2 boards deep</div>
+      <div class="ink" style="font-weight:600;margin-bottom:8px">the northern reach</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        <div class="thumb" style="width:64px;height:48px"></div>
+        <div class="thumb" style="width:64px;height:48px"></div>
+        <div class="thumb" style="width:64px;height:48px"></div>
+        <div class="thumb" style="width:64px;height:48px"></div>
+        <div class="thumb" style="width:64px;height:48px"></div>
+        <div class="dim" style="align-self:center">+3</div>
+      </div>
+      <div class="dim" style="white-space:normal;line-height:1.5">frost country above the salt roads. the warren sits beneath the ridge…</div>
+      <div class="tag">#region</div>
+      <div class="dim">placed once · home</div>
+    </div>
+  </div>
+  <div class="status"><span>tab folds · ↵ dive · ␣ place · esc</span><span class="grow"></span><span>preview follows the cursor — never a click cost</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>ipad landscape — same shape, 44px rows, verbs become tap targets in the preview</div>
+<div class="dv-card tui" style="width:780px">
+  <div class="tbar" style="padding:10px 14px"><b>▤ outline</b><span class="chip on" style="line-height:2">all</span><span class="chip" style="line-height:2">unplaced</span><span class="chip" style="line-height:2">loose</span><span class="grow"></span><span class="chip" style="line-height:2">⌕</span><span class="chip" style="line-height:2">✕</span></div>
+  <div style="display:flex;min-height:280px">
+    <div class="pane" style="flex:1 1 55%;padding:6px 0">
+      <div class="trow" style="line-height:3.4"><span class="acc">▾ </span><span class="ink" style="font-weight:600">home</span><span class="grow"></span><span class="dim">12</span></div>
+      <div class="trow sel" style="line-height:3.4"><span class="dim">  </span><span class="acc">▾ </span><span class="ink" style="font-weight:600">the northern reach</span><span class="grow"></span><span class="dim">8</span></div>
+      <div class="trow" style="line-height:3.4"><span class="dim">      ◯ yorren</span><span class="grow"></span><span class="tag">#chieftain </span></div>
+      <div class="trow" style="line-height:3.4"><span class="dim">  </span><span class="acc">▸ </span><span class="ink" style="font-weight:600">the warren</span><span class="grow"></span><span class="dim">5</span></div>
+      <div class="trow" style="line-height:3.4"><span class="acc">▸ </span><span class="ink" style="font-weight:600">loose</span><span class="grow"></span><span class="org">7 </span></div>
+    </div>
+    <div style="flex:1 1 45%;padding:14px">
+      <div class="thumb" style="width:100%;height:110px;margin-bottom:10px"></div>
+      <div class="ink" style="font-weight:600">the northern reach</div>
+      <div class="tag" style="margin-bottom:10px">#region · 8 children</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span class="chip" style="line-height:2.6;padding:0 14px;border-color:#4a9df0;color:#4a9df0">↵ dive in</span>
+        <span class="chip" style="line-height:2.6;padding:0 14px">⌖ fly to</span>
+        <span class="chip" style="line-height:2.6;padding:0 14px">✎ note</span>
+        <span class="chip" style="line-height:2.6;padding:0 14px"># tag</span>
+      </div>
+    </div>
+  </div>
+  <div class="status"><span>tap fold glyph folds · tap row previews · double-tap dives · drag row out places</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>ipad portrait — tree full-width, preview rises as a bottom sheet on tap</div>
+<div class="dv-card tui" style="width:420px">
+  <div class="tbar" style="padding:10px 14px"><b>▤ outline</b><span class="grow"></span><span class="chip" style="line-height:2">unplaced</span><span class="chip" style="line-height:2">⌕</span></div>
+  <div style="padding:6px 0">
+    <div class="trow" style="line-height:3.2"><span class="acc">▾ </span><span class="ink" style="font-weight:600">home</span><span class="grow"></span><span class="dim">12</span></div>
+    <div class="trow sel" style="line-height:3.2"><span class="dim">  </span><span class="acc">▾ </span><span class="ink" style="font-weight:600">the northern reach</span><span class="grow"></span><span class="dim">8</span></div>
+    <div class="trow" style="line-height:3.2"><span class="dim">      ◯ yorren</span><span class="grow"></span><span class="tag">#chieftain </span></div>
+    <div class="trow" style="line-height:3.2"><span class="dim">  </span><span class="acc">▸ </span><span class="ink" style="font-weight:600">the warren</span><span class="grow"></span><span class="dim">5</span></div>
+    <div class="trow" style="line-height:3.2"><span class="acc">▸ </span><span class="ink" style="font-weight:600">loose</span><span class="grow"></span><span class="org">7 </span></div>
+  </div>
+  <div style="border-top:1px solid rgba(255,255,255,.18);background:#1b1e23;border-radius:9px 9px 0 0;padding:10px 14px 14px;box-shadow:0 -6px 22px rgba(0,0,0,.4)">
+    <div style="width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:0 auto 10px"></div>
+    <div style="display:flex;gap:12px">
+      <div class="thumb" style="width:84px;height:64px;flex:none"></div>
+      <div style="min-width:0">
+        <div class="ink" style="font-weight:600">the northern reach</div>
+        <div class="tag">#region · 8 children</div>
+        <div class="dim" style="white-space:normal;line-height:1.5">frost country above the salt roads…</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <span class="chip" style="line-height:2.6;padding:0 14px;border-color:#4a9df0;color:#4a9df0">↵ dive in</span>
+      <span class="chip" style="line-height:2.6;padding:0 14px">⌖ fly</span>
+      <span class="chip" style="line-height:2.6;padding:0 14px">✎ note</span>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "hi-fi <a class="dv-oid" href="#2a">2a</a> with real EW chrome" · "show <a class="dv-oid" href="#2b">2b</a>'s drag-to-place moment" · "loose bin treatment options"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Outliner ▤ — TUI directions (§14.1: tree, alias rows, loose bin, orphan/loose badges, filter chips, lens)</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>classic tree — one pane, box-drawing guides, status line teaches keys</div>
+<div class="dv-card tui">
+  <div class="tbar"><b>▤ outline</b><span class="chip on">all</span><span class="chip">unplaced</span><span class="chip">orphans</span><span class="chip">loose</span><span class="chip">disconnected</span><span class="grow"></span><span class="dim">⌕ filter…</span></div>
+  <div style="padding:6px 0">
+    <div class="trow"><span class="ink">▾ ⌂ home</span><span class="dim">                                        12</span></div>
+    <div class="trow sel"><span class="dim">├ </span><span class="ink">▾ ⬚ the northern reach</span><span class="dim">                          8</span></div>
+    <div class="trow"><span class="dim">│  ├ </span><span class="ink">◯ yorren</span><span class="tag">  #chieftain #life-debt</span></div>
+    <div class="trow"><span class="dim">│  ├ </span><span class="ink">▸ ⬚ the warren</span><span class="dim">                              5</span></div>
+    <div class="trow"><span class="dim">│  ├ </span><span class="ink">▣ ridge-study-042</span><span class="badge">  ·orphan</span></div>
+    <div class="trow"><span class="dim">│  └ </span><span class="acc">↗ home</span><span class="dim">  — already open above · enter flies</span></div>
+    <div class="trow"><span class="dim">├ </span><span class="ink">▸ ⬚ the southern march</span><span class="dim">                          3</span></div>
+    <div class="trow"><span class="dim">└ </span><span class="ink">▸ ⬚ salt roads</span><span class="dim">                                  2</span></div>
+    <div class="trow"><span class="ink">▾ ⊘ loose</span><span class="dim">  no place yet                          7</span></div>
+    <div class="trow"><span class="dim">  ├ </span><span class="ink">◯ the pale king</span><span class="badge">  ·loose</span><span class="tag">  #ruler</span></div>
+    <div class="trow"><span class="dim">  └ </span><span class="ink">▣ gate-sketch-011</span><span class="badge">  ·loose ·orphan</span></div>
+  </div>
+  <div class="status"><span>42 items · 7 loose · 3 orphans</span><span class="grow"></span><span>↵ dive · ␣ place · t tag · esc close</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>miller columns — ranger-style, depth as panes, preview column</div>
+<div class="dv-card tui" style="width:720px">
+  <div class="tbar"><b>▤ outline</b><span class="dim">home / the northern reach</span><span class="grow"></span><span class="chip">unplaced</span><span class="chip">lens</span></div>
+  <div style="display:flex;min-height:220px">
+    <div class="pane" style="flex:0 0 180px;padding:6px 0">
+      <div class="trow"><span class="ink">⌂ home</span></div>
+      <div class="trow sel"><span class="ink">⬚ northern reach</span></div>
+      <div class="trow"><span class="ink">⬚ southern march</span></div>
+      <div class="trow"><span class="ink">⬚ salt roads</span></div>
+      <div class="trow"><span class="dim">⊘ loose (7)</span></div>
+    </div>
+    <div class="pane" style="flex:0 0 230px;padding:6px 0">
+      <div class="trow sel"><span class="ink">◯ yorren</span></div>
+      <div class="trow"><span class="ink">⬚ the warren</span><span class="dim"> ▸</span></div>
+      <div class="trow"><span class="ink">▣ ridge-study-042</span><span class="badge"> ·o</span></div>
+      <div class="trow"><span class="acc">↗ home</span></div>
+      <div class="trow"><span class="ink">▣ frost-palette</span></div>
+    </div>
+    <div style="flex:1;padding:10px 12px">
+      <div class="thumb" style="width:120px;height:90px;margin-bottom:8px"></div>
+      <div class="ink">yorren</div>
+      <div class="dim" style="white-space:normal;line-height:1.5">chieftain of the warren beneath the northern reach. owes a life-debt he resents…</div>
+      <div class="tag">#chieftain #life-debt</div>
+      <div class="dim">2 places · northern reach, war table</div>
+    </div>
+  </div>
+  <div class="status"><span>‹ › walk · ↵ dive · ␣ place here</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>fuzzy prompt — fzf/telescope, filter-first, tree is the result set</div>
+<div class="dv-card tui">
+  <div style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.1)"><span class="acc">⌕ </span><span class="ink">war</span><span class="dim">▏</span><span class="dim">   12/42 · tab: unplaced ▸ orphans ▸ all</span></div>
+  <div style="display:flex">
+    <div style="flex:1;padding:6px 0">
+      <div class="trow sel"><span class="ink">⬚ the </span><span class="acc">war</span><span class="ink">ren</span><span class="dim">  home / northern reach</span></div>
+      <div class="trow"><span class="ink">◯ </span><span class="acc">war</span><span class="ink"> table</span><span class="dim">  home</span></div>
+      <div class="trow"><span class="ink">▣ </span><span class="acc">war</span><span class="ink">g-sketch-03</span><span class="badge">  ·loose</span></div>
+      <div class="trow"><span class="ink">◯ d</span><span class="acc">war</span><span class="ink">f-envoy</span><span class="tag">  #envoy</span></div>
+      <div class="trow"><span class="dim">…</span></div>
+    </div>
+    <div class="pane" style="flex:0 0 200px;border-right:0;border-left:1px solid rgba(255,255,255,.1);padding:10px 12px">
+      <div class="thumb" style="width:110px;height:80px;margin-bottom:8px"></div>
+      <div class="ink">the warren</div>
+      <div class="dim">board · 5 children</div>
+      <div class="tag">#warren</div>
+    </div>
+  </div>
+  <div class="status"><span>↵ dive · ⌥↵ fly to place · ␣ place · esc</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>data table — htop for the world, sortable columns, library-as-ledger</div>
+<div class="dv-card tui" style="width:700px">
+  <div class="tbar"><b>▤ outline</b><span class="grow"></span><span class="chip on">all</span><span class="chip">unplaced</span><span class="dim">sort: places ▾</span></div>
+  <div class="th"><span>  ITEM                    KIND    TAGS              PLACES  WHERE</span></div>
+  <div style="padding:4px 0">
+    <div class="trow"><span class="ink">⌂ home                  </span><span class="dim">board   </span><span class="tag">—                 </span><span class="ink">—       </span><span class="dim">root</span></div>
+    <div class="trow sel"><span class="ink">◯ yorren                </span><span class="dim">pin     </span><span class="tag">#chieftain +1     </span><span class="ink">2       </span><span class="dim">northern reach…</span></div>
+    <div class="trow"><span class="ink">⬚ the warren            </span><span class="dim">board   </span><span class="tag">#warren           </span><span class="ink">1       </span><span class="dim">northern reach</span></div>
+    <div class="trow"><span class="ink">▣ ridge-study-042       </span><span class="dim">image   </span><span class="org">·orphan           </span><span class="ink">1       </span><span class="dim">northern reach</span></div>
+    <div class="trow"><span class="ink">◯ the pale king         </span><span class="dim">pin     </span><span class="tag">#ruler ·loose     </span><span class="org">0       </span><span class="dim">—</span></div>
+    <div class="trow"><span class="ink">▣ gate-sketch-011       </span><span class="dim">image   </span><span class="org">·loose ·orphan    </span><span class="org">0       </span><span class="dim">—</span></div>
+  </div>
+  <div class="status"><span>42 items</span><span class="grow"></span><span>click header sorts · 0-places = the loose bin</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="1e">
+<div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>dual pane — commander layout: world tree ⇄ loose bin, verbs on a key bar</div>
+<div class="dv-card tui" style="width:720px">
+  <div class="tbar"><b>▤ outline</b><span class="grow"></span><span class="dim">tab swaps panes</span></div>
+  <div style="display:flex;min-height:200px">
+    <div class="pane" style="flex:1;padding:6px 0">
+      <div class="trow"><span class="dim">world</span></div>
+      <div class="trow"><span class="ink">▾ ⌂ home</span></div>
+      <div class="trow sel"><span class="dim">├ </span><span class="ink">▾ ⬚ northern reach</span></div>
+      <div class="trow"><span class="dim">│  ├ </span><span class="ink">◯ yorren</span></div>
+      <div class="trow"><span class="dim">│  └ </span><span class="ink">▸ ⬚ the warren</span></div>
+      <div class="trow"><span class="dim">└ </span><span class="ink">▸ ⬚ southern march</span></div>
+    </div>
+    <div style="flex:1;padding:6px 0">
+      <div class="trow"><span class="dim">loose · 7 — drag right→left to place</span></div>
+      <div class="trow"><span class="ink">◯ the pale king</span><span class="tag">  #ruler</span></div>
+      <div class="trow"><span class="ink">▣ gate-sketch-011</span><span class="badge">  ·orphan</span></div>
+      <div class="trow"><span class="ink">▣ moth-banner</span></div>
+      <div class="trow"><span class="ink">◯ salt priest</span></div>
+    </div>
+  </div>
+  <div class="status" style="gap:8px"><span class="chip">3 fly</span><span class="chip">4 note</span><span class="chip">5 place</span><span class="chip">7 new board</span><span class="chip">8 trash</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="1f">
+<div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>org outliner — folding document, headings fence content, tags right-aligned</div>
+<div class="dv-card tui">
+  <div class="tbar"><b>▤ outline</b><span class="dim">/ home</span><span class="grow"></span><span class="chip">⊙ lens</span></div>
+  <div style="padding:8px 0">
+    <div class="trow"><span class="acc">▾ </span><span class="ink" style="font-weight:600">home</span></div>
+    <div class="trow"><span class="dim">  </span><span class="acc">▾ </span><span class="ink" style="font-weight:600">the northern reach</span><span class="grow"></span><span class="tag">#region </span><span class="dim">8</span></div>
+    <div class="trow"><span class="dim">      ◯ yorren</span><span class="grow"></span><span class="tag">#chieftain #life-debt </span></div>
+    <div class="trow"><span class="dim">      ▣ ridge-study-042</span><span class="grow"></span><span class="org">·orphan </span></div>
+    <div class="trow"><span class="dim">  </span><span class="acc">▸ </span><span class="ink" style="font-weight:600">the warren</span><span class="grow"></span><span class="dim">5 folded…</span></div>
+    <div class="trow"><span class="dim">  </span><span class="acc">▸ </span><span class="ink" style="font-weight:600">the southern march</span><span class="grow"></span><span class="dim">3</span></div>
+    <div class="trow"><span class="dim">  </span><span class="acc">↗ </span><span class="acc">home</span><span class="dim"> — alias, flies to the row above</span></div>
+    <div class="trow" style="margin-top:8px"><span class="acc">▸ </span><span class="ink" style="font-weight:600">loose</span><span class="grow"></span><span class="org">7 without a place </span></div>
+  </div>
+  <div class="status"><span>tab folds · ⇧tab folds all · ↵ dive · drag row → board places</span></div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "riff on <a class="dv-oid" href="#1a">1a</a> with <a class="dv-oid" href="#1c">1c</a>'s filter-first prompt" · "show <a class="dv-oid" href="#1b">1b</a> at full window width" · "new directions"</p>
+</section>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="stylesheet" href="_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/tokens/theme.css">
+<link rel="stylesheet" href="_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/tokens/chrome.css">
+<link rel="stylesheet" href="_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/tokens/typography.css">
+<link rel="stylesheet" href="_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/styles.css">
+<script src="_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/_ds_bundle.js"></script>
+<style>
+html,body{margin:0;height:100%;background:#17191d;overflow:hidden}
+a{color:var(--ew-accent)}a:hover{color:var(--ew-accent-soft)}
+</style>
+</helmet>
+
+<div data-screen-label="Outline takeover" style="position:relative;height:100vh;font-family:var(--ew-font-ui);color:var(--ew-text);background:var(--ew-surface-solid);background-image:linear-gradient(var(--ew-control-tint) 1px, transparent 1px),linear-gradient(90deg, var(--ew-control-tint) 1px, transparent 1px);background-size:44px 44px">
+
+  <div style="position:absolute;inset:0;background:var(--ew-scrim)"></div>
+
+  <div style="position:absolute;inset:16px;display:flex;flex-direction:column;background:var(--ew-surface-overlay);border:1px solid var(--ew-border-panel);border-radius:9px;box-shadow:0 6px 22px var(--ew-shadow);overflow:hidden">
+
+    <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:0.6rem;padding:0.55rem 0.9rem;border-bottom:1px solid var(--ew-border);white-space:nowrap;overflow:hidden">
+      <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.ModeSwitcher" mode="outline" hint-size="220px,30px"></x-import>
+      <span style="width:1px;height:1.2rem;background:var(--ew-border);flex:none"></span>
+      <sc-for list="{{ facets }}" as="f" hint-placeholder-count="5">
+        <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.FacetChip" label="{{ f.label }}" on="{{ f.on }}" on-toggle="{{ f.toggle }}" hint-size="64px,24px"></x-import>
+      </sc-for>
+      <span style="flex:1 1 auto"></span>
+      <sc-if value="{{ lensOn }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.FacetChip" label="{{ lensLabel }}" on="{{ true }}" tag="{{ true }}" on-clear="{{ clearLens }}" hint-size="110px,24px"></x-import>
+      </sc-if>
+      <div style="flex:none;width:200px">
+        <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.TextInput" value="{{ query }}" on-change="{{ setQuery }}" pill="{{ true }}" prefix="⌕" placeholder="filter…" style="{{ inputStyle }}" hint-size="200px,28px"></x-import>
+      </div>
+      <button type="button" onClick="{{ closeBeat }}" title="Close — esc" style="flex:none;width:1.9rem;height:1.9rem;display:grid;place-items:center;background:transparent;border:1px solid var(--ew-border-control);border-radius:5px;color:var(--ew-text-muted);font-size:0.8rem;cursor:pointer" style-hover="background:var(--ew-surface-hover);color:var(--ew-text)">✕</button>
+    </div>
+
+    <div style="display:flex;flex:1;min-height:0">
+
+      <div class="tree" style="flex:1 1 58%;min-width:0;overflow-y:auto;padding:0.5rem 0;border-right:1px solid var(--ew-border)">
+        <sc-for list="{{ rows }}" as="row" hint-placeholder-count="10">
+          <div onClick="{{ row.select }}" onDoubleClick="{{ row.dive }}" onContextMenu="{{ row.menu }}" style="display:flex;align-items:center;gap:0.45rem;padding:{{ rowPadY }} 0.9rem;cursor:default;background:{{ row.bg }};outline:{{ row.outline }};outline-offset:-2px;opacity:{{ row.dim }}" style-hover="background:var(--ew-surface-hover)">
+            <span style="flex:none;width:{{ row.pad }}"></span>
+            <span onClick="{{ row.fold }}" title="{{ row.foldTip }}" style="flex:none;width:1rem;text-align:center;color:var(--ew-accent);font-size:0.7rem;cursor:pointer">{{ row.foldGlyph }}</span>
+            <span style="flex:none;width:1.1rem;text-align:center;color:{{ row.glyphColor }};font-size:0.85rem">{{ row.glyph }}</span>
+            <span style="font-size:0.8rem;font-weight:{{ row.weight }};color:{{ row.titleColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.title }}</span>
+            <span style="flex:none;font-family:var(--ew-font-mono);font-size:var(--ew-text-chip);color:var(--ew-warn)">{{ row.badges }}</span>
+            <sc-for list="{{ row.tags }}" as="t" hint-placeholder-count="0">
+              <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.TagChip" tag="{{ t }}" on="dark" on-click="{{ row.lensTag }}" hint-size="52px,18px"></x-import>
+            </sc-for>
+            <span style="flex:1 1 auto"></span>
+            <span style="flex:none;font-family:var(--ew-font-mono);font-size:var(--ew-text-chip);color:var(--ew-text-subtle)">{{ row.meta }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="flex:1 1 42%;min-width:0;overflow-y:auto;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:0.7rem">
+        <div style="font-family:var(--ew-font-mono);font-size:var(--ew-text-chip);color:var(--ew-text-subtle)">{{ p.kindLine }}</div>
+        <sc-if value="{{ p.hasImg }}" hint-placeholder-val="{{ false }}">
+          <div role="img" aria-label="{{ p.title }}" style="width:100%;height:200px;background-image:url('{{ p.img }}');background-size:cover;background-position:center;border-radius:3px;box-shadow:0 8px 22px rgba(0,0,0,.3)"></div>
+        </sc-if>
+        <sc-if value="{{ p.isBoard }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem">
+            <sc-for list="{{ p.film }}" as="s" hint-placeholder-count="0">
+              <div style="width:72px;height:54px;background-image:url('{{ s }}');background-size:cover;background-position:center;border-radius:3px;border:1px solid var(--ew-border-strong)"></div>
+            </sc-for>
+            <span style="align-self:center;font-family:var(--ew-font-mono);font-size:var(--ew-text-chip);color:var(--ew-text-subtle)">{{ p.filmMore }}</span>
+          </div>
+        </sc-if>
+        <div style="font-size:0.95rem;font-weight:600">{{ p.title }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.35rem">
+          <sc-for list="{{ p.tags }}" as="t" hint-placeholder-count="2">
+            <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.TagChip" tag="{{ t }}" on="dark" on-click="{{ p.lensTag }}" hint-size="60px,20px"></x-import>
+          </sc-for>
+        </div>
+        <sc-if value="{{ p.hasNote }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:var(--ew-text-toast);line-height:1.55;color:var(--ew-text-muted)">{{ p.note }}</div>
+        </sc-if>
+        <sc-if value="{{ p.noNote }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:0.45rem;align-items:center">
+            <div style="flex:1 1 auto">
+              <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.TextInput" value="{{ noteDraft }}" on-change="{{ setNoteDraft }}" placeholder="add a note…" style="{{ inputStyle }}" hint-size="100%,28px"></x-import>
+            </div>
+            <sc-if value="{{ noteDraftReady }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.Button" variant="accent" on-click="{{ attachNote }}" hint-size="70px,28px">↵ attach</x-import>
+            </sc-if>
+          </div>
+        </sc-if>
+        <div style="font-family:var(--ew-font-mono);font-size:var(--ew-text-chip);color:var(--ew-text-subtle)">{{ p.placeLine }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.45rem;margin-top:auto;padding-top:0.6rem">
+          <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.Button" variant="accent" on-click="{{ p.dive }}" hint-size="90px,30px">{{ p.primaryVerb }}</x-import>
+          <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.Button" on-click="{{ p.fly }}" disabled="{{ p.flyDisabled }}" hint-size="80px,30px">⌖ fly to</x-import>
+          <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.Button" on-click="{{ p.openNote }}" hint-size="90px,30px">✎ open note</x-import>
+        </div>
+      </div>
+
+    </div>
+
+    <sc-if value="{{ teachingLine }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:1rem;padding:0.4rem 0.9rem;border-top:1px solid var(--ew-border);font-family:var(--ew-font-mono);font-size:var(--ew-text-chip);color:var(--ew-text-subtle);white-space:nowrap;overflow:hidden">
+        <span>{{ countLine }}</span>
+        <span style="flex:1 1 auto"></span>
+        <span>↵ dive · ␣ place · tab folds · esc returns</span>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <sc-if value="{{ menuOn }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMenu }}" onContextMenu="{{ closeMenu }}" style="position:absolute;inset:0;z-index:9"></div>
+    <div style="position:absolute;left:{{ menuX }};top:{{ menuY }};z-index:10">
+      <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.MenuPopover" rows="{{ menuRows }}" hint-size="210px,180px"></x-import>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;right:24px;bottom:24px">
+      <x-import component-from-global-scope="ExpandingWorldsDesignSystem_5b63d5.Toast" hint-size="200px,36px">{{ toast }}</x-import>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;touchMode&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Layout&quot; },
+  &quot;teachingLine&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Layout&quot; }
+}">
+const IMG = {
+  dawn: 'assets/seed/01-aster-vale-dawn.png',
+  dusk: 'assets/seed/02-aster-vale-dusk.png',
+  stripes: 'assets/seed/04-juniper-brandt-stripes.png',
+  checker: 'assets/seed/05-juniper-brandt-checker.png',
+  glow: 'assets/seed/07-milo-ferren-glow.png',
+  slant: 'assets/seed/08-milo-ferren-slant.png',
+};
+
+const TREE = [
+  { id: 'home', kind: 'board', title: 'home', glyph: '⌂', count: 12, film: [IMG.dawn, IMG.glow, IMG.slant, IMG.checker], filmTotal: 12, places: [], note: 'the root board. every path starts here.', children: [
+    { id: 'reach', kind: 'board', title: 'the northern reach', glyph: '⬚', count: 8, tags: ['region'], img: IMG.dawn, film: [IMG.dawn, IMG.stripes, IMG.dusk, IMG.checker], filmTotal: 8, places: ['home'], note: 'frost country above the salt roads. the warren sits beneath the ridge.', children: [
+      { id: 'yorren', kind: 'pin', title: 'yorren', glyph: '◯', tags: ['chieftain', 'life-debt'], img: IMG.stripes, places: ['the northern reach', 'war table'], note: 'chieftain of the warren beneath the northern reach. owes a life-debt he resents.' },
+      { id: 'warren', kind: 'board', title: 'the warren', glyph: '⬚', count: 5, tags: ['warren'], img: IMG.dusk, film: [IMG.dusk, IMG.glow, IMG.checker], filmTotal: 5, places: ['the northern reach'], note: 'tunnels and dens, three levels deep.', children: [
+        { id: 'denmap', kind: 'image', title: 'den-map-sketch', glyph: '▣', img: IMG.glow, orphan: true, places: ['the warren'] },
+        { id: 'hearth', kind: 'pin', title: 'the low hearth', glyph: '◯', tags: ['meeting-place'], img: IMG.checker, places: ['the warren'], note: 'where the warren argues.' },
+      ] },
+      { id: 'ridge', kind: 'image', title: 'ridge-study-042', glyph: '▣', img: IMG.checker, orphan: true, places: ['the northern reach'] },
+      { id: 'alias-home', kind: 'alias', title: 'home', glyph: '↗', target: 'home' },
+    ] },
+    { id: 'march', kind: 'board', title: 'the southern march', glyph: '⬚', count: 3, img: IMG.glow, film: [IMG.glow, IMG.slant], filmTotal: 3, places: ['home'], note: 'dry hills, watchtowers, the old road.', children: [
+      { id: 'tower', kind: 'image', title: 'watchtower-ref', glyph: '▣', img: IMG.slant, orphan: true, places: ['the southern march'] },
+    ] },
+    { id: 'salt', kind: 'board', title: 'salt roads', glyph: '⬚', count: 2, img: IMG.slant, film: [IMG.slant, IMG.dawn], filmTotal: 2, places: ['home'], note: 'the caravan routes between reach and march.', children: [] },
+  ] },
+  { id: 'loose', kind: 'bin', title: 'loose', glyph: '⊘', count: 3, note: 'no place yet. keeping unplaced material here is a workflow, not an error.', children: [
+    { id: 'paleking', kind: 'pin', title: 'the pale king', glyph: '◯', tags: ['ruler'], loose: true, note: 'spoken of in three notes, drawn in none.' },
+    { id: 'gate', kind: 'image', title: 'gate-sketch-011', glyph: '▣', img: IMG.slant, loose: true, orphan: true },
+    { id: 'moth', kind: 'image', title: 'moth-banner', glyph: '▣', img: IMG.dusk, loose: true, orphan: true },
+  ] },
+];
+
+class Component extends DCLogic {
+  state = {
+    selected: 'reach',
+    folded: { warren: true, march: true, salt: true, loose: false },
+    filter: 'all',
+    query: '',
+    lensTag: null,
+    toast: '',
+    menu: null,
+    noteDraft: '',
+  };
+
+  find(id, list = TREE) {
+    for (const n of list) {
+      if (n.id === id) return n;
+      if (n.children) { const hit = this.find(id, n.children); if (hit) return hit; }
+    }
+    return null;
+  }
+
+  matches(n) {
+    const f = this.state.filter;
+    const q = this.state.query.trim().toLowerCase();
+    if (q && !n.title.toLowerCase().includes(q)) return false;
+    if (f === 'unplaced' || f === 'loose') return !!n.loose;
+    if (f === 'orphans') return !!n.orphan;
+    if (f === 'disconnected') return !!n.loose || !!n.orphan;
+    if (f === 'untagged') return (n.kind === 'pin' || n.kind === 'image') && (n.tags || []).length === 0;
+    return true;
+  }
+
+  flatten() {
+    const out = [];
+    const flat = this.state.filter !== 'all' || this.state.query.trim() !== '';
+    const walk = (list, depth, path) => {
+      for (const n of list) {
+        const hit = this.matches(n);
+        if (flat) {
+          if (hit && n.kind !== 'alias' && n.kind !== 'bin' && !(n.kind === 'board' && this.state.query.trim() === '')) {
+            out.push({ node: n, depth: 0, path });
+          }
+          if (n.children) walk(n.children, 0, path.concat(n.title));
+        } else {
+          out.push({ node: n, depth, path });
+          if (n.children && !this.state.folded[n.id]) walk(n.children, depth + 1, path.concat(n.title));
+        }
+      }
+    };
+    walk(TREE, 0, []);
+    return out;
+  }
+
+  buildMenuRows() {
+    const m = this.state.menu;
+    if (!m) return [];
+    const n = this.find(m.id);
+    if (!n) return [];
+    const close = (fn) => () => { this.setState({ menu: null }); fn(); };
+    const isBoard = n.kind === 'board' || n.kind === 'bin';
+    const places = n.places || [];
+    const rows = [];
+    if (isBoard) rows.push({ label: 'dive in', shortcut: '↵', onClick: close(() => this.beat('diving into ' + n.title)) });
+    else rows.push({ label: 'place on board', shortcut: '␣', onClick: close(() => this.beat('place mode — drop ' + n.title + ' on the board')) });
+    if (places.length > 0) rows.push({ label: 'fly to place', shortcut: '⌥↵', onClick: close(() => this.beat('flying to ' + places[0])) });
+    rows.push({ divider: true });
+    if (n.note) rows.push({ label: 'open note', onClick: close(() => this.beat('opening note: ' + n.title)) });
+    else rows.push({ label: 'add a note…', onClick: close(() => this.beat('note panel opens — creates and attaches')) });
+    rows.push({ label: 'tag…', shortcut: '#', onClick: close(() => this.beat('tag field opens with completion')) });
+    if (n.kind !== 'bin') {
+      rows.push({ divider: true });
+      rows.push({ label: 'move to trash', danger: true, onClick: close(() => this.beat('moved to trash — restores from the trash view')) });
+    }
+    return rows;
+  }
+
+  beat(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._tt);
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const flatRows = this.flatten();
+    const touch = !!(this.props.touchMode ?? false);
+
+    const rows = flatRows.map(({ node: n, depth, path }) => {
+      const sel = s.selected === n.id;
+      const isBoard = n.kind === 'board' || n.kind === 'bin';
+      const canFold = isBoard && n.children && n.children.length > 0 && s.filter === 'all' && !s.query.trim();
+      const folded = !!s.folded[n.id];
+      const lensMiss = s.lensTag && !(n.tags || []).includes(s.lensTag);
+      // Badge vocabulary: orphan = no words, loose = no place — always
+      // visible. Untagged is the third axis and only badges while a
+      // cleanup facet is active (worklist itches; browsing stays calm).
+      const cleanupActive = s.filter === 'untagged' || s.filter === 'disconnected' || s.filter === 'unplaced' || s.filter === 'orphans';
+      const untagged = (n.kind === 'pin' || n.kind === 'image') && (n.tags || []).length === 0;
+      const badges = [n.loose ? '·loose' : '', n.orphan ? '·orphan' : '', cleanupActive && untagged ? '·untagged' : ''].filter(Boolean).join(' ');
+      const metaBits = [];
+      if (s.filter !== 'all' || s.query.trim()) metaBits.push(path.join(' / ') || '—');
+      else if (n.count) metaBits.push(String(n.count));
+      return {
+        title: n.title,
+        glyph: n.glyph,
+        glyphColor: n.kind === 'alias' ? 'var(--ew-accent)' : 'var(--ew-text-muted)',
+        titleColor: n.kind === 'alias' ? 'var(--ew-accent)' : isBoard ? 'var(--ew-text)' : 'var(--ew-text-soft)',
+        weight: isBoard ? 600 : 400,
+        pad: depth * 1.1 + 'rem',
+        foldGlyph: canFold ? (folded ? '▸' : '▾') : '',
+        foldTip: canFold ? (folded ? 'Unfold — tab' : 'Fold — tab') : '',
+        badges,
+        tags: n.tags || [],
+        meta: metaBits.join(''),
+        bg: sel ? 'var(--ew-surface-raised)' : 'transparent',
+        outline: sel ? '2px solid var(--ew-accent)' : (s.lensTag && !lensMiss ? '1px solid var(--ew-warn)' : 'none'),
+        dim: lensMiss ? 0.35 : 1,
+        select: () => {
+          if (n.kind === 'alias') { this.setState({ selected: n.target }); this.beat('alias — flew to the real entry'); }
+          else this.setState({ selected: n.id });
+        },
+        fold: (e) => { e.stopPropagation(); if (canFold) this.setState({ folded: { ...s.folded, [n.id]: !folded } }); },
+        dive: () => { if (isBoard) this.beat('diving into ' + n.title + ' — takeover closes, camera arrives'); },
+        lensTag: () => { if (n.tags && n.tags[0]) this.setState({ lensTag: n.tags[0] }); },
+        menu: (e) => {
+          e.preventDefault();
+          this.setState({ selected: n.kind === 'alias' ? n.target : n.id, menu: { x: e.clientX, y: e.clientY, id: n.kind === 'alias' ? n.target : n.id } });
+        },
+      };
+    });
+
+    const facetDefs = [
+      ['all', 'all'], ['unplaced', 'unplaced'], ['orphans', 'orphans'], ['untagged', 'untagged'], ['disconnected', 'disconnected'],
+    ];
+    const facets = facetDefs.map(([id, label]) => ({
+      label, on: s.filter === id,
+      toggle: () => this.setState({ filter: id }),
+    }));
+
+    const sn = this.find(s.selected) || TREE[0];
+    const isBoard = sn.kind === 'board' || sn.kind === 'bin';
+    const kindBits = [];
+    if (sn.kind === 'board') kindBits.push('⬚ board · ' + (sn.count || 0) + ' children');
+    if (sn.kind === 'bin') kindBits.push('⊘ loose bin · ' + (sn.children || []).length + ' items');
+    if (sn.kind === 'pin') kindBits.push('◯ pin' + (sn.note ? ' · has note' : ''));
+    if (sn.kind === 'image') kindBits.push('▣ image' + (sn.orphan ? ' · orphan — no words yet' : ''));
+    const places = sn.places || [];
+    const p = {
+      title: sn.title,
+      kindLine: kindBits.join(''),
+      hasImg: !!sn.img && !isBoard,
+      img: sn.img || '',
+      isBoard: isBoard && !!(sn.film && sn.film.length),
+      film: sn.film || [],
+      filmMore: sn.filmTotal && sn.film && sn.filmTotal > sn.film.length ? '+' + (sn.filmTotal - sn.film.length) : '',
+      tags: sn.tags || [],
+      note: sn.note || '',
+      hasNote: !!sn.note,
+      noNote: !sn.note,
+      placeLine: places.length ? 'placed ' + places.length + ' × · ' + places.join(' · ') : (sn.kind === 'bin' ? '' : 'no placements — lives in the loose bin'),
+      primaryVerb: isBoard ? '↵ dive in' : '␣ place',
+      flyDisabled: places.length === 0,
+      dive: () => isBoard ? this.beat('diving into ' + sn.title) : this.beat('place mode — drop ' + sn.title + ' on the board'),
+      fly: () => this.beat('flying to ' + (places[0] || '') + ' — lens rings the placement'),
+      openNote: () => this.beat(sn.note ? 'opening note: ' + sn.title : 'no note — creates and attaches one'),
+      lensTag: () => { if (sn.tags && sn.tags[0]) this.setState({ lensTag: sn.tags[0] }); },
+    };
+
+    let loose = 0, orphans = 0;
+    const census = (list) => list.forEach((n) => { if (n.loose) loose++; if (n.orphan) orphans++; if (n.children) census(n.children); });
+    census(TREE);
+
+    return {
+      rows,
+      facets,
+      rowPadY: touch ? '0.7rem' : '0.28rem',
+      query: s.query,
+      setQuery: (v) => this.setState({ query: v }),
+      inputStyle: { width: '100%' },
+      lensOn: !!s.lensTag,
+      lensLabel: '⊙ #' + (s.lensTag || ''),
+      clearLens: () => this.setState({ lensTag: null }),
+      p,
+      countLine: rows.length + ' shown · ' + loose + ' loose · ' + orphans + ' orphans',
+      teachingLine: this.props.teachingLine ?? true,
+      toastOn: !!s.toast,
+      toast: s.toast,
+      closeBeat: () => this.beat('esc — returns to the board, camera untouched'),
+      noteDraft: s.noteDraft,
+      setNoteDraft: (v) => this.setState({ noteDraft: v }),
+      noteDraftReady: s.noteDraft.trim().length > 0,
+      attachNote: () => {
+        const t = s.noteDraft.trim();
+        if (!t) return;
+        sn.note = t;
+        this.setState({ noteDraft: '' });
+        this.beat('note created and attached — one command, one undo');
+      },
+      menuOn: !!s.menu,
+      menuX: (s.menu ? s.menu.x : 0) + 'px',
+      menuY: (s.menu ? s.menu.y : 0) + 'px',
+      menuRows: this.buildMenuRows(),
+      closeMenu: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ menu: null }); },
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -6,12 +6,12 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 0 |
-| Planned | 5 | 3 |
+| In Progress | 3 | 0 |
+| Planned | 5 | 7 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 230 |
-| **Total** | **27** | **266** |
+| **Total** | **28** | **270** |
 
 ## In Progress
 
@@ -34,6 +34,17 @@
 - [[AI-IMP-253-e2e-helper-adoption|IMP-253]] E2e helper adoption — planned
 - [[AI-IMP-254-persistence-test-temp-cleanup|IMP-254]] Persistence test temp cleanup — planned
 - [[AI-IMP-256-codex-epic-027-resolutions-merge|IMP-256]] Codex epic 027 resolutions merge — completed
+
+---
+
+### [[AI-EPIC-028-the-outliner-control-panel|EPIC-028: The outliner control panel]]
+> The shipped outline (AI-IMP-069/070) is a read-mostly tree with two
+
+**IMPs:**
+- [[AI-IMP-273-outliner-read-models|IMP-273]] Outliner read models — planned
+- [[AI-IMP-274-outliner-two-pane-shell|IMP-274]] Outliner two pane shell — planned
+- [[AI-IMP-275-outliner-preview-pane|IMP-275]] Outliner preview pane — planned
+- [[AI-IMP-276-outliner-verb-doors|IMP-276]] Outliner verb doors — planned
 
 ---
 
@@ -154,6 +165,7 @@ Generated from tracked files; binary assets excluded.
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (726 LOC)
 - packages/persistence/src/handlers/placements.ts (704 LOC)
+- RAG/DESIGN-QUEUE.md (680 LOC)
 - RAG/design/UI Vision v2.dc.html (675 LOC)
 - apps/desktop/e2e/undo.spec.ts (674 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (668 LOC)
@@ -165,7 +177,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/frames.test.ts (621 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
 - packages/persistence/src/handlers/notes.test.ts (618 LOC)
-- RAG/DESIGN-QUEUE.md (617 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
 - apps/desktop/src/renderer/note/NotePanels.svelte (601 LOC)
 
