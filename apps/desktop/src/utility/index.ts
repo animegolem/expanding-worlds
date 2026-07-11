@@ -1,6 +1,13 @@
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
-import { DB_FILENAME, importProject, openProjectService, type ProjectService } from '@ew/persistence'
+import { existsSync, realpathSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import {
+  DB_FILENAME,
+  deleteTagByNameKey,
+  importProject,
+  openProjectService,
+  syncTags,
+  type ProjectService,
+} from '@ew/persistence'
 import type { ProjectRequest, ProjectResponse, UtilityEnvelope, UtilityMessage } from '@ew/protocol'
 import { clearLibraryExample, seedLibrary } from './seed-library'
 
@@ -30,6 +37,48 @@ function closeSecondary(target: 'source' | 'library'): void {
     // A close failure must not poison the slot.
   }
   secondaries[target] = null
+}
+
+type PreparedLibrary =
+  | { status: 'ready'; library: ProjectService }
+  | { status: 'same-project'; library: ProjectService }
+  | { status: 'unavailable'; reason: string }
+
+function sameProjectDir(left: string, right: string): boolean {
+  try {
+    return realpathSync(left) === realpathSync(right)
+  } catch {
+    return resolve(left) === resolve(right)
+  }
+}
+
+/** Ensure the single designated writable library is held in its narrow
+ * secondary slot. Automatic callers translate unavailable into a quiet skip;
+ * the explicit delete-dialog preflight returns the same reason visibly. */
+function prepareTagSyncLibrary(libraryDir: string | undefined): PreparedLibrary {
+  if (!libraryDir) return { status: 'unavailable', reason: 'No library is designated.' }
+  if (!service) return { status: 'unavailable', reason: 'No project is open.' }
+  if (sameProjectDir(service.ingestSource().dir, libraryDir)) {
+    return { status: 'same-project', library: service }
+  }
+
+  const current = secondaries.library
+  if (current && sameProjectDir(current.ingestSource().dir, libraryDir)) {
+    return { status: 'ready', library: current }
+  }
+
+  closeSecondary('library')
+  try {
+    const library = openProjectService(libraryDir)
+    secondaries.library = library
+    return { status: 'ready', library }
+  } catch (err) {
+    secondaries.library = null
+    return {
+      status: 'unavailable',
+      reason: `Library unavailable — ${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
 }
 
 function post(message: UtilityMessage): void {
@@ -273,6 +322,90 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
     case 'close-secondary': {
       closeSecondary(request.target)
       return { type: 'close-secondary', ok: true }
+    }
+
+    case 'prepare-tag-sync-library': {
+      const prepared = prepareTagSyncLibrary(request.libraryDir)
+      if (prepared.status === 'unavailable') {
+        return {
+          type: 'prepare-tag-sync-library',
+          ok: true,
+          available: false,
+          reason: prepared.reason,
+        }
+      }
+      if (prepared.status === 'same-project') {
+        return {
+          type: 'prepare-tag-sync-library',
+          ok: true,
+          available: false,
+          reason: 'This project is the designated library.',
+        }
+      }
+      return { type: 'prepare-tag-sync-library', ok: true, available: true }
+    }
+
+    case 'sync-tags': {
+      const prepared = prepareTagSyncLibrary(request.libraryDir)
+      if (prepared.status === 'unavailable') {
+        return {
+          type: 'sync-tags',
+          ok: true,
+          added: 0,
+          skipped: request.libraryDir ? 'unavailable' : 'no-library',
+        }
+      }
+      if (prepared.status === 'same-project') {
+        return { type: 'sync-tags', ok: true, added: 0, skipped: 'same-project' }
+      }
+      if (!service) {
+        return { type: 'sync-tags', ok: true, added: 0, skipped: 'unavailable' }
+      }
+      try {
+        const result =
+          request.direction === 'pull'
+            ? syncTags(prepared.library, service)
+            : syncTags(service, prepared.library)
+        return { type: 'sync-tags', ok: true, added: result.updatedTags }
+      } catch (err) {
+        return {
+          type: 'sync-tags',
+          ok: false,
+          code: 'TAG_SYNC_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'delete-library-tag': {
+      const prepared = prepareTagSyncLibrary(request.libraryDir)
+      if (prepared.status === 'unavailable') {
+        return {
+          type: 'delete-library-tag',
+          ok: false,
+          code: request.libraryDir ? 'LIBRARY_UNAVAILABLE' : 'NO_LIBRARY',
+          message: prepared.reason,
+        }
+      }
+      if (prepared.status === 'same-project') {
+        return {
+          type: 'delete-library-tag',
+          ok: false,
+          code: 'SAME_PROJECT',
+          message: 'This project is the designated library.',
+        }
+      }
+      try {
+        const result = deleteTagByNameKey(prepared.library, request.nameKey)
+        return { type: 'delete-library-tag', ok: true, deleted: result.status === 'deleted' }
+      } catch (err) {
+        return {
+          type: 'delete-library-tag',
+          ok: false,
+          code: 'LIBRARY_DELETE_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
     }
 
     case 'clear-library-example': {

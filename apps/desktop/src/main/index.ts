@@ -320,6 +320,22 @@ function setAppSetting(key: string, value: unknown): SetAppSettingResult {
   return { ok: true }
 }
 
+/** §4.8 one tag universe: the library designation is app-owned. Keep
+ * filesystem targeting out of the sandboxed renderer's tag-sync API. */
+function designatedLibraryDir(): string | undefined {
+  const value = loadAppSettings()['libraryProjectDir']
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function runTagSync(direction: 'pull' | 'push'): Promise<ProjectResponse> {
+  const libraryDir = designatedLibraryDir()
+  return callUtility({
+    type: 'sync-tags',
+    direction,
+    ...(libraryDir !== undefined ? { libraryDir } : {}),
+  })
+}
+
 /**
  * ew-asset://<sha256>: managed blobs for the sandboxed renderer
  * (RFC-0001 §11.1 — the renderer never reads project storage
@@ -1114,6 +1130,22 @@ void app.whenReady().then(() => {
   ipcMain.handle('secondary:mirror', (_event, input: { contentHash: string }) =>
     callUtility({ type: 'mirror-to-library', contentHash: String(input.contentHash) }),
   )
+  ipcMain.handle('tag-sync:pull', () => runTagSync('pull'))
+  ipcMain.handle('tag-sync:library-availability', () => {
+    const libraryDir = designatedLibraryDir()
+    return callUtility({
+      type: 'prepare-tag-sync-library',
+      ...(libraryDir !== undefined ? { libraryDir } : {}),
+    })
+  })
+  ipcMain.handle('tag-sync:delete-library-tag', (_event, nameKey: string) => {
+    const libraryDir = designatedLibraryDir()
+    return callUtility({
+      type: 'delete-library-tag',
+      ...(libraryDir !== undefined ? { libraryDir } : {}),
+      nameKey: String(nameKey),
+    })
+  })
   ipcMain.handle('app-settings:get', () => {
     const settings = loadAppSettings()
     // CA-015: a corrupt-file recovery is consumed exactly once here —
@@ -1178,6 +1210,18 @@ void app.whenReady().then(() => {
 })
 
 let closingCleanly = false
+
+/** §4.8 settle moment (AI-IMP-271). The utility owns the two writers,
+ * so PUSH is one serialized utility request. Absence/contention is a
+ * clean skip at quit: the next settle converges the additive union. */
+async function pushTagsBeforeSnapshot(): Promise<void> {
+  try {
+    await runTagSync('push')
+  } catch {
+    // Never let a tag-sync hiccup trap quit.
+  }
+}
+
 app.on('window-all-closed', () => {
   if (closingCleanly) return
   closingCleanly = true
@@ -1185,9 +1229,6 @@ app.on('window-all-closed', () => {
     utility?.kill()
     app.quit()
   }
-  // close-project closes the secondaries with it (utility side);
-  // the store-root mirror follows.
-  secondaryDirs.clear()
   snapshots.dispose()
   // §11.4 quit ritual (AI-IMP-120): take the end-session snapshot
   // BEFORE closing the project — the snapshot needs the live utility
@@ -1196,7 +1237,10 @@ app.on('window-all-closed', () => {
   // quit; then close the project so the writer lock releases promptly
   // (§11.1) and kill the utility.
   void Promise.race([
-    snapshots.runSnapshot('end-session'),
+    (async () => {
+      await pushTagsBeforeSnapshot()
+      await snapshots.runSnapshot('end-session')
+    })(),
     new Promise((resolve) => setTimeout(resolve, 15_000)),
   ])
     .then(() =>
@@ -1205,5 +1249,8 @@ app.on('window-all-closed', () => {
         new Promise((resolve) => setTimeout(resolve, 1_000)),
       ]),
     )
-    .then(finish)
+    .then(() => {
+      secondaryDirs.clear()
+      finish()
+    })
 })

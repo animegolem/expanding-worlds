@@ -173,6 +173,52 @@ export interface CloseSecondaryResponse {
   ok: true
 }
 
+/** §4.8 one tag universe (AI-IMP-271): the utility owns both writable
+ * project handles, so synchronization crosses the process boundary as
+ * this deliberately narrow verb rather than a generic secondary execute
+ * capability. */
+export interface SyncTagsRequest {
+  type: 'sync-tags'
+  direction: 'pull' | 'push'
+  /** Main resolves the app-level designation. Absent means a clean,
+   * automatic no-op; the renderer never supplies a filesystem target. */
+  libraryDir?: string
+}
+
+export type SyncTagsResponse =
+  | {
+      type: 'sync-tags'
+      ok: true
+      added: number
+      skipped?: 'no-library' | 'same-project' | 'unavailable'
+    }
+  | { type: 'sync-tags'; ok: false; code: string; message: string }
+
+/** Explicit delete-dialog preflight. It may ensure the configured writable
+ * slot is open, but it never performs a settle/sync. */
+export interface PrepareTagSyncLibraryRequest {
+  type: 'prepare-tag-sync-library'
+  libraryDir?: string
+}
+
+export type PrepareTagSyncLibraryResponse =
+  | { type: 'prepare-tag-sync-library'; ok: true; available: true }
+  | { type: 'prepare-tag-sync-library'; ok: true; available: false; reason: string }
+
+/** The delete-scope dialogue's only cross-project write. The library
+ * lookup remains name_key based; no arbitrary command envelope crosses. */
+export interface DeleteLibraryTagRequest {
+  type: 'delete-library-tag'
+  /** Main resolves the app-level designation; absent is a typed refusal
+   * so the explicit delete surface can show its disabled reason. */
+  libraryDir?: string
+  nameKey: string
+}
+
+export type DeleteLibraryTagResponse =
+  | { type: 'delete-library-tag'; ok: true; deleted: boolean }
+  | { type: 'delete-library-tag'; ok: false; code: string; message: string }
+
 export interface SecondaryQueryRequest {
   type: 'secondary-query'
   target: SecondaryTarget
@@ -463,6 +509,9 @@ export type ProjectRequest =
   | SubmitThumbnailRequest
   | OpenSecondaryRequest
   | CloseSecondaryRequest
+  | PrepareTagSyncLibraryRequest
+  | SyncTagsRequest
+  | DeleteLibraryTagRequest
   | SecondaryQueryRequest
   | SecondaryImportRequest
   | IngestFromSecondaryRequest
@@ -486,6 +535,9 @@ export type ProjectResponse =
   | SubmitThumbnailResponse
   | OpenSecondaryResponse
   | CloseSecondaryResponse
+  | PrepareTagSyncLibraryResponse
+  | SyncTagsResponse
+  | DeleteLibraryTagResponse
   | SecondaryQueryResponse
   | SecondaryImportResponse
   | IngestFromSecondaryResponse

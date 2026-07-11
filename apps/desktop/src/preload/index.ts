@@ -6,6 +6,7 @@ import type {
   ClaimThumbnailJobResponse,
   ClearLibraryExampleResponse,
   CloseSecondaryResponse,
+  DeleteLibraryTagResponse,
   ExecuteCommandResponse,
   ExportEstimateResponse,
   ExportProgressEvent,
@@ -16,6 +17,7 @@ import type {
   MirrorToLibraryResponse,
   OpenSecondaryResponse,
   PingResponse,
+  PrepareTagSyncLibraryResponse,
   RestoreResult,
   RunQueryResponse,
   SecondaryImportResponse,
@@ -27,6 +29,7 @@ import type {
   SnapshotPushState,
   SnapshotStatus,
   SnapshotTestConnectionResult,
+  SyncTagsResponse,
   SubmitThumbnailResponse,
   ThumbnailReadyEvent,
 } from '@ew/protocol'
@@ -298,6 +301,17 @@ const api = {
      * slot as an unplaced node, border 'none' by construction. */
     mirrorToLibrary: (input: { contentHash: string }): Promise<MirrorToLibraryResponse> =>
       ipcRenderer.invoke('secondary:mirror', input) as Promise<MirrorToLibraryResponse>,
+  },
+  /** §4.8 one tag universe: deliberately narrow typed operations. Main
+   * owns the designated-library path; no renderer-supplied filesystem
+   * target or generic secondary execute capability crosses this seam. */
+  tagSync: {
+    libraryAvailability: (): Promise<PrepareTagSyncLibraryResponse> =>
+      ipcRenderer.invoke('tag-sync:library-availability') as Promise<PrepareTagSyncLibraryResponse>,
+    pull: (): Promise<SyncTagsResponse> =>
+      ipcRenderer.invoke('tag-sync:pull') as Promise<SyncTagsResponse>,
+    deleteLibraryTag: (nameKey: string): Promise<DeleteLibraryTagResponse> =>
+      ipcRenderer.invoke('tag-sync:delete-library-tag', nameKey) as Promise<DeleteLibraryTagResponse>,
   },
   /** §11.2 renderer-driven thumbnail pipeline (AI-IMP-076): the
    * renderer claims queued jobs, generates WebP thumbnails with
