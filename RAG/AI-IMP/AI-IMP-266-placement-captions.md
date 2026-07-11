@@ -7,12 +7,12 @@ tags:
   - canvas-engine
   - renderer
   - field-report
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-10
 ---
 
 
@@ -111,27 +111,27 @@ an existing caption pre-fills it.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Migration 0008: nullable caption on placement; migration
+- [x] Migration 0008: nullable caption on placement; migration
       test green; no CHECK constraint anywhere near it.
-- [ ] SetPlacementCaption handler + typed codec: set/replace/
+- [x] SetPlacementCaption handler + typed codec: set/replace/
       clear, trim + empty→null, length ceiling in the handler,
       verified inverse; handler tests cover all paths.
-- [ ] Outline/gallery/search read models audited: captions do
+- [x] Outline/gallery/search read models audited: captions do
       NOT surface (test asserts the outline query's blindness).
-- [ ] Renderer: caption under the placement via the label
+- [x] Renderer: caption under the placement via the label
       pipeline (fade ladder + 262 raster buckets), REPLACES the
       title label while present, wraps to placement width,
       ~3-line clamp; unit tests.
-- [ ] Context-menu verb + caption charm + inline editor: Enter
+- [x] Context-menu verb + caption charm + inline editor: Enter
       commits ONE undoable command, Escape discards, click-away
       commits, pre-fill on edit; inventory grammar test extended.
-- [ ] e2e caption.spec.ts green (menu add, render, label
+- [x] e2e caption.spec.ts green (menu add, render, label
       replacement, relaunch persistence, outline absence, undo,
       charm entry); export/import round-trip carries the caption
       (extend the existing roundtrip spec).
-- [ ] Full gates green with pipefail: packages vitest, desktop
+- [x] Full gates green with pipefail: packages vitest, desktop
       vitest, affected e2e shards; counts read, not exit codes.
-- [ ] HUMAN-TESTING + CHANGELOG entries.
+- [x] HUMAN-TESTING + CHANGELOG entries.
 
 ### Acceptance Criteria
 
@@ -154,3 +154,25 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Built by the Codex wave (subagent fan-out + internal pre-merge
+review), lead-merged at 278e4a3a. Full record in the .codex round
+docs; the checklist evidence: migration 0008 + no CHECK; handler
+prior-value inverse with trim/empty→null/2000-code-point ceiling;
+outline/gallery/search negatives landed (the outline one
+load-bearing); render through the one syncLabel pipeline with the
+deterministic 3-line clamp feeding glyphs AND adorned bounds;
+menu verb + image charm + one generation-fenced anchored editor.
+Validation: Windows oracle 29131602603 green both jobs; lead
+re-ran gates in the worktree (packages 1,100; desktop 412/1
+skipped; e2e 46) and on the merged tree (same counts; caption/
+panels/loose-note shards 19/19). Beyond-ticket catches, both
+review-driven: lifecycle delete/restore inverse rows would have
+silently dropped captions (fixed with regressions), and the
+flipY adorned-bounds exclusion contradicted shipped counter-flip
+rendering (stale comment/test fixed; lead verified the math
+against main independently). Codex's wrap uses a conservative
+one-em cell — narrow Latin text wraps earlier than a font-metric
+wrap; recorded as feel-tuning, flagged in HUMAN-TESTING. A
+notes.spec.ts flake during lead review cleared 4/4 on targeted
+repeat (environmental).

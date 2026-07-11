@@ -10,6 +10,19 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **CAPTIONS — the register you asked for** (AI-IMP-266,
+  2026-07-10 — alph first): right-click any image/dot/card →
+  Add caption (or the ✎ charm on an image) and write "I like the
+  blue" — no note, no title, nothing in the outline. Try short,
+  long, multiline (Shift+Enter), emoji; edit and remove; resize/
+  zoom/flip the placement and check the text rides along crisp;
+  captioned CARD keeps its face title with the caption beneath.
+  Two feel questions: does narrow text wrap a little EARLY (known
+  conservative wrap — say if it bothers you), and does image +
+  caption read connected enough, or do you still want the mat/
+  polaroid look? Mod+Z removes a caption edit (it's one verb).
+  Promote-to-note arrives in the next build (AI-IMP-267).
+
 - [ ] **Loose notes are real windows now** (AI-IMP-258,
   2026-07-10 — alph's report, alph should re-check): open a note
   with no placement from the gallery — its panel spawns top-right
