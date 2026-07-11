@@ -133,12 +133,6 @@ async function note(win: Page, noteId: string): Promise<NoteRow> {
   return runQuery<NoteRow>(win, 'getNote', { noteId })
 }
 
-async function openSettings(win: Page): Promise<void> {
-  await win.getByTestId('charm-menu').click()
-  await win.getByTestId('menu-settings').click()
-  await expect(win.getByTestId('settings-view')).toBeVisible()
-}
-
 test('caption is placement-local, replaces its title label, persists, stays out of outline, and is one undo', async () => {
   const launched = await launchApp('ew-e2e-caption-')
   let app = launched.app
