@@ -1,94 +1,108 @@
 <!--
-  Outline takeover (RFC §14.1, AI-IMP-069): the world as an outline,
-  canvas ▸ children, realizing the node-library MUST. Containment is
-  a graph with legal cycles, so the tree is assembled here with a
-  per-branch path: a canvas already on its own ancestry renders as
-  an alias row that flies to the real entry instead of unfolding
-  again. Unplaced material gathers in the root-level loose bin —
-  keeping stashed nodes is a legitimate workflow, not an error.
-  Filter chips: hide content-less · disconnected (orphan ∪ loose,
-  §14.1 vocabulary) · one tag. Placement flows (AI-IMP-070): rows are
-  §6.10 placement sources — Place on Current Canvas fires the same
-  requests the Uses sidebar does (Workspace commits and toasts
-  failures), drag sets the import-surface mimes so the board's drop
-  handler places at the drop point, canvas rows dive via navigateTo,
-  note rows open via requestOpenNote. Every action closes the
-  takeover so the user sees the result land.
+  Outliner control panel shell (RFC §14.1, AI-IMP-274): the org
+  tree and flat cleanup worklists live in the master pane; one stable
+  selection feeds the preview pane (AI-IMP-275). Rows select and
+  navigate — they never become text fields. The existing placement,
+  drag, dive, open-note, alias-flight, and loose-note Trash seams are
+  retained while the surface adopts the outliner grammar.
 -->
 <script lang="ts">
-  import { shortCode } from '@ew/domain'
-  import NodeRow from '../rows/NodeRow.svelte'
   import { NODE_DRAG_MIME, NOTE_DRAG_MIME } from '../canvas/import-surfaces'
   import { closeTakeover } from '../chrome/takeover'
   import { navigateTo } from '../chrome/navigation'
   import { toast } from '../chrome/status'
   import { tooltip } from '../chrome/tooltip'
-  import { requestOpenNote, requestPlaceNode, requestPlaceNote } from '../note/open-note'
+  import {
+    requestCenterPlacements,
+    requestOpenNote,
+    requestPlaceNode,
+    requestPlaceNote,
+  } from '../note/open-note'
   import { createNoteProjectPort } from '../note/project-port'
   import type { ProjectPort } from '../note/note-editor'
+  import TagAddField from '../tags/TagAddField.svelte'
+  import TextInput from '../ui/TextInput.svelte'
+  import { disabled, enabled, type OutlineActionBag } from '../outline/actions'
+  import { createOutlineActionDoors } from '../outline/inventory'
+  import { Z } from '../z'
+  import OutlineContextMenu from './OutlineContextMenu.svelte'
+  import OutlinePreview from './OutlinePreview.svelte'
+  import OutlineTrashConfirm from './OutlineTrashConfirm.svelte'
+  import {
+    OutlineData,
+    type OutlineFilmstrip,
+    type OutlineFacetCounts,
+    type OutlinePreview as OutlinePreviewModel,
+  } from './outline-data'
+  import {
+    buildOutlineRows,
+    type OutlineCanvas,
+    type OutlineFacet,
+    type OutlineLibraryNode,
+    type OutlineLooseNote,
+    type OutlineViewRow,
+  } from './outline-model'
 
-  interface OutlineChildRow {
-    placementId: string
-    nodeId: string
-    renderOrder: number
-    appearanceKind: string | null
-    appearanceColor: string | null
-    appearanceIcon: string | null
-    noteId: string | null
-    noteTitle: string | null
-    childCanvasId: string | null
-    placementCount: number
-    tags: string[]
+  const EMPTY_COUNTS: OutlineFacetCounts = {
+    all: 0,
+    unplaced: 0,
+    orphans: 0,
+    disconnected: 0,
+    untagged: 0,
   }
 
-  interface OutlineCanvasRow {
-    canvasId: string
-    nodeId: string
-    label: string
-    isRoot: boolean
-    isRootLevel: boolean
-    children: OutlineChildRow[]
-  }
+  const FACETS: Array<{ id: OutlineFacet; label: string }> = [
+    { id: 'all', label: 'all' },
+    { id: 'unplaced', label: 'unplaced' },
+    { id: 'orphans', label: 'orphans' },
+    { id: 'disconnected', label: 'disconnected' },
+    { id: 'untagged', label: 'untagged' },
+  ]
 
-  interface LibraryRow {
-    id: string
-    noteId: string | null
-    noteTitle: string | null
-    appearanceKind: string | null
-    appearanceColor: string | null
-    appearanceIcon: string | null
-    placementCount: number
-    tags: string[]
-  }
-
-  interface TagRow {
-    id: string
-    name: string
-  }
-
-  let canvases = $state<OutlineCanvasRow[]>([])
-  let unplacedNodes = $state<LibraryRow[]>([])
-  let looseNotes = $state<Array<{ id: string; title: string }>>([])
-  let tagNames = $state<string[]>([])
+  let canvases = $state<OutlineCanvas[]>([])
+  let unplacedNodes = $state<OutlineLibraryNode[]>([])
+  let looseNotes = $state<OutlineLooseNote[]>([])
+  let facetCounts = $state<OutlineFacetCounts>(EMPTY_COUNTS)
   let errorMessage = $state<string | null>(null)
+  let refreshToken = $state(0)
 
-  // Filter chips (§14.1): view state, never domain state.
-  let hideContentless = $state(false)
-  let disconnectedOnly = $state(false)
-  let tagFilter = $state('')
-  let tagFocus = $state(false)
-
-  function tagCompletions(): string[] {
-    const needle = tagFilter.toLowerCase()
-    return tagNames.filter((name) => name.toLowerCase().startsWith(needle) && name !== tagFilter)
-  }
-
-  // Expansion state keyed by branch path so the same canvas can be
-  // open under one parent and closed under another.
+  // Facets, query, fold, selection, and lens are view state only.
+  let facet = $state<OutlineFacet>('all')
+  let query = $state('')
   let expanded = $state<Record<string, boolean>>({})
+  let selectedKey = $state<string | null>(null)
+  let lensTag = $state<string | null>(null)
+  let previewModel = $state<OutlinePreviewModel | null>(null)
+  let filmstrip = $state<OutlineFilmstrip | null>(null)
+  let previewLoading = $state(false)
+  let previewRequest = 0
+  let tagging = $state(false)
+  let menuPoint = $state<{ x: number; y: number } | null>(null)
+  interface NodeImpact {
+    placementCount: number
+    tagCount: number
+    ownedCanvasId: string | null
+    ownedCanvasPlacementCount: number
+    ownedCanvasDecorationCount: number
+  }
+  let trashImpact = $state<NodeImpact | null>(null)
+  let trashBusy = $state(false)
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null
+  const outlineData = new OutlineData((name, args) => window.ew.project.query(name, args))
 
-  const byCanvas = $derived(new Map(canvases.map((c) => [c.canvasId, c])))
-  const rootLevel = $derived(canvases.filter((c) => c.isRootLevel))
+  const rows = $derived(
+    buildOutlineRows({ canvases, unplacedNodes, looseNotes, facet, query, expanded }),
+  )
+  const selectedRow = $derived(rows.find((row) => row.key === selectedKey) ?? rows[0] ?? null)
+  const cleanupActive = $derived(facet !== 'all')
+  const actionDoors = $derived(
+    selectedRow
+      ? createOutlineActionDoors(actionBag(selectedRow, previewModel), (intent) => {
+          if (intent === 'fold') toggle(selectedRow)
+          else closeTakeover()
+        })
+      : null,
+  )
 
   async function runQuery<T>(name: string, args?: unknown): Promise<T> {
     const response = await window.ew.project.query(name, args)
@@ -98,16 +112,18 @@
 
   async function refresh(): Promise<void> {
     try {
-      const [tree, unplaced, loose, tags] = await Promise.all([
-        runQuery<OutlineCanvasRow[]>('getOutlineTree'),
-        runQuery<LibraryRow[]>('listNodeLibrary', { filter: 'unplaced' }),
-        runQuery<Array<{ id: string; title: string }>>('listLooseNotes'),
-        runQuery<TagRow[]>('listTags'),
+      const [tree, unplaced, loose, counts] = await Promise.all([
+        runQuery<OutlineCanvas[]>('getOutlineTree'),
+        runQuery<OutlineLibraryNode[]>('listNodeLibrary', { filter: 'unplaced' }),
+        runQuery<OutlineLooseNote[]>('listLooseNotes'),
+        outlineData.getFacetCounts(),
+        outlineData.refreshRevision(),
       ])
       canvases = tree
       unplacedNodes = unplaced
       looseNotes = loose
-      tagNames = tags.map((tag) => tag.name)
+      facetCounts = counts
+      refreshToken += 1
       errorMessage = null
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err)
@@ -119,125 +135,276 @@
     return window.ew.project.onChanged(() => void refresh())
   })
 
-  // §9.2 the loose-note exit (AI-IMP-260): Trash on a loose bin row.
-  // The outline owns no canvas gateway, so the verb goes through a
-  // lazily-created note project port — the CommandGateway seam, never
-  // a hand-rolled envelope (FR-23 direction). TrashNote is undo-EXEMPT
-  // (AI-IMP-233: trash-is-recovery-home); recovery is the Trash view.
-  // The refresh above hears the commit and the row leaves the list.
-  let trashPort: ProjectPort | null = null
-  let disposeTrashPort: (() => void) | null = null
-  $effect(() => () => {
-    disposeTrashPort?.()
-    disposeTrashPort = null
-    trashPort = null
+  $effect(() => {
+    const row = selectedRow
+    const token = refreshToken
+    tagging = false
+    menuPoint = null
+    if (!row || row.selection.kind === 'bin') {
+      previewModel = null
+      filmstrip = null
+      previewLoading = false
+      return
+    }
+    const request = ++previewRequest
+    previewLoading = true
+    void (async () => {
+      try {
+        const target =
+          row.selection.kind === 'note'
+            ? { kind: 'note' as const, noteId: row.selection.noteId }
+            : { kind: 'node' as const, nodeId: row.selection.nodeId! }
+        const model = await outlineData.getPreview(target)
+        if (request !== previewRequest || token !== refreshToken) return
+        previewModel = model
+        filmstrip = model?.childCanvasId
+          ? await outlineData.getFilmstrip(model.childCanvasId)
+          : null
+        if (request !== previewRequest || token !== refreshToken) return
+      } catch (err) {
+        if (request === previewRequest) {
+          previewModel = null
+          filmstrip = null
+          errorMessage = err instanceof Error ? err.message : String(err)
+        }
+      } finally {
+        if (request === previewRequest) previewLoading = false
+      }
+    })()
   })
 
-  async function trashLooseNote(note: { id: string; title: string }): Promise<void> {
-    if (!trashPort) {
-      const { port, dispose } = await createNoteProjectPort()
-      trashPort = port
-      disposeTrashPort = dispose
+  $effect(() => {
+    if (rows.length === 0) {
+      selectedKey = null
+      return
     }
-    const result = await trashPort.execute('TrashNote', { noteId: note.id })
+    if (!rows.some((row) => row.key === selectedKey)) selectedKey = rows[0]!.key
+  })
+
+  // §9.2 loose-note exit (AI-IMP-260), still through the command
+  // gateway seam. Trash is recovery-home exempt, never local undo.
+  let commandPort: ProjectPort | null = null
+  let disposeCommandPort: (() => void) | null = null
+  $effect(() => () => {
+    disposeCommandPort?.()
+    disposeCommandPort = null
+    commandPort = null
+  })
+
+  async function projectPort(): Promise<ProjectPort> {
+    if (commandPort) return commandPort
+    const { port, dispose } = await createNoteProjectPort()
+    commandPort = port
+    disposeCommandPort = dispose
+    return port
+  }
+
+  async function trashLooseNote(note: OutlineLooseNote): Promise<void> {
+    const result = await (await projectPort()).execute('TrashNote', { noteId: note.id })
     if (result.status === 'committed') toast(`“${note.title}” moved to Trash`)
     else if (result.status === 'error') toast(result.message, { kind: 'error' })
     else toast('the project changed underneath (retry)', { kind: 'error' })
   }
 
-  function childTitle(child: OutlineChildRow): string {
-    return child.noteTitle ?? shortCode(child.nodeId)
+  async function flyTo(model: OutlinePreviewModel): Promise<void> {
+    const place = model.places[0]
+    if (!place) return
+    closeTakeover()
+    await navigateTo(place.canvasId, place.canvasLabel)
+    requestCenterPlacements([place.placementId])
   }
 
-  function contentless(child: OutlineChildRow): boolean {
-    return child.noteId === null && child.childCanvasId === null
-  }
-
-  function visibleChildren(canvas: OutlineCanvasRow): OutlineChildRow[] {
-    return canvas.children.filter((child) => {
-      if (hideContentless && contentless(child)) return false
-      // In-tree rows are placed by construction; "disconnected"
-      // keeps only the orphan half here (loose lives in the bin).
-      if (disconnectedOnly && child.noteId !== null) return false
-      if (tagFilter && !child.tags.includes(tagFilter)) return false
-      return true
+  async function askTrash(row: OutlineViewRow): Promise<void> {
+    if (row.kind === 'root' || row.kind === 'bin') return
+    if (row.note) {
+      await trashLooseNote(row.note)
+      return
+    }
+    if (!row.selection.nodeId) return
+    const impact = await runQuery<NodeImpact | null>('getNodeImpact', {
+      nodeId: row.selection.nodeId,
     })
+    if (!impact) {
+      toast('This node is no longer available', { kind: 'error' })
+      return
+    }
+    trashImpact = impact
   }
 
-  const rootNodeId = $derived(canvases.find((c) => c.isRoot)?.nodeId ?? null)
-
-  function binNodes(): LibraryRow[] {
-    return unplacedNodes.filter((node) => {
-      // The library lists every active node (§14.1) including the
-      // root node, which is unplaced by construction — but the root
-      // board heads the outline; it is not stashed material.
-      if (node.id === rootNodeId) return false
-      // Canvas-owning unplaced nodes surface as root-level canvas
-      // entries above, not as bin rows.
-      if (canvases.some((c) => c.nodeId === node.id)) return false
-      if (tagFilter && !node.tags.includes(tagFilter)) return false
-      return true
-    })
+  async function confirmTrash(): Promise<void> {
+    const row = selectedRow
+    if (!row?.selection.nodeId || row.kind === 'root' || trashBusy) return
+    trashBusy = true
+    try {
+      const result = await (await projectPort()).execute('TrashNode', {
+        nodeId: row.selection.nodeId,
+      })
+      if (result.status === 'committed') {
+        toast(`“${row.title}” moved to Trash`)
+        trashImpact = null
+      } else {
+        toast(result.status === 'error' ? result.message : 'the project changed underneath (retry)', {
+          kind: 'error',
+        })
+      }
+    } finally {
+      trashBusy = false
+    }
   }
 
-  function toggle(key: string): void {
-    expanded[key] = !isExpanded(key)
+  function actionBag(row: OutlineViewRow, model: OutlinePreviewModel | null): OutlineActionBag {
+    if (row.kind === 'bin') {
+      return { trash: disabled('the loose bin cannot be moved to trash') }
+    }
+    const bag: OutlineActionBag = {}
+    const canvasId = model?.childCanvasId ?? row.canvas?.canvasId ?? row.aliasCanvasId
+    if (canvasId) bag.dive = enabled(() => dive(canvasId, row.title))
+    else if (row.note) bag.place = enabled(() => placeNoteOnBoard(row.note!.id))
+    else if (row.selection.nodeId) {
+      bag.place = enabled(() => placeNodeOnBoard(row.selection.nodeId!))
+    }
+    if (model && model.places.length > 0) bag.flyTo = enabled(() => void flyTo(model))
+    else bag.flyTo = disabled('no placements to fly to')
+    if (model?.noteId) bag.openNote = enabled(() => openNote(model.noteId!))
+    else if (row.note) bag.openNote = enabled(() => openNote(row.note!.id))
+    else if (row.selection.nodeId) {
+      bag.addNote = enabled(() => {
+        document.querySelector<HTMLInputElement>('[data-testid="outline-note-capture"]')?.focus()
+      })
+    }
+    bag.tag =
+      row.selection.nodeId
+        ? enabled(() => (tagging = true))
+        : disabled('tags belong to nodes, not loose notes')
+    bag.trash =
+      row.kind === 'root'
+        ? disabled('the root board cannot be moved to trash')
+        : enabled(() => void askTrash(row))
+    return bag
   }
 
-  function isExpanded(key: string): boolean {
-    // Top-level canvas entries start open; nested branches closed.
-    return expanded[key] ?? !key.includes('/')
+  async function executeCommand(commandType: string, payload: unknown) {
+    return (await projectPort()).execute(commandType, payload)
   }
 
-  /** Alias click: fly to the first real rendering of that canvas. */
+  function openRowMenu(event: MouseEvent | PointerEvent, row: OutlineViewRow): void {
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+    selectedKey = row.key
+    menuPoint = { x: event.clientX, y: event.clientY }
+  }
+
+  function beginLongPress(event: PointerEvent, row: OutlineViewRow): void {
+    if (event.pointerType !== 'touch') return
+    cancelLongPress()
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null
+      openRowMenu(event, row)
+    }, 550)
+  }
+
+  function cancelLongPress(): void {
+    if (longPressTimer) clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+
+  $effect(() => {
+    const onKeydown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && trashImpact) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        trashImpact = null
+        return
+      }
+      if (event.key === 'Escape' && menuPoint) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        menuPoint = null
+        return
+      }
+      if (event.key === 'Escape' && tagging) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        tagging = false
+        return
+      }
+      if (event.key === 'Escape' && lensTag) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        lensTag = null
+        return
+      }
+      const result = actionDoors?.keyboard.handle(event)
+      if (result?.handled) {
+        event.stopImmediatePropagation()
+        if (result.disabledReason) toast(result.disabledReason)
+      }
+    }
+    window.addEventListener('keydown', onKeydown, true)
+    return () => window.removeEventListener('keydown', onKeydown, true)
+  })
+
+  $effect(() => {
+    if (!menuPoint) return
+    const close = (): void => (menuPoint = null)
+    window.addEventListener('pointerdown', close)
+    return () => window.removeEventListener('pointerdown', close)
+  })
+
+  function toggle(row: OutlineViewRow): void {
+    if (!row.branchKey || !row.canFold) return
+    expanded[row.branchKey] = !row.expanded
+  }
+
+  /** Alias activation flies to the first real rendering. */
   function flyToEntry(canvasId: string): void {
     const target = document.querySelector(
-      `[data-testid="outline-view"] [data-canvas="${canvasId}"]`,
+      `[data-testid="outline-view"] [data-canvas="${canvasId}"]:not([data-alias="true"])`,
     )
     if (!(target instanceof HTMLElement)) return
     target.scrollIntoView({ block: 'center' })
     target.classList.remove('flash')
-    // Restart the animation on repeat flights.
     void target.offsetWidth
     target.classList.add('flash')
   }
 
-  /** §6.10: one placement at view center. Workspace owns the commit
-   * and toasts failures; closing first lets the user watch it land. */
   function placeNodeOnBoard(nodeId: string): void {
     closeTakeover()
     requestPlaceNode(nodeId)
   }
 
-  /** §6.10 zero-node note: dot + attach + placement as one CreatePin. */
   function placeNoteOnBoard(noteId: string): void {
     closeTakeover()
     requestPlaceNote(noteId)
   }
 
-  /** Canvas rows dive — through navigateTo, so every jump enters
-   * history (§8.1) — and the takeover yields to the destination. */
   function dive(canvasId: string, label: string): void {
     closeTakeover()
     void navigateTo(canvasId, label)
   }
 
-  /** Note rows open the note panel; panels live under the takeover
-   * (z-order), so the takeover closes to reveal them. */
   function openNote(noteId: string): void {
     closeTakeover()
     requestOpenNote(noteId)
   }
 
-  /**
-   * Row dragstart: set the import-surface payload (the board's drop
-   * handler executes CreatePlacement/CreatePin at the drop's world
-   * point, import-surfaces.ts) and watch the drag — the outline
-   * sheet is full-bleed, so the operative "sheet edge" (§6.10 drag
-   * out of the takeover) is the originating row's own bounds: the
-   * moment the pointer drags past them, the takeover closes so the
-   * board is visible to receive the drop.
-   */
+  function activate(row: OutlineViewRow): void {
+    if (row.kind === 'alias' && row.aliasCanvasId) {
+      flyToEntry(row.aliasCanvasId)
+      return
+    }
+    if (row.canvas) {
+      dive(row.canvas.canvasId, row.title)
+      return
+    }
+    if (row.note) {
+      openNote(row.note.id)
+      return
+    }
+    if (row.node?.noteId) openNote(row.node.noteId)
+  }
+
   function beginRowDrag(event: DragEvent, mime: string, id: string): void {
     const dt = event.dataTransfer
     if (!dt) return
@@ -265,304 +432,296 @@
     window.addEventListener('drop', stop)
   }
 
-  /** Row body activation: canvas rows dive, note rows open. */
-  function activateChild(child: OutlineChildRow): void {
-    if (child.childCanvasId !== null) dive(child.childCanvasId, childTitle(child))
-    else if (child.noteId !== null) openNote(child.noteId)
+  function rowTestId(row: OutlineViewRow): string {
+    if (row.kind === 'alias') return 'outline-alias-row'
+    if (row.kind === 'bin') return 'outline-loose-bin'
+    if (row.note) return 'loose-note-row'
+    if (row.loose) return 'loose-node-row'
+    return 'outline-child-row'
+  }
+
+  function chooseFacet(next: OutlineFacet): void {
+    facet = next
   }
 </script>
-
-{#snippet childRow(child: OutlineChildRow, path: string[], key: string)}
-  {@const cyclic = child.childCanvasId !== null && path.includes(child.childCanvasId)}
-  {@const nested = child.childCanvasId !== null && !cyclic ? byCanvas.get(child.childCanvasId) : undefined}
-  <li>
-    {#if cyclic}
-      <button
-        type="button"
-        class="row alias"
-        data-testid="outline-alias-row"
-        onclick={() => flyToEntry(child.childCanvasId!)}
-        use:tooltip={{ name: 'Already open above — jump to it' }}
-      >
-        <span class="glyph">⤴</span>
-        <span class="title">{childTitle(child)}</span>
-      </button>
-    {:else}
-      <div
-        class="row"
-        class:has-children={nested !== undefined}
-        data-testid="outline-child-row"
-        data-node-id={child.nodeId}
-        draggable="true"
-        ondragstart={(event) => beginRowDrag(event, NODE_DRAG_MIME, child.nodeId)}
-      >
-        {#if nested}
-          <button
-            type="button"
-            class="caret"
-            data-testid="outline-expand"
-            aria-expanded={isExpanded(key)}
-            onclick={() => toggle(key)}
-          >
-            {isExpanded(key) ? '▾' : '▸'}
-          </button>
-        {:else}
-          <span class="caret-space"></span>
-        {/if}
-        <button
-          type="button"
-          class="row-main"
-          data-testid="outline-row-activate"
-          disabled={child.childCanvasId === null && child.noteId === null}
-          onclick={() => activateChild(child)}
-        >
-          <NodeRow
-            appearance={child}
-            label={childTitle(child)}
-            count={child.placementCount > 1 ? child.placementCount : null}
-            tags={child.tags}
-            hasNote={child.noteId !== null}
-            hasCanvas={child.childCanvasId !== null}
-          >
-            {#snippet extra()}
-              {#if disconnectedOnly && child.noteId === null}
-                <span class="badge" data-testid="badge-orphan">orphan</span>
-              {/if}
-            {/snippet}
-          </NodeRow>
-        </button>
-        <button
-          type="button"
-          class="row-action"
-          data-testid="outline-place-node"
-          onclick={() => placeNodeOnBoard(child.nodeId)}
-          use:tooltip={{ name: 'Place on current canvas' }}
-        >
-          Place
-        </button>
-      </div>
-      {#if nested && isExpanded(key)}
-        {@render canvasBranch(nested, [...path, nested.canvasId], key)}
-      {/if}
-    {/if}
-  </li>
-{/snippet}
-
-{#snippet canvasBranch(canvas: OutlineCanvasRow, path: string[], parentKey: string)}
-  <ul class="branch" data-canvas={canvas.canvasId}>
-    {#each visibleChildren(canvas) as child (child.placementId)}
-      {@render childRow(child, path, `${parentKey}/${child.placementId}`)}
-    {/each}
-  </ul>
-{/snippet}
 
 <div class="outline" data-testid="outline-view">
   {#if errorMessage}
     <p class="error" role="alert">{errorMessage}</p>
   {/if}
 
-  <div class="filters" data-testid="outline-filters">
-    <button
-      type="button"
-      class="chip"
-      class:on={hideContentless}
-      aria-pressed={hideContentless}
-      data-testid="outline-filter-contentless"
-      onclick={() => (hideContentless = !hideContentless)}
-    >
-      hide content-less
-    </button>
-    <button
-      type="button"
-      class="chip"
-      class:on={disconnectedOnly}
-      aria-pressed={disconnectedOnly}
-      data-testid="outline-filter-disconnected"
-      onclick={() => (disconnectedOnly = !disconnectedOnly)}
-    >
-      disconnected
-    </button>
-    <!-- Completion is a custom list, NOT a <datalist>: the native
-         autocomplete popup segfaults Electron's main process when the
-         window is hidden (e2e mode) — found the hard way, AI-IMP-069. -->
-    <span class="tag-filter-wrap">
-      <input
-        class="tag-filter"
-        type="text"
-        placeholder="one tag…"
-        data-testid="outline-filter-tag"
-        bind:value={tagFilter}
-        onfocus={() => (tagFocus = true)}
-        onblur={() => (tagFocus = false)}
-      />
-      {#if tagFocus && tagFilter && tagCompletions().length > 0}
-        <span class="tag-completions" data-testid="outline-tag-completions">
-          {#each tagCompletions() as name (name)}
-            <button
-              type="button"
-              data-testid="outline-tag-option"
-              onpointerdown={(e) => {
-                e.preventDefault()
-                tagFilter = name
-              }}
-            >
-              {name}
-            </button>
-          {/each}
-        </span>
-      {/if}
+  <div class="facet-bar" data-testid="outline-filters">
+    <span class="facet-chips" role="group" aria-label="Outline facet">
+      {#each FACETS as option (option.id)}
+        <button
+          type="button"
+          class="chip"
+          class:on={facet === option.id}
+          aria-pressed={facet === option.id}
+          data-testid={`outline-filter-${option.id}`}
+          onclick={() => chooseFacet(option.id)}
+        >
+          {option.label}<span class="facet-count">{facetCounts[option.id]}</span>
+        </button>
+      {/each}
     </span>
+
+    <TextInput
+      variant="pill"
+      data-testid="outline-filter-query"
+      placeholder="⌕ filter…"
+      style="width: 11rem;"
+      bind:value={query}
+    />
+
+    {#if lensTag}
+      <span class="lens-chip" data-testid="outline-lens-chip">
+        ⊙ #{lensTag}
+        <button
+          type="button"
+          aria-label={`Drop #${lensTag} lens`}
+          onclick={() => (lensTag = null)}
+          use:tooltip={{ name: 'Drop tag lens — Esc' }}
+        >✕</button>
+      </span>
+    {/if}
   </div>
 
-  {#each rootLevel as canvas (canvas.canvasId)}
-    <section class="canvas-entry" data-testid={`outline-canvas-${canvas.canvasId}`}>
-      <div class="row canvas-row" data-canvas-header={canvas.canvasId}>
-        <button
-          type="button"
-          class="caret"
-          data-testid="outline-expand"
-          aria-expanded={isExpanded(canvas.canvasId)}
-          onclick={() => toggle(canvas.canvasId)}
-        >
-          {isExpanded(canvas.canvasId) ? '▾' : '▸'}
-        </button>
-        <button
-          type="button"
-          class="row-main"
-          data-testid="outline-canvas-activate"
-          onclick={() => dive(canvas.canvasId, canvas.label)}
-        >
-          <span class="glyph">⊡</span>
-          <span class="title canvas-title">{canvas.label}{canvas.isRoot ? ' (home)' : ''}</span>
-        </button>
-      </div>
-      {#if isExpanded(canvas.canvasId)}
-        {@render canvasBranch(canvas, [canvas.canvasId], canvas.canvasId)}
+  <div class="panes">
+    <div class="tree" role="tree" aria-label="Project outline" data-testid="outline-tree">
+      {#if rows.length === 0}
+        <p class="empty">No rows match this worklist.</p>
       {/if}
-    </section>
-  {/each}
+      {#each rows as row (row.key)}
+        {@const selected = selectedRow?.key === row.key}
+        {@const lensMatch = !lensTag || row.tags.includes(lensTag)}
+        <div
+          class="tree-row"
+          class:selected
+          class:lens-hit={!!lensTag && lensMatch}
+          class:lens-miss={!!lensTag && !lensMatch}
+          class:alias={row.kind === 'alias'}
+          class:structural={row.kind === 'root' || row.kind === 'board'}
+          data-testid={rowTestId(row)}
+          data-node-id={row.selection.nodeId ?? undefined}
+          data-note-id={row.selection.kind === 'note' ? row.selection.noteId : undefined}
+          data-canvas={row.canvas?.canvasId ?? row.aliasCanvasId}
+          data-alias={row.kind === 'alias' ? 'true' : undefined}
+          role="treeitem"
+          tabindex={selected ? 0 : -1}
+          aria-selected={selected}
+          style={`--outline-depth:${row.depth}`}
+          draggable={!!row.node || !!row.note}
+          ondragstart={(event) => {
+            if (row.note) beginRowDrag(event, NOTE_DRAG_MIME, row.note.id)
+            else if (row.node) beginRowDrag(event, NODE_DRAG_MIME, 'id' in row.node ? row.node.id : row.node.nodeId)
+          }}
+          onpointerenter={() => (selectedKey = row.key)}
+          onpointerdown={(event) => beginLongPress(event, row)}
+          onpointerup={cancelLongPress}
+          onpointercancel={cancelLongPress}
+          onpointermove={cancelLongPress}
+          onfocus={() => (selectedKey = row.key)}
+          oncontextmenu={(event) => openRowMenu(event, row)}
+        >
+          <span class="indent"></span>
+          {#if row.canFold}
+            <button
+              type="button"
+              class="caret"
+              data-testid="outline-expand"
+              aria-label={`${row.expanded ? 'Fold' : 'Unfold'} ${row.title}`}
+              aria-expanded={row.expanded}
+              onclick={(event) => {
+                event.stopPropagation()
+                toggle(row)
+              }}
+            >{row.expanded ? '▾' : '▸'}</button>
+          {:else}
+            <span class="caret-space"></span>
+          {/if}
 
-  <!-- Loose IS disconnected: the bin stays under every filter. -->
-  <section class="loose-bin" data-testid="outline-loose-bin">
-      <p class="bin-title">Loose</p>
-      {#if binNodes().length === 0 && looseNotes.length === 0}
-        <p class="bin-empty">Nothing unplaced — every node and note has a home.</p>
-      {/if}
-      <ul>
-        {#each binNodes() as node (node.id)}
-          <li>
-            <div
-              class="row"
-              data-testid="loose-node-row"
-              data-node-id={node.id}
-              draggable="true"
-              ondragstart={(event) => beginRowDrag(event, NODE_DRAG_MIME, node.id)}
-            >
-              <span class="caret-space"></span>
-              <button
-                type="button"
-                class="row-main"
-                data-testid="outline-row-activate"
-                disabled={node.noteId === null}
-                onclick={() => node.noteId !== null && openNote(node.noteId)}
-              >
-                <NodeRow
-                  appearance={node}
-                  label={node.noteTitle ?? shortCode(node.id)}
-                  tags={node.tags}
-                  hasNote={node.noteId !== null}
-                >
-                  {#snippet extra()}
-                    <span class="badge" data-testid="badge-loose">loose</span>
-                    {#if node.noteId === null}
-                      <span class="badge" data-testid="badge-orphan">orphan</span>
-                    {/if}
-                  {/snippet}
-                </NodeRow>
-              </button>
-              <button
-                type="button"
-                class="row-action"
-                data-testid="outline-place-node"
-                onclick={() => placeNodeOnBoard(node.id)}
-                use:tooltip={{ name: 'Place on current canvas' }}
-              >
-                Place
-              </button>
-            </div>
-          </li>
-        {/each}
-        {#if !tagFilter}
-          {#each looseNotes as note (note.id)}
-            <li>
-              <div
-                class="row"
-                data-testid="loose-note-row"
-                data-note-id={note.id}
-                draggable="true"
-                ondragstart={(event) => beginRowDrag(event, NOTE_DRAG_MIME, note.id)}
-              >
-                <span class="caret-space"></span>
+          <button
+            type="button"
+            class="row-main"
+            data-testid="outline-row-activate"
+            onclick={(event) => {
+              event.stopPropagation()
+              selectedKey = row.key
+              if (row.kind === 'alias' && row.aliasCanvasId) flyToEntry(row.aliasCanvasId)
+            }}
+            ondblclick={(event) => {
+              event.stopPropagation()
+              activate(row)
+            }}
+          >
+            <span class="kind-glyph">{row.glyph}</span>
+            <span class:identity-fallback={row.titleFallback !== 'none'} class="row-title">{row.title}</span>
+          </button>
+
+          <span class="badges">
+            {#if row.loose}<span data-testid="badge-loose">·loose</span>{/if}
+            {#if row.orphan}<span data-testid="badge-orphan">·orphan</span>{/if}
+            {#if cleanupActive && row.untagged}<span data-testid="badge-untagged">·untagged</span>{/if}
+          </span>
+
+          {#if row.tags.length > 0}
+            <span class="tags">
+              {#each row.tags as tag (tag)}
                 <button
                   type="button"
-                  class="row-main"
-                  data-testid="outline-row-activate"
-                  onclick={() => openNote(note.id)}
-                >
-                  <span class="glyph" title="note">¶</span>
-                  <span class="title">{note.title}</span>
-                  <span class="badge" data-testid="badge-loose">loose</span>
-                </button>
-                <button
-                  type="button"
-                  class="row-action"
-                  data-testid="outline-place-note"
-                  onclick={() => placeNoteOnBoard(note.id)}
-                  use:tooltip={{ name: 'Place on current canvas' }}
-                >
-                  Place
-                </button>
-                <button
-                  type="button"
-                  class="row-action destructive"
-                  data-testid="outline-trash-note"
-                  onclick={() => void trashLooseNote(note)}
-                  use:tooltip={{ name: 'Trash — recover from the Trash view' }}
-                >
-                  Trash
-                </button>
-              </div>
-            </li>
-          {/each}
-        {/if}
-      </ul>
-    </section>
+                  class="tag-chip"
+                  class:active={lensTag === tag}
+                  onclick={(event) => {
+                    event.stopPropagation()
+                    lensTag = lensTag === tag ? null : tag
+                  }}
+                >#{tag}</button>
+              {/each}
+            </span>
+          {/if}
+
+          <span class="spacer"></span>
+          <span class="meta" data-testid="outline-row-meta">
+            {#if facet !== 'all' || query.trim()}{row.path}{:else if row.kind === 'board' || row.kind === 'root'}{row.canvas?.children.length ?? 0}{/if}
+          </span>
+
+          {#if row.node}
+            <button
+              type="button"
+              class="row-action"
+              data-testid="outline-place-node"
+              onclick={(event) => {
+                event.stopPropagation()
+                placeNodeOnBoard('id' in row.node! ? row.node!.id : row.node!.nodeId)
+              }}
+              use:tooltip={{ name: 'Place on current canvas' }}
+            >Place</button>
+          {:else if row.note}
+            <button
+              type="button"
+              class="row-action"
+              data-testid="outline-place-note"
+              onclick={(event) => {
+                event.stopPropagation()
+                placeNoteOnBoard(row.note!.id)
+              }}
+              use:tooltip={{ name: 'Place on current canvas' }}
+            >Place</button>
+            <button
+              type="button"
+              class="row-action destructive"
+              data-testid="outline-trash-note"
+              onclick={(event) => {
+                event.stopPropagation()
+                void trashLooseNote(row.note!)
+              }}
+              use:tooltip={{ name: 'Trash — recover from the Trash view' }}
+            >Trash</button>
+          {/if}
+        </div>
+      {/each}
+    </div>
+
+    {#if selectedRow && actionDoors}
+      <OutlinePreview
+        row={selectedRow}
+        model={previewModel}
+        {filmstrip}
+        loading={previewLoading}
+        verbs={actionDoors.preview}
+        onLensTag={(tag) => (lensTag = tag)}
+        onMutated={() => void refresh()}
+      />
+    {:else}
+      <aside class="preview-slot"><p class="preview-pending">Select a row to preview it.</p></aside>
+    {/if}
+  </div>
+
+  <footer class="teaching-line">
+    <span data-testid="outline-count-line">{rows.length} shown · {facetCounts.unplaced} loose · {facetCounts.orphans} orphans</span>
+    <span class="teaching-spacer"></span>
+    <span>↵ dive/open · ␣ place · ⌥↵ fly · tab folds · # tag · N note · del trash · esc returns</span>
+  </footer>
 </div>
+
+{#if tagging && selectedRow?.selection.nodeId}
+  <div class="outline-tag-editor" data-testid="outline-tag-editor" style:z-index={Z.popover}>
+    <TagAddField
+      nodeId={selectedRow.selection.nodeId}
+      execute={executeCommand}
+      onAssigned={() => {
+        tagging = false
+        void refresh()
+      }}
+    />
+  </div>
+{/if}
+
+{#if menuPoint && actionDoors}
+  <OutlineContextMenu
+    x={menuPoint.x}
+    y={menuPoint.y}
+    groups={actionDoors.contextMenu}
+    onclose={() => (menuPoint = null)}
+  />
+{/if}
+
+{#if trashImpact && selectedRow}
+  <OutlineTrashConfirm
+    title={selectedRow.title}
+    impact={trashImpact}
+    busy={trashBusy}
+    onconfirm={() => void confirmTrash()}
+    oncancel={() => (trashImpact = null)}
+  />
+{/if}
 
 <style>
   .outline {
-    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
     color: var(--ew-text);
+    font-size: 0.8rem;
   }
 
   .error {
+    flex: none;
+    margin: 0 0 0.5rem;
     color: var(--ew-danger);
   }
 
-  .filters {
+  .facet-bar {
     display: flex;
+    flex: none;
     align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.8rem;
+    gap: 0.55rem;
+    padding: 0 0 0.6rem;
+    white-space: nowrap;
+    overflow-x: auto;
   }
 
-  .chip {
-    padding: 0.15rem 0.55rem;
+  .facet-chips {
+    display: inline-flex;
+    gap: 0.35rem;
+  }
+
+  .chip,
+  .lens-chip,
+  .tag-chip {
+    padding: 0.18rem 0.55rem;
     background: var(--ew-surface-raised);
     color: var(--ew-text-muted);
     border: 1px solid var(--ew-border-strong);
     border-radius: 999px;
-    font-size: 0.72rem;
+    font: inherit;
+  }
+
+  button.chip,
+  button.tag-chip,
+  .lens-chip button {
     cursor: pointer;
   }
 
@@ -572,77 +731,95 @@
     color: var(--ew-on-accent);
   }
 
-  .tag-filter-wrap {
-    position: relative;
+  .facet-count {
+    margin-left: 0.35rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    opacity: 0.72;
   }
 
-  .tag-filter {
-    padding: 0.15rem 0.5rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    font-size: 0.72rem;
+  .lens-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--ew-warn);
   }
 
-  .tag-completions {
-    position: absolute;
-    top: calc(100% + 0.2rem);
-    left: 0;
-    z-index: 1;
+  .lens-chip button {
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+  }
+
+  .panes {
     display: flex;
-    flex-direction: column;
-    min-width: 8rem;
-    background: var(--ew-surface-menu);
+    flex: 1;
+    min-height: 0;
     border: 1px solid var(--ew-border);
-    border-radius: 6px;
+    border-radius: 7px;
     overflow: hidden;
   }
 
-  .tag-completions button {
-    padding: 0.2rem 0.55rem;
+  .tree {
+    flex: 1 1 58%;
+    min-width: 0;
+    overflow: auto;
+    padding: 0.35rem 0;
+    border-right: 1px solid var(--ew-border);
+  }
+
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 1.75rem;
+    padding: 0 0.7rem;
+    cursor: default;
+    outline-offset: -2px;
+  }
+
+  .tree-row:hover {
+    background: var(--ew-surface-hover);
+  }
+
+  .tree-row.selected {
+    background: var(--ew-surface-raised);
+    outline: 2px solid var(--ew-focus-ring);
+  }
+
+  .tree-row.lens-hit {
+    box-shadow: inset 3px 0 0 var(--ew-warn);
+  }
+
+  .tree-row.lens-miss {
+    opacity: 0.35;
+  }
+
+  .indent {
+    flex: none;
+    width: calc(var(--outline-depth) * 1.1rem);
+  }
+
+  .caret,
+  .caret-space {
+    flex: none;
+    width: 1rem;
+  }
+
+  .caret {
+    padding: 0;
     background: transparent;
     border: none;
-    color: var(--ew-text);
-    font-size: 0.72rem;
-    text-align: left;
+    color: var(--ew-accent);
+    font-size: 0.7rem;
     cursor: pointer;
   }
 
-  .tag-completions button:hover {
-    background: var(--ew-surface-raised);
-  }
-
-  ul {
-    margin: 0;
-    padding: 0 0 0 1.1rem;
-    list-style: none;
-  }
-
-  .canvas-entry > .row,
-  .loose-bin ul {
-    padding-left: 0;
-  }
-
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.15rem 0.3rem;
-    border-radius: 4px;
-    min-width: 0;
-  }
-
-  .row:hover {
-    background: var(--ew-surface-raised);
-  }
-
-  /* Row body: the activation target (dive / open note). Inherits the
-     row grammar; disabled rows (bare nodes) read as plain rows. */
   .row-main {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
     min-width: 0;
     padding: 0;
     background: transparent;
@@ -650,20 +827,81 @@
     color: inherit;
     font: inherit;
     text-align: left;
-    cursor: pointer;
-  }
-
-  .row-main:disabled {
     cursor: default;
   }
 
-  /* Hover-revealed per-row action (opacity, not display — Playwright
-     and focus users still reach it). Inline after the row content,
-     NOT right-aligned: the chrome layer's charm rail floats over the
-     sheet's right edge and would swallow the clicks. */
+  .kind-glyph {
+    flex: none;
+    width: 1.1rem;
+    color: var(--ew-text-muted);
+    text-align: center;
+  }
+
+  .alias .kind-glyph,
+  .alias .row-title {
+    color: var(--ew-accent);
+  }
+
+  .row-title {
+    overflow: hidden;
+    color: var(--ew-text-soft);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tree-row.structural .row-title {
+    font-weight: 600;
+  }
+
+  .identity-fallback {
+    color: var(--ew-text-muted) !important;
+    font-family: ui-monospace, monospace;
+    font-weight: 400 !important;
+  }
+
+  .badges,
+  .tags {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .badges {
+    color: var(--ew-warn);
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+  }
+
+  .tag-chip {
+    padding-block: 0;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .tag-chip.active {
+    color: var(--ew-warn);
+    border-color: var(--ew-warn);
+  }
+
+  .spacer,
+  .teaching-spacer {
+    flex: 1;
+  }
+
+  .meta {
+    flex: none;
+    max-width: 36%;
+    overflow: hidden;
+    color: var(--ew-text-subtle);
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .row-action {
     flex: none;
-    margin-left: 0.3rem;
     padding: 0 0.4rem;
     opacity: 0;
     background: var(--ew-surface-raised);
@@ -674,15 +912,60 @@
     cursor: pointer;
   }
 
-  .row:hover .row-action,
-  .row:focus-within .row-action {
+  .tree-row:hover .row-action,
+  .tree-row:focus-within .row-action {
     opacity: 1;
   }
 
-  /* §16 grammar: destructive reads as destructive, even as a row
-     action (AI-IMP-260 — the loose bin's Trash). */
   .row-action.destructive {
     color: var(--ew-danger);
+  }
+
+  .preview-slot {
+    flex: 1 1 42%;
+    min-width: 0;
+    overflow: auto;
+    padding: 1rem 1.1rem;
+  }
+
+  .outline-tag-editor {
+    position: fixed;
+    right: 2rem;
+    top: 8rem;
+    padding: 0.55rem;
+    border: 1px solid var(--ew-border);
+    border-radius: 7px;
+    background: var(--ew-surface-menu);
+    box-shadow: 0 6px 22px var(--ew-shadow);
+  }
+
+  .preview-pending {
+    margin: 0;
+    color: var(--ew-text-subtle);
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+  }
+
+  .preview-pending {
+    margin-top: 1rem;
+    color: var(--ew-text-muted);
+  }
+
+  .empty {
+    margin: 0.8rem;
+    color: var(--ew-text-muted);
+  }
+
+  .teaching-line {
+    display: flex;
+    flex: none;
+    gap: 1rem;
+    padding: 0.45rem 0.1rem 0;
+    overflow: hidden;
+    color: var(--ew-text-subtle);
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    white-space: nowrap;
   }
 
   .outline :global(.flash) {
@@ -690,85 +973,16 @@
   }
 
   @keyframes outline-flash {
-    0% {
-      background: var(--ew-accent);
+    0% { background: var(--ew-accent); }
+    100% { background: transparent; }
+  }
+
+  @media (pointer: coarse) {
+    .tree-row,
+    .row-action,
+    .caret,
+    .tag-chip {
+      min-height: 44px;
     }
-    100% {
-      background: transparent;
-    }
-  }
-
-  button.row {
-    width: 100%;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .alias {
-    color: var(--ew-text-muted);
-    font-style: italic;
-  }
-
-  .caret {
-    flex: none;
-    width: 1.1rem;
-    padding: 0;
-    background: transparent;
-    border: none;
-    color: var(--ew-text-muted);
-    font-size: 0.7rem;
-    cursor: pointer;
-  }
-
-  .caret-space {
-    flex: none;
-    width: 1.1rem;
-  }
-
-  .glyph {
-    color: var(--ew-text-muted);
-    font-size: 0.72rem;
-  }
-
-  .title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .canvas-title {
-    font-weight: 600;
-  }
-
-  .badge {
-    flex: none;
-    padding: 0 0.35rem;
-    border-radius: 7px;
-    background: var(--ew-surface-raised);
-    border: 1px solid var(--ew-border-strong);
-    color: var(--ew-warn);
-    font-size: 0.62rem;
-  }
-
-  .loose-bin {
-    margin-top: 1rem;
-    padding-top: 0.6rem;
-    border-top: 1px solid var(--ew-border);
-  }
-
-  .bin-title {
-    margin: 0 0 0.3rem;
-    font-weight: 600;
-    color: var(--ew-text-muted);
-  }
-
-  .bin-empty {
-    margin: 0;
-    color: var(--ew-text-muted);
-    font-size: 0.72rem;
   }
 </style>

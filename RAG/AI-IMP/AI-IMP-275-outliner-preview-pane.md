@@ -6,12 +6,12 @@ tags:
   - renderer
   - outline
   - notes
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-273, AI-IMP-274]
 parent_epic: [[AI-EPIC-028-the-outliner-control-panel]]
 confidence_score: 0.7
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-11
 ---
 
 
@@ -72,16 +72,16 @@ trip (note exists + row loses ·orphan), disabled fly reason.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Preview renders all §6 content from one selection change;
+- [x] Preview renders all §6 content from one selection change;
       filmstrip thumbs + glyph chips + "+N" honest.
-- [ ] Editable-empty note: ↵ attach = one CreateNoteAndAttach via
+- [x] Editable-empty note: ↵ attach = one CreateNoteAndAttach via
       the port; conflict path never discards the draft; the row's
       ·orphan clears on success.
-- [ ] Adaptive verb row: shipped dispatch per verb; ⌖ disabled
+- [x] Adaptive verb row: shipped dispatch per verb; ⌖ disabled
       with a VISIBLE reason at zero placements; ✎ creates-and-
       attaches on note-less nodes.
-- [ ] Tag chips engage the lens (shared grammar).
-- [ ] e2e green; full check:ci green (pipefail).
+- [x] Tag chips engage the lens (shared grammar).
+- [x] e2e green; full check:ci green (pipefail).
 
 ### Acceptance Criteria
 
@@ -94,6 +94,16 @@ excerpt, and the row's ·orphan state clears
 **AND** fly-to on a loose note is disabled with its reason printed.
 
 ### Issues Encountered
+
+- The existing conflict component was reusable, but its create flow's “Use
+  Existing” would violate capture semantics. Preview capture uses the
+  promotion-shaped Open/Restore/Choose-Different variant; its module-level
+  draft register survives deliberate navigation and success remains exactly
+  one `CreateNoteAndAttach` through the independent note project port.
+- Filmstrip images use the 076 thumbnail route only when readiness is projected;
+  pending/missing derivatives and every non-image child render truthful glyph
+  chips. Persistence/data tests pin filmstrip honesty; focused e2e pins capture
+  and the disabled fly path.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove

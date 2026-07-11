@@ -73,6 +73,9 @@ export interface OutlineChildRow extends NodeAppearanceColumns {
   noteTitle: string | null
   childCanvasId: string | null
   placementCount: number
+  assetContentHash: string | null
+  assetFilename: string | null
+  boardChildCount: number
   tags: string[]
 }
 
@@ -87,7 +90,74 @@ export interface OutlineCanvasRow {
   /** Root canvas, or a canvas whose owning node is unplaced (it can
    * appear as no board's child and must surface at root level). */
   isRootLevel: boolean
+  childCount: number
   children: OutlineChildRow[]
+}
+
+export interface OutlinePlace {
+  placementId: string
+  canvasId: string
+  canvasLabel: string
+}
+
+export type OutlinePreviewTarget =
+  | { kind: 'node'; nodeId: string }
+  | { kind: 'note'; noteId: string }
+
+/** Selection-driven projection for the outliner's preview pane. */
+export interface OutlinePreview {
+  targetKind: 'node' | 'note'
+  nodeId: string | null
+  noteId: string | null
+  noteTitle: string | null
+  noteExcerpt: string | null
+  appearanceKind: string | null
+  appearanceColor: string | null
+  appearanceIcon: string | null
+  assetContentHash: string | null
+  assetFilename: string | null
+  childCanvasId: string | null
+  childCount: number
+  placementCount: number
+  tags: string[]
+  places: OutlinePlace[]
+}
+
+export interface OutlineFacetCounts {
+  all: number
+  unplaced: number
+  orphans: number
+  disconnected: number
+  untagged: number
+}
+
+export type BoardFilmstripItem =
+  | {
+      kind: 'image'
+      placementId: string
+      nodeId: string
+      renderOrder: number
+      label: string
+      contentHash: string
+      filename: string
+      thumbnailReady: boolean
+    }
+  | {
+      kind: 'glyph'
+      placementId: string
+      nodeId: string
+      renderOrder: number
+      label: string
+      appearanceKind: 'board' | 'card' | 'dot' | 'icon' | 'image'
+      appearanceColor: string | null
+      appearanceIcon: string | null
+    }
+
+export interface BoardFilmstrip {
+  canvasId: string
+  items: BoardFilmstripItem[]
+  totalCount: number
+  remainderCount: number
 }
 
 /** A loose note (§14.1): active, attached to no active node. */
@@ -369,10 +439,21 @@ export function registerStructureQueries(registry: QueryRegistry): void {
         noteId: string | null
         noteTitle: string | null
         placementCount: number
+        assetContentHash: string | null
+        assetFilename: string | null
+        childCanvasId: string | null
+        boardChildCount: number
       }
     >(
       `SELECT n.id, n.note_id AS noteId, ${NODE_APPEARANCE_SELECT},
               note.title AS noteTitle,
+              asset.content_hash AS assetContentHash,
+              asset.original_filename AS assetFilename,
+              child.id AS childCanvasId,
+              (SELECT count(*) FROM placement cp
+                JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                WHERE cp.canvas_id = child.id AND cp.lifecycle_state = 'active')
+                AS boardChildCount,
               (SELECT count(*) FROM placement p
                 JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
                 ${usableCanvasOwnerJoin('c', 'co')}
@@ -381,6 +462,10 @@ export function registerStructureQueries(registry: QueryRegistry): void {
        FROM node n
        LEFT JOIN note ON note.id = n.note_id
          AND note.lifecycle_state = 'active'
+       LEFT JOIN asset ON asset.id = n.appearance_asset_id
+         AND asset.lifecycle_state = 'active'
+       LEFT JOIN canvas child ON child.node_id = n.id
+         AND child.lifecycle_state = 'active'
        WHERE n.project_id = ? AND n.lifecycle_state = 'active'
        ORDER BY n.id`,
       ctx.projectId,
@@ -660,10 +745,15 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       noteTitle: string | null
       rootNodeId: string
       ownerPlacements: number
+      childCount: number
     }>(
       `SELECT c.id AS canvasId, n.id AS nodeId,
               note.title AS noteTitle,
               pr.root_node_id AS rootNodeId,
+              (SELECT count(*) FROM placement cp
+                JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                WHERE cp.canvas_id = c.id AND cp.lifecycle_state = 'active')
+                AS childCount,
               (SELECT count(*) FROM placement p
                 JOIN canvas pc ON pc.id = p.canvas_id AND pc.lifecycle_state = 'active'
                 ${usableCanvasOwnerJoin('pc', 'pco')}
@@ -686,12 +776,21 @@ export function registerStructureQueries(registry: QueryRegistry): void {
         noteTitle: string | null
         childCanvasId: string | null
         placementCount: number
+        assetContentHash: string | null
+        assetFilename: string | null
+        boardChildCount: number
       }
     >(
       `SELECT p.canvas_id AS canvasId, p.id AS placementId, n.id AS nodeId,
               p.render_order AS renderOrder, ${NODE_APPEARANCE_SELECT},
               note.id AS noteId, note.title AS noteTitle,
               child.id AS childCanvasId,
+              asset.content_hash AS assetContentHash,
+              asset.original_filename AS assetFilename,
+              (SELECT count(*) FROM placement cp
+                JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                WHERE cp.canvas_id = child.id AND cp.lifecycle_state = 'active')
+                AS boardChildCount,
               (SELECT count(*) FROM placement p2
                 JOIN canvas pc ON pc.id = p2.canvas_id AND pc.lifecycle_state = 'active'
                 ${usableCanvasOwnerJoin('pc', 'pco')}
@@ -702,6 +801,8 @@ export function registerStructureQueries(registry: QueryRegistry): void {
        JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
        LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
        LEFT JOIN canvas child ON child.node_id = n.id AND child.lifecycle_state = 'active'
+       LEFT JOIN asset ON asset.id = n.appearance_asset_id
+         AND asset.lifecycle_state = 'active'
        WHERE p.project_id = ? AND p.lifecycle_state = 'active'
        ORDER BY p.canvas_id, p.render_order, p.id`,
       ctx.projectId,
@@ -733,11 +834,15 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       .map((row) => ({
         canvasId: row.canvasId,
         nodeId: row.nodeId,
-        label: row.noteTitle ?? shortCode(row.nodeId),
+        label:
+          row.nodeId === row.rootNodeId
+            ? 'Home'
+            : (row.noteTitle ?? `unnamed · ${row.childCount} items`),
         isRoot: row.nodeId === row.rootNodeId,
         // A canvas whose owning node has no active placement cannot
         // appear as any board's child — it surfaces at root level.
         isRootLevel: row.nodeId === row.rootNodeId || row.ownerPlacements === 0,
+        childCount: row.childCount,
         children: byCanvas.get(row.canvasId) ?? [],
       }))
       .sort((a, b) =>
@@ -753,6 +858,267 @@ export function registerStructureQueries(registry: QueryRegistry): void {
                 ? -1
                 : 1,
       )
+  })
+
+  // EPIC-028: one renderer query per selected row. The target is
+  // discriminated because the loose bin contains note identities that
+  // deliberately have no node identity (§14.1).
+  registry.register('getOutlinePreview', (ctx, args): OutlinePreview | null => {
+    const target = args as OutlinePreviewTarget
+    if (target.kind === 'note') {
+      const note = ctx.db.get<{
+        noteId: string
+        noteTitle: string
+        noteExcerpt: string
+      }>(
+        `SELECT id AS noteId, title AS noteTitle, substr(body, 1, 240) AS noteExcerpt
+         FROM note
+         WHERE id = ? AND project_id = ? AND lifecycle_state = 'active'`,
+        target.noteId,
+        ctx.projectId,
+      )
+      if (!note) return null
+      return {
+        targetKind: 'note',
+        nodeId: null,
+        ...note,
+        appearanceKind: null,
+        appearanceColor: null,
+        appearanceIcon: null,
+        assetContentHash: null,
+        assetFilename: null,
+        childCanvasId: null,
+        childCount: 0,
+        placementCount: 0,
+        tags: [],
+        places: [],
+      }
+    }
+
+    const node = ctx.db.get<
+      NodeAppearanceColumns & {
+        nodeId: string
+        noteId: string | null
+        noteTitle: string | null
+        noteExcerpt: string | null
+        assetContentHash: string | null
+        assetFilename: string | null
+        childCanvasId: string | null
+        childCount: number
+      }
+    >(
+      `SELECT n.id AS nodeId, note.id AS noteId,
+              note.title AS noteTitle, substr(note.body, 1, 240) AS noteExcerpt,
+              ${NODE_APPEARANCE_SELECT},
+              asset.content_hash AS assetContentHash,
+              asset.original_filename AS assetFilename,
+              child.id AS childCanvasId,
+              (SELECT count(*) FROM placement cp
+                JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                WHERE cp.canvas_id = child.id AND cp.lifecycle_state = 'active')
+                AS childCount
+       FROM node n
+       LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       LEFT JOIN asset ON asset.id = n.appearance_asset_id
+         AND asset.lifecycle_state = 'active'
+       LEFT JOIN canvas child ON child.node_id = n.id
+         AND child.lifecycle_state = 'active'
+       WHERE n.id = ? AND n.project_id = ? AND n.lifecycle_state = 'active'`,
+      target.nodeId,
+      ctx.projectId,
+    )
+    if (!node) return null
+    const places = ctx.db.all<OutlinePlace>(
+      `SELECT p.id AS placementId, c.id AS canvasId,
+              CASE WHEN owner.id = ? THEN 'Home'
+                   WHEN note.title IS NOT NULL THEN note.title
+                   ELSE 'unnamed · ' ||
+                     (SELECT count(*) FROM placement cp
+                       JOIN node cpn ON cpn.id = cp.node_id
+                         AND cpn.lifecycle_state = 'active'
+                       WHERE cp.canvas_id = c.id AND cp.lifecycle_state = 'active') ||
+                     ' items'
+              END AS canvasLabel
+       FROM placement p
+       JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
+       ${usableCanvasOwnerJoin('c', 'owner')}
+       LEFT JOIN note ON note.id = owner.note_id AND note.lifecycle_state = 'active'
+       WHERE p.node_id = ? AND p.lifecycle_state = 'active'
+       ORDER BY lower(canvasLabel), c.id, p.render_order, p.id`,
+      ctx.rootNodeId,
+      target.nodeId,
+    )
+    const tags = ctx.db
+      .all<{ name: string }>(
+        `SELECT t.name FROM tag_assignment ta
+         JOIN tag t ON t.id = ta.tag_id AND t.lifecycle_state = 'active'
+         WHERE ta.node_id = ? AND t.project_id = ?
+         ORDER BY t.name_key`,
+        target.nodeId,
+        ctx.projectId,
+      )
+      .map((tag) => tag.name)
+    return {
+      targetKind: 'node',
+      nodeId: node.nodeId,
+      noteId: node.noteId,
+      noteTitle: node.noteTitle,
+      noteExcerpt: node.noteExcerpt,
+      appearanceKind: node.appearanceKind,
+      appearanceColor: node.appearanceColor,
+      appearanceIcon: node.appearanceIcon,
+      assetContentHash: node.assetContentHash,
+      assetFilename: node.assetFilename,
+      childCanvasId: node.childCanvasId,
+      childCount: node.childCount,
+      placementCount: places.length,
+      tags,
+      places,
+    }
+  })
+
+  registry.register('getOutlineFacetCounts', (ctx): OutlineFacetCounts => {
+    const row = ctx.db.get<OutlineFacetCounts>(
+      `WITH active_nodes AS (
+         SELECT n.id, note.id AS noteId,
+                EXISTS (
+                  SELECT 1 FROM placement p
+                  JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
+                  ${usableCanvasOwnerJoin('c', 'co')}
+                  WHERE p.node_id = n.id AND p.lifecycle_state = 'active'
+                ) AS hasPlacement,
+                EXISTS (
+                  SELECT 1 FROM canvas child
+                  WHERE child.node_id = n.id AND child.lifecycle_state = 'active'
+                ) AS hasCanvas,
+                EXISTS (
+                  SELECT 1 FROM tag_assignment ta
+                  JOIN tag t ON t.id = ta.tag_id AND t.lifecycle_state = 'active'
+                  WHERE ta.node_id = n.id
+                ) AS hasTag
+         FROM node n
+         LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+         WHERE n.project_id = ? AND n.lifecycle_state = 'active' AND n.id <> ?
+       ), loose_notes AS (
+         SELECT note.id FROM note
+         WHERE note.project_id = ? AND note.lifecycle_state = 'active'
+           AND NOT EXISTS (SELECT 1 FROM node n
+             WHERE n.note_id = note.id AND n.lifecycle_state = 'active')
+       )
+       SELECT
+         (SELECT count(*) FROM active_nodes) + (SELECT count(*) FROM loose_notes) AS "all",
+         (SELECT count(*) FROM active_nodes WHERE NOT hasPlacement) +
+           (SELECT count(*) FROM loose_notes) AS unplaced,
+         (SELECT count(*) FROM active_nodes WHERE noteId IS NULL) AS orphans,
+         (SELECT count(*) FROM active_nodes WHERE NOT hasPlacement OR noteId IS NULL) +
+           (SELECT count(*) FROM loose_notes) AS disconnected,
+         (SELECT count(*) FROM active_nodes
+           WHERE NOT hasCanvas AND NOT hasTag) AS untagged`,
+      ctx.projectId,
+      ctx.rootNodeId,
+      ctx.projectId,
+    )
+    return row ?? { all: 0, unplaced: 0, orphans: 0, disconnected: 0, untagged: 0 }
+  })
+
+  registry.register('getBoardFilmstrip', (ctx, args): BoardFilmstrip | null => {
+    const { canvasId, limit: requestedLimit } = args as { canvasId: string; limit?: number }
+    const canvas = ctx.db.get<{ id: string }>(
+      `SELECT c.id FROM canvas c
+       ${usableCanvasOwnerJoin('c', 'owner')}
+       WHERE c.id = ? AND c.project_id = ? AND c.lifecycle_state = 'active'`,
+      canvasId,
+      ctx.projectId,
+    )
+    if (!canvas) return null
+    const numericLimit = requestedLimit === undefined ? 5 : Math.trunc(requestedLimit)
+    const limit = Number.isFinite(numericLimit) ? Math.max(1, Math.min(5, numericLimit)) : 5
+    const rows = ctx.db.all<
+      NodeAppearanceColumns & {
+        placementId: string
+        nodeId: string
+        renderOrder: number
+        noteTitle: string | null
+        childCanvasId: string | null
+        childCount: number
+        contentHash: string | null
+        filename: string | null
+        thumbnailReady: number
+      }
+    >(
+      `SELECT p.id AS placementId, n.id AS nodeId, p.render_order AS renderOrder,
+              ${NODE_APPEARANCE_SELECT},
+              note.title AS noteTitle,
+              child.id AS childCanvasId,
+              (SELECT count(*) FROM placement cp
+                JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                WHERE cp.canvas_id = child.id AND cp.lifecycle_state = 'active')
+                AS childCount,
+              asset.content_hash AS contentHash,
+              asset.original_filename AS filename,
+              EXISTS (
+                SELECT 1 FROM derivative_jobs j
+                JOIN asset ja ON ja.id = j.asset_id
+                WHERE ja.content_hash = asset.content_hash
+                  AND j.kind = 'thumbnail' AND j.state = 'done'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM derivative_jobs pending
+                    JOIN asset pa ON pa.id = pending.asset_id
+                    WHERE pa.content_hash = asset.content_hash
+                      AND pending.kind = 'thumbnail' AND pending.state = 'queued'
+                  )
+              ) AS thumbnailReady
+       FROM placement p
+       JOIN node n ON n.id = p.node_id AND n.lifecycle_state = 'active'
+       LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       LEFT JOIN canvas child ON child.node_id = n.id AND child.lifecycle_state = 'active'
+       LEFT JOIN asset ON asset.id = n.appearance_asset_id
+         AND asset.lifecycle_state = 'active'
+       WHERE p.canvas_id = ? AND p.lifecycle_state = 'active'
+       ORDER BY p.render_order, p.id`,
+      canvasId,
+    )
+    const items: BoardFilmstripItem[] = rows.slice(0, limit).map((row) => {
+      const appearanceKind = row.childCanvasId
+        ? 'board'
+        : row.appearanceKind === 'card' || row.appearanceKind === 'icon' || row.appearanceKind === 'image'
+          ? row.appearanceKind
+          : 'dot'
+      const label =
+        row.noteTitle ??
+        (appearanceKind === 'image' && row.filename
+          ? row.filename
+          : appearanceKind === 'board'
+            ? `unnamed · ${row.childCount} items`
+            : 'untitled node')
+      return row.appearanceKind === 'image' && row.contentHash !== null && row.filename !== null
+        ? ({
+            kind: 'image',
+            placementId: row.placementId,
+            nodeId: row.nodeId,
+            renderOrder: row.renderOrder,
+            label,
+            contentHash: row.contentHash,
+            filename: row.filename,
+            thumbnailReady: row.thumbnailReady === 1,
+          } satisfies BoardFilmstripItem)
+        : ({
+            kind: 'glyph',
+            placementId: row.placementId,
+            nodeId: row.nodeId,
+            renderOrder: row.renderOrder,
+            label,
+            appearanceKind,
+            appearanceColor: row.appearanceColor,
+            appearanceIcon: row.appearanceIcon,
+          } satisfies BoardFilmstripItem)
+    })
+    return {
+      canvasId,
+      items,
+      totalCount: rows.length,
+      remainderCount: Math.max(0, rows.length - items.length),
+    }
   })
 
   // §14.1 (AI-IMP-069): loose NOTES for the outline's root bin —
