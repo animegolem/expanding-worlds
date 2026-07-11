@@ -5,12 +5,12 @@ tags:
   - Implementation
   - renderer
   - outline
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-273]
 parent_epic: [[AI-EPIC-028-the-outliner-control-panel]]
 confidence_score: 0.7
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-11
 ---
 
 
@@ -70,14 +70,14 @@ alias fly, naming fallback, teaching counts).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Two-pane shell with the kit's tree-row anatomy; §14.1
+- [x] Two-pane shell with the kit's tree-row anatomy; §14.1
       semantics preserved (alias fly, loose bin, existing
       actions); selection contract feeding the preview slot.
-- [ ] Facet bar incl. untagged; flatten-with-path; fold-state
+- [x] Facet bar incl. untagged; flatten-with-path; fold-state
       survival; teaching footer counts.
-- [ ] Badge calm rule + naming fallback helper (images filename,
+- [x] Badge calm rule + naming fallback helper (images filename,
       boards unnamed · N, never raw ids anywhere in the view).
-- [ ] e2e grammar pins green; full check:ci green (pipefail).
+- [x] e2e grammar pins green; full check:ci green (pipefail).
 
 ### Acceptance Criteria
 
@@ -91,6 +91,16 @@ and the badges go calm
 image shows its filename in mono — no raw id anywhere.
 
 ### Issues Encountered
+
+- Root-level non-root canvases are unplaced boards. The shell merges their
+  owner facts from the same refresh's unplaced library projection so badges,
+  tags, naming, and facet counts cannot disagree.
+- The old single-click row activation pins were intentionally reworked: rows
+  now select/preview, while double-click, preview verbs, keyboard, and explicit
+  Place controls perform navigation/actions. Alias activation still flies on
+  one click and close-then-act ordering is unchanged.
+- Hidden outline/loose-note shard passed 6/6, including flatten-with-path, fold
+  survival, calm badges, filename/board fallbacks, and the outline-local lens.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
