@@ -222,7 +222,13 @@
 <style>
   .path-wrap {
     position: absolute;
-    top: 0.55rem;
+    /* AI-IMP-272: center in the 46px title band instead of a magic
+       offset — the row shares the traffic lights' y=23 axis (main:
+       trafficLightPosition y:17). */
+    top: 0;
+    height: 46px;
+    display: flex;
+    align-items: center;
     left: 0.6rem;
     max-width: 46vw;
     /* Room for the tail-anchored menu: its right edge lands at
@@ -271,6 +277,14 @@
   }
 
   button {
+    /* AI-IMP-272: one optical center for mixed children — the ⌂ text
+       glyph, crumb text, and the SVG pin each sat in different boxes
+       (text baseline vs line-height:0 glyph wrap), reading a few px
+       off each other. inline-flex + line-height:1 puts every child's
+       content box on the row's center. */
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
     padding: 0.1rem 0.4rem;
     background: transparent;
     color: var(--ew-text);
@@ -313,7 +327,7 @@
 
   /* AI-IMP-214: seat ⌂ in the same centered line-box the pin uses so it
      shares the row's baseline and reads centered on the traffic-light axis
-     (trafficLightPosition y:13) instead of riding high in its own glyph box. */
+     (AI-IMP-272: the shared 46px band axis, lights y:17) instead of riding high in its own glyph box. */
   .home {
     display: inline-grid;
     place-items: center;

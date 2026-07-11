@@ -10,6 +10,20 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
+## [Unreleased]
+
+### For testers
+- Fixed: the top title band finally shows its smoky gradient — it was
+  rendering as a near-invisible sliver — and the home glyph, board
+  name, pin, and the window's own buttons now sit on one shared
+  centerline. (AI-IMP-272)
+
+### Under the hood
+- The title band becomes the prototype-exact 46px axis (AI-IMP-272):
+  fixed-height gradient band with its hairline, traffic lights at the
+  band center, PathBar banded instead of magic-offset, Windows overlay
+  at 46 — the owner's "gradient doesn't fire" was geometry, not CSS.
+
 ## [v0.22.0] — 2026-07-10 — the caption build
 
 ### For testers

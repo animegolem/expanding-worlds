@@ -56,6 +56,10 @@
   --ew-strip-scrim-fade: rgba(12, 13, 16, 0.28);
   --ew-strip-text: #dde3ea;
   --ew-strip-scrim-mid: rgba(12, 13, 16, 0.55);
+  /* AI-IMP-272: the prototype stripzone's bottom hairline — the one
+     edge the smoky band wears. Strip family: chrome-mono, never
+     re-themed. */
+  --ew-strip-hairline: rgba(255, 255, 255, 0.04);
   --ew-dialog-scrim: rgba(0, 0, 0, 0.25);
   --ew-chip-scrim: rgba(23, 25, 29, 0.7);
   --ew-chip-text: #dde3ea;

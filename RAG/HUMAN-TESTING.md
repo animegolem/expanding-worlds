@@ -10,6 +10,16 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **The 46px axis** (AI-IMP-272, 2026-07-10 night — owner's
+  own report): hover the top band — the smoky gradient should now
+  visibly fill a 46px band dissolving into the board (it was a
+  ~30px sliver reading as nothing), with a whisper of a hairline
+  at its bottom edge; ⌂, the board name, and the pin should share
+  one vertical center WITH the traffic lights (which moved down
+  4px to the band's center). alph: on Windows the native
+  minimize/maximize/close now center on the same 46px band —
+  check nothing at the top-right feels off.
+
 - [ ] **CAPTIONS — the register you asked for** (AI-IMP-266,
   2026-07-10 — alph first): right-click any image/dot/card →
   Add caption (or the ✎ charm on an image) and write "I like the

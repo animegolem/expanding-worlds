@@ -10,8 +10,8 @@
 | Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 229 |
-| **Total** | **27** | **265** |
+| Completed | 19 | 230 |
+| **Total** | **27** | **266** |
 
 ## In Progress
 
@@ -132,7 +132,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1219 LOC)
-- apps/desktop/src/main/index.ts (1203 LOC)
+- apps/desktop/src/main/index.ts (1209 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (1176 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (1103 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1053 LOC)
@@ -143,7 +143,7 @@ Generated from tracked files; binary assets excluded.
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/note/panels.ts (880 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
-- RAG/HUMAN-TESTING.md (849 LOC)
+- RAG/HUMAN-TESTING.md (859 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
 - apps/desktop/src/main/snapshot.ts (791 LOC)
@@ -185,16 +185,16 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (548 LOC)
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (546 LOC)
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
+- apps/desktop/src/renderer/chrome/TitleStrip.svelte (537 LOC)
 - packages/protocol/src/index.ts (527 LOC)
-- apps/desktop/src/renderer/chrome/TitleStrip.svelte (525 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
 - packages/persistence/src/export/project-import.test.ts (513 LOC)
 - apps/desktop/e2e/charms.spec.ts (513 LOC)
 - apps/desktop/e2e/canvas.spec.ts (512 LOC)
 - apps/desktop/e2e/caption.spec.ts (493 LOC)
+- apps/desktop/src/renderer/theme.css (491 LOC)
 - packages/persistence/src/handlers/notes.ts (490 LOC)
 - packages/persistence/src/handlers/pin.ts (489 LOC)
-- apps/desktop/src/renderer/theme.css (487 LOC)
 - packages/commands/src/payloads/structure.ts (485 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
@@ -226,11 +226,11 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/undo/undo-store.ts (376 LOC)
 - apps/desktop/src/renderer/views/GalleryFacets.svelte (374 LOC)
 - apps/desktop/src/renderer/note/note-editor.ts (374 LOC)
+- apps/desktop/src/renderer/chrome/PathBar.svelte (374 LOC)
 - packages/persistence/src/queries-gallery.test.ts (373 LOC)
 - apps/desktop/src/renderer/chrome/CharmRail.svelte (364 LOC)
 - packages/canvas-engine/src/hit-test.ts (361 LOC)
 - apps/desktop/src/renderer/chrome/mirror.ts (361 LOC)
-- apps/desktop/src/renderer/chrome/PathBar.svelte (360 LOC)
 - apps/desktop/src/renderer/note/MetadataCard.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)

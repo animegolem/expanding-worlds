@@ -375,11 +375,21 @@
     top: 0;
     left: 0;
     right: 0;
+    /* AI-IMP-272: the band is FIXED at the prototype's 46px (=
+       TITLE_STRIP_REVEAL_PX — the reveal threshold IS the band).
+       The old content-height (~30px, asymmetric padding) collapsed
+       the .82→.28 gradient onto a near-invisible sliver — the
+       owner's "the gradient doesn't fire" — and floated the row off
+       the traffic-light axis. Row centers at y=23 with the lights
+       (main: trafficLightPosition y:17 + 12px dots). */
+    height: 46px;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--ew-strip-hairline);
     z-index: 3;
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.32rem 0.6rem 0.7rem;
+    padding: 0 0.6rem;
     /* AI-IMP-191: matches the ratified prototype's exact stops (stripzone
        [data-strip]) — a continuous smoky decay (.82 → .55 → .28), not a
        flat cap that cuts to fully transparent. All three stops are
@@ -438,7 +448,9 @@
 
   .board-menu {
     position: absolute;
-    top: 2rem;
+    /* AI-IMP-272: clear the 46px band + a small gap (was 2rem under
+       the old ~30px content-height strip). */
+    top: 50px;
     /* AI-IMP-191: mirrors .board-trigger's move to the strip's right
        edge — the dropdown stays anchored under its own opener. */
     right: 0.5rem;

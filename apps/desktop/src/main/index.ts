@@ -653,12 +653,18 @@ function framelessWindowOptions(): Electron.BrowserWindowConstructorOptions {
     // reported gallery picker on a selected frame) appears dead — the
     // pick never lands. "The window is the board": a click should always
     // do the thing under it, key or not. macOS-only option.
-    return { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 13 }, acceptFirstMouse: true }
+    // AI-IMP-272: y:17 centers the 12px lights at y=23 — the vertical
+    // center of the 46px title band, prototype-exact (Pin & Menu Motion
+    // Prototype stripzone: height 46, lights top:17). Every top-chrome
+    // row centers on the same axis.
+    return { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 17 }, acceptFirstMouse: true }
   }
   if (process.platform === 'win32') {
     return {
       titleBarStyle: 'hidden',
-      titleBarOverlay: { color: '#00000000', symbolColor: '#c8ccd2', height: 34 },
+      // AI-IMP-272: overlay height joins the 46px band axis so the OS
+      // window controls center at y=23 with the strip/path rows.
+      titleBarOverlay: { color: '#00000000', symbolColor: '#c8ccd2', height: 46 },
     }
   }
   // linux and anything else: bare frameless; controls live in the strip.
