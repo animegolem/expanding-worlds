@@ -58,6 +58,16 @@ all moved into the RFC.
   seed image lands (placed on Home vs inbox), naming moment (at
   drop vs deferred), plus the still-open naming/display rules and
   Home empty state.
+  **OWNER RULINGS (2026-07-10 late):** cover source — the DROPPED
+  IMAGE IS THE COVER (a board is always associated with a cover
+  image), plus optionally a pin-like choose/upload-cover button;
+  naming — NOT forced: the picker displays COVERS, a name only
+  when one is set ("it could just be covers unless you add a
+  name"); Home empty state — HOME STAYS A PURE BOARD (no picker
+  affordances echoed inside it). Still open: where the dropped
+  seed image LANDS in the new project (placed on Home vs inbox),
+  and the no-slug display rules (now dovetailing with the
+  control-panel outline's "unnamed #1–6" rendering).
 
 - **Reading a note on the board — the open-verb as a camera verb**
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
@@ -217,6 +227,33 @@ all moved into the RFC.
   no-slug display rules in the Home/launcher cluster). Wants a
   design pass with the note-lifecycle work; the tagged-state
   column also depends on the traveling-tags ruling landing first.
+  TEXT-TOOL RULING (owner, same night): promotion is GO — "build
+  it out of the assets we have now"; a special text-asset class
+  is a possible LATER shape, not this build.
+
+- **The touch/pencil design pass (owner directive, 2026-07-10
+  late — the frame for the NEXT design pass).** "All of our
+  assets are a little bit provisional… redesign the major
+  surfaces with the mind of: how does this app work if you have
+  to use your big grubby fingers or a pencil to control it?"
+  Assessment at capture: "I don't think we're terrible there,"
+  but every surface conversation from here (note lifecycle,
+  control-panel outline, launcher picker, right-rail membership)
+  should carry the touch/pencil question as a standing column —
+  this is the iPad/V2 shape (tabled entry below) reaching
+  forward into desktop surface design. Feeds the owner's
+  in-progress design-session documents.
+
+- **Library activity log / notification inbox (owner,
+  2026-07-10, born from the tags sync ruling).** Bidirectional
+  settle-moment sync needs announced changes; announcements need
+  a HOME: a notification-log surface, probably part of the
+  library — "visibility into the overall activity" (tags updated
+  from the library on open, tag manifests applied on library
+  open, sync verb results, later: snapshot/projection events).
+  Shape TBD with the tags epic; the principle is ruled — inbound
+  changes are never silent, and the log is where they account
+  for themselves.
 
 - **The canonical projection (CONVERGED 2026-07-10, both Fables +
   owner; awaiting formal §11/§16 ratification at the strategy
@@ -366,6 +403,31 @@ all moved into the RFC.
   per-tag/category "local only" exception flag; if no: ship
   without one. Close-time inbox mechanics from the original
   proposal carry over unchanged.
+  **OWNER RULINGS (2026-07-10 late, five of six settled):**
+  (1) Sync is BIDIRECTIONAL at settle moments — close pushes out,
+  open pulls in, inbound changes ANNOUNCED never silent; plus a
+  NOTIFICATION/ACTIVITY LOG surface, probably part of the library
+  ("visibility into the overall activity") — new design item.
+  (2) Rename: last-settle-wins, announced at the losing end.
+  DELETE remains THE open chad — "that's a hard one": no shape is
+  clean on either end. Owner's candidate: a SCOPE DIALOGUE at
+  delete time ("delete from the library, or from this project?")
+  — the choice is cheap in the moment and not atomic to anything
+  else. Softener noted: tags have no trash today; giving tag
+  deletion trash semantics would make nothing authoritative on
+  first delete. UNRESOLVED — decide at epic cut or on alph
+  contact. (3) Provenance ACCEPTED as DATA: tag rows carry origin
+  (which project pushed them), and surfaces may FILTER by
+  provenance — completion noise handled by ranking + filter, not
+  lanes. (4) NO OPT-OUT — "be opinionated, get a buildout, let
+  him react to something in his hands." (5) Categories travel
+  with their tags — forced by the model, ruled anyway; wizard
+  required-field configs converge toward the library's over time.
+  (6) Settle moments: OPEN + CLOSE, plus the deliberate sync verb
+  as a full QUIESCE — drop every db connection, run the sync,
+  resume the app (the owner's "active git sync" shape). Remaining
+  before epic cut: the delete dialogue final shape + alph's
+  in-hand reaction to the whole model.
 
 - **Tag categories — the missing primitive (RATIFIED 2026-07-09,
   owner + alph, Discord; awaiting epic cut + RFC fold-in):** typed
