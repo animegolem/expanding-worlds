@@ -277,6 +277,27 @@ all moved into the RFC.
   (the strip never lies), LRU keyed canvasId+revision. (a)+(b)
   land as the kit's v1.1 pass with the grammar bible; none of it
   blocks the build conversation.
+  **KIT 1.1 + THE GRAMMAR BIBLE ARRIVED (owner, same night —
+  RAG/design/Outliner UI Kit 1.1.zip).** The v1.1 pass ships both
+  cosigned resolutions (untagged facet in the kit logic;
+  editable-empty note with "add a note…" + ↵ attach in the
+  preview) PLUS a row context menu (right-click/long-press →
+  MenuPopover) and "Outliner Grammar.dc.html" — THE INVARIANT
+  GRAMMAR: rows are navigation never inputs; three badge axes
+  with the calm rule (untagged badges only under a cleanup facet;
+  disconnected = loose ∪ orphan, untagged never folds in);
+  naming fallback ratified as its section 4 (filename-mono for
+  images, "unnamed · N items" for boards, raw ids never);
+  filters FLATTEN into a worklist with path-meta, fold state
+  survives; the preview contract (cursor-follow, filmstrip spec
+  as cosigned, editable-empty note, adaptive verbs with
+  disabled-reasons); ONE VERB INVENTORY through three doors
+  (preview row / context menu / keyboard — no door offers what
+  another lacks; trash joins the inventory); the lens grammar
+  shared with §4.8/§7.5; and the touch dialect. STATUS: this
+  surface is READY TO CUT as an epic (rebuild of OutlineView to
+  the kit + grammar) whenever the owner assigns the build slot —
+  the design conversation is DONE.
 
 - **The touch/pencil design pass (owner directive, 2026-07-10
   late — the frame for the NEXT design pass).** "All of our
