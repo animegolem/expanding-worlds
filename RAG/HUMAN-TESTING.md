@@ -10,6 +10,21 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **THE OUTLINER IS A CONTROL PANEL** (EPIC-028, 2026-07-11 —
+  your kit, built overnight): open ▤ in a populated project. Tree
+  left, live preview right following your cursor — never a click
+  cost. Try: the facet chips (untagged is new — the worklist
+  flattens with paths, fold state survives clearing it); hover a
+  board (truthful filmstrip — glyph chips for dots/notes, thumbs
+  for images); an ORPHAN row → type in the preview's "add a
+  note…" and hit ↵ (one command, the ·orphan badge clears — the
+  OCD loop working); right-click a row (the new menu; same verbs
+  as the preview chips and the keys: ↵ ␣ ⌥↵ tab # N Del esc);
+  Del on a placed node (the new impact confirm); a tag chip
+  (outline-local lens). Feel questions: does the cleanup loop
+  itch the right way, and does cursor-follow preview lag anywhere
+  on your real project?
+
 - [ ] **ONE TAG UNIVERSE** (AI-IMP-271, 2026-07-11 — alph's
   original surprise, fixed for real): with your library designated,
   put the same image in the library and a project. Tag it in the

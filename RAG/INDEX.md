@@ -6,11 +6,11 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 3 | 0 |
-| Planned | 5 | 7 |
+| In Progress | 2 | 0 |
+| Planned | 5 | 3 |
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
-| Completed | 19 | 231 |
+| Completed | 20 | 235 |
 | **Total** | **28** | **270** |
 
 ## In Progress
@@ -34,17 +34,6 @@
 - [[AI-IMP-253-e2e-helper-adoption|IMP-253]] E2e helper adoption — planned
 - [[AI-IMP-254-persistence-test-temp-cleanup|IMP-254]] Persistence test temp cleanup — planned
 - [[AI-IMP-256-codex-epic-027-resolutions-merge|IMP-256]] Codex epic 027 resolutions merge — completed
-
----
-
-### [[AI-EPIC-028-the-outliner-control-panel|EPIC-028: The outliner control panel]]
-> The shipped outline (AI-IMP-069/070) is a read-mostly tree with two
-
-**IMPs:**
-- [[AI-IMP-273-outliner-read-models|IMP-273]] Outliner read models — planned
-- [[AI-IMP-274-outliner-two-pane-shell|IMP-274]] Outliner two pane shell — planned
-- [[AI-IMP-275-outliner-preview-pane|IMP-275]] Outliner preview pane — planned
-- [[AI-IMP-276-outliner-verb-doors|IMP-276]] Outliner verb doors — planned
 
 ---
 
@@ -143,26 +132,26 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
 - RAG/design/outliner-kit-1.1/support.js (1746 LOC)
 - RAG/design/outliner-kit-1.1/_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/_ds_bundle.js (1450 LOC)
+- packages/persistence/src/queries-structure.test.ts (1335 LOC)
 - apps/desktop/src/main/index.ts (1256 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1219 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (1176 LOC)
+- packages/persistence/src/queries-structure.ts (1139 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (1103 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1053 LOC)
-- packages/persistence/src/queries-structure.test.ts (1041 LOC)
 - apps/desktop/e2e/notes.spec.ts (1025 LOC)
 - apps/desktop/src/renderer/views/SettingsView.svelte (1022 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (958 LOC)
+- apps/desktop/src/renderer/views/OutlineView.svelte (988 LOC)
+- apps/desktop/src/renderer/menus/ContextMenu.ts (963 LOC)
+- RAG/HUMAN-TESTING.md (889 LOC)
 - RAG/design/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/note/panels.ts (880 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
-- RAG/HUMAN-TESTING.md (874 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (851 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
 - apps/desktop/src/main/snapshot.ts (791 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (785 LOC)
-- apps/desktop/src/renderer/views/OutlineView.svelte (774 LOC)
-- packages/persistence/src/queries-structure.ts (773 LOC)
 - RAG/design/Usage Storyboard.dc.html (751 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (726 LOC)
@@ -215,6 +204,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/nodes.ts (465 LOC)
 - spike/webkit-renderer/src/tiering.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
+- apps/desktop/e2e/outline.spec.ts (460 LOC)
 - packages/persistence/src/export/project-import.ts (459 LOC)
 - packages/persistence/src/export/project-export.ts (457 LOC)
 - RAG/design/outliner-kit-1.1/_ds/expanding-worlds-design-system-5b63d5dc-759d-49c1-b0a0-ee8588b0897a/_adherence.oxlintrc.json (446 LOC)
@@ -229,7 +219,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/handlers/decorations.test.ts (402 LOC)
 - packages/persistence/src/lock.ts (401 LOC)
 - packages/canvas-engine/src/hit-test.test.ts (397 LOC)
-- apps/desktop/e2e/outline.spec.ts (397 LOC)
+- apps/desktop/src/renderer/views/outline-model.ts (396 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
 - apps/desktop/src/renderer/undo/undo-store.ts (387 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (386 LOC)
@@ -281,7 +271,7 @@ Generated from tracked files; binary assets excluded.
 
 ## Completed
 <details>
-<summary>19 EPICs, 143 IMPs completed</summary>
+<summary>20 EPICs, 147 IMPs completed</summary>
 
 - [[AI-EPIC-001-renderer-spike|EPIC-001]] Renderer spike — 2026-07-03
   - [[AI-IMP-001-spike-harness-and-scenario|IMP-001]] Spike harness and shared scenario fixtures — completed
@@ -439,5 +429,10 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — completed
   - [[AI-IMP-135-lifecycle-transitions-and-beats|IMP-135]] Lifecycle transitions and beats — completed
   - [[AI-IMP-194-note-paper-shape|IMP-194]] Note paper shape — planned
+- [[AI-EPIC-028-the-outliner-control-panel|EPIC-028]] The outliner control panel — 2026-07-11
+  - [[AI-IMP-273-outliner-read-models|IMP-273]] Outliner read models — completed
+  - [[AI-IMP-274-outliner-two-pane-shell|IMP-274]] Outliner two pane shell — completed
+  - [[AI-IMP-275-outliner-preview-pane|IMP-275]] Outliner preview pane — completed
+  - [[AI-IMP-276-outliner-verb-doors|IMP-276]] Outliner verb doors — completed
 
 </details>

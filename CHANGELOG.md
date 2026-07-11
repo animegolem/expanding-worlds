@@ -10,6 +10,28 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
+## [v0.24.0] — 2026-07-11 — the control-panel build
+
+### For testers
+- New: the outline (▤) is a two-pane control panel — tree on the left,
+  a live preview following your cursor on the right. Boards preview as
+  honest filmstrips, images full-bleed. Facet chips (including the new
+  UNTAGGED) flatten the tree into a cleanup worklist with paths; your
+  fold state survives. Type straight into an orphan row's "add a
+  note…" and hit Enter — the badge clears. Right-click any row for the
+  new menu; the keyboard matches (Enter, Space, Tab, #, N, Delete,
+  Esc). Raw ids are gone: images show their filename, unnamed boards
+  read "unnamed · N items."
+
+### Under the hood
+- AI-EPIC-028 (273-276, the Codex wave on Outliner Kit 1.1 + the
+  invariant grammar): typed preview/facet/filmstrip read models with a
+  revision-keyed LRU; the pure shell model (flatten, fold survival,
+  calm badges); port-backed one-command note capture with the
+  promotion-shaped conflict flow; ONE verb inventory enumerated
+  through three doors with parity asserted by test; the outline-owned
+  getNodeImpact trash confirmation; takeover right-click leak fixed.
+
 ## [v0.23.0] — 2026-07-11 — the one-universe build
 
 ### For testers
