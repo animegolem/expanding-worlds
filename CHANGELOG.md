@@ -10,7 +10,7 @@ and **Under the hood** — the closed tickets. Work lands under
 Entries v0.5.0–v0.19.0 are a light backfill distilled from the tag
 annotations.
 
-## [Unreleased]
+## [v0.23.0] — 2026-07-11 — the one-universe build
 
 ### For testers
 - New: tags on matching library and project images now meet at natural
