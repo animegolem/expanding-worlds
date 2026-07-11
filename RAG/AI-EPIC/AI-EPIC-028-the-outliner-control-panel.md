@@ -27,8 +27,10 @@ reframed the surface: it should be the CONTROL PANEL of the open
 world — the place where incompleteness (no words, no place, no
 taxonomy) itches visibly and is satisfying to clear, because that
 loop is how people come to manage their stuff as data. The Outliner
-UI Kit 1.1 + "Outliner Grammar" companion (RAG/design/
-outliner-kit-1.1/, owner-authored on the design system) resolved the
+UI Kit 1.1 + "Outliner Grammar" companion (`RAG/design/ui-kits/
+Outliner UI Kit 1.1.zip`, owner-authored on the design system;
+one zip per surface + its invariants is that directory's standing
+convention) resolved the
 design conversation the same night: the yazi hybrid — org-tree
 master + cursor-follow preview — with an invariant grammar that
 survives desktop and touch alike.

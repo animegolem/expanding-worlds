@@ -18,7 +18,7 @@ created_date: 2026-07-11
 related_files:
   - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md
   - RAG/DESIGN-QUEUE.md
-  - RAG/design/outliner-kit-1.1/
+  - RAG/design/ui-kits/Outliner UI Kit 1.1.zip
   - RAG/spike-reports/2026-07-10-tag-sync-census.md
   - CHANGELOG.md
 confidence_score: 0.9

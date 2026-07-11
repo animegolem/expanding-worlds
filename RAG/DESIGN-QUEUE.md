@@ -277,8 +277,10 @@ all moved into the RFC.
   (the strip never lies), LRU keyed canvasId+revision. (a)+(b)
   land as the kit's v1.1 pass with the grammar bible; none of it
   blocks the build conversation.
-  **KIT 1.1 + THE GRAMMAR BIBLE ARRIVED (owner, same night —
-  RAG/design/Outliner UI Kit 1.1.zip).** The v1.1 pass ships both
+  **KIT 1.1 + THE GRAMMAR BIBLE ARRIVED (owner, same night — now
+  at `RAG/design/ui-kits/Outliner UI Kit 1.1.zip`; that directory
+  is the standing home for surface kits, one zip per surface with
+  its invariant grammar inside).** The v1.1 pass ships both
   cosigned resolutions (untagged facet in the kit logic;
   editable-empty note with "add a note…" + ↵ attach in the
   preview) PLUS a row context menu (right-click/long-press →
