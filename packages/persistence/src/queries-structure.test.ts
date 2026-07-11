@@ -16,6 +16,7 @@ import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry } from './queries'
 import {
   registerStructureQueries,
+  type BoardFilmstrip,
   type BookmarkListRow,
   type CanvasContentItem,
   type CanvasScene,
@@ -109,6 +110,24 @@ function insertNote(title: string, body = ''): string {
     now,
   )
   return noteId
+}
+
+function insertImageAsset(contentHash: string, filename = 'reference.png'): string {
+  const assetId = uuidv7()
+  const now = new Date().toISOString()
+  handle.db.run(
+    `INSERT INTO asset (id, project_id, kind, content_hash, original_filename,
+                        mime_type, width, height, storage_path, created_at, updated_at)
+     VALUES (?, ?, 'image', ?, ?, 'image/png', 640, 480, ?, ?, ?)`,
+    assetId,
+    handle.projectId,
+    contentHash,
+    filename,
+    `assets/${contentHash}`,
+    now,
+    now,
+  )
+  return assetId
 }
 
 describe('getCanvasContents', () => {
@@ -433,6 +452,281 @@ describe('getOutlineTree / listLooseNotes (§14.1, AI-IMP-069)', () => {
     // library's unplaced rows, not here — never listed twice.
     const rows = query<Array<{ id: string; title: string }>>('listLooseNotes')
     expect(rows).toEqual([{ id: looseId, title: 'Adrift' }])
+  })
+})
+
+describe('outliner control-panel read models (AI-IMP-273)', () => {
+  it('previews node and loose-note targets without a renderer waterfall', () => {
+    const assetId = insertImageAsset('a'.repeat(64), 'north-cliffs.png')
+    const noteId = insertNote('North cliffs', 'x'.repeat(300))
+    const nodeId = createNode()
+    committed('AttachNoteToNode', { nodeId, noteId })
+    committed('SetNodeAppearance', {
+      nodeId,
+      appearance: { kind: 'image', assetId, crop: null },
+    })
+    const placementId = createPlacement(nodeId)
+    const tagId = uuidv7()
+    committed('CreateTag', { tagId, name: 'region' })
+    committed('AssignTagToNode', { tagId, nodeId })
+
+    expect(query('getOutlinePreview', { kind: 'node', nodeId })).toMatchObject({
+      targetKind: 'node',
+      nodeId,
+      noteId,
+      noteTitle: 'North cliffs',
+      noteExcerpt: 'x'.repeat(240),
+      appearanceKind: 'image',
+      assetContentHash: 'a'.repeat(64),
+      assetFilename: 'north-cliffs.png',
+      childCanvasId: null,
+      childCount: 0,
+      placementCount: 1,
+      tags: ['region'],
+      places: [{ placementId, canvasId: handle.rootCanvasId, canvasLabel: 'Home' }],
+    })
+
+    const looseNoteId = insertNote('Loose prose', 'still useful')
+    expect(query('getOutlinePreview', { kind: 'note', noteId: looseNoteId })).toEqual({
+      targetKind: 'note',
+      nodeId: null,
+      noteId: looseNoteId,
+      noteTitle: 'Loose prose',
+      noteExcerpt: 'still useful',
+      appearanceKind: null,
+      appearanceColor: null,
+      appearanceIcon: null,
+      assetContentHash: null,
+      assetFilename: null,
+      childCanvasId: null,
+      childCount: 0,
+      placementCount: 0,
+      tags: [],
+      places: [],
+    })
+    expect(query('getOutlinePreview', { kind: 'note', noteId: uuidv7() })).toBeNull()
+  })
+
+  it('extends tree and unplaced-library rows with honest naming facts', () => {
+    const imageId = createNode()
+    const assetId = insertImageAsset('b'.repeat(64), 'harbor.png')
+    committed('SetNodeAppearance', {
+      nodeId: imageId,
+      appearance: { kind: 'image', assetId, crop: null },
+    })
+    createPlacement(imageId)
+
+    const boardNodeId = createNode()
+    const boardCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: boardCanvasId, nodeId: boardNodeId })
+    createPlacement(boardNodeId)
+    createPlacement(createNode(), boardCanvasId)
+
+    const root = query<OutlineCanvasRow[]>('getOutlineTree').find((row) => row.isRoot)!
+    expect(root.label).toBe('Home')
+    expect(root.childCount).toBe(2)
+    expect(root.children.find((row) => row.nodeId === imageId)).toMatchObject({
+      assetContentHash: 'b'.repeat(64),
+      assetFilename: 'harbor.png',
+      boardChildCount: 0,
+    })
+    expect(root.children.find((row) => row.nodeId === boardNodeId)).toMatchObject({
+      childCanvasId: boardCanvasId,
+      boardChildCount: 1,
+    })
+    expect(query<OutlineCanvasRow[]>('getOutlineTree').find((row) => row.canvasId === boardCanvasId))
+      .toMatchObject({ label: 'unnamed · 1 items', childCount: 1 })
+
+    const looseImageId = createNode()
+    const looseAssetId = insertImageAsset('c'.repeat(64), 'loose.png')
+    committed('SetNodeAppearance', {
+      nodeId: looseImageId,
+      appearance: { kind: 'image', assetId: looseAssetId, crop: null },
+    })
+    const loose = query<Array<Record<string, unknown>>>('listNodeLibrary', {
+      filter: 'unplaced',
+    }).find((row) => row.id === looseImageId)
+    expect(loose).toMatchObject({
+      assetContentHash: 'c'.repeat(64),
+      assetFilename: 'loose.png',
+      childCanvasId: null,
+      boardChildCount: 0,
+    })
+  })
+
+  it('counts the independent cleanup axes without counting the protected root', () => {
+    const orphanDot = createNode()
+    committed('SetNodeAppearance', {
+      nodeId: orphanDot,
+      appearance: { kind: 'dot', color: 'accent' },
+    })
+    createPlacement(orphanDot)
+
+    const taggedImage = createNode()
+    const imageNote = insertNote('Mapped image')
+    committed('AttachNoteToNode', { nodeId: taggedImage, noteId: imageNote })
+    const taggedAsset = insertImageAsset('d'.repeat(64))
+    committed('SetNodeAppearance', {
+      nodeId: taggedImage,
+      appearance: { kind: 'image', assetId: taggedAsset, crop: null },
+    })
+    createPlacement(taggedImage)
+    const tagId = uuidv7()
+    committed('CreateTag', { tagId, name: 'mapped' })
+    committed('AssignTagToNode', { tagId, nodeId: taggedImage })
+
+    const unplacedIcon = createNode()
+    const iconNote = insertNote('Unplaced icon')
+    committed('AttachNoteToNode', { nodeId: unplacedIcon, noteId: iconNote })
+    committed('SetNodeAppearance', {
+      nodeId: unplacedIcon,
+      appearance: { kind: 'icon', icon: 'star' },
+    })
+    insertNote('Loose note')
+
+    expect(query('getOutlineFacetCounts')).toEqual({
+      all: 4,
+      unplaced: 2,
+      orphans: 1,
+      disconnected: 3,
+      untagged: 2,
+    })
+  })
+
+  it('treats a trashed attached note as orphaned and every non-board node as taggable', () => {
+    const nodeId = createNode() // The default/null appearance is still a pin.
+    const noteId = insertNote('Temporarily gone')
+    committed('AttachNoteToNode', { nodeId, noteId })
+    createPlacement(nodeId)
+    handle.db.run("UPDATE note SET lifecycle_state = 'trashed' WHERE id = ?", noteId)
+
+    expect(query('getOutlineFacetCounts')).toEqual({
+      all: 1,
+      unplaced: 0,
+      orphans: 1,
+      disconnected: 1,
+      untagged: 1,
+    })
+  })
+
+  it('returns a render-order filmstrip with honest glyphs and a remainder', () => {
+    const boardNodeId = createNode()
+    const boardCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: boardCanvasId, nodeId: boardNodeId })
+
+    const imageNodeId = createNode()
+    const assetId = insertImageAsset('e'.repeat(64), 'first.png')
+    committed('SetNodeAppearance', {
+      nodeId: imageNodeId,
+      appearance: { kind: 'image', assetId, crop: null },
+    })
+    const imagePlacementId = createPlacement(imageNodeId, boardCanvasId)
+    const jobId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO derivative_jobs (id, asset_id, kind, state, created_at, updated_at)
+       VALUES (?, ?, 'thumbnail', 'done', ?, ?)`,
+      jobId,
+      assetId,
+      now,
+      now,
+    )
+
+    const dotNodeId = createNode()
+    committed('SetNodeAppearance', {
+      nodeId: dotNodeId,
+      appearance: { kind: 'dot', color: 'accent' },
+    })
+    const dotPlacementId = createPlacement(dotNodeId, boardCanvasId)
+    for (let i = 0; i < 4; i += 1) createPlacement(createNode(), boardCanvasId)
+    createDecoration(boardCanvasId) // Decorations are not node children.
+
+    expect(query('getBoardFilmstrip', { canvasId: boardCanvasId, limit: 2 })).toEqual({
+      canvasId: boardCanvasId,
+      items: [
+        {
+          kind: 'image',
+          placementId: imagePlacementId,
+          nodeId: imageNodeId,
+          renderOrder: 1024,
+          label: 'first.png',
+          contentHash: 'e'.repeat(64),
+          filename: 'first.png',
+          thumbnailReady: true,
+        },
+        {
+          kind: 'glyph',
+          placementId: dotPlacementId,
+          nodeId: dotNodeId,
+          renderOrder: 2048,
+          label: 'untitled node',
+          appearanceKind: 'dot',
+          appearanceColor: 'accent',
+          appearanceIcon: null,
+        },
+      ],
+      totalCount: 6,
+      remainderCount: 4,
+    })
+    expect(query('getBoardFilmstrip', { canvasId: uuidv7() })).toBeNull()
+  })
+
+  it('distinguishes nested-board glyphs, empty boards, and pending thumbnails', () => {
+    const boardNodeId = createNode()
+    const boardCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: boardCanvasId, nodeId: boardNodeId })
+    expect(query('getBoardFilmstrip', { canvasId: boardCanvasId })).toEqual({
+      canvasId: boardCanvasId,
+      items: [],
+      totalCount: 0,
+      remainderCount: 0,
+    })
+
+    const nestedNodeId = createNode()
+    const nestedCanvasId = uuidv7()
+    committed('CreateCanvas', { canvasId: nestedCanvasId, nodeId: nestedNodeId })
+    createPlacement(createNode(), nestedCanvasId)
+    const nestedPlacementId = createPlacement(nestedNodeId, boardCanvasId)
+
+    const imageNodeId = createNode()
+    const assetId = insertImageAsset('f'.repeat(64), 'waiting.png')
+    committed('SetNodeAppearance', {
+      nodeId: imageNodeId,
+      appearance: { kind: 'image', assetId, crop: null },
+    })
+    createPlacement(imageNodeId, boardCanvasId)
+    const now = new Date().toISOString()
+    for (const [state, suffix] of [
+      ['done', 'done'],
+      ['queued', 'queued'],
+    ] as const) {
+      handle.db.run(
+        `INSERT INTO derivative_jobs (id, asset_id, kind, state, created_at, updated_at)
+         VALUES (?, ?, 'thumbnail', ?, ?, ?)`,
+        `${uuidv7()}-${suffix}`,
+        assetId,
+        state,
+        now,
+        now,
+      )
+    }
+
+    const strip = query<BoardFilmstrip>('getBoardFilmstrip', { canvasId: boardCanvasId })
+    expect(strip.items[0]).toEqual({
+      kind: 'glyph',
+      placementId: nestedPlacementId,
+      nodeId: nestedNodeId,
+      renderOrder: expect.any(Number),
+      label: 'unnamed · 1 items',
+      appearanceKind: 'board',
+      appearanceColor: null,
+      appearanceIcon: null,
+    })
+    expect(strip.items[1]).toMatchObject({
+      kind: 'image',
+      label: 'waiting.png',
+      thumbnailReady: false,
+    })
   })
 })
 

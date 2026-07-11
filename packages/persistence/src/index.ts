@@ -109,7 +109,18 @@ export {
   RENDER_ORDER_GAP,
   type OrderedItem,
 } from './render-order'
-export { registerStructureQueries, type CanvasContentItem } from './queries-structure'
+export {
+  registerStructureQueries,
+  type BoardFilmstrip,
+  type BoardFilmstripItem,
+  type CanvasContentItem,
+  type OutlineCanvasRow,
+  type OutlineChildRow,
+  type OutlineFacetCounts,
+  type OutlinePlace,
+  type OutlinePreview,
+  type OutlinePreviewTarget,
+} from './queries-structure'
 export { registerFrameHandlers } from './handlers/frames'
 export {
   registerFrameQueries,

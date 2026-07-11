@@ -5,12 +5,12 @@ tags:
   - Implementation
   - persistence
   - outline
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-028-the-outliner-control-panel]]
 confidence_score: 0.75
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-11
 ---
 
 
@@ -65,15 +65,15 @@ untagged counting).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] getOutlinePreview: kind facts, excerpt clamp, places with
+- [x] getOutlinePreview: kind facts, excerpt clamp, places with
       labels, tags; unit tests incl. orphan/loose/untitled rows.
-- [ ] getBoardFilmstrip: render_order slice, image-vs-glyph
+- [x] getBoardFilmstrip: render_order slice, image-vs-glyph
       descriptors, +N; unit tests incl. non-image children.
-- [ ] Untagged facet counts (pins/images, zero active tags);
+- [x] Untagged facet counts (pins/images, zero active tags);
       never merged into disconnected; tests.
-- [ ] outline-data LRU: revision-keyed invalidation test; no
+- [x] outline-data LRU: revision-keyed invalidation test; no
       per-row query waterfalls (one preview call per selection).
-- [ ] Full check:ci green (pipefail; counts read).
+- [x] Full check:ci green (pipefail; counts read).
 
 ### Acceptance Criteria
 
@@ -86,6 +86,19 @@ yield honest glyph descriptors, capped with a +N remainder
 of disconnected.
 
 ### Issues Encountered
+
+- Pre-implementation review corrected `{nodeId}` to a discriminated node/note
+  preview target so loose-note rows satisfy “any row”; the loose bin preview is
+  assembled from the loaded census. `getOutlineFacetCounts` stays a separate
+  typed query because changing `getOutlineTree` would break its undo-label
+  consumer.
+- The shipped derivative address is `ew-asset://<hash>/thumb`, not `ew-thumb`.
+  The renderer treats 404 as an honest image-glyph fallback. Query responses do
+  not carry revision, so the 32-entry LRU reads `getProject` once per refresh and
+  invalidates on revision changes.
+- Tree/library projections now carry filename/hash and board-child facts; every
+  short-code fallback was removed. Validation: persistence 58 files / 635 tests;
+  outline data/model/door focused tests 32/32; full `check:ci` green.
 
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
