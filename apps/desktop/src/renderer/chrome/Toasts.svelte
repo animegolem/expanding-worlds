@@ -6,8 +6,10 @@
   toast alone (§11.4).
 -->
 <script lang="ts">
+  import { onMount } from 'svelte'
   import type { CanvasHostHandle } from '../canvas/host'
   import { attachBoardNotices, dismissToast, onToastsChanged, type ToastEntry } from './status'
+  import { pullTagsFromLibrary } from './tag-sync'
 
   const { handle }: { handle: CanvasHostHandle } = $props()
 
@@ -23,6 +25,9 @@
       })()
     }),
   )
+  onMount(() => {
+    void pullTagsFromLibrary()
+  })
 
   function act(entry: ToastEntry, run: () => void): void {
     dismissToast(entry.id)

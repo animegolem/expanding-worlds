@@ -13,12 +13,21 @@ annotations.
 ## [Unreleased]
 
 ### For testers
+- New: tags on matching library and project images now meet at natural
+  settle moments. Closing a project sends its tags to the library; opening
+  pulls library tags back with one summary notice. Deleting a tag asks
+  whether it should stay local or also leave the library.
 - Fixed: the top title band finally shows its smoky gradient — it was
   rendering as a near-invisible sliver — and the home glyph, board
   name, pin, and the window's own buttons now sit on one shared
   centerline. (AI-IMP-272)
 
 ### Under the hood
+- Mirror-edge tag synchronization (AI-IMP-271) is an additive content-hash
+  union applied as utility-owned system writes, outside user undo. Local
+  deletion tombstones prevent resurrection; narrow typed library operations
+  preserve the renderer capability boundary, and close-time push shares the
+  existing bounded quit budget.
 - The title band becomes the prototype-exact 46px axis (AI-IMP-272):
   fixed-height gradient band with its hairline, traffic lights at the
   band center, PathBar banded instead of magic-offset, Windows overlay

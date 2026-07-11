@@ -52,7 +52,8 @@ its scope and deleted stays deleted.
 - Categories (EPIC-026 unbuilt; flat name_key sync per the RFC).
 - Cross-INSTANCE lock contention (v1 syncs via the same-instance
   secondary slot exactly like the shipped drop-time mirror; a
-  library held by another instance = sync skipped + notice).
+  library held by another instance = silent automatic skip, with a
+  visible disabled reason on the explicit delete path).
 - Tombstone management UI beyond creation (lifting = a
   fast-follow row in the tag panel; v1 writes them correctly).
 
@@ -71,15 +72,13 @@ both captured undo verbs.
 - Matching: project assets ↔ library assets by content_hash (the
   hasContentHash/ingest union precedent); tags flow between the
   NODES carrying those assets on each side.
-- PULL (project open, renderer-orchestrated after init + lazy
-  `ensureLibraryOpen`, the mirror.ts pattern): for each matched
-  hash, library tag names − project tombstones − already-assigned
-  → CreateTag-if-missing + AssignTagToNode through the ordinary
-  gateway (undo-exempt? NO — sync writes are SYSTEM writes: run
-  checkRevision:false, and classify the batch as exempt-from-undo
-  via the existing group/exempt machinery — a user Mod+Z must
-  never unwind a sync). Count → ONE board notice ("N tags arrived
-  from the library").
+- PULL (project open, renderer-orchestrated after init): the narrow
+  utility operation ensures the library slot, then applies library
+  tag names − project tombstones − already-assigned through direct
+  ProjectService envelopes with no expected revision. Those SYSTEM
+  writes never cross the renderer gateway/onCommittedAnywhere seam,
+  so Mod+Z cannot reach them. Count → ONE retained board notice
+  ("N tags arrived from the library").
 - PUSH (proper close, main-process quit ritual beside the
   end-session snapshot, time-bounded the same way; utility still
   live): for each matched hash, project tag names not on the
@@ -122,10 +121,10 @@ RestoreTag inverse — reused as-is.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Migration 0010 tombstone table; no CHECK; migration test.
-- [ ] SuppressTagSync/LiftTagSuppression handlers with verified
+- [x] Migration 0010 tombstone table; no CHECK; migration test.
+- [x] SuppressTagSync/LiftTagSuppression handlers with verified
       inverses; undo-policy entries; handler tests.
-- [ ] The sync planner as a TWO-HANDLE persistence function hosted
+- [x] The sync planner as a TWO-HANDLE persistence function hosted
       by the utility (which owns primary + library services) —
       an ordinary single-context query cannot compare projects
       (round-1 correction); PULL/PUSH/library-delete exposed as
@@ -136,7 +135,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       over the reserved-0009 gap by design — the runner applies
       registered missing ids from the ledger, so a later 0009
       still runs; the gap is documented and tested.
-- [ ] PULL on project ready: applied INSIDE the narrow utility
+- [x] PULL on project ready: applied INSIDE the narrow utility
       operation via direct ProjectService envelopes (never
       crossing onCommittedAnywhere — structurally unreachable by
       Mod+Z, per the round-1 ruling superseding the gateway+
@@ -145,11 +144,11 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       automatic skip is SILENT (no library / unreachable /
       same-dir library are clean no-ops — the round-1 ruling
       superseding this item's earlier notice-on-skip wording).
-- [ ] PUSH at proper close: serialized BEFORE the end-session
+- [x] PUSH at proper close: serialized BEFORE the end-session
       snapshot INSIDE the same 15s quit budget (never a second
       budget, never two concurrent utility writers); never traps
       quit; silent skip when unreachable.
-- [ ] Delete scope dialogue on the tag panel's delete verb (the
+- [x] Delete scope dialogue on the tag panel's delete verb (the
       FIRST DeleteTag affordance in the app — round-1 census):
       project scope = DeleteTag + SuppressTagSync as one
       fail-stop undo group (DeleteTag + both suppression commands
@@ -161,11 +160,12 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       reaches across DBs). Panel closes on success. Tombstone
       handlers are STATE-AWARE (refuse already-suppressed/lifted;
       exact tested inverses — never a blind INSERT OR IGNORE).
-- [ ] e2e: the alph round trip (world tag → close → library has
+- [x] e2e: the alph round trip (world tag → close → library has
       it; library tag → open → announced + assigned; deleted +
       tombstoned stays gone across a sync cycle).
-- [ ] Full gates green (check:ci + affected e2e, pipefail).
-- [ ] HUMAN-TESTING + CHANGELOG entries.
+- [x] Full gates green (check:ci + affected e2e, pipefail).
+- [x] CHANGELOG entry + HUMAN-TESTING suggestion in the submission
+      report (the lead owns `RAG/HUMAN-TESTING.md`).
 
 ### Acceptance Criteria
 
@@ -189,3 +189,22 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Round-1 review corrected eight load-bearing assumptions before code:
+  the deliberate 0010-over-0009 gap; two-handle planning; narrow typed
+  utility operations; the first DeleteTag UI; direct system-write
+  envelopes; silent automatic skips; state-aware tombstone inverses;
+  and the convergent, non-atomic cross-project undo boundary.
+- One early persistence invocation ran before the required workspace
+  build and hit stale package resolution; build-first ordering fixed it.
+  The first full `check:ci` then reached the spike typecheck after every
+  product gate passed, but this fresh worktree lacked the spike's separate
+  npm-managed dependencies. `npm ci` installed the locked tree without
+  source/lockfile changes; the complete rerun passed.
+- Playwright global setup found the fresh worktree's known Electron
+  package husk and repaired it from the local cache. The tag-sync oracle
+  passed 2/2 and the affected regression shard passed 30/30.
+- Full desktop Vitest passed 427 with one existing skip. jsdom printed
+  its known Pixi canvas `getContext` warnings; they did not fail tests.
+- AI-IMP-270 was intentionally not started: 271 consumed the sitting's
+  clean validation budget, and ticket fences remain intact.

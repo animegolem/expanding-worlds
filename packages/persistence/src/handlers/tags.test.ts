@@ -285,6 +285,98 @@ describe('DeleteTag (§4.8 lifecycle-aware, AI-IMP-105)', () => {
   })
 })
 
+describe('tag sync suppression tombstones (§4.8 rev 0.69, AI-IMP-271)', () => {
+  function tombstones(): Array<{ name_key: string; created_at: string }> {
+    return handle.db.all<{ name_key: string; created_at: string }>(
+      'SELECT name_key, created_at FROM tag_sync_tombstone WHERE project_id = ? ORDER BY name_key',
+      handle.projectId,
+    )
+  }
+
+  it('suppresses a canonical name key and exact inverses lift then restore it', () => {
+    const suppress = committed('SuppressTagSync', { nameKey: 'injured leg' })
+    const original = tombstones()
+    expect(original).toHaveLength(1)
+    expect(original[0]).toMatchObject({ name_key: 'injured leg' })
+    expect(suppress.inverse).toEqual({
+      commandType: 'LiftTagSuppression',
+      commandVersion: 1,
+      payload: { nameKey: 'injured leg' },
+    })
+
+    const lift = undo(suppress.inverse)
+    expect(tombstones()).toEqual([])
+    expect(lift.inverse).toEqual({
+      commandType: 'SuppressTagSync',
+      commandVersion: 1,
+      payload: { nameKey: 'injured leg', createdAt: original[0]!.created_at },
+    })
+
+    undo(lift.inverse)
+    expect(tombstones()).toEqual(original)
+  })
+
+  it('refuses already-suppressed and already-lifted states without writes or revision bumps', () => {
+    committed('SuppressTagSync', { nameKey: 'scout' })
+    const suppressedAt = tombstones()[0]!.created_at
+    const r0 = revision()
+    expect(exec('SuppressTagSync', { nameKey: 'scout' })).toMatchObject({
+      status: 'error',
+      code: 'TAG_SYNC_ALREADY_SUPPRESSED',
+      details: { nameKey: 'scout' },
+    })
+    expect(revision()).toBe(r0)
+    expect(tombstones()).toEqual([{ name_key: 'scout', created_at: suppressedAt }])
+
+    committed('LiftTagSuppression', { nameKey: 'scout' })
+    const r1 = revision()
+    expect(exec('LiftTagSuppression', { nameKey: 'scout' })).toMatchObject({
+      status: 'error',
+      code: 'TAG_SYNC_NOT_SUPPRESSED',
+      details: { nameKey: 'scout' },
+    })
+    expect(revision()).toBe(r1)
+    expect(tombstones()).toEqual([])
+  })
+
+  it.each([
+    ['', ''],
+    ['   ', ''],
+    [' Scout ', 'scout'],
+    ['SCOUT', 'scout'],
+    ['injured  leg', 'injured leg'],
+  ])('rejects non-canonical nameKey %j (canonical %j)', (provided, canonical) => {
+    const r0 = revision()
+    expect(exec('SuppressTagSync', { nameKey: provided })).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      details: { nameKey: provided, canonicalNameKey: canonical },
+    })
+    expect(revision()).toBe(r0)
+    expect(tombstones()).toEqual([])
+  })
+
+  it('rejects a non-string nameKey as handler validation', () => {
+    const r0 = revision()
+    expect(exec('SuppressTagSync', { nameKey: 42 })).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+    })
+    expect(revision()).toBe(r0)
+    expect(tombstones()).toEqual([])
+  })
+
+  it('rejects a non-string internal createdAt before writing', () => {
+    const r0 = revision()
+    expect(exec('SuppressTagSync', { nameKey: 'scout', createdAt: 42 })).toMatchObject({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+    })
+    expect(revision()).toBe(r0)
+    expect(tombstones()).toEqual([])
+  })
+})
+
 describe('MergeTag (§4.8, AI-IMP-105)', () => {
   it('winner absorbs the union with overlap dedupe; one undo restores both exactly', () => {
     const loser = createTag('injured')

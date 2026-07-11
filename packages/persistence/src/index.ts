@@ -159,6 +159,17 @@ export {
   type IngestSource,
 } from './import/ingest'
 export {
+  applyTagSync,
+  deleteTagByNameKey,
+  planTagSync,
+  syncTags,
+  TagSyncWriteError,
+  type DeleteTagByNameKeyResult,
+  type PlannedTagSync,
+  type TagSyncPlan,
+  type TagSyncResult,
+} from './tag-sync'
+export {
   commitStaged,
   hashStaged,
   importAsset,

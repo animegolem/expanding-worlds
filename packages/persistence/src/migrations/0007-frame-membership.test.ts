@@ -196,7 +196,7 @@ describe('migration 0007: frame membership', () => {
       })
 
       const ran = migrate(db)
-      expect(ran).toEqual([7, 8])
+      expect(ran).toEqual([7, 8, 10])
       expect(db.get<{ n: number }>('SELECT count(*) AS n FROM node')!.n).toBe(2)
       expect(
         db.get<{ caption: string | null }>("SELECT caption FROM placement WHERE id = 'pl-1'"),

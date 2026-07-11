@@ -3,10 +3,12 @@ import {
   COMMAND_CREATE_TAG,
   COMMAND_DELETE_DRAFT_TAG,
   COMMAND_DELETE_TAG,
+  COMMAND_LIFT_TAG_SUPPRESSION,
   COMMAND_MERGE_TAG,
   COMMAND_RENAME_TAG,
   COMMAND_RESTORE_TAG,
   COMMAND_SET_TAG_APPEARANCE,
+  COMMAND_SUPPRESS_TAG_SYNC,
   COMMAND_UNASSIGN_TAG_FROM_NODE,
   COMMAND_UNMERGE_TAG,
   DomainError,
@@ -16,11 +18,13 @@ import {
   type CreateTagPayload,
   type DeleteDraftTagPayload,
   type DeleteTagPayload,
+  type LiftTagSuppressionPayload,
   type MergeTagPayload,
   type RenameTagPayload,
   type RestoredTagAssignment,
   type RestoreTagPayload,
   type SetTagAppearancePayload,
+  type SuppressTagSyncPayload,
   type UnassignTagFromNodePayload,
   type UnmergeTagPayload,
 } from '@ew/commands'
@@ -122,6 +126,22 @@ function checkNameConflict(ctx: CommandContext, name: string, excludeTagId?: str
     })
   }
   return key
+}
+
+/** Tombstone payloads carry the persisted key, not display text. */
+function requireCanonicalNameKey(payload: unknown): string {
+  if (typeof payload !== 'string') {
+    throw new DomainError('VALIDATION_FAILED', 'tag sync nameKey must be a string')
+  }
+  const canonical = nameKey(payload)
+  if (canonical.length === 0 || canonical !== payload) {
+    throw new DomainError(
+      'VALIDATION_FAILED',
+      'tag sync nameKey must be non-empty and already normalized',
+      { nameKey: payload, canonicalNameKey: canonical },
+    )
+  }
+  return canonical
 }
 
 /**
@@ -328,6 +348,80 @@ export function registerTagHandlers(registry: CommandRegistry<CommandContext>): 
       },
     }
   })
+
+  registry.register<SuppressTagSyncPayload>(
+    COMMAND_SUPPRESS_TAG_SYNC,
+    1,
+    (ctx, payload) => {
+      const key = requireCanonicalNameKey(payload.nameKey)
+      if (payload.createdAt !== undefined && typeof payload.createdAt !== 'string') {
+        throw new DomainError('VALIDATION_FAILED', 'tag sync createdAt must be a string')
+      }
+      const existing = ctx.db.get<{ name_key: string }>(
+        'SELECT name_key FROM tag_sync_tombstone WHERE project_id = ? AND name_key = ?',
+        ctx.projectId,
+        key,
+      )
+      if (existing) {
+        throw new DomainError(
+          'TAG_SYNC_ALREADY_SUPPRESSED',
+          `tag sync is already suppressed for "${key}"`,
+          { nameKey: key },
+        )
+      }
+      ctx.db.run(
+        'INSERT INTO tag_sync_tombstone (project_id, name_key, created_at) VALUES (?, ?, ?)',
+        ctx.projectId,
+        key,
+        payload.createdAt ?? ctx.now(),
+      )
+      return {
+        affected: [{ kind: 'project', id: ctx.projectId }],
+        inverse: {
+          commandType: COMMAND_LIFT_TAG_SUPPRESSION,
+          commandVersion: 1,
+          payload: { nameKey: key } satisfies LiftTagSuppressionPayload,
+        },
+      }
+    },
+  )
+
+  registry.register<LiftTagSuppressionPayload>(
+    COMMAND_LIFT_TAG_SUPPRESSION,
+    1,
+    (ctx, payload) => {
+      const key = requireCanonicalNameKey(payload.nameKey)
+      const existing = ctx.db.get<{ created_at: string }>(
+        `SELECT created_at FROM tag_sync_tombstone
+          WHERE project_id = ? AND name_key = ?`,
+        ctx.projectId,
+        key,
+      )
+      if (!existing) {
+        throw new DomainError(
+          'TAG_SYNC_NOT_SUPPRESSED',
+          `tag sync is not suppressed for "${key}"`,
+          { nameKey: key },
+        )
+      }
+      ctx.db.run(
+        'DELETE FROM tag_sync_tombstone WHERE project_id = ? AND name_key = ?',
+        ctx.projectId,
+        key,
+      )
+      return {
+        affected: [{ kind: 'project', id: ctx.projectId }],
+        inverse: {
+          commandType: COMMAND_SUPPRESS_TAG_SYNC,
+          commandVersion: 1,
+          payload: {
+            nameKey: key,
+            createdAt: existing.created_at,
+          } satisfies SuppressTagSyncPayload,
+        },
+      }
+    },
+  )
 
   // §4.8 merge (AI-IMP-105): checks-before-writes (CreatePin shape).
   // Loser assignments the winner already holds are dropped (dedupe);
