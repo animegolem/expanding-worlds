@@ -119,22 +119,45 @@ matrix wins over inventing new inverse semantics.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Promote verb on captioned placements (menu + caption
-      surface); disabled-with-reason when the node has a note.
+- [ ] Promote verb on captioned placements: context menu + a
+      Promote charm beside Edit when a COMMITTED caption exists
+      (the dialog never promotes stale editor draft text);
+      disabled-with-reason "This item already has a note"
+      (captions are not image-only), reason rendered VISIBLY
+      with bounded second-line layout and verb+reason in the
+      accessible label.
 - [ ] Routing dialogue: Title / Body (+ title input on body
-      routing), remember-choice toggle; §7.7 title conflicts
-      route through the existing conflict machinery.
+      routing), remember-choice toggle. Remember persists ONLY
+      after both commands commit (never on conflict/cancel);
+      remembered BODY skips the routing choice but still opens
+      the title entry.
 - [ ] Setting `captionPromotionRouting` (ask/title/body) through
-      the 251 settings codec; Settings row present and live;
-      'ask' default.
+      the app-tier AppSettings codec/sanitizer
+      (renderer/settings/settings.ts) + Behavior UI row; 'ask'
+      default.
 - [ ] Promotion executes as ONE undo group
-      (CreateNoteAndAttach → SetPlacementCaption null); Mod+Z
-      restores caption-back + note detached-and-trashed per the
-      shipped inverse; redo replays.
-- [ ] e2e: both routings, remember-choice, disabled-reason,
-      undo round-trip, conflict path — green.
+      (CreateNoteAndAttach → SetPlacementCaption null),
+      FAIL-STOP (capture is not a transaction): a refused create
+      never clears the caption; a clear failure leaves note
+      attached + caption retained as a one-member undo entry
+      (the NewBoardPalette clean-partial precedent) — both with
+      failure-injection tests. Mod+Z restores caption-back +
+      note detached-and-trashed per the shipped inverse. REDO of
+      the group refuses HONESTLY (no partial state, no wedged
+      stack) — full redo is AI-IMP-270's (the ruled-out
+      inherited CreateNoteAndAttach redo defect; a trashed
+      title-reserving row makes replay conflict by design).
+- [ ] Promotion title conflicts (BOTH routes) use the
+      no-Use-Existing dialog variant: Open Conflicting / Restore
+      Existing / Choose Different — body returns to its title
+      input, title returns to the caption surface; the caption
+      is NEVER discarded by a conflict.
+- [ ] e2e: both routings, remembered title + remembered body +
+      Settings reset, disabled-reason visible, undo state exact,
+      stage-1/stage-2 fail-stop, conflict variant on active and
+      trashed holders, honest redo refusal — green.
 - [ ] Full gates green with pipefail; counts read.
-- [ ] HUMAN-TESTING + CHANGELOG entries.
+- [ ] HUMAN-TESTING (lead-owned; suggest the entry) + CHANGELOG.
 
 ### Acceptance Criteria
 
@@ -145,10 +168,13 @@ node has no note
 attached, the caption clears, and the label shows the title
 **AND** routing to BODY instead asks for a title and puts the
 caption text in the body
-**AND** saving the choice skips the dialogue on the next promote
-and surfaces as a changeable Settings row
+**AND** saving the choice skips the routing on the next promote
+(remembered body still collects its title) and surfaces as a
+changeable Settings row
 **AND** one Mod+Z restores the caption and detaches-and-trashes
-the created note (the shipped CreateNoteAndAttach inverse)
+the created note (the shipped CreateNoteAndAttach inverse); a
+redo after that undo refuses honestly without partial state
+(full redo is AI-IMP-270)
 **AND** the verb is disabled with a visible reason on a node that
 already has a note.
 

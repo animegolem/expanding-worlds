@@ -11,7 +11,7 @@
 | Deferred | 1 | 1 |
 | Cancelled | 0 | 0 |
 | Completed | 19 | 228 |
-| **Total** | **27** | **263** |
+| **Total** | **27** | **264** |
 
 ## In Progress
 
@@ -104,6 +104,7 @@
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 - [[AI-IMP-267-caption-promotion|IMP-267]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
+- [[AI-IMP-270-create-and-attach-redo|IMP-270]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
