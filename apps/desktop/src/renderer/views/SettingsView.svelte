@@ -194,6 +194,34 @@
       exportProgress = null
     }
   }
+
+  // AI-IMP-278: the explicit update ask. Main owns the fetch and the
+  // session cache; this row renders the verdict (GR-1 sentence form).
+  type UpdateStatus = Awaited<ReturnType<typeof window.ew.app.checkForUpdate>>
+  let appVersion = $state('')
+  let updateChecking = $state(false)
+  let updateResult = $state<UpdateStatus | null>(null)
+  $effect(() => {
+    let live = true
+    void window.ew.app.getVersion().then((v) => {
+      if (live) appVersion = v
+    })
+    void window.ew.app.currentUpdateStatus().then((status) => {
+      if (live && status) updateResult = status
+    })
+    return () => {
+      live = false
+    }
+  })
+  async function checkForUpdates(): Promise<void> {
+    updateChecking = true
+    try {
+      updateResult = await window.ew.app.checkForUpdate()
+    } finally {
+      updateChecking = false
+    }
+  }
+
   // §16 import (AI-IMP-158): pick a .ewproj, land it as a sibling
   // project, offer to open it (the restore relaunch path).
   let importedDir = $state<string | null>(null)
@@ -852,6 +880,43 @@
     {/each}
     <p class="section-note editor-note" data-testid="settings-keyboard-editor-note">
       The note editor has its own shortcuts (Markdown, undo, selection) that live inside the editor.
+    </p>
+  </section>
+
+  <section data-testid="settings-section-updates">
+    <h2>Updates</h2>
+    <div class="row" data-testid="settings-row-update">
+      <span class="row-label">Expanding Worlds {appVersion ? `v${appVersion}` : ''}</span>
+      <Button
+        variant="default"
+        data-testid="settings-update-check"
+        style="flex: none"
+        disabled={updateChecking}
+        onclick={() => void checkForUpdates()}
+      >
+        {updateChecking ? 'Checking…' : 'Check for updates'}
+      </Button>
+    </div>
+    <p class="section-note" data-testid="settings-update-note">
+      {#if updateChecking}
+        Asking the release page…
+      {:else if updateResult?.state === 'update-available'}
+        v{updateResult.latest} is out.
+        <Button
+          variant="default"
+          data-testid="settings-update-download"
+          style="flex: none"
+          onclick={() => void window.ew.app.openUpdateDownload()}
+        >
+          Download v{updateResult.latest}
+        </Button>
+      {:else if updateResult?.state === 'up-to-date'}
+        Up to date — v{updateResult.current} is the latest build.
+      {:else if updateResult?.state === 'error'}
+        {updateResult.message ?? 'couldn’t reach the release page — try again'}
+      {:else}
+        The app also checks once at launch; the tray icon carries the answer quietly.
+      {/if}
     </p>
   </section>
 </div>

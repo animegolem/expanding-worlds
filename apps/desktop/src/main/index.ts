@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, utilityProcess, type UtilityProcess } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, shell, utilityProcess, type UtilityProcess } from 'electron'
 import { realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -12,6 +12,8 @@ import {
 } from '@ew/persistence'
 import { loadAppSettingsFile, writeAppSettingsFile } from './app-settings'
 import { assertPublicHost, resolveRedirectTarget } from './net-guard'
+import { checkForUpdate, type UpdateStatus } from './update-check'
+import { initTray, type TrayHandle } from './tray'
 import { createSnapshotEngine } from './snapshot'
 import { MaterializedProjectOpenRegistry } from './open-capability'
 import { RendererFlushCoordinator } from './flush-coordinator'
@@ -233,6 +235,30 @@ function seedResourcesDir(): string {
   return app.isPackaged
     ? join(process.resourcesPath, 'seed')
     : join(__dirname, '..', '..', 'resources', 'seed')
+}
+
+/** Generated tray glyphs (AI-IMP-278); same resolution rule as seed. */
+function trayIconDir(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'tray')
+    : join(__dirname, '..', '..', 'resources', 'icons', 'tray')
+}
+
+// ---- in-app update check (AI-IMP-278) ----
+// Main owns the fetch (the renderer stays offline-pure). The launch
+// check is a silent courtesy; the Settings ask and the tray menu are
+// the loud paths. Session-cached: the tray shows the last verdict.
+let trayHandle: TrayHandle | null = null
+let updateStatus: UpdateStatus | null = null
+
+async function runUpdateCheck(): Promise<UpdateStatus> {
+  const status = await checkForUpdate(app.getVersion(), process.platform)
+  updateStatus = status
+  trayHandle?.setStatus(status)
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('update:status', status)
+  }
+  return status
 }
 
 // ---- §14.4 secondary store roots (AI-IMP-089) ----
@@ -844,6 +870,29 @@ void app.whenReady().then(() => {
   registerAssetProtocol()
   grantLocalFonts()
   startUtility()
+
+  // AI-IMP-278: the tray perch + the silent launch check. Test runs
+  // never spawn trays or touch the network; dev runs get the tray
+  // (feel work) but only packaged builds run the launch check — a
+  // dev tree isn't an install that can be stale. Linux is trayless
+  // by scope (the Settings row covers it).
+  if (!hiddenTestWindows && process.platform !== 'linux') {
+    trayHandle = initTray({
+      iconDir: trayIconDir(),
+      appVersion: app.getVersion(),
+      onCheckRequested: runUpdateCheck,
+      onOpenRequested: () => {
+        const win = BrowserWindow.getAllWindows()[0]
+        if (!win) return
+        if (win.isMinimized()) win.restore()
+        win.show()
+        win.focus()
+      },
+    })
+  }
+  if (!hiddenTestWindows && app.isPackaged) {
+    setTimeout(() => void runUpdateCheck().catch(() => undefined), 3000)
+  }
   ipcMain.on('app:flush-done', (event, acknowledgement: unknown) => {
     rendererFlushes.acknowledge(event.sender.id, acknowledgement)
   })
@@ -992,6 +1041,18 @@ void app.whenReady().then(() => {
     }
   })
   ipcMain.handle('app:get-version', () => app.getVersion())
+
+  // AI-IMP-278: the explicit ask (Settings row / tray menu). The
+  // renderer never fetches; it invokes and renders the verdict.
+  ipcMain.handle('update:check', () => runUpdateCheck())
+  ipcMain.handle('update:status-current', () => updateStatus)
+  // Narrow by design: the renderer may only open the URL the last
+  // check produced — never an arbitrary link through this door.
+  ipcMain.handle('update:open-download', () => {
+    const url = updateStatus?.state === 'update-available' ? updateStatus.downloadUrl : undefined
+    if (url) void shell.openExternal(url)
+    return Boolean(url)
+  })
 
   ipcMain.handle('window:set-vibrancy', (event, enabled: boolean) => {
     const win = BrowserWindow.fromWebContents(event.sender)

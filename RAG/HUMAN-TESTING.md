@@ -10,6 +10,18 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **THE UPDATE PERCH** (AI-IMP-278, 2026-07-11): owner — check
+  the mac menu bar: the app silhouette should render crisply in
+  both themes (it's a template image), show a • beside it when a
+  newer tag exists, and its menu's "Download vX.Y.Z…" should open
+  the right .dmg in the browser. alph — Windows tray: idle icon vs
+  the amber-dot update state, tooltip naming the version, and the
+  full loop: run a stale build → tray marks itself → download →
+  install → tray goes quiet. Both: Settings → Updates → "Check for
+  updates" prints its answer inline (try it offline too — the
+  sentence should be a calm fact, not a stack trace). The first
+  real proof arrives free with the next tag.
+
 - [ ] **THE DELIBERATE CURSOR** (AI-IMP-277, 2026-07-11 — alph's
   field report №1, same-day fix): in the outline, sweep the mouse
   across the tree — the preview must NOT churn (hover only

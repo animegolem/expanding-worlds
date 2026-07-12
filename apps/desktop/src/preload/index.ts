@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { uuidv7 } from '@ew/domain'
+import type { UpdateStatus } from '../main/update-check'
 import type { CommandEnvelope, CommandResult, ProjectChangedEvent } from '@ew/commands'
 import type {
   CheckpointWalResponse,
@@ -123,6 +124,20 @@ const api = {
      * metadata (app.getVersion), so the dialog never hardcodes it. */
     getVersion: (): Promise<string> =>
       ipcRenderer.invoke('app:get-version') as Promise<string>,
+    /** AI-IMP-278: main owns the releases fetch; the renderer only
+     * asks and renders the verdict. */
+    checkForUpdate: (): Promise<UpdateStatus> =>
+      ipcRenderer.invoke('update:check') as Promise<UpdateStatus>,
+    currentUpdateStatus: (): Promise<UpdateStatus | null> =>
+      ipcRenderer.invoke('update:status-current') as Promise<UpdateStatus | null>,
+    onUpdateStatus: (callback: (status: UpdateStatus) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, status: UpdateStatus): void => callback(status)
+      ipcRenderer.on('update:status', listener)
+      return () => ipcRenderer.removeListener('update:status', listener)
+    },
+    /** Opens the last check's download URL — main refuses anything else. */
+    openUpdateDownload: (): Promise<boolean> =>
+      ipcRenderer.invoke('update:open-download') as Promise<boolean>,
     /**
      * §10.2 quit flush: main intercepts window close, asks the
      * renderer to commit pending editor buffers, and waits for the

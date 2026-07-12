@@ -10,7 +10,7 @@
 | Planned | 5 | 4 |
 | Deferred | 1 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 20 | 236 |
+| Completed | 20 | 237 |
 | **Total** | **28** | **272** |
 
 ## In Progress
@@ -104,7 +104,6 @@
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
 - [[AI-IMP-270-create-and-attach-redo|IMP-270]] — planned, no epic dependency found
-- [[AI-IMP-278-update-check-and-tray|IMP-278]] — backlog, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -132,17 +131,17 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC)
 - apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
 - packages/persistence/src/queries-structure.test.ts (1335 LOC)
-- apps/desktop/src/main/index.ts (1256 LOC)
+- apps/desktop/src/main/index.ts (1317 LOC)
 - apps/desktop/src/renderer/canvas/charms-ui.ts (1219 LOC)
 - packages/canvas-engine/src/renderers/placement.test.ts (1176 LOC)
 - packages/persistence/src/queries-structure.ts (1139 LOC)
 - packages/canvas-engine/src/renderers/placement.ts (1103 LOC)
+- apps/desktop/src/renderer/views/SettingsView.svelte (1087 LOC)
 - packages/persistence/src/handlers/lifecycle.test.ts (1053 LOC)
 - apps/desktop/src/renderer/views/OutlineView.svelte (1045 LOC)
 - apps/desktop/e2e/notes.spec.ts (1025 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (1022 LOC)
 - apps/desktop/src/renderer/menus/ContextMenu.ts (963 LOC)
-- RAG/HUMAN-TESTING.md (902 LOC)
+- RAG/HUMAN-TESTING.md (914 LOC)
 - apps/desktop/src/renderer/note/panels.ts (880 LOC)
 - apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (851 LOC)
@@ -231,6 +230,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/note/MetadataCard.svelte (358 LOC)
 - packages/persistence/src/queries-notes.ts (357 LOC)
 - packages/canvas-engine/src/tools/tools.test.ts (356 LOC)
+- apps/desktop/src/preload/index.ts (356 LOC)
 - apps/desktop/e2e/gallery-scope.spec.ts (356 LOC)
 - apps/desktop/src/renderer/note/open-note.ts (353 LOC)
 - apps/desktop/src/renderer/note/format-bar.ts (353 LOC)
@@ -238,7 +238,6 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/queries-lifecycle.test.ts (346 LOC)
 - packages/canvas-engine/src/snap-provider.test.ts (346 LOC)
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
-- apps/desktop/src/preload/index.ts (341 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)

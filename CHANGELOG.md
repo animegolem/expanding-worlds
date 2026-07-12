@@ -19,7 +19,17 @@ annotations.
   or WASD (all three work, no setting — WASD keeps your pen hand free).
   → unfolds a board, ← folds it or jumps to the parent.
 
+### For testers (updates)
+- New: the app now knows when it's stale. A tray icon (Windows tray /
+  mac menu bar) sits quietly and marks itself when a newer build is
+  out — its menu takes you straight to the download. Settings grew an
+  Updates section with a "Check for updates" button; packaged builds
+  also check once at launch, silently.
+
 ### Under the hood
+- AI-IMP-278: launch/on-demand release check (public GitHub API, no
+  electron-updater while unsigned), tray perch with template/badged
+  glyphs, Settings Updates row, narrow open-download IPC door.
 - AI-IMP-277: hover-follow removed for a deliberate selection cursor;
   twelve-key three-dialect navigation as outline navigation intents;
   org-standard fold keys; dialog gate fencing keys (incl. a live

@@ -21,6 +21,9 @@ files:
 extraResources:
   - from: resources/seed
     to: seed
+  # AI-IMP-278: generated tray glyphs (template + badged variants).
+  - from: resources/icons/tray
+    to: tray
 npmRebuild: false
 mac:
   target:

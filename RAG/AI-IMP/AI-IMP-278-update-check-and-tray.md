@@ -5,11 +5,12 @@ tags:
   - Implementation
   - main-process
   - release
-kanban_status: backlog
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.85
 date_created: 2026-07-11
+date_completed: 2026-07-11
 ---
 
 
@@ -91,21 +92,27 @@ on macOS for menu-bar rendering).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] update-check module: fetch + compare + cache; silent on
-      launch failure; unit-tested (compare table incl. patch/minor
-      ordering and pre-1.0 semantics).
-- [ ] Tray on win32 + darwin: idle/update states, tooltip, menu
-      rows wired; darwin uses a template image.
-- [ ] Launch check after first window show; never delays or
-      blocks startup; offline run verified clean.
-- [ ] Settings row: version + check button + inline sentence
-      (three states per GR-1 form).
-- [ ] Download row opens the correct platform asset (fallback:
-      the release page) via shell.openExternal.
-- [ ] Full `CI=true pnpm check` green; HUMAN-TESTING entries
-      (owner mac menu bar; alph Windows tray + the full stale →
-      notice → download → install loop); CHANGELOG under
-      [Unreleased].
+- [x] update-check module: fetch + compare + cache; silent on
+      launch failure; unit-tested (15 cases: compare table,
+      per-platform asset pick + fallback, update/current/error/
+      offline verdicts).
+- [x] Tray on win32 + darwin: idle/update states, tooltip, menu
+      rows wired; darwin uses a template image + • title for the
+      update state (rendering is HUMAN-TESTING's close — trays are
+      structurally invisible to e2e).
+- [x] Launch check 3s after ready, gated to packaged builds
+      (a dev tree is not a stale install); failure path silent by
+      construction (unit-tested error verdict + caught timer).
+- [x] Settings row: version + check button + inline sentence
+      (checking / up-to-date / update with download / error, GR-1
+      form) + a teaching idle line.
+- [x] Download opens the platform asset (fallback: release page)
+      via a NARROW door — main only ever opens the last verdict's
+      URL, never a renderer-supplied one.
+- [x] Full `CI=true pnpm check` green (units incl. +15, lint,
+      spike, e2e 255 passed / 1 pre-existing source-panel flake
+      passed-on-retry); HUMAN-TESTING entries both platforms;
+      CHANGELOG under [Unreleased].
 
 ### Acceptance Criteria
 
@@ -137,3 +144,19 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+Lead-built parallel to the trust-wave setup (main/ fenced from
+Codex for exactly this reason). Deviations from ticket text, all
+small: no separate `update:status` pull was needed in Settings —
+it pulls `update:status-current` on mount and renders push-free;
+tray glyphs are GENERATED assets (PIL from build/icon.png: black-
+alpha template for the mac menu bar, amber-dot badge variant for
+win32) committed under resources/icons/tray and shipped via
+extraResources; macOS signals updates with • setTitle rather than
+an image swap (template-image convention). The renderer cannot
+open arbitrary URLs: `update:open-download` only opens what the
+last check produced. Tray + launch check are gated off under
+EW_TEST_HIDDEN_WINDOWS so e2e never spawns trays or touches the
+network. Tray look/feel on both platforms is human-close;
+the first real proof arrives free with the next tag — v0.24.0
+installs should show the v0.25.0 notice.
