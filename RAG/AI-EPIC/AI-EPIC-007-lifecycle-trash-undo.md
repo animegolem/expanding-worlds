@@ -9,6 +9,11 @@ date_created: 2026-07-03
 date_completed:
 kanban_status: in-progress
 AI_IMP_spawned:
+  - AI-IMP-102
+  - AI-IMP-114
+  - AI-IMP-219
+  - AI-IMP-220
+  - AI-IMP-224
 ---
 
 # AI-EPIC-007-lifecycle-trash-undo

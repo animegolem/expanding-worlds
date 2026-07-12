@@ -687,15 +687,13 @@ The Two Materials + kit 1.1's beat ledger, ratified at rev 0.56
 
 - Text-drop special cases (code blocks, essay-length paste → note)
   (rev 0.36).
-- **Tag REMOVE has no gesture** (AI-IMP-182 finding, 2026-07-08):
-  `UnassignTagFromNode` exists with a verified inverse but is
-  issued NOWHERE in the renderer — there is no per-node "remove
-  this tag" affordance (171's missing-doorknob sibling). Decide
-  where removal lives (chip ✕ on the node's tag chips? tag panel
-  row action?) — then it's a small ticket, and its capture wrap is
-  one line (the 182 pattern). Also from 182: the gallery bulk bar
-  and mirror recognition chip carry their own uncaptured tag-add
-  copies — same one-wrap shape when ruled.
+- **Tag REMOVE has no gesture — RESOLVED (lifecycle push N4+T2,
+  ratified 11 Jul; RFC rev 0.70 §4.8; ticket AI-IMP-285 cut with
+  migration 0011):** the chip's hover-✕ in remove-capable habitats
+  (note meta strip, tag-panel carrier rows); Unassign joins
+  structural undo; per-node suppression so removal survives sync.
+  The gallery bulk-bar and recognition-chip tag-add copies remain
+  with the trust wave / G2 follow-ons.
 - **Frame charm-bar crowding** (owner note, 2026-07-07, at the
   sort-control ruling): putting frame controls in the charm bar
   "opens us up to think more eventually" — is there a conversation
@@ -778,8 +776,10 @@ the week's testing says so. Lands with the AI-IMP-173 fix wave.)
 - **Painterly icon commission / pixel-glyph theme variant**: the
   geometric SVG set ships; commissioned art is the upgrade path.
 - **Menus loose ends** (Menus Document): where reverse-image "find
-  info" slots when its connector attaches; whether the End Session
-  row prints what it does; the Empty-trash confirm shape.
+  info" slots when its connector attaches — the other two halves
+  RESOLVED by the lifecycle push (End Session's row and ritual:
+  Q4/rev 0.70 §11.4, AI-IMP-224 carries it; the Empty-trash
+  confirm: GR-4's impact-as-fact specimen, shipped shape ratified).
 
 (URL-as-tag vs source field RESOLVED 2026-07-06, rev 0.53: source
 field + domain tag-offer chip.)

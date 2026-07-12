@@ -7,7 +7,7 @@ tags:
   - gc
 kanban_status: planned
 depends_on: []
-parent_epic:
+parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.6
 date_created: 2026-07-09
 ---

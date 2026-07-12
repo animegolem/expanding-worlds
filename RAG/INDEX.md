@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 5 | 4 |
+| Planned | 5 | 7 |
 | Deferred | 1 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 20 | 237 |
-| **Total** | **28** | **272** |
+| **Total** | **28** | **279** |
 
 ## In Progress
 
@@ -21,6 +21,9 @@
 **IMPs:**
 - [[AI-IMP-102-trash-browser|IMP-102]] Trash browser — completed
 - [[AI-IMP-114-undo-redo-core|IMP-114]] Undo redo core — completed
+- [[AI-IMP-219-destructive-gc|IMP-219]] Destructive gc — planned
+- [[AI-IMP-220-trash-retention-job|IMP-220]] Trash retention job — planned
+- [[AI-IMP-224-end-session|IMP-224]] End session — planned
 
 ---
 
@@ -88,11 +91,8 @@
 - [[AI-IMP-207-rail-surface-exclusivity|IMP-207]] — planned, no epic dependency found
 - [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
 - [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
-- [[AI-IMP-219-destructive-gc|IMP-219]] — planned, no epic dependency found
-- [[AI-IMP-220-trash-retention-job|IMP-220]] — planned, no epic dependency found
 - [[AI-IMP-221-gallery-undo-coordination|IMP-221]] — planned, no epic dependency found
 - [[AI-IMP-222-import-streaming|IMP-222]] — planned, no epic dependency found
-- [[AI-IMP-224-end-session|IMP-224]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
 - [[AI-IMP-231-undo-group-identity|IMP-231]] — planned, no epic dependency found
 - [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
@@ -104,6 +104,13 @@
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
 - [[AI-IMP-270-create-and-attach-redo|IMP-270]] — planned, no epic dependency found
+- [[AI-IMP-279-three-state-finding-surfaces|IMP-279]] — planned, no epic dependency found
+- [[AI-IMP-280-the-missing-exits|IMP-280]] — planned, no epic dependency found
+- [[AI-IMP-281-the-named-silences|IMP-281]] — planned, no epic dependency found
+- [[AI-IMP-282-pin-tool-arc|IMP-282]] — planned, no epic dependency found
+- [[AI-IMP-283-a-board-is-born|IMP-283]] — planned, no epic dependency found
+- [[AI-IMP-284-link-repair|IMP-284]] — planned, no epic dependency found
+- [[AI-IMP-285-tag-remove-gesture|IMP-285]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
@@ -128,7 +135,7 @@ Git edit date so a second review can be judged.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4805 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4942 LOC)
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
 - apps/desktop/src/renderer/canvas/host.ts (2172 LOC) — review current: 2026-07-12T01:53:22Z at 2172 LOC; unchanged; last edit 2026-07-10T05:46:57-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
 - apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC) — review current: 2026-07-12T01:53:22Z at 2161 LOC; unchanged; last edit 2026-07-10T16:36:30-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
