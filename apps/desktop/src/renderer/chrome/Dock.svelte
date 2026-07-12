@@ -345,7 +345,7 @@
   }
 </script>
 
-<div class="dock-stack" data-testid="dock">
+<div class="dock-stack" data-testid="dock" data-dock-expanded="false">
   {#if toolOptionsVisible}
     <div class="dock-row contextual" data-testid="tool-options">
       <label>
@@ -735,7 +735,7 @@
 <style>
   .dock-stack {
     position: absolute;
-    bottom: 0.6rem;
+    bottom: calc((var(--ew-reserve-dock) - 2.5rem) / 2);
     left: 50%;
     transform: translateX(-50%);
     display: flex;

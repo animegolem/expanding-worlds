@@ -47,6 +47,14 @@ export interface AnchoredPlacement {
   flipped: boolean
 }
 
+export const DEFAULT_CHROME_BANDS: Readonly<ChromeBands> = {
+  top: 46,
+  right: 56,
+  bottom: 64,
+  left: 0,
+}
+export const DEFAULT_RESERVATION_GUTTER = 24
+
 interface AxisInput {
   anchorStart: number
   anchorSize: number
@@ -128,12 +136,18 @@ function placeAxis(input: AxisInput): { position: number; flipped: boolean } {
  * or clamps. The two axes are independent so mixed placements stay intact.
  */
 export function placeAnchored(options: AnchoredPlacementOptions): AnchoredPlacement {
-  const margin = finiteNonNegative(options.margin)
+  // Legacy callers supplied small viewport margins. Once they adopt the
+  // default reservation frame, its named gutter owns edge clearance; an
+  // explicit bands object is the deliberate custom/opt-out seam.
+  const margin =
+    options.bands === undefined
+      ? DEFAULT_RESERVATION_GUTTER
+      : finiteNonNegative(options.margin)
   const bands = {
-    top: finiteNonNegative(options.bands?.top),
-    right: finiteNonNegative(options.bands?.right),
-    bottom: finiteNonNegative(options.bands?.bottom),
-    left: finiteNonNegative(options.bands?.left),
+    top: finiteNonNegative(options.bands?.top ?? DEFAULT_CHROME_BANDS.top),
+    right: finiteNonNegative(options.bands?.right ?? DEFAULT_CHROME_BANDS.right),
+    bottom: finiteNonNegative(options.bands?.bottom ?? DEFAULT_CHROME_BANDS.bottom),
+    left: finiteNonNegative(options.bands?.left ?? DEFAULT_CHROME_BANDS.left),
   }
   const gap =
     typeof options.gap === 'number'

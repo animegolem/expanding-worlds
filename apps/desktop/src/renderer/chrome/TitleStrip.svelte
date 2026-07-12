@@ -382,7 +382,7 @@
        owner's "the gradient doesn't fire" — and floated the row off
        the traffic-light axis. Row centers at y=23 with the lights
        (main: trafficLightPosition y:17 + 12px dots). */
-    height: 46px;
+    height: var(--ew-reserve-strip);
     box-sizing: border-box;
     border-bottom: 1px solid var(--ew-strip-hairline);
     z-index: 3;

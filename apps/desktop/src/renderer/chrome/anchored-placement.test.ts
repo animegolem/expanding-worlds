@@ -33,7 +33,7 @@ describe('placeAnchored (§8.8)', () => {
         gap: 8,
         margin: 8,
       }),
-    ).toEqual({ x: 250, y: 58, flipped: true })
+    ).toEqual({ x: 250, y: 70, flipped: true })
   })
 
   it('clamps into the region left after named chrome bands', () => {
@@ -58,7 +58,7 @@ describe('placeAnchored (§8.8)', () => {
       y: { preferred: 'after', fallback: 'before' },
       margin: 8,
     })
-    expect(placed).toEqual({ x: 8, y: 8, flipped: false })
+    expect(placed).toEqual({ x: 24, y: 70, flipped: false })
   })
 
   it('pins safely for a zero-size host', () => {
@@ -70,8 +70,8 @@ describe('placeAnchored (§8.8)', () => {
       y: { preferred: 'after' },
       margin: 8,
     })
-    expect(placed.x).toBe(8)
-    expect(placed.y).toBe(8)
+    expect(placed.x).toBe(24)
+    expect(placed.y).toBe(70)
   })
 
   it('keeps TagPanel on-screen when its host is narrower than the measured panel', () => {
@@ -84,7 +84,32 @@ describe('placeAnchored (§8.8)', () => {
       gap: { y: 6 },
       margin: 8,
     })
-    expect(placed.x).toBeGreaterThanOrEqual(8)
+    expect(placed.x).toBeGreaterThanOrEqual(24)
+  })
+
+  it('uses the named reservation frame and gutter by default', () => {
+    const placed = placeAnchored({
+      anchor: pointAnchor(799, 599),
+      surface: { width: 100, height: 80 },
+      host: HOST,
+      x: { preferred: 'start' },
+      y: { preferred: 'start' },
+    })
+    expect(placed).toEqual({ x: 620, y: 432, flipped: false })
+  })
+
+  it('allows an explicit zero-band opt out without changing anchor-relative gaps', () => {
+    const placed = placeAnchored({
+      anchor: pointAnchor(400, 300),
+      surface: { width: 100, height: 80 },
+      host: HOST,
+      bands: { top: 0, right: 0, bottom: 0, left: 0 },
+      margin: 0,
+      x: { preferred: 'after' },
+      y: { preferred: 'after' },
+      gap: { x: 7, y: 11 },
+    })
+    expect(placed).toEqual({ x: 407, y: 311, flipped: false })
   })
 })
 
