@@ -542,7 +542,7 @@ test('place-on-board is ONE command; one undo removes the card and restores the 
   await app.close()
 })
 
-test('corner-charm create-and-attach is ONE command; one undo detaches and removes (AI-IMP-086)', async () => {
+test('corner-charm create-and-attach undo → redo → undo preserves the note (AI-IMP-270)', async () => {
   const { app, win } = await launchApp('ew-e2e-compound-attach-')
 
   // The act: the first committed edit materializes note + attachment
@@ -565,7 +565,7 @@ test('corner-charm create-and-attach is ONE command; one undo detaches and remov
 
   // ONE undo — the compound's single inverse — detaches the node AND
   // removes (trashes) the note together.
-  await exec(win, 'DetachAndTrashNote', { nodeId: attached.id, noteId: attached.noteId })
+  await win.evaluate(() => window.__ewUndo!.undo())
   expect(await revision(win)).toBe(before + 2)
   const nodes = await runQuery<Array<{ id: string; noteId: string | null }>>(
     win,
@@ -581,6 +581,25 @@ test('corner-charm create-and-attach is ONE command; one undo detaches and remov
   })
   // The board's charm is a ghost again: no active note anywhere.
   await expect(win.getByTestId('corner-charm')).toHaveAttribute('data-state', 'ghost')
+
+  await win.evaluate(() => window.__ewUndo!.redo())
+  await expect.poll(async () => {
+    const rows = await runQuery<Array<{ id: string; noteId: string | null }>>(win, 'listNodeLibrary')
+    return rows.find((row) => row.id === attached.id)?.noteId
+  }).toBe(attached.noteId)
+  const restored = await runQuery<Array<{ id: string; lifecycleState: string }>>(
+    win,
+    'listNoteTitles',
+  )
+  expect(restored.find((row) => row.id === attached.noteId)).toMatchObject({
+    lifecycleState: 'active',
+  })
+
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect.poll(async () => {
+    const rows = await runQuery<Array<{ id: string; noteId: string | null }>>(win, 'listNodeLibrary')
+    return rows.find((row) => row.id === attached.id)?.noteId
+  }).toBeNull()
 
   await app.close()
 })

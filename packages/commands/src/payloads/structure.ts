@@ -51,6 +51,16 @@ export interface DetachAndTrashNotePayload {
 }
 
 /**
+ * Internal redo inverse of DetachAndTrashNote: restores the same
+ * recoverable note row and reattaches it to the node that created it.
+ * The trashed row remains the source of truth for title and body.
+ */
+export interface RestoreAndAttachNotePayload {
+  nodeId: string
+  noteId: string
+}
+
+/**
  * §6.6: copy the current shared note's body into a new note under a
  * new project-unique title and swap the node's reference to it.
  * Collisions return the §7.7 NOTE_TITLE_CONFLICT shape.
@@ -413,6 +423,7 @@ export const COMMAND_ATTACH_NOTE_TO_NODE = 'AttachNoteToNode'
 export const COMMAND_DETACH_NOTE_FROM_NODE = 'DetachNoteFromNode'
 export const COMMAND_CREATE_NOTE_AND_ATTACH = 'CreateNoteAndAttach'
 export const COMMAND_DETACH_AND_TRASH_NOTE = 'DetachAndTrashNote'
+export const COMMAND_RESTORE_AND_ATTACH_NOTE = 'RestoreAndAttachNote'
 export const COMMAND_MAKE_NOTE_INDEPENDENT = 'MakeNoteIndependent'
 export const COMMAND_UNMAKE_NOTE_INDEPENDENT = 'UnmakeNoteIndependent'
 export const COMMAND_SET_NODE_APPEARANCE = 'SetNodeAppearance'

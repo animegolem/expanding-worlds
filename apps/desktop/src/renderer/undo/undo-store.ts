@@ -135,6 +135,7 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   TrashNote: { class: 'group-only', why: '§9.7 user trash gesture; inverse RestoreRecord' },
   TrashCanvas: { class: 'group-only', why: '§9.7 user trash gesture; inverse RestoreRecord' },
   DetachAndTrashNote: { class: 'exempt', why: 'trash-is-recovery-home: sends a note to the Trash' },
+  RestoreAndAttachNote: { class: 'exempt', why: 'internal redo inverse of DetachAndTrashNote' },
   // Destructive/irreversible by design.
   PurgeRecord: { class: 'exempt', why: 'destructive-purge: permanent removal by design (invariant)' },
   PurgeDraftNote: { class: 'exempt', why: 'draft cleanup: removes an abandoned draft, not a durable verb' },

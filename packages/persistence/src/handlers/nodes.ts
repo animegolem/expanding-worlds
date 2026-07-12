@@ -6,6 +6,7 @@ import {
   COMMAND_DETACH_AND_TRASH_NOTE,
   COMMAND_DETACH_NOTE_FROM_NODE,
   COMMAND_MAKE_NOTE_INDEPENDENT,
+  COMMAND_RESTORE_AND_ATTACH_NOTE,
   COMMAND_SET_NODE_APPEARANCE,
   COMMAND_UNMAKE_NOTE_INDEPENDENT,
   DomainError,
@@ -18,6 +19,7 @@ import {
   type DetachAndTrashNotePayload,
   type DetachNoteFromNodePayload,
   type MakeNoteIndependentPayload,
+  type RestoreAndAttachNotePayload,
   type SetNodeAppearancePayload,
   type UnmakeNoteIndependentPayload,
 } from '@ew/commands'
@@ -31,6 +33,7 @@ import {
   type AppearanceColumns,
 } from './node-appearance'
 import { requireLinkableTitle, requireTitleFree } from './notes'
+import { restoreTrashedNote } from './lifecycle'
 
 // §4.6 rev 0.31: the note card is the fourth appearance kind. It
 // carries NO payload — the card's content comes from the attached
@@ -295,10 +298,57 @@ export function registerNodeHandlers(registry: CommandRegistry<CommandContext>):
           payload.noteId,
         )
       }
-      // Internal inverse of a composite create: not redoable as one
-      // step (redo re-issues CreateNoteAndAttach), so no inverse is
-      // offered — matching DeleteDraftPin.
-      return { affected, inverse: null }
+      return {
+        affected,
+        inverse: {
+          commandType: COMMAND_RESTORE_AND_ATTACH_NOTE,
+          commandVersion: 1,
+          payload: {
+            nodeId: payload.nodeId,
+            noteId: payload.noteId,
+          } satisfies RestoreAndAttachNotePayload,
+        },
+      }
+    },
+  )
+
+  registry.register<RestoreAndAttachNotePayload>(
+    COMMAND_RESTORE_AND_ATTACH_NOTE,
+    1,
+    (ctx, payload) => {
+      if (typeof payload?.nodeId !== 'string' || payload.nodeId.length === 0) {
+        throw new DomainError('VALIDATION_FAILED', 'RestoreAndAttachNote requires payload.nodeId')
+      }
+      if (typeof payload.noteId !== 'string' || payload.noteId.length === 0) {
+        throw new DomainError('VALIDATION_FAILED', 'RestoreAndAttachNote requires payload.noteId')
+      }
+      const node = requireNode<{ note_id: string | null }>(ctx, payload.nodeId, 'note_id')
+      if (node.note_id !== null) {
+        throw new DomainError('NODE_HAS_NOTE', `node ${payload.nodeId} already references a note`, {
+          nodeId: payload.nodeId,
+          noteId: node.note_id,
+        })
+      }
+
+      const affected = restoreTrashedNote(ctx, payload.noteId)
+      ctx.db.run(
+        'UPDATE node SET note_id = ?, updated_at = ? WHERE id = ?',
+        payload.noteId,
+        ctx.now(),
+        payload.nodeId,
+      )
+      affected.push({ kind: 'node', id: payload.nodeId })
+      return {
+        affected,
+        inverse: {
+          commandType: COMMAND_DETACH_AND_TRASH_NOTE,
+          commandVersion: 1,
+          payload: {
+            nodeId: payload.nodeId,
+            noteId: payload.noteId,
+          } satisfies DetachAndTrashNotePayload,
+        },
+      }
     },
   )
 

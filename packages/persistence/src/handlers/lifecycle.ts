@@ -68,6 +68,30 @@ function restoreRow(ctx: CommandContext, table: LifecycleTable, id: string): voi
   )
 }
 
+/**
+ * Restore one trashed note and perform invariant 27's unresolved-link
+ * binding sweep. Shared by the public lifecycle verb and compound redo
+ * inverses so every note resurrection has identical semantics.
+ */
+export function restoreTrashedNote(ctx: CommandContext, noteId: string): AffectedRecord[] {
+  const row = requireLifecycleRow(ctx, 'note', noteId)
+  if (row.lifecycle_state !== 'trashed') {
+    throw new DomainError('RECORD_NOT_TRASHED', `note ${noteId} is not in Trash`, {
+      kind: 'note',
+      id: noteId,
+    })
+  }
+  restoreRow(ctx, 'note', noteId)
+  const note = ctx.db.get<{ title_key: string }>(
+    'SELECT title_key FROM note WHERE id = ?',
+    noteId,
+  )!
+  return [
+    { kind: 'note', id: noteId },
+    ...bindUnresolvedMatching(ctx, note.title_key, noteId),
+  ]
+}
+
 function requireLifecycleRow(
   ctx: CommandContext,
   table: LifecycleTable,
@@ -701,21 +725,14 @@ export function registerLifecycleHandlers(registry: CommandRegistry<CommandConte
         id: payload.id,
       })
     }
-    restoreRow(ctx, kind, payload.id)
-    const affected: AffectedRecord[] = [{ kind, id: payload.id }]
+    const affected: AffectedRecord[] =
+      kind === 'note'
+        ? restoreTrashedNote(ctx, payload.id)
+        : (restoreRow(ctx, kind, payload.id), [{ kind, id: payload.id }])
 
     let inverseType: string
     let inversePayload: unknown
     if (kind === 'note') {
-      // §9.7/invariant 27: the trashed note kept its title_key
-      // reservation, so bound links never broke and nothing rebinds —
-      // but unresolved records matching the title bind now, exactly as
-      // on create/rename.
-      const note = ctx.db.get<{ title_key: string }>(
-        'SELECT title_key FROM note WHERE id = ?',
-        payload.id,
-      )!
-      affected.push(...bindUnresolvedMatching(ctx, note.title_key, payload.id))
       inverseType = COMMAND_TRASH_NOTE
       inversePayload = { noteId: payload.id } satisfies TrashNotePayload
     } else if (kind === 'node') {

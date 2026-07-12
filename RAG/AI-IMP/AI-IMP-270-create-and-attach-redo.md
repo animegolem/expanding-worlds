@@ -57,6 +57,13 @@ CHECK. Matrix entries updated with tested inverses both ways;
 regression: undo→redo→undo round trip on every
 CreateNoteAndAttach surface, edits-preserved case included.
 
+Pre-implementation verification (2026-07-11): the diagnosis still
+matched source. CreateNoteAndAttach returned DetachAndTrashNote, and
+DetachAndTrashNote returned a null inverse with the stated non-redoable
+comment. One scope correction: `RestoreAndAttachNote` is an internal
+redo command and remains exempt from fresh undo capture; its inverse is
+consumed by the stack action already in flight.
+
 ### Files to Touch
 
 - `packages/persistence/src/handlers/nodes.ts` (the inverse
@@ -73,18 +80,18 @@ CreateNoteAndAttach surface, edits-preserved case included.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Review re-verifies the inverse chain against current source;
+- [x] Review re-verifies the inverse chain against current source;
       corrections recorded here.
-- [ ] RestoreAndAttachNote (or the review's superseding shape):
+- [x] RestoreAndAttachNote (or the review's superseding shape):
       atomic restore + attach, handler-validated, tested inverse
       pointing back at DetachAndTrashNote.
-- [ ] DetachAndTrashNote returns the real inverse; the
+- [x] DetachAndTrashNote returns the real inverse; the
       "not redoable" comment retires.
-- [ ] Undo→redo→undo round trips on every CreateNoteAndAttach
+- [x] Undo→redo→undo round trips on every CreateNoteAndAttach
       surface incl. caption promotion; note edits made before
       undo survive redo.
-- [ ] Matrix + policy tests updated; full gates green (pipefail).
-- [ ] CHANGELOG entry.
+- [x] Matrix + policy tests updated; full gates green (pipefail).
+- [x] CHANGELOG entry.
 
 ### Acceptance Criteria
 

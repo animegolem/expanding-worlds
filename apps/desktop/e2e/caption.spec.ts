@@ -235,7 +235,7 @@ test('caption is placement-local, replaces its title label, persists, stays out 
   }
 })
 
-test('caption promotes as a title in one undo group and redo refuses cleanly', async () => {
+test('caption promotion undo → redo → undo preserves the same edited note', async () => {
   const { app, win } = await launchApp('ew-e2e-caption-promote-title-')
   const at = { x: 360, y: 280 }
   const caption = 'hazy overgrown vines'
@@ -259,24 +259,30 @@ test('caption promotes as a title in one undo group and redo refuses cleanly', a
     await expect.poll(() => labels(win)).toContain(caption)
     expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(1)
 
+    await exec(win, 'UpdateNote', { noteId, body: 'edited after promotion' })
+
     await win.evaluate(() => window.__ewUndo!.undo())
     await expect.poll(() => nodeNoteId(win, seeded.nodeId)).toBeNull()
     await expect.poll(() => captionOf(win, seeded.placementId)).toBe(caption)
     await expect.poll(() => note(win, noteId)).toMatchObject({ lifecycleState: 'trashed' })
     expect(await win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(1)
 
-    // The shipped DetachAndTrashNote inverse is intentionally null:
-    // the trashed note keeps its title reservation. Redo therefore
-    // declines before the caption-clear member — no partial world and
-    // no wedged stack entry. The report corrects 267's stale "redo
-    // replays" checklist line; changing that domain inverse is out of
-    // this ticket's fence.
     await win.evaluate(() => window.__ewUndo!.redo())
-    await expect(win.getByTestId('undo')).toContainText('can no longer be undone')
-    await expect.poll(() => win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(0)
-    expect(await nodeNoteId(win, seeded.nodeId)).toBeNull()
-    expect(await captionOf(win, seeded.placementId)).toBe(caption)
-    expect(await note(win, noteId)).toMatchObject({ lifecycleState: 'trashed' })
+    await expect.poll(() => nodeNoteId(win, seeded.nodeId)).toBe(noteId)
+    await expect.poll(() => captionOf(win, seeded.placementId)).toBeNull()
+    expect(await note(win, noteId)).toMatchObject({
+      title: caption,
+      body: 'edited after promotion',
+      lifecycleState: 'active',
+    })
+
+    await win.evaluate(() => window.__ewUndo!.undo())
+    await expect.poll(() => nodeNoteId(win, seeded.nodeId)).toBeNull()
+    await expect.poll(() => captionOf(win, seeded.placementId)).toBe(caption)
+    expect(await note(win, noteId)).toMatchObject({
+      body: 'edited after promotion',
+      lifecycleState: 'trashed',
+    })
   } finally {
     await app.close().catch(() => undefined)
   }

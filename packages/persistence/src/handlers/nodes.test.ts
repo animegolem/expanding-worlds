@@ -538,12 +538,20 @@ describe('CreateNoteAndAttach / DetachAndTrashNote (AI-IMP-086)', () => {
     expect(nodeRow(nodeId)).toMatchObject({ note_id: null })
   })
 
-  it('inverse round-trips: one undo detaches AND trashes; node row matches byte-for-byte', () => {
+  it('undo → redo → undo preserves the same edited note and symmetric inverses', () => {
     const nodeId = createNode()
     const before = { ...nodeRow(nodeId)! }
     const noteId = uuidv7()
     const create = committed('CreateNoteAndAttach', { nodeId, noteId, title: 'Ephemeral' })
     expect(create.inverse).toMatchObject({ commandType: 'DetachAndTrashNote' })
+
+    // Prose written after creation belongs to the retained row; structural
+    // undo must never reconstruct it from the original create payload.
+    handle.db.run(
+      "UPDATE note SET body = 'edited after creation', updated_at = ? WHERE id = ?",
+      new Date().toISOString(),
+      noteId,
+    )
 
     const undone = undo(create.inverse)
     // The node row is exactly its prior self (timestamps aside).
@@ -556,8 +564,86 @@ describe('CreateNoteAndAttach / DetachAndTrashNote (AI-IMP-086)', () => {
     expect(
       handle.db.get('SELECT lifecycle_state FROM note WHERE id = ?', noteId),
     ).toMatchObject({ lifecycle_state: 'trashed' })
-    // Internal inverse: no inverse of its own.
-    expect(undone.inverse).toBeNull()
+    expect(undone.inverse).toMatchObject({
+      commandType: 'RestoreAndAttachNote',
+      payload: { nodeId, noteId },
+    })
+
+    const redone = undo(undone.inverse)
+    expect(nodeRow(nodeId)).toMatchObject({ note_id: noteId })
+    expect(handle.db.get('SELECT id, title, body, lifecycle_state FROM note WHERE id = ?', noteId))
+      .toMatchObject({
+        id: noteId,
+        title: 'Ephemeral',
+        body: 'edited after creation',
+        lifecycle_state: 'active',
+      })
+    expect(redone.inverse).toMatchObject({
+      commandType: 'DetachAndTrashNote',
+      payload: { nodeId, noteId },
+    })
+
+    undo(redone.inverse)
+    expect(nodeRow(nodeId)).toMatchObject({ note_id: null })
+    expect(handle.db.get('SELECT body, lifecycle_state FROM note WHERE id = ?', noteId))
+      .toMatchObject({ body: 'edited after creation', lifecycle_state: 'trashed' })
+  })
+
+  it('RestoreAndAttachNote reuses note-restore link binding semantics', () => {
+    const nodeId = createNode()
+    const noteId = uuidv7()
+    const create = committed('CreateNoteAndAttach', { nodeId, noteId, title: 'Phoenix' })
+    const restore = undo(undo(create.inverse).inverse)
+
+    // Seed the otherwise-unreachable unresolved state to pin invariant 27,
+    // matching RestoreRecord's focused lifecycle regression.
+    undo(restore.inverse)
+    const sourceId = insertNote('Watcher')
+    const linkId = uuidv7()
+    const now = new Date().toISOString()
+    handle.db.run(
+      `INSERT INTO link (id, project_id, source_note_id, source_revision, range_start,
+         range_end, state, target_note_id, target_title_key, display_text,
+         created_at, updated_at)
+       VALUES (?, ?, ?, 1, 0, 7, 'unresolved', NULL, 'phoenix', 'Phoenix', ?, ?)`,
+      linkId,
+      handle.projectId,
+      sourceId,
+      now,
+      now,
+    )
+
+    const rebound = committed('RestoreAndAttachNote', { nodeId, noteId })
+    expect(handle.db.get('SELECT state, target_note_id FROM link WHERE id = ?', linkId))
+      .toMatchObject({ state: 'bound', target_note_id: noteId })
+    expect(rebound.affected).toContainEqual({ kind: 'link', id: linkId })
+  })
+
+  it('RestoreAndAttachNote validates state before writing and refuses atomically', () => {
+    const nodeId = createNode()
+    const noteId = insertNote('Still Active')
+    expect(exec('RestoreAndAttachNote', { nodeId, noteId })).toMatchObject({
+      status: 'error',
+      code: 'RECORD_NOT_TRASHED',
+    })
+    expect(nodeRow(nodeId)).toMatchObject({ note_id: null })
+
+    const trashed = insertNote('Recoverable', 'keep me', 'trashed')
+    const occupied = insertNote('Occupied')
+    committed('AttachNoteToNode', { nodeId, noteId: occupied })
+    expect(exec('RestoreAndAttachNote', { nodeId, noteId: trashed })).toMatchObject({
+      status: 'error',
+      code: 'NODE_HAS_NOTE',
+    })
+    expect(handle.db.get('SELECT lifecycle_state FROM note WHERE id = ?', trashed))
+      .toMatchObject({ lifecycle_state: 'trashed' })
+
+    const emptyNode = createNode()
+    expect(exec('RestoreAndAttachNote', { nodeId: emptyNode, noteId: uuidv7() })).toMatchObject({
+      status: 'error',
+      code: 'RECORD_NOT_FOUND',
+    })
+    expect(nodeRow(emptyNode)).toMatchObject({ note_id: null })
   })
 
   it('undo refuses when the node meanwhile references a different note (UNDO_STALE)', () => {
