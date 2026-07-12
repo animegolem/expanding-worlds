@@ -316,14 +316,19 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
       .toBe('Undo-CreatePlacement')
   })
 
-  it('TrashNode stays OUT of Mod+Z — never captured, even inside a group', async () => {
-    // The Trash is a trashed node's recovery home (owner ruling), so the
-    // node-trash verb is absent from both allowlists.
+  it('TrashNode is group-only: bare system write stays out, user gesture records', async () => {
     await emitGateway.execute('TrashNode', { nodeId: 'n1' })
     expect(window.__ewUndo!.undoDepth()).toBe(0)
     await runAsUndoGroup(async (groupToken) => {
       await emitGateway.execute('TrashNode', { nodeId: 'n1' }, { groupToken })
     })
-    expect(window.__ewUndo!.undoDepth()).toBe(0)
+    expect(window.__ewUndo!.undoDepth()).toBe(1)
+  })
+
+  it('RestoreRecord captures standalone while PurgeRecord remains exempt', async () => {
+    await emitGateway.execute('RestoreRecord', { kind: 'node', id: 'n1' })
+    expect(window.__ewUndo!.undoDepth()).toBe(1)
+    await emitGateway.execute('PurgeRecord', { kind: 'node', id: 'n2' })
+    expect(window.__ewUndo!.undoDepth()).toBe(1)
   })
 })

@@ -76,4 +76,13 @@ describe('undo policy matrix ↔ command registry (AI-IMP-233)', () => {
     expect(UNDO_POLICY['SuppressTagSync']?.class).toBe('group-only')
     expect(UNDO_POLICY['LiftTagSuppression']?.class).toBe('group-only')
   })
+
+  it('splits lifecycle user gestures from system and irreversible writes', () => {
+    expect(UNDO_POLICY['TrashNode']?.class).toBe('group-only')
+    expect(UNDO_POLICY['TrashNote']?.class).toBe('group-only')
+    expect(UNDO_POLICY['TrashCanvas']?.class).toBe('group-only')
+    expect(UNDO_POLICY['RestoreRecord']?.class).toBe('captured')
+    expect(UNDO_POLICY['PurgeRecord']?.class).toBe('exempt')
+    expect(UNDO_POLICY['UnassignTagFromNode']?.class).toBe('exempt')
+  })
 })

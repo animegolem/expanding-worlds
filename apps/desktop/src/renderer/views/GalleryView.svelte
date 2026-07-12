@@ -72,13 +72,15 @@
   import { consumeGalleryEverythingRequest } from '../chrome/first-run'
   import { closeTakeover } from '../chrome/takeover'
   import { tooltip } from '../chrome/tooltip'
-  import { requestOpenNote, requestPlaceNode } from '../note/open-note'
+  import { requestOpenNote, requestPlaceNode, requestPlaceNodes } from '../note/open-note'
   import { openCornerPanel } from '../note/panels'
+  import { runAsUndoGroup } from '../undo/undo-store'
   import GalleryActionBar from './GalleryActionBar.svelte'
   import GalleryFacets from './GalleryFacets.svelte'
   import GalleryQuickLook from './GalleryQuickLook.svelte'
   import TextInput from '../ui/TextInput.svelte'
   import { bucketByDate, type GalleryBucket } from './gallery-buckets'
+  import { onGalleryReselect } from './gallery-reselect'
   import {
     bucketJumpTarget,
     cellRows,
@@ -173,6 +175,18 @@
   let anchor = $state<string | null>(null)
   let tagOpen = $state(false)
   let actionBar = $state<{ trashSelection: () => Promise<void> } | null>(null)
+
+  onMount(() =>
+    onGalleryReselect(async (nodeIds) => {
+      if (scope !== 'this-world') return
+      await refresh(facetArgs)
+      const live = new Set(index.map((entry) => entry.nodeId))
+      const restored = nodeIds.filter((id) => live.has(id))
+      selected = new Set(restored)
+      anchor = restored[0] ?? null
+      cursor = restored[0] ?? null
+    }),
+  )
 
   // ------------------------------------------- 080 keyboard cursor
   // View state: the cursor's node id plus the remembered visual
@@ -1000,11 +1014,17 @@
     if (frameTarget) {
       clearFrameLoad()
       closeTakeover()
-      requestLoadIntoFrame({ nodeIds: ids, ...frameTarget })
+      void runAsUndoGroup(
+        async (groupToken) => requestLoadIntoFrame({ nodeIds: ids, ...frameTarget, groupToken }),
+        { operation: 'placing' },
+      )
       return
     }
     closeTakeover()
-    for (const id of ids) requestPlaceNode(id)
+    void runAsUndoGroup(
+      async (groupToken) => requestPlaceNodes(ids, groupToken),
+      { operation: 'placing' },
+    )
   }
 
   // Escaping the gallery without placing must not leave a frame target

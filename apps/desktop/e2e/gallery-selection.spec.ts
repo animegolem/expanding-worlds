@@ -117,6 +117,23 @@ test('bulk tag: one field, every selected node, name_key merge, duplicate skip, 
   )
   expect(counts.find((tag) => tag.name === 'ref')).toMatchObject({ id: refTagId, count: 4 })
 
+  // The whole bulk gesture is one entry; the pre-existing assignment
+  // survives undo and redo re-applies the other three.
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect.poll(async () => {
+    const rows = await runQuery<Array<{ id: string; count: number }>>(win, 'galleryTagCounts', {
+      order: 'count',
+    })
+    return rows.find((tag) => tag.id === refTagId)?.count
+  }).toBe(1)
+  await win.evaluate(() => window.__ewUndo!.redo())
+  await expect.poll(async () => {
+    const rows = await runQuery<Array<{ id: string; count: number }>>(win, 'galleryTagCounts', {
+      order: 'count',
+    })
+    return rows.find((tag) => tag.id === refTagId)?.count
+  }).toBe(4)
+
   // New name → CreateTag first, then assign to all; selection
   // survived the project push, so the same four get it.
   await win.getByTestId('gallery-action-tag').click()
@@ -158,6 +175,11 @@ test('place: takeover closes first, the selection lands cascaded on the current 
   expect(placements).toHaveLength(3)
   expect(new Set(placements.map((p) => `${p['x']},${p['y']}`)).size).toBe(3)
 
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(0)
+  await win.evaluate(() => window.__ewUndo!.redo())
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(3)
+
   await app.close()
 })
 
@@ -177,6 +199,17 @@ test('bulk trash: §9.6 over the selection, cells vanish, one summary toast', as
   await expect(win.locator('[data-testid="gallery-cell"]')).toHaveCount(3)
   // Selection cleared with the action — the bar goes with it.
   await expect(win.getByTestId('gallery-action-bar')).toHaveCount(0)
+
+  // Undo restores only the successfully trashed rows and hands the
+  // stable ids back to the still-mounted gallery selection model.
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect(win.locator('[data-testid="gallery-cell"]')).toHaveCount(5)
+  await expect(selectedCells(win)).toHaveCount(2)
+  await expect(cell(win, ids[1]!)).toHaveAttribute('data-selected', 'true')
+  await expect(cell(win, ids[3]!)).toHaveAttribute('data-selected', 'true')
+
+  await win.evaluate(() => window.__ewUndo!.redo())
+  await expect(win.locator('[data-testid="gallery-cell"]')).toHaveCount(3)
 
   await app.close()
 })

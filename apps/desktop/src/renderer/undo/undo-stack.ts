@@ -61,6 +61,8 @@ export interface StackAction {
   canvasId: string
   /** Monotonic user-gesture start order. */
   order: number
+  /** Renderer-side receipt effect that follows this action across redo. */
+  afterUndo?: () => Promise<void> | void
   /** A partial-step repair replays the committed prefix. Once that
    * succeeds, restore this exact grouped action instead of deriving a
    * smaller opposite from the repair commands. */
@@ -149,9 +151,19 @@ export class UndoStack {
    * are non-undoable by design (invariant 31) and skipped. A new
    * durable command clears the redo stack (§10.2).
    */
-  record(command: CapturedCommand, order = this.nextOrder(), clearRedo = true): void {
+  record(
+    command: CapturedCommand,
+    order = this.nextOrder(),
+    clearRedo = true,
+    afterUndo?: () => Promise<void> | void,
+  ): void {
     if (command.inverse === null) return
-    this.#insertUndo({ members: [memberFor(command)], canvasId: command.canvasId, order })
+    this.#insertUndo({
+      members: [memberFor(command)],
+      canvasId: command.canvasId,
+      order,
+      ...(afterUndo === undefined ? {} : { afterUndo }),
+    })
     if (clearRedo) this.#redo = []
     this.#deps.onChanged()
   }
@@ -164,12 +176,22 @@ export class UndoStack {
    * A group that reduces to a single member behaves exactly like
    * `record`.
    */
-  recordGroup(commands: CapturedCommand[], order = this.nextOrder(), clearRedo = true): void {
+  recordGroup(
+    commands: CapturedCommand[],
+    order = this.nextOrder(),
+    clearRedo = true,
+    afterUndo?: () => Promise<void> | void,
+  ): void {
     const undoable = commands.filter((c) => c.inverse !== null)
     if (undoable.length === 0) return
     // Reverse so undo executes the last forward's inverse first (LIFO).
     const members = undoable.map(memberFor).reverse()
-    this.#insertUndo({ members, canvasId: undoable[undoable.length - 1]!.canvasId, order })
+    this.#insertUndo({
+      members,
+      canvasId: undoable[undoable.length - 1]!.canvasId,
+      order,
+      ...(afterUndo === undefined ? {} : { afterUndo }),
+    })
     if (clearRedo) this.#redo = []
     this.#deps.onChanged()
   }
@@ -289,8 +311,21 @@ export class UndoStack {
     // Reverse so the opposite action replays its members in original
     // forward order (undo of undo = redo runs forwards).
     to.push(
-      action.repairOf ?? { members: opposites.reverse(), canvasId: action.canvasId, order: action.order },
+      action.repairOf ?? {
+        members: opposites.reverse(),
+        canvasId: action.canvasId,
+        order: action.order,
+        ...(action.afterUndo === undefined ? {} : { afterUndo: action.afterUndo }),
+      },
     )
+    if (verb === 'undo' && action.afterUndo) {
+      try {
+        await action.afterUndo()
+      } catch {
+        // Domain undo already committed. A view-local receipt effect must not
+        // turn that success into a stale/partial domain failure.
+      }
+    }
     this.#deps.onChanged()
   }
 
@@ -307,6 +342,7 @@ export class UndoStack {
         members: opposites.reverse(),
         canvasId: action.canvasId,
         order: action.order,
+        ...(action.afterUndo === undefined ? {} : { afterUndo: action.afterUndo }),
         repairOf: action,
       })
       this.#deps.toast(verb === 'undo' ? PARTIAL_UNDO_TOAST : PARTIAL_REDO_TOAST)

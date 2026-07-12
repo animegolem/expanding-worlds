@@ -16,6 +16,7 @@
     onCenterPlacements,
     onCreateAndPlace,
     onPlaceNode,
+    onPlaceNodes,
     onPlaceNote,
     requestOpenNote,
   } from './note/open-note'
@@ -80,6 +81,35 @@
           // to the user; the gateway chain is already insulated.
           () => boardNotice('Place on Current Canvas failed — retry'),
         )
+    }),
+  )
+
+  onMount(() =>
+    onPlaceNodes(async ({ nodeIds, groupToken }) => {
+      const h = hostHandle
+      if (!h) return
+      const center = viewCenterWorld()
+      const results = nodeIds.map((nodeId, step) =>
+        h.gateway
+          .execute(
+            'CreatePlacement',
+            {
+              placementId: uuidv7(),
+              canvasId: h.canvasId,
+              nodeId,
+              x: center.x + step * PLACE_CASCADE_OFFSET,
+              y: center.y + step * PLACE_CASCADE_OFFSET,
+            },
+            { groupToken },
+          )
+          .then(
+            (result) => {
+              if (result.status !== 'committed') boardNotice('Place on Current Canvas failed — retry')
+            },
+            () => boardNotice('Place on Current Canvas failed — retry'),
+          ),
+      )
+      await Promise.all(results)
     }),
   )
 

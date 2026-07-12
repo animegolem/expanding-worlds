@@ -21,11 +21,16 @@
 -->
 <script lang="ts">
   import { nameKey, uuidv7 } from '@ew/domain'
+  import type { CommandGateway, CommandGroupToken } from '@ew/canvas-engine'
   import type { CommandResult } from '@ew/commands'
+  import { onDestroy } from 'svelte'
   import { toast } from '../chrome/status'
   import { tooltip } from '../chrome/tooltip'
   import { KEY } from '../keys/bindings'
   import { formatBinding } from '../keys/registry'
+  import { createProjectCommandPort } from '../project-command-port'
+  import { runAsUndoGroup } from '../undo/undo-store'
+  import { requestGalleryReselect } from './gallery-reselect'
   import Button from '../ui/Button.svelte'
   import TextInput from '../ui/TextInput.svelte'
 
@@ -70,26 +75,29 @@
   let tagInput = $state<HTMLInputElement | null>(null)
 
   // ------------------------------------------------ command plumbing
-  // The bar issues envelopes directly (no canvas gateway inside the
-  // takeover); revision checks are optional per §10.1 and these are
-  // append-style commands, so none is threaded.
-  let projectId: string | null = null
+  // The takeover owns an independent renderer-level gateway rather than
+  // reaching into the canvas host. This threads revisions and broadcasts
+  // user commits to the session undo coordinator.
+  let portPromise: ReturnType<typeof createProjectCommandPort> | null = null
+  let destroyed = false
+  let activeOperations = 0
 
-  async function execute(commandType: string, payload: unknown): Promise<CommandResult> {
-    if (projectId === null) {
-      const response = await window.ew.project.query('getProject')
-      if (!response.ok) throw new Error(response.message)
-      projectId = (response.result as { id: string }).id
-    }
-    return window.ew.project.execute({
-      commandId: uuidv7(),
-      projectId,
-      commandType,
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload,
-    })
+  function disposeWhenIdle(): void {
+    if (!destroyed || activeOperations !== 0 || !portPromise) return
+    void portPromise.then((port) => port.dispose())
   }
+
+  async function commandGateway(): Promise<CommandGateway> {
+    portPromise ??= createProjectCommandPort()
+    const port = await portPromise
+    if (destroyed && activeOperations === 0) port.dispose()
+    return port.gateway
+  }
+
+  onDestroy(() => {
+    destroyed = true
+    disposeWhenIdle()
+  })
 
   // Opening the field loads the vocabulary, count-ordered — the same
   // order the facet strip's completion list uses (§14.4) — and takes
@@ -116,12 +124,16 @@
 
   /** Resolve the typed name to a tag id, merging by name_key (§4.8):
    * an existing name is that tag; only a new name creates. */
-  async function resolveTagId(name: string): Promise<{ id: string; label: string } | null> {
+  async function resolveTagId(
+    name: string,
+    groupToken: CommandGroupToken,
+  ): Promise<{ id: string; label: string } | null> {
     const key = nameKey(name)
     const existing = allTags.find((tag) => nameKey(tag.name) === key)
     if (existing) return { id: existing.id, label: existing.name }
     const tagId = uuidv7()
-    const created = await execute('CreateTag', { tagId, name })
+    const gateway = await commandGateway()
+    const created = await gateway.execute('CreateTag', { tagId, name }, { groupToken })
     if (created.status === 'committed') return { id: tagId, label: name }
     // Race or a draft tag (assignment-less tags are absent from
     // galleryTagCounts): the conflict names the existing id.
@@ -135,35 +147,46 @@
   async function assignTag(name: string): Promise<void> {
     const trimmed = name.trim()
     if (readOnly || trimmed.length === 0 || busy || selectedIds.length === 0) return
+    const targetIds = [...selectedIds]
     busy = true
+    activeOperations += 1
     try {
-      const tag = await resolveTagId(trimmed)
-      if (!tag) {
-        toast(`Tag "${trimmed}" could not be created`, {
-          kind: 'error',
+      await runAsUndoGroup(async (groupToken) => {
+        const tag = await resolveTagId(trimmed, groupToken)
+        if (!tag) {
+          toast(`Tag "${trimmed}" could not be created`, {
+            kind: 'error',
+            surface: 'gallery-actions',
+          })
+          return
+        }
+        const gateway = await commandGateway()
+        let added = 0
+        let skipped = 0
+        let failed = 0
+        for (const nodeId of targetIds) {
+          const result = await gateway.execute(
+            'AssignTagToNode',
+            { tagId: tag.id, nodeId },
+            { groupToken },
+          )
+          if (result.status === 'committed') added += 1
+          else if (result.status === 'error' && result.code === 'TAG_ALREADY_ASSIGNED') skipped += 1
+          else failed += 1
+        }
+        const parts = [`#${tag.label} added to ${added} item${added === 1 ? '' : 's'}`]
+        if (skipped > 0) parts.push(`${skipped} already tagged`)
+        if (failed > 0) parts.push(`${failed} failed`)
+        toast(parts.join(' — '), {
+          kind: failed > 0 ? 'error' : 'success',
           surface: 'gallery-actions',
         })
-        return
-      }
-      let added = 0
-      let skipped = 0
-      let failed = 0
-      for (const nodeId of selectedIds) {
-        const result = await execute('AssignTagToNode', { tagId: tag.id, nodeId })
-        if (result.status === 'committed') added += 1
-        else if (result.status === 'error' && result.code === 'TAG_ALREADY_ASSIGNED') skipped += 1
-        else failed += 1
-      }
-      const parts = [`#${tag.label} added to ${added} item${added === 1 ? '' : 's'}`]
-      if (skipped > 0) parts.push(`${skipped} already tagged`)
-      if (failed > 0) parts.push(`${failed} failed`)
-      toast(parts.join(' — '), {
-        kind: failed > 0 ? 'error' : 'success',
-        surface: 'gallery-actions',
+        tagOpen = false
+        tagName = ''
       })
-      tagOpen = false
-      tagName = ''
     } finally {
+      activeOperations -= 1
+      disposeWhenIdle()
       busy = false
     }
   }
@@ -174,23 +197,37 @@
     // The Delete key routes here scope-blind — the guard is the bar's.
     if (readOnly) return
     if (busy || selectedIds.length === 0) return
+    const targetIds = [...selectedIds]
+    const trashedIds: string[] = []
     busy = true
+    activeOperations += 1
     try {
-      let trashed = 0
-      let failed = 0
-      for (const nodeId of selectedIds) {
-        const result = await execute('TrashNode', { nodeId })
-        if (result.status === 'committed') trashed += 1
-        else failed += 1
-      }
-      toast(
-        failed > 0
-          ? `Moved ${trashed} to Trash — ${failed} failed`
-          : `Moved ${trashed} to Trash`,
-        { kind: failed > 0 ? 'error' : 'info', surface: 'gallery-actions' },
-      )
-      onClear()
+      await runAsUndoGroup(async (groupToken) => {
+        const gateway = await commandGateway()
+        let trashed = 0
+        let failed = 0
+        for (const nodeId of targetIds) {
+          const result = await gateway.execute('TrashNode', { nodeId }, { groupToken })
+          if (result.status === 'committed') {
+            trashed += 1
+            trashedIds.push(nodeId)
+          }
+          else failed += 1
+        }
+        toast(
+          failed > 0
+            ? `Moved ${trashed} to Trash — ${failed} failed`
+            : `Moved ${trashed} to Trash`,
+          { kind: failed > 0 ? 'error' : 'info', surface: 'gallery-actions' },
+        )
+        onClear()
+      }, {
+        operation: 'moving items to Trash',
+        afterUndo: () => requestGalleryReselect(trashedIds),
+      })
     } finally {
+      activeOperations -= 1
+      disposeWhenIdle()
       busy = false
     }
   }

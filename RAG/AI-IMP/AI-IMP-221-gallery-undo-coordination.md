@@ -51,6 +51,24 @@ that reason in 129/134 history first) or add a revision-bump
 listener that truncates redo. STOP and report if the original
 exclusion reason turns out load-bearing.
 
+Pre-implementation correction (2026-07-11): the current gallery has
+three distinct command seams, not one. Bulk tag/trash still bypassed the
+gateway, while ordinary and frame-target placement delegated to mounted
+board listeners. The exclusion was component ownership, not a domain
+capability fence: a takeover cannot borrow a canvas host's gateway. The
+repair therefore uses a narrow renderer/project gateway over the public
+preload port and preserves board-owned placement execution.
+
+Ratified per-verb disposition:
+
+- bulk tag: captured as one explicit group;
+- bulk place, including frame capture/arrange: captured as one awaited
+  explicit group through the receiving board gateway;
+- bulk trash: captured only inside its explicit gesture group; solo and
+  system trash remain outside the undo ledger;
+- Trash restore: captured standalone; Purge remains irreversible/exempt,
+  but crosses the gateway so its durable write invalidates redo.
+
 ### Files to Touch
 
 `views/GalleryActionBar.svelte`, undo store seam, gallery e2e.
@@ -61,12 +79,12 @@ exclusion reason turns out load-bearing.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Staleness reproduced and documented; original gateway-
+- [x] Staleness reproduced and documented; original gateway-
       exclusion reason found and stated.
-- [ ] Per-verb disposition table (captured vs exempt-with-
+- [x] Per-verb disposition table (captured vs exempt-with-
       invalidation) recorded and implemented.
-- [ ] Redo never stale after gallery verbs; e2e pins it.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Redo never stale after gallery verbs; e2e pins it.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 

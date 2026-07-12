@@ -38,17 +38,33 @@ export const LOAD_INTO_FRAME_EVENT = 'ew-load-into-frame'
 
 export interface LoadIntoFrameRequest extends FrameLoadTarget {
   nodeIds: string[]
+  groupToken: import('@ew/canvas-engine').CommandGroupToken
+  complete: () => void
 }
 
 /** Gallery → board: place these picked nodes into the parked frame. */
-export function requestLoadIntoFrame(detail: LoadIntoFrameRequest): void {
-  window.dispatchEvent(new CustomEvent<LoadIntoFrameRequest>(LOAD_INTO_FRAME_EVENT, { detail }))
+export function requestLoadIntoFrame(
+  detail: Omit<LoadIntoFrameRequest, 'complete'>,
+): Promise<void> {
+  return new Promise((resolve) => {
+    window.dispatchEvent(
+      new CustomEvent<LoadIntoFrameRequest>(LOAD_INTO_FRAME_EVENT, {
+        detail: { ...detail, complete: resolve },
+      }),
+    )
+  })
 }
 
-export function onLoadIntoFrame(listener: (detail: LoadIntoFrameRequest) => void): () => void {
+export function onLoadIntoFrame(
+  listener: (detail: LoadIntoFrameRequest) => Promise<boolean>,
+): () => void {
   const handler = (event: Event): void => {
     const detail = (event as CustomEvent<LoadIntoFrameRequest>).detail
-    if (detail && Array.isArray(detail.nodeIds) && detail.nodeIds.length > 0) listener(detail)
+    if (detail && Array.isArray(detail.nodeIds) && detail.nodeIds.length > 0) {
+      void listener(detail).then((handled) => {
+        if (handled) detail.complete()
+      })
+    }
   }
   window.addEventListener(LOAD_INTO_FRAME_EVENT, handler)
   return () => window.removeEventListener(LOAD_INTO_FRAME_EVENT, handler)

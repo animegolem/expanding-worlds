@@ -102,6 +102,25 @@ describe('UndoStack (RFC §10.2)', () => {
     expect(h.stack.canRedo()).toBe(false)
   })
 
+  it('keeps an after-undo receipt with its action across redo', async () => {
+    const h = harness(selfInverting)
+    const afterUndo = vi.fn()
+    h.stack.record({
+      commandType: 'TransformContent',
+      commandVersion: 1,
+      payload: { back: false },
+      inverse: { commandType: 'TransformContent', commandVersion: 1, payload: { back: true } },
+      canvasId: 'board-1',
+    }, undefined, true, afterUndo)
+
+    await h.stack.undo()
+    expect(afterUndo).toHaveBeenCalledTimes(1)
+    await h.stack.redo()
+    expect(afterUndo).toHaveBeenCalledTimes(1)
+    await h.stack.undo()
+    expect(afterUndo).toHaveBeenCalledTimes(2)
+  })
+
   it('reverts a three-step burst in reverse order, one step each', async () => {
     const h = harness(selfInverting)
     for (const type of ['MoveA', 'MoveB', 'MoveC']) {

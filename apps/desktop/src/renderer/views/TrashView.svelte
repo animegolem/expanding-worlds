@@ -17,12 +17,13 @@
   fly-to action later closes this view.
 -->
 <script lang="ts">
-  import { uuidv7 } from '@ew/domain'
-  import type { CommandResult } from '@ew/commands'
+  import type { CommandGateway } from '@ew/canvas-engine'
+  import { onDestroy } from 'svelte'
   import { navigateTo } from '../chrome/navigation'
   import { toast } from '../chrome/status'
   import { closeTakeover } from '../chrome/takeover'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
+  import { createProjectCommandPort } from '../project-command-port'
 
   type Kind = 'note' | 'node' | 'canvas'
 
@@ -73,25 +74,22 @@
   let busy = $state(false)
 
   // ------------------------------------------------ command plumbing
-  // Identical to GalleryActionBar: the takeover has no canvas gateway,
-  // so it issues append-style envelopes directly; no revision thread.
-  let projectId: string | null = null
+  // This takeover owns a renderer-level gateway independent of the canvas
+  // host, so restore/purge commits reach the session undo coordinator.
+  let portPromise: ReturnType<typeof createProjectCommandPort> | null = null
+  let destroyed = false
 
-  async function execute(commandType: string, payload: unknown): Promise<CommandResult> {
-    if (projectId === null) {
-      const response = await window.ew.project.query('getProject')
-      if (!response.ok) throw new Error(response.message)
-      projectId = (response.result as { id: string }).id
-    }
-    return window.ew.project.execute({
-      commandId: uuidv7(),
-      projectId,
-      commandType,
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload,
-    })
+  async function commandGateway(): Promise<CommandGateway> {
+    portPromise ??= createProjectCommandPort()
+    const port = await portPromise
+    if (destroyed) port.dispose()
+    return port.gateway
   }
+
+  onDestroy(() => {
+    destroyed = true
+    if (portPromise) void portPromise.then((port) => port.dispose())
+  })
 
   async function query<T>(name: string, args?: unknown): Promise<T | null> {
     const response = await window.ew.project.query(name, args)
@@ -235,7 +233,8 @@
     if (busy) return
     busy = true
     try {
-      const result = await execute('RestoreRecord', { kind: row.kind, id: row.id })
+      const gateway = await commandGateway()
+      const result = await gateway.execute('RestoreRecord', { kind: row.kind, id: row.id })
       if (result.status !== 'committed') {
         toast(`Could not restore ${KIND_LABEL[row.kind]} “${row.title}”`, {
           kind: 'error',
@@ -289,8 +288,9 @@
       const eligible = await query<Array<{ kind: Kind; id: string }>>('getEmptyTrashEligibility')
       let purged = 0
       let failed = 0
+      const gateway = await commandGateway()
       for (const entry of eligible ?? []) {
-        const result = await execute('PurgeRecord', { kind: entry.kind, id: entry.id })
+        const result = await gateway.execute('PurgeRecord', { kind: entry.kind, id: entry.id })
         if (result.status === 'committed') purged += 1
         else failed += 1
       }

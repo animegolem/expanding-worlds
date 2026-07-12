@@ -199,6 +199,39 @@ const placeNode = idEvent('ew-place-node')
 export const requestPlaceNode = placeNode.request
 export const onPlaceNode = placeNode.on
 
+export interface PlaceNodesRequest {
+  nodeIds: string[]
+  groupToken: import('@ew/canvas-engine').CommandGroupToken
+  complete: () => void
+}
+
+const PLACE_NODES_EVENT = 'ew-place-nodes'
+
+/** Gallery bulk place: completion keeps its undo group open until every
+ * gateway result has settled. */
+export function requestPlaceNodes(
+  nodeIds: readonly string[],
+  groupToken: import('@ew/canvas-engine').CommandGroupToken,
+): Promise<void> {
+  return new Promise((resolve) => {
+    window.dispatchEvent(
+      new CustomEvent<PlaceNodesRequest>(PLACE_NODES_EVENT, {
+        detail: { nodeIds: [...nodeIds], groupToken, complete: resolve },
+      }),
+    )
+  })
+}
+
+export function onPlaceNodes(listener: (request: PlaceNodesRequest) => Promise<void>): () => void {
+  const handler = (event: Event): void => {
+    const detail = (event as CustomEvent<PlaceNodesRequest>).detail
+    if (!detail || detail.nodeIds.length === 0) return
+    void listener(detail).finally(detail.complete)
+  }
+  window.addEventListener(PLACE_NODES_EVENT, handler)
+  return () => window.removeEventListener(PLACE_NODES_EVENT, handler)
+}
+
 /** Uses sidebar → Workspace: embody a zero-node note at view center
  * (§6.10 second half — CreatePin with note attach). */
 const placeNote = idEvent('ew-place-note')

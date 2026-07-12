@@ -281,9 +281,9 @@ export function attachBoardTooling(
   /** Gallery place with a parked frame target (frame-load.ts): place
    * each picked node into the frame, capture, and arrange to the drawn
    * size — one compound undo. Runs on THIS board only. */
-  const offLoadIntoFrame = onLoadIntoFrame(({ nodeIds, framePlacementId, canvasId }) => {
-    if (canvasId !== handle.canvasId) return
-    void runAsUndoGroup(async (groupToken) => {
+  const offLoadIntoFrame = onLoadIntoFrame(async ({ nodeIds, framePlacementId, canvasId, groupToken }) => {
+    if (canvasId !== handle.canvasId) return false
+    await runAsUndoGroup(async (nestedToken) => {
       const frame = controller.items().find((item) => item.id === framePlacementId)
       if (!frame || frame.itemKind !== 'placement') return
       const placementIds: string[] = []
@@ -296,7 +296,7 @@ export function attachBoardTooling(
           nodeId,
           x: frame.x + step * 24,
           y: frame.y + step * 24,
-        }, { groupToken })
+        }, { groupToken: nestedToken })
         if (result.status === 'committed') {
           placementIds.push(placementId)
           step += 1
@@ -313,17 +313,18 @@ export function attachBoardTooling(
       const captured = await gateway.execute('CaptureInFrame', {
         framePlacementId,
         memberPlacementIds: placementIds,
-      }, { groupToken })
+      }, { groupToken: nestedToken })
       if (captured.status !== 'committed') {
         onError(describeFailure('CaptureInFrame', captured))
         return
       }
       const payload = await arrangeFramePayload(framePlacementId)
       if (payload) {
-        const arranged = await gateway.execute('TransformContent', payload, { groupToken })
+        const arranged = await gateway.execute('TransformContent', payload, { groupToken: nestedToken })
         if (arranged.status !== 'committed') onError(describeFailure('TransformContent', arranged))
       }
-    })
+    }, { token: groupToken })
+    return true
   })
 
   async function reorder(op: ReorderOp): Promise<void> {

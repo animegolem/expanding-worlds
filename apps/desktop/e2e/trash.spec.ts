@@ -91,6 +91,13 @@ test('trash browser: list, restore + fly-to, empty trash', async () => {
     })
     expect(locations?.placements.length).toBe(1)
 
+    // Restore is a deliberate gesture: undo re-trashes the same row,
+    // redo restores it again before the existing fly-to receipt acts.
+    await win.evaluate(() => window.__ewUndo!.undo())
+    await expect(win.getByTestId('trash-row')).toHaveCount(3)
+    await win.evaluate(() => window.__ewUndo!.redo())
+    await expect(win.getByTestId('trash-row')).toHaveCount(2)
+
     // Fly to it: the takeover closes and navigation lands on canvas B.
     await win.getByTestId('trash-flyto').click()
     await expect(win.getByTestId('takeover-trash')).toHaveCount(0)

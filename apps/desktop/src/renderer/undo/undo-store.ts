@@ -129,11 +129,11 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   UpdateNote: { class: 'exempt', why: 'editor-owned: CodeMirror owns note-body text history (§10.2 boundary)' },
   SetCanvasCamera: { class: 'exempt', why: 'camera persistence: null inverse, not a structural edit' },
   CommitAssetImport: { class: 'exempt', why: 'asset-import pipeline: programmatic materialization, not a verb' },
-  // Trash is a record's recovery home (owner ruling: node-trash excepted;
-  // the same rationale covers the note/canvas trash verbs).
-  TrashNode: { class: 'exempt', why: 'node-trash: THE ratified exception; recovered from the Trash' },
-  TrashNote: { class: 'exempt', why: 'trash-is-recovery-home: recovered from the Trash, not Mod+Z' },
-  TrashCanvas: { class: 'exempt', why: 'trash-is-recovery-home: recovered from the Trash, not Mod+Z' },
+  // Lifecycle gestures are captured only in their explicit user group;
+  // programmatic/system lifecycle writes stay outside the ledger.
+  TrashNode: { class: 'group-only', why: '§9.7 bulk/solo user trash gesture; inverse RestoreRecord' },
+  TrashNote: { class: 'group-only', why: '§9.7 user trash gesture; inverse RestoreRecord' },
+  TrashCanvas: { class: 'group-only', why: '§9.7 user trash gesture; inverse RestoreRecord' },
   DetachAndTrashNote: { class: 'exempt', why: 'trash-is-recovery-home: sends a note to the Trash' },
   // Destructive/irreversible by design.
   PurgeRecord: { class: 'exempt', why: 'destructive-purge: permanent removal by design (invariant)' },
@@ -152,7 +152,7 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   UnassignTagFromNode: { class: 'exempt', why: 'internal-inverse of AssignTagToNode' },
   RestoreContent: { class: 'exempt', why: 'internal-inverse: DeleteContent undo path' },
   RestorePlacement: { class: 'exempt', why: 'internal-inverse: placement delete undo path' },
-  RestoreRecord: { class: 'exempt', why: 'restore-from-Trash / internal inverse' },
+  RestoreRecord: { class: 'captured', why: '§9.7 user restore; inverse re-trashes the record' },
   RestoreTag: { class: 'exempt', why: 'internal-inverse: tag delete undo path' },
   RestoreFrameMembership: { class: 'exempt', why: 'internal-inverse: frame release/capture undo path' },
   // Registered but not issued from the renderer as a deliberate gesture
@@ -198,6 +198,7 @@ const GROUP_ONLY_COMMANDS = new Set<string>(
 interface PendingGroup {
   commands: CapturedCommand[]
   order: number
+  afterUndo?: () => Promise<void> | void
 }
 
 /** Explicit gesture identity replaces the old temporal global window. */
@@ -256,6 +257,8 @@ export interface UndoGroupOptions {
   token?: CommandGroupToken
   /** Present-progress noun used when Undo reaches a still-open newest group. */
   operation?: string
+  /** Optional renderer receipt applied after this group's undo succeeds. */
+  afterUndo?: () => Promise<void> | void
 }
 
 export async function runAsUndoGroup<T>(
@@ -268,7 +271,11 @@ export async function runAsUndoGroup<T>(
   }
   const token = Symbol('undo-group')
   const order = stack?.reserveGroup(options.operation ?? 'working') ?? 0
-  const group: PendingGroup = { commands: [], order }
+  const group: PendingGroup = {
+    commands: [],
+    order,
+    ...(options.afterUndo === undefined ? {} : { afterUndo: options.afterUndo }),
+  }
   pendingGroups.set(token, group)
   try {
     return await fn(token)
@@ -278,8 +285,11 @@ export async function runAsUndoGroup<T>(
     // Every member already invalidated redo at COMMIT time. Finalization may
     // happen much later; clearing redo here would make completion itself look
     // like a new durable command.
-    if (group.commands.length === 1) stack?.record(group.commands[0]!, order, false)
-    else if (group.commands.length > 1) stack?.recordGroup(group.commands, order, false)
+    if (group.commands.length === 1) {
+      stack?.record(group.commands[0]!, order, false, group.afterUndo)
+    } else if (group.commands.length > 1) {
+      stack?.recordGroup(group.commands, order, false, group.afterUndo)
+    }
   }
 }
 
