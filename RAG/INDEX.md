@@ -10,7 +10,7 @@
 | Planned | 5 | 5 |
 | Deferred | 1 | 0 |
 | Cancelled | 0 | 0 |
-| Completed | 20 | 242 |
+| Completed | 20 | 244 |
 | **Total** | **28** | **279** |
 
 ## In Progress
@@ -93,12 +93,10 @@
 - [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
 - [[AI-IMP-222-import-streaming|IMP-222]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
-- [[AI-IMP-244-lock-probe-stream-close|IMP-244]] — in-progress, no epic dependency found
 - [[AI-IMP-255-title-band-native-drag-blackout|IMP-255]] — in-progress, no epic dependency found
 - [[AI-IMP-257-top-band-click-delivery|IMP-257]] — in-progress, no epic dependency found
 - [[AI-IMP-259-path-bar-containment|IMP-259]] — planned, no epic dependency found
 - [[AI-IMP-261-asset-content-dedup|IMP-261]] — planned, no epic dependency found
-- [[AI-IMP-264-lock-protocol-composite-hardening|IMP-264]] — planned, no epic dependency found
 - [[AI-IMP-265-text-in-shape|IMP-265]] — planned, no epic dependency found
 - [[AI-IMP-269-e2e-timing-analysis|IMP-269]] — planned, no epic dependency found
 - [[AI-IMP-279-three-state-finding-surfaces|IMP-279]] — planned, no epic dependency found
@@ -201,6 +199,7 @@ Git edit date so a second review can be judged.
 - apps/desktop/e2e/caption.spec.ts (499 LOC)
 - apps/desktop/src/renderer/theme.css (491 LOC)
 - packages/persistence/src/handlers/notes.ts (490 LOC) — review current: 2026-07-12T01:53:22Z at 490 LOC; unchanged; last edit 2026-07-09T20:12:55-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- packages/persistence/src/lock.ts (489 LOC)
 - packages/persistence/src/handlers/pin.ts (489 LOC) — review current: 2026-07-12T01:53:23Z at 489 LOC; unchanged; last edit 2026-07-10T05:45:08-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - packages/persistence/src/handlers/tags.test.ts (480 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
@@ -219,8 +218,8 @@ Git edit date so a second review can be judged.
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (420 LOC)
 - apps/desktop/src/renderer/views/GalleryActionBar.svelte (417 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)
+- packages/persistence/src/lock.test.ts (411 LOC)
 - packages/persistence/src/handlers/decorations.test.ts (402 LOC)
-- packages/persistence/src/lock.ts (401 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.ts (400 LOC)
 - packages/canvas-engine/src/hit-test.test.ts (397 LOC)
 - apps/desktop/src/renderer/views/outline-model.ts (396 LOC)
