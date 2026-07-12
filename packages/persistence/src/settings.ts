@@ -3,6 +3,8 @@ import type { Db } from './db'
 import type { QueryRegistry } from './queries'
 
 export const TRASH_RETENTION_KEY = 'trash_retention'
+/** Internal, deliberately losable §9.8 first-observed eligibility clock. */
+export const GC_ELIGIBILITY_KEY = 'gc_eligibility_v1'
 
 export type ProjectSettingDecoder<T> = (raw: unknown) => T | undefined
 
@@ -113,6 +115,7 @@ export function registerSettingsQueries(registry: QueryRegistry): void {
     )
     const settings: Record<string, unknown> = {}
     for (const row of rows) {
+      if (row.key === GC_ELIGIBILITY_KEY) continue
       const policy = SETTING_POLICIES[row.key]
       const absent = Symbol(row.key)
       const value = parseSetting(

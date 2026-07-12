@@ -182,6 +182,43 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
       }
     }
 
+    case 'gc-status': {
+      if (!service || service.readOnly) {
+        return { type: 'gc-status', ok: false, code: 'NO_PROJECT', message: 'no writable project is open' }
+      }
+      try {
+        return { type: 'gc-status', ok: true, ...service.gcStatus() }
+      } catch (err) {
+        return {
+          type: 'gc-status',
+          ok: false,
+          code: 'GC_STATUS_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
+    case 'gc-sweep': {
+      if (!service || service.readOnly) {
+        return { type: 'gc-sweep', ok: false, code: 'NO_PROJECT', message: 'no writable project is open' }
+      }
+      try {
+        const report = service.runGcSweep({
+          deadlineAtMs: request.deadlineAtMs,
+          ...(request.nowIso === undefined ? {} : { now: new Date(request.nowIso) }),
+        })
+        console.info('[gc] end-session sweep', report)
+        return { type: 'gc-sweep', ok: true, ...report }
+      } catch (err) {
+        return {
+          type: 'gc-sweep',
+          ok: false,
+          code: 'GC_SWEEP_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+        }
+      }
+    }
+
     case 'export-project': {
       // §16 portable export (AI-IMP-157): the service refreshes the
       // notes tree, checkpoints the WAL, and streams the .ewproj to

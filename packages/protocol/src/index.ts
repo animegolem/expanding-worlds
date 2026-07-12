@@ -374,6 +374,33 @@ export type SnapshotWriteNotesResponse =
   | { type: 'snapshot-write-notes'; ok: true; notes: number; assets: number }
   | { type: 'snapshot-write-notes'; ok: false; code: string; message: string }
 
+/** §9.8 read-only matured-byte fact for the Settings backup cluster. */
+export interface GcStatusRequest { type: 'gc-status' }
+export type GcStatusResponse =
+  | { type: 'gc-status'; ok: true; reclaimableBytes: number; reclaimableCount: number }
+  | { type: 'gc-status'; ok: false; code: string; message: string }
+
+/** §9.8 bounded End Session destructive pass. */
+export interface GcSweepRequest {
+  type: 'gc-sweep'
+  /** Absolute epoch budget shared by main and its local utility child. */
+  deadlineAtMs: number
+  /** Hidden-window test seam only; production always uses utility time. */
+  nowIso?: string
+}
+export type GcSweepResponse =
+  | {
+      type: 'gc-sweep'
+      ok: true
+      reclaimed: string[]
+      failed: string[]
+      deferred: number
+      reclaimableBytes: number
+      reclaimableCount: number
+      stoppedForBudget: boolean
+    }
+  | { type: 'gc-sweep'; ok: false; code: string; message: string }
+
 /** §11.4 Settings readout (AI-IMP-120): whether system git is present
  * (snapshots degrade to a visible note when absent) and the backup's
  * on-disk size — du of `.git` plus the uncommitted working delta,
@@ -382,6 +409,7 @@ export type SnapshotWriteNotesResponse =
 export interface SnapshotStatus {
   gitAvailable: boolean
   sizeBytes: number | null
+  reclaimableBytes: number
 }
 
 /** §11.4 remote push (AI-IMP-122): the per-project remote URL for the
@@ -513,6 +541,8 @@ export type ProjectRequest =
   | CloseProjectRequest
   | CheckpointWalRequest
   | SnapshotWriteNotesRequest
+  | GcStatusRequest
+  | GcSweepRequest
   | ExecuteCommandRequest
   | RunQueryRequest
   | ImportAssetRequest
@@ -539,6 +569,8 @@ export type ProjectResponse =
   | CloseProjectResponse
   | CheckpointWalResponse
   | SnapshotWriteNotesResponse
+  | GcStatusResponse
+  | GcSweepResponse
   | ExecuteCommandResponse
   | RunQueryResponse
   | ImportAssetResponse

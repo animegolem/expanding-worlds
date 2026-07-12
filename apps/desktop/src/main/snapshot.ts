@@ -635,9 +635,9 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     const hasGit = await gitAvailable()
     const dir = deps.projectDir()
     const gitDir = join(dir, '.git')
-    if (!existsSync(gitDir)) return { gitAvailable: hasGit, sizeBytes: null }
+    if (!existsSync(gitDir)) return { gitAvailable: hasGit, sizeBytes: null, reclaimableBytes: 0 }
     const size = dirSize(gitDir) + (hasGit ? await workingDelta(dir) : 0)
-    return { gitAvailable: hasGit, sizeBytes: size }
+    return { gitAvailable: hasGit, sizeBytes: size, reclaimableBytes: 0 }
   }
 
   // Field separator: %x1f is ASCII Unit Separator — it cannot occur in

@@ -931,7 +931,15 @@ void app.whenReady().then(() => {
   // disk size, computed lazily when the Settings sheet opens. The mode
   // enum itself rides the ordinary project-setting verbs (getSettings /
   // set-setting), so no bespoke handler is needed for it.
-  ipcMain.handle('snapshot:status', () => snapshots.status())
+  ipcMain.handle('snapshot:status', async () => {
+    const status = await snapshots.status()
+    const gc = await callUtility({ type: 'gc-status' })
+    return {
+      ...status,
+      reclaimableBytes:
+        'type' in gc && gc.type === 'gc-status' && gc.ok ? gc.reclaimableBytes : 0,
+    }
+  })
   // §11.4 remote push (AI-IMP-122): the deliberate Test connection
   // action (git ls-remote) and the retained push state for attach-time
   // catch-up. Test connection is the ONLY network call the user
@@ -1255,6 +1263,9 @@ void app.whenReady().then(() => {
     ipcMain.handle('test:snapshot', (_event, trigger: 'idle' | 'rest' | 'end-session') =>
       snapshots.runSnapshot(trigger).then(() => true),
     )
+    ipcMain.handle('test:end-session-data', (_event, nowIso: string) =>
+      runEndSessionData(Date.now() + 15_000, String(nowIso)).then(() => true),
+    )
   }
 
   // §11.4 involuntary end-session (AI-IMP-096): the OS suspending or
@@ -1283,6 +1294,17 @@ async function pushTagsBeforeSnapshot(): Promise<void> {
   }
 }
 
+async function runEndSessionData(deadlineAtMs: number, nowIso?: string): Promise<void> {
+  await pushTagsBeforeSnapshot()
+  await snapshots.runSnapshot('end-session')
+  if (Date.now() >= deadlineAtMs - 100) return
+  await callUtility({
+    type: 'gc-sweep',
+    deadlineAtMs,
+    ...(nowIso === undefined ? {} : { nowIso }),
+  })
+}
+
 app.on('window-all-closed', () => {
   if (closingCleanly) return
   closingCleanly = true
@@ -1298,10 +1320,7 @@ app.on('window-all-closed', () => {
   // quit; then close the project so the writer lock releases promptly
   // (§11.1) and kill the utility.
   void Promise.race([
-    (async () => {
-      await pushTagsBeforeSnapshot()
-      await snapshots.runSnapshot('end-session')
-    })(),
+    runEndSessionData(Date.now() + 15_000),
     new Promise((resolve) => setTimeout(resolve, 15_000)),
   ])
     .then(() =>

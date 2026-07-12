@@ -75,6 +75,10 @@ const api = {
      * EW_TEST_HOOKS=1 main-side. */
     snapshot: (trigger: 'idle' | 'rest' | 'end-session'): Promise<boolean> =>
       ipcRenderer.invoke('test:snapshot', trigger) as Promise<boolean>,
+    /** AI-IMP-219 e2e only: the real snapshot→GC data half with an
+     * injected clock; main registers it only under EW_TEST_HOOKS=1. */
+    endSessionData: (nowIso: string): Promise<boolean> =>
+      ipcRenderer.invoke('test:end-session-data', nowIso) as Promise<boolean>,
   },
   window: {
     /** §8.2 frameless shell: the renderer draws Linux window controls

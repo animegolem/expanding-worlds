@@ -11,11 +11,10 @@ import { assertManagedPath } from './path-safety'
  * project (the report simply stays empty), so recovery runs on every
  * open rather than trying to detect uncleanliness.
  *
- * Repairs remove only reconcilable debris: interrupted pending
- * imports, their temp files, and orphan blobs no Asset row references
- * (§11.2/§9.8 age-transaction-reference logic collapses to
- * "reference" here because pending_imports rows ARE the transaction
- * record). Missing regenerable derivatives rebuild lazily and are not
+ * Repairs remove only transaction-proven staging debris: interrupted
+ * pending imports and their temp files. Canonical orphan blobs join
+ * §9.8's age-checked End Session sweep; recovery never bypasses that
+ * 30-day grace. Missing regenerable derivatives rebuild lazily and are not
  * an error; a missing canonical original is a visible integrity error
  * and never repaired silently (§11.4).
  */
@@ -40,7 +39,6 @@ export function runRecovery(ctx: RecoveryCtx): RecoveryReport {
   reconcilePendingImports(ctx, report)
   sweepImportTemp(ctx, report)
   verifyCanonicalBlobs(ctx, report)
-  removeOrphanBlobs(ctx, report)
   verifySearchIndex(ctx, report)
 
   return report
@@ -112,38 +110,6 @@ function verifyCanonicalBlobs(ctx: RecoveryCtx, report: RecoveryReport): void {
     const path = assertManagedPath(ctx.dir, blobPath(ctx.dir, content_hash))
     if (!existsSync(path)) {
       report.integrityErrors.push(`missing canonical original for hash ${content_hash}`)
-    }
-  }
-}
-
-/**
- * Blobs in content-addressed storage that no Asset row references —
- * debris from imports interrupted after the atomic move. Blobs with
- * Asset rows are never touched here, even when GC-eligible; file
- * deletion for those follows Empty Trash flows, not recovery.
- */
-function removeOrphanBlobs(ctx: RecoveryCtx, report: RecoveryReport): void {
-  report.checksRun.push('orphan-blobs')
-  const assetsRoot = assertManagedPath(ctx.dir, join(ctx.dir, 'assets'))
-  if (!existsSync(assetsRoot)) return
-  const referenced = new Set(
-    ctx.db
-      .all<{ content_hash: string }>('SELECT DISTINCT content_hash FROM asset')
-      .map((r) => r.content_hash),
-  )
-  for (const shard of readdirSync(assetsRoot)) {
-    const shardDir = assertManagedPath(ctx.dir, join(assetsRoot, shard))
-    let entries: string[]
-    try {
-      entries = readdirSync(shardDir)
-    } catch {
-      continue // a stray file, not a shard directory
-    }
-    for (const hash of entries) {
-      if (!referenced.has(hash)) {
-        rmSync(assertManagedPath(ctx.dir, join(shardDir, hash)), { force: true })
-        report.repairs.push(`removed orphan blob ${hash}`)
-      }
     }
   }
 }

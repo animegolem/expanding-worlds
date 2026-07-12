@@ -27,6 +27,8 @@ annotations.
   also check once at launch, silently.
 
 ### Under the hood
+- AI-IMP-219: End Session now ages and reclaims blobs only after a
+  guarded 30-day grace, with a dry-run byte fact beside backup size.
 - AI-IMP-220: optional Trash retention now runs at project open through
   ordinary purge semantics and reports completed cleanup from the perch.
 - AI-IMP-270: create-and-attach note gestures now redo by restoring the

@@ -49,6 +49,13 @@ import { registerStructureQueries } from './queries-structure'
 import { runRecovery, type RecoveryReport } from './recovery'
 import { registerSettingsQueries, setProjectSetting } from './settings'
 import { runTrashRetention, type RetentionPurgeReport } from './retention'
+import {
+  acquireExportLease,
+  gcStatus,
+  runGcSweep,
+  type GcStatus,
+  type GcSweepReport,
+} from './gc'
 
 export interface ProjectInfo {
   projectId: string
@@ -99,6 +106,10 @@ export interface ProjectService {
   recovery(): RecoveryReport
   /** §9.1 rev 0.70 project-open expiration through PurgeRecord. */
   runTrashRetention(now?: () => Date): RetentionPurgeReport
+  /** §9.8 read-only matured-byte fact for Settings. */
+  gcStatus(now?: Date): GcStatus
+  /** §9.8 bounded End Session mark/guard/sweep. */
+  runGcSweep(options?: { now?: Date; deadlineAtMs?: number }): GcSweepReport
   /** §11.4 involuntary checkpoint (AI-IMP-096): PRAGMA
    * wal_checkpoint(TRUNCATE) so the -wal file returns to zero and the
    * .sqlite is complete at rest (the OS may sleep and a cloud daemon
@@ -242,6 +253,15 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
           execute: (envelope) => dispatcher.execute(envelope),
           now,
         }),
+      gcStatus: (now = new Date()) =>
+        gcStatus({ db: handle.db, projectId: handle.projectId, dir: handle.dir }, now),
+      runGcSweep: (sweepOptions = {}) => {
+        if (handle.readOnly) throw readOnlyError()
+        return runGcSweep(
+          { db: handle.db, projectId: handle.projectId, dir: handle.dir },
+          sweepOptions,
+        )
+      },
       checkpoint: () => {
         // A read-only source took no lock and left the WAL to its
         // writable owner — checkpointing here would be a no-op the
@@ -291,21 +311,32 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
       ingestSource: () => ({ db: handle.db, dir: handle.dir }),
       exportProject: async (destPath, exportOptions) => {
         if (handle.readOnly) throw readOnlyError()
+        const leased = handle.db
+          .all<{ content_hash: string }>(
+            'SELECT DISTINCT content_hash FROM asset WHERE project_id = ?',
+            handle.projectId,
+          )
+          .map((row) => row.content_hash)
+        const releaseLease = acquireExportLease(leased)
         // Order matters (mirrors the §11.4 snapshot moment): the notes
         // tree regenerates FIRST (refreshing §7.8 blocks), then the WAL
         // truncates so project.sqlite is complete at rest, then the
         // consistent copy streams into the archive.
-        writeNotesTree(
-          {
-            db: handle.db,
-            projectId: handle.projectId,
-            rootNodeId: handle.rootNodeId,
-            rootCanvasId: handle.rootCanvasId,
-          },
-          handle.dir,
-        )
-        handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
-        return exportProject({ db: handle.db, dir: handle.dir }, destPath, exportOptions)
+        try {
+          writeNotesTree(
+            {
+              db: handle.db,
+              projectId: handle.projectId,
+              rootNodeId: handle.rootNodeId,
+              rootCanvasId: handle.rootCanvasId,
+            },
+            handle.dir,
+          )
+          handle.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+          return await exportProject({ db: handle.db, dir: handle.dir }, destPath, exportOptions)
+        } finally {
+          releaseLease()
+        }
       },
       estimateExportSize: () => estimateExportSize({ db: handle.db, dir: handle.dir }),
       // Claiming mutates the queue: a read-only source reports drained

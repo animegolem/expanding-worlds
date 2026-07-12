@@ -96,7 +96,11 @@
   // an ordinary project setting (key snapshot_mode). Git presence and
   // the backup disk size come from main lazily when this view opens.
   type SnapshotMode = 'off' | 'commit' | 'commit-push'
-  let snapshotStatus = $state<{ gitAvailable: boolean; sizeBytes: number | null } | null>(null)
+  let snapshotStatus = $state<{
+    gitAvailable: boolean
+    sizeBytes: number | null
+    reclaimableBytes: number
+  } | null>(null)
   $effect(() => {
     void (async () => {
       try {
@@ -616,7 +620,7 @@
         A checkpoint saves the project, its images, and a readable notes tree to git history at every
         end session, quit, and idle pause. Backup size: {formatBackupSize(
           snapshotStatus?.sizeBytes ?? null,
-        )}.
+        )}. Cleanup can reclaim {formatBackupSize(snapshotStatus?.reclaimableBytes ?? 0)}.
       {/if}
     </p>
 

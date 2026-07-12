@@ -154,7 +154,17 @@ export {
   type TrashEntry,
   type TrashView,
 } from './queries-lifecycle'
-export { computeGcEligibleBlobs, exportLeaseGuardedHashes } from './gc'
+export {
+  GC_GRACE_MS,
+  GC_MANIFEST_PATH,
+  acquireExportLease,
+  computeGcEligibleBlobs,
+  exportLeaseGuardedHashes,
+  gcStatus,
+  runGcSweep,
+  type GcStatus,
+  type GcSweepReport,
+} from './gc'
 export { runTrashRetention, type RetentionPurgeItem, type RetentionPurgeReport } from './retention'
 export { runRecovery, type RecoveryCtx, type RecoveryReport } from './recovery'
 export {

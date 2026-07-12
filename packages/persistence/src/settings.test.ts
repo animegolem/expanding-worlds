@@ -7,6 +7,7 @@ import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry, registerCoreQueries } from './queries'
 import {
   decodeTrashRetention,
+  GC_ELIGIBILITY_KEY,
   getProjectSetting,
   registerSettingsQueries,
   setProjectSetting,
@@ -55,6 +56,16 @@ describe('project-tier settings (§11.5, AI-IMP-074)', () => {
     expect(settings['session_snapshots']).toBe('commit')
     // createProject seeds trash retention (§9.1); it reads back too.
     expect(settings['trash_retention']).toBe('never')
+  })
+
+  it('keeps the internal GC clock out of renderer-facing settings', () => {
+    setProjectSetting(handle.db, handle.projectId, GC_ELIGIBILITY_KEY, {
+      hash: { firstSeenAt: '2026-01-01T00:00:00.000Z' },
+    })
+    expect(getSettings()).not.toHaveProperty(GC_ELIGIBILITY_KEY)
+    expect(
+      getProjectSetting(handle.db, handle.projectId, GC_ELIGIBILITY_KEY, {}),
+    ).toHaveProperty('hash')
   })
 
   it('overwrites in place: one row per key', () => {

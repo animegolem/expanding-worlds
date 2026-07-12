@@ -1,11 +1,21 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { uuidv7 } from '@ew/domain'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CommandContext } from './dispatcher'
-import { computeGcEligibleBlobs, exportLeaseGuardedHashes } from './gc'
+import {
+  GC_MANIFEST_PATH,
+  acquireExportLease,
+  computeGcEligibleBlobs,
+  exportLeaseGuardedHashes,
+  gcStatus,
+  runGcSweep,
+} from './gc'
+import { blobPath, thumbnailPath } from './import/store'
 import { createProject, type ProjectHandle } from './project'
+import { runRecovery } from './recovery'
+import { GC_ELIGIBILITY_KEY, setProjectSetting } from './settings'
 
 let dir: string
 let handle: ProjectHandle
@@ -138,7 +148,113 @@ describe('computeGcEligibleBlobs (§9.8)', () => {
     ])
   })
 
-  it('exposes the EPIC-008 export-lease guard as an empty stub', () => {
-    expect(exportLeaseGuardedHashes().size).toBe(0)
+  it('ref-counts live export leases', () => {
+    const releaseA = acquireExportLease(['hash-export'])
+    const releaseB = acquireExportLease(['hash-export'])
+    expect(exportLeaseGuardedHashes()).toEqual(new Set(['hash-export']))
+    releaseA()
+    expect(exportLeaseGuardedHashes()).toEqual(new Set(['hash-export']))
+    releaseB()
+    expect(exportLeaseGuardedHashes()).toEqual(new Set())
+  })
+})
+
+describe('runGcSweep (§9.8 rev 0.70)', () => {
+  const hash = 'a'.repeat(64)
+  const at = (iso: string) => new Date(iso)
+
+  function writeManagedBlob(contentHash = hash): void {
+    const original = blobPath(dir, contentHash)
+    const thumb = thumbnailPath(dir, contentHash)
+    mkdirSync(join(original, '..'), { recursive: true })
+    mkdirSync(join(thumb, '..'), { recursive: true })
+    writeFileSync(original, 'original-bytes')
+    writeFileSync(thumb, 'thumb')
+  }
+
+  it('waits 30 days, tears down metadata/files, manifests, and reopens cleanly', () => {
+    const assetId = insertAsset(hash)
+    writeManagedBlob()
+    const sweepCtx = { ...ctx, dir }
+
+    const first = runGcSweep(sweepCtx, { now: at('2026-01-01T00:00:00.000Z') })
+    expect(first).toMatchObject({ reclaimed: [], deferred: 1 })
+    expect(gcStatus(sweepCtx, at('2026-01-20T00:00:00.000Z'))).toEqual({
+      reclaimableBytes: 0,
+      reclaimableCount: 0,
+    })
+    expect(gcStatus(sweepCtx, at('2026-02-01T00:00:00.000Z'))).toEqual({
+      reclaimableBytes: 19,
+      reclaimableCount: 1,
+    })
+
+    const swept = runGcSweep(sweepCtx, { now: at('2026-02-01T00:00:00.000Z') })
+    expect(swept).toMatchObject({ reclaimed: [hash], failed: [], reclaimableBytes: 19 })
+    expect(handle.db.get('SELECT id FROM asset WHERE id = ?', assetId)).toBeUndefined()
+    expect(existsSync(blobPath(dir, hash))).toBe(false)
+    expect(existsSync(thumbnailPath(dir, hash))).toBe(false)
+    expect(readFileSync(join(dir, GC_MANIFEST_PATH), 'utf8')).toContain(hash)
+    expect(
+      handle.db.get('SELECT value FROM settings WHERE key = ?', GC_ELIGIBILITY_KEY),
+    ).toBeUndefined()
+
+    const recovery = runRecovery({ db: handle.db, projectId: handle.projectId, dir })
+    expect(recovery.integrityErrors).toEqual([])
+  })
+
+  it('ages filesystem-only orphans and compacts a re-referenced candidate', () => {
+    writeManagedBlob()
+    const reReferencedHash = 'b'.repeat(64)
+    const assetId = insertAsset(reReferencedHash)
+    const sweepCtx = { ...ctx, dir }
+    runGcSweep(sweepCtx, { now: at('2026-01-01T00:00:00.000Z') })
+
+    insertNode('active', assetId)
+    const later = runGcSweep(sweepCtx, { now: at('2026-02-01T00:00:00.000Z') })
+    expect(later.reclaimed).toEqual([hash])
+    expect(handle.db.get('SELECT id FROM asset WHERE id = ?', assetId)).toBeDefined()
+    const stored = handle.db.get<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ?',
+      GC_ELIGIBILITY_KEY,
+    )
+    expect(stored).toBeUndefined()
+  })
+
+  it('does not start a clock while an export lease guards the hash', () => {
+    insertAsset(hash)
+    writeManagedBlob()
+    const release = acquireExportLease([hash])
+    const sweepCtx = { ...ctx, dir }
+    expect(runGcSweep(sweepCtx, { now: at('2026-01-01T00:00:00.000Z') }).deferred).toBe(0)
+    release()
+    expect(runGcSweep(sweepCtx, { now: at('2026-02-01T00:00:00.000Z') })).toMatchObject({
+      reclaimed: [],
+      deferred: 1,
+    })
+  })
+
+  it('resumes a post-delete manifest receipt and yields to an expired budget', () => {
+    const sweepCtx = { ...ctx, dir }
+    setProjectSetting(handle.db, handle.projectId, GC_ELIGIBILITY_KEY, {
+      [hash]: {
+        firstSeenAt: '2026-01-01T00:00:00.000Z',
+        pendingManifest: { deletedAt: '2026-02-01T00:00:00.000Z', bytes: 17 },
+      },
+    })
+    const resumed = runGcSweep(sweepCtx, {
+      now: at('2026-02-02T00:00:00.000Z'),
+      deadlineAtMs: Date.now() + 10_000,
+    })
+    expect(resumed).toMatchObject({ reclaimed: [hash], reclaimableBytes: 17 })
+    expect(readFileSync(join(dir, GC_MANIFEST_PATH), 'utf8')).toContain(hash)
+
+    insertAsset(hash)
+    writeManagedBlob()
+    const stopped = runGcSweep(sweepCtx, {
+      now: at('2026-03-10T00:00:00.000Z'),
+      deadlineAtMs: 0,
+    })
+    expect(stopped).toMatchObject({ stoppedForBudget: true, reclaimed: [] })
+    expect(existsSync(blobPath(dir, hash))).toBe(true)
   })
 })

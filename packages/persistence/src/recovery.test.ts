@@ -57,7 +57,6 @@ describe('runRecovery', () => {
       'pending-imports',
       'import-temp-sweep',
       'canonical-blobs',
-      'orphan-blobs',
       'search-index',
     ])
     expect(report.repairs).toEqual([])
@@ -110,7 +109,7 @@ describe('runRecovery', () => {
     expect(handle.db.get('SELECT id FROM asset')).toBeDefined()
   })
 
-  it('removes orphan blobs but never blobs an Asset row references', () => {
+  it('leaves canonical orphan blobs for the age-checked End Session sweep', () => {
     const kept = 'c'.repeat(64)
     const orphan = 'd'.repeat(64)
     insertAsset(kept)
@@ -119,8 +118,8 @@ describe('runRecovery', () => {
 
     const report = recover()
     expect(existsSync(blobPath(handle.dir, kept))).toBe(true)
-    expect(existsSync(blobPath(handle.dir, orphan))).toBe(false)
-    expect(report.repairs.join(' ')).toContain(orphan)
+    expect(existsSync(blobPath(handle.dir, orphan))).toBe(true)
+    expect(report.repairs.join(' ')).not.toContain(orphan)
     expect(report.integrityErrors).toEqual([])
   })
 
