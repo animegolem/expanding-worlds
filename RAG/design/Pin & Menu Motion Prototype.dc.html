@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<link rel="stylesheet" href="design-system/styles.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+a{color:#2a78d6}a:hover{color:#4a9df0}
+/* the bookmark beat: wiggle (dog readying the hop) → pop UP → push DOWN into the canvas, baby squash-and-stretch */
+@keyframes pinbeat{
+  0%{transform:translateY(0) rotate(0) scale(1)}
+  8%{transform:translateY(0) rotate(-8deg)}
+  16%{transform:translateY(0) rotate(7deg)}
+  22%{transform:translateY(0) rotate(-4deg)}
+  27%{transform:translateY(0) rotate(2deg)}
+  31%{transform:translateY(0) rotate(0)}
+  44%{transform:translateY(-9px) scaleY(1.06) scaleX(.96)}
+  52%{transform:translateY(-10px) scaleY(1.02) scaleX(.99)}
+  66%{transform:translateY(3px) scaleY(.93) scaleX(1.06)}
+  80%{transform:translateY(0) scaleY(1.01) scaleX(.995)}
+  100%{transform:translateY(0) scale(1)}
+}
+[data-phase="beat"] [data-pin]{animation:pinbeat var(--beat-ms,700ms) cubic-bezier(.5,.7,.45,1) both}
+[data-phase="open"] [data-pin]{transform:translateY(0)}
+[data-pin]{transform-origin:50% 100%}
+/* the hover-revealed title strip — the would-be window chrome, lightly smoky; the whole beat lives inside its band */
+[data-strip]{opacity:0;transition:opacity 220ms ease-out}
+[data-stripzone]:hover [data-strip],[data-phase="beat"] [data-strip],[data-phase="open"] [data-strip],[data-phase="closing"] [data-strip]{opacity:1}
+/* menu grammar candidates — all opacity-led, directional, ease-out */
+@keyframes sweepCurtain{from{opacity:0;clip-path:inset(0 0 96% 0)}to{opacity:1;clip-path:inset(0)}}
+@keyframes sweepFade{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rowin{from{opacity:0}to{opacity:1}}
+[data-bmenu]{opacity:1}
+[data-phase="open"] [data-bmenu][data-anim="curtain"]{animation:sweepCurtain 190ms ease-out both}
+[data-phase="open"] [data-bmenu][data-anim="fade-slide"]{animation:sweepFade 170ms ease-out both}
+[data-phase="open"] [data-bmenu][data-anim="cascade"] [data-row]{opacity:0;animation:rowin 130ms ease-out forwards}
+[data-phase="closing"] [data-bmenu]{opacity:0;transition:opacity 120ms ease-out}
+[data-va] [data-menu-a]{animation:sweepCurtain 190ms ease-out both}
+[data-vb] [data-menu-b]{animation:sweepFade 170ms ease-out both}
+[data-vc] [data-menu-c] [data-row]{opacity:0;animation:rowin 130ms ease-out forwards}
+</style>
+</helmet>
+
+<section style="padding:40px 44px 60px" id="t1" data-screen-label="t1 bookmark beat">
+  <div style="display:flex;align-items:baseline;gap:10px;margin:0 0 6px">
+    <a href="#t1" style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none">1</a>
+    <span style="font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a">The bookmark beat — the signature pin bridges chrome into the canvas</span>
+  </div>
+  <p style="margin:0 0 20px 30px;font:11.5px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:660px">The path-tail bookmark is the app's one signature: the only colored element in the mono chrome, wearing the canonical pin (silhouette iv). Click it — it wiggles like a dog readying its hop, pops up, and pushes DOWN into the canvas with a baby touch of squash-and-stretch; the bookmarks menu sweeps in underneath, anchored to its opener. Esc or click the board to close. No chrome pill — ⌂, the board name, and the pin sit bare on the board at cap-height; hovering the top edge smokes in the low-opacity title strip (the drag handle), and the whole beat stays inside that band. The Tweaks panel switches the menu grammar.</p>
+
+  <div data-phase="{{ phase }}" style="width:960px;height:440px;position:relative;border-radius:10px;overflow:hidden;border:1px solid #c9c4b8;background:var(--ew-surface-solid)">
+    <div onClick="{{ closeMenu }}" style="position:absolute;inset:0;background-image:var(--ew-grid-bg);background-size:var(--ew-grid-size)"></div>
+
+    <div style="position:absolute;left:340px;top:120px;width:150px;height:200px;border-radius:3px;background:repeating-linear-gradient(115deg,#4a5560 0 12px,#414b55 12px 24px);box-shadow:0 8px 22px rgba(0,0,0,.3)"></div>
+    <div style="position:absolute;left:346px;top:326px;font-size:11px;color:var(--ew-text-muted);font-family:ui-monospace,Menlo,monospace">Mirelle — cloak study</div>
+    <div style="position:absolute;left:540px;top:170px;width:190px;height:130px;border-radius:3px;background:repeating-linear-gradient(95deg,#5d4b45 0 12px,#52423d 12px 24px);box-shadow:0 8px 22px rgba(0,0,0,.3)"></div>
+    <div style="position:absolute;left:546px;top:306px;font-size:11px;color:var(--ew-text-muted);font-family:ui-monospace,Menlo,monospace">Northern Reach</div>
+
+    <div data-stripzone="" style="position:absolute;left:0;top:0;right:0;height:46px">
+      <div data-strip="" style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(12,13,16,.82) 0%, rgba(12,13,16,.55) 55%, rgba(12,13,16,.28) 100%);border-bottom:1px solid rgba(255,255,255,.04)"></div>
+      <div style="position:absolute;left:18px;top:17px;display:flex;gap:8px">
+        <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57;display:block"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#febc2e;display:block"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#28c840;display:block"></span>
+      </div>
+
+      <div style="position:absolute;left:78px;top:0;height:46px;display:flex;align-items:center;gap:8px;opacity:.92">
+        <span style="font-size:.8rem;line-height:1;display:flex;align-items:center;color:var(--ew-text-soft)">⌂</span>
+        <span style="font:600 .75rem/1 var(--ew-font-ui);color:var(--ew-text)">Homeworld</span>
+        <div data-pin="" onClick="{{ openPin }}" onAnimationEnd="{{ pinBeatEnd }}" style="width:16px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer" title="Bookmarks">
+        <svg width="13" height="18" viewBox="100 20 312 440">
+          <defs><linearGradient id="pgRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0847c"></stop><stop offset="1" stop-color="#c0392f"></stop></linearGradient><clipPath id="pgH"><circle cx="256" cy="178" r="118"></circle></clipPath></defs>
+          <path d="M138 178 A118 118 0 1 1 374 178 C374 290 300 332 264 414 C258 434 250 434 244 414 C212 332 138 290 138 178 Z" fill="url(#pgRed)" stroke="#8f2f27" stroke-width="10"></path>
+          <g clip-path="url(#pgH)" fill="none" stroke="#9c2f27" stroke-width="14">
+            <ellipse cx="256" cy="178" rx="44" ry="116"></ellipse>
+            <ellipse cx="256" cy="178" rx="88" ry="116"></ellipse>
+            <path d="M138 178 H374"></path>
+          </g>
+          <ellipse cx="210" cy="114" rx="40" ry="20" fill="rgba(255,255,255,.42)" transform="rotate(-20 210 114)"></ellipse>
+        </svg>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ menuVisible }}" hint-placeholder-val="{{ false }}">
+      <div data-bmenu="" data-anim="{{ menuSweep }}" style="position:absolute;left:158px;top:50px;width:230px;border-radius:7px;background:var(--ew-surface-menu);border:1px solid var(--ew-border-panel);box-shadow:var(--ew-panel-shadow-menu);padding:5px;z-index:5">
+        <div data-row="" style="font:600 .62rem ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ew-text-subtle);padding:5px 8px 4px">BOOKMARKS — PLACES ON THE MAP</div>
+        <div data-row="" style="animation-delay:30ms;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;font:.75rem var(--ew-font-ui);color:var(--ew-text);cursor:pointer;white-space:nowrap" style-hover="background:var(--ew-surface-hover)"><svg width="13" height="13" viewBox="0 0 24 24" style="flex:none"><defs><linearGradient id="mg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"></stop><stop offset="1" stop-color="#6b9cc4"></stop></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="url(#mg1)"></circle><path d="M6.5 8.5 q2.5 -2 5.5 -1.2 q2 .5 1.2 2.2 q-1 1.8 -3.6 1.4 q-3 -.4 -3.1 -2.4 Z" fill="#6f9e58"></path><path d="M12.5 14 q2.8 -.8 4.6 .6 q1.2 1 .4 2.4 q-1.2 1.6 -3.5 .8 q-2.3 -.8 -1.5 -3.8 Z" fill="#6f9e58"></path><circle cx="12" cy="12" r="9.5" fill="none" stroke="#4a7096" stroke-width="1.6"></circle></svg><span>the ford</span><span style="margin-left:auto;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">Homeworld</span></div>
+        <div data-row="" style="animation-delay:60ms;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;font:.75rem var(--ew-font-ui);color:var(--ew-text);cursor:pointer;white-space:nowrap" style-hover="background:var(--ew-surface-hover)"><svg width="13" height="13" viewBox="0 0 24 24" style="flex:none"><defs><linearGradient id="mg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"></stop><stop offset="1" stop-color="#6b9cc4"></stop></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="url(#mg2)"></circle><path d="M6.5 8.5 q2.5 -2 5.5 -1.2 q2 .5 1.2 2.2 q-1 1.8 -3.6 1.4 q-3 -.4 -3.1 -2.4 Z" fill="#6f9e58"></path><path d="M12.5 14 q2.8 -.8 4.6 .6 q1.2 1 .4 2.4 q-1.2 1.6 -3.5 .8 q-2.3 -.8 -1.5 -3.8 Z" fill="#6f9e58"></path><circle cx="12" cy="12" r="9.5" fill="none" stroke="#4a7096" stroke-width="1.6"></circle></svg><span>tariff ledger</span><span style="margin-left:auto;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">Northern Reach</span></div>
+        <div data-row="" style="animation-delay:90ms;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;font:.75rem var(--ew-font-ui);color:var(--ew-text);cursor:pointer;white-space:nowrap" style-hover="background:var(--ew-surface-hover)"><svg width="13" height="13" viewBox="0 0 24 24" style="flex:none"><defs><linearGradient id="mg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"></stop><stop offset="1" stop-color="#6b9cc4"></stop></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="url(#mg3)"></circle><path d="M6.5 8.5 q2.5 -2 5.5 -1.2 q2 .5 1.2 2.2 q-1 1.8 -3.6 1.4 q-3 -.4 -3.1 -2.4 Z" fill="#6f9e58"></path><path d="M12.5 14 q2.8 -.8 4.6 .6 q1.2 1 .4 2.4 q-1.2 1.6 -3.5 .8 q-2.3 -.8 -1.5 -3.8 Z" fill="#6f9e58"></path><circle cx="12" cy="12" r="9.5" fill="none" stroke="#4a7096" stroke-width="1.6"></circle></svg><span>warren gate</span><span style="margin-left:auto;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">Warren scout camp</span></div>
+        <div data-row="" style="animation-delay:110ms;height:1px;background:var(--ew-border);margin:4px 6px"></div>
+        <div data-row="" style="animation-delay:130ms;display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;font:.75rem var(--ew-font-ui);color:var(--ew-text);cursor:pointer;white-space:nowrap" style-hover="background:var(--ew-surface-hover)"><span style="color:var(--ew-text-soft)">＋</span><span>bookmark this board</span><span style="margin-left:auto;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⌘D</span></div>
+      </div>
+    </sc-if>
+
+    <div style="position:absolute;left:18px;bottom:12px;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">click the pin · hover the top edge to smoke in the title strip (the drag handle — no app frame otherwise) · esc or click the board to close</div>
+  </div>
+
+  <div style="display:flex;gap:24px;margin-top:14px;align-items:flex-start">
+    <div style="width:400px;border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:10px 13px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a">
+      ■ BEAT SPEC (~, rev 2 — softened) · one-shot, world-beat budget, the single sanctioned chrome→world crossover<br>
+      the pin is cap-height: it tracks the word beside it, a hair over the lines<br>
+      wiggle ~220ms (±8° about the tip, anticipation)<br>
+      hop ~150ms up 10px · stretch scaleY 1.06<br>
+      press ~100ms — dips 3px, reseats at its EXACT spot (no drift) · squash scaleY .93<br>
+      settle ~230ms, one gentle overshoot, no bounce loop<br>
+      the WHOLE beat stays inside the title-strip band (the would-be chrome)<br>
+      menu +190ms directional sweep, opacity-led, from the anchor<br>
+      unpin on close: plain 120ms fade — the ceremony is for arrival
+    </div>
+    <div style="width:400px;font:11px/1.7 system-ui,sans-serif;color:rgba(0,0,0,.55)">The doctrine note this prototypes: chrome animates opacity only — EXCEPT the pin, which is the one isomorphic object bridging the two materials. It performs a desk beat because it literally enters the canvas. Every other menu in the app gets only the directional sweep below.</div>
+  </div>
+</section>
+
+<section style="padding:0 44px 60px" id="t2" data-screen-label="t2 menu grammar">
+  <div style="display:flex;align-items:baseline;gap:10px;margin:0 0 6px">
+    <a href="#t2" style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none">2</a>
+    <span style="font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a">The universal menu grammar — three sweep candidates (replay each)</span>
+  </div>
+  <p style="margin:0 0 20px 30px;font:11.5px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.5);max-width:660px">One shared open animation for every menu and popover — opacity-led, directional from the anchor, genie-flavored but not exaggerated, ≤190ms ease-out. The Tweaks panel applies your pick to the bookmark menu above.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;margin-left:30px">
+
+    <div id="2a" style="flex:none;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:260px"><a href="#2a" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none">2a</a><span>Curtain — opacity sweeps downward with a moving clip edge</span></div>
+      <div data-va="" style="width:260px;height:200px;position:relative;border-radius:8px;background:var(--ew-surface-solid);border:1px solid rgba(0,0,0,.1);overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:var(--ew-grid-bg);background-size:var(--ew-grid-size)"></div>
+        <div style="position:absolute;left:14px;top:12px;width:28px;height:24px;border-radius:6px;background:var(--ew-surface-raised);border:1px solid var(--ew-border-control);display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--ew-text-soft)">☰</div>
+        <sc-if value="{{ vA }}" hint-placeholder-val="{{ true }}">
+          <div data-menu-a="" style="position:absolute;left:14px;top:42px;width:170px;border-radius:7px;background:var(--ew-surface-menu);border:1px solid var(--ew-border-panel);box-shadow:var(--ew-panel-shadow-menu);padding:5px;font:.72rem var(--ew-font-ui);color:var(--ew-text)">
+            <div style="padding:4px 8px">Zoom to fit <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⇧1</span></div>
+            <div style="padding:4px 8px">Paste <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⌘V</span></div>
+            <div style="padding:4px 8px">Select all <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⌘A</span></div>
+          </div>
+        </sc-if>
+      </div>
+      <button onClick="{{ replayA }}" style="align-self:flex-start;font:600 10.5px ui-monospace,Menlo,monospace;padding:4px 10px;border-radius:5px;border:1px solid rgba(0,0,0,.18);background:#fff;cursor:pointer;color:#1a1a1a">↺ replay</button>
+    </div>
+
+    <div id="2b" style="flex:none;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:260px"><a href="#2b" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none">2b</a><span>Fade-slide — whole menu fades in while easing 5px from its anchor</span></div>
+      <div data-vb="" style="width:260px;height:200px;position:relative;border-radius:8px;background:var(--ew-surface-solid);border:1px solid rgba(0,0,0,.1);overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:var(--ew-grid-bg);background-size:var(--ew-grid-size)"></div>
+        <div style="position:absolute;left:14px;top:12px;width:28px;height:24px;border-radius:6px;background:var(--ew-surface-raised);border:1px solid var(--ew-border-control);display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--ew-text-soft)">☰</div>
+        <sc-if value="{{ vB }}" hint-placeholder-val="{{ true }}">
+          <div data-menu-b="" style="position:absolute;left:14px;top:42px;width:170px;border-radius:7px;background:var(--ew-surface-menu);border:1px solid var(--ew-border-panel);box-shadow:var(--ew-panel-shadow-menu);padding:5px;font:.72rem var(--ew-font-ui);color:var(--ew-text)">
+            <div style="padding:4px 8px">Zoom to fit <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⇧1</span></div>
+            <div style="padding:4px 8px">Paste <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⌘V</span></div>
+            <div style="padding:4px 8px">Select all <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⌘A</span></div>
+          </div>
+        </sc-if>
+      </div>
+      <button onClick="{{ replayB }}" style="align-self:flex-start;font:600 10.5px ui-monospace,Menlo,monospace;padding:4px 10px;border-radius:5px;border:1px solid rgba(0,0,0,.18);background:#fff;cursor:pointer;color:#1a1a1a">↺ replay</button>
+    </div>
+
+    <div id="2c" style="flex:none;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:260px"><a href="#2c" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none">2c</a><span>Cascade — rows fade in staggered, 30ms apart, top to bottom</span></div>
+      <div data-vc="" style="width:260px;height:200px;position:relative;border-radius:8px;background:var(--ew-surface-solid);border:1px solid rgba(0,0,0,.1);overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:var(--ew-grid-bg);background-size:var(--ew-grid-size)"></div>
+        <div style="position:absolute;left:14px;top:12px;width:28px;height:24px;border-radius:6px;background:var(--ew-surface-raised);border:1px solid var(--ew-border-control);display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--ew-text-soft)">☰</div>
+        <sc-if value="{{ vC }}" hint-placeholder-val="{{ true }}">
+          <div data-menu-c="" style="position:absolute;left:14px;top:42px;width:170px;border-radius:7px;background:var(--ew-surface-menu);border:1px solid var(--ew-border-panel);box-shadow:var(--ew-panel-shadow-menu);padding:5px;font:.72rem var(--ew-font-ui);color:var(--ew-text)">
+            <div data-row="" style="padding:4px 8px">Zoom to fit <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⇧1</span></div>
+            <div data-row="" style="animation-delay:30ms;padding:4px 8px">Paste <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⌘V</span></div>
+            <div data-row="" style="animation-delay:60ms;padding:4px 8px">Select all <span style="float:right;font:.62rem ui-monospace,Menlo,monospace;color:var(--ew-text-subtle)">⌘A</span></div>
+          </div>
+        </sc-if>
+      </div>
+      <button onClick="{{ replayC }}" style="align-self:flex-start;font:600 10.5px ui-monospace,Menlo,monospace;padding:4px 10px;border-radius:5px;border:1px solid rgba(0,0,0,.18);background:#fff;cursor:pointer;color:#1a1a1a">↺ replay</button>
+    </div>
+
+  </div>
+  <p style="margin:22px 0 0 30px;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)">Try next: pick the grammar (curtain is the design-team lean — most "sweep", still one property) · apply to MenuPopover in the DS · tune the beat timings against the ~300ms tear.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;menuSweep&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;curtain&quot;, &quot;fade-slide&quot;, &quot;cascade&quot;], &quot;default&quot;: &quot;cascade&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;menu grammar&quot;}}">
+class Component extends DCLogic {
+  state = { phase: 'rest', vA: true, vB: true, vC: true };
+
+  componentDidMount() {
+    this._esc = (e) => { if (e.key === 'Escape') this.close(); };
+    window.addEventListener('keydown', this._esc);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this._esc);
+    clearTimeout(this._t);
+  }
+  close() {
+    if (this.state.phase === 'open') {
+      this.setState({ phase: 'closing' });
+      this._t = setTimeout(() => this.setState({ phase: 'rest' }), 140);
+    }
+  }
+  replay(k) {
+    this.setState({ [k]: false });
+    requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ [k]: true })));
+  }
+  renderVals() {
+    const phase = this.state.phase;
+    return {
+      phase: phase,
+      menuVisible: phase === 'open' || phase === 'closing',
+      menuSweep: this.props.menuSweep ?? 'cascade',
+      openPin: () => {
+        if (phase === 'rest') this.setState({ phase: 'beat' });
+        else this.close();
+      },
+      pinBeatEnd: () => { if (this.state.phase === 'beat') this.setState({ phase: 'open' }); },
+      closeMenu: () => this.close(),
+      vA: this.state.vA, vB: this.state.vB, vC: this.state.vC,
+      replayA: () => this.replay('vA'),
+      replayB: () => this.replay('vB'),
+      replayC: () => this.replay('vC')
+    };
+  }
+}
+</script>
+</body>
+</html>
