@@ -527,7 +527,9 @@
     const project = paneProject
     if (!project) return
     // AI-IMP-182: one Mod+Z per rename gesture (RenameNote is GROUP_ONLY).
-    const result = await runAsUndoGroup(() => project.execute('RenameNote', { noteId, title }))
+    const result = await runAsUndoGroup((groupToken) =>
+      project.execute('RenameNote', { noteId, title }, { groupToken }),
+    )
     if (result.status === 'error') {
       const found = conflictFrom(result, 'rename', title)
       if (found) conflict = found
@@ -1385,7 +1387,7 @@
       {/each}
       <TagAddField
         nodeId={tagNodeId}
-        execute={(type, payload) => paneProject!.execute(type, payload)}
+        execute={(type, payload, options) => paneProject!.execute(type, payload, options)}
         onAssigned={() => void refreshTagChips()}
       />
     </div>

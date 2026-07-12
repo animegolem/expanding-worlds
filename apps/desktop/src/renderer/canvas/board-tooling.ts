@@ -283,7 +283,7 @@ export function attachBoardTooling(
    * size — one compound undo. Runs on THIS board only. */
   const offLoadIntoFrame = onLoadIntoFrame(({ nodeIds, framePlacementId, canvasId }) => {
     if (canvasId !== handle.canvasId) return
-    void runAsUndoGroup(async () => {
+    void runAsUndoGroup(async (groupToken) => {
       const frame = controller.items().find((item) => item.id === framePlacementId)
       if (!frame || frame.itemKind !== 'placement') return
       const placementIds: string[] = []
@@ -296,7 +296,7 @@ export function attachBoardTooling(
           nodeId,
           x: frame.x + step * 24,
           y: frame.y + step * 24,
-        })
+        }, { groupToken })
         if (result.status === 'committed') {
           placementIds.push(placementId)
           step += 1
@@ -313,14 +313,14 @@ export function attachBoardTooling(
       const captured = await gateway.execute('CaptureInFrame', {
         framePlacementId,
         memberPlacementIds: placementIds,
-      })
+      }, { groupToken })
       if (captured.status !== 'committed') {
         onError(describeFailure('CaptureInFrame', captured))
         return
       }
       const payload = await arrangeFramePayload(framePlacementId)
       if (payload) {
-        const arranged = await gateway.execute('TransformContent', payload)
+        const arranged = await gateway.execute('TransformContent', payload, { groupToken })
         if (arranged.status !== 'committed') onError(describeFailure('TransformContent', arranged))
       }
     })

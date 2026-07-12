@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { CommandResult } from '@ew/commands'
+import type { CommandGroupToken } from '@ew/canvas-engine'
 import { deleteLocalTag } from './tag-delete'
 
 const committed = (revision: number): CommandResult => ({
@@ -14,15 +15,16 @@ describe('tag delete gesture', () => {
   it('runs DeleteTag then SuppressTagSync in one group', async () => {
     const execute = vi.fn(async () => committed(execute.mock.calls.length))
     let groupCalls = 0
-    const group = async <T>(fn: () => Promise<T>): Promise<T> => {
+    const groupToken = Symbol('group')
+    const group = async <T>(fn: (token: CommandGroupToken) => Promise<T>): Promise<T> => {
       groupCalls += 1
-      return fn()
+      return fn(groupToken)
     }
     const result = await deleteLocalTag(execute, group, 'tag-1', 'coastal towns')
     expect(groupCalls).toBe(1)
     expect(execute.mock.calls).toEqual([
-      ['DeleteTag', { tagId: 'tag-1' }],
-      ['SuppressTagSync', { nameKey: 'coastal towns' }],
+      ['DeleteTag', { tagId: 'tag-1' }, { groupToken }],
+      ['SuppressTagSync', { nameKey: 'coastal towns' }, { groupToken }],
     ])
     expect(result.suppressed?.status).toBe('committed')
   })
@@ -35,7 +37,8 @@ describe('tag delete gesture', () => {
       actualRevision: 2,
     }
     const execute = vi.fn(async () => conflict)
-    const group = async <T>(fn: () => Promise<T>): Promise<T> => fn()
+    const group = async <T>(fn: (token: CommandGroupToken) => Promise<T>): Promise<T> =>
+      fn(Symbol('group'))
     const result = await deleteLocalTag(execute, group, 'tag-1', 'coastal towns')
     expect(execute).toHaveBeenCalledOnce()
     expect(result.suppressed).toBeNull()

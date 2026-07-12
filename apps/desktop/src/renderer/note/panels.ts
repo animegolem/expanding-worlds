@@ -810,11 +810,11 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
         // targets a stable id; unconditional apply is the intent.
         // AI-IMP-182: one Mod+Z per rename gesture (RenameNote is
         // GROUP_ONLY, captured at this deliberate no-open-panel path too).
-        const result = await runAsUndoGroup(() =>
+        const result = await runAsUndoGroup((groupToken) =>
           port.execute(
             'RenameNote',
             { noteId: detail.noteId, title: detail.title },
-            { checkRevision: false },
+            { checkRevision: false, groupToken },
           ),
         )
         if (result.status === 'error') toast(result.message, { kind: 'error' })

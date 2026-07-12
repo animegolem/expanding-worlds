@@ -161,6 +161,8 @@ export { noopSnapProvider, type SnapGuide, type SnapProvider, type SnapQuery, ty
 export {
   CommandGateway,
   onCommittedAnywhere,
+  type CommandExecutionOptions,
+  type CommandGroupToken,
   type CommittedNotice,
   type ProjectExecutor,
 } from './command-gateway'

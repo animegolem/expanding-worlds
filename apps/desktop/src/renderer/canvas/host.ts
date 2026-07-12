@@ -179,7 +179,7 @@ export interface CanvasHostHandle {
    * frame-appearance + placement as one undo group; returns the new
    * frame placement id (null on failure). A caller inside its own undo
    * group (the multi-drop composite) gets the id to capture members. */
-  commitFrame(region: { x: number; y: number; width: number; height: number }): Promise<string | null>
+  commitFrame(region: { x: number; y: number; width: number; height: number }, groupToken?: import('@ew/canvas-engine').CommandGroupToken): Promise<string | null>
   /** §12.2 single live canvas: swap the mounted canvas, releasing
    * the previous scene's textures. */
   openCanvas(canvasId: string): Promise<void>
@@ -1243,24 +1243,24 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     // arrange would run against the wrong set. The refusal the user
     // sees is the move's own authoritative snap-back on the next
     // refresh; stopping here is what makes that snap-back honest.
-    await runAsUndoGroup(async () => {
-      const moved = await gateway.execute('TransformContent', payload)
+    await runAsUndoGroup(async (groupToken) => {
+      const moved = await gateway.execute('TransformContent', payload, { groupToken })
       if (moved.status !== 'committed') return
       for (const [framePlacementId, memberPlacementIds] of captures) {
         const captured = await gateway.execute('CaptureInFrame', {
           framePlacementId,
           memberPlacementIds,
-        })
+        }, { groupToken })
         if (captured.status !== 'committed') return
       }
       if (releases.length > 0) {
         const released = await gateway.execute('ReleaseFromFrame', {
           memberPlacementIds: releases,
-        })
+        }, { groupToken })
         if (released.status !== 'committed') return
       }
       for (const arrange of arranges) {
-        const arranged = await gateway.execute('TransformContent', arrange)
+        const arranged = await gateway.execute('TransformContent', arrange, { groupToken })
         if (arranged.status !== 'committed') return
       }
     })
@@ -1278,17 +1278,17 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     y: number
     width: number
     height: number
-  }): Promise<string | null> {
+  }, owningToken?: import('@ew/canvas-engine').CommandGroupToken): Promise<string | null> {
     const nodeId = uuidv7()
     const placementId = uuidv7()
     let ok = false
-    await runAsUndoGroup(async () => {
-      const created = await gateway.execute('CreateNode', { nodeId })
+    await runAsUndoGroup(async (groupToken) => {
+      const created = await gateway.execute('CreateNode', { nodeId }, { groupToken })
       if (created.status !== 'committed') return
       const appearance = await gateway.execute('SetNodeAppearance', {
         nodeId,
         appearance: { kind: 'frame' },
-      })
+      }, { groupToken })
       if (appearance.status !== 'committed') return
       const placed = await gateway.execute('CreatePlacement', {
         placementId,
@@ -1298,9 +1298,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         y: region.y + region.height / 2,
         width: region.width,
         height: region.height,
-      })
+      }, { groupToken })
       ok = placed.status === 'committed'
-    })
+    }, owningToken === undefined ? {} : { token: owningToken })
     return ok ? placementId : null
   }
 

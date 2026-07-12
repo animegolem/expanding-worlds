@@ -1,5 +1,5 @@
 import { uuidv7 } from '@ew/domain'
-import { arrangePayload, type SceneItem } from '@ew/canvas-engine'
+import { arrangePayload, type CommandGroupToken, type SceneItem } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from './host'
 import {
@@ -104,6 +104,7 @@ async function createImagePin(
   assetId: string,
   world: Point,
   canvasId: string,
+  groupToken?: CommandGroupToken,
 ): Promise<{ nodeId: string; placementId: string } | null> {
   const nodeId = uuidv7()
   const placementId = uuidv7()
@@ -127,7 +128,7 @@ async function createImagePin(
       y: world.y,
       appearance: { kind: 'image', assetId, crop: null },
     },
-    { checkRevision: false },
+    { checkRevision: false, ...(groupToken === undefined ? {} : { groupToken }) },
   )
   if (result.status !== 'committed') {
     onError(describeFailure('CreatePin', result))
@@ -151,6 +152,7 @@ async function importOneFile(
   canvasId: string,
   mirror: { anchor: Point; bulk: boolean },
   sourceUrl?: string,
+  groupToken?: CommandGroupToken,
 ): Promise<{ outcome: ImportOutcome; placementId: string | null }> {
   const bytes = new Uint8Array(await file.arrayBuffer())
   const input: { bytes: Uint8Array; originalFilename: string; sourceUrl?: string } = {
@@ -166,7 +168,7 @@ async function importOneFile(
   // A committed asset with no pin is invisible (the gallery is
   // node-backed) — report it as the failure it is; the orphaned
   // bytes stay GC-eligible per §9.8 and hash dedupe re-finds them.
-  const pin = await createImagePin(host, onError, imported.assetId, world, canvasId)
+  const pin = await createImagePin(host, onError, imported.assetId, world, canvasId, groupToken)
   if (pin === null) return { outcome: 'failed', placementId: null }
   queueMirrorForDrop({
     assetId: imported.assetId,
@@ -281,7 +283,7 @@ async function applyDropChoice(
   }
   const wantSort = choice === 'sort' || choice === 'group-and-sort'
   const wantFrame = choice === 'group' || choice === 'group-and-sort'
-  await runAsUndoGroup(async () => {
+  await runAsUndoGroup(async (groupToken) => {
     // Deferred import — every CreatePin lands INSIDE the group so undo
     // removes the imports with the frame/sort. Cascade first; sort (if
     // asked) repacks over the real committed sizes.
@@ -296,6 +298,7 @@ async function applyDropChoice(
         canvasId,
         { anchor, bulk: files.length > 1 },
         sourceUrl,
+        groupToken,
       )
       if (placementId) {
         placementIds.push(placementId)
@@ -320,7 +323,7 @@ async function applyDropChoice(
         // a failed transform hung the import and its undo group forever
         // (CA-007). Inspect, surface, and stop on refusal; otherwise
         // wait for the scene to reflect THIS transform's revision.
-        const arranged = await host.gateway.execute('TransformContent', arrange)
+        const arranged = await host.gateway.execute('TransformContent', arrange, { groupToken })
         if (arranged.status !== 'committed') {
           onError(describeFailure('TransformContent', arranged))
           return
@@ -333,17 +336,17 @@ async function applyDropChoice(
     if (wantFrame) {
       const region = frameRegionAround(items)
       if (region) {
-        const framePlacementId = await host.commitFrame(region)
+        const framePlacementId = await host.commitFrame(region, groupToken)
         if (framePlacementId) {
           const captured = await host.gateway.execute('CaptureInFrame', {
             framePlacementId,
             memberPlacementIds: placementIds,
-          })
+          }, { groupToken })
           if (captured.status !== 'committed') onError(describeFailure('CaptureInFrame', captured))
         }
       }
     }
-  })
+  }, { operation: 'importing' })
 }
 
 /** AI-IMP-097: a note surface (panel or big editor) intercepted an

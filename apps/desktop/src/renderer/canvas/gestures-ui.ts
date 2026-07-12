@@ -216,9 +216,9 @@ export function attachGesturesUI(
     // keyboard chord is ONE gesture, so the whole multi-selection flip is
     // ONE undo entry (AI-IMP-233): wrap the per-item loop in a group so
     // Mod+Z reverses the flip of all N, not N separate undos.
-    await runAsUndoGroup(async () => {
+    await runAsUndoGroup(async (groupToken) => {
       for (const p of selectedPlacements()) {
-        await gateway.execute('FlipPlacement', { placementId: p.id, axis })
+        await gateway.execute('FlipPlacement', { placementId: p.id, axis }, { groupToken })
       }
     })
   }
@@ -226,9 +226,9 @@ export function attachGesturesUI(
   async function reorderSelection(op: ReorderOp): Promise<void> {
     const payloads = reorderPayloads(handle.canvasId, controller.items(), controller.selection.ids(), op)
     // One reorder chord = one undo entry across every affected item.
-    await runAsUndoGroup(async () => {
+    await runAsUndoGroup(async (groupToken) => {
       for (const payload of payloads) {
-        await gateway.execute('ReorderContent', payload)
+        await gateway.execute('ReorderContent', payload, { groupToken })
       }
     })
   }
@@ -279,9 +279,9 @@ export function attachGesturesUI(
     if (placements.length === 0) return
     const nextLocked = placements.some((p) => p.locked !== 1)
     // One ⇧⌘L chord = one undo entry across every selected placement.
-    await runAsUndoGroup(async () => {
+    await runAsUndoGroup(async (groupToken) => {
       for (const p of placements) {
-        await gateway.execute('SetPlacementLock', { placementId: p.id, locked: nextLocked })
+        await gateway.execute('SetPlacementLock', { placementId: p.id, locked: nextLocked }, { groupToken })
       }
     })
   }

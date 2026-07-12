@@ -4,6 +4,7 @@ import {
   PARTIAL_UNDO_TOAST,
   UndoStack,
   UNDO_STALE_TOAST,
+  openGroupToast,
   type StackCommand,
   type UndoStackDeps,
 } from './undo-stack'
@@ -63,6 +64,20 @@ const selfInverting = (command: StackCommand): InverseCommand => ({
 })
 
 describe('UndoStack (RFC §10.2)', () => {
+  it('declines an open newest operation with its exact present-progress toast', async () => {
+    const h = harness(selfInverting)
+    const order = h.stack.reserveGroup('importing files')
+
+    expect(h.stack.canUndo()).toBe(true)
+    await h.stack.undo()
+    expect(h.log).toEqual([])
+    expect(h.toasts).toEqual([openGroupToast('importing files')])
+    expect(h.toasts[0]).toBe("still importing files — that step isn't ready to undo")
+
+    h.stack.releaseGroup(order)
+    expect(h.stack.canUndo()).toBe(false)
+  })
+
   it('undoes then redoes a self-inverting command, tracking depth', async () => {
     const h = harness(selfInverting)
     h.stack.record({

@@ -104,19 +104,19 @@ export function createDecorationsUi(handle: CanvasHostHandle): DecorationsUi {
     // drags and text commits stay out of undo (AI-IMP-154). A batch
     // lock/hide over several selected decorations collapses to one entry.
     async setLockedOnSelection(locked: boolean) {
-      await runAsUndoGroup(async () => {
+      await runAsUndoGroup(async (groupToken) => {
         for (const d of selectedDecorations()) {
           if ((d.locked === 1) === locked) continue
-          await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { locked } })
+          await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { locked } }, { groupToken })
         }
       })
     },
 
     async hideSelection() {
       const targets = selectedDecorations().filter((d) => d.hidden === 0)
-      await runAsUndoGroup(async () => {
+      await runAsUndoGroup(async (groupToken) => {
         for (const d of targets) {
-          await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { hidden: true } })
+          await gateway.execute('UpdateDecoration', { decorationId: d.id, set: { hidden: true } }, { groupToken })
         }
       })
       // Hidden items are unhittable; drop them from the selection.
@@ -125,8 +125,8 @@ export function createDecorationsUi(handle: CanvasHostHandle): DecorationsUi {
     },
 
     async show(decorationId: string) {
-      await runAsUndoGroup(async () => {
-        await gateway.execute('UpdateDecoration', { decorationId, set: { hidden: false } })
+      await runAsUndoGroup(async (groupToken) => {
+        await gateway.execute('UpdateDecoration', { decorationId, set: { hidden: false } }, { groupToken })
       })
     },
 

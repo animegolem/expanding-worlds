@@ -20,6 +20,7 @@
  */
 import { nameKey, uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
+import type { CommandExecutionOptions } from '@ew/canvas-engine'
 
 export interface TagOption {
   id: string
@@ -28,7 +29,11 @@ export interface TagOption {
 
 /** The single command door each surface already owns (charm gateway /
  * note project port), narrowed to what this module issues. */
-export type ExecuteCommand = (commandType: string, payload: unknown) => Promise<CommandResult>
+export type ExecuteCommand = (
+  commandType: string,
+  payload: unknown,
+  options?: CommandExecutionOptions,
+) => Promise<CommandResult>
 
 export type AssignOutcome =
   | { status: 'assigned'; tagId: string; label: string }

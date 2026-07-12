@@ -25,6 +25,7 @@ import {
   type SceneDecoration,
   type SceneItem,
   type ScenePlacement,
+  type CommandExecutionOptions,
 } from '@ew/canvas-engine'
 import { Z } from '../z'
 import { uuidv7 } from '@ew/domain'
@@ -470,8 +471,12 @@ export function attachContextMenu(
 
   // ---------------------------------------------------- actions
 
-  async function execute(commandType: string, payload: unknown): Promise<boolean> {
-    const result = await host.gateway.execute(commandType, payload)
+  async function execute(
+    commandType: string,
+    payload: unknown,
+    options?: CommandExecutionOptions,
+  ): Promise<boolean> {
+    const result = await host.gateway.execute(commandType, payload, options)
     if (result.status !== 'committed') {
       onError(describeFailure(commandType, result))
       return false
@@ -557,8 +562,8 @@ export function attachContextMenu(
       // (its inverse AttachNoteToNode reattaches). A group of one records
       // a single entry, exactly like the decoration verbs above.
       detachNote: () =>
-        void runAsUndoGroup(async () => {
-          await execute('DetachNoteFromNode', { nodeId: p.nodeId })
+        void runAsUndoGroup(async (groupToken) => {
+          await execute('DetachNoteFromNode', { nodeId: p.nodeId }, { groupToken })
         }),
       makeNoteIndependent: () =>
         promptTitle('New unique title', (newTitle) =>
@@ -676,11 +681,11 @@ export function attachContextMenu(
       // Dock style drags / text commits emit it too and stay OUT of
       // undo (AI-IMP-154). A group of one records as a single entry.
       setDecorationLock: () =>
-        void runAsUndoGroup(async () => {
+        void runAsUndoGroup(async (groupToken) => {
           await execute('UpdateDecoration', {
             decorationId: d.id,
             set: { locked: d.locked !== 1 },
-          })
+          }, { groupToken })
         }),
       hideDecoration: () => void hideDecoration(d.id),
       deleteDecoration: () => void deleteContent([], [d.id]),
@@ -690,8 +695,8 @@ export function attachContextMenu(
   async function hideDecoration(id: string): Promise<void> {
     // Hidden decorations are unhittable (§6.8) — drop the selection.
     // Captured at the gesture so it is one Mod+Z entry (AI-IMP-154).
-    await runAsUndoGroup(async () => {
-      if (await execute('UpdateDecoration', { decorationId: id, set: { hidden: true } })) {
+    await runAsUndoGroup(async (groupToken) => {
+      if (await execute('UpdateDecoration', { decorationId: id, set: { hidden: true } }, { groupToken })) {
         host.controller.selection.clear()
       }
     })
@@ -728,9 +733,9 @@ export function attachContextMenu(
 
   async function flipAll(placementIds: string[], axis: 'x' | 'y'): Promise<void> {
     if (placementIds.length === 0) return
-    await runAsUndoGroup(async () => {
+    await runAsUndoGroup(async (groupToken) => {
       for (const placementId of placementIds) {
-        await host.gateway.execute('FlipPlacement', { placementId, axis })
+        await host.gateway.execute('FlipPlacement', { placementId, axis }, { groupToken })
       }
     })
   }
@@ -754,16 +759,16 @@ export function attachContextMenu(
         .filter((i): i is SceneDecoration => i.itemKind === 'decoration' && i.locked === 1)
         .map((i) => i.id),
     )
-    await runAsUndoGroup(async () => {
+    await runAsUndoGroup(async (groupToken) => {
       for (const placementId of placementIds) {
-        await host.gateway.execute('SetPlacementLock', { placementId, locked: true })
+        await host.gateway.execute('SetPlacementLock', { placementId, locked: true }, { groupToken })
       }
       for (const decorationId of decorationIds) {
         if (lockedDecorations.has(decorationId)) continue
         await host.gateway.execute('UpdateDecoration', {
           decorationId,
           set: { locked: true },
-        })
+        }, { groupToken })
       }
     })
   }
@@ -790,8 +795,8 @@ export function attachContextMenu(
       width: bounds.width + pad * 2,
       height: bounds.height + pad * 2,
     }
-    await runAsUndoGroup(async () => {
-      const framePlacementId = await host.commitFrame(region)
+    await runAsUndoGroup(async (groupToken) => {
+      const framePlacementId = await host.commitFrame(region, groupToken)
       if (framePlacementId) {
         // Surface a CaptureInFrame conflict/validation failure via
         // onError (execute() does this). Do NOT auto-delete the frame:
@@ -800,7 +805,7 @@ export function attachContextMenu(
         await execute('CaptureInFrame', {
           framePlacementId,
           memberPlacementIds: placementIds,
-        })
+        }, { groupToken })
       }
     })
   }

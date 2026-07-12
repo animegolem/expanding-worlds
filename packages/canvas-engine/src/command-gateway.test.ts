@@ -69,6 +69,20 @@ describe('CommandGateway', () => {
     expect(notices).toHaveLength(2)
   })
 
+  it('broadcasts renderer-local group identity without adding it to the envelope', async () => {
+    const executor = fakeExecutor(() => committed(2))
+    const notices: CommittedNotice[] = []
+    const off = onCommittedAnywhere((notice) => notices.push(notice))
+    const gateway = new CommandGateway(executor, 'p', 1, () => '01890a5d-ac96-774b-bcce-b302099a8057')
+    const groupToken = Symbol('gesture')
+
+    await gateway.execute('CreatePlacement', { placementId: 'p1' }, { groupToken })
+    off()
+
+    expect(notices[0]?.groupToken).toBe(groupToken)
+    expect(executor.envelopes[0]).not.toHaveProperty('groupToken')
+  })
+
   it('surfaces conflicts to listeners and adopts the actual revision', async () => {
     const executor = fakeExecutor((envelope) => ({
       status: 'conflict',

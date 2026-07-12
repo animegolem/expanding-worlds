@@ -209,9 +209,6 @@ export function attachCharmsUi(
   // completes on the next keystroke.
   let tagVocab: Array<{ id: string; name: string }> = []
 
-  const gatewayExecute = (commandType: string, payload: unknown) =>
-    host.gateway.execute(commandType, payload)
-
   // Add-field row: a completing input (custom list, NEVER <datalist> —
   // the native popup segfaults hidden Electron windows, AI-IMP-069).
   const addRow = document.createElement('div')
@@ -274,8 +271,8 @@ export function attachCharmsUi(
   function commitAppearance(next: NodeAppearance): void {
     const placement = selectedPlacement()
     if (!placement) return
-    void runAsUndoGroup(async () => {
-      await execute('SetNodeAppearance', { nodeId: placement.nodeId, appearance: next })
+    void runAsUndoGroup(async (groupToken) => {
+      await host.gateway.execute('SetNodeAppearance', { nodeId: placement.nodeId, appearance: next }, { groupToken })
     })
     closeAppearance()
   }
@@ -368,11 +365,11 @@ export function attachCharmsUi(
     // image apply is one Mod+Z entry, matching commitAppearance and the
     // sibling sites. The bound nodeId (not live selection) stays the
     // target through the group.
-    await runAsUndoGroup(async () => {
-      await execute('SetNodeAppearance', {
+    await runAsUndoGroup(async (groupToken) => {
+      await host.gateway.execute('SetNodeAppearance', {
         nodeId,
         appearance: { kind: 'image', assetId: imported.assetId, crop: null },
-      })
+      }, { groupToken })
     })
     // AI-IMP-184 (M-19): fold ONLY the popover this import opened. A slow
     // import can resolve after the user opened a DIFFERENT node's
@@ -470,8 +467,13 @@ export function attachCharmsUi(
     // AI-IMP-182: one add-tag gesture = one Mod+Z. The group folds the
     // create-and-assign pair (CreateTag + AssignTagToNode) into a single
     // entry (both are GROUP_ONLY); an existing-tag assign is a group of one.
-    const outcome = await runAsUndoGroup(() =>
-      assignTagByName(gatewayExecute, placement.nodeId, name, tagVocab),
+    const outcome = await runAsUndoGroup((groupToken) =>
+      assignTagByName(
+        (commandType, payload) => host.gateway.execute(commandType, payload, { groupToken }),
+        placement.nodeId,
+        name,
+        tagVocab,
+      ),
     )
     if (outcome.status === 'error') return
     addInput.value = ''

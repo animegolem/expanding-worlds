@@ -32,7 +32,7 @@ function committed(
     affected: [],
     inverse: NULL_INVERSE_COMMANDS.has(commandType)
       ? null
-      : { commandType: 'UpdateDecoration', commandVersion: 1, payload: {} },
+      : { commandType: `Undo-${commandType}`, commandVersion: 1, payload: {} },
   }
 }
 
@@ -99,16 +99,16 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
   })
 
   it('a gesture-captured UpdateDecoration verb adds exactly one entry', async () => {
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('UpdateDecoration', { decorationId: 'd1', set: { locked: true } })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('UpdateDecoration', { decorationId: 'd1', set: { locked: true } }, { groupToken })
     })
     expect(window.__ewUndo!.undoDepth()).toBe(1)
   })
 
   it('a Lock-all gesture (placement + decoration) collapses to one entry', async () => {
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('SetPlacementLock', { placementId: 'p1', locked: true })
-      await emitGateway.execute('UpdateDecoration', { decorationId: 'd1', set: { locked: true } })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('SetPlacementLock', { placementId: 'p1', locked: true }, { groupToken })
+      await emitGateway.execute('UpdateDecoration', { decorationId: 'd1', set: { locked: true } }, { groupToken })
     })
     expect(window.__ewUndo!.undoDepth()).toBe(1)
   })
@@ -126,8 +126,8 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
     const off = (
       await import('@ew/canvas-engine')
     ).onCommittedAnywhere((n) => seen.push(n))
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('UpdateDecoration', { decorationId: 'd1', set: { hidden: true } })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('UpdateDecoration', { decorationId: 'd1', set: { hidden: true } }, { groupToken })
     })
     off()
     expect(seen.map((n) => n.commandType)).toContain('UpdateDecoration')
@@ -150,17 +150,17 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
   ]
   for (const { verb, payload } of CAPTURED_VERBS) {
     it(`${verb} inside a gesture group records exactly one entry`, async () => {
-      await runAsUndoGroup(async () => {
-        await emitGateway.execute(verb, payload)
+      await runAsUndoGroup(async (groupToken) => {
+        await emitGateway.execute(verb, payload, { groupToken })
       })
       expect(window.__ewUndo!.undoDepth()).toBe(1)
     })
   }
 
   it('a create-and-assign tag gesture (CreateTag + AssignTagToNode) folds to one entry', async () => {
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('CreateTag', { tagId: 't1', name: 'harbor' })
-      await emitGateway.execute('AssignTagToNode', { tagId: 't1', nodeId: 'n1' })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreateTag', { tagId: 't1', name: 'harbor' }, { groupToken })
+      await emitGateway.execute('AssignTagToNode', { tagId: 't1', nodeId: 'n1' }, { groupToken })
     })
     expect(window.__ewUndo!.undoDepth()).toBe(1)
   })
@@ -172,8 +172,8 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
   // stale and Mod+Shift+Z could replay onto a moved world.
   it('an UNCAPTURED commit after an undo clears redo (CA-005 probe)', async () => {
     // Capture a real structural command, undo it → redoDepth 1.
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' }, { groupToken })
     })
     expect(window.__ewUndo!.undoDepth()).toBe(1)
     await window.__ewUndo!.undo()
@@ -189,8 +189,8 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
   })
 
   it('a null-inverse commit after an undo still clears redo (CA-005)', async () => {
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' }, { groupToken })
     })
     await window.__ewUndo!.undo()
     expect(window.__ewUndo!.redoDepth()).toBe(1)
@@ -205,11 +205,11 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
     // through the gateway, whose commit broadcasts back through the same
     // seam. Those self-commits are gated by `applying`, so they must NOT
     // clear the redo the undos are building: redoDepth climbs to 2.
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p1', canvasId: 'canvas-1' }, { groupToken })
     })
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('CreatePlacement', { placementId: 'p2', canvasId: 'canvas-1' })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'p2', canvasId: 'canvas-1' }, { groupToken })
     })
     expect(window.__ewUndo!.undoDepth()).toBe(2)
     await window.__ewUndo!.undo()
@@ -218,33 +218,102 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
     expect(window.__ewUndo!.redoDepth()).toBe(2)
   })
 
-  // AI-IMP-231 / Sol CA-006: overlapping asynchronous undo groups must NOT
-  // merge — a note edit made while a multi-file import holds its group open
-  // must be its OWN single undo entry. SKIPPED: the fix is BLOCKED. Robust
-  // token-scoping needs either AsyncLocalStorage (unavailable in the
-  // sandboxed renderer — sandbox:true / nodeIntegration:false) or explicit
-  // per-command token threading through ~15 runAsUndoGroup call sites, all
-  // in files this ticket may not touch (import-surfaces / note / menus /
-  // tags / chrome). The current global `pendingGroup` MERGES these into one
-  // entry. See AI-IMP-231 Issues Encountered for the full diagnosis. This
-  // stays as the executable spec for whoever lands the mechanism.
-  it.skip('overlapping groups stay separate: each Mod+Z reverses only its own (CA-006)', async () => {
+  // AI-IMP-231 / Sol CA-006: explicit tokens bind commits to the gesture
+  // that owns them, while reserved start-order keeps later gestures on top
+  // even when an earlier async group finishes last.
+  it('parked A/C import and later B tag stay separate in gesture start-order (CA-006)', async () => {
     let releaseImport!: () => void
     const gate = new Promise<void>((r) => (releaseImport = r))
     // Import group: open, commit A, then PARK on an await (interactive gap).
-    const importGroup = runAsUndoGroup(async () => {
-      await emitGateway.execute('CreatePlacement', { placementId: 'imp', canvasId: 'canvas-1' })
+    const importGroup = runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute(
+        'CreatePlacement',
+        { placementId: 'imp-a', canvasId: 'canvas-1' },
+        { groupToken },
+      )
       await gate
-      await emitGateway.execute('CreatePlacement', { placementId: 'imp2', canvasId: 'canvas-1' })
-    })
-    // While import is parked, an unrelated note edit runs its OWN group.
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('RenameNote', { noteId: 'n1', title: 'x' })
-    })
+      await emitGateway.execute(
+        'CreatePlacement',
+        { placementId: 'imp-c', canvasId: 'canvas-1' },
+        { groupToken },
+      )
+    }, { operation: 'importing files' })
+    // B starts later and completes while A/C is parked.
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('RenameNote', { noteId: 'n1', title: 'b' }, { groupToken })
+    }, { operation: 'tagging' })
+    // The older open import must not block undoing the newer completed tag.
+    await window.__ewUndo!.undo()
+    const calls = vi.mocked(window.ew.project.execute).mock.calls
+    expect(calls.at(-1)?.[0].commandType).toBe('Undo-RenameNote')
     releaseImport()
     await importGroup
-    // Desired: TWO entries (import, note edit) — not one merged blob.
+    // B was consumed above; A/C now lands as one remaining entry, proving
+    // it did not absorb B despite completing after it.
+    expect(window.__ewUndo!.undoDepth()).toBe(1)
+    await window.__ewUndo!.undo()
+    expect(vi.mocked(window.ew.project.execute).mock.calls.slice(-2).map(([e]) => e.commandType))
+      .toEqual(['Undo-CreatePlacement', 'Undo-CreatePlacement'])
+  })
+
+  it('completed overlapping groups are inserted by start-order, not finish-order', async () => {
+    let releaseOlder!: () => void
+    const gate = new Promise<void>((resolve) => (releaseOlder = resolve))
+    const older = runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'a', canvasId: 'canvas-1' }, { groupToken })
+      await gate
+      await emitGateway.execute('CreatePlacement', { placementId: 'c', canvasId: 'canvas-1' }, { groupToken })
+    })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('RenameNote', { noteId: 'n1', title: 'b' }, { groupToken })
+    })
+    releaseOlder()
+    await older
     expect(window.__ewUndo!.undoDepth()).toBe(2)
+    await window.__ewUndo!.undo()
+    expect(vi.mocked(window.ew.project.execute).mock.calls.at(-1)?.[0].commandType)
+      .toBe('Undo-RenameNote')
+  })
+
+  it('a genuinely nested group reuses the owning token and records one entry', async () => {
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'outer', canvasId: 'canvas-1' }, { groupToken })
+      await runAsUndoGroup(async (nestedToken) => {
+        expect(nestedToken).toBe(groupToken)
+        await emitGateway.execute('RenameNote', { noteId: 'n1', title: 'nested' }, { groupToken: nestedToken })
+      }, { token: groupToken })
+    })
+    expect(window.__ewUndo!.undoDepth()).toBe(1)
+  })
+
+  it('a nested call without the owner token is a distinct later group', async () => {
+    await runAsUndoGroup(async (outerToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'outer', canvasId: 'canvas-1' }, { groupToken: outerToken })
+      await runAsUndoGroup(async (innerToken) => {
+        expect(innerToken).not.toBe(outerToken)
+        await emitGateway.execute('RenameNote', { noteId: 'n1', title: 'inner' }, { groupToken: innerToken })
+      })
+    })
+    expect(window.__ewUndo!.undoDepth()).toBe(2)
+    await window.__ewUndo!.undo()
+    expect(vi.mocked(window.ew.project.execute).mock.calls.at(-1)?.[0].commandType)
+      .toBe('Undo-RenameNote')
+  })
+
+  it('a bare captured commit during an open group remains a separate entry', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const grouped = runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('CreatePlacement', { placementId: 'grouped', canvasId: 'canvas-1' }, { groupToken })
+      await gate
+    })
+    await emitGateway.execute('CreatePlacement', { placementId: 'bare', canvasId: 'canvas-1' })
+    release()
+    await grouped
+    expect(window.__ewUndo!.undoDepth()).toBe(2)
+    await window.__ewUndo!.undo()
+    expect(vi.mocked(window.ew.project.execute).mock.calls.at(-1)?.[0].commandType)
+      .toBe('Undo-CreatePlacement')
   })
 
   it('TrashNode stays OUT of Mod+Z — never captured, even inside a group', async () => {
@@ -252,8 +321,8 @@ describe('undo-store capture seam (AI-IMP-154)', () => {
     // node-trash verb is absent from both allowlists.
     await emitGateway.execute('TrashNode', { nodeId: 'n1' })
     expect(window.__ewUndo!.undoDepth()).toBe(0)
-    await runAsUndoGroup(async () => {
-      await emitGateway.execute('TrashNode', { nodeId: 'n1' })
+    await runAsUndoGroup(async (groupToken) => {
+      await emitGateway.execute('TrashNode', { nodeId: 'n1' }, { groupToken })
     })
     expect(window.__ewUndo!.undoDepth()).toBe(0)
   })

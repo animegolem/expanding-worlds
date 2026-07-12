@@ -61,13 +61,13 @@ export async function bookmarkCurrentBoard(handle: CanvasHostHandle): Promise<vo
   const label = pathEntries().at(-1)?.label ?? 'Board'
   // AI-IMP-182: one Mod+Z per bookmark create (CreateBookmark is
   // GROUP_ONLY, captured at this gesture; inverse RemoveBookmark).
-  await runAsUndoGroup(async () => {
+  await runAsUndoGroup(async (groupToken) => {
     await handle.gateway.execute('CreateBookmark', {
       bookmarkId: uuidv7(),
       canvasId: handle.canvasId,
       label,
       viewport: handle.controller.camera.state(),
-    })
+    }, { groupToken })
   })
 }
 

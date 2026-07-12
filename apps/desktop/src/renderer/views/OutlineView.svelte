@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   import { tick } from 'svelte'
+  import type { CommandExecutionOptions } from '@ew/canvas-engine'
   import { NODE_DRAG_MIME, NOTE_DRAG_MIME } from '../canvas/import-surfaces'
   import { closeTakeover } from '../chrome/takeover'
   import { navigateTo } from '../chrome/navigation'
@@ -288,8 +289,8 @@
     return bag
   }
 
-  async function executeCommand(commandType: string, payload: unknown) {
-    return (await projectPort()).execute(commandType, payload)
+  async function executeCommand(commandType: string, payload: unknown, options?: CommandExecutionOptions) {
+    return (await projectPort()).execute(commandType, payload, options)
   }
 
   function openRowMenu(event: MouseEvent | PointerEvent, row: OutlineViewRow): void {

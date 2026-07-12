@@ -59,6 +59,8 @@ export interface StackAction {
   members: StackMember[]
   /** Board the originating command acted on (v1 same-canvas fence). */
   canvasId: string
+  /** Monotonic user-gesture start order. */
+  order: number
   /** A partial-step repair replays the committed prefix. Once that
    * succeeds, restore this exact grouped action instead of deriving a
    * smaller opposite from the repair commands. */
@@ -90,11 +92,15 @@ export interface UndoStackDeps {
 export const UNDO_STALE_TOAST = 'That change can no longer be undone'
 export const PARTIAL_UNDO_TOAST = 'That change was only partly undone — Redo will restore it'
 export const PARTIAL_REDO_TOAST = 'That change was only partly redone — Undo will restore it'
+export const openGroupToast = (operation: string): string =>
+  `still ${operation} — that step isn't ready to undo`
 
 export class UndoStack {
   #deps: UndoStackDeps
   #undo: StackAction[] = []
   #redo: StackAction[] = []
+  #nextOrder = 0
+  #openGroups = new Map<number, string>()
   /**
    * True for the WHOLE duration of a #step's member execution: the
    * resulting commits are the stack's OWN re-applied inverse/forward and
@@ -131,7 +137,7 @@ export class UndoStack {
   }
 
   canUndo(): boolean {
-    return this.#undo.length > 0
+    return this.#undo.length > 0 || this.#openGroups.size > 0
   }
 
   canRedo(): boolean {
@@ -143,10 +149,10 @@ export class UndoStack {
    * are non-undoable by design (invariant 31) and skipped. A new
    * durable command clears the redo stack (§10.2).
    */
-  record(command: CapturedCommand): void {
+  record(command: CapturedCommand, order = this.nextOrder(), clearRedo = true): void {
     if (command.inverse === null) return
-    this.#undo.push({ members: [memberFor(command)], canvasId: command.canvasId })
-    this.#redo = []
+    this.#insertUndo({ members: [memberFor(command)], canvasId: command.canvasId, order })
+    if (clearRedo) this.#redo = []
     this.#deps.onChanged()
   }
 
@@ -158,17 +164,23 @@ export class UndoStack {
    * A group that reduces to a single member behaves exactly like
    * `record`.
    */
-  recordGroup(commands: CapturedCommand[]): void {
+  recordGroup(commands: CapturedCommand[], order = this.nextOrder(), clearRedo = true): void {
     const undoable = commands.filter((c) => c.inverse !== null)
     if (undoable.length === 0) return
     // Reverse so undo executes the last forward's inverse first (LIFO).
     const members = undoable.map(memberFor).reverse()
-    this.#undo.push({ members, canvasId: undoable[undoable.length - 1]!.canvasId })
-    this.#redo = []
+    this.#insertUndo({ members, canvasId: undoable[undoable.length - 1]!.canvasId, order })
+    if (clearRedo) this.#redo = []
     this.#deps.onChanged()
   }
 
   async undo(): Promise<void> {
+    const newestOpen = this.#newestOpen()
+    const newestAction = this.#undo[this.#undo.length - 1]
+    if (newestOpen && (!newestAction || newestOpen.order > newestAction.order)) {
+      this.#deps.toast(openGroupToast(newestOpen.operation))
+      return
+    }
     await this.#serialize(this.#undo, this.#redo, 'undo')
   }
 
@@ -216,9 +228,10 @@ export class UndoStack {
 
   /** Drop everything — project switch (§10.2) or teardown. */
   clear(): void {
-    const had = this.#undo.length > 0 || this.#redo.length > 0
+    const had = this.#undo.length > 0 || this.#redo.length > 0 || this.#openGroups.size > 0
     this.#undo = []
     this.#redo = []
+    this.#openGroups.clear()
     if (had) this.#deps.onChanged()
   }
 
@@ -276,7 +289,7 @@ export class UndoStack {
     // Reverse so the opposite action replays its members in original
     // forward order (undo of undo = redo runs forwards).
     to.push(
-      action.repairOf ?? { members: opposites.reverse(), canvasId: action.canvasId },
+      action.repairOf ?? { members: opposites.reverse(), canvasId: action.canvasId, order: action.order },
     )
     this.#deps.onChanged()
   }
@@ -293,11 +306,44 @@ export class UndoStack {
       to.push({
         members: opposites.reverse(),
         canvasId: action.canvasId,
+        order: action.order,
         repairOf: action,
       })
       this.#deps.toast(verb === 'undo' ? PARTIAL_UNDO_TOAST : PARTIAL_REDO_TOAST)
     }
     this.#deps.onChanged()
+  }
+
+  /** Reserve undo chronology when a gesture starts, not when it finishes. */
+  reserveGroup(operation: string): number {
+    const order = this.nextOrder()
+    this.#openGroups.set(order, operation)
+    this.#deps.onChanged()
+    return order
+  }
+
+  releaseGroup(order: number): void {
+    if (!this.#openGroups.delete(order)) return
+    this.#deps.onChanged()
+  }
+
+  nextOrder(): number {
+    this.#nextOrder += 1
+    return this.#nextOrder
+  }
+
+  #insertUndo(action: StackAction): void {
+    const index = this.#undo.findIndex((candidate) => candidate.order > action.order)
+    if (index === -1) this.#undo.push(action)
+    else this.#undo.splice(index, 0, action)
+  }
+
+  #newestOpen(): { order: number; operation: string } | null {
+    let newest: { order: number; operation: string } | null = null
+    for (const [order, operation] of this.#openGroups) {
+      if (!newest || order > newest.order) newest = { order, operation }
+    }
+    return newest
   }
 }
 

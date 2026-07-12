@@ -58,10 +58,10 @@ menus).
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Group membership is token-scoped; overlap never merges;
+- [x] Group membership is token-scoped; overlap never merges;
       nesting joins only same-token.
-- [ ] Probe regression: interleaved groups → separate entries.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Probe regression: interleaved groups → separate entries.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -81,6 +81,24 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+**TRUST-WAVE IMPLEMENTATION (2026-07-12) — the earlier STOP below is
+superseded by the round-1 verdict.** Current review found 29 group sites across
+17 callers, not the older ~15 estimate. The lead widened the fence to the
+canvas-engine gateway and every caller, making explicit renderer-local token
+threading possible without AsyncLocalStorage, IPC, schema, or main-process
+changes. `CommandGateway` now broadcasts the token beside (never inside) the
+durable envelope; every grouped execute carries it, and genuine nested
+composition explicitly reuses the owner token.
+
+The review also found that token identity alone was insufficient: completion-
+order recording would put a long import above a later tag gesture. The verdict
+ratified start-order reservations. A later finalized gesture may undo over an
+older open reservation; Undo aimed at the newest open gesture speaks
+`still importing — that step isn't ready to undo`. The regression suite covers
+both overlap orders, same-token nesting, distinct-token nesting, a bare commit
+during a parked group, and the exact decline voice. Import names its open
+operation and threads the token through its nested frame composition.
 
 **STOPPED — mechanism blocked within this wave's fence.** The ticket
 required probing the two named mechanisms and STOPPING "if neither can

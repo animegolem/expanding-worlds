@@ -254,11 +254,11 @@ export function attachCropEditor(host: CanvasHostHandle, element: HTMLElement): 
     // ONE command; the group window is only the capture vehicle (see
     // the import note). A full-frame rect commits crop: null, so
     // "cropped to everything" and "never cropped" are the same state.
-    await runAsUndoGroup(async () => {
+    await runAsUndoGroup(async (groupToken) => {
       await host.gateway.execute('SetNodeAppearance', {
         nodeId: placement.nodeId,
         appearance: { kind: 'image', assetId: placement.appearanceAssetId, crop: next },
-      })
+      }, { groupToken })
     })
   }
 

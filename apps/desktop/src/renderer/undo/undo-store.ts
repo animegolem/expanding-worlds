@@ -1,5 +1,9 @@
 import { uuidv7 } from '@ew/domain'
-import { CommandGateway, onCommittedAnywhere } from '@ew/canvas-engine'
+import {
+  CommandGateway,
+  onCommittedAnywhere,
+  type CommandGroupToken,
+} from '@ew/canvas-engine'
 import { toast } from '../chrome/status'
 import { UndoStack, type CapturedCommand } from './undo-stack'
 
@@ -191,8 +195,13 @@ const GROUP_ONLY_COMMANDS = new Set<string>(
     .map(([type]) => type),
 )
 
-/** Commits accumulate here while a group window is open (see runAsUndoGroup). */
-let pendingGroup: CapturedCommand[] | null = null
+interface PendingGroup {
+  commands: CapturedCommand[]
+  order: number
+}
+
+/** Explicit gesture identity replaces the old temporal global window. */
+const pendingGroups = new Map<CommandGroupToken, PendingGroup>()
 
 /** The slice of getOutlineTree's rows boardLabel reads — `label` is
  * the projection's quick-open-convention name (title ?? short code),
@@ -237,22 +246,40 @@ export function redo(): void {
  * Run `fn` (which issues several gateway commands) so every captured
  * commit it produces lands as ONE undo entry (AI-IMP-127). Used for a
  * §4.9 frame create composite and for a drag that moves an item AND
- * changes its membership — one Mod+Z returns both. Nested calls run
- * inline (the outer window owns the grouping). The gateway serializes
- * executes, so commits from `fn` arrive in order within the window.
+ * changes its membership — one Mod+Z returns both. A genuinely nested
+ * composition explicitly reuses the outer token; temporal overlap mints a
+ * different token. The gateway serializes executes per instance, so commits
+ * from one callback arrive in issue order.
  */
-export async function runAsUndoGroup<T>(fn: () => Promise<T>): Promise<T> {
-  if (pendingGroup) {
-    return fn()
+export interface UndoGroupOptions {
+  /** Reuse an owning gesture's token for a genuinely nested composition. */
+  token?: CommandGroupToken
+  /** Present-progress noun used when Undo reaches a still-open newest group. */
+  operation?: string
+}
+
+export async function runAsUndoGroup<T>(
+  fn: (token: CommandGroupToken) => Promise<T>,
+  options: UndoGroupOptions = {},
+): Promise<T> {
+  if (options.token !== undefined) {
+    if (!pendingGroups.has(options.token)) throw new Error('undo group token is not active')
+    return fn(options.token)
   }
-  const group: CapturedCommand[] = []
-  pendingGroup = group
+  const token = Symbol('undo-group')
+  const order = stack?.reserveGroup(options.operation ?? 'working') ?? 0
+  const group: PendingGroup = { commands: [], order }
+  pendingGroups.set(token, group)
   try {
-    return await fn()
+    return await fn(token)
   } finally {
-    pendingGroup = null
-    if (group.length === 1) stack?.record(group[0]!)
-    else if (group.length > 1) stack?.recordGroup(group)
+    pendingGroups.delete(token)
+    stack?.releaseGroup(order)
+    // Every member already invalidated redo at COMMIT time. Finalization may
+    // happen much later; clearing redo here would make completion itself look
+    // like a new durable command.
+    if (group.commands.length === 1) stack?.record(group.commands[0]!, order, false)
+    else if (group.commands.length > 1) stack?.recordGroup(group.commands, order, false)
   }
 }
 
@@ -334,6 +361,9 @@ export function attachUndo(): () => void {
         inverse: notice.result.inverse,
         canvasId,
       }
+      const pendingGroup = notice.groupToken
+        ? pendingGroups.get(notice.groupToken)
+        : undefined
       if (pendingGroup) {
         // Inside a group window: collect the standing allowlist plus the
         // group-only frame commands, provided the commit is invertible.
@@ -342,7 +372,7 @@ export function attachUndo(): () => void {
           (CAPTURED_COMMANDS.has(notice.commandType) ||
             GROUP_ONLY_COMMANDS.has(notice.commandType))
         ) {
-          pendingGroup.push(captured)
+          pendingGroup.commands.push(captured)
         }
         return
       }

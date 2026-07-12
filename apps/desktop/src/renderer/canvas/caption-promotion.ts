@@ -1,4 +1,5 @@
 import type { CommandResult } from '@ew/commands'
+import type { CommandExecutionOptions, CommandGroupToken } from '@ew/canvas-engine'
 import { runAsUndoGroup } from '../undo/undo-store'
 
 const PROMOTE_CAPTION_EVENT = 'ew-promote-caption'
@@ -40,24 +41,28 @@ export type PromotionOutcome =
   | { status: 'create-refused'; result: CommandResult }
   | { status: 'clear-refused'; result: CommandResult }
 
-type Execute = (commandType: string, payload: unknown) => Promise<CommandResult>
-type Group = <T>(run: () => Promise<T>) => Promise<T>
+type Execute = (
+  commandType: string,
+  payload: unknown,
+  options?: CommandExecutionOptions,
+) => Promise<CommandResult>
+type Group = <T>(run: (token?: CommandGroupToken) => Promise<T>) => Promise<T>
 
 /** Run the two fail-stop commands inside one capture window. */
 export async function commitCaptionPromotion(
   execute: Execute,
   input: PromotionInput,
-  group: Group = runAsUndoGroup,
+  group: Group = (run) => runAsUndoGroup((token) => run(token)),
 ): Promise<PromotionOutcome> {
   let outcome: PromotionOutcome | null = null
-  await group(async () => {
+  await group(async (groupToken) => {
     const title = input.route === 'title' ? input.caption : (input.bodyTitle ?? '').trim()
     const created = await execute('CreateNoteAndAttach', {
       nodeId: input.nodeId,
       noteId: input.noteId,
       title,
       ...(input.route === 'body' ? { body: input.caption } : {}),
-    })
+    }, groupToken === undefined ? {} : { groupToken })
     if (created.status !== 'committed') {
       outcome = { status: 'create-refused', result: created }
       return
@@ -66,7 +71,7 @@ export async function commitCaptionPromotion(
     const cleared = await execute('SetPlacementCaption', {
       placementId: input.placementId,
       caption: null,
-    })
+    }, groupToken === undefined ? {} : { groupToken })
     outcome =
       cleared.status === 'committed'
         ? { status: 'committed' }

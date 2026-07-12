@@ -49,7 +49,14 @@
     try {
       // AI-IMP-182: one add-tag gesture = one Mod+Z. The group folds the
       // create-and-assign pair into a single entry (both GROUP_ONLY).
-      const outcome = await runAsUndoGroup(() => assignTagByName(execute, nodeId, name, allTags))
+      const outcome = await runAsUndoGroup((groupToken) =>
+        assignTagByName(
+          (commandType, payload) => execute(commandType, payload, { groupToken }),
+          nodeId,
+          name,
+          allTags,
+        ),
+      )
       if (outcome.status === 'error') return
       tagName = ''
       // Refresh the vocabulary so a just-created tag completes next,

@@ -32,8 +32,7 @@ export async function createNoteProjectPort(): Promise<{
 
   return {
     port: {
-      execute: (commandType, payload, opts) =>
-        gateway.execute(commandType, payload, opts?.checkRevision === false ? { checkRevision: false } : {}),
+      execute: (commandType, payload, opts) => gateway.execute(commandType, payload, opts),
       query,
     },
     dispose,

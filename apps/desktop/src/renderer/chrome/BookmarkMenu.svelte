@@ -93,8 +93,8 @@
   async function remove(row: BookmarkRow): Promise<void> {
     // AI-IMP-182: one Mod+Z per removal (RemoveBookmark is GROUP_ONLY,
     // captured at this gesture; inverse CreateBookmark restores it).
-    await runAsUndoGroup(async () => {
-      await handle.gateway.execute('RemoveBookmark', { bookmarkId: row.id })
+    await runAsUndoGroup(async (groupToken) => {
+      await handle.gateway.execute('RemoveBookmark', { bookmarkId: row.id }, { groupToken })
     })
     await refresh()
   }
@@ -145,12 +145,12 @@
       // One completed drag commits ONE durable command — and one Mod+Z
       // entry (AI-IMP-182: ReorderBookmark is GROUP_ONLY, captured at the
       // completed-drag gesture; its inverse restores the prior order).
-      void runAsUndoGroup(async () => {
+      void runAsUndoGroup(async (groupToken) => {
         await handle.gateway.execute('ReorderBookmark', {
           bookmarkId: id,
           afterId: finalIndex > 0 ? order[finalIndex - 1] : null,
           beforeId: finalIndex < order.length - 1 ? order[finalIndex + 1] : null,
-        })
+        }, { groupToken })
       }).then(() => refresh())
     }
 

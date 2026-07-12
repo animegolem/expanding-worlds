@@ -40,6 +40,16 @@ export interface ProjectExecutor {
   execute(envelope: CommandEnvelope): Promise<CommandResult>
 }
 
+/** Renderer-local identity for one user gesture's undo group. It never crosses
+ * the Project API or enters a durable command envelope. */
+export type CommandGroupToken = symbol
+
+export interface CommandExecutionOptions {
+  commandVersion?: number
+  checkRevision?: boolean
+  groupToken?: CommandGroupToken
+}
+
 /**
  * Surfaced to the in-renderer undo stack (EPIC-007, AI-IMP-114) for
  * every committed command: the type and payload rebuild a redo, and
@@ -49,6 +59,7 @@ export interface CommittedNotice {
   commandType: string
   commandVersion: number
   payload: unknown
+  groupToken?: CommandGroupToken
   result: Extract<CommandResult, { status: 'committed' }>
 }
 
@@ -105,7 +116,7 @@ export class CommandGateway {
   async execute(
     commandType: string,
     payload: unknown,
-    opts: { commandVersion?: number; checkRevision?: boolean } = {},
+    opts: CommandExecutionOptions = {},
   ): Promise<CommandResult> {
     // Chain off the prior execute so the envelope below reads a
     // #revision already advanced by everything queued before it.
@@ -122,7 +133,7 @@ export class CommandGateway {
   async #run(
     commandType: string,
     payload: unknown,
-    opts: { commandVersion?: number; checkRevision?: boolean },
+    opts: CommandExecutionOptions,
   ): Promise<CommandResult> {
     const result = await this.#executor.execute({
       commandId: this.#newId(),
@@ -140,6 +151,7 @@ export class CommandGateway {
           commandType,
           commandVersion: opts.commandVersion ?? 1,
           payload,
+          ...(opts.groupToken === undefined ? {} : { groupToken: opts.groupToken }),
           result,
         }
         for (const listener of committedListeners) listener(notice)

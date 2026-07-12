@@ -101,7 +101,7 @@
     partial = false
     try {
       const outcome = await commitCaptionPromotion(
-        (commandType, payload) => handle.gateway.execute(commandType, payload),
+        (commandType, payload, options) => handle.gateway.execute(commandType, payload, options),
         {
           placementId: placement.id,
           nodeId: placement.nodeId,

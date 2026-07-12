@@ -2,6 +2,7 @@ import { type AnyExtension, Editor } from '@tiptap/core'
 import { DOMParser as ProseMirrorDOMParser } from '@tiptap/pm/model'
 import { EditorState } from '@tiptap/pm/state'
 import type { CommandResult } from '@ew/commands'
+import type { CommandExecutionOptions } from '@ew/canvas-engine'
 import { stripMetadataBlock } from '@ew/domain'
 import { baseNoteExtensions, noteEditorProps } from './editor-markdown'
 import { runAsUndoGroup } from '../undo/undo-store'
@@ -37,7 +38,7 @@ export interface ProjectPort {
   execute(
     commandType: string,
     payload: unknown,
-    opts?: { checkRevision?: boolean },
+    opts?: CommandExecutionOptions,
   ): Promise<CommandResult>
   query<T>(name: string, args?: unknown): Promise<T>
 }
@@ -195,8 +196,8 @@ export class NoteEditorController {
     // AI-IMP-182: the note-title rename is one Mod+Z entry. RenameNote is
     // GROUP_ONLY, captured at this deliberate gesture only (autosave
     // UpdateNote and programmatic renames stay out of undo).
-    const result = await runAsUndoGroup(() =>
-      this.#project.execute('RenameNote', { noteId: note.id, title }),
+    const result = await runAsUndoGroup((groupToken) =>
+      this.#project.execute('RenameNote', { noteId: note.id, title }, { groupToken }),
     )
     if (result.status === 'committed' && this.#note?.id === note.id) {
       this.#note = { ...this.#note, title }

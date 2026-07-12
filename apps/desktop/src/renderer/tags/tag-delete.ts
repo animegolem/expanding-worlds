@@ -1,7 +1,12 @@
 import type { CommandResult } from '@ew/commands'
+import type { CommandExecutionOptions, CommandGroupToken } from '@ew/canvas-engine'
 
-type Execute = (type: string, payload: unknown) => Promise<CommandResult>
-type Group = <T>(fn: () => Promise<T>) => Promise<T>
+type Execute = (
+  type: string,
+  payload: unknown,
+  options?: CommandExecutionOptions,
+) => Promise<CommandResult>
+type Group = <T>(fn: (token?: CommandGroupToken) => Promise<T>) => Promise<T>
 
 export interface LocalTagDeleteResult {
   deleted: CommandResult
@@ -16,10 +21,11 @@ export function deleteLocalTag(
   tagId: string,
   key: string,
 ): Promise<LocalTagDeleteResult> {
-  return group(async () => {
-    const deleted = await execute('DeleteTag', { tagId })
+  return group(async (groupToken) => {
+    const options = groupToken === undefined ? {} : { groupToken }
+    const deleted = await execute('DeleteTag', { tagId }, options)
     if (deleted.status !== 'committed') return { deleted, suppressed: null }
-    const suppressed = await execute('SuppressTagSync', { nameKey: key })
+    const suppressed = await execute('SuppressTagSync', { nameKey: key }, options)
     return { deleted, suppressed }
   })
 }

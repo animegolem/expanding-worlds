@@ -85,16 +85,16 @@
     // aborts the group before the next command. The group collapses to
     // whatever committed — every partial is a clean draft the single
     // recorded entry still undoes (matching host.commitFrame).
-    await runAsUndoGroup(async () => {
-      failure = outcome(await handle.gateway.execute('CreateNode', { nodeId }), conflict)
+    await runAsUndoGroup(async (groupToken) => {
+      failure = outcome(await handle.gateway.execute('CreateNode', { nodeId }, { groupToken }), conflict)
       if (failure !== null) return
       failure = outcome(
-        await handle.gateway.execute('CreateNoteAndAttach', { nodeId, noteId, title }),
+        await handle.gateway.execute('CreateNoteAndAttach', { nodeId, noteId, title }, { groupToken }),
         conflict,
       )
       if (failure !== null) return
       failure = outcome(
-        await handle.gateway.execute('CreateCanvas', { canvasId: newCanvasId, nodeId }),
+        await handle.gateway.execute('CreateCanvas', { canvasId: newCanvasId, nodeId }, { groupToken }),
         conflict,
       )
       if (failure !== null) return
@@ -105,7 +105,7 @@
           nodeId,
           x: at.x,
           y: at.y,
-        }),
+        }, { groupToken }),
         conflict,
       )
     })

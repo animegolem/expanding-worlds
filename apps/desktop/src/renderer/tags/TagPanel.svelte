@@ -210,8 +210,8 @@
       // AI-IMP-182: one Mod+Z per tag rename (RenameTag is GROUP_ONLY,
       // captured at this deliberate gesture; its inverse restores the
       // prior name).
-      const result = await runAsUndoGroup(() =>
-        handle.gateway.execute('RenameTag', { tagId: panel.tagId, name }),
+      const result = await runAsUndoGroup((groupToken) =>
+        handle.gateway.execute('RenameTag', { tagId: panel.tagId, name }, { groupToken }),
       )
       if (result.status === 'committed') {
         // Reflect the new name in the switcher at once; live surfaces
@@ -289,8 +289,8 @@
     const key = nameKey(tag.name)
     try {
       const local = await deleteLocalTag(
-        (type, payload) => handle.gateway.execute(type, payload),
-        runAsUndoGroup,
+        (type, payload, options) => handle.gateway.execute(type, payload, options),
+        (run) => runAsUndoGroup((token) => run(token)),
         tag.id,
         key,
       )
