@@ -88,7 +88,11 @@
      open. */
   .takeover {
     position: absolute;
-    inset: 0;
+    inset:
+      calc(var(--ew-reserve-strip) + var(--ew-reserve-gutter))
+      calc(var(--ew-reserve-rail) + var(--ew-reserve-gutter))
+      calc(var(--ew-reserve-dock) + var(--ew-reserve-gutter))
+      var(--ew-reserve-gutter);
     /* rung: takeover (Z.takeover = 300). Was a pre-ladder 9 (one above
        the old panels-8); ported with the AI-IMP-161 inversion fix so
        takeovers stay above panels on the named ladder. */
@@ -111,7 +115,7 @@
   /* §11.5: the settings sheet is translucent and inset so the real
      board stays visible at the edges and through it. */
   .sheet.inset {
-    margin: 3rem 4rem;
+    margin: 0;
     border: 1px solid var(--ew-border);
     border-radius: 10px;
     background: var(--ew-surface-subtle);

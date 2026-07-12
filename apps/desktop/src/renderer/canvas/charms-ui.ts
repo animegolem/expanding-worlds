@@ -42,6 +42,11 @@ import { requestCaptionPromotion } from './caption-promotion'
 import { themeTokenValue } from '../theme'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 import { ICON_SVG_DATA_URLS } from './icon-atlas.generated'
+import { placeAnchored, type PlacementRect } from '../chrome/anchored-placement'
+import {
+  registerSelectionHaloProvider,
+  selectionHaloRect,
+} from './selection-halo'
 
 export interface CharmsUiHandle {
   destroy(): void
@@ -584,6 +589,31 @@ export function attachCharmsUi(
     const item = host.controller.items().find((candidate) => candidate.id === ids[0])
     return item && item.itemKind === 'placement' ? item : null
   }
+
+  let selectionHalo: PlacementRect | null = null
+  function selectedScreenRect(): PlacementRect | null {
+    const selected = selectedPlacement()
+    const bounds = selected
+      ? adornedWorldAABB(selected, host.controller.camera.zoom)
+      : null
+    if (!bounds) return null
+    const topLeft = host.controller.camera.worldToScreen({ x: bounds.x, y: bounds.y })
+    const bottomRight = host.controller.camera.worldToScreen({
+      x: bounds.x + bounds.width,
+      y: bounds.y + bounds.height,
+    })
+    return {
+      x: Math.min(topLeft.x, bottomRight.x),
+      y: Math.min(topLeft.y, bottomRight.y),
+      width: Math.abs(bottomRight.x - topLeft.x),
+      height: Math.abs(bottomRight.y - topLeft.y),
+    }
+  }
+  function updateSelectionHalo(): void {
+    const card = selectedScreenRect()
+    selectionHalo = card ? selectionHaloRect(card, bar.offsetHeight || 32) : null
+  }
+  disposers.push(registerSelectionHaloProvider(() => selectionHalo))
 
   async function execute(commandType: string, payload: unknown): Promise<void> {
     await host.gateway.execute(commandType, payload)
@@ -1131,6 +1161,7 @@ export function attachCharmsUi(
       const barWidth = bar.offsetWidth || 200
       bar.style.left = `${bottomCenter.x - barWidth / 2}px`
       bar.style.top = `${bottomCenter.y + 10}px`
+      updateSelectionHalo()
       // Popovers hang below the bar with a 2px gap, derived from the
       // LIVE bar height (AI-IMP-141) — the old fixed +44 encoded the
       // pre-restyle 32px bar and would sit under the taller kit bar.
@@ -1147,15 +1178,43 @@ export function attachCharmsUi(
       // selection wears an image (AI-IMP-159).
       setCropEnabled(selected.appearanceKind === 'image' && selected.assetContentHash !== null)
       if (chipsFor === selected.id) {
-        chips.style.left = `${bottomCenter.x - barWidth / 2}px`
-        chips.style.top = `${popoverTop}px`
+        const card = selectedScreenRect()
+        const bounds = element.getBoundingClientRect()
+        const surface = chips.getBoundingClientRect()
+        const placed = card
+          ? placeAnchored({
+              anchor: card,
+              surface,
+              host: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+              x: { preferred: 'center' },
+              y: { preferred: 'after', fallback: 'before' },
+              gap: 2,
+              avoid: selectionHalo ?? undefined,
+            })
+          : { x: bottomCenter.x - barWidth / 2, y: popoverTop }
+        chips.style.left = `${placed.x}px`
+        chips.style.top = `${placed.y}px`
       } else {
         chipsFor = null
         chips.style.display = 'none'
       }
       if (appearanceFor === selected.id) {
-        appearance.style.left = `${bottomCenter.x - barWidth / 2}px`
-        appearance.style.top = `${popoverTop}px`
+        const card = selectedScreenRect()
+        const bounds = element.getBoundingClientRect()
+        const surface = appearance.getBoundingClientRect()
+        const placed = card
+          ? placeAnchored({
+              anchor: card,
+              surface,
+              host: { x: 0, y: 0, width: bounds.width, height: bounds.height },
+              x: { preferred: 'center' },
+              y: { preferred: 'after', fallback: 'before' },
+              gap: 2,
+              avoid: selectionHalo ?? undefined,
+            })
+          : { x: bottomCenter.x - barWidth / 2, y: popoverTop }
+        appearance.style.left = `${placed.x}px`
+        appearance.style.top = `${placed.y}px`
         // Keep card's enabled state fresh if a note is attached/detached
         // while the popover is open.
         setCardEnabled(selected.noteId !== null)
@@ -1163,6 +1222,7 @@ export function attachCharmsUi(
         closeAppearance()
       }
     } else {
+      selectionHalo = null
       bar.style.display = 'none'
       syncFrameChip(null)
       chipsFor = null
@@ -1177,11 +1237,13 @@ export function attachCharmsUi(
   disposers.push(
     host.controller.camera.onChanged(() => {
       checkFurnitureFloor()
+      updateSelectionHalo()
       schedule()
     }),
   )
   disposers.push(
     host.onSceneApplied(() => {
+      updateSelectionHalo()
       schedule()
       // The corner charm's ghost/solid state follows the ACTIVE
       // canvas's note; scene applied covers both edits and dives.
@@ -1192,6 +1254,7 @@ export function attachCharmsUi(
   disposers.push(
     host.controller.selection.onChanged(() => {
       checkFurnitureFloor()
+      updateSelectionHalo()
       schedule()
     }),
   )

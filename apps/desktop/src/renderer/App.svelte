@@ -3,6 +3,7 @@
   import Workspace from './Workspace.svelte'
   import { attachServiceStatus, attachSnapshotPush } from './chrome/status'
   import { mountFeelDial } from './dev/feel-dial'
+  import { mountReservationDebug } from './dev/reservation-debug'
   import { mountUndo } from './undo/undo-keys'
 
   // Service lifecycle → §8.6 toasts + perch (AI-IMP-066). Attached
@@ -23,6 +24,8 @@
   // Windows build); hidden until the chord opens it. onMount's return
   // is the disposer.
   onMount(mountFeelDial)
+  // RFC §8.8.3 frame inspector: release-present, session-only dev furniture.
+  onMount(mountReservationDebug)
 </script>
 
 <!--

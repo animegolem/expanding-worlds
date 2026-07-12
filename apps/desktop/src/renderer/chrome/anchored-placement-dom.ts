@@ -2,6 +2,7 @@ import {
   placeAnchored,
   type AnchoredPlacementOptions,
 } from './anchored-placement'
+import { listenForReservationChanges, reservationFrame } from './reservation'
 
 export type AnchoredElementOptions = Omit<AnchoredPlacementOptions, 'surface'>
 export type AnchoredElementResolver = () => AnchoredElementOptions
@@ -17,8 +18,12 @@ export function placeAnchoredElement(
   const place = (): void => {
     if (disposed || !node.isConnected) return
     const measured = node.getBoundingClientRect()
+    const options = current()
+    const frame = reservationFrame(options.host)
     const at = placeAnchored({
-      ...current(),
+      ...options,
+      bands: options.bands ?? frame.bands,
+      margin: options.margin ?? frame.gutter,
       surface: { width: measured.width, height: measured.height },
     })
     node.style.left = `${at.x}px`
@@ -28,6 +33,7 @@ export function placeAnchoredElement(
   const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(place)
   observer?.observe(node)
   window.addEventListener('resize', place)
+  const stopReservation = listenForReservationChanges(place)
   queueMicrotask(place)
 
   return {
@@ -39,6 +45,7 @@ export function placeAnchoredElement(
       disposed = true
       observer?.disconnect()
       window.removeEventListener('resize', place)
+      stopReservation()
     },
   }
 }

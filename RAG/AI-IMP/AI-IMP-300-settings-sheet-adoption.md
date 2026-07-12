@@ -58,7 +58,8 @@ checks the settings store's tolerance).
   confirms path): the adoption.
 `apps/desktop/src/renderer/theme.ts` / density wiring from 286.
 Settings store (app tier) for density; menuPlacement removal.
-Guard allowlist: settings natives retire.
+Guard allowlist: settings has only range controls, not the prohibited
+select/color/number/datalist natives; no settings entry needs retiring.
 e2e: density switch + folding + placeholder-rows-gone; existing
   settings specs updated.
 
@@ -94,4 +95,3 @@ survives a restart
 per the kit.
 
 ### Issues Encountered
-

@@ -6,12 +6,12 @@ tags:
   - chrome
   - tokens
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.85
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-12
 ---
 
 # AI-IMP-286-reservation-frame-tokens
@@ -77,22 +77,22 @@ pair; the settings segment ships in AI-IMP-300.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify current clamp margins/band numbers in
+- [x] Round-1: verify current clamp margins/band numbers in
       anchored-placement.ts, takeover.ts, Dock/CharmRail/TitleStrip
       against this ticket; record corrections here.
-- [ ] Add band + density tokens to theme.css; document "names
+- [x] Add band + density tokens to theme.css; document "names
       normative, values kit-owned" in a comment citing §8.8.3.
-- [ ] New chrome/reservation.ts: frame rect from tokens + window
+- [x] New chrome/reservation.ts: frame rect from tokens + window
       size; density switch via data-density; unit tests.
-- [ ] anchored-placement.ts clamps inside frame + gutter; unit
+- [x] anchored-placement.ts clamps inside frame + gutter; unit
       tests updated (popover near each edge lands inside frame).
-- [ ] takeover.ts/TakeoverLayer inset to frame + gutter; rail
+- [x] takeover.ts/TakeoverLayer inset to frame + gutter; rail
       remains visible over any takeover.
-- [ ] Dock/CharmRail/TitleStrip extents read the tokens; no
+- [x] Dock/CharmRail/TitleStrip extents read the tokens; no
       literal 40/56/64 remain in chrome band math.
-- [ ] Guard test fails on new literal band numbers in chrome/.
-- [ ] showReservations dev toggle tints the four bands.
-- [ ] E2E: takeover inset + one anchored-surface clamp assertion;
+- [x] Guard test fails on new literal band numbers in chrome/.
+- [x] showReservations dev toggle tints the four bands.
+- [x] E2E: takeover inset + one anchored-surface clamp assertion;
       full local gate green with counts read.
 
 ### Acceptance Criteria
@@ -111,3 +111,24 @@ to 0 and the popover re-clamps without a reload.
 
 ### Issues Encountered
 
+#### Round-1 source verification (2026-07-12)
+
+- The ticket's "kit-1.4 proposal" attribution was incorrect: the
+  reservation names are normative in RFC §8.8.3, but the tracked kit
+  token file does not define their values. Preserve shipped geometry in
+  this adoption wave: strip 46 (with an open kit-1.3 design question),
+  rail 56, dock 64/112 expanded, and gutter 24.
+- `placeAnchored` and its DOM action already form the shared pure/DOM
+  placement seam. The defect is adoption: production callers supply
+  scattered margins and no reservation bands. Reservation bands become
+  the helper default; caller-specific anchor gaps remain unchanged.
+- Takeover geometry is owned by `TakeoverLayer.svelte` CSS, not
+  `takeover.ts`. Its ad-hoc settings inset is replaced by reservation
+  custom properties.
+- `compact` is the shipped desktop geometry; `comfortable` is the RFC's
+  touch referent (including strip 0). The session-only switch belongs on
+  `document.documentElement` and follows the existing feel-dial dev
+  chord/debug-seam convention rather than settings or a query string.
+- Furniture stays positioned inside its reservation band rather than
+  stretching to fill it. The provider exposes the dock's 112 expanded
+  value while this ticket leaves the shipped dock expansion state false.

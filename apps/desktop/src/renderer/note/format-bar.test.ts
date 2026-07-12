@@ -43,22 +43,22 @@ describe('clampBar (§8.8 clamp-and-flip)', () => {
 
   it('flips below when the top edge would clip', () => {
     const at = clampBar({ centerX: 500, top: 20, bottom: 40 }, size, viewport)
-    expect(at.top).toBe(40 + 8)
+    expect(at.top).toBe(46 + 24)
   })
 
   it('clamps the left edge into the viewport', () => {
     const at = clampBar({ centerX: 10, top: 300, bottom: 320 }, size, viewport)
-    expect(at.left).toBe(8)
+    expect(at.left).toBe(24)
   })
 
   it('clamps the right edge into the viewport', () => {
     const at = clampBar({ centerX: 995, top: 300, bottom: 320 }, size, viewport)
-    expect(at.left).toBe(1000 - 200 - 8)
+    expect(at.left).toBe(1000 - 56 - 24 - 200)
   })
 
   it('clamps the bottom edge when the flip would spill past it', () => {
     const at = clampBar({ centerX: 500, top: 10, bottom: 790 }, size, viewport)
-    expect(at.top).toBe(800 - 32 - 8)
+    expect(at.top).toBe(800 - 64 - 24 - 32)
   })
 })
 

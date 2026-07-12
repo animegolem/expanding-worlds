@@ -231,8 +231,8 @@
 <style>
   .charm-rail {
     position: absolute;
-    top: 2.4rem;
-    right: 0.6rem;
+    top: calc(var(--ew-reserve-strip) + var(--ew-reserve-gutter));
+    right: calc((var(--ew-reserve-rail) - 2rem) / 2);
     display: flex;
     flex-direction: column;
     gap: 0.35rem;

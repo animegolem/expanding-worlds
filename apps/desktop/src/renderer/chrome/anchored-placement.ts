@@ -39,13 +39,23 @@ export interface AnchoredPlacementOptions {
   y: AxisPreference
   gap?: number | Partial<PlacementGap>
   margin?: number
+  avoid?: PlacementRect | undefined
 }
 
 export interface AnchoredPlacement {
   x: number
   y: number
   flipped: boolean
+  avoided?: boolean
 }
+
+export const DEFAULT_CHROME_BANDS: Readonly<ChromeBands> = {
+  top: 46,
+  right: 56,
+  bottom: 64,
+  left: 0,
+}
+export const DEFAULT_RESERVATION_GUTTER = 24
 
 interface AxisInput {
   anchorStart: number
@@ -122,18 +132,33 @@ function placeAxis(input: AxisInput): { position: number; flipped: boolean } {
   }
 }
 
+function intersects(a: PlacementRect, b: PlacementRect): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  )
+}
+
 /**
  * Place a measured surface in the host coordinate system. Reserved bands
  * and the outer margin reduce the usable region before either axis flips
  * or clamps. The two axes are independent so mixed placements stay intact.
  */
 export function placeAnchored(options: AnchoredPlacementOptions): AnchoredPlacement {
-  const margin = finiteNonNegative(options.margin)
+  // Legacy callers supplied small viewport margins. Once they adopt the
+  // default reservation frame, its named gutter owns edge clearance; an
+  // explicit bands object is the deliberate custom/opt-out seam.
+  const margin =
+    options.bands === undefined
+      ? DEFAULT_RESERVATION_GUTTER
+      : finiteNonNegative(options.margin)
   const bands = {
-    top: finiteNonNegative(options.bands?.top),
-    right: finiteNonNegative(options.bands?.right),
-    bottom: finiteNonNegative(options.bands?.bottom),
-    left: finiteNonNegative(options.bands?.left),
+    top: finiteNonNegative(options.bands?.top ?? DEFAULT_CHROME_BANDS.top),
+    right: finiteNonNegative(options.bands?.right ?? DEFAULT_CHROME_BANDS.right),
+    bottom: finiteNonNegative(options.bands?.bottom ?? DEFAULT_CHROME_BANDS.bottom),
+    left: finiteNonNegative(options.bands?.left ?? DEFAULT_CHROME_BANDS.left),
   }
   const gap =
     typeof options.gap === 'number'
@@ -177,7 +202,53 @@ export function placeAnchored(options: AnchoredPlacementOptions): AnchoredPlacem
     gap: gap.y,
   })
 
-  return { x: x.position, y: y.position, flipped: x.flipped || y.flipped }
+  const normal = { x: x.position, y: y.position, flipped: x.flipped || y.flipped }
+  if (!options.avoid) return normal
+
+  const avoid = {
+    x: options.avoid.x,
+    y: options.avoid.y,
+    width: finiteNonNegative(options.avoid.width),
+    height: finiteNonNegative(options.avoid.height),
+  }
+  const normalRect = { x: normal.x, y: normal.y, ...surface }
+  if (!intersects(normalRect, avoid)) return { ...normal, avoided: true }
+
+  const clampX = (value: number): number =>
+    Math.min(Math.max(freeLeft, value), Math.max(freeLeft, freeRight - surface.width))
+  const clampY = (value: number): number =>
+    Math.min(Math.max(freeTop, value), Math.max(freeTop, freeBottom - surface.height))
+  const bySide = {
+    above: { x: clampX(normal.x), y: avoid.y - surface.height },
+    below: { x: clampX(normal.x), y: avoid.y + avoid.height },
+    left: { x: avoid.x - surface.width, y: clampY(normal.y) },
+    right: { x: avoid.x + avoid.width, y: clampY(normal.y) },
+  }
+  const order: Array<keyof typeof bySide> = []
+  const add = (side: keyof typeof bySide): void => {
+    if (!order.includes(side)) order.push(side)
+  }
+  if (options.y.preferred === 'after') add('below')
+  if (options.y.preferred === 'before') add('above')
+  if (options.x.preferred === 'after') add('right')
+  if (options.x.preferred === 'before') add('left')
+  if (options.y.fallback === 'after') add('below')
+  if (options.y.fallback === 'before') add('above')
+  if (options.x.fallback === 'after') add('right')
+  if (options.x.fallback === 'before') add('left')
+  ;(['below', 'above', 'right', 'left'] as const).forEach(add)
+
+  for (const side of order) {
+    const at = bySide[side]
+    const rect = { ...at, ...surface }
+    const inside =
+      at.x >= freeLeft &&
+      at.y >= freeTop &&
+      at.x + surface.width <= freeRight &&
+      at.y + surface.height <= freeBottom
+    if (inside && !intersects(rect, avoid)) return { ...normal, ...at, avoided: true }
+  }
+  return { ...normal, avoided: false }
 }
 
 export function pointAnchor(x: number, y: number): PlacementRect {

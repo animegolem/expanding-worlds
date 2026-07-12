@@ -38,6 +38,7 @@ import { takeoverActive } from '../chrome/takeover'
 import { applyMenuCascade } from '../chrome/menu-cascade'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { requestCharmPopover } from '../canvas/charms-ui'
+import { currentSelectionHalo } from '../canvas/selection-halo'
 import { requestCaptionEditor } from '../canvas/caption-request'
 import { requestCaptionPromotion } from '../canvas/caption-promotion'
 import {
@@ -437,7 +438,12 @@ export function attachContextMenu(
     input.focus()
   }
 
-  function render(kind: MenuKind, groups: MenuGroup[], at: { x: number; y: number }): void {
+  function render(
+    kind: MenuKind,
+    groups: MenuGroup[],
+    at: { x: number; y: number },
+    avoid?: ReturnType<typeof currentSelectionHalo>,
+  ): void {
     close()
     menu = makeShell(kind)
     // AI-IMP-183 (M-13): a menu is now up — panels decline Escape to it.
@@ -462,6 +468,7 @@ export function attachContextMenu(
       x: { preferred: 'start', fallback: 'before' },
       y: { preferred: 'start', fallback: 'before' },
       margin: 4,
+      avoid: avoid ?? undefined,
     })
     menu.style.left = `${placed.x}px`
     menu.style.top = `${placed.y}px`
@@ -900,7 +907,7 @@ export function attachContextMenu(
       hasCaption: hit.caption !== null,
       isImage: hit.appearanceKind === 'image',
     }
-    render('item', menuFor(subject, itemActions(hit)), at)
+    render('item', menuFor(subject, itemActions(hit)), at, currentSelectionHalo())
   }
 
   /** The frame menu's sort-on-drop toggle prints live state, so resolve
@@ -932,7 +939,15 @@ export function attachContextMenu(
         hasNote: p.noteId !== null,
         sortOnDrop,
       }
-      render('frame', menuFor(subject, frameActions(p)), at)
+      const stillSelected = host.controller.selection.ids()
+      render(
+        'frame',
+        menuFor(subject, frameActions(p)),
+        at,
+        stillSelected.length === 1 && stillSelected[0] === p.id
+          ? currentSelectionHalo()
+          : null,
+      )
     } finally {
       document.removeEventListener('pointerdown', onPreRenderPointer, true)
     }

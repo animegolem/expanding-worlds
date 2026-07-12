@@ -12,6 +12,7 @@
   import type { CanvasHostHandle } from './host'
   import { requestCaptionEditor } from './caption-request'
   import { commitCaptionPromotion, type PromotionRoute } from './caption-promotion'
+  import { currentSelectionHalo } from './selection-halo'
 
   let {
     handle,
@@ -61,6 +62,7 @@
       y: { preferred: 'after', fallback: 'before' },
       gap: 8,
       margin: 8,
+      avoid: currentSelectionHalo() ?? undefined,
     }
   }
 
