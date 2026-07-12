@@ -57,11 +57,42 @@ tests are regression pins tied to convictions — a "duplicate" is
 only removable when the surviving pin provably covers the same
 failure mode.
 
+## Summary of Issue #2 — the source-panel flake, ROOT-CAUSED (lead, 2026-07-12)
+
+The standing flake (`source-panel.spec.ts:68`, fails ~1-in-3 wave
+gates cold, always passes on retry) is a DATA-ARMING RACE, not
+timing noise, and no poll timeout will ever fix it:
+
+- The spec waits for `[data-testid="source-cell"]` to exist, then
+  dispatches a synthetic dragstart→drop (spec ~:102-119).
+- But cells render from the INDEX only; each cell's `contentHash`
+  arrives later via IntersectionObserver-batched item fetches
+  (`SourcePanel.svelte:146-199`).
+- `beginCellDrag` (`SourcePanel.svelte:229-238`) refuses to arm
+  when `items[nodeId]?.contentHash` is missing: `preventDefault()`,
+  NO payload set. The drop then carries an empty DataTransfer, the
+  board ingests nothing, and the poll at :131 times out — observed
+  failing identically at BOTH 5s and 15s budgets (nothing retries
+  the drag, so the wait can never succeed). Cold first attempt
+  6.6s-fail / warm retry 1.9s-pass matches exactly.
+
+Fix shape (small, cuttable with or before this analysis): the cell
+should expose its armed state (e.g., `data-armed` when contentHash
+is present — or the drag affordance renders only when armed, which
+also closes the PRODUCT gap below), and the spec waits for armed,
+not for present. PRODUCT NOTE for the kit/GR-3 ledger: a real user
+dragging a just-revealed cell in the pre-arm window gets a
+silently dead drag (preventDefault, no ghost, no voice) — a named-
+silence violation in miniature; visible-affordance-when-armed
+retires it.
+
 ### Files to Touch
 
 - New `RAG/spike-reports/` or ticket-appended report (analysis
   artifact; no product code).
 - Follow-up tickets cut per accepted proposal.
+- (Issue #2) `apps/desktop/e2e/source-panel.spec.ts` +
+  `SourcePanel.svelte` armed-state exposure.
 
 ### Implementation Checklist
 
