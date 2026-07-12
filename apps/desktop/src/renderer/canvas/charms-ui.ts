@@ -680,10 +680,16 @@ export function attachCharmsUi(
       openAppearanceFor(placement)
     },
   )
-  const makeCanvasButton = barButton('charm-make-canvas', FRAME_GLYPH, { name: 'Make canvas' }, () => {
+  const makeCanvasTip = { name: 'Make canvas' }
+  const alreadyCanvasTip = { name: 'already a board — dive with its frame charm' }
+  const makeCanvasButton = barButton('charm-make-canvas', FRAME_GLYPH, makeCanvasTip, () => {
     const placement = selectedPlacement()
-    if (!placement || placement.childCanvasId) return
-    void execute('CreateCanvas', { canvasId: uuidv7(), nodeId: placement.nodeId })
+    if (!placement || placement.childCanvasId || makeCanvasButton.dataset['disabled'] === 'true') return
+    const canvasId = uuidv7()
+    void host.gateway.execute('CreateCanvas', { canvasId, nodeId: placement.nodeId }).then((result) => {
+      if (result.status === 'committed')
+        void navigateTo(canvasId, placement.noteTitle ?? 'Board')
+    })
   })
   barButton('charm-note', PAGE_GLYPH, { name: 'Note — open or close, or attach one' }, () => {
     const placement = selectedPlacement()
@@ -1132,8 +1138,11 @@ export function attachCharmsUi(
       lockButton.textContent = selected.locked === 1 ? '🔓' : '🔒'
       const tipSpec = selected.locked === 1 ? 'Unlock' : 'Lock'
       lockButton.setAttribute('aria-label', tipSpec)
-      makeCanvasButton.disabled = selected.childCanvasId !== null
-      makeCanvasButton.style.opacity = selected.childCanvasId !== null ? '0.4' : '1'
+      const canMakeCanvas = selected.childCanvasId === null
+      makeCanvasButton.dataset['disabled'] = canMakeCanvas ? 'false' : 'true'
+      makeCanvasButton.style.opacity = canMakeCanvas ? '1' : '0.4'
+      makeCanvasButton.style.cursor = canMakeCanvas ? 'pointer' : 'default'
+      barTips.get(makeCanvasButton)?.update(canMakeCanvas ? makeCanvasTip : alreadyCanvasTip)
       // Crop is a §4.6 image-appearance verb: live only when the
       // selection wears an image (AI-IMP-159).
       setCropEnabled(selected.appearanceKind === 'image' && selected.assetContentHash !== null)

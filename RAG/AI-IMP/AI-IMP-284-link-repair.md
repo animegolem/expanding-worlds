@@ -6,11 +6,12 @@ tags:
   - renderer
   - persistence
   - lifecycle-push
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-270]
 parent_epic:
 confidence_score: 0.8
 date_created: 2026-07-11
+date_completed: 2026-07-12
 ---
 
 # AI-IMP-284-link-repair
@@ -79,15 +80,15 @@ EPIC-018). The class-5 toast rides the existing toast channel.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Restore-and-relink verb: one click, one undo group, inline
+- [x] Restore-and-relink verb: one click, one undo group, inline
       failure sentence on restore refusal.
-- [ ] Relink-create inverse unmakes the created note and restores
+- [x] Relink-create inverse unmakes the created note and restores
       broken state; redo replays cleanly (270's seam honored).
-- [ ] Plain relink undo re-breaks the link; nothing else moves.
-- [ ] Phantom keeps its draft on close; Escape follows rung 2
+- [x] Plain relink undo re-breaks the link; nothing else moves.
+- [x] Phantom keeps its draft on close; Escape follows rung 2
       with the surface's stated discard behavior.
-- [ ] Bound-token open failure speaks class 5.
-- [ ] Full `CI=true pnpm check` green (pipefail, counts read);
+- [x] Bound-token open failure speaks class 5.
+- [x] Full `CI=true pnpm check` green (pipefail, counts read);
       CHANGELOG [Unreleased]; HUMAN-TESTING entry (the repair
       flow end-to-end with a trashed target).
 
@@ -112,3 +113,13 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Round-1 correction: AI-IMP-233 had already repaired the compound
+  RelinkBrokenLinks inverse (safe created-note removal, preserve when
+  edited/referenced, clean redo). No persistence rewrite was made; the
+  existing handler contract is preserved and exercised end-to-end.
+- Round-1 correction: the generic phantom draft was component-local and
+  reset on close; EPIC-018 had not supplied close persistence. The repair
+  is intentionally session-only and cleared on project teardown.
+- The trashed match formerly collapsed to a boolean. Retaining its id and
+  title enables the existing RestoreRecord + RelinkBrokenLinks group.

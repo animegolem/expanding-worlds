@@ -59,9 +59,12 @@
   } from './paper/bound-geometry'
   import { openTagPanel } from '../tags/tag-panel'
   import TagAddField from '../tags/TagAddField.svelte'
+  import RemovableTagChip from '../tags/RemovableTagChip.svelte'
   import { wikiLinkSuggestions } from './suggestions'
   import { wikiLinkActivation, wikiLinkDecorations } from './wiki-link-plugin'
   import { themeTokenValue } from '../theme'
+  import { toast } from '../chrome/status'
+  import { discardPhantomDraft, phantomDraft as getPhantomDraft, rememberPhantomDraft } from './phantom-drafts'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
   import UsesList, { type UsesData } from './UsesList.svelte'
   import MetadataCard, { type MetadataCardData } from './MetadataCard.svelte'
@@ -256,6 +259,16 @@
       : []
   }
 
+  async function removeTag(tagId: string): Promise<void> {
+    if (!paneProject || !tagNodeId) return
+    const result = await paneProject.execute('UnassignTagFromNode', { tagId, nodeId: tagNodeId })
+    if (result.status !== 'committed') {
+      error = result.status === 'error' ? result.message : 'the project changed underneath (retry)'
+      return
+    }
+    await refreshTagChips()
+  }
+
   // §7.2 phantom view: a projection only.
   let phantom = $state<PhantomView | null>(null)
   let phantomDraft = $state('')
@@ -283,7 +296,7 @@
       return
     }
     phantom = view
-    phantomDraft = ''
+    phantomDraft = phantomDraftFor(view.titleKey)
     error = null
   }
 
@@ -291,10 +304,22 @@
     if (draftTimer !== null) clearTimeout(draftTimer)
     draftTimer = null
     phantom = null
-    phantomDraft = ''
+    if (phantom) rememberPhantomDraft(phantom.titleKey, phantomDraft)
     if (returnNoteId) requestOpenNote(returnNoteId)
     else closePanel(record.key)
     returnNoteId = null
+  }
+
+  function phantomDraftFor(key: string): string {
+    return getPhantomDraft(key)
+  }
+
+  function discardPhantom(): void {
+    const view = phantom
+    if (!view) return
+    discardPhantomDraft(view.titleKey)
+    phantomDraft = ''
+    dismissPhantom()
   }
 
   /** §9.2 the loose-note exit (AI-IMP-260): a note living NOWHERE
@@ -342,6 +367,7 @@
         ...(body.length > 0 ? { body } : {}),
       })
       if (result.status === 'committed') {
+        discardPhantomDraft(view.titleKey)
         phantom = null
         phantomDraft = ''
         returnNoteId = null
@@ -363,6 +389,7 @@
   const PHANTOM_FIRST_EDIT_IDLE_MS = 4000
 
   function onDraftInput(): void {
+    if (phantom) rememberPhantomDraft(phantom.titleKey, phantomDraft)
     if (draftTimer !== null) clearTimeout(draftTimer)
     draftTimer = setTimeout(() => {
       draftTimer = null
@@ -376,6 +403,7 @@
     if (draftTimer !== null) clearTimeout(draftTimer)
     draftTimer = null
     const body = phantomDraft.trim()
+    discardPhantomDraft(view.titleKey)
     phantom = null
     phantomDraft = ''
     returnNoteId = null
@@ -550,7 +578,7 @@
   let brokenLink = $state<{
     displayTitle: string
     activeMatch: { id: string; title: string } | null
-    trashedMatch: boolean
+    trashedMatch: { id: string; title: string } | null
   } | null>(null)
 
   async function findByTitle(
@@ -570,7 +598,10 @@
     tokenRect?: { x: number; y: number },
   ): Promise<void> {
     const match = await findByTitle(title)
-    if (!match) return
+    if (!match) {
+      toast("that note didn't open — try again", { surface: 'bound-note-open' })
+      return
+    }
     requestOpenNote(match.id)
     if (match.lifecycleState === 'active')
       requestRevealNote(match.id, match.title, tokenRect)
@@ -581,8 +612,45 @@
     brokenLink = {
       displayTitle: title,
       activeMatch: match && match.lifecycleState === 'active' ? match : null,
-      trashedMatch: match?.lifecycleState === 'trashed',
+      trashedMatch: match && match.lifecycleState === 'trashed' ? match : null,
     }
+  }
+
+  async function restoreAndRelink(): Promise<void> {
+    const project = paneProject
+    const source = paneController?.note
+    const panel = brokenLink
+    const target = panel?.trashedMatch
+    if (!project || !source || !panel || !target) return
+    let restoreFailed = false
+    let relinkFailure: string | null = null
+    await runAsUndoGroup(async (groupToken) => {
+      const restored = await project.execute(
+        'RestoreRecord',
+        { kind: 'note', id: target.id },
+        { groupToken },
+      )
+      if (restored.status !== 'committed') {
+        restoreFailed = true
+        return
+      }
+      const relinked = await project.execute(
+        'RelinkBrokenLinks',
+        { sourceNoteId: source.id, displayTitle: panel.displayTitle, targetNoteId: target.id },
+        { groupToken },
+      )
+      if (relinked.status !== 'committed')
+        relinkFailure = relinked.status === 'error' ? relinked.message : 'the project changed underneath (retry)'
+    })
+    if (restoreFailed) {
+      error = "couldn't restore it — the note is still in trash, the link still broken."
+      return
+    }
+    if (relinkFailure) {
+      error = relinkFailure
+      return
+    }
+    brokenLink = null
   }
 
   async function resolveBroken(kind: 'create' | 'relink'): Promise<void> {
@@ -1372,18 +1440,16 @@
     <div class="tag-chips" data-testid="panel-tag-chips">
       {#each tagChips as tag (tag.id)}
         <!-- §4.8 door 2: a chip opens THE tag panel anchored to itself. -->
-        <button
-          type="button"
-          class="tag-chip"
-          data-testid={`panel-tag-chip-${tag.id}`}
-          style={tag.color ? `color:${tag.color}` : ''}
-          onclick={(event) => {
+        <RemovableTagChip
+          testid={`panel-tag-chip-${tag.id}`}
+          name={tag.name}
+          color={tag.color}
+          onopen={(event) => {
             const rect = event.currentTarget.getBoundingClientRect()
             openTagPanel(tag.id, { x: rect.left, y: rect.bottom })
           }}
-        >
-          #{tag.name}
-        </button>
+          onremove={() => void removeTag(tag.id)}
+        />
       {/each}
       <TagAddField
         nodeId={tagNodeId}
@@ -1411,7 +1477,9 @@
           Relink to “{brokenLink.activeMatch.title}”
         </button>
       {:else if brokenLink.trashedMatch}
-        <p class="hint">A trashed note holds this title; restore it from Trash first.</p>
+        <button type="button" data-testid="broken-restore-relink" onclick={() => void restoreAndRelink()}>
+          Restore it and relink
+        </button>
       {:else}
         <button type="button" data-testid="broken-create" onclick={() => void resolveBroken('create')}>
           Create Note from “{brokenLink.displayTitle}”
@@ -1480,7 +1548,14 @@
         placeholder="Start writing to create this note…"
         bind:value={phantomDraft}
         oninput={onDraftInput}
+        onkeydown={(event) => {
+          if (event.key !== 'Escape') return
+          event.preventDefault()
+          event.stopPropagation()
+          discardPhantom()
+        }}
       ></textarea>
+      <p class="hint" data-testid="phantom-discard-hint">Escape discards this draft.</p>
       <h3>References</h3>
       <ul class="phantom-sources" data-testid="phantom-sources">
         {#each phantom.sources as source (source.noteId)}
@@ -2131,10 +2206,6 @@
 
   .broken-panel p {
     margin: 0;
-  }
-
-  .broken-panel .hint {
-    color: var(--ew-paper-broken-muted);
   }
 
   .error {

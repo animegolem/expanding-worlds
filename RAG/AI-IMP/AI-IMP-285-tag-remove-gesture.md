@@ -7,11 +7,12 @@ tags:
   - persistence
   - tags
   - lifecycle-push
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-231]
 parent_epic:
 confidence_score: 0.8
 date_created: 2026-07-11
+date_completed: 2026-07-12
 ---
 
 # AI-IMP-285-tag-remove-gesture
@@ -90,18 +91,18 @@ brief deferred here.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Chip ✕ in both remove-capable habitats; filter habitats
+- [x] Chip ✕ in both remove-capable habitats; filter habitats
       untouched (pinned); last-carrier leaves the panel open on
       its empty state.
-- [ ] UnassignTagFromNode captured (inverse AssignTagToNode);
+- [x] UnassignTagFromNode captured (inverse AssignTagToNode);
       matrix diff test updated; removal silent, ⌘Z the receipt.
-- [ ] Migration 0011: suppression table; handler writes it for
+- [x] Migration 0011: suppression table; handler writes it for
       mirrored content only, same transaction; inverse lifts it.
-- [ ] planTagSync never re-applies a suppressed triple; may still
+- [x] planTagSync never re-applies a suppressed triple; may still
       re-offer via recognition (pinned in planner tests).
-- [ ] The R6 round trip in e2e: tag removed from a mirrored image
+- [x] The R6 round trip in e2e: tag removed from a mirrored image
       survives close→open against a library that still carries it.
-- [ ] Full `CI=true pnpm check` green (pipefail, counts read);
+- [x] Full `CI=true pnpm check` green (pipefail, counts read);
       CHANGELOG [Unreleased]; HUMAN-TESTING entry (alph's exact
       flow: remove a tag, reopen, it stays removed).
 
@@ -126,3 +127,13 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Round-1 correction: Phase 1 stores no mirror-source project identity
+  (`import/ingest.ts` says it has no schema home). The approved predicate
+  writes the narrow suppression for every active image-backed node; the
+  row is inert unless sync later offers that exact hash/name/node triple.
+- Round-1 correction: TagPanel carrier rows previously rendered only
+  `otherTags`; the active tag chip had to be added through NodeRow's
+  surface-specific `extra` slot.
+- Reassignment universally lifts the exact suppression. This makes both
+  undo and deliberate hand re-add the explicit reopening gesture.

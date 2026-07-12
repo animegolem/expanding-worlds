@@ -175,13 +175,17 @@ test('the charm bar: flips, make-canvas, tags, lock (§8.4)', async () => {
   expect(await revision(win)).toBe(before + 2)
 
   // Make-canvas creates the node's canvas; the frame hint appears and
-  // the button retires into its disabled state.
+  // both birth doors end inside.
+  const originCanvas = await win.evaluate(() => window.__ewDebug!.canvasId())
   await win.getByTestId('charm-make-canvas').click()
-  await expect(win.getByTestId(`hint-frame-${pin.placementId}`)).toBeVisible()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).not.toBe(originCanvas)
+  await win.getByTestId('nav-crumb-0').click()
   await expect
     .poll(async () => (await scenePlacement(win, pin.placementId))?.['childCanvasId'])
     .not.toBeNull()
-  await expect(win.getByTestId('charm-make-canvas')).toBeDisabled()
+  await win.mouse.click(box.x + 500, box.y + 350)
+  await expect(win.getByTestId('charm-make-canvas')).toHaveAttribute('data-disabled', 'true')
+  await expect(win.getByTestId('charm-make-canvas')).not.toBeDisabled()
 
   // The # charm pops the node's tag chips.
   const tagId = crypto.randomUUID()

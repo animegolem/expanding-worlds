@@ -26,6 +26,7 @@ import type { ProjectPort } from './note-editor'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { attachLandmarks, clearLandmarkFact, landmarkFacts } from './paper/lifecycle'
 import type { BindSide } from './paper/bound-geometry'
+import { clearPhantomDrafts } from './phantom-drafts'
 
 // §8.5 rev 0.55 (AI-IMP-134): the open book's geometry lives in a pure,
 // node-testable module under paper/; the store re-exports the side
@@ -869,6 +870,7 @@ export function attachPanels(handle: CanvasHostHandle): () => void {
   return () => {
     for (const dispose of disposers) dispose()
     records = []
+    clearPhantomDrafts()
     flushers.clear()
     closingPanels.clear()
     renamers.clear()

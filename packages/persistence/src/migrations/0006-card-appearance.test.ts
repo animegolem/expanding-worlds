@@ -160,7 +160,7 @@ describe('migration 0006 on a POPULATED schema-5 database', () => {
 
       // migrate() runs to HEAD, including intentional reserved-id gaps.
       const ran = migrate(db)
-      expect(ran).toEqual([6, 7, 8, 10])
+      expect(ran).toEqual([6, 7, 8, 10, 11])
       expect(db.get<{ n: number }>('SELECT count(*) AS n FROM node')!.n).toBe(2)
       expect(db.all('PRAGMA foreign_key_check')).toEqual([])
       expect(db.pragma('foreign_keys')).toBe(1)

@@ -186,6 +186,26 @@ describe('two-handle tag sync (§4.8 rev 0.69, AI-IMP-271)', () => {
     ])
   })
 
+  it('skips only the suppressed node when equal-hash siblings are offered the same tag', () => {
+    const sourceNode = imageNode(source, 'shared-suppressed')
+    const destinationA = imageNode(destination, 'shared-suppressed')
+    const destinationB = imageNode(destination, 'shared-suppressed')
+    tag(source, 'Scout', [sourceNode])
+    const destinationTag = tag(destination, 'Scout', [destinationA])
+    committed(destination, 'UnassignTagFromNode', { tagId: destinationTag, nodeId: destinationA })
+
+    expect(planTagSync(source, destination).tags).toEqual([
+      expect.objectContaining({
+        nameKey: 'scout',
+        destinationTagId: destinationTag,
+        destinationNodeIds: [destinationB],
+      }),
+    ])
+    syncTags(source, destination)
+    expect(assignedNames(destination, destinationA)).toEqual([])
+    expect(assignedNames(destination, destinationB)).toEqual(['Scout'])
+  })
+
   it('fails stop at the first refused direct command and inspects its result', () => {
     const nodeA = imageNode(destination, 'failure')
     const nodeB = imageNode(destination, 'failure')

@@ -41,6 +41,33 @@ interface TagRow extends Record<string, unknown> {
   created_at: string
 }
 
+interface ImageTagSuppression {
+  content_hash: string
+  name_key: string
+}
+
+function imageTagSuppression(
+  ctx: CommandContext,
+  tagId: string,
+  nodeId: string,
+): ImageTagSuppression | undefined {
+  return ctx.db.get<ImageTagSuppression>(
+    `SELECT a.content_hash, t.name_key
+       FROM node n
+       JOIN asset a ON a.id = n.appearance_asset_id
+       JOIN tag t ON t.id = ?
+      WHERE n.id = ? AND n.project_id = ? AND n.lifecycle_state = 'active'
+        AND n.appearance_kind = 'image'
+        AND a.project_id = ? AND a.lifecycle_state = 'active' AND a.kind = 'image'
+        AND t.project_id = ? AND t.lifecycle_state = 'active'`,
+    tagId,
+    nodeId,
+    ctx.projectId,
+    ctx.projectId,
+    ctx.projectId,
+  )
+}
+
 /** Loads a tag's ordered assignment list for exact-restore inverses. */
 function loadAssignments(ctx: CommandContext, tagId: string): RestoredTagAssignment[] {
   return ctx.db
@@ -251,6 +278,17 @@ export function registerTagHandlers(registry: CommandRegistry<CommandContext>): 
       payload.nodeId,
       ctx.now(),
     )
+    const suppression = imageTagSuppression(ctx, payload.tagId, payload.nodeId)
+    if (suppression) {
+      ctx.db.run(
+        `DELETE FROM tag_unassign_suppression
+          WHERE project_id = ? AND content_hash = ? AND name_key = ? AND node_id = ?`,
+        ctx.projectId,
+        suppression.content_hash,
+        suppression.name_key,
+        payload.nodeId,
+      )
+    }
     return {
       affected: [
         { kind: 'tag', id: payload.tagId },
@@ -271,6 +309,7 @@ export function registerTagHandlers(registry: CommandRegistry<CommandContext>): 
     COMMAND_UNASSIGN_TAG_FROM_NODE,
     1,
     (ctx, payload) => {
+      const suppression = imageTagSuppression(ctx, payload.tagId, payload.nodeId)
       const removed = ctx.db.run(
         'DELETE FROM tag_assignment WHERE tag_id = ? AND node_id = ?',
         payload.tagId,
@@ -281,6 +320,18 @@ export function registerTagHandlers(registry: CommandRegistry<CommandContext>): 
           tagId: payload.tagId,
           nodeId: payload.nodeId,
         })
+      }
+      if (suppression) {
+        ctx.db.run(
+          `INSERT OR IGNORE INTO tag_unassign_suppression
+             (project_id, content_hash, name_key, node_id, created_at)
+           VALUES (?, ?, ?, ?, ?)`,
+          ctx.projectId,
+          suppression.content_hash,
+          suppression.name_key,
+          payload.nodeId,
+          ctx.now(),
+        )
       }
       return {
         affected: [

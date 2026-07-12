@@ -33,6 +33,7 @@
   import { contextMenuOpen } from '../menus/ContextMenu'
   import { runAsUndoGroup } from '../undo/undo-store'
   import { deleteLocalTag } from './tag-delete'
+  import RemovableTagChip from './RemovableTagChip.svelte'
 
   interface TagViewPlacement {
     placementId: string
@@ -424,6 +425,19 @@
     reserveTetheredPanelSpace()
     requestCenterPlacements([placement.placementId])
   }
+
+  async function removeCarrier(nodeId: string): Promise<void> {
+    if (!view) return
+    const result = await handle.gateway.execute('UnassignTagFromNode', {
+      tagId: view.tag.id,
+      nodeId,
+    })
+    if (result.status !== 'committed') {
+      errorMessage = result.status === 'error' ? result.message : 'the project changed underneath (retry)'
+      return
+    }
+    await refresh()
+  }
 </script>
 
 <div
@@ -582,6 +596,12 @@
               hasCanvas={node.childCanvasId !== null}
             >
               {#snippet extra()}
+                <RemovableTagChip
+                  testid={`tag-carrier-chip-${node.id}`}
+                  name={view.tag.name}
+                  color={view.tag.color}
+                  onremove={() => void removeCarrier(node.id)}
+                />
                 {#if node.placements.length === 0}
                   <span class="badge" data-testid="badge-loose">loose</span>
                 {/if}

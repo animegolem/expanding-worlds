@@ -83,6 +83,6 @@ describe('undo policy matrix ↔ command registry (AI-IMP-233)', () => {
     expect(UNDO_POLICY['TrashCanvas']?.class).toBe('group-only')
     expect(UNDO_POLICY['RestoreRecord']?.class).toBe('captured')
     expect(UNDO_POLICY['PurgeRecord']?.class).toBe('exempt')
-    expect(UNDO_POLICY['UnassignTagFromNode']?.class).toBe('exempt')
+    expect(UNDO_POLICY['UnassignTagFromNode']?.class).toBe('captured')
   })
 })

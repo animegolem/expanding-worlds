@@ -5,11 +5,12 @@ tags:
   - Implementation
   - renderer
   - lifecycle-push
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.8
 date_created: 2026-07-11
+date_completed: 2026-07-12
 ---
 
 # AI-IMP-283-a-board-is-born
@@ -91,18 +92,18 @@ navigate to origin, then apply; silent per GR-3 class 7.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Make-canvas dives on success; hint-chip ending removed;
+- [x] Make-canvas dives on success; hint-chip ending removed;
       flight identical to door 1 (240ms, through the object).
-- [ ] Already-a-board renders inert with the why-tooltip (card-
+- [x] Already-a-board renders inert with the why-tooltip (card-
       button idiom); no native-disabled remains in the bar.
-- [ ] Door 1 carry: Enter → cursor; seat click completes the
+- [x] Door 1 carry: Enter → cursor; seat click completes the
       four-command group; the newborn is swappable afterwards.
-- [ ] Escape mid-carry unmakes the whole birth; nothing
+- [x] Escape mid-carry unmakes the whole birth; nothing
       provisional survives (pinned).
-- [ ] R6: undoing the birth while inside flies back to origin
+- [x] R6: undoing the birth while inside flies back to origin
       first, then unmakes, silently; undoing from the origin
       just unmakes; both one ⌘Z.
-- [ ] Full `CI=true pnpm check` green (pipefail, counts read);
+- [x] Full `CI=true pnpm check` green (pipefail, counts read);
       CHANGELOG [Unreleased]; HUMAN-TESTING entry (the flight
       feel, the carry, the fly-back).
 
@@ -131,3 +132,13 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- Round-1 ruling: `runAsUndoGroup` finalizes in `finally` and has no abort
+  primitive; CreateNoteAndAttach's inverse deliberately trashes. Birth
+  therefore delays all durable commands until seating. Escape drops only
+  renderer memory and literally nothing survives.
+- S4 is `renderer/canvas/place-mode.ts`; it now has a narrow board-birth
+  request variant while the gallery pull path remains unchanged.
+- A refused seat rolls back any captured prefix through a birth-only
+  fail-stop seam, clears its redo receipt, keeps the ghost, and reports
+  inline. Birth metadata is the sole navigate-before-undo exception.

@@ -204,3 +204,36 @@ test('delete scope prints a visible disabled reason when no library is designate
   await expect.poll(async () => (await tagNamed(win, 'local only'))?.nodeCount ?? 0).toBe(1)
   await app.close()
 })
+
+test('a hand-removed mirrored tag stays off that image after close and reopen (R6)', async () => {
+  const libraryDir = mkdtempSync(join(tmpdir(), 'ew-e2e-tag-r6-library-'))
+  const worldDir = mkdtempSync(join(tmpdir(), 'ew-e2e-tag-r6-world-'))
+  const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-tag-r6-config-'))
+  const env = { EW_APP_CONFIG_DIR: configDir }
+  {
+    const { app, win } = await launchAppInDir(libraryDir, env)
+    const image = await seedImage(win)
+    await createAndAssignTag(win, image.nodeId, 'do not return')
+    await app.close()
+  }
+  let worldImage: SeededImage
+  {
+    const { app, win } = await launchAppInDir(worldDir, env)
+    worldImage = await seedImage(win)
+    expect((await win.evaluate((dir) => window.ew.settings.setApp('libraryProjectDir', dir), libraryDir)).ok).toBe(true)
+    await app.close()
+  }
+  {
+    const { app, win } = await launchAppInDir(worldDir, env)
+    const mirrored = (await tagNamed(win, 'do not return'))!
+    await openTagPanel(win, worldImage.placementId, mirrored.id)
+    await win.getByTestId(`tag-carrier-chip-${worldImage.nodeId}-remove`).click()
+    await expect.poll(async () => (await tagNamed(win, 'do not return'))?.nodeCount).toBe(0)
+    await app.close()
+  }
+  {
+    const { app, win } = await launchAppInDir(worldDir, env)
+    await expect.poll(async () => (await tagNamed(win, 'do not return'))?.nodeCount).toBe(0)
+    await app.close()
+  }
+})

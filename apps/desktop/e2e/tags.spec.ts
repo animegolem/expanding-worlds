@@ -249,6 +249,10 @@ test('note-panel door opens the panel; the completion field swaps the tag (§4.8
   // "ruins" chip in the note panel's header chips.
   await win.mouse.dblclick(box.x + 150, box.y + 150)
   await expect(win.getByTestId('panel-tag-chips')).toBeVisible()
+  await win.getByTestId(`panel-tag-chip-${world.ruinsTagId}-remove`).click()
+  await expect(win.getByTestId(`panel-tag-chip-${world.ruinsTagId}`)).toHaveCount(0)
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect(win.getByTestId(`panel-tag-chip-${world.ruinsTagId}`)).toBeVisible()
   await win.getByTestId(`panel-tag-chip-${world.ruinsTagId}`).click()
   const panel = win.getByTestId('tag-panel')
   await expect(panel).toBeVisible()
@@ -270,6 +274,12 @@ test('note-panel door opens the panel; the completion field swaps the tag (§4.8
     panel.getByTestId(`tag-row-fly-${world.otherPlacement}`),
   ).toContainText('Home')
   await expect(win.getByTestId('tag-panel-lens')).toBeEnabled()
+
+  // Removing the final carrier leaves the tag panel open on its honest
+  // empty state; panels never dismiss themselves.
+  await win.getByTestId(`tag-carrier-chip-${world.untaggedNodeId}-remove`).click()
+  await expect(panel).toBeVisible()
+  await expect(win.getByTestId('tag-panel-empty')).toBeVisible()
 
   await app.close()
 })

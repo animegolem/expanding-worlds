@@ -58,6 +58,8 @@ test('New board…: verb → palette → name+Enter → dive, one Mod+Z reverses
     await win.getByTestId('new-board-query').fill('Harbor District')
     await expect(win.getByTestId('new-board-create')).toBeVisible()
     await win.getByTestId('new-board-query').press('Enter')
+    await expect(win.getByTestId('board-birth-ghost')).toBeVisible()
+    await win.mouse.click(box.x + 620, box.y + 380)
 
     // We dive into the new board — the path bar shows it and the live
     // canvas has swapped away from the origin.
@@ -65,20 +67,24 @@ test('New board…: verb → palette → name+Enter → dive, one Mod+Z reverses
     const newCanvas = await canvasId(win)
     await expect(win.getByTestId('nav-crumb-1')).toHaveText('Harbor District')
 
-    // Back on the origin board, the named board-object exists and wears
-    // the dive hint (childCanvasId set = the make-canvas presentation).
-    await win.getByTestId('nav-crumb-0').click()
+    // The whole act is ONE undo entry, and the sole navigating-undo
+    // exception flies out before deleting the board under our feet.
+    expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(1)
+    await win.evaluate(() => window.__ewUndo!.undo())
     await expect.poll(() => canvasId(win)).toBe(origin)
+    await expect.poll(() => placements(win, origin).then((p) => p.length)).toBe(0)
+    expect(await canvasAbsent(win, newCanvas)).toBe(true)
+
+    // Redo is intentionally non-navigating and reconstructs the birth.
+    await win.evaluate(() => window.__ewUndo!.redo())
+    await expect.poll(() => placements(win, origin).then((p) => p.length)).toBe(1)
     const seeded = await placements(win, origin)
     expect(seeded).toHaveLength(1)
     expect(seeded[0]!.noteTitle).toBe('Harbor District')
     expect(seeded[0]!.childCanvasId).toBe(newCanvas)
     const nodeId = seeded[0]!.nodeId
 
-    // The whole act is ONE undo entry.
-    expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(1)
-
-    // ONE Mod+Z from the origin board removes node + canvas + placement.
+    // ONE Mod+Z from the origin removes the redone birth without a flight.
     await win.evaluate(() => window.__ewUndo!.undo())
     await expect.poll(() => placements(win, origin).then((p) => p.length)).toBe(0)
     expect(await canvasAbsent(win, newCanvas)).toBe(true)
@@ -87,6 +93,51 @@ test('New board…: verb → palette → name+Enter → dive, one Mod+Z reverses
       return !r.ok || r.result === null
     }, nodeId)
     expect(node).toBe(true)
+  } finally {
+    await app.close()
+  }
+})
+
+test('New board… carry: Escape abandons renderer memory and creates nothing', async () => {
+  const { app, win } = await launchApp('ew-e2e-new-board-carry-esc-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const origin = await canvasId(win)
+    await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
+    await win.getByTestId('ctx-new-board').click()
+    await win.getByTestId('new-board-query').fill('Never Born')
+    await win.getByTestId('new-board-query').press('Enter')
+    await expect(win.getByTestId('board-birth-ghost')).toBeVisible()
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('board-birth-ghost')).toHaveCount(0)
+    expect(await canvasId(win)).toBe(origin)
+    expect(await placements(win, origin)).toHaveLength(0)
+    expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(0)
+  } finally {
+    await app.close()
+  }
+})
+
+test('New board… refused seat keeps the carry alive; Escape leaves nothing', async () => {
+  const { app, win } = await launchApp('ew-e2e-new-board-refused-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const origin = await canvasId(win)
+    await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
+    await win.getByTestId('ctx-new-board').click()
+    await win.getByTestId('new-board-query').fill('Try Again')
+    await win.getByTestId('new-board-query').press('Enter')
+    await win.evaluate(() => window.__ewDebug!.failNextCommand('CreateCanvas'))
+    await win.mouse.click(box.x + 620, box.y + 380)
+    await expect(win.getByTestId('board-birth-ghost')).toBeVisible()
+    await expect(win.getByTestId('board-birth-error')).not.toHaveText('')
+    expect(await placements(win, origin)).toHaveLength(0)
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('board-birth-ghost')).toHaveCount(0)
+    expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(0)
+    expect(await win.evaluate(() => window.__ewUndo!.redoDepth())).toBe(0)
   } finally {
     await app.close()
   }

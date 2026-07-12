@@ -240,6 +240,31 @@ test('typing into the phantom body materializes on the first committed burst (§
   await app.close()
 })
 
+test('phantom close keeps its session draft; stated Escape discards it', async () => {
+  const { app, win } = await launchApp('ew-e2e-phantom-draft-')
+  await seedPlacedNote(win, 'Source', 'a [[Wisp]] in the marsh', { x: 300, y: 240 })
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  const openWisp = async (): Promise<void> => {
+    await win.locator('[data-testid="note-editor-content"] [data-link-title="Wisp"]').click({
+      modifiers: ['ControlOrMeta'],
+    })
+    await expect(win.getByTestId('phantom-view')).toBeVisible()
+  }
+  await openWisp()
+  await win.getByTestId('phantom-draft').fill('kept in this session')
+  await win.getByTestId('panel-close').click()
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await openWisp()
+  await expect(win.getByTestId('phantom-draft')).toHaveValue('kept in this session')
+  await expect(win.getByTestId('phantom-discard-hint')).toHaveText('Escape discards this draft.')
+  await win.getByTestId('phantom-draft').press('Escape')
+  await win.mouse.dblclick(box.x + 300, box.y + 240)
+  await openWisp()
+  await expect(win.getByTestId('phantom-draft')).toHaveValue('')
+  await app.close()
+})
+
 test('rename flushes dirty buffers, rewrites transactionally, folds into local undo (§17-15)', async () => {
   const { app, win } = await launchApp('ew-e2e-rename-')
   const { noteId: oldId } = await seedPlacedNote(win, 'Old', 'the original', { x: 500, y: 240 })
@@ -471,14 +496,17 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
   const reefId = crypto.randomUUID()
   const wraithId = crypto.randomUUID()
   const ghostId = crypto.randomUUID()
+  const emberId = crypto.randomUUID()
+  const emberReplacementId = crypto.randomUUID()
   const sId = crypto.randomUUID()
   await exec(win, 'CreateNote', { noteId: reefId, title: 'Reef' })
   await exec(win, 'CreateNote', { noteId: wraithId, title: 'Wraith' })
   await exec(win, 'CreateNote', { noteId: ghostId, title: 'Ghost' })
+  await exec(win, 'CreateNote', { noteId: emberId, title: 'Ember' })
   await exec(win, 'CreateNote', {
     noteId: sId,
     title: 'S',
-    body: 'dive [[Reef]] near [[Wraith]] and [[Ghost]]',
+    body: 'dive [[Reef]] near [[Wraith]] and [[Ghost]] beside [[Ember]]',
   })
   await exec(win, 'CreatePin', {
     nodeId: crypto.randomUUID(),
@@ -494,11 +522,30 @@ test('trashed and broken links offer explicit recovery (§17-22)', async () => {
   await exec(win, 'PurgeRecord', { kind: 'note', id: wraithId })
   await exec(win, 'TrashNote', { noteId: ghostId })
   await exec(win, 'PurgeRecord', { kind: 'note', id: ghostId })
+  await exec(win, 'TrashNote', { noteId: emberId })
+  await exec(win, 'PurgeRecord', { kind: 'note', id: emberId })
+  await exec(win, 'CreateNote', { noteId: emberReplacementId, title: 'Ember' })
+  await exec(win, 'TrashNote', { noteId: emberReplacementId })
   await exec(win, 'CreateNote', { noteId: crypto.randomUUID(), title: 'Wraith' })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
   const box = (await win.getByTestId('canvas-host').boundingBox())!
   await win.mouse.dblclick(box.x + 300, box.y + 240)
+
+  // Broken with a trashed title match gets one restore+relink verb and
+  // one undo returns exactly to trashed + broken.
+  const ember = win.locator('[data-testid="note-editor-content"] [data-link-title="Ember"]')
+  await expect(ember).toHaveAttribute('data-link-state', 'broken')
+  await ember.click({ modifiers: ['ControlOrMeta'] })
+  await win.getByTestId('broken-restore-relink').click()
+  await expect(ember).toHaveAttribute('data-link-state', 'bound')
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect(ember).toHaveAttribute('data-link-state', 'broken')
+  expect(
+    await runQuery<Array<{ id: string; lifecycleState: string }>>(win, 'listNoteTitles').then(
+      (rows) => rows.find((row) => row.id === emberReplacementId)?.lifecycleState,
+    ),
+  ).toBe('trashed')
 
   // Broken with an active title_key match → Relink flips the records.
   await expect(win.locator('[data-testid="note-editor-content"] [data-link-title="Wraith"]')).toHaveAttribute(
