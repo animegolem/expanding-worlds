@@ -1,7 +1,9 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import { EventEmitter } from 'node:events'
 import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PassThrough } from 'node:stream'
 import { build } from 'esbuild'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { IMPORT_TMP_DIR } from './import/store'
@@ -86,7 +88,9 @@ function waitForLine(proc: ChildProcess, marker: string, timeoutMs = 20_000): Pr
     proc.stderr?.on('data', (chunk: Buffer) => {
       err += chunk.toString()
     })
-    proc.on('exit', (code) => {
+    // `exit` may precede the final stdout/stderr data events. Only reject
+    // after `close`, when the child's stdio streams have finished draining.
+    proc.on('close', (code) => {
       if (!out.includes(marker)) {
         clearTimeout(timer)
         reject(new Error(`fixture exited ${code} before "${marker}"; stdout=${out} stderr=${err}`))
@@ -104,6 +108,23 @@ function waitForExit(proc: ChildProcess, timeoutMs = 20_000): Promise<number | n
     })
   })
 }
+
+describe('process fixture output lifecycle (AI-IMP-244)', () => {
+  it('accepts a marker delivered after exit but before stdio close', async () => {
+    const stdout = new PassThrough()
+    const stderr = new PassThrough()
+    const proc = Object.assign(new EventEmitter(), { stdout, stderr }) as unknown as ChildProcess
+    const output = waitForLine(proc, 'FINAL', 1_000)
+
+    proc.emit('exit', 0, null)
+    stdout.write('FINAL\n')
+    stdout.end()
+    stderr.end()
+    proc.emit('close', 0, null)
+
+    await expect(output).resolves.toContain('FINAL')
+  })
+})
 
 describe('single-writer lock across OS processes (§11.1)', () => {
   it('refuses a second process while held and admits it after close', async () => {
