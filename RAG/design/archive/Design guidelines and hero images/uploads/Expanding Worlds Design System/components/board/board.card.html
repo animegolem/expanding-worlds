@@ -1,0 +1,30 @@
+<!-- @dsCard group="Components" viewport="700x360" name="Board" subtitle="Node cards, hint charms, selection + charm bar, lens states" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>a{color:var(--ew-accent)}a:hover{color:var(--ew-accent-soft)}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body style="margin:0;background:var(--ew-surface-solid)">
+<div id="root"></div>
+<script type="text/babel">
+const { NodeCard, CharmBar, HintCharm } = window.ExpandingWorldsDesignSystem_5b63d5;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <div style={{ padding: 18, display: 'flex', gap: 22, alignItems: 'flex-start', backgroundImage: 'var(--ew-grid-bg)', backgroundSize: 'var(--ew-grid-size)', minHeight: 340, boxSizing: 'border-box' }}>
+    <NodeCard title="Aster Vale — dawn" src="../../assets/seed/01-aster-vale-dawn.png" width={170} height={220} hasNote />
+    <div>
+      <NodeCard title="Goblin chief" label="portrait" stripes="125deg,#5d4b45,#52423d" width={150} height={200} hasNote hasCanvas selected />
+      <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center' }}><CharmBar noteActive /></div>
+    </div>
+    <NodeCard title="Yorren" label="character ref" stripes="95deg,#4d5266,#434759" width={140} height={185} hit />
+    <NodeCard title="banner sketches" label="sketches" stripes="120deg,#5f5849,#534d40" width={140} height={185} dimmed />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', paddingTop: 8 }}>
+      <div style={{ display: 'flex', gap: 8 }}><HintCharm kind="page" /><HintCharm kind="frame" /></div>
+      <div style={{ fontSize: 11, color: 'var(--ew-text-muted)', fontFamily: 'var(--ew-font-ui)', textAlign: 'center' }}>page · frame<br/>hint charms</div>
+    </div>
+  </div>
+);
+</script>
+</body></html>

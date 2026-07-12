@@ -1,0 +1,74 @@
+/* Expanding Worlds — chrome feel + canvas presentation tokens.
+   Sources: apps/desktop/src/renderer/chrome/feel.ts (RFC §8.2 rev 0.17)
+   and the UI Vision artifact (Design-Artifacts-v1.0). Numbers are the
+   app's shipped "provisional feel numbers" — copy them exactly. */
+:root {
+  /* Engagement cadence (feel.ts). ALL chrome fades on ONE shared clock. */
+  --ew-chrome-fade-delay-ms: 4000ms; /* @kind other */ /* idle before chrome fades */
+  --ew-chrome-fade-ms: 240ms; /* @kind other */ /* the shared fade transition */
+  --ew-chrome-rest-opacity: 0.92; /* @kind other */ /* chrome rests here; hover → 1 */
+  --ew-hint-charm-rest-opacity: 0.7; /* @kind other */ /* node hint charms census level */
+  --ew-tooltip-delay-ms: 500ms; /* @kind other */ /* tooltip chip delay */
+  --ew-toast-duration-ms: 6000ms; /* @kind other */ /* non-sticky toast lifetime */
+  --ew-perch-pulse-ms: 700ms; /* @kind other */ /* perch single arrival pulse */
+
+  /* Canvas grid (UI Vision). Lines default; dots 26px radial; none. */
+  --ew-grid-line: rgba(255, 255, 255, 0.055);
+  --ew-grid-bg: linear-gradient(var(--ew-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ew-grid-line) 1px, transparent 1px);
+  --ew-grid-size: 44px 44px;
+
+  /* Board card (world content): flat, tiny radius, soft drop. */
+  --ew-node-radius: 3px;
+  --ew-node-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+
+  /* Screen-space panel depth cues (§8.5: shadow = screen-space). */
+  --ew-panel-shadow: 0 6px 22px var(--ew-shadow);
+  --ew-panel-shadow-pinned: 0 10px 30px var(--ew-shadow);
+  --ew-panel-shadow-menu: 0 10px 28px var(--ew-menu-shadow);
+
+  /* ─── Design-pass additions (Style Guide v2 ■ TECH) ─── */
+
+  /* Floating things cast shadows (§8.5 extended): anything torn off or
+     riding a drag — mid-tear note, drag ghost, place cursor — picks up
+     this shadow exactly while it floats. On at drag/tear start, off on
+     settle. (~) */
+  --ew-drag-shadow: 0 12px 26px rgba(0, 0, 0, 0.5);
+
+  /* World-content motion beats (motion corollary): ONE-shot, one beat
+     per user act, never ambient, never looping. Chrome keeps the fade
+     clock above. (~ except tear, confirmed at t9) */
+  --ew-beat-tear-ms: 300ms; /* @kind other */ /* pin tear-off, ease-out */
+  --ew-beat-bloom-ms: 240ms; /* @kind other */ /* first-placement bloom */
+  --ew-beat-stage-edge-ms: 180ms; /* @kind other */ /* stage growth ease */
+  --ew-beat-cover-ms: 200ms; /* @kind other */ /* book-cover open (musing) */
+
+  /* Void grid: the stage's grid-line alpha × ~0.4. Void is OFF on glass. */
+  --ew-void-grid-line: rgba(255, 255, 255, 0.022);
+
+  /* The named z-ladder (§8.8) — names normative; a guard fails any
+     literal z-index in app code. Modals mount at the root host. */
+  --ew-z-world: 0; /* @kind other */
+  --ew-z-affordance: 100; /* @kind other */
+  --ew-z-panel: 200; /* @kind other */
+  --ew-z-takeover: 300; /* @kind other */
+  --ew-z-chrome: 400; /* @kind other */
+  --ew-z-popover: 500; /* @kind other */
+  --ew-z-modal: 600; /* @kind other */
+  --ew-z-notice: 700; /* @kind other */
+  --ew-z-tooltip: 800; /* @kind other */
+}
+
+:root[data-theme='light'] {
+  --ew-grid-line: rgba(0, 0, 0, 0.075);
+  --ew-void-grid-line: rgba(0, 0, 0, 0.03);
+}
+
+[data-grid='dots'] {
+  --ew-grid-bg: radial-gradient(var(--ew-grid-line) 1.3px, transparent 1.5px);
+  --ew-grid-size: 26px 26px;
+}
+
+[data-grid='none'] {
+  --ew-grid-bg: none;
+}

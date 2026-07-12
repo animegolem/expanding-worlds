@@ -1,0 +1,360 @@
+:root {
+  color-scheme: dark;
+
+  --ew-surface: rgba(23, 25, 29, 0.92);
+  --ew-surface-solid: #17191d;
+  --ew-surface-raised: #23262c;
+  --ew-surface-hover: #2a2e35;
+  --ew-surface-control-hover: #3a3f47;
+  --ew-surface-menu: rgba(23, 25, 29, 0.95);
+  --ew-surface-rail: rgba(23, 25, 29, 0.88);
+  --ew-surface-subtle: rgba(23, 25, 29, 0.82);
+  --ew-surface-overlay: rgba(23, 25, 29, 0.97);
+  --ew-surface-modal: #22262c;
+  --ew-surface-input: #17191d;
+  --ew-border: #2e3138;
+  --ew-border-strong: #3a3e46;
+  --ew-border-panel: #3a4048;
+  --ew-border-control: #4a4f57;
+  --ew-border-accent-subtle: #3a4a5e;
+  --ew-text: #dde3ea;
+  --ew-text-soft: #c8cfd8;
+  --ew-text-muted: #9aa3ad;
+  --ew-text-subtle: #79808a;
+  --ew-text-dialog: #dddddd;
+  --ew-accent: #4a9df0;
+  --ew-accent-soft: #8ec2f5;
+  /* §4.9 frame region (AI-IMP-127): furniture, not art — a low-alpha
+     fill wash + a subtle border, drawn by the canvas engine. Hex only
+     (the engine parses these to Pixi colors; no rgba). */
+  --ew-frame-fill: #20242b;
+  --ew-frame-border: #3a3e46;
+  --ew-frame-label: #79808a;
+  --ew-on-accent: #10131a;
+  --ew-danger: #b3403a;
+  --ew-on-danger: #ffffff;
+  --ew-danger-surface: rgba(59, 31, 31, 0.95);
+  --ew-danger-surface-solid: #3b1f1f;
+  --ew-danger-text: #f3c9c9;
+  --ew-danger-border: #7c3a3a;
+  --ew-danger-muted: #e8a49f;
+  --ew-success-border: #2e5c3a;
+  --ew-warn: #e6b34a;
+  --ew-warn-border: #6b5426;
+  --ew-warn-muted: #a7844e;
+  --ew-warn-muted-border: #4d4231;
+  --ew-scrim: rgba(12, 13, 16, 0.55);
+  --ew-dialog-scrim: rgba(0, 0, 0, 0.25);
+  --ew-chip-scrim: rgba(23, 25, 29, 0.7);
+  --ew-chip-text: #dde3ea;
+  --ew-chip-border: #3a3e46;
+  --ew-art-chip-scrim: rgba(16, 19, 26, 0.72);
+  --ew-art-chip-scrim-soft: rgba(16, 19, 26, 0.35);
+  --ew-tooltip-scrim: rgba(16, 19, 26, 0.95);
+  --ew-control-tint: rgba(255, 255, 255, 0.08);
+  --ew-shadow: rgba(8, 10, 14, 0.35);
+  --ew-dialog-shadow: rgba(0, 0, 0, 0.25);
+  --ew-menu-shadow: rgba(0, 0, 0, 0.4);
+  --ew-accent-halo: rgba(74, 157, 240, 0.85);
+  --ew-accent-halo-shadow: rgba(74, 157, 240, 0.45);
+  --ew-focus-ring: rgba(74, 157, 240, 0.8);
+  --ew-focus-ring-fade: rgba(74, 157, 240, 0);
+  --ew-warn-pulse: rgba(230, 179, 74, 0.7);
+  --ew-warn-pulse-fade: rgba(230, 179, 74, 0);
+
+  /* Rotate-zone cursor (AI-IMP-031): CSS has no native rotate
+     cursor, so the glyph is an inline SVG — white over a black halo
+     so it reads over any art at any theme (a cursor bitmap, not
+     themed chrome). Crosshair is the fallback. */
+  --ew-cursor-rotate: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M10 4a6 6 0 1 1-6 6' fill='none' stroke='%23000' stroke-width='4.5' stroke-linecap='round'/><path d='M10 4a6 6 0 1 1-6 6' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'/><path d='M4 5 L1.5 10.5 L6.5 10.5 Z' fill='%23fff' stroke='%23000' stroke-width='1'/></svg>") 10 10, crosshair; /* @kind other */
+
+  --ew-body-text: #222222;
+  --ew-paper-surface: #fafafa;
+  --ew-paper-page: #ffffff;
+  --ew-paper-border: #dddddd;
+  --ew-paper-border-subtle: #eeeeee;
+  --ew-paper-border-strong: #c9ced6;
+  --ew-paper-border-focus: #cccccc;
+  --ew-paper-pinned-border: #9db7d3;
+  --ew-paper-text: #333333;
+  --ew-paper-text-strong: #222222;
+  --ew-paper-text-heading: #444444;
+  --ew-paper-text-muted: #888888;
+  --ew-paper-text-subtle: #666666;
+  --ew-paper-text-soft: #999999;
+  --ew-paper-hover: #eeeeee;
+  --ew-paper-info-surface: #dce9f7;
+  --ew-paper-info-panel: #eef3f9;
+  --ew-paper-info-text: #33628f;
+  --ew-paper-info-border: #b9c6d6;
+  --ew-paper-danger-surface: #fbeaea;
+  --ew-paper-danger-text: #8c2f2f;
+  --ew-paper-tail: #7f8898;
+  --ew-paper-chip-surface: #eef1f5;
+  --ew-paper-chip-border: #d3d9e1;
+  --ew-paper-chip-text: #555577;
+  --ew-paper-dirty: #cc9900;
+  --ew-paper-trash-surface: #f3ead3;
+  --ew-paper-trash-border: #d9c68a;
+  --ew-paper-trash-text: #7a5f14;
+  --ew-paper-broken-surface: #f7e4e2;
+  --ew-paper-broken-border: #d9a09a;
+  --ew-paper-broken-text: #7c2d27;
+  --ew-paper-broken-muted: #9a5c56;
+
+  --ew-link-bound: #2563b0;
+  --ew-link-bound-decoration: #2563b080;
+  --ew-link-muted: #6b7684;
+  --ew-link-unresolved: #7c4dbe;
+  --ew-link-unresolved-decoration: #7c4dbe80;
+  --ew-link-broken: #b3403a;
+  --ew-link-broken-decoration: #b3403a80;
+
+  --ew-node-dot-default: #8ab4d8;
+  /* §4.6 appearance-switcher dot palette (AI-IMP-109): the swatch row
+     in the charm popover. Node dots are world content, like the canvas
+     flat swatches below — deliberately theme-independent, defined once
+     and never overridden per theme. There was no prior multi-colour
+     dot palette (only the single default); this is its source. */
+  --ew-node-dot-blue: #8ab4d8;
+  --ew-node-dot-teal: #62b6a6;
+  --ew-node-dot-green: #8cc47a;
+  --ew-node-dot-gold: #e8c450;
+  --ew-node-dot-orange: #e0975a;
+  --ew-node-dot-red: #d97a72;
+  --ew-node-dot-purple: #b295d6;
+  --ew-node-dot-pink: #d987b8;
+  --ew-zero-node-note-dot: #8a94a0;
+  --ew-tag-default: #a8c7e8;
+  --ew-color-input-empty: #000000;
+
+  /* §11.5 flat canvas color swatches (AI-IMP-074): board paint for
+     canvases with no background of their own. Deliberately identical
+     on every theme — this is the user's board color, not chrome. */
+  --ew-canvas-flat-1: #1b2733;
+  --ew-canvas-flat-2: #22301f;
+  --ew-canvas-flat-3: #33241f;
+  --ew-canvas-flat-4: #2c2233;
+  --ew-canvas-flat-5: #3a362f;
+  --ew-canvas-flat-6: #e8e0cd;
+
+  /* ─── Design-pass additions (Style Guide v2 ■ TECH, 2026-07-07) ───
+     World-content materials — theme-independent like the dot palette,
+     defined once and never overridden per theme (glass excepted where
+     paper itself inverts). Values marked ~ in the guide are provisional. */
+
+  /* The lit stage and the void (rev 0.50, §6.7): the void derives from
+     the EFFECTIVE board color — never a second raw color. The engine
+     sets --ew-board-color to the effective background; void is OFF on
+     glass (the desktop is the stage there). */
+  --ew-board-color: var(--ew-surface-solid);
+  --ew-void-surface: color-mix(in oklab, var(--ew-board-color) 78%, black);
+
+  /* Paper materials (doctrine): the pinned state's permanent marks.
+     Tape + torn edge survive light/dark/glass. */
+  --ew-tape-surface: rgba(214, 205, 182, 0.6);
+  --ew-tape-border: rgba(160, 150, 125, 0.4);
+  --ew-paper-torn: #f7f3ea;
+
+  /* Object icon set (Icon Document 2b family): top-light gradient
+     pairs, stroke ≈ -lo darkened ~20%, restrained gloss. One color
+     token tints dot and icon alike; SVG masters in assets/icons/. */
+  --ew-obj-blue-hi: #a8cbe8;
+  --ew-obj-blue-lo: #6b9cc4;
+  --ew-obj-blue-stroke: #4a7096;
+  --ew-obj-gold-hi: #f2d878;
+  --ew-obj-gold-lo: #d9ab2e;
+  --ew-obj-gold-stroke: #a87f18;
+  --ew-obj-red-hi: #f0847c;
+  --ew-obj-red-lo: #c0392f;
+  --ew-obj-red-stroke: #8f2f27;
+  --ew-obj-pink-hi: #e8b0d4;
+  --ew-obj-pink-lo: #c46a9e;
+  --ew-obj-pink-stroke: #96487a;
+  --ew-obj-orange-hi: #eec08a;
+  --ew-obj-orange-lo: #c87d3e;
+  --ew-obj-orange-stroke: #9a5f2a;
+  --ew-obj-green-hi: #aad494;
+  --ew-obj-green-lo: #6f9e58;
+  --ew-obj-green-stroke: #4f7a3c;
+  --ew-obj-gloss: rgba(255, 255, 255, 0.42);
+  /* Fixed drawing constants from the ratified masters (assets/icons/) */
+  --ew-obj-pin-hole: #22303c;
+  --ew-obj-flag-pole: #8a7748;
+  --ew-obj-leaf-vein: #3c5c2e;
+
+  /* Note heading colors (~): loud by default, riding theme tokens.
+     Notes are paper (light) on dark + light themes; glass overrides. */
+  --ew-note-h1: #2b6cb0;
+  --ew-note-h2: #3b8a7d;
+  --ew-note-h3: #9c7f2e;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --ew-surface: rgba(244, 245, 247, 0.94);
+  --ew-surface-solid: #f4f5f7;
+  --ew-surface-raised: #e7eaee;
+  --ew-surface-hover: #dbe0e7;
+  --ew-surface-control-hover: #d1d7df;
+  --ew-surface-menu: rgba(244, 245, 247, 0.96);
+  --ew-surface-rail: rgba(244, 245, 247, 0.9);
+  --ew-surface-subtle: rgba(244, 245, 247, 0.86);
+  --ew-surface-overlay: rgba(244, 245, 247, 0.97);
+  --ew-surface-modal: #eef1f5;
+  --ew-surface-input: #ffffff;
+  --ew-border: #c9ced6;
+  --ew-border-strong: #aeb6c0;
+  --ew-border-panel: #b8c1cc;
+  --ew-border-control: #aeb6c0;
+  --ew-border-accent-subtle: #9fb9d4;
+  --ew-frame-fill: #d4dae2;
+  --ew-frame-border: #aeb6c0;
+  --ew-frame-label: #6b727c;
+  --ew-text: #1d232b;
+  --ew-text-soft: #2f3945;
+  --ew-text-muted: #5a6572;
+  --ew-text-subtle: #6b7684;
+  --ew-text-dialog: #1d232b;
+  --ew-accent: #2b6cb0;
+  --ew-accent-soft: #2f78c4;
+  --ew-on-accent: #f4f5f7;
+  --ew-danger: #a63430;
+  --ew-on-danger: #ffffff;
+  --ew-danger-surface: rgba(253, 232, 230, 0.96);
+  --ew-danger-surface-solid: #f7e4e2;
+  --ew-danger-text: #7c2d27;
+  --ew-danger-border: #d9a09a;
+  --ew-danger-muted: #9a5c56;
+  --ew-success-border: #6aa277;
+  --ew-warn: #8a6414;
+  --ew-warn-border: #b49443;
+  --ew-warn-muted: #7a5f14;
+  --ew-warn-muted-border: #d9c68a;
+  --ew-scrim: rgba(70, 75, 85, 0.45);
+  --ew-dialog-scrim: rgba(70, 75, 85, 0.25);
+  --ew-control-tint: rgba(29, 35, 43, 0.08);
+  --ew-shadow: rgba(8, 10, 14, 0.18);
+  --ew-dialog-shadow: rgba(8, 10, 14, 0.18);
+  --ew-menu-shadow: rgba(8, 10, 14, 0.2);
+  --ew-accent-halo: rgba(43, 108, 176, 0.85);
+  --ew-accent-halo-shadow: rgba(43, 108, 176, 0.35);
+  --ew-focus-ring: rgba(43, 108, 176, 0.65);
+  --ew-focus-ring-fade: rgba(43, 108, 176, 0);
+  --ew-warn-pulse: rgba(138, 100, 20, 0.55);
+  --ew-warn-pulse-fade: rgba(138, 100, 20, 0);
+
+  --ew-body-text: #1d232b;
+  --ew-paper-surface: #f4f5f7;
+  --ew-paper-page: #ffffff;
+  --ew-paper-border: #c9ced6;
+  --ew-paper-border-subtle: #dce1e8;
+  --ew-paper-border-strong: #aeb6c0;
+  --ew-paper-border-focus: #aeb6c0;
+  --ew-paper-pinned-border: #8aa9c7;
+  --ew-paper-text: #1d232b;
+  --ew-paper-text-strong: #10131a;
+  --ew-paper-text-heading: #1d232b;
+  --ew-paper-text-muted: #5a6572;
+  --ew-paper-text-subtle: #5a6572;
+  --ew-paper-text-soft: #6b7684;
+  --ew-paper-hover: #e7eaee;
+  --ew-paper-info-surface: #dce9f7;
+  --ew-paper-info-panel: #e6f0fa;
+  --ew-paper-info-text: #2b6cb0;
+  --ew-paper-info-border: #9fb9d4;
+  --ew-paper-danger-surface: #fbeaea;
+  --ew-paper-danger-text: #8c2f2f;
+  --ew-paper-tail: #7f8898;
+  --ew-paper-chip-surface: #e7eaee;
+  --ew-paper-chip-border: #c9ced6;
+  --ew-paper-chip-text: #3b4350;
+  --ew-paper-dirty: #8a6414;
+  --ew-paper-trash-surface: #f3ead3;
+  --ew-paper-trash-border: #d9c68a;
+  --ew-paper-trash-text: #7a5f14;
+  --ew-paper-broken-surface: #f7e4e2;
+  --ew-paper-broken-border: #d9a09a;
+  --ew-paper-broken-text: #7c2d27;
+  --ew-paper-broken-muted: #9a5c56;
+
+  --ew-link-bound: #2b6cb0;
+  --ew-link-bound-decoration: #2b6cb080;
+  --ew-link-muted: #6b7684;
+  --ew-link-unresolved: #6d48a8;
+  --ew-link-unresolved-decoration: #6d48a880;
+  --ew-link-broken: #a63430;
+  --ew-link-broken-decoration: #a6343080;
+}
+
+:root[data-theme='glass'] {
+  color-scheme: dark;
+
+  --ew-surface: rgba(23, 25, 29, 0.6);
+  --ew-surface-solid: #17191d;
+  --ew-surface-raised: rgba(35, 38, 44, 0.72);
+  --ew-surface-hover: rgba(42, 46, 53, 0.78);
+  --ew-surface-control-hover: rgba(58, 63, 71, 0.78);
+  --ew-surface-menu: rgba(23, 25, 29, 0.7);
+  --ew-surface-rail: rgba(23, 25, 29, 0.56);
+  --ew-surface-subtle: rgba(23, 25, 29, 0.5);
+  --ew-surface-overlay: rgba(23, 25, 29, 0.74);
+  --ew-surface-modal: rgba(34, 38, 44, 0.72);
+  --ew-surface-input: rgba(23, 25, 29, 0.72);
+  --ew-danger-surface: rgba(59, 31, 31, 0.76);
+  --ew-danger-surface-solid: rgba(59, 31, 31, 0.82);
+  --ew-scrim: rgba(12, 13, 16, 0.45);
+  --ew-dialog-scrim: rgba(0, 0, 0, 0.18);
+  --ew-control-tint: rgba(255, 255, 255, 0.1);
+  --ew-shadow: rgba(8, 10, 14, 0.28);
+  --ew-dialog-shadow: rgba(0, 0, 0, 0.22);
+  --ew-menu-shadow: rgba(0, 0, 0, 0.32);
+
+  --ew-body-text: #dde3ea;
+  --ew-paper-surface: rgba(23, 25, 29, 0.72);
+  --ew-paper-page: rgba(16, 19, 26, 0.7);
+  --ew-paper-border: #3a3e46;
+  --ew-paper-border-subtle: #2e3138;
+  --ew-paper-border-strong: #3a3e46;
+  --ew-paper-border-focus: #4a9df0;
+  --ew-paper-pinned-border: #4a9df0;
+  --ew-paper-text: #dde3ea;
+  --ew-paper-text-strong: #f4f5f7;
+  --ew-paper-text-heading: #dde3ea;
+  --ew-paper-text-muted: #9aa3ad;
+  --ew-paper-text-subtle: #c8cfd8;
+  --ew-paper-text-soft: #79808a;
+  --ew-paper-hover: rgba(42, 46, 53, 0.78);
+  --ew-paper-info-surface: rgba(43, 108, 176, 0.22);
+  --ew-paper-info-panel: rgba(43, 108, 176, 0.18);
+  --ew-paper-info-text: #8ec2f5;
+  --ew-paper-info-border: #3a4a5e;
+  --ew-paper-danger-surface: rgba(59, 31, 31, 0.72);
+  --ew-paper-danger-text: #f3c9c9;
+  --ew-paper-tail: #7f8898;
+  --ew-paper-chip-surface: rgba(35, 38, 44, 0.72);
+  --ew-paper-chip-border: #3a3e46;
+  --ew-paper-chip-text: #dde3ea;
+  --ew-paper-dirty: #e6b34a;
+  --ew-paper-trash-surface: rgba(71, 57, 27, 0.72);
+  --ew-paper-trash-border: #6b5426;
+  --ew-paper-trash-text: #e6b34a;
+  --ew-paper-broken-surface: rgba(59, 31, 31, 0.72);
+  --ew-paper-broken-border: #7c3a3a;
+  --ew-paper-broken-text: #f3c9c9;
+  --ew-paper-broken-muted: #e8a49f;
+
+  --ew-link-bound: #8ec2f5;
+  --ew-link-bound-decoration: #8ec2f580;
+  --ew-link-muted: #9aa3ad;
+  --ew-link-unresolved: #c5a3ff;
+  --ew-link-unresolved-decoration: #c5a3ff80;
+  --ew-link-broken: #f3c9c9;
+  --ew-link-broken-decoration: #f3c9c980;
+
+  /* Glass: paper is dark here, so the loud headings lighten (~). */
+  --ew-note-h1: #8ec2f5;
+  --ew-note-h2: #7ec9b8;
+  --ew-note-h3: #d9bc6a;
+}

@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="fef01a74-5878-42c1-b2cc-78178baeab70"></script>
+</head>
+<body>
+
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<style>/* vietnamese */
+@font-face {
+  font-family: 'Patrick Hand';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("8296ad8e-fdab-4ad0-9011-548300fbb954") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Patrick Hand';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f7de84f4-1b7a-4bee-b522-b8136c4d9198") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Patrick Hand';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("68260cbf-4b46-4a0a-99b3-4a2bf3d923a7") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("8177ffe4-cd56-4c40-93db-57471f1d6f2e") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("32377801-4f51-43d5-9c4c-6c916de95c15") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("1340eb08-c876-4b94-9634-a1a217f9a1ae") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("163ca069-b576-4726-a6d3-aee9c6e9fa6b") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("44a5e00a-11ec-465b-a469-43a4a8c732ac") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("8177ffe4-cd56-4c40-93db-57471f1d6f2e") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("32377801-4f51-43d5-9c4c-6c916de95c15") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("1340eb08-c876-4b94-9634-a1a217f9a1ae") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("163ca069-b576-4726-a6d3-aee9c6e9fa6b") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Shantell Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("44a5e00a-11ec-465b-a469-43a4a8c732ac") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+body{margin:0;background:#f0eee9;font-family:'Shantell Sans',system-ui,sans-serif}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 'Shantell Sans',sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+/* wireframe drawing kit */
+.wf-win{position:relative;background:#fdfdfb;border:1.5px solid #2b2b2b;border-radius:10px;overflow:hidden;box-shadow:3px 3px 0 rgba(0,0,0,.12)}
+.wf-canvas{position:absolute;inset:0;background-image:linear-gradient(rgba(0,0,0,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.07) 1px,transparent 1px);background-size:36px 36px}
+.wf-img{position:absolute;border:1.5px solid #555;background:repeating-linear-gradient(45deg,#e9e6df 0 6px,#f4f2ec 6px 12px);display:flex;align-items:center;justify-content:center}
+.wf-img span{font:9px ui-monospace,monospace;color:#777;background:rgba(255,255,255,.75);padding:1px 4px}
+.wf-lights{position:absolute;display:flex;gap:5px}
+.wf-lights i{width:9px;height:9px;border-radius:50%;border:1.2px solid #444;display:block}
+.wf-panel{position:absolute;background:#fff;border:1.5px solid #2b2b2b;border-radius:7px;box-shadow:2px 2px 0 rgba(0,0,0,.1)}
+.wf-note{font-family:'Patrick Hand',cursive;font-size:12.5px;line-height:1.25;color:#444}
+.wf-arrow{position:absolute;font-family:'Patrick Hand',cursive;font-size:11.5px;color:#c2551f;line-height:1.15}
+.wf-tool{width:22px;height:22px;border:1.2px solid #444;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;font:10px ui-monospace,monospace;color:#333}
+.wf-tool.on{background:#2a78d6;color:#fff;border-color:#2a78d6}
+.wf-cap{font-family:'Patrick Hand',cursive;font-size:12px;color:#555;padding:8px 12px;border-top:1px dashed rgba(0,0,0,.15);background:#fbfaf7}
+.wf-ghost{opacity:.32}
+.wf-sel{outline:1.5px solid #2a78d6}
+.wf-hint{position:absolute;font:8.5px ui-monospace,monospace;color:#2a78d6}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t14">
+  <div class="dv-thd"><a class="dv-tid" href="#t14">14</a><span class="dv-tname">Rev 0.19 asks — the mirror moments · the export dialogue (ask 6 void: nested tags dropped)</span></div>
+  <div class="dv-opts">
+
+    <!-- 14a MIRROR MOMENTS -->
+    <div class="dv-opt" id="14a">
+      <div class="dv-olabel"><a class="dv-oid" href="#14a">14a</a>The mirror's two moments — both ride the drop, neither blocks it</div>
+      <div class="dv-card" style="width:640px">
+        <div style="display:flex;gap:12px;padding:12px">
+
+          <div style="width:290px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:290px;height:220px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:40px;top:40px;width:64px;height:82px"><span style="font-size:7px">img</span></div>
+              <div class="wf-arrow" style="left:44px;top:20px;font-size:10px">first-ever drop into this world ↓</div>
+              <!-- anchored ask -->
+              <div class="wf-panel" style="left:114px;top:52px;width:150px;padding:6px;border-color:#2a78d6">
+                <div style="font:8.5px/1.5 ui-monospace,monospace;color:#333">Also keep copies of what you drop here in your <b>library</b>?</div>
+                <div style="display:flex;gap:4px;margin-top:5px;font:8px ui-monospace,monospace">
+                  <span style="border:1px solid #2a78d6;color:#2a78d6;border-radius:4px;padding:1px 6px">yes, mirror</span>
+                  <span style="border:1px solid #999;color:#777;border-radius:4px;padding:1px 6px">no</span>
+                </div>
+              </div>
+              <div class="wf-arrow" style="left:24px;top:150px;width:240px">asked ONCE per project, anchored to the first drop. Answer stored; changeable later in settings (one line: “mirror drops to library ✓”). Import runs either way — the question never delays the node.</div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>moment 1 · the once-per-project ask</b> — rides the first drop, then never speaks again.</div>
+          </div>
+
+          <div style="width:290px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:290px;height:220px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:40px;top:40px;width:64px;height:82px"><span style="font-size:7px">img</span></div>
+              <!-- recognized chip -->
+              <div class="wf-panel" style="left:112px;top:66px;padding:4px 6px;border-color:#c2551f;display:flex;gap:4px;align-items:center;white-space:nowrap">
+                <span style="font:8px ui-monospace,monospace;color:#c2551f">in your library ·</span>
+                <span style="font:8px ui-monospace,monospace;color:#c2551f;border:1px solid #c2551f;border-radius:6px;padding:0 4px">#doré</span>
+                <span style="font:8px ui-monospace,monospace;color:#c2551f;border:1px solid #c2551f;border-radius:6px;padding:0 4px">#ink</span>
+                <span style="font:8px ui-monospace,monospace;color:#2a78d6">apply</span>
+                <span style="font:8px ui-monospace,monospace;color:#999">✕</span>
+              </div>
+              <div class="wf-arrow" style="left:24px;top:150px;width:240px">hash recognized ⇒ a transient chip beside the fresh node offers the library's tags. It obeys the engagement fade (<a class="dv-oid" href="#5a" style="font-size:10px">5a</a>): ignore it and it dissolves with the next idle — no dismissal debt, no pile-up on bulk drops (one summary chip: “14 known — apply tags?”).</div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>moment 2 · “already in your library”</b> — an offer with a natural expiry, never a dialog.</div>
+          </div>
+
+        </div>
+        <div class="wf-cap">Anti-nag machinery: moment 1 is once ever; moment 2 borrows the chrome fade so “ignoring” IS the dismissal gesture. Nothing blocks, nothing queues, nothing must be answered.</div>
+      </div>
+    </div>
+
+    <!-- 14b EXPORT -->
+    <div class="dv-opt" id="14b">
+      <div class="dv-olabel"><a class="dv-oid" href="#14b">14b</a>The escape hatch — export as an anchored sheet off ☰</div>
+      <div class="dv-card" style="width:560px">
+        <div style="display:flex;gap:12px;padding:12px">
+          <div class="wf-win" style="width:310px;height:280px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px">
+              <div class="wf-tool" style="width:18px;height:18px;font-size:8px">P</div>
+              <div class="wf-tool" style="width:18px;height:18px;font-size:8px">⌕</div>
+              <div class="wf-tool on" style="width:18px;height:18px;font-size:8px">☰</div>
+            </div>
+            <!-- export sheet -->
+            <div class="wf-panel" style="right:34px;top:44px;width:200px;padding:8px">
+              <div style="font:9.5px ui-monospace,monospace;color:#1a1a1a;font-weight:700;border-bottom:1px solid #eee;padding-bottom:4px">Export “Homeworld”</div>
+              <div style="font:8.5px/1.9 ui-monospace,monospace;color:#333;padding-top:4px">
+                ☑ notes → Markdown (Obsidian-readable)<br>
+                <span style="color:#888;padding-left:14px">☑ append “uses” section (![[…]])</span><br>
+                ☑ original files + tag manifest<br>
+                <span style="color:#888;padding-left:14px">☐ also copy into tag folders</span><br>
+                ☑ boards → full-res images
+              </div>
+              <div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px;display:flex;align-items:center;gap:6px">
+                <span style="font:8.5px ui-monospace,monospace;color:#c2551f">≈ 2.4 GB</span>
+                <span style="margin-left:auto;font:8.5px ui-monospace,monospace;color:#fff;background:#2a78d6;border-radius:4px;padding:2px 8px">export</span>
+              </div>
+            </div>
+            <div class="wf-arrow" style="left:14px;top:210px;width:280px">size is always shown live in the footer. Past the threshold, the first export adds one acknowledge line (“large export — ok?”); confirmed once, never asked again for this project (§16).</div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            a sheet anchored to ☰ — not a takeover (you're leaving, not browsing) and not an OS wizard.<br><br>
+            three sections mirror the three record kinds: <b>notes</b> (md + optional uses appendix), <b>files</b> (bytes + tag manifest, optional tag-folder copies), <b>boards</b> (rendered images).<br><br>
+            sub-options indent under their parent and disable with it. Defaults ship everything ON except tag folders (duplicative by design — opt-in).
+          </div>
+        </div>
+        <div class="wf-cap">The preflight is a footer fact, not a gate: report always, acknowledge once, block never.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “reply letter for rev 0.19 + zip” · “importer dialogue for OS drops” · “gallery keyboard model”</p>
+</section>
+
+<section class="dv-turn" id="t13">
+  <div class="dv-thd"><a class="dv-tid" href="#t13">13</a><span class="dv-tname">The library surface (rev 0.18 §14.4) — browser, border, sourcing, seed, and the pin tool</span></div>
+  <div class="dv-opts">
+
+    <!-- 13a BROWSER -->
+    <div class="dv-opt" id="13a">
+      <div class="dv-olabel"><a class="dv-oid" href="#13a">13a</a>The browser — a takeover, and the doors question answered</div>
+      <div class="dv-card" style="width:560px">
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div class="wf-win" style="width:512px;height:330px;position:relative;box-shadow:none;background:#23262c;border-color:#444">
+            <span class="wf-lights" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+            <!-- mode switcher: the answer to "same charm or own door" -->
+            <div style="position:absolute;left:50%;transform:translateX(-50%);top:8px;display:flex;border:1px solid #55606e;border-radius:6px;overflow:hidden;font:8.5px ui-monospace,monospace">
+              <span style="padding:3px 9px;color:#8a94a0">⊛ graph</span>
+              <span style="padding:3px 9px;color:#8a94a0;border-left:1px solid #55606e">▤ outline</span>
+              <span style="padding:3px 9px;color:#fff;background:#2a78d6;border-left:1px solid #55606e">⊞ gallery</span>
+            </div>
+            <!-- facet bar -->
+            <div style="position:absolute;left:14px;top:36px;right:14px;display:flex;gap:5px;align-items:center;font:8.5px ui-monospace,monospace">
+              <span style="color:#cdd6e0;border:1px solid #55606e;border-radius:8px;padding:2px 7px;background:#2b2f36">date ▾</span>
+              <span style="color:#8a94a0;border:1px solid #3c424b;border-radius:8px;padding:2px 7px">#artist-x ✕</span>
+              <span style="color:#8a94a0;border:1px solid #3c424b;border-radius:8px;padding:2px 7px">untagged</span>
+              <span style="color:#8a94a0;border:1px solid #3c424b;border-radius:8px;padding:2px 7px">unplaced</span>
+              <span style="margin-left:auto;color:#8a94a0">⌕ filter…</span>
+            </div>
+            <!-- import progress -->
+            <div style="position:absolute;left:14px;top:58px;right:14px;height:14px;border:1px solid #55606e;border-radius:4px;overflow:hidden">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:62%;background:rgba(42,120,214,.35)"></div>
+              <span style="position:absolute;left:6px;top:1px;font:8px ui-monospace,monospace;color:#cdd6e0">importing 1,241 files — 764 done · hash-deduped 31</span>
+            </div>
+            <!-- grid -->
+            <div style="position:absolute;left:14px;top:80px;right:14px;display:grid;grid-template-columns:repeat(8,1fr);gap:6px">
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(115deg,#4a5560 0 6px,#414b55 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(95deg,#5d4b45 0 6px,#52423d 6px 12px);border-radius:2px;outline:2px solid #2a78d6;outline-offset:1px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(105deg,#5a564a 0 6px,#4f4b40 6px 12px);border-radius:2px;outline:2px solid #2a78d6;outline-offset:1px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(125deg,#455548 0 6px,#3c4a3f 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(95deg,#4d5266 0 6px,#434759 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(115deg,#534d40 0 6px,#48432f 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(105deg,#4a5560 0 6px,#414b55 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(115deg,#5d4b45 0 6px,#52423d 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(95deg,#5a564a 0 6px,#4f4b40 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(105deg,#455548 0 6px,#3c4a3f 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(125deg,#4d5266 0 6px,#434759 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(95deg,#534d40 0 6px,#48432f 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(115deg,#4a5560 0 6px,#414b55 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(105deg,#5d4b45 0 6px,#52423d 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(95deg,#5a564a 0 6px,#4f4b40 6px 12px);border-radius:2px"></div>
+              <div style="aspect-ratio:3/4;background:repeating-linear-gradient(115deg,#455548 0 6px,#3c4a3f 6px 12px);border-radius:2px"></div>
+            </div>
+            <!-- selection action bar -->
+            <div class="wf-panel" style="left:50%;transform:translateX(-50%);bottom:10px;padding:4px 8px;display:flex;gap:6px;align-items:center;background:#2b2f36;border-color:#55606e">
+              <span style="font:8.5px ui-monospace,monospace;color:#cdd6e0">2 selected</span>
+              <span style="font:8.5px ui-monospace,monospace;color:#8ab4d8"># tag</span>
+              <span style="font:8.5px ui-monospace,monospace;color:#8ab4d8">⌖ place</span>
+              <span style="font:8.5px ui-monospace,monospace;color:#8a94a0">🗑</span>
+            </div>
+          </div>
+          <div class="wf-note" style="font-size:11.5px"><b>Doors answer: three charms, one house.</b> ⊛ ▤ and the browser are projections of the same database, so the takeover gets a top mode switcher — enter through any charm, hop freely inside. The gallery (⊞) earns its own rail charm anyway: it's the migrating-from-Allusion user's primary room, not a sub-mode. (“Library” names the project kind; “gallery” names the view — any project can open its gallery.) Grid is virtualized; facets are sort + tag + the two cleanup filters we already own (untagged / unplaced). Bulk select ⇒ floating action bar (tag · place · trash). Thousand-file drops run as a progress strip with live dedupe count — import is interruptible, not modal.</div>
+        </div>
+        <div class="wf-cap">Shares takeover physics (<a class="dv-oid" href="#2c">2c</a>), Esc returns. “Act against the database” at its most literal — the anti-spatial mode, on purpose.</div>
+      </div>
+    </div>
+
+    <!-- 13b SOURCE + BORDER -->
+    <div class="dv-opt" id="13b">
+      <div class="dv-olabel"><a class="dv-oid" href="#13b">13b</a>Pulling from another project — the picker is a pinned panel; the border toggle lives in its header</div>
+      <div class="dv-card" style="width:560px">
+        <div style="display:flex;gap:12px;padding:12px">
+          <div class="wf-win" style="width:310px;height:260px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img wf-ghost" style="left:20px;top:60px;width:56px;height:72px"><span style="font-size:7px">img</span></div>
+            <!-- source panel -->
+            <div class="wf-panel" style="right:8px;top:10px;width:150px;height:238px;padding:6px;border-color:#2a78d6">
+              <div style="font:8.5px ui-monospace,monospace;color:#333;border-bottom:1px solid #eee;padding-bottom:4px"><b>⌂ Ref Library</b> <span style="color:#999">· source (read-only)</span></div>
+              <div style="display:flex;gap:3px;align-items:center;padding:4px 0;border-bottom:1px solid #eee;font:8px ui-monospace,monospace;color:#555">
+                bring tags:
+                <span style="display:inline-flex;border:1px solid #888;border-radius:4px;overflow:hidden">
+                  <span style="padding:1px 4px;background:#1a1a1a;color:#fff">all</span>
+                  <span style="padding:1px 4px">none</span>
+                  <span style="padding:1px 4px">pick</span>
+                </span>
+              </div>
+              <div style="font:8px ui-monospace,monospace;color:#8a94a0;padding:3px 0">⌕ #creature…</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding-top:2px">
+                <div style="aspect-ratio:3/4;background:repeating-linear-gradient(115deg,#c9c2b4 0 5px,#ddd8cc 5px 10px);border-radius:2px"></div>
+                <div style="aspect-ratio:3/4;background:repeating-linear-gradient(95deg,#c2b4ab 0 5px,#d8cfc6 5px 10px);border-radius:2px;outline:1.5px solid #2a78d6"></div>
+                <div style="aspect-ratio:3/4;background:repeating-linear-gradient(105deg,#b4bcc4 0 5px,#ccd3da 5px 10px);border-radius:2px"></div>
+                <div style="aspect-ratio:3/4;background:repeating-linear-gradient(125deg,#bcc4b4 0 5px,#d3dacc 5px 10px);border-radius:2px"></div>
+                <div style="aspect-ratio:3/4;background:repeating-linear-gradient(95deg,#c4b4bc 0 5px,#dacce0 5px 10px);border-radius:2px"></div>
+                <div style="aspect-ratio:3/4;background:repeating-linear-gradient(115deg,#c9c2b4 0 5px,#ddd8cc 5px 10px);border-radius:2px"></div>
+              </div>
+            </div>
+            <!-- drag ghost -->
+            <div style="position:absolute;left:108px;top:120px;width:40px;height:52px;background:repeating-linear-gradient(95deg,#c2b4ab 0 5px,#d8cfc6 5px 10px);border:1.5px dashed #2a78d6;border-radius:2px;opacity:.75"></div>
+            <div class="wf-arrow" style="left:14px;top:196px;width:118px">drag out ⇒ bytes copy in (deduped), tags cross per header toggle</div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            entry: the project charm's menu — every project row gets <b>switch</b> and <b>open as source</b>.<br><br>
+            the source opens as a <b>pinned panel</b> (compressed browser: same facets, same grid, mini). It's a panel, so it obeys panel physics — drag, pin, close.<br><br>
+            <b>the border toggle is session-scoped, set once in the header</b> — never a per-drag interrupt. Defaults: <b>all</b> from a library, <b>none</b> from a world (curation facts travel; world context doesn't). “pick” opens a checklist and applies to subsequent pulls.
+          </div>
+        </div>
+        <div class="wf-cap">One grammar, three compressions, as decided: takeover (<a class="dv-oid" href="#13a">13a</a>) · this panel · the OS-drop importer. The toggle placement means bulk pulls never nag.</div>
+      </div>
+    </div>
+
+    <!-- 13c SEED -->
+    <div class="dv-opt" id="13c">
+      <div class="dv-olabel"><a class="dv-oid" href="#13c">13c</a>First open — the example teaches, then leaves without a trace</div>
+      <div class="dv-card" style="width:520px">
+        <div style="display:flex;gap:12px;padding:12px">
+          <div class="wf-win" style="width:290px;height:230px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div style="position:absolute;left:20px;top:40px">
+              <div class="wf-img" style="position:static;width:54px;height:70px"><span style="font-size:7px">Doré</span></div>
+              <div style="text-align:center;font:7.5px ui-monospace,monospace;color:#888;margin-top:2px">Gustave Doré</div>
+            </div>
+            <div style="position:absolute;left:86px;top:52px">
+              <div class="wf-img" style="position:static;width:54px;height:70px"><span style="font-size:7px">Mucha</span></div>
+              <div style="text-align:center;font:7.5px ui-monospace,monospace;color:#888;margin-top:2px">Alphonse Mucha</div>
+            </div>
+            <div style="position:absolute;left:152px;top:14px">
+              <div class="wf-img" style="position:static;width:54px;height:70px"><span style="font-size:7px">Hokusai</span></div>
+              <div style="text-align:center;font:7.5px ui-monospace,monospace;color:#888;margin-top:2px">Hokusai</div>
+            </div>
+            <!-- pinned explainer note -->
+            <div class="wf-panel" style="right:6px;bottom:8px;width:120px;padding:6px;border-color:#c2551f">
+              <div style="font:8px/1.5 ui-monospace,monospace;color:#333"><b>This is an example library.</b> Each artist dives into a board of placed, tagged works — poke around.<br><br><span style="color:#c2551f;border:1px solid #c2551f;border-radius:4px;padding:1px 4px">clear the example</span></div>
+            </div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            the seed is <b>ordinary records</b>: a root board of public-domain artists, each node diving to a per-artist board with placed works, notes, tags.<br><br>
+            the explainer is an ordinary <b>pinned note panel</b>, open on first launch. Its one special power: the “clear” action (an ordinary trash command over the example records + itself).<br><br>
+            unmissable (it's open), not naggy (close it and it's just a note), gone forever after clearing.
+          </div>
+        </div>
+        <div class="wf-cap">No new UI kinds: the tutorial is made of the app's own furniture, which is itself the lesson.</div>
+      </div>
+    </div>
+
+    <!-- 13d PIN TOOL -->
+    <div class="dv-opt" id="13d">
+      <div class="dv-olabel"><a class="dv-oid" href="#13d">13d</a>RFC Q20 closed — the pin is a dock tool</div>
+      <div class="dv-card" style="width:520px">
+        <div style="display:flex;gap:12px;padding:12px">
+          <div class="wf-win" style="width:290px;height:236px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <!-- dock with pin tool active -->
+            <div class="wf-panel" style="left:50%;transform:translateX(-50%);bottom:8px;padding:4px 6px;display:flex;gap:4px">
+              <div class="wf-tool" style="width:16px;height:16px;font-size:8px">▸</div>
+              <div class="wf-tool" style="width:16px;height:16px;font-size:8px">T</div>
+              <div class="wf-tool" style="width:16px;height:16px;font-size:8px">▢</div>
+              <div class="wf-tool on" style="width:16px;height:16px;font-size:8px">◉</div>
+              <div class="wf-tool" style="width:16px;height:16px;font-size:8px">✎</div>
+            </div>
+            <!-- placed pin with phantom note -->
+            <div style="position:absolute;left:96px;top:64px;width:12px;height:12px;border:1.5px solid #c2551f;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#fff"></div>
+            <div class="wf-panel" style="left:118px;top:38px;width:120px;height:74px;padding:5px;border-color:#c2551f">
+              <div style="font:8px/1.5 ui-monospace,monospace;color:#999"><em>name this place — type to keep it, Esc to let it vanish</em></div>
+            </div>
+            <div class="wf-arrow" style="left:20px;top:130px;width:220px">click with the pin tool ⇒ dot node + phantom note, already focused. Same teardrop shape as the bookmark button — pins mean places, everywhere.</div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            a dot node is a placed note with no image — so creating one is: place a dot, open its phantom note. Existing rules do the rest (nothing persists until you type).<br><br>
+            shortcut <b>N</b>; tooltip teaches it (<a class="dv-oid" href="#11d">11d</a>).<br><br>
+            the Create Pin dialog retires.
+          </div>
+        </div>
+        <div class="wf-cap">The last pre-shell surface closes with zero new machinery: dock tool + phantom lifecycle (<a class="dv-oid" href="#3b">3b</a>).</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “importer dialogue for OS drops (the third compression)” · “gallery keyboard model (arrow-nav, range select)” · “reply letter for rev 0.18”</p>
+</section>
+
+<section class="dv-turn" id="t12">
+  <div class="dv-thd"><a class="dv-tid" href="#t12">12</a><span class="dv-tname">The last two surfaces — uses/location rows · a perch for ongoing state</span></div>
+  <div class="dv-opts">
+
+    <!-- 12a USES LIST -->
+    <div class="dv-opt" id="12a">
+      <div class="dv-olabel"><a class="dv-oid" href="#12a">12a</a>Uses list — lives inside the note panel, behind “n places”</div>
+      <div class="dv-card" style="width:520px">
+        <div style="display:flex;gap:12px;padding:12px">
+          <div class="wf-win" style="width:290px;height:250px;position:relative;box-shadow:none;flex:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img wf-ghost" style="left:12px;top:60px;width:56px;height:72px"><span style="font-size:7px">img</span></div>
+            <div class="wf-panel" style="left:84px;top:14px;width:190px;height:216px;padding:7px;border-color:#c2551f">
+              <div style="display:flex;align-items:center;gap:5px;border-bottom:1px solid #eee;padding-bottom:5px">
+                <span style="font:10px ui-monospace,monospace;color:#1a1a1a;font-weight:700">Goblin chief</span>
+                <span style="margin-left:auto;font:8.5px ui-monospace,monospace;color:#2a78d6;border:1px solid #2a78d6;border-radius:7px;padding:1px 5px">⌖ 3 places</span>
+                <span style="font:8.5px ui-monospace,monospace;color:#888">✕</span>
+              </div>
+              <div style="display:flex;gap:5px;align-items:center;padding:5px 0;border-bottom:1px dashed #eee">
+                <div style="width:16px;height:20px;background:repeating-linear-gradient(125deg,#d8d2c8 0 4px,#eee 4px 8px);border:1px solid #bbb;flex:none"></div>
+                <div style="font:8.5px/1.35 ui-monospace,monospace;color:#333;flex:1">Homeworld <span style="color:#c2551f">· here</span></div>
+                <span style="font:8.5px ui-monospace,monospace;color:#2a78d6">⌖</span>
+              </div>
+              <div style="display:flex;gap:5px;align-items:center;padding:5px 0;border-bottom:1px dashed #eee">
+                <div style="width:16px;height:20px;background:repeating-linear-gradient(95deg,#d8d2c8 0 4px,#eee 4px 8px);border:1px solid #bbb;flex:none"></div>
+                <div style="font:8.5px/1.35 ui-monospace,monospace;color:#333;flex:1">Northern Reach <span style="color:#999">×2</span></div>
+                <span style="font:8.5px ui-monospace,monospace;color:#2a78d6">⌖</span>
+              </div>
+              <div style="display:flex;gap:5px;align-items:center;padding:5px 0">
+                <div style="width:16px;height:20px;border:1px dashed #bbb;flex:none;display:flex;align-items:center;justify-content:center;font:7px ui-monospace,monospace;color:#bbb">⚯</div>
+                <div style="font:8.5px/1.35 ui-monospace,monospace;color:#999;flex:1">Unplaced copies · 0</div>
+              </div>
+              <div style="border-top:1px solid #eee;margin-top:2px;padding-top:4px;font:8.5px/1.4 ui-monospace,monospace;color:#999">~~ note body resumes ~~</div>
+            </div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            the note panel header always shows <b>⌖ n places</b>. Click ⇒ the list unfolds INSIDE the panel (body slides down), grouped by canvas, unplaced group last.<br><br>
+            same row grammar as the tag panel (<a class="dv-oid" href="#9a">9a</a>): thumbnail · where · ⌖ fly (cross-canvas = navigation event, enters history).<br><br>
+            “here” marks the placement you're reading from.
+          </div>
+        </div>
+        <div class="wf-cap">RFC §7.4's Uses list, placed. One panel owns everything about a note: words, tags (its node's), places.</div>
+      </div>
+    </div>
+
+    <!-- 12b LOCATION CHOOSER -->
+    <div class="dv-opt" id="12b">
+      <div class="dv-olabel"><a class="dv-oid" href="#12b">12b</a>Location chooser — anchored to the link you followed</div>
+      <div class="dv-card" style="width:520px">
+        <div style="display:flex;gap:12px;padding:12px">
+          <div class="wf-win" style="width:290px;height:230px;position:relative;box-shadow:none;flex:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-panel" style="left:14px;top:14px;width:180px;height:150px;padding:7px;border-color:#c2551f">
+              <div style="font:10px ui-monospace,monospace;color:#1a1a1a;font-weight:700;border-bottom:1px solid #eee;padding-bottom:4px">Goblin chief</div>
+              <div style="font:8.5px/1.6 ui-monospace,monospace;color:#555;margin-top:4px">…owes <span style="color:#2a78d6;background:rgba(42,120,214,.12);border-bottom:1px solid #2a78d6">[[Yorren]]</span> a life-debt he resents…</div>
+            </div>
+            <!-- chooser anchored at link -->
+            <div class="wf-panel" style="left:64px;top:78px;width:200px;padding:5px;border-color:#2a78d6">
+              <div style="font:8px ui-monospace,monospace;color:#888;padding:2px 4px">Yorren appears in 3 places — go to:</div>
+              <div style="display:flex;gap:5px;align-items:center;padding:4px;border-bottom:1px dashed #eee">
+                <div style="width:14px;height:18px;background:repeating-linear-gradient(95deg,#d8d2c8 0 4px,#eee 4px 8px);border:1px solid #bbb;flex:none"></div>
+                <span style="font:8.5px ui-monospace,monospace;color:#333;flex:1">Character refs</span><span style="font:8.5px ui-monospace,monospace;color:#2a78d6">⌖</span>
+              </div>
+              <div style="display:flex;gap:5px;align-items:center;padding:4px;border-bottom:1px dashed #eee">
+                <div style="width:14px;height:18px;background:repeating-linear-gradient(115deg,#d8d2c8 0 4px,#eee 4px 8px);border:1px solid #bbb;flex:none"></div>
+                <span style="font:8.5px ui-monospace,monospace;color:#333;flex:1">Homeworld</span><span style="font:8.5px ui-monospace,monospace;color:#2a78d6">⌖</span>
+              </div>
+              <div style="display:flex;gap:5px;align-items:center;padding:4px">
+                <div style="width:14px;height:18px;background:repeating-linear-gradient(105deg,#d8d2c8 0 4px,#eee 4px 8px);border:1px solid #bbb;flex:none"></div>
+                <span style="font:8.5px ui-monospace,monospace;color:#333;flex:1">the parley board</span><span style="font:8.5px ui-monospace,monospace;color:#2a78d6">⌖</span>
+              </div>
+            </div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            follow a wiki-link (RFC §7.3):<br>
+            · <b>one</b> placement ⇒ fly straight there, no UI<br>
+            · <b>many</b> ⇒ this chooser, anchored to the link you clicked (panels grow from what you press)<br>
+            · <b>zero</b> ⇒ inline notice at the link: “no placements — open note?” ⇒ opens as a loose-note panel<br><br>
+            rows: same grammar again. Esc dismisses.
+          </div>
+        </div>
+        <div class="wf-cap">One row grammar, three doors total: tag panel (<a class="dv-oid" href="#9a">9a</a>), uses list (<a class="dv-oid" href="#12a">12a</a>), chooser — exactly the pattern the letter asked to consolidate.</div>
+      </div>
+    </div>
+
+    <!-- 12c DEGRADED PERCH -->
+    <div class="dv-opt" id="12c">
+      <div class="dv-olabel"><a class="dv-oid" href="#12c">12c</a>Ongoing state — the rail wears it</div>
+      <div class="dv-card" style="width:520px">
+        <div style="display:flex;gap:12px;padding:12px">
+          <div class="wf-win" style="width:290px;height:210px;position:relative;box-shadow:none;flex:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img wf-ghost" style="left:30px;top:60px;width:60px;height:76px"><span style="font-size:7px">img</span></div>
+            <!-- rail with degraded badge -->
+            <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px;align-items:center">
+              <div class="wf-tool" style="width:18px;height:18px;font-size:8px">P</div>
+              <div class="wf-tool" style="width:18px;height:18px;font-size:8px">⌕</div>
+              <div class="wf-tool" style="width:18px;height:18px;font-size:8px">⊛</div>
+              <div class="wf-tool" style="width:18px;height:18px;font-size:8px">▤</div>
+              <div class="wf-tool" style="width:18px;height:18px;font-size:8px">☰</div>
+              <div style="width:18px;height:18px;border:1.2px solid #c2551f;border-radius:5px;background:rgba(194,85,31,.12);color:#c2551f;display:flex;align-items:center;justify-content:center;font-size:9px">⚠</div>
+            </div>
+            <!-- detail panel -->
+            <div class="wf-panel" style="right:34px;top:120px;width:170px;padding:6px;border-color:#c2551f">
+              <div style="font:8.5px/1.5 ui-monospace,monospace;color:#333"><b style="color:#c2551f">index service restarting…</b><br>boards are read-only for a moment. Started 00:12 ago.</div>
+            </div>
+            <div class="wf-arrow" style="left:20px;top:16px;width:150px">⚠ slot exists ONLY while a condition holds — appends below the rail, pulses once on arrival</div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            transitions ⇒ toasts (enter + resolve).<br>
+            duration ⇒ the rail wears a ⚠ charm; click = detail panel anchored to it, same physics as everything.<br><br>
+            no ongoing condition ⇒ no slot, nothing reserved. The status strip retires the day this ships.<br><br>
+            multiple conditions stack as one charm with a count (⚠2), panel lists them.
+          </div>
+        </div>
+        <div class="wf-cap">Honors “nothing has invisible state” without a permanent strip: the perch exists exactly as long as the state does — same existence rule as the halo (<a class="dv-oid" href="#7b">7b</a>).</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “Design Spec v2” · “refresh How It Works” · “pinned-panel management (many pins) polish pass”</p>
+</section>
+
+<section class="dv-turn" id="t11">
+  <div class="dv-thd"><a class="dv-tid" href="#t11">11</a><span class="dv-tname">Navigation chrome — path, bookmarks menu, keyboard-first</span></div>
+  <div class="dv-opts">
+
+    <!-- 11a THE VISION -->
+    <div class="dv-opt" id="11a">
+      <div class="dv-olabel"><a class="dv-oid" href="#11a">11a</a>Your vision — path + chevron ⇒ bookmark menu</div>
+      <div class="dv-card" style="width:520px">
+        <div style="padding:12px">
+          <div class="wf-win" style="width:472px;height:300px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <span class="wf-lights" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+            <!-- back/fwd + path -->
+            <div style="position:absolute;left:56px;top:8px;display:flex;align-items:center;gap:6px;font:9.5px ui-monospace,monospace;color:#666">
+              <span class="wf-ghost" style="letter-spacing:2px">‹ ›</span>
+              <span style="color:#555;font-size:10px">⌂</span>
+              <span style="color:#2a78d6;border-bottom:1px dotted #2a78d6">Homeworld</span><span>▸</span>
+              <span style="color:#2a78d6;border-bottom:1px dotted #2a78d6">Northern Reach</span><span>▸</span>
+              <span style="color:#333">warren interior</span>
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:8px;height:8px;border:1px solid #2a78d6;border-radius:50% 50% 0 50%;transform:rotate(45deg);margin-left:3px;background:#fff"><span style="width:2.5px;height:2.5px;border-radius:50%;background:#2a78d6"></span></span>
+            </div>
+            <div class="wf-arrow" style="left:56px;top:44px;width:130px">⌂ = home (root canvas). Pin = bookmarks: saved PLACES on the map</div>
+            <div class="wf-arrow" style="left:60px;top:26px;width:150px">‹ › hover-revealed; gestures + ⌘[ ⌘] are the real controls</div>
+            <div class="wf-arrow" style="left:230px;top:192px;width:200px">path = the route you took (history), not ancestry — cycles are legal</div>
+            <!-- dropdown -->
+            <div class="wf-panel" style="left:200px;top:28px;width:210px;padding:5px">
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid #eee">
+                <span style="color:#bbb;font-size:9px">⋮⋮</span>
+                <span style="font:9.5px ui-monospace,monospace;color:#333;flex:1">Homeworld</span>
+                <span style="font:8.5px ui-monospace,monospace;color:#888">⌘1</span>
+                <span style="color:#bbb;font-size:9px">✕</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid #eee;background:rgba(42,120,214,.06)">
+                <span style="color:#bbb;font-size:9px">⋮⋮</span>
+                <span style="font:9.5px ui-monospace,monospace;color:#333;flex:1">Character refs</span>
+                <span style="font:8.5px ui-monospace,monospace;color:#888">⌘2</span>
+                <span style="color:#bbb;font-size:9px">✕</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid #eee">
+                <span style="color:#bbb;font-size:9px">⋮⋮</span>
+                <span style="font:9.5px ui-monospace,monospace;color:#333;flex:1">Northern Reach</span>
+                <span style="font:8.5px ui-monospace,monospace;color:#888">⌘3</span>
+                <span style="color:#bbb;font-size:9px">✕</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid #eee;opacity:.45">
+                <span style="color:#bbb;font-size:9px">⋮⋮</span>
+                <span style="font:9.5px ui-monospace,monospace;color:#999;flex:1;text-decoration:line-through">old moodboard</span>
+                <span style="font:8px ui-monospace,monospace;color:#c2551f">in trash</span>
+                <span style="color:#bbb;font-size:9px">✕</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:5px 6px;color:#2a78d6;font:9.5px ui-monospace,monospace">＋ bookmark this board</div>
+            </div>
+            <div class="wf-arrow" style="left:24px;top:150px;width:160px">drag ⋮⋮ to reorder — order IS the ⌘n binding, printed right there. ✕ deletes. Stale target greys out, never silently vanishes.</div>
+          </div>
+        </div>
+        <div class="wf-cap">One menu, everything in it: jump (click), rebind (drag), remove (✕), add (bottom row). The pin button is tiny — cap-height circle, optically centered on the text line (generous invisible hit target). On press it MORPHS into a teardrop whose tip points down at the menu (drawn here open) — the button itself is the anchor tail, dot staying put through the little morph. Release/close morphs back. Clicking a path crumb = “go back to that board as you left it” (viewport restored). ⌂ is its own button: home = root canvas.</div>
+      </div>
+    </div>
+
+    <!-- 11b CHIP RAIL -->
+    <div class="dv-opt" id="11b">
+      <div class="dv-olabel"><a class="dv-oid" href="#11b">11b</a>Alternative — bookmarks live as chips, menu only manages</div>
+      <div class="dv-card" style="width:470px">
+        <div style="padding:12px">
+          <div class="wf-win" style="width:446px;height:210px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <span class="wf-lights" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+            <div style="position:absolute;left:56px;top:8px;font:9.5px ui-monospace,monospace;color:#666">⌂ Homeworld ▸ <span style="color:#333">warren interior</span></div>
+            <!-- chip row, hover-revealed -->
+            <div style="position:absolute;left:56px;top:26px;display:flex;gap:4px">
+              <span style="font:8.5px ui-monospace,monospace;color:#333;border:1.2px solid #888;border-radius:8px;padding:2px 7px;background:#fff">¹ Homeworld</span>
+              <span style="font:8.5px ui-monospace,monospace;color:#333;border:1.2px solid #888;border-radius:8px;padding:2px 7px;background:#fff">² Char refs</span>
+              <span style="font:8.5px ui-monospace,monospace;color:#fff;border:1.2px solid #2a78d6;border-radius:8px;padding:2px 7px;background:#2a78d6">³ N. Reach</span>
+              <span style="font:8.5px ui-monospace,monospace;color:#888;border:1.2px dashed #aaa;border-radius:8px;padding:2px 7px">＋</span>
+            </div>
+            <div class="wf-arrow" style="left:60px;top:52px;width:200px">the “four working boards” are VISIBLE — one click, zero menu. Row appears with the title strip on hover; current board's chip is lit.</div>
+          </div>
+        </div>
+        <div class="wf-cap">Trades a click of depth for glanceability: your working set is spatial muscle memory (chip position = ⌘n). Management (drag/delete) happens on the chips themselves; no dropdown at all. Risk: eats hover-strip width on long names.</div>
+      </div>
+    </div>
+
+    <!-- 11c SWITCHER HUD -->
+    <div class="dv-opt" id="11c">
+      <div class="dv-olabel"><a class="dv-oid" href="#11c">11c</a>Complement — hold-⌘ switcher HUD (keyboard path made visible)</div>
+      <div class="dv-card" style="width:470px">
+        <div style="padding:12px">
+          <div class="wf-win" style="width:446px;height:210px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img wf-ghost" style="left:40px;top:40px;width:60px;height:76px"><span>img</span></div>
+            <div class="wf-img wf-ghost" style="left:330px;top:100px;width:56px;height:70px"><span>img</span></div>
+            <!-- HUD -->
+            <div class="wf-panel" style="left:50%;top:50%;transform:translate(-50%,-50%);padding:8px;display:flex;gap:8px">
+              <div style="width:64px;text-align:center">
+                <div style="width:64px;height:40px;border:1.2px solid #888;border-radius:4px;background:repeating-linear-gradient(115deg,#eee 0 5px,#f8f8f8 5px 10px)"></div>
+                <div style="font:8px ui-monospace,monospace;color:#555;margin-top:3px">1 Homeworld</div>
+              </div>
+              <div style="width:64px;text-align:center">
+                <div style="width:64px;height:40px;border:1.2px solid #888;border-radius:4px;background:repeating-linear-gradient(95deg,#eee 0 5px,#f8f8f8 5px 10px)"></div>
+                <div style="font:8px ui-monospace,monospace;color:#555;margin-top:3px">2 Char refs</div>
+              </div>
+              <div style="width:64px;text-align:center">
+                <div style="width:64px;height:40px;border:2px solid #2a78d6;border-radius:4px;background:repeating-linear-gradient(105deg,#eee 0 5px,#f8f8f8 5px 10px)"></div>
+                <div style="font:8px ui-monospace,monospace;color:#2a78d6;margin-top:3px">3 N. Reach</div>
+              </div>
+            </div>
+            <div class="wf-arrow" style="left:80px;top:160px;width:280px">hold ⌘ a beat after pressing a digit (or ⌘⇥ style cycling) ⇒ thumbnails of your bookmarked boards flash up; release lands you there</div>
+          </div>
+        </div>
+        <div class="wf-cap">Not a replacement for <a class="dv-oid" href="#11a">11a</a> — the GUI menu is still the management surface. This is the reflex path once shortcuts are learned: visual confirmation without any pointer travel. Cheap to add later; listed so it's a decision, not an accident.</div>
+      </div>
+    </div>
+
+    <!-- 11d TOOLTIP RULE -->
+    <div class="dv-opt" id="11d">
+      <div class="dv-olabel"><a class="dv-oid" href="#11d">11d</a>Tooltip rule — every control teaches its key</div>
+      <div class="dv-card" style="width:340px">
+        <div style="padding:12px;display:flex;gap:12px;align-items:flex-start">
+          <div style="position:relative;flex:none;width:135px;height:80px">
+            <div class="wf-tool" style="position:absolute;left:8px;top:30px">⌖</div>
+            <div class="wf-panel" style="position:absolute;left:34px;top:8px;padding:3px 7px;font:9px ui-monospace,monospace;color:#333;white-space:nowrap">zoom to fit <b style="color:#888">⇧1</b></div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">every hover target: name + shortcut, ~500ms delay, same chip style everywhere. No control ships without one — it's the app's only tutorial.</div>
+        </div>
+        <div class="wf-cap">Spec line, not an option. Keyboard-driven is a stated goal; tooltips are how the GUI teaches the fast path.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “merge <a class="dv-oid" href="#11a">11a</a> + <a class="dv-oid" href="#11b">11b</a>: chips on hover, menu for manage” · “uses list + location chooser placement” · “rail degraded-state treatment”</p>
+</section>
+
+<section class="dv-turn" id="t10">
+  <div class="dv-thd"><a class="dv-tid" href="#t10">10</a><span class="dv-tname">Settings — a takeover like the other global views, but translucent so theming applies live</span></div>
+  <div class="dv-opts">
+
+    <!-- 10a APPEARANCE PAGE -->
+    <div class="dv-opt" id="10a">
+      <div class="dv-olabel"><a class="dv-oid" href="#10a">10a</a>The Appearance page — the sheet you can see through</div>
+      <div class="dv-card" style="width:560px">
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div class="wf-win" style="width:512px;height:320px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <!-- art visible behind, at edges -->
+            <div class="wf-img" style="left:6px;top:60px;width:52px;height:66px"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:460px;top:180px;width:44px;height:56px"><span style="font-size:7px">img</span></div>
+            <!-- takeover sheet -->
+            <div style="position:absolute;left:70px;top:24px;right:70px;bottom:24px;background:rgba(253,253,251,.82);border:1.5px solid #2b2b2b;border-radius:8px;display:flex;overflow:hidden">
+              <!-- nav -->
+              <div style="width:92px;flex:none;border-right:1px dashed #bbb;padding:8px 0;font:10px/2.1 ui-monospace,monospace;color:#888">
+                <div style="padding:0 10px;color:#1a1a1a;background:rgba(0,0,0,.06)">Appearance</div>
+                <div style="padding:0 10px">Behavior</div>
+                <div style="padding:0 10px">Window</div>
+                <div style="padding:0 10px">Notes</div>
+              </div>
+              <!-- content -->
+              <div style="flex:1;padding:10px 14px;font:10px ui-monospace,monospace;color:#444">
+                <div style="margin-bottom:9px">Theme
+                  <span style="display:inline-flex;border:1.2px solid #444;border-radius:5px;overflow:hidden;margin-left:8px;vertical-align:middle">
+                    <span style="padding:2px 8px;background:#1a1a1a;color:#fff">Dark</span>
+                    <span style="padding:2px 8px">Light</span>
+                    <span style="padding:2px 8px">Glass</span>
+                  </span>
+                </div>
+                <div style="margin-bottom:9px">Grid
+                  <span style="display:inline-flex;border:1.2px solid #444;border-radius:5px;overflow:hidden;margin-left:19px;vertical-align:middle">
+                    <span style="padding:2px 8px">None</span>
+                    <span style="padding:2px 8px;background:#1a1a1a;color:#fff">Lines</span>
+                    <span style="padding:2px 8px">Dots</span>
+                  </span>
+                </div>
+                <div style="margin-bottom:9px;display:flex;align-items:center;gap:6px">Flat color
+                  <span style="width:13px;height:13px;border:1.2px solid #444;border-radius:3px;background:#fff;display:inline-block"></span>
+                  <span style="width:13px;height:13px;border:1.2px solid #444;border-radius:3px;background:#8a877e;display:inline-block"></span>
+                  <span style="width:13px;height:13px;border:1.2px solid #444;border-radius:3px;background:#3a3e46;display:inline-block"></span>
+                  <span style="width:13px;height:13px;border:1.2px solid #444;border-radius:3px;background:#17191d;display:inline-block"></span>
+                  <span style="color:#999">· off ✓</span>
+                </div>
+                <div style="margin-bottom:9px;display:flex;align-items:center;gap:8px">Opacity
+                  <span style="display:inline-block;width:110px;height:3px;background:#ccc;border-radius:2px;position:relative;vertical-align:middle">
+                    <span style="position:absolute;right:8px;top:-4px;width:10px;height:10px;border-radius:50%;background:#1a1a1a"></span>
+                  </span>
+                  <span style="color:#999">96%</span>
+                </div>
+                <div style="color:#999;margin-top:14px;font-family:'Patrick Hand',cursive;font-size:12px">every change applies LIVE to the board behind the sheet — the translucency is the preview.</div>
+              </div>
+            </div>
+            <!-- esc hint -->
+            <div style="position:absolute;right:76px;top:30px;font:9px ui-monospace,monospace;color:#888">✕ esc</div>
+          </div>
+          <div class="wf-note" style="font-size:11.5px">Same takeover physics as graph/wiki (<a class="dv-oid" href="#2c">2c</a>), entered from the ☰ charm — but the sheet is ~82% opaque and inset, so real canvas (and your art) stays visible at the edges and through it. Theme/grid clicks repaint the world behind it instantly: the popup's one advantage, without the popup.</div>
+        </div>
+        <div class="wf-cap">No apply/save buttons — settings commit on click, like everything else in the app. Esc closes.</div>
+      </div>
+    </div>
+
+    <!-- 10b FULL MAP -->
+    <div class="dv-opt" id="10b">
+      <div class="dv-olabel"><a class="dv-oid" href="#10b">10b</a>The whole menu — deliberately tiny</div>
+      <div class="dv-card" style="width:400px">
+        <div style="padding:14px">
+          <div style="font:10.5px/1.85 ui-monospace,monospace;color:#444;white-space:pre">Appearance
+  theme         dark · light · glass
+  grid          none · lines · dots
+  flat color    swatch set · off
+  opacity       slider
+
+Behavior
+  charm corner  lower-right · upper-right
+  chrome fade   delay slider (~4s) · never
+  snap to grid  ✓
+
+Window
+  title strip   hover-reveal · always · never
+  border        ✓ · rounded corners ✓
+
+Notes
+  new-note template  (frontmatter w/ tags:)
+
+(win/linux only)
+  menu          ☰ in charm rail · system bar</div>
+          <div class="wf-note" style="margin-top:10px;font-size:11.5px">Sixteen decisions total. Everything else we've designed — cadence thresholds, zoom fade, panel physics — ships as opinion, not options. Neutrality is the product; a settings screen you can exhaust in one glance is part of the aesthetic.</div>
+        </div>
+        <div class="wf-cap">Covers every setting surfaced across turns 1–9 (<a class="dv-oid" href="#4a">4a</a> corner, <a class="dv-oid" href="#5a">5a</a> fade, <a class="dv-oid" href="#1b">1b</a> title strip, tag frontmatter from <a class="dv-oid" href="#9b">9b</a>). Anything not listed stays out of the RFC's settings section on purpose.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “hero visualization with live theme tweaks” · “draft the design-spec doc” · “glass theme: what exactly stays visible?”</p>
+</section>
+
+<section class="dv-turn" id="t9">
+  <div class="dv-thd"><a class="dv-tid" href="#t9">9</a><span class="dv-tname">Tag panel: list first, lens as amplifier · entry points · orphans under wiki-link edges</span></div>
+  <div class="dv-opts">
+
+    <!-- 9a TAG PANEL -->
+    <div class="dv-opt" id="9a">
+      <div class="dv-olabel"><a class="dv-oid" href="#9a">9a</a>The tag panel — one surface merging your list and the lens</div>
+      <div class="dv-card" style="width:560px">
+        <div style="display:flex;gap:12px;padding:14px">
+          <div class="wf-win" style="width:300px;height:300px;position:relative;box-shadow:none;flex:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:196px;top:60px;width:56px;height:70px;opacity:.22"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:220px;top:160px;width:50px;height:64px;outline:2px solid #c2551f;outline-offset:2px"><span style="font-size:7px">img</span></div>
+            <!-- panel -->
+            <div class="wf-panel" style="left:8px;top:8px;width:170px;height:262px;padding:6px;border-color:#c2551f">
+              <div style="display:flex;gap:4px;align-items:center;border-bottom:1px solid #ddd;padding-bottom:4px">
+                <span style="font:9.5px ui-monospace,monospace;color:#333">⌕ #gob<span style="color:#aaa">lin ⇥</span></span>
+                <span style="margin-left:auto;font:8.5px ui-monospace,monospace;color:#c2551f;border:1px solid #c2551f;border-radius:7px;padding:0 5px">◎ lens ✓</span>
+              </div>
+              <div style="display:flex;gap:5px;padding:6px 0;border-bottom:1px dashed #e4e0d8;align-items:center">
+                <div class="wf-img" style="position:static;width:20px;height:25px;flex:none"></div>
+                <div style="font:8.5px/1.35 ui-monospace,monospace;color:#333">Goblin chief<br><span style="color:#999">Root ▸ Northern Reach</span></div>
+                <div style="margin-left:auto;font:8.5px ui-monospace,monospace;color:#c2551f">▤ ⌖</div>
+              </div>
+              <div style="display:flex;gap:5px;padding:6px 0;border-bottom:1px dashed #e4e0d8;align-items:center;background:rgba(194,85,31,.07)">
+                <div class="wf-img" style="position:static;width:20px;height:25px;flex:none"></div>
+                <div style="font:8.5px/1.35 ui-monospace,monospace;color:#333">Warren scout<br><span style="color:#c2551f">this canvas</span></div>
+                <div style="margin-left:auto;font:8.5px ui-monospace,monospace;color:#c2551f">▤ ⌖</div>
+              </div>
+              <div style="display:flex;gap:5px;padding:6px 0;align-items:center">
+                <div style="width:20px;height:25px;flex:none;border:1px dashed #bbb;border-radius:2px;display:flex;align-items:center;justify-content:center;font:8px ui-monospace,monospace;color:#bbb">▤</div>
+                <div style="font:8.5px/1.35 ui-monospace,monospace;color:#333">Goblin customs<br><span style="color:#999">⚯ unplaced</span></div>
+                <div style="margin-left:auto;font:8.5px ui-monospace,monospace;color:#c2551f">▤</div>
+              </div>
+            </div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            list is the primary — it spans EVERY board, thumbnails included; unplaced notes appear too (no ⌖, just ▤).<br><br>
+            per row: <b>▤</b> open the note here · <b>⌖</b> fly to the placement (cross-canvas nav allowed).<br><br>
+            <b>◎ lens</b> is a toggle in the header: on ⇒ the visible canvas dims to hits (<a class="dv-oid" href="#8b">8b</a>) while the list stays up. Off ⇒ pure list, board untouched.<br><br>
+            ⇥ tab-completes against tags that exist in the db; # prefix narrows search to tags.
+          </div>
+        </div>
+        <div class="wf-cap">Merges your search-page vision with the lens: neither replaces the other — the list finds things across space, the lens shows them in space. Same anchored-panel physics as everything else.</div>
+      </div>
+    </div>
+
+    <!-- 9b ENTRY POINTS -->
+    <div class="dv-opt" id="9b">
+      <div class="dv-olabel"><a class="dv-oid" href="#9b">9b</a>Three roads into the same panel</div>
+      <div class="dv-card" style="width:700px">
+        <div style="display:flex;gap:12px;padding:14px;align-items:flex-start">
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:140px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img wf-sel" style="left:56px;top:16px;width:60px;height:76px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="left:42px;top:98px;width:96px;height:15px;display:flex;align-items:center;justify-content:space-around;font:8px ui-monospace,monospace;color:#333">✂ ⇋ ⇵ ▦ ▤ <b style="color:#c2551f">#</b></div>
+              <div class="wf-panel" style="left:120px;top:116px;padding:2px 5px;font:8px ui-monospace,monospace;color:#c2551f;border-color:#c2551f">#goblin · #artist-x</div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b># on the charm bar</b> — pops this node's tags; click one ⇒ tag panel opens on it.</div>
+          </div>
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:140px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div style="position:absolute;right:6px;top:6px;display:flex;flex-direction:column;gap:3px">
+                <div class="wf-tool on" style="width:15px;height:15px;font-size:8px">⌕</div>
+                <div class="wf-tool" style="width:15px;height:15px;font-size:8px">⊛</div>
+              </div>
+              <div class="wf-panel" style="left:14px;top:14px;width:140px;height:20px;display:flex;align-items:center;padding:0 6px">
+                <span style="font:9px ui-monospace,monospace;color:#555">#art<span style="color:#bbb">ist-x ⇥</span></span>
+              </div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>⌕ charm</b> — global search; typing # switches it to tag mode with the same completion.</div>
+          </div>
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:140px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-panel" style="left:30px;top:16px;width:140px;height:104px;padding:5px">
+                <div style="font:8.5px ui-monospace,monospace;color:#999">---<br>tags: <span style="color:#c2551f;border-bottom:1px solid #c2551f">goblin</span>, <span style="color:#c2551f;border-bottom:1px solid #c2551f">artist-x</span><br>---</div>
+                <div class="wf-note" style="font-size:9px;margin-top:4px">~~ ~~~ ~~ ~~~~<br>~~~ [[link]] ~~</div>
+              </div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>frontmatter chips</b> — tags render as clickable chips in any open note. Click ⇒ same panel.</div>
+          </div>
+
+        </div>
+        <div class="wf-cap">One destination, three doors. Multi-tag (AND/OR) deferred — the field takes exactly one tag for now, the completion making that feel intentional rather than limited.</div>
+      </div>
+    </div>
+
+    <!-- 9c ORPHAN TAXONOMY -->
+    <div class="dv-opt" id="9c">
+      <div class="dv-olabel"><a class="dv-oid" href="#9c">9c</a>Orphan taxonomy once edges = wiki-links</div>
+      <div class="dv-card" style="width:400px">
+        <div style="padding:14px">
+          <div class="wf-note" style="font-size:12px;line-height:1.5">
+            <b>⚯ orphan</b> — a node with no note. It CANNOT have a graph edge; permanently disconnected unless a note is attached. Dashed ring in graph (<a class="dv-oid" href="#8a">8a</a>), “orphans only” filter targets these.<br><br>
+            <b>loose</b> — a note with no placement. May be richly linked (not lonely at all); lives in the tree's root bin (<a class="dv-oid" href="#8c">8c</a>) and shows ⚯ unplaced in tag results (<a class="dv-oid" href="#9a">9a</a>) — a location fact, not a connection fact.<br><br>
+            <b>truly alone</b> — loose AND link-less: floats edge-free in the graph. The cleanup filter people actually want is probably this union: “everything disconnected.”
+          </div>
+        </div>
+        <div class="wf-cap">Two independent axes — placed/unplaced and linked/link-less — so the badges stay separate: ⚯ means “no words,” loose means “no place.”</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “draft the design-spec doc for the repo (incl. the tag frontmatter RFC addition)” · “hi-fi dark pass on the shell + tag panel” · “zoomed graph frame with image-node LOD”</p>
+</section>
+
+<section class="dv-turn" id="t8">
+  <div class="dv-thd"><a class="dv-tid" href="#t8">8</a><span class="dv-tname">The data views — graph with image nodes · tag lens · tree · frames question</span></div>
+  <div class="dv-opts">
+
+    <!-- 8a GRAPH -->
+    <div class="dv-opt" id="8a">
+      <div class="dv-olabel"><a class="dv-oid" href="#8a">8a</a>Graph mode — your art IS the nodes</div>
+      <div class="dv-card" style="width:520px">
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div class="wf-win" style="width:472px;height:280px;position:relative;box-shadow:none;background:#23262c;border-color:#444">
+            <!-- edges -->
+            <div style="position:absolute;left:190px;top:110px;width:96px;border-top:1.2px solid #55606e;transform:rotate(22deg);transform-origin:0 0"></div>
+            <div style="position:absolute;left:170px;top:115px;width:78px;border-top:1.2px solid #55606e;transform:rotate(115deg);transform-origin:0 0"></div>
+            <div style="position:absolute;left:295px;top:140px;width:70px;border-top:1.2px solid #55606e;transform:rotate(-55deg);transform-origin:0 0"></div>
+            <div style="position:absolute;left:280px;top:150px;width:64px;border-top:1.2px solid #55606e;transform:rotate(68deg);transform-origin:0 0"></div>
+            <!-- image nodes -->
+            <div class="wf-img" style="left:150px;top:82px;width:40px;height:50px;border-color:#888"><span style="font-size:6.5px">img</span></div>
+            <div class="wf-img" style="left:268px;top:118px;width:36px;height:46px;border-color:#888"><span style="font-size:6.5px">img</span></div>
+            <div class="wf-img" style="left:290px;top:196px;width:34px;height:42px;border-color:#888"><span style="font-size:6.5px">img</span></div>
+            <!-- dot nodes (notes without images) -->
+            <div style="position:absolute;left:136px;top:180px;width:9px;height:9px;border-radius:50%;background:#8ab4d8"></div>
+            <div style="position:absolute;left:352px;top:96px;width:9px;height:9px;border-radius:50%;background:#8ab4d8"></div>
+            <!-- orphan -->
+            <div class="wf-img" style="left:396px;top:210px;width:34px;height:42px;border:1.5px dashed #c2551f"><span style="font-size:6.5px">img</span></div>
+            <div style="position:absolute;left:388px;top:196px;font:9px ui-monospace,monospace;color:#c2551f">⚯</div>
+            <!-- filter strip -->
+            <div style="position:absolute;left:8px;top:8px;display:flex;gap:4px">
+              <div style="font:8.5px ui-monospace,monospace;color:#cdd6e0;border:1px solid #55606e;border-radius:8px;padding:2px 6px;background:#2b2f36">hide content-less ✓</div>
+              <div style="font:8.5px ui-monospace,monospace;color:#8a94a0;border:1px solid #3c424b;border-radius:8px;padding:2px 6px">orphans only</div>
+              <div style="font:8.5px ui-monospace,monospace;color:#8a94a0;border:1px solid #3c424b;border-radius:8px;padding:2px 6px">tag ▾</div>
+            </div>
+            <div style="position:absolute;right:6px;top:6px;width:15px;height:15px" class="wf-tool on"><span style="font-size:8px">⊛</span></div>
+            <div class="wf-arrow" style="left:14px;bottom:10px;width:220px;color:#8ab4d8">zoomed out: dots · zoomed in: the node renders as its image (thumbnail LOD)</div>
+          </div>
+          <div class="wf-note" style="font-size:11.5px">Force layout with physics you can grab. Dots = pure notes; images = placed art. Orphans wear the dashed ring + ⚯ badge, and “orphans only” filters straight to cleanup mode. “Hide content-less” kills the 90%-noise problem in one toggle.</div>
+        </div>
+        <div class="wf-cap">Takeover mode per <a class="dv-oid" href="#2c">2c</a>, entered from the ⊛ charm. Click any node ⇒ jump to it on its canvas (or open the note if unplaced).</div>
+      </div>
+    </div>
+
+    <!-- 8b TAG LENS -->
+    <div class="dv-opt" id="8b">
+      <div class="dv-olabel"><a class="dv-oid" href="#8b">8b</a>Tag lens — same filter, aimed at the BOARD itself</div>
+      <div class="dv-card" style="width:520px">
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div class="wf-win" style="width:472px;height:260px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:40px;top:50px;width:66px;height:84px;opacity:.22"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:130px;top:90px;width:60px;height:76px;outline:2px solid #c2551f;outline-offset:2px"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:230px;top:44px;width:64px;height:80px;opacity:.22"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:310px;top:120px;width:58px;height:74px;outline:2px solid #c2551f;outline-offset:2px"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:210px;top:160px;width:54px;height:68px;opacity:.22"><span style="font-size:7px">img</span></div>
+            <!-- lens chip -->
+            <div class="wf-panel" style="left:120px;top:8px;padding:3px 8px;display:flex;gap:6px;align-items:center;border-color:#c2551f;white-space:nowrap">
+              <span style="font:9px ui-monospace,monospace;color:#c2551f">◎ #artist-x</span>
+              <span style="font:9px ui-monospace,monospace;color:#888">2 here · 5 total</span>
+              <span style="font:9px ui-monospace,monospace;color:#888">✕</span>
+            </div>
+            <div class="wf-arrow" style="left:14px;bottom:8px;width:280px">rest of the board dims to ~20%; hits keep full color + accent ring. Esc or ✕ drops the lens.</div>
+          </div>
+          <div class="wf-note" style="font-size:11.5px">Tags come from frontmatter, Obsidian-style. The lens is ONE mechanism aimed at three surfaces: dim the board (here), tint the graph (<a class="dv-oid" href="#8a">8a</a>), filter the tree (<a class="dv-oid" href="#8c">8c</a>). “Everywhere you used artist X” is just: lens on, look.</div>
+        </div>
+        <div class="wf-cap">Lens ≠ selection — it's a view state, survives pan/zoom, and the project-wide count invites “jump to next hit” (↹) across canvases.</div>
+      </div>
+    </div>
+
+    <!-- 8c TREE -->
+    <div class="dv-opt" id="8c">
+      <div class="dv-olabel"><a class="dv-oid" href="#8c">8c</a>Tree mode — the world as an outline, cycles as aliases</div>
+      <div class="dv-card" style="width:520px">
+        <div style="padding:12px;display:flex;gap:12px">
+          <div class="wf-win" style="width:250px;height:250px;position:relative;box-shadow:none;background:#23262c;border-color:#444;flex:none">
+            <div style="position:absolute;left:10px;top:10px;font:10px/1.9 ui-monospace,monospace;color:#cdd6e0;white-space:pre">▾ ▦ Root canvas
+  ▸ ▤ (canvas note)
+  ▾ ▦ Northern Reach
+      ▤ Goblin chief
+      ◻ img — untitled
+      ↺ Root canvas
+  ▾ ▦ Character refs
+      ▤ Mirelle  #artist-x
+      ▤ Yorren
+      ◻ img — untitled</div>
+            <div style="position:absolute;left:8px;bottom:8px;display:flex;gap:4px">
+              <div style="font:8px ui-monospace,monospace;color:#cdd6e0;border:1px solid #55606e;border-radius:8px;padding:1px 5px;background:#2b2f36">hide content-less</div>
+              <div style="font:8px ui-monospace,monospace;color:#8a94a0;border:1px solid #3c424b;border-radius:8px;padding:1px 5px">#tag</div>
+            </div>
+          </div>
+          <div class="wf-note" style="flex:1;font-size:11.5px">
+            same glyphs again: ▦ canvas · ▤ note · ◻ bare image.<br><br>
+            cycles: a canvas already shown renders as an <b style="color:#c2551f">↺ alias row</b> — click flies to its real entry. No infinite unfold.<br><br>
+            tags show inline as chips; the lens filters this list too.<br><br>
+            unplaced notes gather in a “⚯ loose” bin at the root — same orphans the graph flags.
+          </div>
+        </div>
+        <div class="wf-cap">Lives in the takeover mode alongside <a class="dv-oid" href="#8a">8a</a> (tab or split within it) — it's the same data, different projection.</div>
+      </div>
+    </div>
+
+    <!-- 8d FRAMES OPINION -->
+    <div class="dv-opt" id="8d">
+      <div class="dv-olabel"><a class="dv-oid" href="#8d">8d</a>Figma-style frames? My lean: not yet</div>
+      <div class="dv-card" style="width:340px">
+        <div style="padding:14px">
+          <div class="wf-note" style="font-size:12px">
+            A frame primitive adds a THIRD container (canvas, node, frame) and quietly imposes schema — the thing this app promises not to do. What frames would buy is mostly already covered:<br><br>
+            · visual grouping ⇒ spatial proximity (that's the medium)<br>
+            · named grouping ⇒ tags via lens (<a class="dv-oid" href="#8b">8b</a>)<br>
+            · structural grouping ⇒ nested canvases (already exist)<br><br>
+            The unmet case is “label a REGION of one canvas.” If that itch gets real, a cheap text decoration + marquee-select already approximates it. Revisit only if users keep drawing rectangles around clusters and naming them.
+          </div>
+        </div>
+        <div class="wf-cap">Recommendation, not a door closed — the tree (<a class="dv-oid" href="#8c">8c</a>) + tags carry the visibility burden frames were auditioning for.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “zoomed-in graph frame showing image-node LOD” · “the tag picker / lens entry flow” · “draft the design-spec doc including the tag RFC addition”</p>
+</section>
+
+<section class="dv-turn" id="t7">
+  <div class="dv-thd"><a class="dv-tid" href="#t7">7</a><span class="dv-tname">Click grammar merged · the halo demoted to “link broken” duty</span></div>
+  <div class="dv-opts">
+
+    <!-- 7a CLICK GRAMMAR -->
+    <div class="dv-opt" id="7a">
+      <div class="dv-olabel"><a class="dv-oid" href="#7a">7a</a>Three targets, three scopes</div>
+      <div class="dv-card" style="width:700px">
+        <div style="display:flex;gap:12px;padding:14px;align-items:flex-start">
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:24px;top:24px;width:66px;height:84px"><span style="font-size:7px">img</span></div>
+              <div style="position:absolute;left:66px;top:92px;display:flex;gap:2px">
+                <div style="width:9px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:rgba(255,255,255,.9);box-shadow:0 0 0 1.5px rgba(194,85,31,.5)"></div>
+                <div style="width:11px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:rgba(255,255,255,.6);opacity:.5"></div>
+              </div>
+              <div class="wf-panel" style="left:100px;top:20px;width:88px;height:92px;padding:4px;border-color:#c2551f">
+                <div class="wf-note" style="font-size:8.5px">note —<br>~~ ~~~ ~~</div>
+              </div>
+              <div style="position:absolute;left:94px;top:60px;width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-right:6px solid #c2551f"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>page charm · 1 click</b> — note pops in beside the node. You stay where you are; the canvas you're on doesn't change.</div>
+          </div>
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas" style="background-size:24px 24px"></div>
+              <span class="wf-lights wf-ghost" style="left:8px;top:8px"><i></i><i></i><i></i></span>
+              <div style="position:absolute;left:52px;top:9px;font:8px ui-monospace,monospace;color:#777">home ▸ node</div>
+              <div class="wf-img" style="left:70px;top:40px;width:56px;height:70px"><span style="font-size:7px">img</span></div>
+              <div style="position:absolute;left:8px;bottom:8px;width:13px;height:15px;border:1.2px solid #c2551f;border-radius:2px;background:#fff"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>frame charm · 1 click</b> — dive into the canvas only. Its note stays shut (corner charm waits, solid).</div>
+          </div>
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas" style="background-size:24px 24px"></div>
+              <span class="wf-lights wf-ghost" style="left:8px;top:8px"><i></i><i></i><i></i></span>
+              <div style="position:absolute;left:52px;top:9px;font:8px ui-monospace,monospace;color:#777">home ▸ node</div>
+              <div class="wf-img wf-ghost" style="left:110px;top:44px;width:50px;height:64px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="left:6px;bottom:40px;width:92px;height:76px;padding:4px;border-color:#c2551f">
+                <div class="wf-note" style="font-size:8.5px">canvas note —<br>~~~ ~~ ~~</div>
+              </div>
+              <div style="position:absolute;left:10px;bottom:32px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #c2551f"></div>
+              <div style="position:absolute;left:8px;bottom:8px;width:13px;height:15px;border:1.2px solid #c2551f;border-radius:2px;background:#fff"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>image · 2 click</b> — everything: dive into the canvas AND its note opens from the corner charm, already reading.</div>
+          </div>
+
+        </div>
+        <div class="wf-cap">Grammar: single-click image = select + charm bar (<a class="dv-oid" href="#1f">1f</a>) · single-click a charm = just that facet · double-click image = the works. Note-only nodes: double-click simply opens the note; canvas-only: dives without a note panel. Nothing to memorize — charms are the exploded view of what double-click does.</div>
+      </div>
+    </div>
+
+    <!-- 7b HALO DEMOTION -->
+    <div class="dv-opt" id="7b">
+      <div class="dv-olabel"><a class="dv-oid" href="#7b">7b</a>Halo only when the tether can't speak</div>
+      <div class="dv-card" style="width:700px">
+        <div style="display:flex;gap:12px;padding:14px;align-items:flex-start">
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:20px;top:30px;width:60px;height:78px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="left:96px;top:26px;width:92px;height:86px;padding:4px;border-color:#c2551f">
+                <div class="wf-note" style="font-size:8.5px">note —<br>~~ ~~~</div>
+              </div>
+              <div style="position:absolute;left:82px;top:64px;width:14px;border-top:1.5px dashed #c2551f"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>tethered (default)</b> — NO halo. The tail is the attribution; a halo would be redundant ink.</div>
+          </div>
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:20px;top:34px;width:56px;height:72px;outline:2px solid #c2551f;outline-offset:2px"><span style="font-size:7px">img</span></div>
+              <div class="wf-img" style="left:92px;top:60px;width:44px;height:56px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="right:4px;top:4px;width:56px;height:140px;padding:4px;border-color:#c2551f;background:rgba(255,255,255,.95)">
+                <div class="wf-note" style="font-size:8px">⇱ pinned<br>~~ ~~<br>~~~</div>
+              </div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>pinned + panning</b> — panel is screen-fixed now, tether gone: the halo returns to say “this is the node you're reading.” The old sidebar problem, solved by the old solution.</div>
+          </div>
+
+          <div style="width:200px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:200px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:24px;top:40px;width:48px;height:60px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="right:4px;top:4px;width:56px;height:140px;padding:4px;border-color:#c2551f;background:rgba(255,255,255,.95)">
+                <div class="wf-note" style="font-size:8px">⇱ pinned<br>~~ ~~<br>~~~</div>
+              </div>
+              <div style="position:absolute;left:2px;top:66px;width:16px;height:16px;border:1.5px solid #c2551f;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font:9px ui-monospace,monospace;color:#c2551f">←</div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>node off-screen</b> — halo can't help; a small edge chip points toward it. Click = fly home (<a class="dv-oid" href="#1f">1f</a> flight).</div>
+          </div>
+
+        </div>
+        <div class="wf-cap">Rule: the “which node?” indicator exists exactly when the spatial connection is broken — tethered ⇒ nothing, pinned ⇒ halo, off-screen ⇒ edge chip. Selection blue stays untouched by any of it.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “draft the design-spec doc for the repo” · “hi-fi dark pass on <a class="dv-oid" href="#7a">7a</a>'s three frames” · “what does pinning look like for multiple notes at once?”</p>
+</section>
+
+<section class="dv-turn" id="t6">
+  <div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Storyboard — the core loop end-to-end (<a class="dv-oid" href="#2a">2a</a> shell · <a class="dv-oid" href="#3b">3b</a> panels · <a class="dv-oid" href="#4a">4a</a> charms · <a class="dv-oid" href="#5a">5a</a> cadence)</span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="6a">
+      <div class="dv-olabel"><a class="dv-oid" href="#6a">6a</a>Act I — first image, first note</div>
+      <div class="dv-card" style="width:1010px">
+        <div style="display:flex;gap:12px;padding:14px;align-items:flex-start">
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <span class="wf-lights wf-ghost" style="left:8px;top:8px"><i></i><i></i><i></i></span>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>1 · launch</b> — the window IS the board. Chrome asleep; ghost lights only.</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <span class="wf-lights" style="left:8px;top:8px"><i></i><i></i><i></i></span>
+              <div style="position:absolute;right:6px;top:6px;display:flex;flex-direction:column;gap:3px">
+                <div class="wf-tool" style="width:15px;height:15px;font-size:8px">P</div>
+                <div class="wf-tool" style="width:15px;height:15px;font-size:8px">⊛</div>
+                <div class="wf-tool" style="width:15px;height:15px;font-size:8px">▤</div>
+              </div>
+              <div class="wf-panel" style="left:50%;transform:translateX(-50%);bottom:6px;padding:2px 4px;display:flex;gap:3px">
+                <div class="wf-tool" style="width:14px;height:14px;font-size:8px">▸</div><div class="wf-tool" style="width:14px;height:14px;font-size:8px">T</div><div class="wf-tool" style="width:14px;height:14px;font-size:8px">▢</div><div class="wf-tool" style="width:14px;height:14px;font-size:8px">+</div>
+              </div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>2 · engage</b> — cursor enters: dock + mode rail + lights fade in (<a class="dv-oid" href="#5a">5a</a> clock).</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:38px;top:26px;width:70px;height:90px"><span>img</span></div>
+              <div class="wf-arrow" style="left:14px;top:120px;font-size:10px">dropped from Finder ↓</div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>3 · drop</b> — image lands as a node. No charms: nothing inside yet, just pixels.</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img wf-sel" style="left:38px;top:20px;width:70px;height:90px"><span>img</span></div>
+              <div class="wf-panel" style="left:30px;top:116px;width:86px;height:16px;display:flex;align-items:center;justify-content:space-around;font:8.5px ui-monospace,monospace;color:#333">✂ ⇋ ⇵ ▦ ▤ ⊘</div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>4 · click</b> — selection outline + charm bar: crop · flipH · flipV · make-canvas · note · lock.</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:10px;top:20px;width:56px;height:72px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="left:70px;top:14px;width:66px;height:84px;padding:4px;border-color:#c2551f">
+                <div class="wf-note" style="font-size:8.5px;color:#999"><em>start writing to create…</em></div>
+              </div>
+              <div style="position:absolute;left:70px;top:52px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:7px solid #c2551f"></div>
+              <div style="position:absolute;left:52px;top:78px;width:9px;height:11px;border:1.2px dashed #c2551f;border-radius:1px;background:rgba(255,255,255,.7)"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>5 · note (▤ charm)</b> — phantom panel opens anchored to the node; ghost page charm appears inside its corner.</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:10px;top:20px;width:56px;height:72px;outline:2px solid #c2551f;outline-offset:2px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="left:70px;top:14px;width:66px;height:84px;padding:4px;border-color:#c2551f">
+                <div class="wf-note" style="font-size:8.5px">~~ ~~~ ~~<br>[[link]] ~~</div>
+                <div style="position:absolute;bottom:2px;right:4px;font:7.5px ui-monospace,monospace;color:#888">✕ · ⇱</div>
+              </div>
+              <div style="position:absolute;left:52px;top:78px;width:9px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:rgba(255,255,255,.85)"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>6 · type</b> — note persists (phantom rules); charm turns solid; node wears the accent halo while its note is open (<a class="dv-oid" href="#1h">1h</a>-A).</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="6b">
+      <div class="dv-olabel"><a class="dv-oid" href="#6b">6b</a>Act II — worlds within, then back out to the wiki</div>
+      <div class="dv-card" style="width:1010px">
+        <div style="display:flex;gap:12px;padding:14px;align-items:flex-start">
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img wf-sel" style="left:38px;top:20px;width:70px;height:90px"><span>img</span></div>
+              <div class="wf-panel" style="left:30px;top:116px;width:86px;height:16px;display:flex;align-items:center;justify-content:space-around;font:8.5px ui-monospace,monospace;color:#333">✂ ⇋ ⇵ <b style="color:#2a78d6">▦</b> ▤ ⊘</div>
+              <div style="position:absolute;left:84px;top:96px;width:9px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:rgba(255,255,255,.85)"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>7 · make-canvas (▦)</b> — the node gains a world; frame charm joins the page charm in the corner.</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas" style="background-size:24px 24px"></div>
+              <span class="wf-lights wf-ghost" style="left:8px;top:8px"><i></i><i></i><i></i></span>
+              <div style="position:absolute;left:52px;top:9px;font:8px ui-monospace,monospace;color:#777">home ▸ node title</div>
+              <div class="wf-img" style="left:48px;top:40px;width:52px;height:66px"><span style="font-size:7px">img</span></div>
+              <div style="position:absolute;left:8px;bottom:8px;width:13px;height:15px;border:1.2px dashed #999;border-radius:2px;display:flex;align-items:center;justify-content:center;font:9px ui-monospace,monospace;color:#999">+</div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>8 · dive in</b> — double-click the frame charm: eased zoom INTO the nested canvas. Breadcrumb by the lights is the way back; corner shows this canvas's own ghost +page (<a class="dv-oid" href="#2b">2b</a>).</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas" style="background-size:24px 24px"></div>
+              <div class="wf-img wf-ghost" style="left:80px;top:30px;width:52px;height:66px"><span style="font-size:7px">img</span></div>
+              <div class="wf-panel" style="left:6px;bottom:46px;width:96px;height:80px;padding:4px;border-color:#c2551f">
+                <div class="wf-note" style="font-size:8.5px">Canvas note —<br>~~~ ~~ ~~~</div>
+              </div>
+              <div style="position:absolute;left:10px;bottom:38px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #c2551f"></div>
+              <div style="position:absolute;left:8px;bottom:12px;width:13px;height:15px;border:1.2px solid #c2551f;border-radius:2px;background:#fff"></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>9 · canvas note</b> — corner charm clicked: panel grows out of it, tail says where it lives (<a class="dv-oid" href="#3b">3b</a>).</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none;background:#23262c">
+              <div style="position:absolute;inset:10px;border:1px dashed #8ab4d8;border-radius:5px;display:flex;align-items:center;justify-content:center">
+                <div class="wf-note" style="color:#cdd6e0;text-align:center;font-size:9.5px">wiki / graph<br>● — ● — ●<br>&nbsp;\ ● /</div>
+              </div>
+              <div style="position:absolute;right:6px;top:6px;width:15px;height:15px" class="wf-tool on"><span style="font-size:8px">⊛</span></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>10 · go global</b> — mode charm swaps the whole window to wiki/viz (<a class="dv-oid" href="#2c">2c</a>). Esc or the charm returns, camera untouched.</div>
+          </div>
+
+          <div style="width:148px;flex:none;display:flex;flex-direction:column;gap:6px">
+            <div class="wf-win" style="width:148px;height:150px;position:relative;box-shadow:none">
+              <div class="wf-canvas"></div>
+              <div class="wf-img" style="left:20px;top:24px;width:48px;height:62px"><span style="font-size:7px">img</span></div>
+              <div class="wf-img" style="left:76px;top:48px;width:42px;height:54px"><span style="font-size:7px">img</span></div>
+            </div>
+            <div class="wf-note" style="font-size:11px"><b>11 · walk away</b> — idle: every layer fades. The board is wallpaper-quiet until the cursor returns (<a class="dv-oid" href="#5a">5a</a>).</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “frame 8 alternate: dive via double-click on the image itself?” · “draft the design-spec doc for the repo” · “hi-fi dark pass on frames 4–6”</p>
+</section>
+
+<section class="dv-turn" id="t5">
+  <div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Charm visibility cadence — YouTube-timeline model, revising <a class="dv-oid" href="#4b">4b</a></span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="5a">
+      <div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a>Engaged ⇒ visible everywhere · idle ⇒ whole layer fades</div>
+      <div class="dv-card" style="width:660px">
+        <div style="display:flex;gap:10px;padding:12px">
+
+          <div class="wf-win" style="width:148px;height:212px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:24px;top:20px;width:78px;height:100px"><span>img</span></div>
+            <div style="position:absolute;left:74px;top:98px;display:flex;gap:3px;opacity:.7;padding:1px;background:rgba(255,255,255,.4);border-radius:2px">
+              <div style="width:9px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:rgba(255,255,255,.5)"></div>
+              <div style="width:12px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:rgba(255,255,255,.5)"></div>
+            </div>
+            <div class="wf-panel" style="left:34px;bottom:6px;padding:2px 4px;display:flex;gap:3px;opacity:.85">
+              <div class="wf-tool" style="width:14px;height:14px">▸</div><div class="wf-tool" style="width:14px;height:14px">T</div><div class="wf-tool" style="width:14px;height:14px">▢</div>
+            </div>
+            <div class="wf-hint" style="left:10px;top:132px;width:128px;color:#333">ENGAGED (cursor in window): charms on EVERY node at ~70% — a glanceable census. Art reads through.</div>
+          </div>
+
+          <div class="wf-win" style="width:148px;height:212px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:24px;top:20px;width:78px;height:100px"><span>img</span></div>
+            <div class="wf-hint" style="left:10px;top:132px;width:128px;color:#888">IDLE (cursor leaves window / ~4s still): charms + dock + rail ALL fade out together. Pure art — ref board mode.</div>
+          </div>
+
+          <div class="wf-win" style="width:148px;height:212px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:24px;top:20px;width:78px;height:100px"><span>img</span></div>
+            <div style="position:absolute;left:70px;top:94px;display:flex;gap:3px;padding:2px 3px;background:rgba(255,255,255,.9);border-radius:3px;box-shadow:0 0 0 1.5px #c2551f">
+              <div style="width:9px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:#fff"></div>
+              <div style="width:12px;height:11px;border:1.2px solid #c2551f;border-radius:1px;background:#fff;opacity:.45"></div>
+            </div>
+            <div class="wf-hint" style="left:10px;top:132px;width:128px;color:#c2551f">CHARM HOVER: that charm lights to 100% + pointer cursor. No node-hover state needed at all.</div>
+          </div>
+
+          <div class="wf-win" style="width:148px;height:212px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:34px;top:34px;width:34px;height:44px"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:76px;top:52px;width:28px;height:36px"><span style="font-size:7px">img</span></div>
+            <div class="wf-img" style="left:48px;top:88px;width:26px;height:32px"><span style="font-size:7px">img</span></div>
+            <div class="wf-hint" style="left:10px;top:132px;width:128px;color:#888">ZOOM &lt; ~40%: charms gone regardless — thumbnails stay clean (agreed from <a class="dv-oid" href="#4b" style="font-size:8.5px">4b</a>).</div>
+          </div>
+
+        </div>
+        <div class="wf-cap">One global “engagement layer”: charms, bottom dock, and mode rail share the same fade clock (YouTube-timeline cadence). At-rest-while-engaged visibility is the point — charms are the census of “this node has content,” never a hover-to-discover secret. Chip-on-node-hover from <a class="dv-oid" href="#4b">4b</a> is dropped.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “storyboard the full flow end-to-end” · “hi-fi dark pass on <a class="dv-oid" href="#2a">2a</a> with final charm rules” · “draft the design-spec doc for the repo”</p>
+</section>
+
+<section class="dv-turn" id="t4">
+  <div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Charms move INSIDE the image — corner placement + legibility over art</span></div>
+  <div class="dv-opts">
+
+    <!-- 4a INSIDE PLACEMENT -->
+    <div class="dv-opt" id="4a">
+      <div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Inside the frame: lower-right default, upper-right alternate (a setting later)</div>
+      <div class="dv-card" style="width:520px">
+        <div style="display:flex;gap:10px;padding:12px">
+          <div class="wf-win" style="width:154px;height:216px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:30px;top:22px;width:92px;height:118px"><span>img</span></div>
+            <!-- charms INSIDE lower-right -->
+            <div style="position:absolute;left:92px;top:118px;display:flex;gap:3px;padding:2px;background:rgba(255,255,255,.75);border-radius:3px">
+              <div style="position:relative;width:11px;height:13px;border:1.2px solid #c2551f;border-radius:1.5px;background:#fff">
+                <div style="position:absolute;left:2px;top:3px;width:5px;border-top:1.2px solid #c2551f"></div>
+                <div style="position:absolute;left:2px;top:6px;width:5px;border-top:1.2px solid #c2551f"></div>
+              </div>
+              <div style="position:relative;width:14px;height:13px;border:1.2px solid #c2551f;border-radius:1.5px;background:#fff;overflow:hidden">
+                <div style="position:absolute;left:2px;top:2px;width:3px;height:3px;border:1px solid #c2551f;border-radius:50%"></div>
+                <div style="position:absolute;left:5px;top:6px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:5px solid #c2551f"></div>
+              </div>
+            </div>
+            <!-- title below -->
+            <div style="position:absolute;left:30px;top:144px;width:92px;text-align:center;font:8.5px ui-monospace,monospace;color:#555">Node title</div>
+            <div class="wf-hint" style="left:14px;top:164px;width:130px;color:#c2551f">lower-right, tucked inside with 4px inset — title strip below stays clear</div>
+          </div>
+          <div class="wf-win" style="width:154px;height:216px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:30px;top:22px;width:92px;height:118px"><span>img</span></div>
+            <div style="position:absolute;left:92px;top:26px;display:flex;gap:3px;padding:2px;background:rgba(255,255,255,.75);border-radius:3px">
+              <div style="position:relative;width:11px;height:13px;border:1.2px solid #c2551f;border-radius:1.5px;background:#fff">
+                <div style="position:absolute;left:2px;top:3px;width:5px;border-top:1.2px solid #c2551f"></div>
+                <div style="position:absolute;left:2px;top:6px;width:5px;border-top:1.2px solid #c2551f"></div>
+              </div>
+              <div style="position:relative;width:14px;height:13px;border:1.2px solid #c2551f;border-radius:1.5px;background:#fff;overflow:hidden">
+                <div style="position:absolute;left:2px;top:2px;width:3px;height:3px;border:1px solid #c2551f;border-radius:50%"></div>
+                <div style="position:absolute;left:5px;top:6px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:5px solid #c2551f"></div>
+              </div>
+            </div>
+            <div style="position:absolute;left:30px;top:144px;width:92px;text-align:center;font:8.5px ui-monospace,monospace;color:#555">Node title</div>
+            <div class="wf-hint" style="left:14px;top:164px;width:130px;color:#888">upper-right alternate — wins when subjects' faces sit low; corner = user setting later</div>
+          </div>
+          <div class="wf-note" style="flex:1;padding-top:8px">
+            why inside won:<br>
+            · grids — neighbors touch, outside charms collide<br>
+            · title already owns the strip below<br>
+            · inside costs nothing at rest: ~45% opacity until hover<br><br>
+            crop/flip preview never shows charms — they're UI, not pixels.
+          </div>
+        </div>
+        <div class="wf-cap">Supersedes the hung-below placement in <a class="dv-oid" href="#3a">3a</a>; glyphs and click behavior unchanged. One corner, 4px inset, row of at most two.</div>
+      </div>
+    </div>
+
+    <!-- 4b LEGIBILITY -->
+    <div class="dv-opt" id="4b">
+      <div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>Reading on busy art — backing chip states</div>
+      <div class="dv-card" style="width:470px">
+        <div style="display:flex;gap:10px;padding:12px">
+          <div style="flex:none;position:relative;width:120px;height:150px;background:repeating-linear-gradient(115deg,#8a877e 0 7px,#c9c4b8 7px 13px,#6f6c64 13px 21px);border:1.5px solid #555">
+            <div style="position:absolute;right:4px;bottom:4px;display:flex;gap:3px;padding:2px 3px;background:rgba(20,20,20,.55);border-radius:3px">
+              <div style="width:9px;height:11px;border:1.1px solid #fff;border-radius:1px"></div>
+              <div style="width:12px;height:11px;border:1.1px solid #fff;border-radius:1px"></div>
+            </div>
+            <div style="position:absolute;left:4px;top:4px;font:8.5px ui-monospace,monospace;color:#fff;background:rgba(0,0,0,.4);padding:1px 3px">busy image</div>
+          </div>
+          <div class="wf-note" style="flex:1">
+            charms sit ON artwork now, so:<br>
+            · rest: glyphs at ~45% opacity, NO chip — nearly invisible, like PureRef<br>
+            · node hover: chip fades in behind them (scrim picks dark/light by sampling the corner)<br>
+            · charm hover: full opacity + cursor ⇒ pointer<br>
+            · zoom &lt; ~40%: gone entirely<br><br>
+            rule stays: click charm ⇒ anchored panel (<a class="dv-oid" href="#3b">3b</a> physics)
+          </div>
+        </div>
+        <div class="wf-cap">The chip only exists mid-interaction, so boards stay art-first at rest but charms are always findable when you reach for them.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “storyboard the full flow: hover node → charm → anchored note → pin” · “hi-fi dark pass on <a class="dv-oid" href="#2a">2a</a> with these charms” · “draft the design-spec doc for the repo”</p>
+</section>
+
+<section class="dv-turn" id="t3">
+  <div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Charm glyphs (side-by-side, never stacked) · canvas-note create + anchored reveal</span></div>
+  <div class="dv-opts">
+
+    <!-- 3a GLYPHS -->
+    <div class="dv-opt" id="3a">
+      <div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Two glyphs: page = note, frame = canvas — tested at real charm size</div>
+      <div class="dv-card" style="width:470px">
+        <div style="padding:14px;display:flex;gap:18px;align-items:flex-start">
+          <div style="flex:none">
+            <div class="wf-note" style="margin-bottom:6px">zoomed:</div>
+            <div style="display:flex;gap:14px;align-items:center">
+              <!-- page glyph large -->
+              <div style="position:relative;width:34px;height:42px;border:2px solid #c2551f;border-radius:3px;background:#fff">
+                <div style="position:absolute;right:-2px;top:-2px;width:12px;height:12px;background:#f0eee9;border-left:2px solid #c2551f;border-bottom:2px solid #c2551f"></div>
+                <div style="position:absolute;left:5px;top:12px;width:18px;border-top:2px solid #c2551f"></div>
+                <div style="position:absolute;left:5px;top:19px;width:18px;border-top:2px solid #c2551f"></div>
+                <div style="position:absolute;left:5px;top:26px;width:12px;border-top:2px solid #c2551f"></div>
+              </div>
+              <!-- frame glyph large -->
+              <div style="position:relative;width:42px;height:36px;border:2px solid #c2551f;border-radius:3px;background:#fff;overflow:hidden">
+                <div style="position:absolute;left:6px;top:7px;width:8px;height:8px;border:2px solid #c2551f;border-radius:50%"></div>
+                <div style="position:absolute;left:16px;top:14px;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:16px solid #c2551f"></div>
+              </div>
+            </div>
+            <div class="wf-note" style="margin:10px 0 6px">at 13px:</div>
+            <div style="display:flex;gap:4px">
+              <div style="position:relative;width:11px;height:13px;border:1.2px solid #c2551f;border-radius:1.5px;background:rgba(255,255,255,.8)">
+                <div style="position:absolute;left:2px;top:3px;width:5px;border-top:1.2px solid #c2551f"></div>
+                <div style="position:absolute;left:2px;top:6px;width:5px;border-top:1.2px solid #c2551f"></div>
+              </div>
+              <div style="position:relative;width:14px;height:12px;border:1.2px solid #c2551f;border-radius:1.5px;background:rgba(255,255,255,.8);overflow:hidden">
+                <div style="position:absolute;left:2px;top:2px;width:3px;height:3px;border:1px solid #c2551f;border-radius:50%"></div>
+                <div style="position:absolute;left:5px;top:5px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:5px solid #c2551f"></div>
+              </div>
+            </div>
+          </div>
+          <div class="wf-win" style="width:150px;height:190px;position:relative;box-shadow:none;flex:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:28px;top:24px;width:92px;height:118px"><span>img</span></div>
+            <!-- side by side charms lower right of node -->
+            <div style="position:absolute;left:88px;top:146px;display:flex;gap:3px">
+              <div style="position:relative;width:11px;height:13px;border:1.2px solid #c2551f;border-radius:1.5px;background:rgba(255,255,255,.65)">
+                <div style="position:absolute;left:2px;top:3px;width:5px;border-top:1.2px solid #c2551f"></div>
+                <div style="position:absolute;left:2px;top:6px;width:5px;border-top:1.2px solid #c2551f"></div>
+              </div>
+              <div style="position:relative;width:14px;height:13px;border:1.2px solid #c2551f;border-radius:1.5px;background:rgba(255,255,255,.65);overflow:hidden">
+                <div style="position:absolute;left:2px;top:2px;width:3px;height:3px;border:1px solid #c2551f;border-radius:50%"></div>
+                <div style="position:absolute;left:5px;top:6px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:5px solid #c2551f"></div>
+              </div>
+            </div>
+            <div class="wf-hint" style="left:12px;top:166px;width:130px;color:#c2551f">both ⇒ row of two, below node edge</div>
+          </div>
+          <div class="wf-note" style="flex:1">
+            fastest read = counting icons:<br>
+            · page ⇒ has words<br>
+            · frame ⇒ has a world<br>
+            · both ⇒ two side-by-side<br>
+            · neither ⇒ clean image<br><br>
+            click a charm = open THAT content directly. Double-click stays “open primary.”
+          </div>
+        </div>
+        <div class="wf-cap">Replaces the ≡/▦ pair from <a class="dv-oid" href="#2d">2d</a>. No stacking ever — a node has at most one page + one frame, so the row never exceeds two.</div>
+      </div>
+    </div>
+
+    <!-- 3b CANVAS NOTE LIFECYCLE -->
+    <div class="dv-opt" id="3b">
+      <div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Canvas note: the corner charm is both the create toggle and the anchor</div>
+      <div class="dv-card" style="width:640px">
+        <div style="display:flex;gap:10px;padding:12px">
+          <div class="wf-win" style="width:192px;height:210px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img wf-ghost" style="left:60px;top:30px;width:70px;height:90px"><span>img</span></div>
+            <div style="position:absolute;left:10px;bottom:10px;width:15px;height:17px;border:1.2px dashed #999;border-radius:2px;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;font:10px ui-monospace,monospace;color:#999">+</div>
+            <div class="wf-hint" style="left:32px;bottom:12px;width:140px;color:#888">no note yet: ghost “+page” appears when cursor nears the corner (else invisible)</div>
+          </div>
+          <div class="wf-win" style="width:192px;height:210px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img wf-ghost" style="left:96px;top:24px;width:70px;height:90px"><span>img</span></div>
+            <!-- anchored panel with tail -->
+            <div class="wf-panel" style="left:8px;bottom:64px;width:128px;height:110px;padding:6px;border-color:#c2551f">
+              <div class="wf-note" style="font-size:10.5px;color:#999">Canvas title —<br><em>start writing to create this note…</em></div>
+            </div>
+            <div style="position:absolute;left:14px;bottom:56px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid #c2551f"></div>
+            <div style="position:absolute;left:10px;bottom:10px;width:15px;height:17px;border:1.2px solid #c2551f;border-radius:2px;background:#fff;display:flex;align-items:center;justify-content:center;font:8px ui-monospace,monospace;color:#c2551f">▤</div>
+            <div class="wf-hint" style="left:32px;bottom:6px;width:152px;color:#c2551f">click ⇒ empty panel opens ANCHORED to the charm (note the tail). Persists only once you type</div>
+          </div>
+          <div class="wf-win" style="width:192px;height:210px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:96px;top:24px;width:70px;height:90px"><span>img</span></div>
+            <div style="position:absolute;left:10px;bottom:10px;width:15px;height:17px;border:1.2px solid #c2551f;border-radius:2px;background:#fff;display:flex;align-items:center;justify-content:center;font:8px ui-monospace,monospace;color:#c2551f">▤</div>
+            <div class="wf-hint" style="left:32px;bottom:12px;width:150px;color:#c2551f">has a note: solid charm, always visible. Click toggles the same anchored panel; ⇱ pin keeps it open while you work</div>
+          </div>
+        </div>
+        <div class="wf-cap">Answers “where does a global thing appear”: it grows out of the button you pressed — spatially honest even though the note is canvas-scoped. Same anchored-popover physics as node charms (<a class="dv-oid" href="#3a">3a</a>), so there is exactly one rule: charms open panels attached to themselves.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “storyboard the full flow with these charms end-to-end” · “try the frame glyph as stacked-cards instead of mountains” · “start the hi-fi dark pass on <a class="dv-oid" href="#2a">2a</a> + <a class="dv-oid" href="#3a">3a</a>”</p>
+</section>
+
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Synthesis: bottom dock (<a class="dv-oid" href="#1d">1d</a>) + corner mode charms + pop-in notes (<a class="dv-oid" href="#1c">1c</a>) · canvas-note access · global views · node hint charms</span></div>
+  <div class="dv-opts">
+
+    <!-- 2a SYNTHESIZED SHELL -->
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>The synthesis — nothing docked, nothing reflows</div>
+      <div class="dv-card" style="width:470px">
+        <div class="wf-win" style="width:446px;height:300px;margin:12px">
+          <div class="wf-canvas"></div>
+          <span class="wf-lights" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+          <!-- mode charms upper right, vertical -->
+          <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <div class="wf-tool" style="border-style:dashed">P</div>
+            <div class="wf-tool">⌕</div>
+            <div class="wf-tool">🕸</div>
+            <div class="wf-tool">▤</div>
+            <div class="wf-tool wf-ghost">☰</div>
+          </div>
+          <div class="wf-arrow" style="right:38px;top:12px;width:120px">vertical charm rail (Obsidian-ish): project · search · viz · wiki · menu — ~40% opacity till hover</div>
+          <!-- nodes -->
+          <div class="wf-img" style="left:80px;top:70px;width:88px;height:114px"><span>img</span></div>
+          <div class="wf-img wf-sel" style="left:186px;top:120px;width:72px;height:92px"><span>img</span></div>
+          <!-- pop-in note near node -->
+          <div style="position:absolute;left:258px;top:130px;width:14px;border-top:1.5px dashed #c2551f"></div>
+          <div class="wf-panel" style="left:272px;top:78px;width:124px;height:150px;padding:6px;border-color:#c2551f">
+            <div class="wf-note" style="font-size:11px">Note title ——<br>~~~~ ~~~~~ ~~<br>~~ [[link]] ~~~<br>~~~~</div>
+            <div style="position:absolute;bottom:4px;right:6px;font:8.5px ui-monospace,monospace;color:#888">✕ · ⇱ pin</div>
+          </div>
+          <!-- bottom dock -->
+          <div class="wf-panel" style="left:50%;transform:translateX(-50%);bottom:8px;padding:4px 6px;display:flex;gap:5px">
+            <div class="wf-tool on">▸</div><div class="wf-tool">T</div><div class="wf-tool">▢</div><div class="wf-tool">✎</div><div class="wf-tool">↗</div>
+            <div style="width:1px;background:#ccc"></div>
+            <div class="wf-tool">+</div><div class="wf-tool">−</div><div class="wf-tool">⌖</div>
+          </div>
+          <div class="wf-arrow" style="left:30px;bottom:46px;width:150px">tools + view controls in one dock; never moves, fades while drawing</div>
+        </div>
+        <div class="wf-cap">Bottom dock from <a class="dv-oid" href="#1d">1d</a>; mode charms replace the spine; notes open as pop-in panels tethered near their node (from <a class="dv-oid" href="#1e">1e</a>/<a class="dv-oid" href="#1c">1c</a>) with a pin action if you want it to stick to the screen instead.</div>
+      </div>
+    </div>
+
+    <!-- 2b CANVAS NOTE ACCESS -->
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>“Where is the canvas's own note?” — the canvas is a node too</div>
+      <div class="dv-card" style="width:470px">
+        <div class="wf-win" style="width:446px;height:300px;margin:12px">
+          <div class="wf-canvas"></div>
+          <span class="wf-lights wf-ghost" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+          <div class="wf-img" style="left:150px;top:60px;width:88px;height:112px"><span>img</span></div>
+          <div class="wf-img" style="left:260px;top:110px;width:70px;height:88px"><span>img</span></div>
+          <!-- node hint charm -->
+          <div style="position:absolute;left:222px;top:156px;width:14px;height:14px;border:1.2px solid #c2551f;border-radius:3px;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font:8px ui-monospace,monospace;color:#c2551f">≡</div>
+          <!-- canvas hint charm, fixed corner -->
+          <div style="position:absolute;left:10px;bottom:10px;width:18px;height:18px;border:1.2px solid #c2551f;border-radius:4px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font:10px ui-monospace,monospace;color:#c2551f">≡</div>
+          <div class="wf-arrow" style="left:34px;bottom:12px;width:190px">SAME charm, screen-fixed lower-left = this canvas's note. One symbol system: node corner ↔ canvas corner.</div>
+          <div class="wf-arrow" style="left:246px;top:206px;width:180px">node's hint charm, lower-right (see <a class="dv-oid" href="#2d" style="font-family:ui-monospace,Menlo,monospace;font-size:10px">2d</a>)</div>
+          <div class="wf-note" style="position:absolute;left:14px;top:34px;width:180px">alt access: click the board title in the hover strip ⇒ same note. Both roads, one destination.</div>
+        </div>
+        <div class="wf-cap">Since canvases are nodes in the domain model, the canvas note is just “the node you're standing inside.” Fixed corner charm = “this place has a page.” Breadcrumb/title click as the redundant path.</div>
+      </div>
+    </div>
+
+    <!-- 2c GLOBAL VIEWS -->
+    <div class="dv-opt" id="2c">
+      <div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Global views take over — local panels float, global modes swap</div>
+      <div class="dv-card" style="width:470px">
+        <div style="display:flex;gap:10px;padding:12px">
+          <div class="wf-win" style="width:206px;height:220px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:40px;top:40px;width:60px;height:78px"><span>img</span></div>
+            <div class="wf-panel" style="left:108px;top:60px;width:84px;height:90px;padding:4px">
+              <div class="wf-note" style="font-size:9.5px">note ——<br>~~~ ~~</div>
+            </div>
+            <div class="wf-hint" style="left:12px;top:170px;width:180px;color:#333">LOCAL: note pops in beside its node. Scope = one node.</div>
+          </div>
+          <div class="wf-win" style="width:206px;height:220px;position:relative;box-shadow:none;background:#23262c">
+            <div style="position:absolute;inset:14px;border:1.2px dashed #8ab4d8;border-radius:6px;display:flex;align-items:center;justify-content:center">
+              <div class="wf-note" style="color:#cdd6e0;text-align:center">graph / wiki view<br>● — ● — ●<br>&nbsp;&nbsp;\ ● /<br>full-window mode</div>
+            </div>
+            <div style="position:absolute;right:6px;top:6px;display:flex;flex-direction:column;gap:3px">
+              <div class="wf-tool on" style="width:18px;height:18px">🕸</div>
+              <div class="wf-tool" style="width:18px;height:18px;background:#2b2f36;color:#aaa;border-color:#555">▤</div>
+            </div>
+            <div class="wf-hint" style="left:12px;top:196px;width:180px;color:#8ab4d8">GLOBAL: viz/wiki swap the whole window; Esc or charm returns to canvas</div>
+          </div>
+        </div>
+        <div class="wf-cap">Resolves the <a class="dv-oid" href="#1a">1a</a> fear: global data views were never going to fit a floating window. Two scopes, two physics — panels for node-local, full-window modal modes for project-global. The charm rail is the switch.</div>
+      </div>
+    </div>
+
+    <!-- 2d NODE HINT CHARMS -->
+    <div class="dv-opt" id="2d">
+      <div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Node content-hint charms — what's inside, before you double-click</div>
+      <div class="dv-card" style="width:470px">
+        <div style="display:flex;gap:10px;padding:12px">
+          <div class="wf-win" style="width:104px;height:178px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:18px;top:20px;width:66px;height:86px"><span>img</span></div>
+            <div class="wf-hint" style="left:10px;top:116px;width:88px">bare image: NO charm — nothing inside</div>
+          </div>
+          <div class="wf-win" style="width:104px;height:178px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:18px;top:20px;width:66px;height:86px"><span>img</span></div>
+            <div style="position:absolute;left:70px;top:92px;width:13px;height:13px;border:1.2px solid #c2551f;border-radius:3px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font:7.5px ui-monospace,monospace;color:#c2551f">≡</div>
+            <div class="wf-hint" style="left:10px;top:116px;width:88px;color:#c2551f">has a note: ≡ charm, ~50% opacity, lower-right</div>
+          </div>
+          <div class="wf-win" style="width:104px;height:178px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:18px;top:20px;width:66px;height:86px"><span>img</span></div>
+            <div style="position:absolute;left:70px;top:92px;width:13px;height:13px;border:1.2px solid #c2551f;border-radius:3px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font:7.5px ui-monospace,monospace;color:#c2551f">▦</div>
+            <div class="wf-hint" style="left:10px;top:116px;width:88px;color:#c2551f">has a canvas: ▦ charm (both ⇒ stacked ≡▦)</div>
+          </div>
+          <div class="wf-win" style="width:104px;height:178px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:18px;top:20px;width:66px;height:86px"><span>img</span></div>
+            <div style="position:absolute;left:70px;top:92px;width:13px;height:13px;border:1.2px dashed #999;border-radius:3px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font:9px ui-monospace,monospace;color:#999">+</div>
+            <div class="wf-hint" style="left:10px;top:116px;width:88px;color:#888">hover, empty node: ghost + charm = create note/canvas here</div>
+          </div>
+        </div>
+        <div class="wf-cap">Same glyphs everywhere: ≡ note, ▦ canvas — on node corners, on the canvas corner (<a class="dv-oid" href="#2b">2b</a>), in the charm bar's “attach” action. Click the charm = open directly (skips double-click ambiguity when a node has both). Fades out below ~40% zoom so boards stay clean.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “storyboard <a class="dv-oid" href="#2a">2a</a> end-to-end: open node note → pin it → open canvas note → jump to wiki” · “riff on the dock's shape-tool flyout” · “start the hi-fi pass on <a class="dv-oid" href="#2a">2a</a> dark theme”</p>
+</section>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Shell directions — broad strokes (window chrome · sidebar · palettes)</span></div>
+  <div class="dv-opts">
+
+    <!-- 1a BARE GLASS -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Bare glass — zero persistent chrome, everything floats + hover-reveals</div>
+      <div class="dv-card" style="width:470px">
+        <div class="wf-win" style="width:446px;height:300px;margin:12px">
+          <div class="wf-canvas"></div>
+          <div class="wf-img" style="left:150px;top:60px;width:90px;height:120px"><span>img</span></div>
+          <div class="wf-img" style="left:255px;top:110px;width:76px;height:96px"><span>img</span></div>
+          <div class="wf-img" style="left:180px;top:196px;width:64px;height:80px"><span>img</span></div>
+          <!-- ghost hover strip -->
+          <div class="wf-ghost" style="position:absolute;left:0;top:0;right:0;height:26px;border-bottom:1.2px dashed #666;display:flex;align-items:center;padding:0 10px;gap:8px">
+            <span class="wf-lights" style="position:static"><i></i><i></i><i></i></span>
+            <span style="font:9px ui-monospace,monospace;color:#555">board title · file · view (hover only)</span>
+          </div>
+          <div class="wf-arrow" style="left:170px;top:2px">↖ whole strip at 0% opacity until cursor nears top edge</div>
+          <!-- floating tool palette -->
+          <div class="wf-panel" style="left:8px;top:78px;width:30px;padding:4px;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <div class="wf-tool on">▸</div><div class="wf-tool">T</div><div class="wf-tool">▢</div><div class="wf-tool">✎</div><div class="wf-tool">↗</div><div class="wf-tool" style="border-style:dashed">◧</div>
+          </div>
+          <div class="wf-arrow" style="left:46px;top:196px;width:96px">press-hold ▢ flies out shape set →</div>
+          <!-- right controls -->
+          <div class="wf-panel" style="right:8px;top:96px;width:30px;padding:4px;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <div class="wf-tool">+</div><div class="wf-tool">−</div><div class="wf-tool">⌖</div><div class="wf-tool">⬆̲</div><div class="wf-tool">⬇̲</div>
+          </div>
+          <!-- floating sidebar -->
+          <div class="wf-panel" style="left:238px;top:34px;width:140px;height:200px;padding:6px">
+            <div style="display:flex;gap:4px;margin-bottom:4px">
+              <div class="wf-tool on" style="width:auto;padding:0 5px;height:16px">note</div>
+              <div class="wf-tool" style="width:auto;padding:0 5px;height:16px">viz</div>
+              <div class="wf-tool" style="width:auto;padding:0 5px;height:16px">wiki</div>
+            </div>
+            <div class="wf-note" style="font-size:11px">Note title ——<br>~~~~~ ~~~ ~~~~<br>~~ [[link]] ~~~~~<br>~~~~~ ~~</div>
+          </div>
+          <div class="wf-arrow" style="left:150px;top:246px;width:220px">sidebar = free-floating window INSIDE the canvas, drag anywhere, remembers spot</div>
+        </div>
+        <div class="wf-cap">Purest PureRef read. No bars at all; traffic lights live in the hover strip too. Sidebar is a floating panel with its own mini chrome. Win/Linux: the hover strip gains a ☰ menu.</div>
+      </div>
+    </div>
+
+    <!-- 1b WHISPER BAR -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Whisper bar — translucent top bar, always there but nearly invisible</div>
+      <div class="dv-card" style="width:470px">
+        <div class="wf-win" style="width:446px;height:300px;margin:12px">
+          <div class="wf-canvas"></div>
+          <!-- persistent whisper bar -->
+          <div style="position:absolute;left:0;top:0;right:0;height:24px;background:rgba(0,0,0,.05);display:flex;align-items:center;padding:0 10px;gap:10px">
+            <span class="wf-lights" style="position:static"><i></i><i></i><i></i></span>
+            <span style="font:9px ui-monospace,monospace;color:#999">— board title —</span>
+            <span style="margin-left:auto;font:10px ui-monospace,monospace;color:#666">▤ ◫ ⌕</span>
+          </div>
+          <div class="wf-arrow" style="left:120px;top:26px;width:190px">bar is ~15% opacity; hover ⇒ full opacity + file/view menus appear</div>
+          <div class="wf-img" style="left:200px;top:80px;width:90px;height:118px"><span>img</span></div>
+          <div class="wf-img" style="left:305px;top:130px;width:70px;height:90px"><span>img</span></div>
+          <!-- docked sidebar -->
+          <div style="position:absolute;left:0;top:24px;bottom:0;width:150px;background:#fff;border-right:1.5px solid #2b2b2b;padding:6px">
+            <div style="display:flex;gap:4px;margin-bottom:4px">
+              <div class="wf-tool on" style="width:auto;padding:0 5px;height:16px">note</div>
+              <div class="wf-tool" style="width:auto;padding:0 5px;height:16px">viz</div>
+              <div class="wf-tool" style="width:auto;padding:0 5px;height:16px">wiki</div>
+            </div>
+            <div class="wf-note" style="font-size:11px">Note title ——<br>~~~~ ~~~~~ ~~<br>~~ [[link]] ~~~<br>~~~~~</div>
+          </div>
+          <div class="wf-arrow" style="left:156px;top:236px;width:130px">docked panel slides in/out; canvas shifts (Obsidian-like)</div>
+          <!-- palettes -->
+          <div class="wf-panel" style="left:158px;top:70px;width:28px;padding:4px;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <div class="wf-tool on">▸</div><div class="wf-tool">T</div><div class="wf-tool">▢</div><div class="wf-tool">✎</div>
+          </div>
+          <div class="wf-panel" style="right:8px;top:96px;width:28px;padding:4px;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <div class="wf-tool">+</div><div class="wf-tool">−</div><div class="wf-tool">⌖</div>
+          </div>
+        </div>
+        <div class="wf-cap">A real (thin) bar solves Win/Linux menus honestly and gives drag-to-move everywhere. It just refuses to be visible until you look at it.</div>
+      </div>
+    </div>
+
+    <!-- 1c CORNER CHARMS -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Corner charms — traffic lights + icon cluster only, sidebar overlays</div>
+      <div class="dv-card" style="width:470px">
+        <div class="wf-win" style="width:446px;height:300px;margin:12px">
+          <div class="wf-canvas"></div>
+          <span class="wf-lights" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+          <div style="position:absolute;right:10px;top:8px;display:flex;gap:4px">
+            <div class="wf-tool">◫</div><div class="wf-tool">⌕</div><div class="wf-tool">☰</div>
+          </div>
+          <div class="wf-arrow" style="right:14px;top:34px;width:120px">only fixed chrome: 3 charms. ☰ holds file/view (esp. win/nix)</div>
+          <div class="wf-img" style="left:120px;top:66px;width:92px;height:120px"><span>img</span></div>
+          <div class="wf-img" style="left:228px;top:110px;width:74px;height:92px"><span>img</span></div>
+          <div class="wf-img" style="left:150px;top:200px;width:66px;height:80px"><span>img</span></div>
+          <!-- overlay sheet sidebar -->
+          <div class="wf-panel" style="right:6px;top:36px;width:158px;height:230px;padding:6px;background:rgba(255,255,255,.92)">
+            <div style="display:flex;gap:4px;margin-bottom:4px">
+              <div class="wf-tool on" style="width:auto;padding:0 5px;height:16px">note</div>
+              <div class="wf-tool" style="width:auto;padding:0 5px;height:16px">viz</div>
+              <div class="wf-tool" style="width:auto;padding:0 5px;height:16px">wiki</div>
+            </div>
+            <div class="wf-note" style="font-size:11px">Note title ——<br>~~~~ ~~~~~ ~~~~<br>~~~ [[link]] ~~<br>~~~~ ~~~</div>
+          </div>
+          <div class="wf-arrow" style="left:250px;top:272px;width:180px">sidebar OVERLAYS canvas (no reflow) — slides from the ◫ charm, semi-translucent</div>
+          <div class="wf-panel" style="left:8px;top:88px;width:28px;padding:4px;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <div class="wf-tool on">▸</div><div class="wf-tool">T</div><div class="wf-tool">▢</div><div class="wf-tool">✎</div>
+          </div>
+        </div>
+        <div class="wf-cap">Middle ground: canvas never reflows, chrome is 3 icons + lights. Overlay sidebar keeps spatial memory of the board intact.</div>
+      </div>
+    </div>
+
+    <!-- 1d DECK RAIL -->
+    <div class="dv-opt" id="1d">
+      <div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Deck rail — spine of mode tabs on the edge, tools in a bottom dock</div>
+      <div class="dv-card" style="width:470px">
+        <div class="wf-win" style="width:446px;height:300px;margin:12px">
+          <div class="wf-canvas"></div>
+          <span class="wf-lights" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+          <!-- spine rail -->
+          <div style="position:absolute;left:0;top:34px;bottom:0;width:22px;background:#fff;border-right:1.5px solid #2b2b2b;display:flex;flex-direction:column;gap:8px;align-items:center;padding-top:10px">
+            <span style="font:9px ui-monospace,monospace;writing-mode:vertical-rl;color:#2a78d6;font-weight:700">NOTE</span>
+            <span style="font:9px ui-monospace,monospace;writing-mode:vertical-rl;color:#888">WIKI</span>
+            <span style="font:9px ui-monospace,monospace;writing-mode:vertical-rl;color:#888">VIZ</span>
+            <span style="font:9px ui-monospace,monospace;writing-mode:vertical-rl;color:#888">FILES</span>
+          </div>
+          <div class="wf-arrow" style="left:28px;top:40px;width:140px">book-spine rail, ~22px. Click a label ⇒ that panel unfolds</div>
+          <div class="wf-img" style="left:150px;top:56px;width:92px;height:118px"><span>img</span></div>
+          <div class="wf-img" style="left:258px;top:100px;width:72px;height:92px"><span>img</span></div>
+          <!-- bottom dock -->
+          <div class="wf-panel" style="left:50%;transform:translateX(-50%);bottom:8px;padding:4px 6px;display:flex;gap:5px">
+            <div class="wf-tool on">▸</div><div class="wf-tool">T</div><div class="wf-tool">▢</div><div class="wf-tool">✎</div><div class="wf-tool">↗</div><div class="wf-tool">⧉</div>
+            <div style="width:1px;background:#ccc"></div>
+            <div class="wf-tool">+</div><div class="wf-tool">−</div><div class="wf-tool">⌖</div>
+          </div>
+          <div class="wf-arrow" style="left:120px;bottom:44px;width:210px">one macOS-dock-style strip: tools left of divider, view controls right. Fades when drawing.</div>
+        </div>
+        <div class="wf-cap">Novel-ish: sidebar modes become a physical spine (wiki/book metaphor fits the campaign-bible fantasy). Single bottom dock instead of two edge palettes.</div>
+      </div>
+    </div>
+
+    <!-- 1e IN-WORLD SATELLITE -->
+    <div class="dv-opt" id="1e">
+      <div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>In-world satellite — the note panel attaches to the node, in canvas space</div>
+      <div class="dv-card" style="width:470px">
+        <div class="wf-win" style="width:446px;height:300px;margin:12px">
+          <div class="wf-canvas"></div>
+          <span class="wf-lights wf-ghost" style="left:10px;top:10px"><i></i><i></i><i></i></span>
+          <div class="wf-img wf-sel" style="left:96px;top:80px;width:92px;height:120px"><span>img</span></div>
+          <!-- tether + satellite panel -->
+          <div style="position:absolute;left:188px;top:120px;width:34px;border-top:1.5px dashed #2a78d6"></div>
+          <div class="wf-panel" style="left:222px;top:64px;width:160px;height:160px;padding:6px;border-color:#2a78d6">
+            <div class="wf-note" style="font-size:11px;color:#1a1a1a">Note title ——<br>~~~~ ~~~~~ ~~<br>~~ [[link]] ~~~<br>~~~~~ ~~~~</div>
+            <div style="position:absolute;bottom:5px;right:6px;font:8.5px ui-monospace,monospace;color:#2a78d6">⇱ pop to sidebar</div>
+          </div>
+          <div class="wf-arrow" style="left:230px;top:232px;width:190px">double-click a node ⇒ its note opens TETHERED beside it, pans/zooms with the board. One click pops it into a classic docked sidebar if you want it fixed.</div>
+          <!-- cmd k -->
+          <div class="wf-panel" style="left:50%;transform:translateX(-50%);top:10px;width:180px;height:22px;display:flex;align-items:center;padding:0 8px">
+            <span style="font:9.5px ui-monospace,monospace;color:#888">⌘K — search / commands / create…</span>
+          </div>
+          <div class="wf-panel" style="left:8px;top:96px;width:28px;padding:4px;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <div class="wf-tool on">▸</div><div class="wf-tool">T</div><div class="wf-tool">▢</div><div class="wf-tool">✎</div>
+          </div>
+        </div>
+        <div class="wf-cap">Most novel: notes live in the world next to their nodes — spatial memory does the filing. Chrome is nearly nil; ⌘K carries commands, menus hover-reveal.</div>
+      </div>
+    </div>
+
+    <!-- 1f SELECTION + CHARM BAR -->
+    <div class="dv-opt" id="1f">
+      <div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Selection states + charm bar (applies to any shell above)</div>
+      <div class="dv-card" style="width:470px">
+        <div style="display:flex;gap:10px;padding:12px">
+          <div class="wf-win" style="width:136px;height:190px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:30px;top:34px;width:74px;height:98px"><span>img</span></div>
+            <div class="wf-hint" style="left:32px;top:138px">hover: faint edge glow only</div>
+          </div>
+          <div class="wf-win" style="width:136px;height:190px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img wf-sel" style="left:30px;top:24px;width:74px;height:98px"><span>img</span></div>
+            <div class="wf-panel" style="left:22px;top:128px;width:92px;height:18px;display:flex;align-items:center;justify-content:space-around;font:9px ui-monospace,monospace;color:#333">✂ ⇋ ⇵ ⧉ ✎ 🔒</div>
+            <div class="wf-hint" style="left:14px;top:152px;width:110px">1-click: charm bar under it — crop · flipH · flipV · make-canvas · note · lock</div>
+          </div>
+          <div class="wf-win" style="width:136px;height:190px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:30px;top:24px;width:74px;height:98px;outline:2.5px solid #c2551f;outline-offset:2px"><span>img</span></div>
+            <div class="wf-hint" style="left:14px;top:132px;width:112px;color:#c2551f">2-click: opens note ⇒ node keeps a distinct “note is open” border while its note shows in the sidebar</div>
+          </div>
+        </div>
+        <div class="wf-cap">Three states: hover / selected+charms / note-open. No handles drawn in idle states — the cursor does that work (see <a class="dv-oid" href="#1g">1g</a>). Border treatments for note-open explored in <a class="dv-oid" href="#1h">1h</a>.</div>
+      </div>
+    </div>
+
+    <!-- 1g CURSOR SPEC -->
+    <div class="dv-opt" id="1g">
+      <div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Cursor zones — no drawn handles, the cursor IS the affordance</div>
+      <div class="dv-card" style="width:470px">
+        <div style="padding:14px;display:flex;gap:14px">
+          <div style="position:relative;width:210px;height:250px;flex:none">
+            <div class="wf-img wf-sel" style="left:44px;top:44px;width:120px;height:160px;position:absolute"><span>img</span></div>
+            <!-- zone annotations -->
+            <div class="wf-hint" style="left:80px;top:110px;color:#333">inside: ✥ move</div>
+            <div class="wf-hint" style="left:170px;top:114px">edge ±4px: ⇔ resize</div>
+            <div class="wf-hint" style="left:150px;top:24px">corner: ⤡ resize</div>
+            <div class="wf-hint" style="left:6px;top:16px;color:#c2551f">just OUTSIDE corner: ↻ rotate</div>
+            <div class="wf-hint" style="left:6px;top:230px;color:#888">empty canvas: grab/pan</div>
+            <div style="position:absolute;left:36px;top:36px;width:136px;height:176px;border:1px dashed #c2551f;border-radius:6px"></div>
+          </div>
+          <div class="wf-note" style="flex:1">
+            Zones, not handles:<br>
+            · inside ⇒ move cursor<br>
+            · within 4px of edge ⇒ directional resize (⇕ ⇔)<br>
+            · corner ⇒ diagonal resize (⤡ ⤢)<br>
+            · 4–14px OUTSIDE a corner ⇒ rotate cursor ↻<br>
+            · ⌥ inside ⇒ duplicate-drag<br>
+            · locked node ⇒ 🚫 cursor, no state to draw<br>
+            <br>
+            Selected = thin blue outline only. Zero knobs cluttering the art.
+          </div>
+        </div>
+        <div class="wf-cap">Matches your instinct: kill the stick-out rotate handle; hot zones + cursor glyphs communicate everything. Snappy because nothing has to render.</div>
+      </div>
+    </div>
+
+    <!-- 1h NOTE-OPEN BORDER -->
+    <div class="dv-opt" id="1h">
+      <div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>“Note open in sidebar” indicator — three treatments</div>
+      <div class="dv-card" style="width:470px">
+        <div style="display:flex;gap:10px;padding:12px">
+          <div class="wf-win" style="width:136px;height:170px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:30px;top:26px;width:74px;height:98px;outline:2.5px solid #c2551f;outline-offset:3px;border-radius:2px"><span>img</span></div>
+            <div class="wf-hint" style="left:16px;top:136px;width:106px;color:#c2551f">A · accent halo, second color ≠ selection blue</div>
+          </div>
+          <div class="wf-win" style="width:136px;height:170px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:30px;top:26px;width:74px;height:98px"><span>img</span></div>
+            <div style="position:absolute;left:96px;top:18px;width:16px;height:22px;background:#c2551f;clip-path:polygon(0 0,100% 0,100% 100%,50% 75%,0 100%)"></div>
+            <div class="wf-hint" style="left:16px;top:136px;width:106px;color:#c2551f">B · bookmark tab on the corner (reads at any zoom)</div>
+          </div>
+          <div class="wf-win" style="width:136px;height:170px;position:relative;box-shadow:none">
+            <div class="wf-canvas"></div>
+            <div class="wf-img" style="left:14px;top:26px;width:70px;height:94px"><span>img</span></div>
+            <div style="position:absolute;left:84px;top:60px;width:40px;border-top:1.5px dashed #c2551f"></div>
+            <div style="position:absolute;right:2px;top:16px;bottom:16px;width:12px;background:#fff;border:1.5px solid #c2551f;border-radius:3px"></div>
+            <div class="wf-hint" style="left:14px;top:132px;width:110px;color:#c2551f">C · thread line from node to the sidebar edge — literal “this one”</div>
+          </div>
+        </div>
+        <div class="wf-cap">All three keep selection-blue free for actual selection. A is cheapest; B survives zoom-out best; C is charming but needs care when the node is off-screen.</div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “combine <a class="dv-oid" href="#1b">1b</a>'s whisper bar with <a class="dv-oid" href="#1c">1c</a>'s overlay sidebar” · “go deeper on <a class="dv-oid" href="#1e">1e</a>'s tethered notes” · “wireframe the tool flyout + charm bar interactions frame by frame”</p>
+</section>
+
+</x-dc>
+
+
+</body></html>

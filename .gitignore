@@ -1,5 +1,7 @@
 .DS_Store
 RAG/.obsidian/workspace.json
+.obsidian/
+.pnpm-store/
 .claude/worktrees/
 # Codex watcher drop-box (hand-off to Claude's hook); never committed.
 .codex/
@@ -16,6 +18,8 @@ dist-artifacts/
 # Loose extractions of RAG/Design-Artifacts-v*.zip — the zip is the
 # canonical committed artifact; extracted copies stay local.
 RAG/canonical/
+# Same rule for the design-package zips (rev 0.71 kit-normative home).
+RAG/design/design-package-*/
 RAG/Design Spec v2.html
 RAG/Design-reply-letter-2.md
 RAG/Expanding Worlds - UI Vision.html

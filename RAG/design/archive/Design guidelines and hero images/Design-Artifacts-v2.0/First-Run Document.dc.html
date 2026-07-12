@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400-italic.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/700.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+a{color:#2a78d6}a:hover{color:#4a9df0}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:250px}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.fpg{width:250px;height:230px;position:relative;background:#1b1d22}
+.fcard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:210px;border-radius:8px;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #cfc9bc;box-shadow:0 14px 40px rgba(0,0,0,.5);padding:13px;box-sizing:border-box}
+.ft{font:700 10.5px 'Maple Mono',ui-monospace,monospace;color:#222}
+.fb{font:8.5px/1.7 'Maple Mono',ui-monospace,monospace;color:#333;margin-top:5px}
+.ffoot{display:flex;align-items:center;gap:4px;margin-top:10px}
+.fd{width:5px;height:5px;border-radius:50%;background:#c9c2b2}
+.fda{width:5px;height:5px;border-radius:50%;background:#8a6414}
+.fsk{font:8px 'Maple Mono',ui-monospace,monospace;color:#888;margin-left:auto}
+.fnx{font:8px 'Maple Mono',ui-monospace,monospace;color:#33628f}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">The first-run guide, all seven pages (EPIC-019) — plain and warm, skippable at every step, ends inside the seeded example</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Page 1 — what this is, in one breath</div>
+    <div class="dv-card fpg"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div><div style="position:absolute;inset:0;background:rgba(12,13,16,.5)"></div>
+      <div class="fcard">
+        <div class="ft">A board for your pictures</div>
+        <div class="fb">Drop art on it. Arrange it the way you already do. That's the whole app — until, without any extra ceremony, it quietly becomes a world you can search, map, and read.</div>
+        <div class="ffoot"><span class="fda"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fsk">skip</span><span class="fnx">next ›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Page 2 — the one lesson that must land</div>
+    <div class="dv-card fpg"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div><div style="position:absolute;inset:0;background:rgba(12,13,16,.5)"></div>
+      <div class="fcard">
+        <div class="ft">Your pictures are safe</div>
+        <div class="fb">Everything you drop here is COPIED. Your own folders and originals are never touched, moved, or changed — and one picture can live in many places at once without existing twice.</div>
+        <div class="ffoot"><span class="fd"></span><span class="fda"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fsk">skip</span><span class="fnx">next ›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Page 3 — hands on the board</div>
+    <div class="dv-card fpg"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div><div style="position:absolute;inset:0;background:rgba(12,13,16,.5)"></div>
+      <div class="fcard">
+        <div class="ft">No knobs on your art</div>
+        <div class="fb">Inside moves it. Edges stretch it. Corners scale it; just outside a corner turns it. The cursor shows you — and every button in the app names itself and its key when you hover.</div>
+        <div class="ffoot"><span class="fd"></span><span class="fd"></span><span class="fda"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fsk">skip</span><span class="fnx">next ›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Page 4 — words, and the wiki that happens</div>
+    <div class="dv-card fpg"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div><div style="position:absolute;inset:0;background:rgba(12,13,16,.5)"></div>
+      <div class="fcard">
+        <div class="ft">Any picture can carry words</div>
+        <div class="fb">Its note opens beside it like a page in a book. Write <span style="color:#2563b0">[[a name]]</span> and it's linked — that's the whole wiki. Nothing saves until you actually type something.</div>
+        <div class="ffoot"><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fda"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fsk">skip</span><span class="fnx">next ›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Page 5 — doors</div>
+    <div class="dv-card fpg"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div><div style="position:absolute;inset:0;background:rgba(12,13,16,.5)"></div>
+      <div class="fcard">
+        <div class="ft">Pictures open into boards</div>
+        <div class="fb">Give any picture a board of its own — a map opens into its region, a character into their story. Boards nest as deep as the world goes, and the path at the top is always the way back.</div>
+        <div class="ffoot"><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fda"></span><span class="fd"></span><span class="fd"></span><span class="fsk">skip</span><span class="fnx">next ›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Page 6 — finding it again</div>
+    <div class="dv-card fpg"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div><div style="position:absolute;inset:0;background:rgba(12,13,16,.5)"></div>
+      <div class="fcard">
+        <div class="ft">Nothing gets lost</div>
+        <div class="fb">Tag things as you arrange them. Search finds every word you've written and every picture you've named. The gallery holds your whole collection — and deleting only ever moves things to a trash that keeps them whole.</div>
+        <div class="ffoot"><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fda"></span><span class="fd"></span><span class="fsk">skip</span><span class="fnx">next ›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1g"><div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Page 7 — the optional ask, then into the example</div>
+    <div class="dv-card fpg"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div><div style="position:absolute;inset:0;background:rgba(12,13,16,.5)"></div>
+      <div class="fcard">
+        <div class="ft">What do you plan to make?</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;font:8.5px 'Maple Mono',ui-monospace,monospace;color:#333">
+          <div style="border:1px solid #d3ccbc;border-radius:5px;padding:4px 7px">reference boards for painting</div>
+          <div style="border:1px solid #8a6414;border-radius:5px;padding:4px 7px;background:#faf3df">a comic or a pitch bible</div>
+          <div style="border:1px solid #d3ccbc;border-radius:5px;padding:4px 7px">mapping a story on a timeline</div>
+        </div>
+        <div class="fb" style="color:#888">optional — it only picks which workflow ideas you'll see once</div>
+        <div class="ffoot"><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fd"></span><span class="fda"></span><span class="fsk">skip</span><span class="fnx">start ›</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1h"><div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>The rules of the arc — content-design notes for build</div>
+    <div class="dv-card" style="width:280px;background:#fdf6e3;border-color:#d9c68a;padding:13px 15px;font-size:10.5px;line-height:1.7;color:#5b4a1a">
+      · one idea per page, ≤3 sentences, warm and plain — no feature names, no "node"<br>
+      · page 2 (copies, never your files) is the load-bearing page; it may not be cut in any shortening<br>
+      · skip is on every page and never nags; the guide never shows again (a settings action can replay it)<br>
+      · page 7's pick is optional and only filters which workflow ideas show; a pick could someday seed a real starter world (deferred, letter)<br>
+      · "start" lands INSIDE the seeded example — the walkthrough teaches claims, the example proves them with real furniture<br>
+      · pages are the taped-paper voice: Maple, dots for progress, board visible behind
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “show the workflow-ideas panel a pick produces” · “tighten any page's copy” · “ratify — letter + storyboard §19 absorbs”</p>
+</section>
+</x-dc>
+</body>
+</html>

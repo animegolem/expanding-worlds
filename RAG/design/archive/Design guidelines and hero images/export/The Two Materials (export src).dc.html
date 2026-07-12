@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#0e1013">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <rect x="20" y="30" width="36" height="60" rx="6" fill="#14161a" stroke="#3a3e46" stroke-width="1.5"/>
+    <text x="38" y="68" text-anchor="middle" font-family="monospace" font-size="22" fill="#8b94a1">⌕</text>
+    <rect x="64" y="34" width="36" height="52" rx="3" fill="#f7f4ec"/>
+    <path d="M64 34l4 2 4-2 4 2 4-2 4 2 4-2 4 2 4-2 4 2v3H64z" fill="#efe9db"/>
+    <circle cx="82" cy="32" r="5" fill="#d6564a"/>
+    <ellipse cx="80" cy="30" rx="1.8" ry="1.2" fill="#f2b0a8"/>
+  </svg>
+</template>
+<x-dc>
+<helmet data-dc-atomics="">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400-italic.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/700.css">
+<style>
+body{margin:0;background:#0e1013}
+a{color:#8ec2f5}a:hover{color:#b3d6f8}
+@keyframes nsPage{
+  0%,13%{transform:translate(0,0) rotate(0);border-radius:0 8px 8px 0;box-shadow:0 0 0 rgba(0,0,0,0)}
+  20%,40%{transform:translate(232px,-8px) rotate(-2deg);border-radius:8px;box-shadow:0 16px 38px rgba(0,0,0,.6)}
+  47%,68%{transform:translate(464px,0) rotate(0);border-radius:6px;box-shadow:0 0 0 rgba(0,0,0,0)}
+  76%,82%{transform:translate(232px,-8px) rotate(-2deg);border-radius:8px;box-shadow:0 16px 38px rgba(0,0,0,.6)}
+  92%,100%{transform:translate(0,0) rotate(0);border-radius:0 8px 8px 0;box-shadow:0 0 0 rgba(0,0,0,0)}
+}
+@keyframes nsRings{0%,13%{opacity:1}17%,88%{opacity:0}94%,100%{opacity:1}}
+@keyframes nsTear{0%,14%{opacity:0}18%,90%{opacity:1}96%,100%{opacity:0}}
+@keyframes nsTape{0%,15%{opacity:0}21%,42%{opacity:1}47%,73%{opacity:0}77%,84%{opacity:1}89%,100%{opacity:0}}
+@keyframes nsPin{0%,42%{opacity:0;transform:translate(-50%,-14px)}47%,68%{opacity:1;transform:translate(-50%,0)}73%,100%{opacity:0;transform:translate(-50%,-14px)}}
+@keyframes nsCap1{0%,13%{color:#e8c88a}15%,92%{color:#4b535e}94%,100%{color:#e8c88a}}
+@keyframes nsCap2{0%,17%{color:#4b535e}21%,40%{color:#e8c88a}44%,74%{color:#4b535e}77%,83%{color:#e8c88a}86%,100%{color:#4b535e}}
+@keyframes nsCap3{0%,44%{color:#4b535e}48%,68%{color:#e8c88a}72%,100%{color:#4b535e}}
+@keyframes nsLift{0%,14%{transform:translate(0,0) rotate(0) scale(1);box-shadow:0 0 0 rgba(0,0,0,0)}20%,24%{transform:translate(0,-3px) rotate(-1deg) scale(1.012);box-shadow:0 12px 26px rgba(0,0,0,.55)}52%,56%{transform:translate(76px,-3px) rotate(-1deg) scale(1.012);box-shadow:0 12px 26px rgba(0,0,0,.55)}64%,86%{transform:translate(76px,0) rotate(0) scale(1);box-shadow:0 0 0 rgba(0,0,0,0)}90%{opacity:0}92%{opacity:0;transform:translate(0,0)}96%,100%{transform:translate(0,0);opacity:1;box-shadow:0 0 0 rgba(0,0,0,0)}}
+@keyframes nsStrain{0%,32%{transform:translateX(0)}38%,46%{transform:translateX(2px)}52%,100%{transform:translateX(0)}}
+@keyframes nsBurnMask{0%,24%{-webkit-mask-position:0 0;mask-position:0 0}62%,84%{-webkit-mask-position:0 100%;mask-position:0 100%}92%,100%{-webkit-mask-position:0 0;mask-position:0 0}}
+@keyframes nsBurnEdge{0%,24%{top:96%;opacity:0}28%{opacity:1}60%{top:-6%;opacity:1}64%,100%{top:-6%;opacity:0}}
+@keyframes nsClock{0%,58%{opacity:1}70%,84%{opacity:.22}96%,100%{opacity:1}}
+.nsBurn{-webkit-mask-image:linear-gradient(to top,transparent 0 38%,#000 55% 100%);mask-image:linear-gradient(to top,transparent 0 38%,#000 55% 100%);-webkit-mask-size:100% 320%;mask-size:100% 320%;animation:nsBurnMask 4.6s ease-in-out infinite}
+.nsMono{font-family:ui-monospace,'SF Mono',Menlo,monospace}
+.nsChip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11);color:#dde3ea;font-size:12px}
+</style>
+</helmet>
+
+<div style="min-height:100vh;color:#dde3ea;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif">
+
+  <!-- ============ HERO ============ -->
+  <div style="max-width:1060px;margin:0 auto;padding:44px 40px 40px">
+    <div class="nsMono" style="font-size:11px;letter-spacing:.14em;color:#8a6414">EXPANDING WORLDS · THE NORTH STAR · READ BEFORE YOUR FIRST UI PULL REQUEST</div>
+    <h1 style="margin:16px 0 0;font-size:30px;line-height:1.25;letter-spacing:-.01em;font-weight:600">
+      <span class="nsMono" style="color:#8b94a1;font-weight:400">Chrome is a terminal. </span><span style="font-family:'Maple Mono',ui-monospace,monospace;color:#f2efe6">The world is a desk.</span>
+    </h1>
+    <p style="max-width:640px;margin:14px 0 0;font-size:13.5px;line-height:1.7;color:#9aa3ad">Every pixel in this app is made of one of two materials. The UI around the canvas is a flat, mono-flavored terminal that names itself and never emotes. The canvas holds objects with gentle physics — they lift, settle, tear, press, and burn. Know which one you're working in before you write a line.</p>
+  </div>
+
+  <!-- ============ LAYER 01 — TERMINAL ============ -->
+  <div style="border-top:1px solid rgba(255,255,255,.07);background:#101216">
+    <div style="max-width:1060px;margin:0 auto;padding:60px 40px 64px">
+      <div style="display:flex;align-items:baseline;gap:16px">
+        <span class="nsMono" style="font-size:13px;color:#4a9df0">LAYER 01</span>
+        <h2 class="nsMono" style="margin:0;font-size:26px;font-weight:700;color:#dde3ea;letter-spacing:-.01em">the terminal</h2>
+        <span class="nsMono" style="margin-left:auto;font-size:11.5px;color:#5a6572">rail · dock · menus · tooltips · search · takeover chrome · panels</span>
+      </div>
+      <p style="max-width:640px;margin:16px 0 0;font-size:14px;line-height:1.7;color:#9aa3ad"><b style="color:#dde3ea">Shipping a UX-layer feature? You are working in mono.</b> Flat surfaces, unicode glyphs, printed shortcuts, sentence case, verbs. Chrome animates exactly one property — opacity — and everything fades on one shared clock, together, like a tide.</p>
+
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:30px;align-items:flex-start">
+        <div style="flex:none;background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:18px 20px">
+          <div class="nsMono" style="font-size:10px;letter-spacing:.14em;color:#5a6572;margin-bottom:12px">GLYPHS ARE TYPE, NOT ART</div>
+          <div style="display:flex;gap:8px">
+            <span class="nsChip nsMono">⧉</span><span class="nsChip nsMono">⌕</span><span class="nsChip nsMono">⊛</span><span class="nsChip nsMono">⊞</span><span class="nsChip nsMono">▤</span><span class="nsChip nsMono">☰</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <span class="nsChip"><span class="nsMono">Bookmark this board</span><span class="nsMono" style="color:#8b94a1;background:rgba(255,255,255,.07);border-radius:4px;padding:0 6px">⌘D</span></span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <span class="nsChip nsMono" style="border-color:#b85c33;color:#e0975a">#creature ✕</span>
+            <span class="nsChip nsMono">gob ✕</span>
+            <span class="nsChip nsMono" style="color:#8b94a1">date ▾</span>
+          </div>
+        </div>
+        <div style="flex:none;background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:18px 20px">
+          <div class="nsMono" style="font-size:10px;letter-spacing:.14em;color:#5a6572;margin-bottom:12px">ONE CLOCK — ALL CHROME FADES TOGETHER</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="nsChip nsMono" style="animation:nsClock 5s ease-in-out infinite">▸ T ▭ ✎ ◉</span>
+            <span class="nsChip nsMono" style="animation:nsClock 5s ease-in-out infinite">100%</span>
+            <span class="nsChip nsMono" style="animation:nsClock 5s ease-in-out infinite">⌂ homeworld › reach</span>
+          </div>
+          <div class="nsMono" style="font-size:10.5px;color:#5a6572;margin-top:12px;line-height:1.7">opacity only · 240ms · 4s idle delay<br>never piecemeal, never a second clock</div>
+        </div>
+        <div style="flex:1;min-width:240px;background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:18px 20px">
+          <div class="nsMono" style="font-size:10px;letter-spacing:.14em;color:#5a6572;margin-bottom:12px">THINK LIKE THIS</div>
+          <div class="nsMono" style="font-size:12px;line-height:2.05;color:#9aa3ad">
+            flat — no gradient, gloss, bevel, or resting shadow<br>
+            the GUI is the tutorial: hover prints name + key<br>
+            five tooltip shapes, verbs in menus, never “file”<br>
+            state = color and fill, never motion<br>
+            disabled stays visible and names its reason
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LAYER 02 — DESK ============ -->
+  <div style="border-top:1px solid rgba(255,255,255,.07);background:#17191d">
+    <div style="max-width:1060px;margin:0 auto;padding:60px 40px 64px">
+      <div style="display:flex;align-items:baseline;gap:16px">
+        <span class="nsMono" style="font-size:13px;color:#e0975a">LAYER 02</span>
+        <h2 style="margin:0;font-size:26px;font-weight:700;color:#f2efe6;letter-spacing:-.01em;font-family:'Maple Mono',ui-monospace,monospace">the desk</h2>
+        <span class="nsMono" style="margin-left:auto;font-size:11.5px;color:#5a6572">art · ink · paper notes · object icons · the lit stage</span>
+      </div>
+      <p style="max-width:640px;margin:16px 0 0;font-size:14px;line-height:1.7;color:#9aa3ad"><b style="color:#f2efe6">Shipping a canvas-level feature? You are working in physics.</b> Things the user owns are objects with mass. State changes are physical events you can watch happen — and the hardware left behind tells you what state a thing is in: rings mean bound, tape means on your glass, a push pin means planted in the world.</p>
+
+      <!-- the lifecycle animation -->
+      <div style="position:relative;margin-top:30px;height:300px;border-radius:12px;background:#1b1d22;border:1px solid rgba(255,255,255,.08);overflow:hidden">
+        <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:26px 26px"></div>
+        <div style="position:absolute;left:64px;top:58px;width:110px;height:150px;border-radius:3px;background:repeating-linear-gradient(115deg,#5d4b45 0 12px,#524139 12px 24px);box-shadow:0 8px 22px rgba(0,0,0,.3)"></div>
+        <!-- the page -->
+        <div style="position:absolute;left:174px;top:58px;width:150px;height:150px;background:linear-gradient(180deg,#ffffff,#f4f1ea);border:1px solid #dcd8cf;box-sizing:border-box;padding:13px 13px 13px 17px;animation:nsPage 13s ease-in-out infinite">
+          <div style="position:absolute;left:-6px;top:16px;bottom:16px;display:flex;flex-direction:column;justify-content:space-between;animation:nsRings 13s ease-in-out infinite"><span style="width:11px;height:11px;border:2px solid #9aa3ad;border-radius:50%;background:#1b1d22;box-sizing:border-box"></span><span style="width:11px;height:11px;border:2px solid #9aa3ad;border-radius:50%;background:#1b1d22;box-sizing:border-box"></span><span style="width:11px;height:11px;border:2px solid #9aa3ad;border-radius:50%;background:#1b1d22;box-sizing:border-box"></span><span style="width:11px;height:11px;border:2px solid #9aa3ad;border-radius:50%;background:#1b1d22;box-sizing:border-box"></span></div>
+          <div style="position:absolute;left:0;right:0;top:-5px;height:6px;background:#f7f3ea;clip-path:polygon(0 100%,4% 0,10% 80%,17% 10%,24% 95%,31% 20%,38% 90%,45% 5%,52% 100%,59% 15%,66% 85%,73% 10%,80% 95%,87% 20%,94% 80%,100% 100%);animation:nsTear 13s ease-in-out infinite"></div>
+          <div style="position:absolute;left:50%;top:-9px;transform:translateX(-50%) rotate(-2deg);width:46px;height:12px;background:rgba(214,205,182,.62);border:1px solid rgba(160,150,125,.4);animation:nsTape 13s ease-in-out infinite"></div>
+          <svg style="position:absolute;left:50%;top:-13px;animation:nsPin 13s ease-in-out infinite" width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="nsp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0847c"/><stop offset="1" stop-color="#c0392f"/></linearGradient></defs><circle cx="12" cy="9" r="6.5" fill="url(#nsp)" stroke="#8f2f27" stroke-width=".8"/><ellipse cx="9.8" cy="6.6" rx="2.4" ry="1.4" fill="rgba(255,255,255,.45)"/><path d="M12 15.5v5" stroke="#8a8f98" stroke-width="1.6"/></svg>
+          <div style="font-family:'Maple Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:#222">Warren gate</div>
+          <div style="font-family:'Maple Mono',ui-monospace,monospace;font-size:9.5px;line-height:1.65;color:#333;margin-top:6px">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall — salvage iron, warren-forged.</div>
+        </div>
+        <div class="nsMono" style="position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:44px;font-size:11px">
+          <span style="animation:nsCap1 13s ease-in-out infinite">1 · bound — rings, flat</span>
+          <span style="animation:nsCap2 13s ease-in-out infinite">2 · sticky — tape, shadow, your glass</span>
+          <span style="animation:nsCap3 13s ease-in-out infinite">3 · landmark — push-pinned, world again</span>
+        </div>
+        <div class="nsMono" style="position:absolute;right:16px;top:12px;font-size:10px;color:#5a6572">every arrow runs both ways · one undo each · the torn edge is the scar that stays</div>
+      </div>
+
+      <!-- the beats -->
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:14px">
+        <div style="flex:1;min-width:220px;position:relative;height:150px;border-radius:10px;background:#1b1d22;border:1px solid rgba(255,255,255,.08);overflow:hidden">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:26px 26px"></div>
+          <div style="position:absolute;left:44px;top:30px;width:50px;height:66px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 10px,#414b55 10px 20px);animation:nsLift 4.8s ease-in-out infinite"></div>
+          <div class="nsMono" style="position:absolute;left:12px;bottom:9px;font-size:10px;color:#5a6572">the grab — lift · carry · settle. every drag plays it</div>
+        </div>
+        <div style="flex:1;min-width:220px;position:relative;height:150px;border-radius:10px;background:#1b1d22;border:1px solid rgba(255,255,255,.08);overflow:hidden">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:26px 26px"></div>
+          <div style="position:absolute;left:80px;top:30px;width:54px;height:70px;border-radius:2px;background:repeating-linear-gradient(115deg,#455548 0 10px,#3c4a3f 10px 20px);animation:nsStrain 3.6s ease-in-out infinite"></div>
+          <div class="nsMono" style="position:absolute;left:12px;bottom:9px;font-size:10px;color:#5a6572">the press — locked means IN the desk; a grab strains, it never lifts</div>
+        </div>
+        <div style="flex:1;min-width:220px;position:relative;height:150px;border-radius:10px;background:#101216;border:1px solid rgba(255,255,255,.08);overflow:hidden">
+          <div style="position:absolute;left:84px;top:26px;width:52px;height:70px">
+            <div class="nsBurn" style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px)"></div>
+            <div style="position:absolute;left:-4px;right:-4px;height:7px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,160,60,.95),rgba(230,90,30,.5) 55%,transparent 75%);filter:blur(1.2px);animation:nsBurnEdge 4.6s ease-in-out infinite"></div>
+          </div>
+          <div class="nsMono" style="position:absolute;left:12px;bottom:9px;font-size:10px;color:#5a6572">the burn — Empty Trash only: the one honest fire</div>
+        </div>
+      </div>
+      <p class="nsMono" style="margin:18px 0 0;font-size:11.5px;line-height:1.8;color:#5a6572">six verbs cover everything: lift · settle · nudge · press · tear · glide — one beat per user act, ±1% scale, never ambient, never looping, and never a metaphor that lies: delete LIFTS AWAY because the trash keeps things whole.</p>
+    </div>
+  </div>
+
+  <!-- ============ THE RULES ============ -->
+  <div style="border-top:1px solid rgba(255,255,255,.07);background:#101216">
+    <div style="max-width:1060px;margin:0 auto;padding:48px 40px 56px">
+      <div class="nsMono" style="font-size:11px;letter-spacing:.14em;color:#8a6414">THE RULES — THIS IS THE PART YOU BUILD FROM</div>
+
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:20px;align-items:flex-start">
+        <div style="flex:1;min-width:330px;background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px">
+          <div class="nsMono" style="font-size:10px;letter-spacing:.14em;color:#5a6572;margin-bottom:10px">EVERY CANVAS MOUSE-DOWN → ITS BEAT</div>
+          <div class="nsMono" style="font-size:11px;line-height:2;color:#9aa3ad">
+            grab → <span style="color:#e8c88a">lift</span> — shadow on, +1% scale, ~120ms<br>
+            release → <span style="color:#e8c88a">settle</span> — flat, one ease-out ~150ms, no bounce<br>
+            import lands → <span style="color:#e8c88a">settle + bloom</span> — stage edge grows ~240ms<br>
+            snap engage → <span style="color:#e8c88a">nudge</span> — magnetic seat, last px ease ~40ms<br>
+            lock → <span style="color:#e8c88a">press</span> — −1% into the desk; grab = 2px strain, no lift<br>
+            note gestures → <span style="color:#e8c88a">tear family</span> — cover ~200 · tear ~300 · tuck ~200 · pin-through ⇄ pull<br>
+            delete → <span style="color:#e8c88a">lift, away</span> — up + fade ~180ms; NEVER a crumple (trash keeps it whole)<br>
+            pan flick → <span style="color:#e8c88a">glide</span> — real friction, ≤300ms, no rubber band<br>
+            double-click picture → <span style="color:#e8c88a">dive</span> — eased flight into the child board<br>
+            drag over a frame → members <span style="color:#e8c88a">make room</span> — the one allowed anticipatory motion<br>
+            <span style="color:#5a6572">no beat, on purpose: resize · rotate · crop · marquee · draw · pan-grab</span>
+          </div>
+        </div>
+        <div style="flex:1;min-width:330px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px">
+            <div class="nsMono" style="font-size:10px;letter-spacing:.14em;color:#5a6572;margin-bottom:10px">THE HAND — CURSOR ZONES, NOT HANDLES</div>
+            <div class="nsMono" style="font-size:11px;line-height:2;color:#9aa3ad">
+              inside moves · edge stretches · corner scales · just outside a corner rotates<br>
+              Option at drag-START duplicates · Option MID-drag slips the snap<br>
+              Shift = tidy constraints, and it silences snapping while held<br>
+              rotation magnetizes to cardinals · Shift quantizes to 15° steps<br>
+              locked shows the refusal cursor and draws nothing else
+            </div>
+          </div>
+          <div style="background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px">
+            <div class="nsMono" style="font-size:10px;letter-spacing:.14em;color:#5a6572;margin-bottom:10px">THE CLICK GRAMMAR + ESC</div>
+            <div class="nsMono" style="font-size:11px;line-height:2;color:#9aa3ad">
+              single click = select + charm bar · a charm opens exactly its facet<br>
+              double-click = everything the thing has (dive + note)<br>
+              esc peels one layer at a time: selection → lens → takeover → nothing
+            </div>
+          </div>
+          <div style="background:#14161a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px">
+            <div class="nsMono" style="font-size:10px;letter-spacing:.14em;color:#5a6572;margin-bottom:10px">PAPER + ZOOM CONSTANTS</div>
+            <div class="nsMono" style="font-size:11px;line-height:2;color:#9aa3ad">
+              the page opens where the image's shape says: portrait → beside (roomier side) · wide → below, calendar-bound; it matches the SHARED edge, chosen at open, never flips mid-zoom<br>
+              lifecycle fully reversible — one undo per transition; the torn edge stays<br>
+              zoom: world shrinks honestly · chrome holds size · ALL furniture on one threshold (EW_FURNITURE_MIN_PX ~8) · page fades whole at EW_PAGE_FLOOR_PX ~48
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ THE TEST ============ -->
+  <div style="border-top:1px solid rgba(255,255,255,.07);background:#0e1013">
+    <div style="max-width:1060px;margin:0 auto;padding:56px 40px 80px">
+      <div class="nsMono" style="font-size:12px;letter-spacing:.22em;color:#8a6414">WHICH MATERIAL AM I IN? — THREE QUESTIONS</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:22px">
+        <div style="flex:1;min-width:250px;border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:18px 20px">
+          <div class="nsMono" style="font-size:13px;color:#dde3ea">1 · does the user OWN it?</div>
+          <div style="font-size:12.5px;line-height:1.7;color:#8b94a1;margin-top:8px">They placed it, wrote it, made it → desk. The app provides it as a control or container → terminal.</div>
+        </div>
+        <div style="flex:1;min-width:250px;border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:18px 20px">
+          <div class="nsMono" style="font-size:13px;color:#dde3ea">2 · should the state change be VISIBLE as an event?</div>
+          <div style="font-size:12.5px;line-height:1.7;color:#8b94a1;margin-top:8px">The desk's job is making state changes obvious, playfully — bound → torn → pinned. Terminal state changes by color and fill, silently.</div>
+        </div>
+        <div style="flex:1;min-width:250px;border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:18px 20px">
+          <div class="nsMono" style="font-size:13px;color:#dde3ea">3 · would the metaphor ever LIE?</div>
+          <div style="font-size:12.5px;line-height:1.7;color:#8b94a1;margin-top:8px">If the physical story misrepresents the system, it's forbidden even on the desk. An honest terminal beats a lying desk, always.</div>
+        </div>
+      </div>
+      <p class="nsMono" style="margin:26px 0 0;font-size:11.5px;color:#5a6572;line-height:1.8">companions: Desk or Terminal Rulebook (the PR checklist) · Interaction Physics Document (every mouse-down) · Note Lifecycle Document (the paper states) · STYLE-GUIDE.md (tokens + constants)</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

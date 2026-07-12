@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<style>
+body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+a{color:#2a78d6}a:hover{color:#4a9df0}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-rowh{font:600 11px/1.2 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.45);letter-spacing:.06em;text-transform:uppercase;margin:26px 0 12px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:360px}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.fc{font-size:7.5px;border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:1px 6px;color:#9aa3ad;white-space:nowrap}
+.fca{font-size:7.5px;border:1px solid #d08652;border-radius:99px;padding:1px 6px;color:#d08652;white-space:nowrap}
+.callout{font:8px ui-monospace,Menlo,monospace;color:#8a6414;background:#fdf6e3;border:1px solid #d9c68a;border-radius:3px;padding:1px 5px;white-space:nowrap}
+.kb{font:8px ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.06);border-radius:3px;padding:0 4px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">The search track — icon → bar → pills, and back</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Five states of one control. Committing a term crystallizes it into a pill; the track's ✕ clears everything; double-click melts pills back into editable text; empty again = back to the quiet icon</div>
+    <div class="dv-card" style="width:460px;background:#14161a;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;width:88px">rest</span>
+        <span style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#9aa3ad;font-size:10px;display:flex;align-items:center;justify-content:center">⌕</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;width:88px">click → bar</span>
+        <span style="display:flex;align-items:center;gap:5px;width:190px;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:3px 7px;font-size:9px;color:#dde3ea">⌕ <span style="color:#5a6572">|</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;width:88px">type · complete</span>
+        <span style="display:flex;align-items:center;gap:5px;width:190px;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:3px 7px;font-size:9px;color:#dde3ea;position:relative">⌕ #cre<span style="color:#5a6572">ature ⏎</span>
+          <span style="position:absolute;left:24px;top:22px;background:rgba(31,34,40,.98);border:1px solid rgba(255,255,255,.14);border-radius:4px;padding:2px 6px;font:8px ui-monospace,Menlo,monospace;color:#9aa3ad;z-index:2">#creature · 41 &nbsp;#crescent-keep · 3</span>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+        <span style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;width:88px">⏎ → pills</span>
+        <span style="display:flex;align-items:center;gap:5px;width:230px;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:3px 7px;font-size:8.5px">
+          <span style="color:#9aa3ad">⌕</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid #d08652;border-radius:99px;padding:1px 7px;color:#d08652;font-family:ui-monospace,Menlo,monospace">#creature <span style="color:#8b6a4a">✕</span></span>
+          <span style="display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:1px 7px;color:#dde3ea;font-family:ui-monospace,Menlo,monospace">gob <span style="color:#79808a">✕</span></span>
+          <span style="flex:1"></span>
+          <span style="color:#79808a">✕</span>
+        </span>
+        <span style="font:8px ui-monospace,Menlo,monospace;color:#5a6572">tags AND together · trailing ✕ clears all</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;width:88px">2×click → text</span>
+        <span style="display:flex;align-items:center;gap:5px;width:230px;border:1px solid #4a9df0;border-radius:5px;padding:3px 7px;font-size:9px;color:#dde3ea">⌕ #creature gob<span style="color:#5a6572">|</span></span>
+        <span style="font:8px ui-monospace,Menlo,monospace;color:#5a6572">pills melt back — edit, ⏎ re-crystallizes</span>
+      </div>
+      <div style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;border-top:1px solid #2e3138;padding-top:9px">clear the last pill and the track collapses to the ⌕ icon · esc while empty does the same · the grid thins live at every state</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “where does the track sit — facet row start or end” · “pill for a plain-text term vs a tag — same shape?” · “fold this into the letter and move to heroes”</p>
+</section>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Answers round — size control · in-gallery filter · Space preview, shown · curation mode</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Thumbnail size — a small slider at the facet row's far end; grid zoom is view state. Transcode/size-limit rules live with the import connectors, not here</div>
+    <div class="dv-card" style="width:340px;background:#14161a;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span class="fc" style="color:#dde3ea;border-color:rgba(255,255,255,.25)">date ▾</span>
+        <span class="fc">untagged</span>
+        <span style="flex:1"></span>
+        <span style="display:flex;align-items:center;gap:4px;color:#8b94a1"><span style="font-size:7px">▫</span><span style="width:44px;height:3px;border-radius:2px;background:#3a3e46;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:60%;border-radius:2px;background:#4a9df0"></span></span><span style="font-size:9px">▪</span></span>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px;align-items:flex-start">
+        <div style="display:grid;grid-template-columns:repeat(5,26px);gap:4px">
+          <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#455548"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#534d40"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#4d5266"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,50px);gap:5px">
+          <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#455548"></div>
+        </div>
+      </div>
+      <div style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;margin-top:8px">⌘− ⌘+ nudge it too · remembered per scope</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>The in-gallery filter — thins THIS grid as you type; it never navigates. Global ⌕ searches the world and takes you places. Different jobs, both exist</div>
+    <div class="dv-card" style="width:340px;background:#14161a;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.16);border-radius:4px;padding:3px 7px;font-size:8.5px;color:#dde3ea;width:150px">⌕ gob<span style="color:#5a6572">|</span></div>
+      <div style="display:flex;gap:5px;margin-top:8px">
+        <div style="width:44px;aspect-ratio:3/4;border-radius:2px;background:#5d4b45"></div>
+        <div style="width:44px;aspect-ratio:3/4;border-radius:2px;background:#534d40"></div>
+        <div style="width:44px;aspect-ratio:3/4;border-radius:2px;background:#fafafa;padding:3px;box-sizing:border-box"><div style="font-size:4.5px;color:#333;line-height:1.5">goblin warren — provisions list…</div></div>
+      </div>
+      <div style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;margin-top:8px;line-height:1.7">3 of 1,240 · esc clears · matches titles, original names, #tags<br>the multi-tag door: when it arrives, typing #tag here adds a facet chip</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Space preview, shown — the Quick Look reflex: cursor on a cell, tap Space, one big ephemeral look over the dimmed grid; Space or Esc closes, arrows walk while it's open. The open question was what each KIND shows</div>
+    <div class="dv-card" style="width:420px;height:270px;position:relative;background:#14161a">
+      <div style="position:absolute;left:14px;top:14px;right:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:5px;opacity:.3">
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#455548"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#534d40"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#4d5266"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#4d5266"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#455548"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#534d40"></div><div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div>
+      </div>
+      <div style="position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:190px;height:150px;border-radius:6px;background:repeating-linear-gradient(115deg,#5d4b45 0 16px,#524139 16px 32px);box-shadow:0 18px 50px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.14)">
+        <div style="position:absolute;left:0;right:0;bottom:0;padding:4px 8px;background:rgba(16,19,26,.8);border-radius:0 0 6px 6px;font:8px ui-monospace,Menlo,monospace;color:#c8cfd8;display:flex;justify-content:space-between"><span>goblin_chief_v2.png</span><span style="color:#79808a">2048×2732 · #creature</span></div>
+      </div>
+      <div style="position:absolute;left:14px;bottom:12px;right:14px;font:8px ui-monospace,Menlo,monospace;color:#5a6572;line-height:1.7">image → full-size look (above) · note → the paper card, body scrollable · board → its zoom-to-fit render, ⏎ dives · ← → walk the grid without closing</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2d"><div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Curation mode — decided here: a fourth cleanup facet, library-scope; rows carry the quality reasons; the list IS the Replace-image worklist</div>
+    <div class="dv-card" style="width:340px;background:#14161a;padding:12px 14px">
+      <div style="display:flex;gap:5px;align-items:center">
+        <span class="fc">untagged</span><span class="fc">unplaced</span><span class="fc">inbox</span><span class="fca">low quality</span>
+      </div>
+      <div style="margin-top:9px;display:flex;flex-direction:column;gap:5px;font-size:8px;color:#dde3ea">
+        <div style="display:flex;gap:7px;align-items:center"><span style="width:16px;height:20px;border-radius:1.5px;background:#5d4b45"></span><span style="flex:1">goblin_chief_v2.png</span><span style="font:7.5px ui-monospace,Menlo,monospace;color:#a7844e">jpeg q≈35 · 0.4 bpp · 812px</span></div>
+        <div style="display:flex;gap:7px;align-items:center"><span style="width:16px;height:20px;border-radius:1.5px;background:#4d5266"></span><span style="flex:1">river_gate_ref.jpg</span><span style="font:7.5px ui-monospace,Menlo,monospace;color:#a7844e">upscaled? · 0.6 bpp</span></div>
+      </div>
+      <div style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;margin-top:8px">rides asset facts, so any world can open it later · rev 0.43</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “the transcode/size-limit connector settings card” · “Space preview on a note — draw it” · “absorb into storyboard §14; on to the §19 first-run insert”</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Gallery document — the controls audit against RFC §14.4 (it was indeed more than the storyboard drew)</span></div>
+
+<div class="dv-rowh">A — the whole surface, annotated</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>CANONICAL app state — every ratified control in one frame, updated through t3 (search track, low-quality facet, size slider, centered import strip)</div>
+    <div class="dv-card" style="width:720px;height:480px;position:relative;background:#14161a">
+      <div style="position:absolute;left:50%;transform:translateX(-50%);top:10px;display:flex;border:1px solid rgba(255,255,255,.14);border-radius:5px;overflow:hidden;font-size:8.5px">
+        <span style="padding:2.5px 9px;color:#8b94a1">graph ⊛</span>
+        <span style="padding:2.5px 9px;color:#8b94a1;border-left:1px solid rgba(255,255,255,.14)">outline ▤</span>
+        <span style="padding:2.5px 9px;color:#10131a;background:#4a9df0;border-left:1px solid rgba(255,255,255,.14)">gallery ⊞</span>
+      </div>
+      <span class="callout" style="position:absolute;left:76px;top:36px">mode switcher — one database, three views</span>
+      <div style="position:absolute;right:20px;top:10px;display:flex;border:1px solid rgba(255,255,255,.14);border-radius:5px;overflow:hidden;font-size:8.5px">
+        <span style="padding:2.5px 9px;color:#8b94a1">this world</span>
+        <span style="padding:2.5px 9px;color:#10131a;background:#4a9df0;border-left:1px solid rgba(255,255,255,.14)">everything</span>
+      </div>
+      <span class="callout" style="position:absolute;right:20px;top:34px">scope = whose gallery</span>
+      <div style="position:absolute;left:20px;top:44px;display:flex;gap:5px;align-items:center">
+        <span class="fc" style="color:#dde3ea;border-color:rgba(255,255,255,.25)">date ▾</span>
+        <span class="fc">image · note · board</span>
+        <span style="display:flex;align-items:center;gap:4px;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:1.5px 6px;font-size:7.5px">
+          <span style="color:#9aa3ad">⌕</span>
+          <span style="display:inline-flex;align-items:center;gap:3px;border:1px solid #d08652;border-radius:99px;padding:0 5px;color:#d08652;font-family:ui-monospace,Menlo,monospace">#creature ✕</span>
+          <span style="display:inline-flex;align-items:center;gap:3px;border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:0 5px;color:#dde3ea;font-family:ui-monospace,Menlo,monospace">gob ✕</span>
+          <span style="color:#79808a;padding-left:2px">✕</span>
+        </span>
+        <span class="fc">tags ▾</span>
+        <span class="fc">untagged</span><span class="fc">unplaced</span><span class="fca">inbox</span><span class="fc">low quality</span>
+        <span style="display:flex;align-items:center;gap:3px;color:#8b94a1"><span style="font-size:6.5px">▫</span><span style="width:30px;height:3px;border-radius:2px;background:#3a3e46;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:60%;border-radius:2px;background:#4a9df0"></span></span><span style="font-size:8px">▪</span></span>
+      </div>
+      <span class="callout" style="position:absolute;left:20px;top:66px">sort · kind · the search track (pills AND, <a href="#3a" style="color:#8a6414">3a</a>) · tag list w/ counts · cleanup facets incl. low quality · thumbnail size</span>
+      <div style="position:absolute;left:20px;top:94px;display:flex;align-items:center;gap:8px"><span style="font:600 8px ui-monospace,Menlo,monospace;color:#c8cfd8;letter-spacing:.05em;border-bottom:1px solid rgba(255,255,255,.14);padding-bottom:2px">THIS WEEK ▾</span><span class="callout">header = jump control → period list</span></div>
+      <div style="position:absolute;left:110px;top:112px;width:120px;z-index:3;border-radius:6px;background:rgba(31,34,40,.98);border:1px solid rgba(255,255,255,.14);padding:5px;font:8px ui-monospace,Menlo,monospace;color:#9aa3ad;box-shadow:0 10px 28px rgba(0,0,0,.4)">this week<br>this month<br><span style="color:#dde3ea">march</span><br>february<br>2025 ▸</div>
+      <div style="position:absolute;left:20px;top:118px;right:160px;display:grid;grid-template-columns:repeat(8,1fr);gap:6px">
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45;outline:1.6px solid #4a9df0;outline-offset:2px"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#fafafa;padding:3px;box-sizing:border-box;position:relative"><div style="font-size:4.5px;color:#333;line-height:1.5">river gate tolls — Yorren keeps the ledger; the chain predates…</div></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#455548;outline:1.6px dashed #8ec2f5;outline-offset:2px"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4d5266;position:relative"><span style="position:absolute;right:2px;bottom:2px;width:8px;height:8px;border:1px solid rgba(255,255,255,.9);border-radius:1px;background:rgba(20,22,26,.5)"></span></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#534d40"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+      </div>
+      <span class="callout" style="position:absolute;right:20px;top:128px">selection = blue outline</span>
+      <span class="callout" style="position:absolute;right:20px;top:148px">cursor = dashed focus ring</span>
+      <span class="callout" style="position:absolute;right:20px;top:168px">note kind = text post</span>
+      <span class="callout" style="position:absolute;right:20px;top:188px">board kind = frame charm</span>
+      <div style="position:absolute;left:20px;top:222px;display:flex;align-items:center;gap:8px"><span style="font:600 8px ui-monospace,Menlo,monospace;color:#79808a;letter-spacing:.05em">EARLIER THIS YEAR</span></div>
+      <div style="position:absolute;left:20px;top:238px;right:160px;display:grid;grid-template-columns:repeat(8,1fr);gap:6px">
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4d5266"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#455548"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#534d40"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:74px;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:5px;background:rgba(31,34,40,.95);border:1px solid rgba(255,255,255,.1);font-size:8px;color:#dde3ea">importing 214 of 1,032 <span style="color:#8b94a1">· 87 already known</span><span style="width:60px;height:3px;border-radius:2px;background:#3a3e46;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:22%;border-radius:2px;background:#4a9df0"></span></span><span style="color:#8b94a1">pause ✕</span></div>
+      <span class="callout" style="position:absolute;left:20px;bottom:78px">import strip — centered above the bar, one shared axis; interruptible, never a modal</span>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:36px;display:flex;gap:10px;padding:5px 10px;border-radius:7px;background:rgba(31,34,40,.98);border:1px solid rgba(255,255,255,.14);font-size:8.5px;box-shadow:0 10px 28px rgba(0,0,0,.4)">
+        <span style="color:#dde3ea">2 selected</span><span style="color:#4a9df0"># tag</span><span style="color:#4a9df0">⌖ place</span><span style="color:#e8a49f">trash</span>
+      </div>
+      <span class="callout" style="position:absolute;left:50%;transform:translateX(-50%);bottom:16px">action bar — this-world verbs; see <a href="#1c" style="color:#8a6414">1c</a> for everything scope</span>
+      <div style="position:absolute;right:20px;bottom:36px;font:8px ui-monospace,Menlo,monospace;color:#79808a;text-align:right;line-height:1.7">esc peels: selection first,<br>takeover second</div>
+    </div>
+  </div>
+</div>
+
+<div class="dv-rowh">B — the pieces that needed their own frame</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Everything scope — ONE live action (pull), the seed's clear button, and the honest mirror-off notice</div>
+    <div class="dv-card" style="width:340px;background:#14161a;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:8px;color:#8b94a1">everything <span style="color:#5a6572">= the library's gallery</span></span>
+        <span style="font-size:7.5px;color:#8ec2f5;border:1px solid #3a4a5e;border-radius:4px;padding:1px 6px">Clear the example set</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;padding:5px 10px;border-radius:7px;background:rgba(31,34,40,.98);border:1px solid rgba(255,255,255,.14);font-size:8.5px;width:fit-content">
+        <span style="color:#dde3ea">1 selected</span><span style="color:#4a9df0">⌖ pull into this world</span><span style="color:#5a6572"># tag · trash — browse-only here</span>
+      </div>
+      <div style="margin-top:10px;padding:6px 8px;border-radius:5px;background:rgba(230,179,74,.08);border:1px solid #4d4231;font-size:8px;color:#a7844e">mirroring is off for this world — everything shows the library, not everything you've dropped here</div>
+      <div style="font:8px ui-monospace,Menlo,monospace;color:#5a6572;margin-top:8px">pull ends as the place cursor over the board · esc stores unplaced</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>The keyboard model — cursor and selection are different facts; Space is reserved for preview before preview exists</div>
+    <div class="dv-card" style="width:340px;background:#14161a;padding:12px 14px;font-size:8.5px;color:#dde3ea">
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;justify-content:space-between"><span>move cursor (collapses selection)</span><span class="kb">← → ↑ ↓</span></div>
+        <div style="display:flex;justify-content:space-between"><span>extend range from anchor — document order, never a rectangle</span><span class="kb">⇧arrows · ⇧click</span></div>
+        <div style="display:flex;justify-content:space-between"><span>toggle one, keep anchor</span><span class="kb">⌘click · ⌘space</span></div>
+        <div style="display:flex;justify-content:space-between"><span>select what you see (current filter scope)</span><span class="kb">⌘A</span></div>
+        <div style="display:flex;justify-content:space-between"><span>kind-appropriate open: note→panel · board→dive · image→panel</span><span class="kb">⏎</span></div>
+        <div style="display:flex;justify-content:space-between;color:#79808a"><span>reserved for preview (Quick Look reflex)</span><span class="kb">space</span></div>
+        <div style="display:flex;justify-content:space-between"><span>previous · next bucket (date sort)</span><span class="kb">⌘↑ ⌘↓</span></div>
+        <div style="display:flex;justify-content:space-between"><span>trash selection</span><span class="kb">⌫</span></div>
+        <div style="display:flex;justify-content:space-between"><span>peel: selection, then takeover</span><span class="kb">esc</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Open questions the audit surfaced — not in the RFC, flagged rather than invented</div>
+    <div class="dv-card" style="width:340px;background:#fdf6e3;padding:12px 14px;font-size:10.5px;color:#5b4a1a;line-height:1.65">
+      <b style="font-size:9px;letter-spacing:.05em;font-family:ui-monospace,Menlo,monospace">FOR THE DESIGN QUEUE</b>
+      <div style="margin-top:6px">· thumbnail size control (grid zoom) — every reference tool has one; §14.4 is silent</div>
+      <div>· a filter-as-you-type field INSIDE the gallery vs relying on global ⌕</div>
+      <div>· multi-tag AND/OR — deferred in §4.8; the facet row should leave room</div>
+      <div>· curation/admin mode (rev 0.43 quality list) — a fourth cleanup facet or a separate mode?</div>
+      <div>· what Space-preview shows when it lands (image lightbox · note card · board peek)</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “sketch the thumbnail-size control options” · “the Space preview surface” · “absorb into storyboard §14 — then the first-run §19 insert”</p>
+</section>
+</x-dc>
+</body>
+</html>

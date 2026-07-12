@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="b030d109-3c49-47d3-bd91-ffb262bd92c7"></script>
+</head>
+<body>
+
+<x-dc>
+<helmet data-dc-atomics="">
+<style>
+body{margin:0}
+doc-page:not(:defined){visibility:hidden}
+</style>
+</helmet>
+<x-import component-from-global-scope="doc-page" from="00371410-8cbe-4977-9dea-c326280c1216#/doc-page.js" size="letter" margin="0.85in" hint-size="100%,1200px">
+
+<h1 style="font-size:26px;margin:0 0 4px;letter-spacing:-.01em">Expanding Worlds — UI &amp; Interaction Design Spec</h1>
+<p style="margin:0 0 8px;font-size:13px;color:#777">v2 · July 2026 · Supersedes v1 and both reply letters; consolidates wireframe turns 1–14. Written to live in the repo beside RFC-0001 (rev 0.19). Where this document and any earlier artifact disagree, this document wins.</p>
+<p style="margin:0 0 24px;font-size:13.5px;line-height:1.6;color:#555;border-left:3px solid #ddd;padding-left:12px"><i>Motivation, the sentence that decides our calls: the app is PureRef until you learn it nests; the global views are the user consenting to act against the database; the payoff moment is "wait — THAT'S what I've been building?" The target user is the person who has that moment.</i></p>
+
+<h2 style="font-size:18px;margin:28px 0 8px">0 · Design stance</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>The window is the board. Chrome is minimal, floating, and never causes canvas reflow. Neutrality is the product: the tool gets out of the way of the art.</li>
+  <li>Mac is the lead platform; Windows/Linux gain a <code>☰</code> menu entry point, no other divergence. Glass theme is Mac-only (falls back to dark).</li>
+  <li><b>One physics rule: panels grow out of the control you pressed</b> — charms, links, menu items, rail icons all open panels anchored to themselves.</li>
+  <li>Nothing has invisible state. Every grouping, link, mode, or ongoing condition is visible on some surface.</li>
+  <li>Opinions ship as defaults, not settings (§9). Numeric thresholds herein are provisional feel numbers.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">1 · Shell layout</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li><b>Traffic lights</b> upper-left. Beside them, the <b>navigation path</b> (§2).</li>
+  <li><b>Mode charm rail</b>, vertical, upper-right: project <code>⧉</code> · search <code>⌕</code> · graph <code>⊛</code> · gallery <code>⊞</code> · outline <code>▤</code> · menu <code>☰</code>. Ongoing-condition charm appends below when present (§8).</li>
+  <li><b>Dock</b>, bottom-center: select · text · shape (press-hold flyout) · draw · line · arrow · connector · pin <code>◉</code> · divider · zoom out · % · zoom in · fit. Layer send-forward/back join only while a selection exists.</li>
+  <li><b>No docked sidebar, no status strip, no tab bar.</b> Transient errors are toasts; ongoing conditions per §8; multi-board work per §2.</li>
+  <li><b>Title strip</b> (file/view menus, Win/Linux) is hover-revealed at the top edge.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">2 · Navigation (RFC §8.1 chrome)</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li><b>Path, upper-left:</b> renders the <b>entry route</b> (a rendered back-stack), not structural ancestry — containment is a graph with legal cycles and no canonical parent. Clicking a crumb goes back to that board with viewport restored.</li>
+  <li><b>⌂ Home</b> is its own button at the path's head → root canvas.</li>
+  <li><b>Back/forward:</b> primarily gestures — trackpad swipe, mouse 4/5, <code>⌘[</code> / <code>⌘]</code>. Hover-revealed ‹ › beside the path; no permanent buttons.</li>
+  <li><b>Bookmarks:</b> a tiny map-pin button (cap-height circle-dot, generous hit target) at the path's tail. On press it <b>morphs into a teardrop</b> pointing at the menu it opens — the button is its own anchor tail. Menu rows: drag-handle · name · printed shortcut · ✕. <b>Drag order is the ⌘1–n binding.</b> Stale targets grey out with an "in trash" label, never silently vanish. Bottom row: "＋ bookmark this board".</li>
+  <li>Cross-board flights (uses rows, tag rows, pinned-panel origin labels, graph clicks) are navigation events and enter history.</li>
+  <li>Deferred: hold-⌘ switcher HUD; New Window for side-by-side (deferred, not a non-goal).</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">3 · Chrome visibility (engagement cadence)</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li><b>Engaged</b> (cursor in window): all chrome visible; node charms ~70% opacity — a glanceable census of which nodes have content, never gated on hovering.</li>
+  <li><b>Idle</b> (cursor out, or ~4s still): the whole chrome layer — dock, rail, path, charms — fades on one shared clock. The board becomes wallpaper.</li>
+  <li><b>Charm hover:</b> that charm alone lights to 100% + pointer. No node-hover reveal state exists.</li>
+  <li>Node charms hide when the node's <b>rendered screen size</b> drops below a threshold (not zoom %).</li>
+  <li>Transient offers (§7) ride this fade: ignoring them is the dismissal gesture.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">4 · Nodes: charms, selection, cursor</h2>
+<h3 style="font-size:15px;margin:16px 0 6px">4.1 Content-hint charms</h3>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>Two glyphs: <b>page</b> = has a note · <b>frame</b> = has a nested canvas. At most one of each, side-by-side (never stacked), inset ~4px <b>inside</b> the image corner, lower-right (corner is a setting). Subtle scrim chip for legibility; art reads through.</li>
+  <li>The title below the image never collides with charms. Charms are UI, not pixels — excluded from crop/flip previews and exports.</li>
+  <li>The canvas is a node: a screen-fixed corner charm (lower-left) is the current canvas's page charm — ghost <code>+</code> on cursor approach when empty, solid when the note exists.</li>
+</ul>
+<h3 style="font-size:15px;margin:16px 0 6px">4.2 Click grammar</h3>
+<table style="border-collapse:collapse;font-size:13.5px;line-height:1.5;margin:0 0 10px;width:100%">
+  <tbody><tr style="border-bottom:1.5px solid #333"><th style="text-align:left;padding:6px 10px 6px 0">Target</th><th style="text-align:left;padding:6px 10px">Gesture</th><th style="text-align:left;padding:6px 0">Result</th></tr>
+  <tr style="border-bottom:1px solid #ddd"><td style="padding:6px 10px 6px 0">image</td><td style="padding:6px 10px">click</td><td style="padding:6px 0">select + charm bar</td></tr>
+  <tr style="border-bottom:1px solid #ddd"><td style="padding:6px 10px 6px 0">page charm</td><td style="padding:6px 10px">click</td><td style="padding:6px 0">note pops in tethered; current canvas unchanged</td></tr>
+  <tr style="border-bottom:1px solid #ddd"><td style="padding:6px 10px 6px 0">frame charm</td><td style="padding:6px 10px">click</td><td style="padding:6px 0">dive into the nested canvas only</td></tr>
+  <tr><td style="padding:6px 10px 6px 0">image</td><td style="padding:6px 10px">double-click</td><td style="padding:6px 0">everything: dive AND the canvas's note opens from its corner charm. Note-only ⇒ note; canvas-only ⇒ dive</td></tr>
+</tbody></table>
+<p style="font-size:14.5px;line-height:1.65;margin:0 0 10px">Charms are the exploded view of double-click; nothing to memorize.</p>
+<h3 style="font-size:15px;margin:16px 0 6px">4.3 Selection + charm bar</h3>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>Selection = thin accent outline. No drawn handles, ever.</li>
+  <li>Charm bar beneath the selection: crop · flip H · flip V · divider · make-canvas · note · tags <code>#</code> · lock. <code>#</code> pops the node's tag chips; a chip opens the tag panel (§6).</li>
+</ul>
+<h3 style="font-size:15px;margin:16px 0 6px">4.4 Cursor zones</h3>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>Inside ⇒ move · edge ±4px ⇒ directional resize · corner ⇒ diagonal resize · 4–14px outside a corner ⇒ rotate · empty canvas ⇒ pan. <code>⌥</code>-drag duplicates; locked ⇒ 🚫. The cursor is the affordance; nothing renders on the node.</li>
+</ul>
+<h3 style="font-size:15px;margin:16px 0 6px">4.5 The pin tool (closes RFC Q20)</h3>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>Dock tool <code>◉</code>, shortcut N: click places a dot node with its phantom note open and focused — type to persist, Esc and it never existed. Same teardrop as the bookmark button: <b>pins mean places, everywhere</b>. The Create Pin dialog retires.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">5 · Notes and panels</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>Notes open as <b>tethered panels</b> beside their node; a dashed tail marks the attachment. The panel tracks its node as the camera pans; chrome and type stay screen-scale.</li>
+  <li><b>One tethered panel at a time</b> — opening another replaces it. <b>Pinned panels accumulate</b> (⇱ converts). Tethered is a glance; pinning is a commitment. No auto-unpin, ever.</li>
+  <li><b>Phantom lifecycle:</b> empty editor persists nothing until the first keystroke; the hint charm turns solid at that moment.</li>
+  <li>Tag chips at the top of a note panel are <b>the subject node's tags</b>; zero-node notes show none.</li>
+  <li>Note panel header always shows <b>⌖ n places</b> — click unfolds the <b>uses list</b> in-panel: rows grouped by canvas, Unplaced group last, "here" marking the placement being read (RFC §7.4).</li>
+  <li><b>Wiki-link following is text-first</b> (RFC §7.3): zero placements ⇒ inline notice at the link ("no placements — open note?" → loose-note panel); one ⇒ fly there AND the note opens tethered at the destination (anchors to the clicked link until spatial resolution lands, then re-tethers); many ⇒ <b>location chooser</b> panel anchored to the clicked link.</li>
+</ul>
+<h3 style="font-size:15px;margin:16px 0 6px">5.1 "Which node am I reading?" — the escalation rule</h3>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>The indicator escalates with how broken the spatial link is: tethered ⇒ nothing (the tail speaks) · pinned, node on-screen ⇒ accent halo · pinned, node off-screen ⇒ edge chip pointing at it (click flies home) · node on another board ⇒ origin label in the panel header ("⌂ Northern Reach"; click = cross-board flight, enters history).</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">6 · Tags</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li><b>Node-scoped, app-managed, project-wide, flat.</b> Assigned many-to-many to nodes; never serialized into note text. Bare placed art is taggable — the flagship case. Flat and globally unique: <b>hierarchy is dropped</b> (owner's call). Note-attached tags deferred, not rejected.</li>
+  <li><b>Tag panel:</b> search with tab-completion; thumbnail rows spanning every board, unplaced nodes included. Per row: <code>▤</code> open note · <code>⌖</code> fly to placement. <b>Lens</b> <code>◎</code> toggle in the header dims the visible canvas to hits (~20% others), survives pan/zoom until dropped.</li>
+  <li>Entry: <code>#</code> on the charm bar · <code>⌕</code> (typing # switches to tag mode) · tag chips anywhere. One destination, one row grammar.</li>
+  <li>Multi-tag queries deferred; one tag at a time.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">7 · Global views and the library (RFC §14.4)</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li><b>Two scopes, two physics:</b> node-local content floats as panels; project-global views take over the window. Esc or the charm returns; the camera is untouched. <b>Three charms, one house:</b> ⊛ graph · ▤ outline · ⊞ gallery are projections of one database — the takeover has a top mode switcher; enter anywhere, hop freely.</li>
+  <li><b>Graph ⊛:</b> force layout; wiki-links are the only edges. Placed art renders as the art past a screen-size threshold; pure notes are dots; orphans (node, no note — can't have edges) wear a dashed ring + <code>⚯</code>. Filters: hide content-less · orphans only · #tag. Click ⇒ fly to placement (or open note if unplaced).</li>
+  <li><b>Outline ▤:</b> the world as an indented tree, same glyphs; cycles render as <code>↺</code> alias rows; unplaced notes gather in a root loose bin. Same filter chips.</li>
+  <li><b>Gallery ⊞:</b> the browsable collection — virtualized thumbnail grid; facets: sort (date/name/size) · tag filter · untagged · unplaced. Bulk select ⇒ floating action bar (tag · place · trash). Bulk import runs as an interruptible progress strip with live hash-dedupe count, never modal. <b>"Library" names the project kind; "gallery" names the view</b> — any project can open its gallery.</li>
+  <li><b>Sourcing:</b> project charm menu rows offer <b>switch</b> and <b>open as source</b>. A source opens read-only as a <b>pinned panel</b> (compressed gallery); dragging out copies bytes in, hash-deduped. The none/all/pick <b>tag-border toggle is session-scoped in the source panel header</b> — never per-drag. Defaults: all from a library, none from a world.</li>
+  <li><b>Seeded first-open:</b> ordinary records — a root board of public-domain artists diving to per-artist boards with placed, tagged, noted works. The explainer is an ordinary pinned note whose one power is "clear the example" (an ordinary trash command over the example + itself). The tutorial is the app's own furniture.</li>
+  <li><b>Mirror moments:</b> (1) once-per-project ask rides the first drop, anchored to it, import never blocked, answer stored (settings line). (2) Hash-recognized drops get a transient chip offering the library's tags — it obeys the engagement fade (ignoring = dismissing); bulk drops collapse to one summary chip.</li>
+  <li><b>Export</b> (escape hatch): a sheet anchored to ☰. Three sections mirror the record kinds — notes → Markdown (+ optional uses appendix with <code>![[…]]</code>) · files → bytes + tag manifest (+ opt-in tag folders) · boards → full-res renders. Size is a live footer fact; past threshold, one acknowledge per project, never a gate.</li>
+  <li><b>Figma-style frames: rejected</b> (revisit clause stands). Proximity, tags, and nested canvases cover grouping.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">8 · Status</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>Transitions ⇒ toasts (enter + resolve). <b>Ongoing conditions ⇒ a ⚠ charm appended below the rail</b> — exists only while the condition holds, pulses once on arrival, click opens a detail panel anchored to it. Multiple conditions: one charm with a count. The status strip retires when this ships.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">9 · Theming and settings</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>Themes: dark (default) · light · glass (Mac-only, falls back dark). Grid: lines · dots · none. Optional flat canvas colors (porcelain / putty / slate / ink). Tokens as CSS custom properties; no theme engine.</li>
+  <li>Settings is a <b>translucent takeover</b> (~82% opaque, inset) — appearance changes apply live to the board visible behind it. No apply/save; commit on click; Esc closes.</li>
+  <li>Inventory: <b>Appearance</b> theme · grid · flat color · opacity — <b>Behavior</b> charm corner · chrome-fade delay/never · snap-to-grid · mirror drops to library (per-project) — <b>Window</b> title strip hover/always/never · border · rounded corners — <b>(Win/Linux)</b> menu in rail vs system bar. Exhaustible in one glance, on purpose.</li>
+  <li><b>Tooltips:</b> every control shows name + shortcut, ~500ms delay, one chip style app-wide. The GUI is the tutorial for the keyboard app.</li>
+</ul>
+
+<h2 style="font-size:18px;margin:28px 0 8px">10 · Deferred ledger</h2>
+<ul style="font-size:14.5px;line-height:1.65;margin:0 0 10px;padding-left:22px">
+  <li>multi-tag queries (AND/OR) · note-attached tags · tag hierarchy (dropped hard) · switcher HUD · New Window / side-by-side · gallery keyboard model · OS-drop importer dialogue · grouping frames (rejected-for-now).</li>
+</ul>
+
+<p style="font-size:12.5px;color:#888;margin:26px 0 0;border-top:1px solid #ddd;padding-top:10px">Companion artifacts: <i>Shell Wireframes</i> (decision trail, turns 1–14) · <i>Expanding Worlds — UI Vision</i> (five hero states, themeable) · <i>How It Works</i> (plain-language storyboard). Supersedes Design Spec v1 and reply letters 1–2.</p>
+
+</x-import>
+
+</x-dc>
+
+
+</body></html>

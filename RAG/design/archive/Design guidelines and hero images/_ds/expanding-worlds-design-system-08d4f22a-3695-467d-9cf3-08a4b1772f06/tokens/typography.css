@@ -1,0 +1,37 @@
+/* Expanding Worlds — typography. Chrome uses the platform UI stack
+   (native desktop tool; deliberately no webfonts in chrome). Chrome
+   type is small (0.6–0.95rem); mono is for shortcuts, tags, counts
+   and technical fragments.
+   THE ONE CARVE-OUT (ratified 2026-07-06): note text is Maple Mono —
+   kerned rounded mono, true cursive italics, OFL — bundled from
+   assets/fonts/, never fetched at runtime. It applies to note panels,
+   the big editor, card excerpts, gallery text posts; NOWHERE in chrome. */
+:root {
+  --ew-font-ui: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+  --ew-font-mono: ui-monospace, Menlo, monospace;
+  --ew-font-editor: 'Maple Mono', ui-monospace, Menlo, monospace;
+
+  /* Chrome type scale (from shipped component CSS; rem-based, 16px root) */
+  --ew-text-charm: 1rem;        /* rail glyphs */
+  --ew-text-tool: 0.95rem;      /* dock tool glyphs */
+  --ew-text-toast: 0.85rem;     /* toasts, note body, panel base */
+  --ew-text-panel: 0.78rem;     /* panel chrome, facet bars */
+  --ew-text-menu: 0.75rem;      /* menu rows, path bar, dock rows */
+  --ew-text-chip: 0.7rem;       /* tag chips, origin labels */
+  --ew-text-micro: 0.62rem;     /* thumbnail mini-labels, counts */
+
+  /* Editor scale (~, Style Guide v2 §3): body .85rem/1.65; headings
+     are LOUD — size AND color (--ew-note-h1/2/3), org-style folding
+     presentation over the Markdown carrier. */
+  --ew-editor-body: 0.85rem;
+  --ew-editor-line: 1.65; /* @kind other */
+  --ew-editor-h1: 1.15rem;
+  --ew-editor-h2: 1rem;
+  --ew-editor-h3: 0.9rem;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ew-font-ui);
+  color: var(--ew-text);
+}

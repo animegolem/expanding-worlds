@@ -1,0 +1,26 @@
+/* Expanding Worlds — the editor face. Maple Mono (OFL), the ONE
+   webfont carve-out (ratified 2026-07-06; Note Editor Wireframes
+   4a/4c — Geist and Martian fell to the no-true-italic check).
+   Bundled woff2, latin subset, never fetched at runtime.
+   License: assets/fonts/LICENSE-OFL.txt. Chrome stays system stacks. */
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/maple-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/maple-mono-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/maple-mono-latin-700-normal.woff2') format('woff2');
+}

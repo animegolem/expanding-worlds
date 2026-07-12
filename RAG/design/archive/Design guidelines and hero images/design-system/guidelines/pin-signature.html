@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;background:var(--ew-surface-solid);font-family:var(--ew-font-ui);color:var(--ew-text);overflow:hidden}
+  .grid{position:absolute;inset:0;background-image:var(--ew-grid-bg);background-size:var(--ew-grid-size)}
+</style>
+</head><body>
+<div style="position:relative;width:700px;height:236px">
+  <div class="grid"></div>
+
+  <!-- the strip, shown at its hover-revealed state -->
+  <div style="position:absolute;left:0;top:0;right:0;height:46px;background:linear-gradient(180deg, rgba(12,13,16,.82) 0%, rgba(12,13,16,.55) 55%, rgba(12,13,16,.28) 100%);border-bottom:1px solid rgba(255,255,255,.04)"></div>
+  <div style="position:absolute;left:18px;top:17px;display:flex;gap:8px">
+    <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span>
+    <span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span>
+    <span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+  </div>
+  <div style="position:absolute;left:78px;top:0;height:46px;display:flex;align-items:center;gap:8px;opacity:.92">
+    <span style="font-size:.8rem;line-height:1;color:var(--ew-text-soft)">⌂</span>
+    <span style="font:600 .75rem/1 var(--ew-font-ui);color:var(--ew-text)">Homeworld</span>
+    <svg width="13" height="18" viewBox="100 20 312 440">
+      <defs><linearGradient id="sgR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0847c"/><stop offset="1" stop-color="#c0392f"/></linearGradient><clipPath id="sgH"><circle cx="256" cy="178" r="118"/></clipPath></defs>
+      <path d="M138 178 A118 118 0 1 1 374 178 C374 290 300 332 264 414 C258 434 250 434 244 414 C212 332 138 290 138 178 Z" fill="url(#sgR)" stroke="#8f2f27" stroke-width="10"/>
+      <g clip-path="url(#sgH)" fill="none" stroke="#9c2f27" stroke-width="14"><ellipse cx="256" cy="178" rx="44" ry="116"/><ellipse cx="256" cy="178" rx="88" ry="116"/><path d="M138 178 H374"/></g>
+      <ellipse cx="210" cy="114" rx="40" ry="20" fill="rgba(255,255,255,.42)" transform="rotate(-20 210 114)"/>
+    </svg>
+  </div>
+
+  <!-- the bookmarks menu, seated under the pin, cascade grammar -->
+  <div style="position:absolute;left:158px;top:50px;width:225px;border-radius:7px;background:var(--ew-surface-menu);border:1px solid var(--ew-border-panel);box-shadow:var(--ew-panel-shadow-menu);padding:5px">
+    <div style="font:600 .62rem var(--ew-font-mono);letter-spacing:.08em;color:var(--ew-text-subtle);padding:5px 8px 4px">BOOKMARKS — PLACES ON THE MAP</div>
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;font:.75rem var(--ew-font-ui);white-space:nowrap"><svg width="13" height="13" viewBox="0 0 24 24" style="flex:none"><defs><linearGradient id="gb1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"/><stop offset="1" stop-color="#6b9cc4"/></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="url(#gb1)"/><path d="M6.5 8.5 q2.5 -2 5.5 -1.2 q2 .5 1.2 2.2 q-1 1.8 -3.6 1.4 q-3 -.4 -3.1 -2.4 Z" fill="#6f9e58"/><path d="M12.5 14 q2.8 -.8 4.6 .6 q1.2 1 .4 2.4 q-1.2 1.6 -3.5 .8 q-2.3 -.8 -1.5 -3.8 Z" fill="#6f9e58"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="#4a7096" stroke-width="1.6"/></svg><span>the ford</span><span style="margin-left:auto;font:.62rem var(--ew-font-mono);color:var(--ew-text-subtle)">Homeworld</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;font:.75rem var(--ew-font-ui);white-space:nowrap"><svg width="13" height="13" viewBox="0 0 24 24" style="flex:none"><circle cx="12" cy="12" r="9.5" fill="url(#gb1)"/><path d="M6.5 8.5 q2.5 -2 5.5 -1.2 q2 .5 1.2 2.2 q-1 1.8 -3.6 1.4 q-3 -.4 -3.1 -2.4 Z" fill="#6f9e58"/><path d="M12.5 14 q2.8 -.8 4.6 .6 q1.2 1 .4 2.4 q-1.2 1.6 -3.5 .8 q-2.3 -.8 -1.5 -3.8 Z" fill="#6f9e58"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="#4a7096" stroke-width="1.6"/></svg><span>tariff ledger</span><span style="margin-left:auto;font:.62rem var(--ew-font-mono);color:var(--ew-text-subtle)">Northern Reach</span></div>
+    <div style="height:1px;background:var(--ew-border);margin:4px 6px"></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px;font:.75rem var(--ew-font-ui);white-space:nowrap"><span style="color:var(--ew-text-soft)">＋</span><span>bookmark this board</span><span style="margin-left:auto;font:.62rem var(--ew-font-mono);color:var(--ew-text-subtle)">⌘D</span></div>
+  </div>
+
+  <!-- spec column -->
+  <div style="position:absolute;left:416px;top:56px;width:266px;font:10.5px/1.75 var(--ew-font-mono);color:var(--ew-text-muted)">
+    <span style="color:var(--ew-warn)">THE SIGNATURE (ratified 2026-07-07)</span><br>
+    · the app's ONE colored chrome element<br>
+    · canonical pin = silhouette iv, cap-height<br>
+    · beat: wiggle → 10px hop → press, reseats exact (~700ms, one-shot)<br>
+    · menus: cascade — rows +30ms, opacity only<br>
+    · every bookmark row is a small world<br>
+    · strip smokes in on hover; beat stays in-band
+  </div>
+
+  <div style="position:absolute;left:18px;bottom:8px;font:.62rem var(--ew-font-mono);color:var(--ew-text-subtle)">masters: assets/icons/pin-canonical.svg · app-icon.svg — live beat: Pin &amp; Menu Motion Prototype.dc.html</div>
+</div>
+</body></html>

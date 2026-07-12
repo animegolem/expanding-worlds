@@ -1,0 +1,26 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Feedback" subtitle="Toasts, action bar, mode switcher, import strip, recognition chip" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>a{color:var(--ew-accent)}a:hover{color:var(--ew-accent-soft)}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body style="margin:0;background:var(--ew-surface-solid)">
+<div id="root"></div>
+<script type="text/babel">
+const { Toast, ActionBar, ModeSwitcher, ImportProgressStrip, RecognitionChip } = window.ExpandingWorldsDesignSystem_5b63d5;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <Toast>bookmark added</Toast>
+    <Toast kind="error" actionLabel="retry">import failed — 3 items skipped</Toast>
+    <Toast kind="success">restored from trash</Toast>
+    <ActionBar count={2} actions={[{ label: '# tag' }, { label: '⌖ place' }, { label: 'trash', danger: true }]} />
+    <div><ModeSwitcher mode="gallery" /></div>
+    <ImportProgressStrip done={34} total={120} deduped={6} />
+    <RecognitionChip actions={[{ label: 'take tags' }, { label: 'not now' }]}>this item is in your library — take its tags?</RecognitionChip>
+  </div>
+);
+</script>
+</body></html>

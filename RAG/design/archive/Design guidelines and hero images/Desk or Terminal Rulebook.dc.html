@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<style>
+body{margin:0}
+doc-page:not(:defined){visibility:hidden}
+a{color:#2b6cb0}a:hover{color:#2f78c4}
+</style>
+</helmet>
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="100%,1400px">
+
+<h1 style="font-size:26px;margin:0 0 4px;letter-spacing:-.01em">Desk or Terminal — the rulebook</h1>
+<p style="margin:0 0 6px;font-size:13.5px;color:#777;line-height:1.55">When to use skeuomorphism, when to use flat mono, with every example in the app cataloged. This is a repo-onboarding document: read it before your first UI pull request. If your change contradicts a rule here, the change is wrong or this document needs an amendment — those are the only two options; silent exceptions are how design systems die.</p>
+<p style="margin:0 0 24px;font-size:12px;color:#8a6414;font-family:ui-monospace,Menlo,monospace">Compiled 2026-07-07 at RFC rev 0.54 · child of STYLE-GUIDE.md §1/§6 · examples cite their ratifying document</p>
+
+<h2 data-screen-label="1 sentence" style="font-size:16px;margin:22px 0 8px">1 · The one sentence</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.65;color:#333"><b>Chrome is a terminal; the world is a desk.</b> The canvas holds objects with gentle physics — they lift, settle, tear, press, burn. The UI around them is a flat, mono-flavored terminal that names itself and never emotes. Every pixel you ship belongs to exactly one of these two materials, and mixing them in one element is the cardinal sin.</p>
+
+<h2 data-screen-label="2 test" style="font-size:16px;margin:22px 0 8px">2 · The test — three questions</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.75;color:#333">
+<b>1. Does the user OWN it?</b> Did they place it, write it, or make it — is it content? → It's on the desk. Is it a control, indicator, or container the app provides? → It's terminal.<br>
+<b>2. Would a state change benefit from being physically obvious?</b> The skeuomorphism's whole job is making state changes legible in a playful way — bound/torn/pinned, lifted/settled, locked-pressed. If the element has meaningful states the user must track at a glance, the desk's hardware vocabulary is available. Terminal state is shown by color/fill only.<br>
+<b>3. Would the metaphor ever lie?</b> If the physical story misrepresents what the system does, the metaphor is FORBIDDEN even on the desk — this is why delete lifts away (the trash keeps things whole) and only Empty Trash burns (destruction is real there). An honest terminal beats a lying desk, always.</p>
+
+<h2 data-screen-label="3 catalog" style="font-size:16px;margin:22px 0 8px">3 · The catalog — every example in the app</h2>
+<div style="display:flex;gap:14px;margin:0 0 8px">
+  <div style="flex:1;border:1px solid #d8d3c8;border-radius:8px;padding:11px 13px;background:#faf8f3">
+    <div style="font:700 11px ui-monospace,Menlo,monospace;color:#7a5c1e;letter-spacing:.05em">THE DESK (material, beats allowed)</div>
+    <div style="font-size:11.5px;line-height:1.8;color:#333;margin-top:7px">
+    · images, ink, drawn shapes, canvas text — the art itself<br>
+    · <b>paper notes</b>: ring-bound page · taped sticky · push-pinned landmark; torn edge persists (Note Lifecycle)<br>
+    · <b>object icons</b>: star·pin·flag·heart·bolt·leaf, top-light gloss (Icon Doc t3–t6)<br>
+    · <b>the red glossy pin</b> — exactly three homes, all on paper<br>
+    · tape, torn edges, binder rings — state hardware<br>
+    · <b>beats</b>: lift·settle·nudge·press·tear·glide + dive, bloom, making-room, burn-on-purge (Interaction Physics)<br>
+    · the lit stage growing as the world grows<br>
+    · skeuo map shapes (future decorations epic, sketched)<br>
+    · seed/demo art (commissioned, never generated)</div>
+  </div>
+  <div style="flex:1;border:1px solid #ccd4dc;border-radius:8px;padding:11px 13px;background:#f5f8fb">
+    <div style="font:700 11px ui-monospace,Menlo,monospace;color:#33628f;letter-spacing:.05em">THE TERMINAL (flat mono, opacity only)</div>
+    <div style="font-size:11.5px;line-height:1.8;color:#333;margin-top:7px">
+    · rail, dock, charm bar, path bar — unicode glyphs, flat chips<br>
+    · menus, tooltips (five shapes), toasts, dialogs<br>
+    · search track, facet pills, tag chips — mono type<br>
+    · takeovers: graph, outline, gallery, trash, settings chrome<br>
+    · selection outline, smart guides, marquee, lens ring — screen-constant 2px<br>
+    · hint charms (page/frame corners) — drawn bordered divs, flat<br>
+    · the flat teardrop pin in path/menus — "place," spoken in terminal<br>
+    · progress (import strip), counts, shortcuts — tabular mono<br>
+    · frame borders + title/sort chip (furniture: exists or doesn't)</div>
+  </div>
+</div>
+
+<h2 data-screen-label="4 borders" style="font-size:16px;margin:22px 0 8px">4 · The decided border cases — don't re-argue these</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.75;color:#333">
+· <b>The appearance switcher</b> shows object icons at chrome size — they remain world assets on loan; the popover itself is terminal.<br>
+· <b>The source panel</b> shows another world's content — panel chrome is terminal; the thumbnails inside are desk.<br>
+· <b>Notes are paper even though panels are chrome</b>: the page is world content the user wrote; its container behaviors (clamp, z-rung) are terminal duties performed invisibly.<br>
+· <b>The shadow follows the glass, nothing else</b> — a shadow marks viewport-floating (sticky, drag ghost, menus); world content at rest is FLAT (→ RFC §8.5).<br>
+· <b>The frame is terminal furniture</b> even though it holds desk objects — it's a container the app provides; its making-room slide is the members moving (desk), not the frame emoting.<br>
+· <b>Hint charms stay flat</b> even on pictures — they are annotations ON world content, not part of it.</p>
+
+<h2 data-screen-label="5 forbidden" style="font-size:16px;margin:22px 0 8px">5 · Forbidden moves — the PR checklist</h2>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:10px 13px;font:11px/1.9 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 8px">
+□ no gradient, gloss, bevel, or shadow-at-rest in chrome — terminal is flat<br>
+□ no drawn/icon-font glyph where the surface's unicode set exists — and no emoji anywhere<br>
+□ no beat on chrome: chrome animates OPACITY only, on the one shared clock<br>
+□ no looping/ambient animation anywhere — one beat per user act (iteration-count ≠ 1 fails review)<br>
+□ no scale outside ±1% in beats; no bounce, no rubber band, no spring<br>
+□ no metaphor that lies: nothing crumples/burns/shatters unless the data is truly destroyed<br>
+□ no raw hex — every color is an --ew-* token first; no literal z-index — rungs only<br>
+□ no new fonts (Maple Mono in note text is THE exception, already spent)<br>
+□ no per-element size thresholds — EW_FURNITURE_MIN_PX / EW_PAGE_FLOOR_PX only<br>
+□ no shadow on world content at rest; --ew-drag-shadow rides lift→settle only<br>
+□ never the word "file" in UI copy; impact stated as fact before multi-place actions
+</div>
+
+<h2 data-screen-label="6 amend" style="font-size:16px;margin:22px 0 8px">6 · When you think the rule is wrong</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.65;color:#333">Sometimes it will be. Route it: a turn in the relevant design document (or a new one) → an entry in the design-team letter → DESIGN-QUEUE → RFC rev bump → this rulebook amends. What you may not do is ship the exception and let the document drift — the rulebook is only worth its enforcement.</p>
+
+<p style="font-size:12px;color:#888;margin:26px 0 0;border-top:1px solid #ddd;padding-top:10px">Companions: STYLE-GUIDE.md (tokens + tech contracts) · Interaction Physics Document (the beats, moving) · Note Lifecycle Document (the paper states) · Icon Document (the objects).</p>
+
+</x-import>
+</x-dc>
+</body>
+</html>

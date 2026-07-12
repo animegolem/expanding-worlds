@@ -1,0 +1,23 @@
+/* Expanding Worlds — typography. The app ships NO webfonts: it is a
+   native desktop tool and deliberately uses the platform UI stack.
+   Chrome type is small (0.6–0.95rem); mono is for shortcuts, tags,
+   counts and technical fragments. */
+:root {
+  --ew-font-ui: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+  --ew-font-mono: ui-monospace, Menlo, monospace;
+
+  /* Chrome type scale (from shipped component CSS; rem-based, 16px root) */
+  --ew-text-charm: 1rem;        /* rail glyphs */
+  --ew-text-tool: 0.95rem;      /* dock tool glyphs */
+  --ew-text-toast: 0.85rem;     /* toasts, note body, panel base */
+  --ew-text-panel: 0.78rem;     /* panel chrome, facet bars */
+  --ew-text-menu: 0.75rem;      /* menu rows, path bar, dock rows */
+  --ew-text-chip: 0.7rem;       /* tag chips, origin labels */
+  --ew-text-micro: 0.62rem;     /* thumbnail mini-labels, counts */
+}
+
+body {
+  margin: 0;
+  font-family: var(--ew-font-ui);
+  color: var(--ew-text);
+}

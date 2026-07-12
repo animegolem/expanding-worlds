@@ -27,7 +27,7 @@ domain behavior.
   `assignee: owner` in frontmatter ("M-tickets") — design pushes,
   curation, anything only the owner can do. Same kanban, same
   close discipline.
-- `RAG/DESIGN-QUEUE.md` lists decisions needing a design
+- `RAG/design/DESIGN-QUEUE.md` lists decisions needing a design
   conversation before their work proceeds; prune like the flush
   list — resolved items move into the RFC.
 - `RAG/HUMAN-TESTING.md` is the owner-validation queue: append an
@@ -106,7 +106,7 @@ never delegated. Implementation may be decomposed:
   decision, not just the change.
 - LOC is not a defect (the 2026-07-11 audit standard: a split needs
   independently owned behavior with a stable extraction seam —
-  `RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md`). After deliberately
+  `RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md`). After deliberately
   reviewing a Size Watch file's cohesion, record it:
   `./RAG/scripts/approve-loc-review.sh --review-ref <audit/ticket>
   --note "<one-line conclusion>" <file>`, then regenerate the index —
@@ -119,7 +119,7 @@ never delegated. Implementation may be decomposed:
 - The RFC must stay pandoc-convertible
   (`pandoc RAG/RFC-0001-....md -o check.docx` as a sanity check).
 - `spike/` is throwaway benchmark code — findings transfer via
-  `RAG/spike-reports/`, code does not.
+  `RAG/audits/spike-reports/`, code does not.
 - Domains expected to grow (appearance kinds, lifecycle states)
   are validated in command handlers, NEVER as SQLite `CHECK IN`
   constraints — SQLite cannot ALTER a CHECK, so every added value

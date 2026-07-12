@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 20 312 440">
+  
+  <defs>
+    <linearGradient id="pinRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0847c"></stop><stop offset="1" stop-color="#c0392f"></stop></linearGradient>
+    <clipPath id="pinHead"><circle cx="256" cy="178" r="118"></circle></clipPath>
+  </defs>
+  <path d="M138 178 A118 118 0 1 1 374 178 C374 290 300 332 264 414 C258 434 250 434 244 414 C212 332 138 290 138 178 Z" fill="url(#pinRed)" stroke="#8f2f27" stroke-width="10"></path>
+  <g clip-path="url(#pinHead)" fill="none" stroke="#9c2f27" stroke-width="14">
+    <ellipse cx="256" cy="178" rx="44" ry="116"></ellipse>
+    <ellipse cx="256" cy="178" rx="88" ry="116"></ellipse>
+    <path d="M138 178 H374"></path>
+  </g>
+  <ellipse cx="210" cy="114" rx="40" ry="20" fill="rgba(255,255,255,.42)" transform="rotate(-20 210 114)"></ellipse>
+</svg>

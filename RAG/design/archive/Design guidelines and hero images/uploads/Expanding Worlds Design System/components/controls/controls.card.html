@@ -1,0 +1,45 @@
+<!-- @dsCard group="Components" viewport="700x230" name="Controls" subtitle="Buttons, segmented, facet chips, inputs, tag chips" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>a{color:var(--ew-accent)}a:hover{color:var(--ew-accent-soft)}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body style="margin:0;background:var(--ew-surface-solid)">
+<div id="root"></div>
+<script type="text/babel">
+const { Button, Segmented, FacetChip, TextInput, TagChip } = window.ExpandingWorldsDesignSystem_5b63d5;
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <Button>Restore</Button>
+      <Button variant="accent">Add to library</Button>
+      <Button variant="ghost">not now</Button>
+      <Button disabled>Empty Trash</Button>
+    </div>
+    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      <Segmented options={['date', 'name', 'size']} value="date" />
+      <Segmented options={['none', 'all', 'pick']} value="all" />
+    </div>
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <FacetChip label="#creature" tag />
+      <FacetChip label="untagged" />
+      <FacetChip label="unplaced" on />
+      <FacetChip label="orphans only" />
+    </div>
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <TextInput pill prefix="⌕" placeholder="filter…" />
+      <TextInput prefix="#" placeholder="add tag" />
+    </div>
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <TagChip tag="goblin" />
+      <TagChip tag="artist-x" />
+      <TagChip tag="creature" on="dark" />
+      <TagChip tag="placeholder" on="dark" />
+    </div>
+  </div>
+);
+</script>
+</body></html>

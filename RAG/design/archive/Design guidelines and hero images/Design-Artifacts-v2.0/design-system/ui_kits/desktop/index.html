@@ -1,0 +1,176 @@
+<!-- @dsCard group="Desktop App" viewport="1280x720" name="Expanding Worlds — desktop" subtitle="Interactive: board, selection + note, graph and gallery takeovers" -->
+<!-- @startingPoint section="Screens" subtitle="The desktop app shell" viewport="1280x720" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>a{color:var(--ew-accent)}a:hover{color:var(--ew-accent-soft)} *{box-sizing:border-box}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body style="margin:0;background:var(--ew-surface-solid);overflow:hidden">
+<div id="root"></div>
+<script type="text/babel">
+const { CharmRail, Dock, PathBar, NodeCard, CharmBar, NotePanel, WikiLink, ModeSwitcher, FacetChip, ActionBar, Toast, TextInput } = window.ExpandingWorldsDesignSystem_5b63d5;
+
+const NODES = [
+  { id: 'aster', title: 'Aster Vale — dawn', src: '../../assets/seed/01-aster-vale-dawn.png', x: 120, y: 90, w: 180, h: 240, hasNote: true, tags: ['aster-vale'] },
+  { id: 'reach', title: 'Northern Reach', label: 'region map', stripes: '100deg,#5a564a,#4f4b40', x: 340, y: 90, w: 240, h: 160, hasNote: true, hasCanvas: true },
+  { id: 'chief', title: 'Goblin chief', label: 'portrait', stripes: '125deg,#5d4b45,#52423d', x: 340, y: 300, w: 150, h: 200, hasNote: true, tags: ['goblin', 'artist-x'], hit: true },
+  { id: 'lamellar', title: 'lamellar set', label: 'armor ref', stripes: '105deg,#514858,#463e4c', x: 525, y: 300, w: 175, h: 130 },
+  { id: 'camp', title: 'Warren scout camp', src: '../../assets/seed/07-milo-ferren-glow.png', x: 615, y: 90, w: 210, h: 160, hasCanvas: true },
+  { id: 'yorren', title: 'Yorren', label: 'character ref', stripes: '95deg,#4d5266,#434759', x: 730, y: 300, w: 175, h: 235, hasNote: true, tags: ['artist-x'], hit: true },
+  { id: 'banner', title: 'banner sketches', src: '../../assets/seed/04-juniper-brandt-stripes.png', x: 870, y: 90, w: 170, h: 225 },
+];
+
+const NOTES = {
+  chief: <>Chieftain of the warren beneath the <WikiLink>Northern Reach</WikiLink>. Wears the lamellar set looted from the pass — see <WikiLink>lamellar set</WikiLink> for the strap detail.<br /><br />Voice: gravel, deliberate, never raises it. Owes <WikiLink>Yorren</WikiLink> a life-debt he resents.</>,
+  aster: <>Root board of the seeded example. Drag anything out of a source panel and the bytes are copied in — your pictures are never touched.</>,
+  reach: <>The pass, the ford, the warren mouths. Dive in from the frame charm.</>,
+  yorren: <>Sword-oath keeper of the ford. The parley scene needs him older.</>,
+};
+
+function App() {
+  const [view, setView] = React.useState('board');
+  const [selected, setSelected] = React.useState(null);
+  const [note, setNote] = React.useState(null);
+  const [lens, setLens] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
+  const sel = NODES.find((n) => n.id === selected);
+
+  const takeover = view === 'graph' || view === 'gallery' || view === 'outline';
+  const pop = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  return (
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', background: takeover ? 'var(--ew-surface-overlay)' : 'var(--ew-surface-solid)', overflow: 'hidden', fontFamily: 'var(--ew-font-ui)' }} data-screen-label={view}>
+      {!takeover && <div style={{ position: 'absolute', inset: 0, backgroundImage: 'var(--ew-grid-bg)', backgroundSize: 'var(--ew-grid-size)' }} onClick={() => { setSelected(null); setNote(null); }}></div>}
+
+      {/* traffic lights */}
+      <div style={{ position: 'absolute', left: 18, top: 16, display: 'flex', gap: 8 }}>
+        <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57' }}></span>
+        <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#febc2e' }}></span>
+        <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840' }}></span>
+      </div>
+
+      {!takeover && <PathBar style={{ top: 12, left: 82 }} crumbs={['Homeworld']} />}
+      {takeover && (
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <ModeSwitcher mode={view} onChange={setView} />
+          <span style={{ fontSize: 11, color: 'var(--ew-text-subtle)' }}>esc to return</span>
+        </div>
+      )}
+
+      <CharmRail active={view === 'board' ? (lens ? 'search' : undefined) : view} onSelect={(id) => {
+        if (id === 'graph' || id === 'gallery' || id === 'outline') setView(view === id ? 'board' : id);
+        else if (id === 'search') setLens(!lens);
+        else pop(id === 'project' ? 'library door — switch or open as source' : 'menu: Undo · Redo · Trash… · Settings');
+      }} />
+
+      {/* ============ BOARD ============ */}
+      {view === 'board' && (
+        <>
+          {NODES.map((n) => (
+            <div key={n.id} style={{ position: 'absolute', left: n.x, top: n.y }}>
+              <NodeCard
+                title={n.title} src={n.src} label={n.label} stripes={n.stripes}
+                width={n.w} height={n.h} hasNote={n.hasNote} hasCanvas={n.hasCanvas}
+                selected={selected === n.id}
+                hit={lens && n.hit} dimmed={lens && !n.hit}
+                onClick={() => { setSelected(n.id); setNote(null); }}
+              />
+              {selected === n.id && (
+                <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: n.h + 34 }}>
+                  <CharmBar noteActive={n.hasNote} onAction={(a) => {
+                    if (a === 'note') setNote(n.id);
+                    else pop(a === 'canvas' ? 'dive: this image becomes a canvas' : a);
+                  }} />
+                </div>
+              )}
+            </div>
+          ))}
+          {note && sel && (
+            <>
+              <div style={{ position: 'absolute', left: sel.x + sel.w + 8, top: sel.y + sel.h / 2, width: 40, borderTop: '1.5px dashed var(--ew-node-dot-orange)', opacity: 0.7 }}></div>
+              <div style={{ position: 'absolute', left: sel.x + sel.w + 48, top: Math.max(50, sel.y - 20) }}>
+                <NotePanel title={sel.title} tags={sel.tags || []} places={sel.id === 'chief' ? 3 : 1} height={300} onPin={() => pop('pinned — panels accumulate')} onClose={() => setNote(null)}>
+                  {NOTES[sel.id] || 'A phantom note: nothing persists until the first keystroke.'}
+                </NotePanel>
+              </div>
+            </>
+          )}
+          {lens && (
+            <div style={{ position: 'absolute', left: 20, top: 44, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <TextInput pill prefix="⌕" value="#artist-x" onChange={() => {}} />
+              <FacetChip label="◎ lens on" on onToggle={() => setLens(false)} />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ============ GRAPH ============ */}
+      {view === 'graph' && (
+        <>
+          <div style={{ position: 'absolute', left: 20, top: 52, display: 'flex', gap: 6 }}>
+            <FacetChip label="hide content-less ✓" on />
+            <FacetChip label="orphans only" />
+            <FacetChip label="#tag" />
+          </div>
+          {[[400, 260, 210, -12], [560, 200, 180, 105], [520, 400, 240, 186], [700, 330, 200, -140]].map(([x, y, w, r], i) => (
+            <div key={i} style={{ position: 'absolute', left: x, top: y, width: w, borderTop: '1.5px solid var(--ew-border-strong)', transform: `rotate(${r}deg)`, transformOrigin: '0 0' }}></div>
+          ))}
+          {NODES.slice(0, 5).map((n, i) => (
+            <div key={n.id} style={{ position: 'absolute', left: 300 + i * 160, top: i % 2 ? 350 : 190 }}>
+              <NodeCard title={n.title} src={n.src} label={n.label} stripes={n.stripes} width={90} height={110} onClick={() => { setView('board'); setSelected(n.id); }} />
+            </div>
+          ))}
+          {[['the ford', 340, 480], ['shield-oath', 660, 470], ['warren politics', 850, 210]].map(([t, x, y]) => (
+            <div key={t} style={{ position: 'absolute', left: x, top: y, textAlign: 'center' }}>
+              <div style={{ width: 11, height: 11, borderRadius: '50%', background: 'var(--ew-node-dot-default)', margin: '0 auto' }}></div>
+              <div style={{ fontSize: 10, color: 'var(--ew-text-muted)', marginTop: 4 }}>{t}</div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* ============ GALLERY ============ */}
+      {view === 'gallery' && (
+        <>
+          <div style={{ position: 'absolute', left: 24, top: 58, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <FacetChip label="date ▾" on />
+            <FacetChip label="#creature" tag onClear={() => {}} />
+            <FacetChip label="untagged" />
+            <FacetChip label="unplaced" />
+            <span style={{ marginLeft: 12 }}><TextInput pill prefix="⌕" placeholder="filter…" /></span>
+          </div>
+          <div style={{ position: 'absolute', left: 24, top: 104, right: 70, bottom: 70, display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 14, alignContent: 'start' }}>
+            {Array.from({ length: 16 }).map((_, i) => {
+              const n = NODES[i % NODES.length];
+              const sel2 = i === 1 || i === 2;
+              return (
+                <div key={i} style={{ aspectRatio: '3/4', borderRadius: 3, background: n.src ? `center/cover url(${n.src})` : `repeating-linear-gradient(${(n.stripes || '115deg,#4a5560,#414b55').split(',')[0]}, ${(n.stripes || ',#4a5560,#414b55').split(',')[1]} 0 11px, ${(n.stripes || ',,#414b55').split(',')[2]} 11px 22px)`, outline: sel2 ? '2px solid var(--ew-accent)' : 'none', outlineOffset: 2 }}></div>
+              );
+            })}
+          </div>
+          <ActionBar count={2} style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 16 }} actions={[{ label: '# tag' }, { label: '⌖ place', onClick: () => pop('place: a ghosted preview rides the cursor') }, { label: 'trash', danger: true }]} />
+        </>
+      )}
+
+      {/* ============ OUTLINE (stub) ============ */}
+      {view === 'outline' && (
+        <div style={{ position: 'absolute', left: 40, top: 100, color: 'var(--ew-text-muted)', fontSize: 13, lineHeight: 2 }}>
+          <div>▤ Homeworld</div>
+          <div style={{ paddingLeft: 24 }}>⊞ Northern Reach</div>
+          <div style={{ paddingLeft: 48 }}>▤ Goblin chief</div>
+          <div style={{ paddingLeft: 48 }}>↺ Warren scout camp</div>
+          <div style={{ paddingLeft: 24 }}>⚯ Goblin customs <span style={{ fontSize: 11 }}>(unplaced)</span></div>
+        </div>
+      )}
+
+      {view === 'board' && <Dock activeTool="select" zoomPct={100} onTool={() => {}} onZoom={() => {}} />}
+      {toast && <div style={{ position: 'absolute', right: 12, bottom: 12 }}><Toast>{toast}</Toast></div>}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body></html>

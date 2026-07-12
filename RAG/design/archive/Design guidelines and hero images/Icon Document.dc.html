@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<style>
+body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+a{color:#2a78d6}a:hover{color:#4a9df0}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-rowh{font:600 11px/1.2 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.45);letter-spacing:.06em;text-transform:uppercase;margin:26px 0 12px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:340px}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.ic{display:flex;flex-direction:column;align-items:center;gap:5px;width:44px}
+.ic small{font:9px ui-monospace,Menlo,monospace;color:#8b94a1}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400-italic.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/700.css">
+</helmet>
+
+<section class="dv-turn" id="t11">
+<div class="dv-thd"><a class="dv-tid" href="#t11">11</a><span class="dv-tname">The note lifecycle, three states — open book · sticky on the glass · push-pinned landmark</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="11a"><div class="dv-olabel"><a class="dv-oid" href="#11a">11a</a>One page, three lives: bound and FLAT (it's world) → torn and taped to your viewport (shadow) → push-pinned INTO the board, always there (flat again — it's world again)</div>
+    <div class="dv-card" style="width:680px;height:260px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px"></div>
+      <div style="position:absolute;left:22px;top:44px;width:54px;height:96px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 11px,#524139 11px 22px)"></div>
+      <div style="position:absolute;left:76px;top:44px;width:96px;height:96px;border-radius:0 6px 6px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;border-left:none;box-sizing:border-box;padding:7px 7px 7px 10px">
+        <div style="position:absolute;left:-5px;top:10px;bottom:10px;display:flex;flex-direction:column;justify-content:space-between"><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span></div>
+        <div style="font:700 7.5px 'Maple Mono',ui-monospace,monospace;color:#222">Warren gate</div>
+        <div style="font:6.5px/1.6 'Maple Mono',ui-monospace,monospace;color:#333;margin-top:3px">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall…</div>
+      </div>
+      <div style="position:absolute;left:30px;top:152px;font:8.5px ui-monospace,Menlo,monospace;color:#8b94a1;line-height:1.7">1 · the open book<br><span style="color:#5a6572">bound · FLAT, no shadow · same height<br>as its image · scales with the world</span></div>
+      <div style="position:absolute;left:196px;top:84px;font:8.5px ui-monospace,Menlo,monospace;color:#8ec2f5;text-align:center">tear<br>~300ms →</div>
+      <div style="position:absolute;left:262px;top:38px;width:110px;height:104px;border-radius:6px;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #cfc9bc;box-shadow:0 12px 30px rgba(0,0,0,.55);transform:rotate(-1.2deg);box-sizing:border-box;padding:8px">
+        <div style="position:absolute;left:0;right:0;top:-4px;height:5px;background:#f7f3ea;clip-path:polygon(0 100%,4% 0,10% 80%,17% 10%,24% 95%,31% 20%,38% 90%,45% 5%,52% 100%,59% 15%,66% 85%,73% 10%,80% 95%,87% 20%,94% 80%,100% 100%)"></div>
+        <div style="position:absolute;left:50%;top:-7px;transform:translateX(-50%) rotate(-2deg);width:34px;height:9px;background:rgba(214,205,182,.6);border:1px solid rgba(160,150,125,.4)"></div>
+        <div style="font:700 7.5px 'Maple Mono',ui-monospace,monospace;color:#222">Warren gate</div>
+        <div style="font:6.5px/1.6 'Maple Mono',ui-monospace,monospace;color:#333;margin-top:3px">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall — salvage iron.</div>
+      </div>
+      <div style="position:absolute;left:262px;top:152px;font:8.5px ui-monospace,Menlo,monospace;color:#8b94a1;line-height:1.7">2 · the sticky<br><span style="color:#5a6572">torn + taped to your GLASS · shadow ·<br>viewport-fixed · resizable · travels with you</span></div>
+      <div style="position:absolute;left:396px;top:84px;font:8.5px ui-monospace,Menlo,monospace;color:#8ec2f5;text-align:center">pin through<br>⇄ pull the pin</div>
+      <div style="position:absolute;left:480px;top:44px;width:104px;height:96px;border-radius:3px;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;box-sizing:border-box;padding:8px">
+        <div style="position:absolute;left:0;right:0;top:-4px;height:5px;background:#f7f3ea;clip-path:polygon(0 100%,4% 0,10% 80%,17% 10%,24% 95%,31% 20%,38% 90%,45% 5%,52% 100%,59% 15%,66% 85%,73% 10%,80% 95%,87% 20%,94% 80%,100% 100%)"></div>
+        <svg style="position:absolute;left:50%;top:-9px;transform:translateX(-50%)" width="17" height="17" viewBox="0 0 24 24"><defs><linearGradient id="pp1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0847c"/><stop offset="1" stop-color="#c0392f"/></linearGradient></defs><circle cx="12" cy="9" r="6.5" fill="url(#pp1)" stroke="#8f2f27" stroke-width=".8"/><ellipse cx="9.8" cy="6.6" rx="2.4" ry="1.4" fill="rgba(255,255,255,.45)"/><path d="M12 15.5v5" stroke="#8a8f98" stroke-width="1.6"/></svg>
+        <div style="font:700 7.5px 'Maple Mono',ui-monospace,monospace;color:#222;margin-top:4px">Warren gate</div>
+        <div style="font:6.5px/1.6 'Maple Mono',ui-monospace,monospace;color:#333;margin-top:3px">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall…</div>
+      </div>
+      <div style="position:absolute;left:480px;top:152px;font:8.5px ui-monospace,Menlo,monospace;color:#8b94a1;line-height:1.7">3 · the landmark<br><span style="color:#5a6572">push-pinned INTO the board · flat again —<br>world content at its spot, always visible there</span></div>
+      <div style="position:absolute;left:22px;bottom:8px;right:22px;font:8px ui-monospace,Menlo,monospace;color:#5a6572;border-top:1px solid rgba(255,255,255,.08);padding-top:6px">the hardware tells the state: rings = bound · tape = on your glass · push pin = in the world. the shadow follows the glass, nothing else. every arrow runs BOTH ways — dismiss a landmark and the page is back in its book; the torn edge is the one scar that stays.</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="11b"><div class="dv-olabel"><a class="dv-oid" href="#11b">11b</a>The rules — depth reallocation, one-way materialization, what each state is FOR</div>
+    <div class="dv-card" style="width:340px;background:#fdf6e3;border-color:#d9c68a;padding:13px 15px;font-size:10.5px;line-height:1.75;color:#5b4a1a">
+      · <b>shadow = floating on the glass, only.</b> States 1 and 3 are world → flat. (→ RFC §8.5 amendment: the depth cue was "screen-space panels"; it is now precisely "viewport-floating.")<br>
+      · <b>tape belongs to state 2 alone;</b> the torn edge persists into 3 — the page remembers being torn.<br>
+      · <b>2 → 3 is the §8.5 place-on-board materialization</b> (card appearance) wearing the push pin: closes the panel, the world owns it — z-order, selection, export like any placement.<br>
+      · <b>the lifecycle is FREELY REVERSIBLE</b> — pull the pin: landmark → sticky. Dismiss the landmark: the page returns to its book. Untape the sticky: back to bound. Every transition is one undoable command, and the playful state-hardware IS the skeuomorphism's job: making state changes obvious. (→ RFC §8.5: supersedes the one-way materialization rule.)<br>
+      · <b>semantics:</b> 1 reading · 2 working set (travels with you) · 3 landmark (lives at a place).<br>
+      · <b>shrink ladder:</b> state 3 is world class — scales honestly like canvas text, never clamped; its push pin is part of the paper, not furniture.<br>
+      · the red pin appears exactly three ways, all ON paper: panel pin control · sticky's tape-mate · the push pin. Chrome still never gets the object.
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “the pin-through beat — how does 2 become 3 visually” · “can a landmark be re-torn back to a sticky, or is the door one-way forever” · “absorb into storyboard §6 + UI Vision 02”</p>
+</section>
+
+<section class="dv-turn" id="t10">
+<div class="dv-thd"><a class="dv-tid" href="#t10">10</a><span class="dv-tname">The shrink ladder — how EVERY canvas element behaves under zoom, one grammar</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="10a"><div class="dv-olabel"><a class="dv-oid" href="#10a">10a</a>The rule in one line: world content shrinks honestly · chrome holds its size · FURNITURE exists only above a shared screen-size threshold</div>
+    <div class="dv-card" style="width:560px;padding:14px 16px;font-size:11px;color:#333">
+      <div style="display:grid;grid-template-columns:150px 92px 1fr;line-height:1.55">
+        <div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:4px 0;border-bottom:1px solid #eee">ELEMENT</div><div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:4px 0;border-bottom:1px solid #eee">CLASS</div><div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:4px 0;border-bottom:1px solid #eee">UNDER ZOOM-OUT</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">images · art</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#888">world</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">shrinks forever, honestly — a speck is a speck</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">canvas text · ink · shapes</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#888">world</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">pure world scale, NEVER clamped — zooming is how it's read (ratified §4.9)</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">labels</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#888">world</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">scale with their placement (the one relative size); no clamp, deliberately</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">object icons</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">degrades</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">→ plain dot below ~8px rendered</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">bound page (tethered note)</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">degrades</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">rings → dotted edge → solid stroke → fades whole at the floor (t9/<a class="dv-oid" href="#9c">9c</a>)</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">hint charms (page·frame)</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">furniture</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">drawn only above the threshold; never scale — they exist or they don't</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">frame title + sort chip</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">furniture</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">same threshold family; the frame's REGION keeps a ≥1px stroke so membership never vanishes</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">selection outline · smart guides · lens rings</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#2a78d6">chrome</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">screen-constant 2px always — state must stay visible at any zoom</div>
+        <div style="padding:4px 0;border-bottom:1px solid #f2f2f2;font-weight:600">charm bar · pinned notes · dock · rail</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2;color:#2a78d6">chrome</div><div style="padding:4px 0;border-bottom:1px solid #f2f2f2">screen-fixed, untouched by zoom entirely</div>
+        <div style="padding:4px 0;font-weight:600">stage edge · void</div><div style="padding:4px 0;color:#888">world</div><div style="padding:4px 0">scales with the world; the tone step is constant so the edge reads at any zoom</div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="10b"><div class="dv-olabel"><a class="dv-oid" href="#10b">10b</a>The build contract — two shared constants, no per-element thresholds, ever</div>
+    <div class="dv-card" style="width:330px;background:#fdf6e3;border-color:#d9c68a;padding:13px 15px;font:10.5px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a">
+      EW_FURNITURE_MIN_PX ~8 — one threshold for ALL furniture (hint charms, object-icon detail, frame title/chip). One zoom gesture makes all furniture appear together, like the fade clock makes all chrome fade together.<br><br>
+      EW_PAGE_FLOOR_PX ~48 — the bound page's fade floor (below this its text is noise; the page fades whole, its ring-stroke last).<br><br>
+      Guard: any rendered-size conditional that doesn't reference one of these two constants fails review — the engagement-clock rule, applied to zoom.
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “draw one board at 4 zoom levels with everything on it” · “does the label want a floor after all? test with a 40-board overview” · “ratify — letter + style guide absorb”</p>
+</section>
+
+<section class="dv-turn" id="t9">
+<div class="dv-thd"><a class="dv-tid" href="#t9">9</a><span class="dv-tname">Polish beats — rip timing · close gesture · spiral shrink test · light-theme spot check</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="9a"><div class="dv-olabel"><a class="dv-oid" href="#9a">9a</a>Rip timing — the same tear at 150 / 300 / 450ms feel: snappy loses the paper, slow becomes ceremony. Recommendation: ~300, ease-out, sound-free</div>
+    <div class="dv-card" style="width:430px;height:170px;background:#17191d;display:flex;align-items:center;justify-content:space-around;padding:0 10px">
+      <div style="position:relative;width:110px;height:120px">
+        <div style="position:absolute;left:12px;top:16px;width:70px;height:84px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;transform:rotate(2deg);box-shadow:0 6px 14px rgba(0,0,0,.35)"></div>
+        <div style="position:absolute;left:6px;bottom:-14px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">150ms — a flick; the paper never registers</div>
+      </div>
+      <div style="position:relative;width:110px;height:120px">
+        <div style="position:absolute;left:4px;top:20px;width:4px;height:76px;background:#efe9dd;clip-path:polygon(0 0,100% 3%,20% 10%,90% 18%,10% 26%,100% 35%,25% 44%,85% 53%,15% 62%,95% 71%,20% 80%,90% 89%,0 100%)"></div>
+        <div style="position:absolute;left:14px;top:12px;width:70px;height:84px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;transform:rotate(7deg);box-shadow:0 12px 24px rgba(0,0,0,.5)"></div>
+        <div style="position:absolute;left:2px;bottom:-14px;font:8px ui-monospace,Menlo,monospace;color:#8ec2f5">~300ms — the page resists, then gives ✓</div>
+      </div>
+      <div style="position:relative;width:110px;height:120px">
+        <div style="position:absolute;left:2px;top:20px;width:4px;height:76px;background:#efe9dd;clip-path:polygon(0 0,100% 3%,20% 10%,90% 18%,10% 26%,100% 35%,25% 44%,85% 53%,15% 62%,95% 71%,20% 80%,90% 89%,0 100%)"></div>
+        <div style="position:absolute;left:20px;top:8px;width:70px;height:84px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;transform:rotate(12deg);box-shadow:0 16px 30px rgba(0,0,0,.55)"></div>
+        <div style="position:absolute;left:4px;bottom:-14px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">450ms — ceremony; wrong for a tool</div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="9b"><div class="dv-olabel"><a class="dv-oid" href="#9b">9b</a>Closing the centered note — click-off or esc tucks it BACK into its book (the tear in reverse, ~200ms); the pin control is the one exit that keeps it out</div>
+    <div class="dv-card" style="width:330px;height:170px;background:#17191d;position:relative">
+      <div style="position:absolute;inset:0;background:rgba(12,13,16,.45)"></div>
+      <div style="position:absolute;left:110px;top:30px;width:110px;height:100px;border-radius:6px;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #cfc9bc;box-shadow:0 14px 36px rgba(0,0,0,.55)"></div>
+      <div style="position:absolute;left:26px;top:56px;width:38px;height:52px;border-radius:2px;background:#5d4b45"></div>
+      <svg style="position:absolute;left:70px;top:66px" width="38" height="20" viewBox="0 0 38 20"><path d="M34 10 C 24 2, 14 2, 4 10" fill="none" stroke="#8ec2f5" stroke-width="1.6" stroke-dasharray="4 3"/><path d="M8 5l-5 5 6 2z" fill="#8ec2f5"/></svg>
+      <div style="position:absolute;left:16px;bottom:8px;font:8.5px ui-monospace,Menlo,monospace;color:#8ec2f5">esc / click-off → tucks home</div>
+      <div style="position:absolute;right:14px;bottom:8px;font:8.5px ui-monospace,Menlo,monospace;color:#9aa3ad;text-align:right">pin control → stays out, taped, screen-fixed</div>
+      <div style="position:absolute;left:16px;top:10px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">no Done button — the board behind IS the exit</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="9c"><div class="dv-olabel"><a class="dv-oid" href="#9c">9c</a>Spiral shrink test — rings hold to ~40%, then merge into a plain bound-edge stroke; below the legibility floor the page fades whole. The binding survives</div>
+    <div class="dv-card" style="width:430px;height:150px;background:#17191d;display:flex;align-items:center;justify-content:space-around">
+      <div style="position:relative">
+        <div style="position:relative;width:84px;height:100px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;border-left:none">
+          <div style="position:absolute;left:-5px;top:8px;bottom:8px;display:flex;flex-direction:column;justify-content:space-between"><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:9px;height:9px;border:1.8px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span></div>
+        </div>
+        <div style="margin-top:6px;text-align:center;font:8px ui-monospace,Menlo,monospace;color:#5a6572">100% — rings</div>
+      </div>
+      <div style="position:relative">
+        <div style="position:relative;width:36px;height:44px;border-radius:0 3px 3px 0;background:#f7f4ec;border:1px solid #dcd8cf;border-left:2.5px dotted #9aa3ad"></div>
+        <div style="margin-top:6px;text-align:center;font:8px ui-monospace,Menlo,monospace;color:#5a6572">~40% — dotted edge</div>
+      </div>
+      <div style="position:relative">
+        <div style="position:relative;width:18px;height:22px;border-radius:0 2px 2px 0;background:#f7f4ec;border-left:2px solid #9aa3ad;opacity:.75"></div>
+        <div style="margin-top:6px;text-align:center;font:8px ui-monospace,Menlo,monospace;color:#5a6572">~18% — solid stroke</div>
+      </div>
+      <div style="position:relative">
+        <div style="position:relative;width:9px;height:11px;background:#f7f4ec;opacity:.3"></div>
+        <div style="margin-top:6px;text-align:center;font:8px ui-monospace,Menlo,monospace;color:#5a6572">floor — fades whole</div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="9d"><div class="dv-olabel"><a class="dv-oid" href="#9d">9d</a>Light-theme spot check — paper on light board leans on its border for separation; tape and torn edge hold; the object pin reads on both</div>
+    <div class="dv-card" style="width:330px;height:170px;background:#f1efea;position:relative">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(0,0,0,.075) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.075) 1px,transparent 1px);background-size:24px 24px"></div>
+      <div style="position:absolute;left:22px;top:36px;width:56px;height:74px;border-radius:2px;background:repeating-linear-gradient(115deg,#8a8578 0 11px,#7c7769 11px 22px);box-shadow:0 6px 16px rgba(8,10,14,.2)"></div>
+      <div style="position:absolute;left:78px;top:36px;width:132px;height:74px;border-radius:0 7px 7px 0;background:linear-gradient(180deg,#fff,#f6f3ec);border:1px solid #aeb6c0;border-left:none;box-shadow:0 6px 22px rgba(8,10,14,.18);padding:7px 9px;box-sizing:border-box">
+        <div style="position:absolute;left:-5px;top:8px;bottom:8px;display:flex;flex-direction:column;justify-content:space-between"><span style="width:8px;height:8px;border:1.6px solid #8a94a0;border-radius:50%;background:#f1efea;box-sizing:border-box"></span><span style="width:8px;height:8px;border:1.6px solid #8a94a0;border-radius:50%;background:#f1efea;box-sizing:border-box"></span><span style="width:8px;height:8px;border:1.6px solid #8a94a0;border-radius:50%;background:#f1efea;box-sizing:border-box"></span></div>
+        <div style="font:700 8.5px 'Maple Mono',ui-monospace,monospace;color:#1d232b">Warren gate</div>
+        <div style="font:7.5px/1.6 'Maple Mono',ui-monospace,monospace;color:#2f3945;margin-top:3px">Tolls kept by <span style="color:#2b6cb0">[[Yorren]]</span>…</div>
+      </div>
+      <div style="position:absolute;right:20px;top:40px;width:92px;border-radius:6px;background:linear-gradient(180deg,#fff,#f4f0e6);border:1px solid #aeb6c0;box-shadow:0 10px 26px rgba(8,10,14,.22);padding:6px;box-sizing:border-box">
+        <div style="position:absolute;left:0;right:0;top:-4px;height:5px;background:#efe9db;clip-path:polygon(0 100%,4% 0,10% 80%,17% 10%,24% 95%,31% 20%,38% 90%,45% 5%,52% 100%,59% 15%,66% 85%,73% 10%,80% 95%,87% 20%,94% 80%,100% 100%)"></div>
+        <div style="position:absolute;left:50%;top:-7px;transform:translateX(-50%) rotate(-1.5deg);width:28px;height:8px;background:rgba(196,185,158,.65);border:1px solid rgba(150,138,112,.45)"></div>
+        <div style="font:700 7.5px 'Maple Mono',ui-monospace,monospace;color:#1d232b">Yorren</div>
+        <div style="font:7px/1.5 'Maple Mono',ui-monospace,monospace;color:#2f3945;margin-top:2px">Broker of the river gate…</div>
+      </div>
+      <div style="position:absolute;left:16px;bottom:10px;font:8px ui-monospace,Menlo,monospace;color:#6b7684">--ew-paper-border-strong carries the separation; shadows lighten per theme tokens</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “tuck-home beat at 150 vs 200ms” · “glass-theme paper check” · “that's the slate — flush and hand off”</p>
+</section>
+
+<section class="dv-turn" id="t8">
+<div class="dv-thd"><a class="dv-tid" href="#t8">8</a><span class="dv-tname">The open-note gesture — double-click tears to center; the book-cover beat</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="8a"><div class="dv-olabel"><a class="dv-oid" href="#8a">8a</a>Three beats: bound page at the image's side → double-click rips it out → centered over the dimmed board; overflow scrolls INSIDE the note, the board never moves</div>
+    <div class="dv-card" style="width:560px;height:210px;position:relative;background:#17191d;display:flex;align-items:center;justify-content:space-around;padding:0 12px">
+      <div style="position:relative;width:150px;height:150px">
+        <div style="position:absolute;left:8px;top:30px;width:52px;height:78px;border-radius:2px;background:#5d4b45"></div>
+        <div style="position:absolute;left:63px;top:30px;width:74px;height:78px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;border-left:none;box-sizing:border-box">
+          <div style="position:absolute;left:-4px;top:8px;bottom:8px;display:flex;flex-direction:column;justify-content:space-between"><span style="width:7px;height:7px;border:1.5px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.5px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.5px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span></div>
+          <div style="font-size:6.5px;font-weight:700;color:#222;padding:6px 6px 0 8px;font-family:'Maple Mono',ui-monospace,monospace">Warren gate</div>
+        </div>
+        <div style="position:absolute;left:80px;top:120px;font:8px ui-monospace,Menlo,monospace;color:#8ec2f5">2×click</div>
+        <div style="position:absolute;left:0;bottom:-14px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">bound at the image's side</div>
+      </div>
+      <div style="position:relative;width:150px;height:150px">
+        <div style="position:absolute;left:6px;top:40px;width:52px;height:68px;border-radius:2px;background:#5d4b45;opacity:.7"></div>
+        <div style="position:absolute;left:56px;top:34px;width:5px;height:70px;background:#efe9dd;clip-path:polygon(0 0,100% 3%,20% 9%,90% 16%,10% 23%,100% 30%,25% 37%,85% 44%,15% 51%,95% 58%,20% 65%,90% 72%,10% 79%,100% 86%,25% 93%,0 100%)"></div>
+        <div style="position:absolute;left:70px;top:22px;width:76px;height:80px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;transform:rotate(6deg);box-shadow:0 12px 26px rgba(0,0,0,.5)"></div>
+        <div style="position:absolute;left:24px;bottom:-14px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">the rip — one beat, ~300ms</div>
+      </div>
+      <div style="position:relative;width:180px;height:170px">
+        <div style="position:absolute;inset:0;border-radius:6px;background:rgba(12,13,16,.55)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:132px;height:130px;border-radius:6px;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #cfc9bc;box-shadow:0 16px 44px rgba(0,0,0,.6);padding:8px;box-sizing:border-box;overflow:hidden">
+          <div style="position:absolute;left:-4px;top:0;bottom:0;width:5px;background:#f7f3ea;clip-path:polygon(100% 0,0 4%,80% 10%,10% 17%,95% 24%,20% 31%,90% 38%,5% 45%,100% 52%,15% 59%,85% 66%,10% 73%,95% 80%,20% 87%,80% 94%,100% 100%)"></div>
+          <div style="font-size:8px;font-weight:700;color:#222;font-family:'Maple Mono',ui-monospace,monospace">Warren gate</div>
+          <div style="font-size:6.5px;line-height:1.6;color:#333;margin-top:3px;font-family:'Maple Mono',ui-monospace,monospace">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall — salvage iron, warren-forged. The gate ledger runs back forty years…</div>
+          <div style="position:absolute;right:3px;top:14px;bottom:8px;width:3px;border-radius:2px;background:rgba(0,0,0,.1)"><div style="position:absolute;left:0;right:0;top:10%;height:36%;border-radius:2px;background:rgba(0,0,0,.25)"></div></div>
+        </div>
+        <div style="position:absolute;left:14px;bottom:-14px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">centered · scroll lives inside</div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="8b"><div class="dv-olabel"><a class="dv-oid" href="#8b">8b</a>The book-cover beat (musing) — first open of a note-carrying node: the cover swings, quick and inline, then it's just the page</div>
+    <div class="dv-card" style="width:340px;height:210px;position:relative;background:#17191d;display:flex;align-items:center;justify-content:space-around">
+      <div style="position:relative;width:80px;height:110px">
+        <div style="position:absolute;left:10px;top:20px;width:56px;height:74px;border-radius:2px 4px 4px 2px;background:linear-gradient(90deg,#6b5a4a,#7d6a56);border:1px solid #4f4234;box-shadow:0 6px 16px rgba(0,0,0,.4)"></div>
+        <div style="position:absolute;left:8px;top:20px;width:5px;height:74px;background:#4f4234;border-radius:2px 0 0 2px"></div>
+        <div style="position:absolute;left:14px;bottom:-2px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">closed</div>
+      </div>
+      <div style="position:relative;width:110px;height:110px">
+        <div style="position:absolute;left:44px;top:20px;width:52px;height:74px;border-radius:0 4px 4px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf"></div>
+        <div style="position:absolute;left:12px;top:16px;width:34px;height:80px;border-radius:3px 1px 1px 3px;background:linear-gradient(90deg,#7d6a56,#6b5a4a);border:1px solid #4f4234;transform:perspective(200px) rotateY(-38deg);transform-origin:right center;box-shadow:-6px 8px 18px rgba(0,0,0,.4)"></div>
+        <div style="position:absolute;left:20px;bottom:-2px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">the swing — one shot</div>
+      </div>
+      <div style="position:relative;width:80px;height:110px">
+        <div style="position:absolute;left:6px;top:18px;width:64px;height:78px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;border-left:none">
+          <div style="position:absolute;left:-4px;top:8px;bottom:8px;display:flex;flex-direction:column;justify-content:space-between"><span style="width:7px;height:7px;border:1.5px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.5px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.5px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span></div>
+        </div>
+        <div style="position:absolute;left:18px;bottom:-2px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">the page</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “time the rip — show 150/300/450ms frames” · “what closes the centered note — click-off, esc, re-dock?” · “flush everything to RAG/design/”</p>
+</section>
+
+<section class="dv-turn" id="t7">
+<div class="dv-thd"><a class="dv-tid" href="#t7">7</a><span class="dv-tname">Object shapes — the shape tool grows a dimensional row; write on the faces, build skeuo maps</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="7a"><div class="dv-olabel"><a class="dv-oid" href="#7a">7a</a>A map drawn from object shapes — extruded box, pyramid, road connector; canvas text sits on the faces</div>
+    <div class="dv-card" style="width:420px;height:240px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:26px 26px"></div>
+      <svg style="position:absolute;left:44px;top:60px" width="110" height="110" viewBox="0 0 24 24"><defs><linearGradient id="o1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9b98e"/><stop offset="1" stop-color="#a08e5e"/></linearGradient><linearGradient id="o2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2d4ac"/><stop offset="1" stop-color="#cbb987"/></linearGradient></defs><path d="M4 10h12v10H4z" fill="url(#o1)" stroke="#6f5f38" stroke-width=".5"/><path d="M4 10l4-4h12l-4 4z" fill="url(#o2)" stroke="#6f5f38" stroke-width=".5"/><path d="M16 10l4-4v10l-4 4z" fill="#8a7748" stroke="#6f5f38" stroke-width=".5"/></svg>
+      <div style="position:absolute;left:58px;top:118px;width:82px;text-align:center;font:700 10px 'Maple Mono',ui-monospace,monospace;color:#3b3216">the keep</div>
+      <svg style="position:absolute;left:250px;top:36px" width="120" height="120" viewBox="0 0 24 24"><defs><linearGradient id="o3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb4c4"/><stop offset="1" stop-color="#6e8496"/></linearGradient></defs><path d="M12 3L3 21h9z" fill="url(#o3)" stroke="#4a5c6b" stroke-width=".5"/><path d="M12 3l9 18h-9z" fill="#556878" stroke="#4a5c6b" stroke-width=".5"/><path d="M12 3l3.2 6.4L12 8l-3.2 1.4z" fill="#e8edf2"/></svg>
+      <div style="position:absolute;left:266px;top:140px;width:88px;text-align:center;font:700 10px 'Maple Mono',ui-monospace,monospace;color:#c8d4de">frostpeak</div>
+      <svg style="position:absolute;left:140px;top:104px" width="120" height="60"><path d="M8 40 C 40 46, 80 30, 112 16" fill="none" stroke="#c9b98e" stroke-width="3.5" stroke-dasharray="7 5" stroke-linecap="round"/></svg>
+      <div style="position:absolute;left:168px;top:158px;font:9px 'Maple Mono',ui-monospace,monospace;color:#9aa3ad;font-style:italic">the old road</div>
+      <div style="position:absolute;left:14px;bottom:10px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">decorations, not nodes — the same shape record with an object style; text-in-shape rides the face</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="7b"><div class="dv-olabel"><a class="dv-oid" href="#7b">7b</a>Not a second tool — the shape tool's press-and-hold flyout gains an object row under the flat row</div>
+    <div class="dv-card" style="width:300px;height:180px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px"></div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:64px;display:flex;flex-direction:column;gap:4px;padding:7px 9px;border-radius:8px;background:rgba(23,25,29,.95);border:1px solid #2e3138">
+        <div style="display:flex;gap:10px;align-items:center;font-size:12px;color:#c8cfd8"><span>▭</span><span>◯</span><span>△</span><span>➤</span><span>☁</span><span style="font:7px ui-monospace,Menlo,monospace;color:#5a6572">flat</span></div>
+        <div style="height:1px;background:#2e3138"></div>
+        <div style="display:flex;gap:10px;align-items:center"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M4 10h12v10H4z" fill="#b7a678"/><path d="M4 10l4-4h12l-4 4z" fill="#d5c69c"/><path d="M16 10l4-4v10l-4 4z" fill="#8a7748"/></svg><svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 3L3 21h9z" fill="#8ba0b0"/><path d="M12 3l9 18h-9z" fill="#556878"/></svg><svg width="15" height="15" viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="8" ry="3.5" fill="#d5c69c"/><path d="M4 6.5v11c0 2 3.6 3.5 8 3.5s8-1.5 8-3.5v-11c0 2-3.6 3.5-8 3.5s-8-1.5-8-3.5z" fill="#b7a678"/></svg><span style="font:7px ui-monospace,Menlo,monospace;color:#5a6572">object</span></div>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:12px;display:flex;gap:5px;padding:5px 8px;border-radius:8px;background:rgba(23,25,29,.92);border:1px solid #2e3138;font:10.5px ui-monospace,Menlo,monospace;color:#8b94a1"><span>▸</span><span>T</span><span style="width:18px;height:16px;border-radius:4px;background:#4a9df0;color:#10131a;display:flex;align-items:center;justify-content:center">▭</span><span>✎</span><span>◉</span></div>
+      <div style="position:absolute;left:14px;top:12px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">object shapes keep shape semantics: scale, rotate,<br>fill (= face tint), stroke; the render style is the only new fact</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “a full parchment-map board from <a class="dv-oid" href="#7a">7a</a> pieces” · “object-shape styling controls — what does fill mean on a box” · “park it — flag in the letter for EPIC-016/decorations”</p>
+</section>
+
+<section class="dv-turn" id="t6">
+<div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">The skeuomorphic tether — notebook, tear-off, and the quiet version</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="6a"><div class="dv-olabel"><a class="dv-oid" href="#6a">6a</a>The bound page — a tethered note is still IN the node's notebook: spiral edge faces its node, binding replaces the dashed tail</div>
+    <div class="dv-card" style="width:330px;height:200px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px"></div>
+      <div style="position:absolute;left:26px;top:44px;width:70px;height:92px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 11px,#524139 11px 22px);box-shadow:0 8px 22px rgba(0,0,0,.3)">
+        <span style="position:absolute;right:4px;bottom:4px;width:11px;height:13px;border:1.2px solid rgba(255,255,255,.9);border-radius:1.5px;background:rgba(20,22,26,.5)"><span style="position:absolute;left:1.5px;top:2px;right:1.5px;border-top:1px solid rgba(255,255,255,.9)"></span></span>
+      </div>
+      <div style="position:absolute;left:118px;top:40px;width:150px;border-radius:0 7px 7px 0;background:linear-gradient(180deg,#ffffff,#f7f5f0);border:1px solid #dcd8cf;border-left:none;box-shadow:0 6px 22px rgba(8,10,14,.4);padding:9px 9px 9px 14px;box-sizing:border-box">
+        <div style="position:absolute;left:-4px;top:6px;bottom:6px;width:8px;display:flex;flex-direction:column;justify-content:space-between">
+          <span style="width:8px;height:8px;border:1.6px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span>
+          <span style="width:8px;height:8px;border:1.6px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span>
+          <span style="width:8px;height:8px;border:1.6px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span>
+          <span style="width:8px;height:8px;border:1.6px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span>
+          <span style="width:8px;height:8px;border:1.6px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="font-size:9.5px;font-weight:700;color:#222;flex:1;font-family:'Maple Mono',ui-monospace,monospace">Warren gate</span><span style="font-size:7.5px;color:#888">⌖ 2</span><svg width="10" height="10" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#m0)" stroke="#8f2f27" stroke-width=".8"/></svg><span style="font-size:9px;color:#33628f">⤢</span></div>
+        <div style="font-size:8px;line-height:1.6;color:#333;margin-top:4px;font-family:'Maple Mono',ui-monospace,monospace">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall…</div>
+      </div>
+      <div style="position:absolute;left:98px;top:82px;width:18px;border-top:1.2px dashed #7f8898"></div>
+      <div style="position:absolute;left:20px;bottom:10px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">the page charm becomes a tiny notebook · rings face home</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="6b"><div class="dv-olabel"><a class="dv-oid" href="#6b">6b</a>The tear — pinning rips the page out along the rings; the torn edge is the permanent “this came from somewhere” mark</div>
+    <div class="dv-card" style="width:430px;height:200px;position:relative;background:#17191d;display:flex;align-items:center;justify-content:space-around;padding:0 10px">
+      <div style="position:relative;width:96px;height:120px">
+        <div style="position:absolute;left:8px;top:14px;width:84px;height:96px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;border-left:1px dashed #b8b2a4"></div>
+        <div style="position:absolute;left:4px;top:22px;display:flex;flex-direction:column;gap:14px"><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span></div>
+        <div style="position:absolute;left:0;bottom:-16px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">bound · perforation shows</div>
+      </div>
+      <div style="position:relative;width:110px;height:120px">
+        <div style="position:absolute;left:0;top:20px;display:flex;flex-direction:column;gap:14px"><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span><span style="width:7px;height:7px;border:1.4px solid #9aa3ad;border-radius:50%;background:#17191d;box-sizing:border-box"></span></div>
+        <div style="position:absolute;left:6px;top:16px;width:5px;height:88px;background:#efe9dd;clip-path:polygon(0 0,100% 2%,20% 8%,90% 14%,10% 20%,100% 27%,25% 33%,85% 40%,15% 47%,95% 54%,20% 61%,90% 68%,10% 75%,100% 82%,25% 89%,80% 95%,0 100%)"></div>
+        <div style="position:absolute;left:16px;top:8px;width:84px;height:96px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;transform:rotate(7deg);box-shadow:0 10px 24px rgba(0,0,0,.45)"></div>
+        <div style="position:absolute;left:10px;bottom:-16px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">drag the pin — rrrip</div>
+      </div>
+      <div style="position:relative;width:110px;height:120px">
+        <div style="position:absolute;left:14px;top:10px;width:88px;height:100px;border-radius:0 5px 5px 0;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #dcd8cf;box-shadow:0 10px 26px rgba(0,0,0,.5)">
+          <div style="position:absolute;left:-5px;top:0;bottom:0;width:6px;background:#f7f3ea;clip-path:polygon(100% 0,0 3%,80% 9%,10% 16%,95% 23%,20% 30%,90% 37%,5% 44%,100% 51%,15% 58%,85% 65%,10% 72%,95% 79%,20% 86%,80% 93%,100% 100%)"></div>
+          <div style="position:absolute;left:50%;top:-6px;transform:translateX(-50%) rotate(-2deg);width:34px;height:9px;background:rgba(214,205,182,.6);border:1px solid rgba(160,150,125,.4)"></div>
+          <svg style="position:absolute;right:5px;top:5px" width="11" height="11" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#m0)" stroke="#8f2f27" stroke-width=".8"/></svg>
+        </div>
+        <div style="position:absolute;left:8px;bottom:-16px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">pinned · torn edge stays</div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="6c"><div class="dv-olabel"><a class="dv-oid" href="#6c">6c</a>The quiet version — tether stays the flat dashed tail; only the PINNED note earns tear + tape; cross-board origin label still does the naming</div>
+    <div class="dv-card" style="width:330px;height:200px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px"></div>
+      <div style="position:absolute;left:22px;top:50px;width:56px;height:74px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 11px,#524139 11px 22px)"></div>
+      <div style="position:absolute;left:78px;top:84px;width:14px;border-top:1.2px dashed #7f8898"></div>
+      <div style="position:absolute;left:92px;top:60px;width:92px;border-radius:6px;background:#fafafa;border:1px solid #dddddd;padding:6px;box-sizing:border-box;box-shadow:0 5px 16px rgba(8,10,14,.35)">
+        <div style="font-size:8px;font-weight:700;color:#222;font-family:'Maple Mono',ui-monospace,monospace">Warren gate</div>
+        <div style="font-size:6.5px;color:#555;line-height:1.5;margin-top:2px;font-family:'Maple Mono',ui-monospace,monospace">Tolls kept by…</div>
+      </div>
+      <div style="position:absolute;right:16px;top:34px;width:116px;border-radius:6px;background:linear-gradient(180deg,#fff,#f4f1ea);border:1px solid #cfc9bc;box-shadow:0 10px 26px rgba(0,0,0,.5);padding:8px;box-sizing:border-box">
+        <div style="position:absolute;left:0;right:0;top:-5px;height:6px;background:#f7f3ea;clip-path:polygon(0 100%,3% 0,9% 80%,16% 10%,23% 95%,30% 20%,37% 90%,44% 5%,51% 100%,58% 15%,65% 85%,72% 10%,79% 95%,86% 20%,93% 80%,100% 100%)"></div>
+        <div style="position:absolute;left:50%;top:-8px;transform:translateX(-50%) rotate(-1.5deg);width:38px;height:10px;background:rgba(214,205,182,.6);border:1px solid rgba(160,150,125,.4)"></div>
+        <div style="font-size:8.5px;font-weight:700;color:#222;font-family:'Maple Mono',ui-monospace,monospace">Yorren</div>
+        <div style="font-size:7px;color:#555;line-height:1.6;margin-top:2px;font-family:'Maple Mono',ui-monospace,monospace">Broker of the river gate…</div>
+        <div style="font-size:6.5px;color:#33628f;margin-top:4px;font-family:'Maple Mono',ui-monospace,monospace">▸ character refs</div>
+      </div>
+      <div style="position:absolute;left:20px;bottom:10px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">materiality budget spent only at the pin moment</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “animate the tear beat — how long, what easing” · “<a class="dv-oid" href="#6a">6a</a> rings but <a class="dv-oid" href="#6c">6c</a> restraint — perforation only ON HOVER of the pin control” · “does the notebook read at tethered world-scale shrink?”</p>
+</section>
+
+<section class="dv-turn" id="t5">
+<div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Tooltip surfaces — the one chip, its legal shapes, and where it may stand</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="5a"><div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a>Anatomy — ONE chip app-wide: name in UI type, shortcut in mono; scrim ground so it reads over any art; ~500ms delay</div>
+    <div class="dv-card" style="width:300px;height:170px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px"></div>
+      <div style="position:absolute;left:34px;top:28px;width:60px;height:74px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px)"></div>
+      <span style="position:absolute;right:24px;top:24px;width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#dde3ea;font-size:11px;display:flex;align-items:center;justify-content:center">⤢</span>
+      <div style="position:absolute;right:14px;top:54px;display:flex;align-items:center;gap:7px;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#dde3ea">Zoom to fit <span style="font-family:ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.07);border-radius:3px;padding:0 4px">⇧1</span></div>
+      <div style="position:absolute;left:14px;bottom:12px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">grows out of its control · one style, one delay, everywhere</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="5b"><div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a>The five legal shapes — nothing else is a tooltip</div>
+    <div class="dv-card" style="width:330px;background:#17191d;padding:14px 16px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:9px ui-monospace,Menlo,monospace;color:#5a6572;width:82px">name+shortcut</span><span style="display:inline-flex;align-items:center;gap:7px;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#dde3ea">Bookmark this board <span style="font-family:ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.07);border-radius:3px;padding:0 4px">⌘D</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:9px ui-monospace,Menlo,monospace;color:#5a6572;width:82px">name only</span><span style="display:inline-flex;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#dde3ea">Open as source</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:9px ui-monospace,Menlo,monospace;color:#5a6572;width:82px">disabled+why</span><span style="display:inline-flex;align-items:center;gap:7px;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#79808a">Redo — nothing to redo <span style="font-family:ui-monospace,Menlo,monospace;background:rgba(255,255,255,.05);border-radius:3px;padding:0 4px">⇧⌘Z</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:9px ui-monospace,Menlo,monospace;color:#5a6572;width:82px">state+exit</span><span style="display:inline-flex;align-items:center;gap:7px;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#dde3ea">Lens on <span style="font-family:ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.07);border-radius:3px;padding:0 4px">esc</span></span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:9px ui-monospace,Menlo,monospace;color:#5a6572;width:82px">not yet</span><span style="display:inline-flex;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#79808a">Graph — coming soon</span></div>
+      <div style="font:8.5px ui-monospace,Menlo,monospace;color:#5a6572;border-top:1px solid #2e3138;padding-top:8px;line-height:1.7">never legal: two lines of prose · links or buttons inside · images ·<br>a second visual style · tooltips on tooltips</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="5c"><div class="dv-olabel"><a class="dv-oid" href="#5c">5c</a>Standing rules — clamp and flip inside the free region; never cover the named control; menus print shortcuts so rows need no tooltip</div>
+    <div class="dv-card" style="width:300px;height:170px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px"></div>
+      <span style="position:absolute;right:10px;top:10px;width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#dde3ea;font-size:11px;display:flex;align-items:center;justify-content:center">☰</span>
+      <div style="position:absolute;right:40px;top:14px;display:flex;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#dde3ea">Menu</div>
+      <div style="position:absolute;right:10px;top:44px;width:2px;height:20px;border-left:1.4px dashed #4a4f57"></div>
+      <div style="position:absolute;right:20px;top:66px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572;text-align:right">at the edge, it flips inward —<br>clamped into the free band,<br>never off-window, never over ☰</div>
+      <span style="position:absolute;left:14px;bottom:40px;width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #6b5426;color:#e6b34a;font-size:11px;display:flex;align-items:center;justify-content:center">⚠</span>
+      <div style="position:absolute;left:44px;bottom:44px;display:flex;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:10px;color:#dde3ea">1 ongoing — click for details</div>
+      <div style="position:absolute;left:14px;bottom:12px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">the perch names itself too; its DETAIL is a panel, never a tooltip</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “paper-habitat variant — tooltip over a note panel” · “show a clamp collision with the dock” · “ratify tooltip grammar into the letter”</p>
+</section>
+
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">The merge — <a class="dv-oid" href="#3a">3a</a> chrome, <a class="dv-oid" href="#3b">3b</a> world objects; the pin is the one object allowed in the chrome</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="4a"><div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Merged proposal — flat mono chrome · object node-icons · glossy teardrop wherever "pin" is meant (path tail, dock ◉ tool, panel pin)</div>
+    <div class="dv-card" style="width:640px;height:380px;position:relative;background:#17191d;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:26px 26px"></div>
+      <div style="position:absolute;left:14px;top:12px;display:flex;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#ff5f57"></span><span style="width:10px;height:10px;border-radius:50%;background:#febc2e"></span><span style="width:10px;height:10px;border-radius:50%;background:#28c840"></span></div>
+      <div style="position:absolute;left:66px;top:11px;display:flex;align-items:center;gap:6px;font:10.5px ui-monospace,Menlo,monospace;color:#8b94a1"><span>⌂</span><span style="color:#4a9df0">homeworld</span><span>›</span><span>northern reach</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;border:1.2px solid #8b94a1;border-radius:50% 50% 0 50%;transform:rotate(45deg);margin-left:3px"><span style="width:3px;height:3px;border-radius:50%;background:#8b94a1"></span></span>
+      </div>
+      <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="m0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0847c"/><stop offset="1" stop-color="#c0392f"/></linearGradient></defs></svg>
+      <div style="position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:5px">
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⧉</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⌕</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⊛</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⊞</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">▤</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">☰</span>
+      </div>
+      <div style="position:absolute;left:48px;top:70px;width:120px;height:156px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 13px,#414b55 13px 26px);box-shadow:0 8px 22px rgba(0,0,0,.3);outline:2px solid #4a9df0;outline-offset:3px">
+        <span style="position:absolute;right:5px;bottom:5px;width:12px;height:15px;border:1.4px solid rgba(255,255,255,.92);border-radius:2px;background:rgba(20,22,26,.5)"></span>
+      </div>
+      <div style="position:absolute;left:76px;top:236px;font:9.5px ui-monospace,Menlo,monospace;color:#9aa3ad">warren gate</div>
+      <div style="position:absolute;left:34px;top:258px;display:flex;gap:4px;padding:5px 7px;border-radius:7px;background:rgba(23,25,29,.92);border:1px solid #2e3138;font-size:10px;color:#c8cfd8;align-items:center">
+        <span style="width:17px;text-align:center">⌗</span><span style="width:17px;text-align:center">⇋</span><span style="width:17px;text-align:center">⇵</span>
+        <span style="width:1px;height:12px;background:#2e3138;margin:0 2px"></span>
+        <span style="width:17px;height:15px;border-radius:3px;background:conic-gradient(#8ab4d8 0 25%,#e8c450 0 50%,#d97a72 0 75%,#8cc47a 0);opacity:.8"></span>
+        <span style="width:17px;text-align:center">▦</span><span style="width:17px;text-align:center">▤</span><span style="width:17px;text-align:center">#</span><span style="width:17px;text-align:center">⊘</span>
+      </div>
+      <div style="position:absolute;left:210px;top:96px;width:14px;border-top:1.2px dashed #7f8898"></div>
+      <div style="position:absolute;left:224px;top:64px;width:170px;border-radius:7px;background:linear-gradient(180deg,#ffffff,#f7f5f0);border:1px solid #dcd8cf;box-shadow:0 6px 22px rgba(8,10,14,.4);padding:9px;box-sizing:border-box">
+        <div style="position:absolute;left:50%;top:-6px;transform:translateX(-50%) rotate(-1.5deg);width:48px;height:11px;background:rgba(214,205,182,.6);border:1px solid rgba(160,150,125,.4)"></div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:10.5px;font-weight:700;color:#222;flex:1;font-family:'Maple Mono',ui-monospace,monospace">Warren gate</span><span style="font-size:8px;color:#888">⌖ 2</span>
+          <svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#m0)" stroke="#8f2f27" stroke-width=".8"/><ellipse cx="9.6" cy="6.8" rx="2.6" ry="1.4" fill="rgba(255,255,255,.45)"/></svg>
+          <span style="font-size:10px;color:#33628f">⤢</span></div>
+        <div style="font-size:8.5px;line-height:1.65;color:#333;margin-top:5px;font-family:'Maple Mono',ui-monospace,monospace">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall — <i>salvage iron</i>, warren-forged.</div>
+      </div>
+      <svg style="position:absolute;left:452px;top:104px" width="30" height="30" viewBox="0 0 24 24"><defs><linearGradient id="m1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"/><stop offset="1" stop-color="#6b9cc4"/></linearGradient></defs><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#m1)" stroke="#4a7096" stroke-width=".8"/><circle cx="12" cy="10.5" r="2.6" fill="#22303c"/><ellipse cx="9.6" cy="6.8" rx="2.6" ry="1.4" fill="rgba(255,255,255,.4)"/></svg>
+      <div style="position:absolute;left:440px;top:136px;font:9.5px ui-monospace,Menlo,monospace;color:#9aa3ad">chain shrine</div>
+      <svg style="position:absolute;left:524px;top:170px" width="26" height="26" viewBox="0 0 24 24"><defs><linearGradient id="m2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d878"/><stop offset="1" stop-color="#d9ab2e"/></linearGradient></defs><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z" fill="url(#m2)" stroke="#a87f18" stroke-width=".8" stroke-linejoin="round"/><path d="M12 4.5l1.6 3.4-3.2.2z" fill="rgba(255,255,255,.45)"/></svg>
+      <div style="position:absolute;left:508px;top:198px;font:9.5px ui-monospace,Menlo,monospace;color:#9aa3ad">tariff ledger</div>
+      <div style="position:absolute;left:14px;bottom:12px;width:17px;height:21px;border:1.4px solid rgba(139,148,161,.6);border-radius:2.5px;background:rgba(255,255,255,.04)"></div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:5px;padding:5px 8px;border-radius:8px;background:rgba(23,25,29,.92);border:1px solid #2e3138;font:10.5px ui-monospace,Menlo,monospace;color:#8b94a1;align-items:center">
+        <span style="width:18px;height:18px;border-radius:4px;background:#4a9df0;color:#10131a;display:flex;align-items:center;justify-content:center;font-size:9px">▸</span>
+        <span style="width:18px;text-align:center">T</span><span style="width:18px;text-align:center">▭</span><span style="width:18px;text-align:center">✎</span><span style="width:18px;text-align:center">╱</span><span style="width:18px;text-align:center">↗</span><span style="width:18px;text-align:center">◉</span>
+        <span style="color:#2e3138">│</span>
+        <span>−</span><span style="font-size:9px">100%</span><span>+</span><span>⤢</span>
+      </div>
+      <div style="position:absolute;right:12px;bottom:12px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572;text-align:right">chrome: flat mono, per <a href="#2c" style="color:#5a6572">2c</a> · world: objects<br>tape + red pin live on the paper, not in the chrome</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “light-theme check on <a class="dv-oid" href="#4a">4a</a>” · “full six-glyph object set at <a class="dv-oid" href="#1d">1d</a> sizes” · “ratify — write it into the letter and update storyboard §4”</p>
+</section>
+
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">The two visions at app-surface render — same board, whole icon inventory</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Vision T — the <a class="dv-oid" href="#2c">2c</a> doctrine rendered: flat mono chrome everywhere; materiality only where the world is</div>
+    <div class="dv-card" style="width:640px;height:380px;position:relative;background:#17191d;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:26px 26px"></div>
+      <div style="position:absolute;left:14px;top:12px;display:flex;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#ff5f57"></span><span style="width:10px;height:10px;border-radius:50%;background:#febc2e"></span><span style="width:10px;height:10px;border-radius:50%;background:#28c840"></span></div>
+      <div style="position:absolute;left:66px;top:11px;display:flex;align-items:center;gap:6px;font:10.5px ui-monospace,Menlo,monospace;color:#8b94a1"><span>⌂</span><span style="color:#4a9df0">homeworld</span><span>›</span><span>northern reach</span><span style="display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;border:1.2px solid #8b94a1;border-radius:50% 50% 0 50%;transform:rotate(45deg);margin-left:3px"><span style="width:3px;height:3px;border-radius:50%;background:#8b94a1"></span></span></div>
+      <div style="position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:5px">
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⧉</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⌕</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⊛</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">⊞</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">▤</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #2e3138;color:#9aa3ad;font-size:11px;display:flex;align-items:center;justify-content:center">☰</span>
+        <span style="width:24px;height:24px;border-radius:6px;background:rgba(23,25,29,.88);border:1px solid #6b5426;color:#e6b34a;font-size:11px;display:flex;align-items:center;justify-content:center">⚠</span>
+      </div>
+      <div style="position:absolute;left:48px;top:70px;width:120px;height:156px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 13px,#414b55 13px 26px);box-shadow:0 8px 22px rgba(0,0,0,.3);outline:2px solid #4a9df0;outline-offset:3px">
+        <span style="position:absolute;right:5px;bottom:5px;width:12px;height:15px;border:1.4px solid rgba(255,255,255,.92);border-radius:2px;background:rgba(20,22,26,.5)"></span>
+      </div>
+      <div style="position:absolute;left:76px;top:236px;font:9.5px ui-monospace,Menlo,monospace;color:#9aa3ad">warren gate</div>
+      <div style="position:absolute;left:34px;top:258px;display:flex;gap:4px;padding:5px 7px;border-radius:7px;background:rgba(23,25,29,.92);border:1px solid #2e3138;font-size:10px;color:#c8cfd8">
+        <span style="width:17px;text-align:center">⌗</span><span style="width:17px;text-align:center">⇋</span><span style="width:17px;text-align:center">⇵</span>
+        <span style="width:1px;background:#2e3138;margin:1px 2px"></span>
+        <span style="width:17px;height:15px;border-radius:3px;background:conic-gradient(#8ab4d8 0 25%,#e8c450 0 50%,#d97a72 0 75%,#8cc47a 0);opacity:.8"></span>
+        <span style="width:17px;text-align:center">▦</span><span style="width:17px;text-align:center">▤</span><span style="width:17px;text-align:center">#</span><span style="width:17px;text-align:center">⊘</span>
+      </div>
+      <div style="position:absolute;left:210px;top:96px;width:14px;border-top:1.2px dashed #7f8898"></div>
+      <div style="position:absolute;left:224px;top:64px;width:170px;border-radius:7px;background:#fafafa;border:1px solid #dddddd;box-shadow:0 6px 22px rgba(8,10,14,.4);padding:9px;box-sizing:border-box">
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:10.5px;font-weight:700;color:#222;flex:1;font-family:'Maple Mono',ui-monospace,monospace">Warren gate</span><span style="font-size:8px;color:#888">⌖ 2</span><span style="display:inline-flex;width:9px;height:9px;border:1.3px solid #7f8898;border-radius:50% 50% 50% 0;transform:rotate(-45deg)"></span><span style="font-size:10px;color:#33628f">⤢</span></div>
+        <div style="font-size:8.5px;line-height:1.65;color:#333;margin-top:5px;font-family:'Maple Mono',ui-monospace,monospace">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall — <i>salvage iron</i>, warren-forged.</div>
+      </div>
+      <svg style="position:absolute;left:452px;top:150px" width="30" height="30" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="#8ab4d8"/><circle cx="12" cy="10.5" r="2.6" fill="#17191d"/></svg>
+      <div style="position:absolute;left:440px;top:182px;font:9.5px ui-monospace,Menlo,monospace;color:#9aa3ad">chain shrine</div>
+      <div style="position:absolute;left:14px;bottom:12px;width:17px;height:21px;border:1.4px solid rgba(139,148,161,.6);border-radius:2.5px;background:rgba(255,255,255,.04)"></div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:5px;padding:5px 8px;border-radius:8px;background:rgba(23,25,29,.92);border:1px solid #2e3138;font:10.5px ui-monospace,Menlo,monospace;color:#8b94a1;align-items:center">
+        <span style="width:18px;height:18px;border-radius:4px;background:#4a9df0;color:#10131a;display:flex;align-items:center;justify-content:center;font-size:9px">▸</span>
+        <span style="width:18px;text-align:center">T</span><span style="width:18px;text-align:center">▭</span><span style="width:18px;text-align:center">✎</span><span style="width:18px;text-align:center">╱</span><span style="width:18px;text-align:center">↗</span><span style="width:18px;text-align:center">◉</span>
+        <span style="color:#2e3138">│</span>
+        <span>−</span><span style="font-size:9px">100%</span><span>+</span><span>⤢</span>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Vision S — skeuo current forward: chrome icons are objects too (etched buttons, glass lens, gold lock, glossy pin)</div>
+    <div class="dv-card" style="width:640px;height:380px;position:relative;background:#17191d;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:26px 26px"></div>
+      <div style="position:absolute;left:14px;top:12px;display:flex;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9d97,#ff5f57)"></span><span style="width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd97e,#febc2e)"></span><span style="width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7fe89e,#28c840)"></span></div>
+      <div style="position:absolute;left:66px;top:11px;display:flex;align-items:center;gap:6px;font-size:10.5px;color:#9aa3ad"><span>⌂</span><span style="color:#8ec2f5">Homeworld</span><span>›</span><span>Northern Reach</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" style="margin-left:3px"><defs><linearGradient id="s0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0847c"/><stop offset="1" stop-color="#c0392f"/></linearGradient></defs><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#s0)" stroke="#8f2f27" stroke-width=".8"/><ellipse cx="9.6" cy="6.8" rx="2.6" ry="1.4" fill="rgba(255,255,255,.45)"/></svg>
+      </div>
+      <div style="position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:5px">
+        <span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(180deg,#3a4048,#23262c);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24"><rect x="4" y="7" width="12" height="12" rx="2" fill="#5a6572"/><rect x="8" y="4" width="12" height="12" rx="2" fill="url(#s1)" stroke="#2f5a82" stroke-width=".8"/><defs><linearGradient id="s1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc4e8"/><stop offset="1" stop-color="#5b8db8"/></linearGradient></defs></svg></span>
+        <span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(180deg,#3a4048,#23262c);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24"><defs><radialGradient id="s2" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#cfe6f8"/><stop offset="1" stop-color="#6b9cc4"/></radialGradient></defs><circle cx="10" cy="10" r="6" fill="url(#s2)" stroke="#3d647f" stroke-width="1.2"/><path d="M14.5 14.5L20 20" stroke="#8a8f98" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="8" cy="7.4" rx="2.6" ry="1.5" fill="rgba(255,255,255,.55)"/></svg></span>
+        <span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(180deg,#3a4048,#23262c);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 8L15 6M15 6L17 15M7 8l10 7" stroke="#7f8898" stroke-width="1.2"/><circle cx="7" cy="8" r="3" fill="url(#s3)"/><circle cx="15" cy="6" r="2.4" fill="url(#s4)"/><circle cx="17" cy="15" r="2.8" fill="url(#s5)"/><defs><linearGradient id="s3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8e0c4"/><stop offset="1" stop-color="#4f9d72"/></linearGradient><linearGradient id="s4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d878"/><stop offset="1" stop-color="#d9ab2e"/></linearGradient><linearGradient id="s5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eda49c"/><stop offset="1" stop-color="#c05a52"/></linearGradient></defs></svg></span>
+        <span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(180deg,#3a4048,#23262c);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="11" rx="1.4" transform="rotate(-6 9 11)" fill="#e8e4db" stroke="#a8a294" stroke-width=".8"/><rect x="8" y="7" width="13" height="11" rx="1.4" fill="#fff" stroke="#98a2ac" stroke-width=".8"/><rect x="9.4" y="8.4" width="10.2" height="6" fill="url(#s6)"/><circle cx="12" cy="10.4" r="1" fill="#f2d878"/><defs><linearGradient id="s6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc4e8"/><stop offset=".6" stop-color="#c4dcb4"/><stop offset="1" stop-color="#7ba86a"/></linearGradient></defs></svg></span>
+        <span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(180deg,#3a4048,#23262c);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.6" fill="url(#s7)" stroke="#98a2ac" stroke-width=".8"/><path d="M7 8h10M7 11.5h10M7 15h7" stroke="#7f8898" stroke-width="1.2"/><defs><linearGradient id="s7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e4e0d6"/></linearGradient></defs></svg></span>
+        <span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(180deg,#3a4048,#23262c);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="#aab4be" stroke-width="2.2" stroke-linecap="round"/><path d="M4 6.2h16M4 11.2h16M4 16.2h16" stroke="rgba(255,255,255,.25)" stroke-width=".8" stroke-linecap="round"/></svg></span>
+      </div>
+      <div style="position:absolute;left:48px;top:70px;width:120px;height:156px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 13px,#414b55 13px 26px);box-shadow:0 8px 22px rgba(0,0,0,.35);outline:2px solid #4a9df0;outline-offset:3px">
+        <span style="position:absolute;right:5px;bottom:5px;width:13px;height:16px;border-radius:2px;background:linear-gradient(180deg,#fff,#e4e0d6);border:1px solid #98a2ac;box-shadow:0 1px 2px rgba(0,0,0,.4)"><span style="position:absolute;left:2px;top:3px;right:2px;border-top:1.2px solid #8b94a1"></span><span style="position:absolute;left:2px;top:6px;right:4px;border-top:1.2px solid #98a2ac"></span></span>
+      </div>
+      <div style="position:absolute;left:76px;top:236px;font-size:9.5px;color:#9aa3ad">Warren gate</div>
+      <div style="position:absolute;left:26px;top:258px;display:flex;gap:4px;padding:5px 7px;border-radius:8px;background:linear-gradient(180deg,#2c3038,#1d2026);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 16px rgba(0,0,0,.4);align-items:center">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 5h5M5 5v5M19 5h-5M19 5v5M5 19h5M5 19v-5M19 19h-5M19 19v-5" stroke="#aab4be" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 6L4 12l5 6M15 6l5 6-5 6" stroke="#aab4be" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="width:1px;height:14px;background:#2e3138;margin:0 2px"></span>
+        <svg width="17" height="17" viewBox="0 0 24 24"><defs><linearGradient id="s8" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8b56a"/><stop offset="1" stop-color="#9a6f2e"/></linearGradient></defs><path d="M12 4c5 0 8 3 8 7 0 2-1.4 3-3 3h-2c-1.4 0-2 .8-2 2 0 1-.6 2-2 2-4 0-7-3-7-7s3-7 8-7z" fill="url(#s8)" stroke="#6f4f1d" stroke-width=".8"/><circle cx="9" cy="8" r="1.3" fill="#c05a52"/><circle cx="14" cy="7.4" r="1.3" fill="#5b8db8"/><circle cx="7.4" cy="11.6" r="1.3" fill="#4f9d72"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="13" rx="1.6" fill="none" stroke="#aab4be" stroke-width="1.6"/><path d="M4 15l5-5 4 4 3-3 4 4" stroke="#aab4be" stroke-width="1.4" fill="none"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24"><defs><linearGradient id="s9" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2cf5e"/><stop offset="1" stop-color="#cf9d1e"/></linearGradient></defs><rect x="6" y="10" width="12" height="9" rx="1.6" fill="url(#s9)" stroke="#8a691a" stroke-width=".8"/><path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10" fill="none" stroke="#9aa3ad" stroke-width="1.8"/><circle cx="12" cy="14" r="1.2" fill="#6f4f1d"/></svg>
+      </div>
+      <div style="position:absolute;left:210px;top:96px;width:14px;border-top:1.2px dashed #7f8898"></div>
+      <div style="position:absolute;left:224px;top:64px;width:170px;border-radius:6px;background:linear-gradient(180deg,#ffffff,#f3f0e9);border:1px solid #cfc9bc;box-shadow:0 8px 24px rgba(8,10,14,.5);padding:9px;box-sizing:border-box">
+        <div style="position:absolute;left:50%;top:-5px;transform:translateX(-50%) rotate(-1.5deg);width:44px;height:10px;background:rgba(214,205,182,.55);border:1px solid rgba(160,150,125,.4)"></div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:10.5px;font-weight:700;color:#222;flex:1;font-family:'Maple Mono',ui-monospace,monospace">Warren gate</span><span style="font-size:8px;color:#888">⌖ 2</span><svg width="11" height="11" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#s0)" stroke="#8f2f27" stroke-width=".8"/></svg><span style="font-size:10px;color:#33628f">⤢</span></div>
+        <div style="font-size:8.5px;line-height:1.65;color:#333;margin-top:5px;font-family:'Maple Mono',ui-monospace,monospace">Tolls kept by <span style="color:#2563b0">[[Yorren]]</span>. The chain is older than the wall — <i>salvage iron</i>, warren-forged.</div>
+      </div>
+      <svg style="position:absolute;left:452px;top:150px" width="30" height="30" viewBox="0 0 24 24"><defs><linearGradient id="s10" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"/><stop offset="1" stop-color="#6b9cc4"/></linearGradient></defs><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#s10)" stroke="#4a7096" stroke-width=".8"/><circle cx="12" cy="10.5" r="2.6" fill="#22303c"/><ellipse cx="9.6" cy="6.8" rx="2.6" ry="1.4" fill="rgba(255,255,255,.4)"/></svg>
+      <div style="position:absolute;left:440px;top:182px;font-size:9.5px;color:#9aa3ad">Chain shrine</div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;padding:6px 9px;border-radius:10px;background:linear-gradient(180deg,#2c3038,#1d2026);border:1px solid #2e3138;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 8px 20px rgba(0,0,0,.45);align-items:center">
+        <span style="width:20px;height:20px;border-radius:5px;background:linear-gradient(180deg,#6fb3f7,#3576c4);box-shadow:inset 0 1px 0 rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24"><path d="M6 3l12 9-6 1 3 6-3 1.4-3-6-4 4z" fill="#fff" stroke="#1d3a5a" stroke-width="1"/></svg></span>
+        <span style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:#c8cfd8;font:700 11px Georgia,serif">T</span>
+        <svg width="15" height="15" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2" fill="none" stroke="#aab4be" stroke-width="1.6"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24"><defs><linearGradient id="s11" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f2cf5e"/><stop offset="1" stop-color="#cf9d1e"/></linearGradient></defs><path d="M4 20l2-5L17 4l3 3L9 18z" fill="url(#s11)" stroke="#8a691a" stroke-width=".8"/><path d="M4 20l2-5 3 3z" fill="#e8b0a4"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 19L19 5" stroke="#aab4be" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 19L17 7" stroke="#aab4be" stroke-width="1.8" stroke-linecap="round"/><path d="M13 5l6 0 0 6z" fill="#aab4be"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#s0)" stroke="#8f2f27" stroke-width=".8"/><circle cx="12" cy="10.5" r="2.4" fill="#fff"/></svg>
+        <span style="width:1px;height:15px;background:#2e3138;margin:0 2px"></span>
+        <span style="color:#aab4be;font-size:11px">−</span><span style="color:#8b94a1;font:10px ui-monospace,Menlo,monospace">100%</span><span style="color:#aab4be;font-size:11px">+</span>
+      </div>
+      <div style="position:absolute;left:14px;bottom:12px;width:18px;height:22px;border-radius:2.5px;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));border:1px solid rgba(139,148,161,.5)"></div>
+    </div>
+  </div>
+  <div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>The inventory — every icon surface under each vision (the pin motif is load-bearing in both)</div>
+    <div class="dv-card" style="width:560px;padding:14px 16px;font-size:11px;color:#333">
+      <div style="display:grid;grid-template-columns:130px 1fr 1fr;gap:0;line-height:1.5">
+        <div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:4px 0;border-bottom:1px solid #eee">SURFACE</div><div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:4px 0;border-bottom:1px solid #eee">VISION T (3a)</div><div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:4px 0;border-bottom:1px solid #eee">VISION S (3b)</div>
+        <div style="padding:5px 0;border-bottom:1px solid #f2f2f2;font-weight:600">charm rail</div><div style="padding:5px 6px 5px 0;border-bottom:1px solid #f2f2f2">unicode glyphs, flat chips</div><div style="padding:5px 0;border-bottom:1px solid #f2f2f2">etched buttons, drawn color icons</div>
+        <div style="padding:5px 0;border-bottom:1px solid #f2f2f2;font-weight:600">dock tools</div><div style="padding:5px 6px 5px 0;border-bottom:1px solid #f2f2f2">mono glyphs, accent = active fill</div><div style="padding:5px 0;border-bottom:1px solid #f2f2f2">object tools (pencil, cursor, pin); recessed tray</div>
+        <div style="padding:5px 0;border-bottom:1px solid #f2f2f2;font-weight:600">selection charm bar</div><div style="padding:5px 6px 5px 0;border-bottom:1px solid #f2f2f2">mono glyphs + flat swatch</div><div style="padding:5px 0;border-bottom:1px solid #f2f2f2">crop marks, palette, gold lock</div>
+        <div style="padding:5px 0;border-bottom:1px solid #f2f2f2;font-weight:600">hint charms (page·frame)</div><div style="padding:5px 6px 5px 0;border-bottom:1px solid #f2f2f2">bordered-div drawings, as shipped</div><div style="padding:5px 0;border-bottom:1px solid #f2f2f2">tiny paper sheet with ruled lines</div>
+        <div style="padding:5px 0;border-bottom:1px solid #f2f2f2;font-weight:600">path + bookmarks pin</div><div style="padding:5px 6px 5px 0;border-bottom:1px solid #f2f2f2">outline teardrop, mono path text</div><div style="padding:5px 0;border-bottom:1px solid #f2f2f2">glossy red pin — THE object of the app</div>
+        <div style="padding:5px 0;border-bottom:1px solid #f2f2f2;font-weight:600">node icons (t1)</div><div style="padding:5px 6px 5px 0;border-bottom:1px solid #f2f2f2">flat <a class="dv-oid" href="#1c">1c</a> in-dot family</div><div style="padding:5px 0;border-bottom:1px solid #f2f2f2"><a class="dv-oid" href="#2b">2b</a> objects, full color</div>
+        <div style="padding:5px 0;font-weight:600">perch · toasts</div><div style="padding:5px 6px 5px 0">mono ⚠, flat chip</div><div style="padding:5px 0">amber rounded lamp, soft glow</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “<a class="dv-oid" href="#3a">3a</a> chrome + <a class="dv-oid" href="#3b">3b</a>'s node icons and pin only — the exact 2c line” · “<a class="dv-oid" href="#3b">3b</a> in light theme” · “push the gold lock and palette further”</p>
+</section>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">The 2006 hybrid musing — terminal current · early-Mac current · the compromise doctrine</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Terminal current, explicit — bitmap glyphs on the pixel grid; tmux/vim as a quiet accent, not a costume</div>
+    <div class="dv-card" style="background:#14161a;padding:16px 18px">
+      <div style="display:flex;gap:16px;align-items:center">
+        <svg width="28" height="24" viewBox="0 0 9 7" style="shape-rendering:crispedges" fill="#e8c450"><path d="M4 0h1v1h-1zM3 1h3v1h-3zM0 2h9v1h-9zM1 3h7v1h-7zM2 4h5v1h-5zM1 5h3v1h-3zM5 5h3v1h-3zM0 6h2v1h-2zM7 6h2v1h-2z"/></svg>
+        <svg width="24" height="24" viewBox="0 0 7 6" style="shape-rendering:crispedges" fill="#8ab4d8"><path d="M2 0h3v1h-3zM1 1h5v2h-5zM2 3h3v1h-3zM3 4h1v2h-1z"/></svg>
+        <svg width="24" height="26" viewBox="0 0 6 8" style="shape-rendering:crispedges" fill="#d97a72"><path d="M0 0h1v8h-1zM1 0h5v3h-5z"/></svg>
+        <svg width="26" height="22" viewBox="0 0 8 6" style="shape-rendering:crispedges" fill="#d987b8"><path d="M1 0h2v1h-2zM5 0h2v1h-2zM0 1h8v2h-8zM1 3h6v1h-6zM2 4h4v1h-4zM3 5h2v1h-2z"/></svg>
+        <svg width="22" height="28" viewBox="0 0 6 8" style="shape-rendering:crispedges" fill="#e0975a"><path d="M4 0h2v1h-2zM3 1h2v1h-2zM2 2h2v1h-2zM1 3h5v1h-5zM3 4h2v1h-2zM2 5h2v1h-2zM1 6h2v1h-2zM0 7h2v1h-2z"/></svg>
+        <svg width="24" height="22" viewBox="0 0 7 6" style="shape-rendering:crispedges" fill="#8cc47a"><path d="M5 0h2v1h-2zM3 1h4v1h-4zM2 2h4v1h-4zM1 3h4v1h-4zM0 4h4v1h-4zM0 5h2v1h-2z"/></svg>
+      </div>
+      <div style="margin-top:12px;font:10px ui-monospace,Menlo,monospace;color:#79808a">┌─ homeworld ─ northern reach ──────┐&nbsp; the grid is honest at every zoom</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Early-Mac current — icons as little objects: top-light, soft bevel, restrained gloss (Aqua-lite, no jelly)</div>
+    <div class="dv-card" style="background:#1b1d22;padding:16px 18px;display:flex;gap:16px;align-items:center">
+      <svg width="30" height="30" viewBox="0 0 24 24"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d878"/><stop offset="1" stop-color="#d9ab2e"/></linearGradient></defs><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z" fill="url(#g1)" stroke="#a87f18" stroke-width=".8" stroke-linejoin="round"/><path d="M12 4.5l1.6 3.4-3.2.2z" fill="rgba(255,255,255,.45)"/></svg>
+      <svg width="30" height="30" viewBox="0 0 24 24"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"/><stop offset="1" stop-color="#6b9cc4"/></linearGradient></defs><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#g2)" stroke="#4a7096" stroke-width=".8"/><circle cx="12" cy="10.5" r="2.6" fill="#22303c"/><ellipse cx="9.6" cy="6.8" rx="2.6" ry="1.4" fill="rgba(255,255,255,.4)"/></svg>
+      <svg width="30" height="30" viewBox="0 0 24 24"><defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eda49c"/><stop offset="1" stop-color="#c05a52"/></linearGradient></defs><path d="M12 20.6C6.4 16.2 3 13 3 9.6 3 7 5 5 7.4 5c1.8 0 3.4 1 4.6 2.7C13.2 6 14.8 5 16.6 5 19 5 21 7 21 9.6c0 3.4-3.4 6.6-9 11z" fill="url(#g3)" stroke="#8f3a33" stroke-width=".8"/><ellipse cx="8.4" cy="7.8" rx="2.4" ry="1.3" fill="rgba(255,255,255,.4)"/></svg>
+      <span style="font-size:9px;color:#8b94a1;max-width:110px;line-height:1.5">objects you could pick up — this is the current that eventually wants a commissioned hand</span>
+    </div>
+  </div>
+  <div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>The doctrine — “chrome is a terminal; the world is a desk.” Flat mono chrome · material world content · paper notes already live there</div>
+    <div class="dv-card" style="width:400px;height:230px;position:relative;background:#17191d;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:24px 24px"></div>
+      <div style="position:absolute;left:12px;top:8px;font:9px ui-monospace,Menlo,monospace;color:#79808a">⌂ homeworld › northern reach</div>
+      <div style="position:absolute;right:10px;top:8px;display:flex;flex-direction:column;gap:4px;font:10px ui-monospace,Menlo,monospace;color:#8b94a1">
+        <span style="width:18px;height:18px;border:1px solid #2e3138;border-radius:4px;display:flex;align-items:center;justify-content:center;background:rgba(23,25,29,.88)">⧉</span>
+        <span style="width:18px;height:18px;border:1px solid #2e3138;border-radius:4px;display:flex;align-items:center;justify-content:center;background:rgba(23,25,29,.88)">⌕</span>
+        <span style="width:18px;height:18px;border:1px solid #2e3138;border-radius:4px;display:flex;align-items:center;justify-content:center;background:rgba(23,25,29,.88)">☰</span>
+      </div>
+      <div style="position:absolute;left:26px;top:44px;width:74px;height:96px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 10px,#414b55 10px 20px);box-shadow:0 8px 22px rgba(0,0,0,.3)"></div>
+      <svg style="position:absolute;left:118px;top:64px" width="26" height="26" viewBox="0 0 24 24"><defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"/><stop offset="1" stop-color="#6b9cc4"/></linearGradient></defs><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#g4)" stroke="#4a7096" stroke-width=".8"/><circle cx="12" cy="10.5" r="2.6" fill="#22303c"/></svg>
+      <div style="position:absolute;left:112px;top:92px;font:8px ui-monospace,Menlo,monospace;color:#9aa3ad">warren gate</div>
+      <div style="position:absolute;right:26px;top:44px;width:150px;border-radius:6px;background:linear-gradient(180deg,#ffffff,#f6f4ef);border:1px solid #dcd8cf;box-shadow:0 6px 22px rgba(8,10,14,.4);padding:8px;box-sizing:border-box">
+        <div style="font-size:9px;font-weight:700;color:#222;font-family:'Maple Mono',ui-monospace,monospace">Goblin chief</div>
+        <div style="font-size:7.5px;line-height:1.6;color:#333;margin-top:3px;font-family:'Maple Mono',ui-monospace,monospace">Owes <span style="color:#2563b0">[[Yorren]]</span> a life-debt he resents…</div>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:8px;display:flex;gap:5px;padding:3px 7px;border-radius:6px;background:rgba(23,25,29,.92);border:1px solid #2e3138;font:9px ui-monospace,Menlo,monospace;color:#8b94a1"><span style="color:#4a9df0">▸</span><span>T</span><span>▭</span><span>✎</span><span>◉</span><span style="color:#2e3138">│</span><span>100%</span></div>
+      <div style="position:absolute;left:12px;bottom:8px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">flat mono chrome ↑ · material things →</div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “push <a class="dv-oid" href="#2a">2a</a> pixel glyphs through the <a class="dv-oid" href="#1d">1d</a> size ladder” · “<a class="dv-oid" href="#2c">2c</a> but icons from <a class="dv-oid" href="#1c">1c</a> flat — materiality only for pin+paper” · “how far can 2b go before it needs the artist”</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Icon document — the six node glyphs (star · pin · flag · heart · bolt · leaf) + dot palette review (Design-letter-3 #3)</span></div>
+<p style="max-width:760px;margin:-8px 0 6px;font:12px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.55)">These are world content drawn by the renderer, not chrome — so they may be real drawn shapes (the unicode-glyph rule governs chrome). Standing constraints: the pin must carry the teardrop motif ("pins mean places, everywhere"), icons take the same 8 color tokens as dots, and they must read at tiny board sizes over arbitrary art.</p>
+
+<div class="dv-rowh">A — glyph style direction</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Filled, soft-cornered — one solid weight, tinted by the node's color token</div>
+    <div class="dv-card" style="background:#1b1d22;padding:16px 18px;display:flex;gap:14px">
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="#e8c450"><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z" stroke-linejoin="round" stroke="#e8c450" stroke-width="1.5"/></svg><small>star</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="#8ab4d8"/><circle cx="12" cy="10.5" r="2.6" fill="#1b1d22"/></svg><small>pin</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M6 2.5h2.2v19H6z" fill="#d97a72"/><path d="M8 4h10.5l-3 3.8 3 3.8H8z" fill="#d97a72"/></svg><small>flag</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 20.6C6.4 16.2 3 13 3 9.6 3 7 5 5 7.4 5c1.8 0 3.4 1 4.6 2.7C13.2 6 14.8 5 16.6 5 19 5 21 7 21 9.6c0 3.4-3.4 6.6-9 11z" fill="#d987b8"/></svg><small>heart</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M13.5 2L4.5 13.5h5.5L9 22l9-11.5h-5.5z" fill="#e0975a" stroke="#e0975a" stroke-width="1" stroke-linejoin="round"/></svg><small>bolt</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M4.5 19.5C4.5 10.5 10.5 4.5 19.5 4.5c0 9-6 15-15 15z" fill="#8cc47a"/><path d="M6 18C10 14 14 10 18 6" stroke="#1b1d22" stroke-width="1.4" fill="none"/></svg><small>leaf</small></span>
+    </div>
+  </div>
+  <div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Outlined, 1.6px — kin to the drawn page/frame hint charms; quieter on the board</div>
+    <div class="dv-card" style="background:#1b1d22;padding:16px 18px;display:flex;gap:14px">
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e8c450" stroke-width="1.6" stroke-linejoin="round"><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z"/></svg><small>star</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8ab4d8" stroke-width="1.6"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z"/><circle cx="12" cy="10.5" r="2.4"/></svg><small>pin</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97a72" stroke-width="1.6" stroke-linejoin="round"><path d="M7 21.5v-19"/><path d="M7 4h11l-3 3.8 3 3.8H7z"/></svg><small>flag</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d987b8" stroke-width="1.6" stroke-linejoin="round"><path d="M12 20.6C6.4 16.2 3 13 3 9.6 3 7 5 5 7.4 5c1.8 0 3.4 1 4.6 2.7C13.2 6 14.8 5 16.6 5 19 5 21 7 21 9.6c0 3.4-3.4 6.6-9 11z"/></svg><small>heart</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e0975a" stroke-width="1.6" stroke-linejoin="round"><path d="M13.5 2L4.5 13.5h5.5L9 22l9-11.5h-5.5z"/></svg><small>bolt</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8cc47a" stroke-width="1.6"><path d="M4.5 19.5C4.5 10.5 10.5 4.5 19.5 4.5c0 9-6 15-15 15z" stroke-linejoin="round"/><path d="M6 18C10 14 14 10 18 6"/></svg><small>leaf</small></span>
+    </div>
+  </div>
+  <div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Glyph-in-dot — the icon IS a dot with a knocked-out glyph; dot↔icon stays one shape family</div>
+    <div class="dv-card" style="background:#1b1d22;padding:16px 18px;display:flex;gap:14px">
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e8c450"/><path d="M12 6l1.7 3.6 3.9.4-2.9 2.6.8 3.8-3.5-2-3.5 2 .8-3.8-2.9-2.6 3.9-.4z" fill="#1b1d22"/></svg><small>star</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10H2V12A10 10 0 0 1 12 2z" fill="#8ab4d8" transform="rotate(-45 12 12)"/><circle cx="12" cy="12" r="3.4" fill="#1b1d22"/></svg><small>pin</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#d97a72"/><path d="M8.5 6.5h1.6V18H8.5z" fill="#1b1d22"/><path d="M10 7h6.5l-1.8 2.6 1.8 2.6H10z" fill="#1b1d22"/></svg><small>flag</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#d987b8"/><path d="M12 17.6c-3.5-2.8-5.6-4.8-5.6-6.9 0-1.6 1.2-2.9 2.8-2.9 1.1 0 2.1.7 2.8 1.7.7-1 1.7-1.7 2.8-1.7 1.6 0 2.8 1.3 2.8 2.9 0 2.1-2.1 4.1-5.6 6.9z" fill="#1b1d22"/></svg><small>heart</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0975a"/><path d="M13 5.5L7.5 12.8h3.4L10 18.5l5.5-7.3h-3.4z" fill="#1b1d22"/></svg><small>bolt</small></span>
+      <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#8cc47a"/><path d="M7 17c0-5.5 3.7-9.2 9.2-9.2 0 5.5-3.7 9.2-9.2 9.2z" fill="#1b1d22"/></svg><small>leaf</small></span>
+    </div>
+  </div>
+</div>
+
+<div class="dv-rowh">B — do they survive the board? (screen sizes · busy art · the switcher row)</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Size ladder — 28 · 18 · 12 · 8px screen, style <a class="dv-oid" href="#1a">1a</a> vs <a class="dv-oid" href="#1c">1c</a>; below ~8px the appearance should render as its plain dot</div>
+    <div class="dv-card" style="background:#1b1d22;padding:14px 18px">
+      <div style="display:flex;gap:16px;align-items:center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#e8c450"><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#e8c450"><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#e8c450"><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z"/></svg>
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="#e8c450"><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z"/></svg>
+        <span style="width:8px;height:8px;border-radius:50%;background:#e8c450"></span>
+        <span style="font-size:9px;color:#8b94a1">← degrade to the dot</span>
+      </div>
+      <div style="display:flex;gap:16px;align-items:center;margin-top:12px">
+        <svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e8c450"/><path d="M12 6l1.7 3.6 3.9.4-2.9 2.6.8 3.8-3.5-2-3.5 2 .8-3.8-2.9-2.6 3.9-.4z" fill="#1b1d22"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e8c450"/><path d="M12 6l1.7 3.6 3.9.4-2.9 2.6.8 3.8-3.5-2-3.5 2 .8-3.8-2.9-2.6 3.9-.4z" fill="#1b1d22"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e8c450"/><path d="M12 6l1.7 3.6 3.9.4-2.9 2.6.8 3.8-3.5-2-3.5 2 .8-3.8-2.9-2.6 3.9-.4z" fill="#1b1d22"/></svg>
+        <svg width="8" height="8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e8c450"/><path d="M12 6l1.7 3.6 3.9.4-2.9 2.6.8 3.8-3.5-2-3.5 2 .8-3.8-2.9-2.6 3.9-.4z" fill="#1b1d22"/></svg>
+        <span style="width:8px;height:8px;border-radius:50%;background:#e8c450"></span>
+        <span style="font-size:9px;color:#8b94a1">1c collapses to the dot naturally</span>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Over busy art — bare <a class="dv-oid" href="#1a">1a</a> needs luck; <a class="dv-oid" href="#1c">1c</a> carries its own ground everywhere</div>
+    <div class="dv-card" style="width:280px;height:120px;position:relative;background:repeating-linear-gradient(115deg,#7a6a52 0 9px,#4a5560 9px 18px,#93826f 18px 27px)">
+      <svg style="position:absolute;left:34px;top:26px" width="22" height="22" viewBox="0 0 24 24" fill="#d97a72"><path d="M6 2.5h2.2v19H6z"/><path d="M8 4h10.5l-3 3.8 3 3.8H8z"/></svg>
+      <svg style="position:absolute;left:120px;top:26px" width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#d97a72"/><path d="M8.5 6.5h1.6V18H8.5z" fill="#1b1d22"/><path d="M10 7h6.5l-1.8 2.6 1.8 2.6H10z" fill="#1b1d22"/></svg>
+      <div style="position:absolute;left:26px;top:56px;font-size:8.5px;color:#fff;background:rgba(16,19,26,.72);border-radius:3px;padding:1px 4px">bare</div>
+      <div style="position:absolute;left:114px;top:56px;font-size:8.5px;color:#fff;background:rgba(16,19,26,.72);border-radius:3px;padding:1px 4px">in-dot</div>
+      <svg style="position:absolute;left:204px;top:22px" width="30" height="30" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(16,19,26,.72)"/><path d="M6.2 2.5h2v19h-2z" fill="#d97a72" transform="scale(.82) translate(2.6 2.6)"/><path d="M8 4h10.5l-3 3.8 3 3.8H8z" fill="#d97a72" transform="scale(.82) translate(2.6 2.6)"/></svg>
+      <div style="position:absolute;left:194px;top:56px;font-size:8.5px;color:#fff;background:rgba(16,19,26,.72);border-radius:3px;padding:1px 4px">scrim chip</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>In the switcher popover — dot row above, icon row below, one color selection tints both</div>
+    <div class="dv-card" style="width:220px;background:#22262c;border:1px solid #3a3e46;padding:9px">
+      <div style="display:flex;gap:7px;padding-bottom:7px;border-bottom:1px solid #2e3138">
+        <span style="width:13px;height:13px;border-radius:50%;background:#8ab4d8"></span>
+        <span style="width:13px;height:13px;border-radius:50%;background:#62b6a6"></span>
+        <span style="width:13px;height:13px;border-radius:50%;background:#8cc47a"></span>
+        <span style="width:13px;height:13px;border-radius:50%;background:#e8c450;outline:1.4px solid #4a9df0;outline-offset:2px"></span>
+        <span style="width:13px;height:13px;border-radius:50%;background:#e0975a"></span>
+        <span style="width:13px;height:13px;border-radius:50%;background:#d97a72"></span>
+        <span style="width:13px;height:13px;border-radius:50%;background:#b295d6"></span>
+        <span style="width:13px;height:13px;border-radius:50%;background:#d987b8"></span>
+      </div>
+      <div style="display:flex;gap:8px;padding:8px 0 4px;align-items:center">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#e8c450"><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24"><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="#e8c450"/><circle cx="12" cy="10.5" r="2.6" fill="#22262c"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#e8c450"><path d="M6 2.5h2.2v19H6z"/><path d="M8 4h10.5l-3 3.8 3 3.8H8z"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#e8c450"><path d="M12 20.6C6.4 16.2 3 13 3 9.6 3 7 5 5 7.4 5c1.8 0 3.4 1 4.6 2.7C13.2 6 14.8 5 16.6 5 19 5 21 7 21 9.6c0 3.4-3.4 6.6-9 11z"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#e8c450"><path d="M13.5 2L4.5 13.5h5.5L9 22l9-11.5h-5.5z"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24"><path d="M4.5 19.5C4.5 10.5 10.5 4.5 19.5 4.5c0 9-6 15-15 15z" fill="#e8c450"/><path d="M6 18C10 14 14 10 18 6" stroke="#22262c" stroke-width="1.4" fill="none"/></svg>
+      </div>
+      <div style="font-size:8px;color:#9aa3ad;padding-top:2px">image… &nbsp;·&nbsp; card</div>
+    </div>
+  </div>
+</div>
+
+<div class="dv-rowh">C — dot palette review (the 8 tokens were agent-coined placeholders)</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1g"><div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Current tokens as shipped — uneven lightness (gold glows, blue recedes)</div>
+    <div class="dv-card" style="background:#1b1d22;padding:14px 16px">
+      <div style="display:flex;gap:10px">
+        <span style="width:22px;height:22px;border-radius:50%;background:#8ab4d8"></span><span style="width:22px;height:22px;border-radius:50%;background:#62b6a6"></span><span style="width:22px;height:22px;border-radius:50%;background:#8cc47a"></span><span style="width:22px;height:22px;border-radius:50%;background:#e8c450"></span><span style="width:22px;height:22px;border-radius:50%;background:#e0975a"></span><span style="width:22px;height:22px;border-radius:50%;background:#d97a72"></span><span style="width:22px;height:22px;border-radius:50%;background:#b295d6"></span><span style="width:22px;height:22px;border-radius:50%;background:#d987b8"></span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#8ab4d8;margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:#62b6a6;margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:#8cc47a;margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:#e8c450;margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:#e0975a;margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:#d97a72;margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:#b295d6;margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:#d987b8;margin:7px"></span>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1h"><div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>Regularized — one oklch lightness+chroma (L .76 · C .09), eight even hues; calmer, still nameable</div>
+    <div class="dv-card" style="background:#1b1d22;padding:14px 16px">
+      <div style="display:flex;gap:10px">
+        <span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 250)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 185)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 140)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 95)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 60)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 25)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 300)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 340)"></span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 250);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 185);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 140);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 95);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 60);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 25);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 300);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.76 .09 340);margin:7px"></span>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1i"><div class="dv-olabel"><a class="dv-oid" href="#1i">1i</a>Regularized, louder — L .78 · C .13; world content is allowed more voice than chrome</div>
+    <div class="dv-card" style="background:#1b1d22;padding:14px 16px">
+      <div style="display:flex;gap:10px">
+        <span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 250)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 185)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 140)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 95)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 60)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 25)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 300)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.78 .13 340)"></span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 250);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 185);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 140);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 95);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 60);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 25);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 300);margin:7px"></span><span style="width:8px;height:8px;border-radius:50%;background:oklch(.78 .13 340);margin:7px"></span>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1j"><div class="dv-olabel"><a class="dv-oid" href="#1j">1j</a>Light-theme + paper check — dots are theme-independent; whichever row wins must hold here too</div>
+    <div class="dv-card" style="background:#f4f5f7;padding:14px 16px">
+      <div style="display:flex;gap:10px">
+        <span style="width:22px;height:22px;border-radius:50%;background:#8ab4d8"></span><span style="width:22px;height:22px;border-radius:50%;background:#62b6a6"></span><span style="width:22px;height:22px;border-radius:50%;background:#8cc47a"></span><span style="width:22px;height:22px;border-radius:50%;background:#e8c450"></span><span style="width:22px;height:22px;border-radius:50%;background:#e0975a"></span><span style="width:22px;height:22px;border-radius:50%;background:#d97a72"></span><span style="width:22px;height:22px;border-radius:50%;background:#b295d6"></span><span style="width:22px;height:22px;border-radius:50%;background:#d987b8"></span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 250)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 185)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 140)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 95)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 60)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 25)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 300)"></span><span style="width:22px;height:22px;border-radius:50%;background:oklch(.76 .09 340)"></span>
+      </div>
+      <div style="font-size:9px;color:#5a6572;margin-top:8px">current (top) · regularized <a class="dv-oid" href="#1h">1h</a> (bottom) on light surface</div>
+    </div>
+  </div>
+</div>
+
+<p class="dv-next">Try next: “<a class="dv-oid" href="#1c">1c</a> glyphs with the <a class="dv-oid" href="#1h">1h</a> palette, shown on the storyboard's board frame” · “bolder pin — it's the motif” · “keep current dots, ship <a class="dv-oid" href="#1a">1a</a> with the scrim chip from <a class="dv-oid" href="#1e">1e</a>”</p>
+</section>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<style>
+body{margin:0}
+doc-page:not(:defined){visibility:hidden}
+a{color:#2b6cb0}a:hover{color:#2f78c4}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/400-italic.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/maple-mono@5/700.css">
+</helmet>
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="100%,1400px">
+
+<h1 style="font-size:26px;margin:0 0 4px;letter-spacing:-.01em">Expanding Worlds — style guide v2</h1>
+<p style="margin:0 0 6px;font-size:13.5px;color:#777;line-height:1.55">The whole visual system with its engineering callouts. Compiled at RFC rev 0.54 + the 2026-07-06 design pass. Where this contradicts the design-system readme or the v1 artifacts, THIS wins; where it contradicts the RFC, the RFC wins. Canonical token source stays <span style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px">apps/desktop/src/renderer/theme.css</span> — every proposed token below lands there first, then everywhere else.</p>
+<p style="margin:0 0 24px;font-size:11.5px;color:#8a6414;font-family:ui-monospace,Menlo,monospace">■ TECH blocks are the build contract: token names, constants, guard implications. Provisional numbers are marked ~.</p>
+
+<!-- 1 DOCTRINE -->
+<h2 data-screen-label="1 doctrine" style="font-size:16px;margin:22px 0 8px">1 · The doctrine</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333"><b>Chrome is a terminal; the world is a desk.</b> Chrome is flat, mono-flavored, translucent, and self-effacing: unicode glyphs, flat chips, printed shortcuts, one shared fade clock. World content carries gentle materiality: object icons, taped paper notes with torn edges, small one-shot physical beats. The red glossy pin is the one object admitted into chrome adjacency — and it lives ON the paper (panel pin control), never in the rail, dock, or path, which keep the flat teardrop. Bigger elements are flashier and more visual; text stays focused and thin.</p>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · the raw-hex guard test stands: every color below becomes an --ew-* token in theme.css BEFORE use. Object-icon gradients, tape, and torn-paper are world-content colors — theme-independent, defined once like the dot palette. Nothing here relaxes the occlusion contract (§8.8) or the engagement clock (§8.2).
+</div>
+<iframe src="design-system/guidelines/doctrine.html" style="width:700px;height:170px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="doctrine example"></iframe>
+
+<!-- 2 COLOR -->
+<h2 data-screen-label="2 color" style="font-size:16px;margin:22px 0 8px">2 · Color</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">Chrome: near-black blue-grey surfaces in translucency tiers (0.82–0.97 alpha by layer), one blue accent (<span style="font-family:ui-monospace,monospace;font-size:11px">#4a9df0</span> dark · <span style="font-family:ui-monospace,monospace;font-size:11px">#2b6cb0</span> light), desaturated danger/warn. Notes are light paper on every theme. Links: bound blue · unresolved purple · broken red, each with a 50%-alpha underline token. World content (theme-independent): 8 node dots, 6 canvas flats — and now the object materials.</p>
+<div style="display:flex;gap:8px;align-items:center;margin:0 0 8px">
+  <span style="width:20px;height:20px;border-radius:50%;background:#8ab4d8"></span><span style="width:20px;height:20px;border-radius:50%;background:#62b6a6"></span><span style="width:20px;height:20px;border-radius:50%;background:#8cc47a"></span><span style="width:20px;height:20px;border-radius:50%;background:#e8c450"></span><span style="width:20px;height:20px;border-radius:50%;background:#e0975a"></span><span style="width:20px;height:20px;border-radius:50%;background:#d97a72"></span><span style="width:20px;height:20px;border-radius:50%;background:#b295d6"></span><span style="width:20px;height:20px;border-radius:50%;background:#d987b8"></span>
+  <span style="font-size:11px;color:#888">shipped dots · regularization to oklch(.76 .09 h) proposed, unratified (Icon Document 1h)</span>
+</div>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · tokens to ADD to theme.css:<br>
+--ew-void-surface: derived at runtime — color-mix(in oklab, [effective board color] ~78%, black). Never a raw hex; tracks arbitrary per-canvas colors free. Grid in the void renders at grid-line alpha × ~0.4. Void is OFF on glass.<br>
+--ew-tape-surface: rgba(214,205,182,.6) · --ew-tape-border: rgba(160,150,125,.4) · --ew-paper-torn: #f7f3ea<br>
+--ew-obj-*-hi/-lo gradient pairs (world content): blue a8cbe8/6b9cc4 · gold f2d878/d9ab2e · red f0847c/c0392f · pink e8b0d4/c46a9e · orange eec08a/c87d3e · green aad494/6f9e58; stroke = the -lo step darkened ~20%. Gloss highlight: rgba(255,255,255,.4–.45).<br>
+Note heading colors (editor): --ew-note-h1 #2b6cb0 · --ew-note-h2 #3b8a7d · --ew-note-h3 #9c7f2e (~provisional; ride theme tokens at build).
+</div>
+<iframe src="design-system/guidelines/colors-surfaces.html" style="width:700px;height:150px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="surfaces"></iframe>
+<iframe src="design-system/guidelines/colors-accent.html" style="width:700px;height:120px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="accent"></iframe>
+<iframe src="design-system/guidelines/colors-paper.html" style="width:700px;height:170px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="paper"></iframe>
+<iframe src="design-system/guidelines/colors-node-dots-proposed.html" style="width:700px;height:150px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="dot palette shipped vs proposed"></iframe>
+
+<!-- 3 TYPE -->
+<h2 data-screen-label="3 type" style="font-size:16px;margin:22px 0 8px">3 · Type</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">Chrome type stays the platform stack, small and quiet: charm 1rem · tool .95 · toast/panel-base .85 · panel chrome .78 · menu rows .75 · chips .7 · micro .62. Mono (<span style="font-family:ui-monospace,monospace;font-size:11px">ui-monospace, Menlo</span>) for shortcuts, tags, counts, zoom %, tabular-nums. Weight 600 max for chrome. <b>The one carve-out: note text is Maple Mono</b> — <span style="font-family:'Maple Mono',monospace">kerned, rounded, with a <i>true cursive italic</i></span> — loud colored headings, org-style folding presentation over the Markdown carrier.</p>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · --ew-font-editor: 'Maple Mono', ui-monospace, Menlo, monospace. BUNDLE woff2 400/400-italic/700 with the app (OFL license file alongside); never fetched at runtime — the no-network posture holds. Editor scale (~provisional): body .85rem/1.65 · h1 1.15rem/700 · h2 1rem/700 · h3 .9rem/700, headings colored per §2. Applies to note panels, big editor, note-card appearance excerpts, and gallery text posts; NOWHERE in chrome.
+</div>
+<iframe src="design-system/guidelines/type-scale.html" style="width:700px;height:170px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="chrome type scale"></iframe>
+<iframe src="design-system/guidelines/type-editor.html" style="width:700px;height:190px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="editor face"></iframe>
+
+<!-- 4 SPACE & SHAPE -->
+<h2 data-screen-label="4 shape" style="font-size:16px;margin:22px 0 8px">4 · Space, shape, and borders</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">Compact rem paddings (.15–.75); controls ~30px square. Radii are a meaning tier, not a taste dial: board cards 3 · buttons/menu rows 4–5 · controls 6–7 · charms/menus/toasts 7 · rail charms 8 · panels/dock 9 · action bars 10–12 · chips/facets 999. Borders 1px everywhere, token-tiered. Selection is a 2px accent outline offset 3px — no drawn handles, ever. The bound page keeps a square corner on its binding edge (radius 0 on the seam side, 9px elsewhere).</p>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · --ew-node-radius: 3px stands. New geometry facts: bound-page border-radius: 0 9px 9px 0 (mirrored when the page opens left); binder rings ~11px, 2px stroke --ew-text-muted, punched (fill = board color), straddling the seam; frame title row sits ON the frame's top edge (an item label never does — position is the tell). Frame furniture draws only past a rendered-size threshold (share the charm screen-size rule).
+</div>
+
+<!-- 5 DEPTH -->
+<h2 data-screen-label="5 depth" style="font-size:16px;margin:22px 0 8px">5 · Depth</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">Shadow = screen-space; flat = world content. Panels <span style="font-family:ui-monospace,monospace;font-size:11px">0 6px 22px</span> · pinned <span style="font-family:ui-monospace,monospace;font-size:11px">0 10px 30px</span> · menus <span style="font-family:ui-monospace,monospace;font-size:11px">0 10px 28px</span> · board nodes soft drop only. <b>New rule: floating things cast shadows</b> — anything torn off or riding a drag (mid-tear note, drag ghost, place cursor) picks up the panel shadow for exactly the duration it floats.</p>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · --ew-panel-shadow / -pinned / -menu ship in chrome.css. Add --ew-drag-shadow: 0 12px 26px rgba(0,0,0,.5) (~) applied on drag/tear start, removed on settle — one transition, no lingering elevation on world content.
+</div>
+
+<!-- 6 MOTION -->
+<h2 data-screen-label="6 motion" style="font-size:16px;margin:22px 0 8px">6 · Motion</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">Two budgets. <b>Chrome:</b> fades and single pulses only, ease-out, 120–240ms, all on one clock. <b>World:</b> small one-shot physical beats — the tear, the bloom, the stage edge easing outward, the (mused) book-cover open. One beat per user act; never ambient, never looping, no bounces.</p>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.9 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · shipped constants (feel.ts / chrome.css): fade-delay 4000ms · fade 240ms · chrome-rest .92 · hint-charm-rest .7 · tooltip-delay 500ms · toast 6000ms · perch-pulse 700ms (once).<br>
+ADD beat constants: EW_BEAT_TEAR_MS ~300 (ease-out, one-shot) · EW_BEAT_BLOOM_MS ~240 (first placement lights the stage) · EW_BEAT_STAGE_EDGE_MS ~180 (edge follows a push, eased) · EW_BEAT_COVER_MS ~200 (book-cover open, musing). Guard idea: any CSS animation with iteration-count != 1 outside the interaction layer fails review.
+</div>
+
+<!-- 7 Z-LADDER -->
+<h2 data-screen-label="7 z ladder" style="font-size:16px;margin:22px 0 8px">7 · The z-ladder (§8.8)</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">One named ladder, in order: world content → canvas affordances → note panels → takeover → chrome / source panel → anchored popovers → modal → notices → tooltip. Modals mount at the root overlay host. Everything anchored clamps and flips through one shared helper. Corner chrome declares reserved bands; flights reserve space for the panel they open. Chrome never occludes what it annotates.</p>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · export Z = { world:0, affordance:100, panel:200, takeover:300, chrome:400, popover:500, modal:600, notice:700, tooltip:800 } (rung names normative, numbers illustrative); a guard test fails any literal z-index that is not a rung constant. The centered torn-off note is a MODAL-rung tenant with a scrim; scroll inside it never reaches the board.
+</div>
+
+<!-- 8 ICONOGRAPHY -->
+<h2 data-screen-label="8 iconography" style="font-size:16px;margin:22px 0 8px">8 · Iconography</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">Chrome glyphs stay unicode, per surface: rail <span style="font-family:ui-monospace,monospace">⧉ ⌕ ⊛ ⊞ ▤ ☰ (+⚠ perch)</span> · dock <span style="font-family:ui-monospace,monospace">▸ T ▭ ✎ ╱ ↗ ⌁ ◉ − % + ⤢</span> · charm bar <span style="font-family:ui-monospace,monospace">⌗ ⇋ ⇵ | swatch · ▦ · ▤ · # · ⊘</span>. Hint charms remain drawn bordered-divs. The pin/teardrop motif means "place" everywhere — flat in chrome, glossy object on paper. The six node icons are the painted object set (star · pin · flag · heart · bolt · leaf), degrading to the plain dot below ~8px rendered size.</p>
+<div style="display:flex;gap:16px;align-items:center;margin:0 0 8px;background:#1b1d22;border-radius:8px;padding:12px 16px;width:fit-content">
+  <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="s1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d878"/><stop offset="1" stop-color="#d9ab2e"/></linearGradient></defs><path d="M12 2.5l2.8 6 6.4.6-4.8 4.3 1.4 6.3-5.8-3.3-5.8 3.3 1.4-6.3-4.8-4.3 6.4-.6z" fill="url(#s1)" stroke="#a87f18" stroke-width=".8" stroke-linejoin="round"/></svg>
+  <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="s2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8cbe8"/><stop offset="1" stop-color="#6b9cc4"/></linearGradient></defs><path d="M12 3.2a7.3 7.3 0 0 1 7.3 7.3c0 2.1-1 3.7-2.6 5.3L12 21l-4.7-5.2C5.7 14.2 4.7 12.6 4.7 10.5A7.3 7.3 0 0 1 12 3.2z" fill="url(#s2)" stroke="#4a7096" stroke-width=".8"/><circle cx="12" cy="10.5" r="2.6" fill="#22303c"/></svg>
+  <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="s3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eda49c"/><stop offset="1" stop-color="#c05a52"/></linearGradient></defs><path d="M6 2.5h2.2v19H6z" fill="#8a7748"/><path d="M8 4h10.5l-3 3.8 3 3.8H8z" fill="url(#s3)" stroke="#8f3a33" stroke-width=".6"/></svg>
+  <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="s4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8b0d4"/><stop offset="1" stop-color="#c46a9e"/></linearGradient></defs><path d="M12 20.6C6.4 16.2 3 13 3 9.6 3 7 5 5 7.4 5c1.8 0 3.4 1 4.6 2.7C13.2 6 14.8 5 16.6 5 19 5 21 7 21 9.6c0 3.4-3.4 6.6-9 11z" fill="url(#s4)" stroke="#96487a" stroke-width=".6"/></svg>
+  <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="s5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eec08a"/><stop offset="1" stop-color="#c87d3e"/></linearGradient></defs><path d="M13.5 2L4.5 13.5h5.5L9 22l9-11.5h-5.5z" fill="url(#s5)" stroke="#9a5f2a" stroke-width=".6" stroke-linejoin="round"/></svg>
+  <svg width="24" height="24" viewBox="0 0 24 24"><defs><linearGradient id="s6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aad494"/><stop offset="1" stop-color="#6f9e58"/></linearGradient></defs><path d="M4.5 19.5C4.5 10.5 10.5 4.5 19.5 4.5c0 9-6 15-15 15z" fill="url(#s6)" stroke="#4f7a3c" stroke-width=".6"/><path d="M6 18C10 14 14 10 18 6" stroke="#3c5c2e" stroke-width="1.2" fill="none"/></svg>
+</div>
+<div style="border:1px solid #d9c68a;background:#fdf6e3;border-radius:6px;padding:9px 12px;font:11px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a;margin:0 0 4px">
+■ TECH · icons render in the WebGL canvas, not the DOM: bake each object glyph to a small texture atlas (SVG → raster at 2–3 sizes) or draw as geometry; the color choice tints dot and icon alike via the same token. Below ~8px screen size the renderer swaps to the plain dot (same rule family as charm visibility). Objects live nowhere in chrome; the switcher popover shows them at chrome size but they remain world assets.
+</div>
+<iframe src="design-system/guidelines/icons-objects.html" style="width:700px;height:150px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="object icon set"></iframe>
+
+<!-- 9 COMPONENT RULES -->
+<iframe src="design-system/guidelines/stage-void.html" style="width:700px;height:180px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="stage and void"></iframe>
+<iframe src="design-system/guidelines/tooltip-shapes.html" style="width:700px;height:224px;border:1px solid #ddd;border-radius:8px;margin:8px 0 0;display:block" title="tooltip shapes"></iframe>
+
+<h2 data-screen-label="9 components" style="font-size:16px;margin:22px 0 8px">9 · Component rules digest</h2>
+<p style="margin:0 0 4px;font-size:12.5px;line-height:1.75;color:#333">
+<b>Notes:</b> the bound page's height exactly matches its image — like a book; width is the free variable; rings on the seam; corner controls identical everywhere (⌖ places · pin · ⤢); tethered never resizes and scales with the world; pin = the tear (tape + torn edge are the pinned state's permanent marks); pinned resizes, and past a threshold becomes the big editor; double-click tears to center over a dimmed board, scroll stays inside.<br>
+<b>Tooltips:</b> five legal shapes only — name+shortcut · name-only · disabled-with-reason · state-with-exit · coming-soon. One chip, 500ms, clamp-and-flip.<br>
+<b>Search track:</b> ⌕ icon → bar → committed terms crystallize into pills (AND, booru-style) → trailing ✕ clears all → double-click melts pills to text; empty collapses to the icon.<br>
+<b>Frames:</b> title + sort chip ON the top edge, zoom-gated; grid · rows · float; fresh frames default sorted; only item drags across the boundary edit membership.<br>
+<b>Settings:</b> trailing fold carets on section headings; "this world" chips on project-tier rows; Advanced is one toggle revealing store → AI; git native, other storage = connectors.<br>
+<b>Gallery:</b> scope toggle · facets incl. inbox + low quality · bucketed time with header-as-jump · size slider · Space = Quick-Look peek · import strip centered above the action bar.
+</p>
+
+<!-- 10 COPY -->
+<h2 data-screen-label="10 copy" style="font-size:16px;margin:22px 0 8px">10 · Copy</h2>
+<p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#333">Sentence case everywhere. Never the word "file" — the app copies bytes and must never imply it could touch the user's drive. "Item" where a noun is unavoidable; "node" stays a docs word. Verbs over nouns: Replace image… · Swap for… · open as source · pull into this world. Confirmations state impact as fact ("this will affect 35 placements — are you sure?"). Tooltips teach; menus print shortcuts; no emoji, no exclamation marks, no marketing voice.</p>
+
+<p style="font-size:12px;color:#888;margin:26px 0 0;border-top:1px solid #ddd;padding-top:10px">Change control: this guide absorbs ratified decisions only; explorations live in the satellite documents, amendments route through Design-Team-Letter-1 → DESIGN-QUEUE → RFC rev bump → here.</p>
+
+</x-import>
+</x-dc>
+</body>
+</html>

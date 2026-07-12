@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<style>
+body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+a{color:#2a78d6}a:hover{color:#4a9df0}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-rowh{font:600 11px/1.2 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.45);letter-spacing:.06em;text-transform:uppercase;margin:26px 0 12px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:280px}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.pf{width:250px;height:150px;position:relative;background:#17191d;overflow:hidden}
+.pg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px}
+.cap{position:absolute;left:10px;bottom:7px;right:10px;font:8px ui-monospace,Menlo,monospace;color:#5a6572}
+@keyframes ewLift{0%,12%{transform:translate(0,0) rotate(0) scale(1);box-shadow:0 0 0 rgba(0,0,0,0)}18%,22%{transform:translate(0,-3px) rotate(-1deg) scale(1.012);box-shadow:0 12px 26px rgba(0,0,0,.5)}50%,54%{transform:translate(92px,-3px) rotate(-1deg) scale(1.012);box-shadow:0 12px 26px rgba(0,0,0,.5)}62%,88%{transform:translate(92px,0) rotate(0) scale(1);box-shadow:0 0 0 rgba(0,0,0,0)}96%,100%{transform:translate(0,0) rotate(0) scale(1);opacity:1}92%{opacity:0}94%{opacity:0;transform:translate(0,0)}}
+@keyframes ewStrain{0%,30%{transform:translateX(0)}36%,44%{transform:translateX(2px)}50%,100%{transform:translateX(0)}}
+@keyframes ewHand{0%,30%{opacity:0;transform:translateX(0)}34%,44%{opacity:1;transform:translateX(3px)}52%,100%{opacity:0;transform:translateX(0)}}
+@keyframes ewTake{0%,20%{transform:translateY(0) rotate(0) scale(1);opacity:1;box-shadow:0 0 0 rgba(0,0,0,0)}30%{transform:translateY(-4px) rotate(-2deg) scale(1.02);opacity:1;box-shadow:0 14px 28px rgba(0,0,0,.5)}48%,72%{transform:translateY(-14px) rotate(-3deg) scale(1.05);opacity:0;box-shadow:0 18px 32px rgba(0,0,0,.3)}78%,88%{transform:translateY(0) rotate(0) scale(1);opacity:0;box-shadow:0 0 0 rgba(0,0,0,0)}100%{opacity:1;transform:translateY(0)}}
+@keyframes ewBurnMask{0%,22%{-webkit-mask-position:0 0;mask-position:0 0}62%,84%{-webkit-mask-position:0 100%;mask-position:0 100%}92%,100%{-webkit-mask-position:0 0;mask-position:0 0}}
+@keyframes ewBurnEdge{0%,22%{top:96%;opacity:0}26%{opacity:1}60%{top:-6%;opacity:1}64%,100%{top:-6%;opacity:0}}
+@keyframes ewEmber{0%,24%{opacity:0;transform:translateY(0)}30%{opacity:1}55%{opacity:0;transform:translateY(-34px)}100%{opacity:0}}
+.burnCard{-webkit-mask-image:linear-gradient(to top,transparent 0 38%,#000 55% 100%);mask-image:linear-gradient(to top,transparent 0 38%,#000 55% 100%);-webkit-mask-size:100% 320%;mask-size:100% 320%;animation:ewBurnMask 4.2s ease-in-out infinite}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">The beats, moving — thin loops for feel (the app plays each ONCE per act; looping here is spec convenience)</span></div>
+<div class="dv-opts">
+  <div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>The universal grab — lift · carry · settle, the loop every drag plays</div>
+    <div class="dv-card pf" style="width:290px"><div class="pg"></div>
+      <div style="position:absolute;left:44px;top:30px;width:52px;height:68px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px);animation:ewLift 4.6s ease-in-out infinite"></div>
+      <div style="position:absolute;left:44px;top:32px;width:52px;height:68px;border:1px dashed rgba(139,148,161,.2);border-radius:2px"></div>
+      <div style="position:absolute;left:136px;top:32px;width:52px;height:68px;border:1px dashed rgba(139,148,161,.2);border-radius:2px"></div>
+      <div class="cap">+1% · shadow rides the lift · one ease-out seats it — no bounce</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>The press — a locked item strains 2px and springs home; the physics explains the refusal</div>
+    <div class="dv-card pf" style="width:250px"><div class="pg"></div>
+      <div style="position:absolute;left:78px;top:30px;width:54px;height:72px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 10px,#414b55 10px 20px);animation:ewStrain 3.4s ease-in-out infinite"></div>
+      <div style="position:absolute;left:142px;top:58px;font-size:12px;color:#8ec2f5;animation:ewHand 3.4s ease-in-out infinite">✥</div>
+      <div class="cap">−1% pressed into the desk · grab = strain, not motion</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Delete — lifted off the desk, away: honest, because the trash keeps it whole</div>
+    <div class="dv-card pf" style="width:250px"><div class="pg"></div>
+      <div style="position:absolute;left:80px;top:34px;width:50px;height:66px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px);animation:ewTake 3.8s ease-in-out infinite"></div>
+      <div style="position:absolute;left:150px;top:96px;padding:3px 7px;border-radius:5px;background:rgba(31,34,40,.97);border:1px solid rgba(255,255,255,.12);font-size:7.5px;color:#dde3ea">moved to trash · <span style="color:#8ec2f5">undo</span></div>
+      <div class="cap">~180ms, one shot — relocation, not destruction</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2d"><div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>The burn — the Compiz/Beryl wink, reserved for EMPTY TRASH where destruction is the truth</div>
+    <div class="dv-card pf" style="width:250px;background:#101216"><div class="pg" style="opacity:.5"></div>
+      <div style="position:absolute;left:80px;top:30px;width:50px;height:66px">
+        <div class="burnCard" style="position:absolute;inset:0;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px)"></div>
+        <div style="position:absolute;left:-4px;right:-4px;height:7px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,160,60,.95),rgba(230,90,30,.5) 55%,transparent 75%);filter:blur(1.2px);animation:ewBurnEdge 4.2s ease-in-out infinite"></div>
+        <div style="position:absolute;left:10px;top:40px;width:3px;height:3px;border-radius:50%;background:#ffb35c;animation:ewEmber 4.2s ease-in-out infinite"></div>
+        <div style="position:absolute;left:34px;top:52px;width:2.5px;height:2.5px;border-radius:50%;background:#ff9540;animation:ewEmber 4.2s ease-in-out .3s infinite"></div>
+        <div style="position:absolute;left:22px;top:30px;width:2px;height:2px;border-radius:50%;background:#ffc97e;animation:ewEmber 4.2s ease-in-out .6s infinite"></div>
+      </div>
+      <div class="cap">bottom-up wipe + ember edge · gone means GONE — the flame never lies</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="2e"><div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>The pairing rule</div>
+    <div class="dv-card" style="width:270px;background:#fdf6e3;border-color:#d9c68a;padding:13px 15px;font-size:10.5px;line-height:1.75;color:#5b4a1a">
+      · <b>delete → lift-away</b> (2c): the thing survives, so the beat must say "picked up," not "destroyed"<br>
+      · <b>empty trash / purge → burn</b> (2d): the one place destruction is real, so the one place fire is honest<br>
+      · both one-shot; burn ~450ms is allowed to run long — it's rare, deliberate, and confirmed by a typed fact first<br>
+      · implementation: mask wipe + ember edge, no particles engine — the wink stays thin
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “burn on delete anyway (override the pairing)” · “tape-peel beat on untape?” · “resolved → fold into UI Vision + Usage Storyboard”</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Interaction physics — every mouse-down on the canvas, and the beat (if any) that sells the desk</span></div>
+<p style="max-width:780px;margin:-8px 0 6px;font:12px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.55)">The promise: <b>the canvas feels like objects with physics; the UI is a terminal.</b> Six physical verbs cover everything — <b>lift · settle · nudge · press · tear · glide</b> — each one-shot, each on world content only, each answering a specific mouse-down. Chrome (marquee, selection outline, panels, tools mid-use) stays beat-free on purpose: live manipulation IS its own feedback, and a beat would be noise.</p>
+
+<div class="dv-rowh">A — the inventory: every canvas mouse-down, its physical answer</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>The full map — what gets a beat, what deliberately doesn't</div>
+    <div class="dv-card" style="width:620px;padding:14px 16px;font-size:10.5px;color:#333">
+      <div style="display:grid;grid-template-columns:170px 96px 1fr;line-height:1.5">
+        <div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:3px 0;border-bottom:1px solid #eee">MOUSE-DOWN</div><div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:3px 0;border-bottom:1px solid #eee">BEAT</div><div style="font:600 9px ui-monospace,Menlo,monospace;color:#999;letter-spacing:.05em;padding:3px 0;border-bottom:1px solid #eee">THE PHYSICS</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">grab an item (drag starts)</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">the LIFT</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">it rises off the desk — drag shadow on, +1% scale, ~120ms</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">release (set a node)</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">the SETTLE</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">it seats back flat — shadow off, scale home, one soft ease-out ~150ms, no bounce</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">drop an import (OS / web / library)</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">SETTLE + bloom</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">the settle, and if it grows the world, the stage edge blooms outward (~240ms) — placing something makes ground</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">drag near an edge/center (snap)</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">the NUDGE</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">magnetic seat into alignment — position eases the last few px in ~40ms; escape needs real force (Option slips it)</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">lock (charm/menu)</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">the PRESS</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">pressed flat INTO the desk — −1% scale once; a grab attempt gives a 2px strain, not a lift</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">note gestures (open/tear/pin)</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">TEAR family</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">ratified: cover-open ~200 · tear ~300 · tuck ~200 · pin-through ⇄ pull</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">delete</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">LIFT, away</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">picked up OFF the desk (lift + fade ~180ms) — never a crumple: crumpling would lie, the trash keeps it whole</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">pan release / flick</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">the GLIDE</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">the desk has mass — brief inertia with real friction, ≤300ms, never a rubber band</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">double-click a board-picture</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">the DIVE</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">eased camera into the child board — travel, not teleport (§6.5's flight, named)</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">drag across a frame edge</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#8a6414">making ROOM</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">sorted members slide aside to show the drop seat while you hover — the one allowed anticipatory motion (it previews a real outcome)</div>
+        <div style="padding:3px 0;border-bottom:1px solid #f2f2f2;font-weight:600">resize · rotate · crop (mid-use)</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2;color:#2a78d6">none</div><div style="padding:3px 0;border-bottom:1px solid #f2f2f2">live manipulation is its own feedback — a beat here would fight the hand</div>
+        <div style="padding:3px 0;font-weight:600">marquee · select · draw · pan grab</div><div style="padding:3px 0;color:#2a78d6">none</div><div style="padding:3px 0">chrome or tool-in-hand; the terminal doesn't emote</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dv-rowh">B — the beats that need drawing to believe</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Lift → carry → settle: the core loop every drag plays</div>
+    <div class="dv-card" style="width:420px;height:150px;position:relative;background:#17191d;display:flex;align-items:center;justify-content:space-around">
+      <div class="pg"></div>
+      <div style="position:relative;width:70px;height:96px">
+        <div style="position:absolute;left:10px;top:14px;width:50px;height:66px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px)"></div>
+        <div style="position:absolute;left:12px;bottom:-12px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">at rest — flat</div>
+      </div>
+      <div style="position:relative;width:70px;height:96px">
+        <div style="position:absolute;left:8px;top:10px;width:52px;height:68px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px);box-shadow:0 12px 26px rgba(0,0,0,.5);transform:rotate(-1deg)"></div>
+        <div style="position:absolute;left:6px;bottom:-12px;font:8px ui-monospace,Menlo,monospace;color:#8ec2f5">lifted — shadow, +1%</div>
+      </div>
+      <div style="position:relative;width:70px;height:96px">
+        <div style="position:absolute;left:10px;top:14px;width:50px;height:66px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px)"></div>
+        <div style="position:absolute;left:4px;top:6px;width:62px;height:82px;border:1px solid rgba(139,148,161,.25);border-radius:3px"></div>
+        <div style="position:absolute;left:8px;bottom:-12px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">settled — one ease, done</div>
+      </div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>The press — a locked thing is IN the desk; pulling gives strain, not motion</div>
+    <div class="dv-card pf"><div class="pg"></div>
+      <div style="position:absolute;left:36px;top:34px;width:54px;height:72px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 10px,#414b55 10px 20px);opacity:.92"></div>
+      <div style="position:absolute;left:42px;top:110px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">pressed −1%</div>
+      <div style="position:absolute;right:38px;top:34px;width:54px;height:72px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 10px,#414b55 10px 20px);transform:translateX(2px)"></div>
+      <div style="position:absolute;right:24px;top:60px;font-size:11px;color:#8ec2f5">✥</div>
+      <div style="position:absolute;right:20px;top:110px;font:8px ui-monospace,Menlo,monospace;color:#5a6572">grab → 2px strain, springs home</div>
+      <div class="cap">unlock replays the press in reverse — it pops back proud of the desk</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Delete lifts AWAY — the anti-crumple: the trash keeps things whole, so the beat must not destroy</div>
+    <div class="dv-card pf"><div class="pg"></div>
+      <div style="position:absolute;left:30px;top:40px;width:50px;height:66px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px)"></div>
+      <div style="position:absolute;left:110px;top:28px;width:52px;height:68px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px);opacity:.55;box-shadow:0 14px 28px rgba(0,0,0,.45);transform:rotate(-2deg)"></div>
+      <div style="position:absolute;left:186px;top:20px;width:54px;height:70px;border-radius:2px;background:repeating-linear-gradient(115deg,#5d4b45 0 10px,#524139 10px 20px);opacity:.15;transform:rotate(-3deg)"></div>
+      <div class="cap">lifted off the desk and gone, ~180ms — the toast offers undo; nothing crumples, ever</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Making room — a sorted frame slides its members aside while you hover the drop</div>
+    <div class="dv-card pf"><div class="pg"></div>
+      <div style="position:absolute;left:20px;top:24px;width:180px;height:100px;border:1.4px solid rgba(255,255,255,.35);border-radius:6px">
+        <div style="position:absolute;left:6px;top:-13px;font-size:8px;color:#dde3ea">The warren <span style="color:#8b94a1;border:1px solid rgba(255,255,255,.2);border-radius:99px;padding:0 4px;font-size:7px">⇅ grid</span></div>
+        <div style="position:absolute;left:10px;top:12px;width:34px;height:44px;background:#4a5560;border-radius:2px"></div>
+        <div style="position:absolute;left:52px;top:12px;width:34px;height:44px;background:#455548;border-radius:2px;transform:translateX(-3px)"></div>
+        <div style="position:absolute;left:130px;top:12px;width:34px;height:44px;background:#4d5266;border-radius:2px;transform:translateX(6px)"></div>
+        <div style="position:absolute;left:92px;top:10px;width:36px;height:48px;border:1.5px dashed rgba(142,194,245,.7);border-radius:2px"></div>
+      </div>
+      <div style="position:absolute;right:12px;top:44px;width:38px;height:50px;border-radius:2px;background:repeating-linear-gradient(115deg,#9a8f7e 0 9px,#8a8071 9px 18px);box-shadow:0 12px 24px rgba(0,0,0,.5);transform:rotate(2deg)"></div>
+      <div class="cap">the seat opens where it will land — the preview IS the truth; leave and it closes</div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>The build contract</div>
+    <div class="dv-card" style="width:300px;background:#fdf6e3;border-color:#d9c68a;padding:13px 15px;font:10.5px/1.8 ui-monospace,Menlo,monospace;color:#5b4a1a">
+      EW_BEAT_LIFT_MS ~120 · EW_BEAT_SETTLE_MS ~150 · EW_BEAT_NUDGE_MS ~40 · EW_BEAT_TAKE_MS ~180 · EW_GLIDE_MAX_MS ~300 (friction, never spring)<br><br>
+      scale delta ±1% only; --ew-drag-shadow rides lift→settle; all beats interruptible (a new grab cancels a settle mid-flight)<br><br>
+      guard: beats attach ONLY to shrink-ladder world-class elements; chrome animating anything but opacity fails review
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “does the sticky's tape deserve a peel beat on untape?” · “glide friction feel — 200 vs 300ms” · “resolve → update UI Vision hero + Usage Storyboard”</p>
+</section>
+</x-dc>
+</body>
+</html>

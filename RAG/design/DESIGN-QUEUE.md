@@ -611,42 +611,32 @@ all moved into the RFC.
   anatomy is a queued kit session, see the entry below. AI-IMP-207
   half 2 unblocks against this table.
 
-- **The dock species split — RULED (owner, 2026-07-11; the
-  vestigial-toolbar conversation, owner's "biggest thing to figure
-  out").** The beta dock is one surface wearing four species; the
-  split is cosigned as the input for the dock kit session:
-  (1) TOOLS — the dock slims to the toolbelt proper + contextual
-  tool options while a tool is armed; OWNER ADDITION: the shape
-  tools consolidate into ONE shape tool with a popover/flyout
-  (the AI-IMP-190 hold-picker, now ruled) AND the shape set fills
-  out toward the Miro baseline (190's comparison table is the
-  benchmark). (2) SELECTION VERBS — the fifteen-verb strip
-  (order/align/distribute/arrange/normalize/zoom-selection +
-  group/lock/hide) leaves the dock for ONE arrange charm on the
-  charm bar opening a grouped popover (the appearance-popover
-  pattern). (3) STYLE PROPERTIES split by host: armed tool →
-  dock tool-options; selected shape → the charm bar's appearance
-  popover. (4) ZOOM CLUSTER becomes standalone corner chrome —
-  written out as a proposal for the design team to try in the
-  kit ("I'll try it in the design team, and we'll see what it
-  looks like"). Hands the dock kit session three clean drawings:
-  toolbelt, arrange popover, zoom corner. Answers the DESIGN-GAPS
-  dock-family, arrange-surface, shape-hold-picker, and
-  beta-controls-sweep items at the conversation level — the kit
-  session draws them.
+- (Dock species split RESOLVED rev 0.71: the kit session drew all
+  four species — toolbelt + 1d defaults row + the 2a shape flyout,
+  selection verbs as the ⌗ arrange charm's grouped popover, style
+  split 1d/1c (armed tool → defaults row; selection → ◧ restyle
+  panel). The zoom-corner proposal was TRIED IN KIT AND REJECTED
+  by the design team — zoom stays dock-resident. Kit push
+  2026-07-12, DESIGN-LETTER rulings 2/3/7; RFC §20.)
 
-- **The universal command palette (owner + lead, 2026-07-11 —
-  design push, born from the rail ruling).** Search leaves the
-  rail and merges with quick-open into one centered, scrim-dimmed
-  fuzzy palette (⌘K family): find notes/boards/tags/assets AND
-  issue commands from one field. Functional direction RATIFIED;
-  the kit session decides anatomy — result grouping (finds vs
-  verbs), the scrim's place in the GR-2 ladder (rung 3), how tag
-  `#` and command prefixes read, what the empty state teaches,
-  and the touch dialect. Input docs: SearchPanel's shipped
-  behavior (G7 holes: type hole, no error state), the 211
-  palette, N6 (COMPLETE, the reference), B1's ⊡ naming palette
-  framing (create rows are habitat-framed).
+- **The universal command palette — find-half RESOLVED rev 0.71,
+  command-half still open (owner + lead, 2026-07-11; kit push
+  2026-07-12).** The centered scrim palette is drawn and ratified
+  (§8.3: two doors, kind-verb headers, # tag pills, drag-out on
+  placeable rows). Note: the kit keeps a rail-⌕ as the second door,
+  refining the rail table's "lens toggles only" — the door opens
+  the same centered surface, it is not an anchored panel. The
+  fzf-style resolution (owner ask, 2026-07-12) was RULED + WIRED
+  same day (design-push 1.2, letter ruling 32): space-separated
+  fuzzy subsequence terms ANDed over the NAME-SPACE (titles ·
+  tags · filenames), plain terms also match tags, #-terms
+  constrain to tags one pill each; bodies stay substring,
+  completion elsewhere stays prefix (RFC §8.3). STILL OPEN for a
+  design conversation: the COMMAND half — does the 211 command
+  family join this palette (find + verbs, one field) as the rail
+  ruling intended, and how do command prefixes read against `#`?
+  Input docs: SearchPanel shipped behavior (G7 holes), the 211
+  palette, N6, Search UI Kit + wireframes.
 
 (macOS move/resize chord RESOLVED 2026-07-07: owner ruled GO on
 both move AND resize — "I do want the resize… we have so many key

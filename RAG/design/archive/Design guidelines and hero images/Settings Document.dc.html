@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<style>
+body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+a{color:#2a78d6}a:hover{color:#4a9df0}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-rowh{font:600 11px/1.2 ui-monospace,Menlo,monospace;color:rgba(0,0,0,.45);letter-spacing:.06em;text-transform:uppercase;margin:26px 0 12px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:340px}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.sh{font:600 8px ui-monospace,Menlo,monospace;color:#79808a;letter-spacing:.08em;text-transform:uppercase;padding:8px 0 3px}
+.sr{display:flex;align-items:center;gap:6px;font-size:9px;color:#dde3ea;padding:2.5px 0}
+.sr b{font-weight:400;flex:1}
+.tw{font:600 6.5px ui-monospace,Menlo,monospace;color:#8a94a0;border:1px solid #3a3e46;border-radius:99px;padding:0 4px;white-space:nowrap}
+.seg{display:flex;border:1px solid #3a3e46;border-radius:4px;overflow:hidden;font-size:7.5px}
+.seg span{padding:1px 6px;color:#9aa3ad}
+.seg .on{background:#4a9df0;color:#10131a}
+.tog{width:20px;height:11px;border-radius:99px;background:#4a9df0;position:relative}
+.tog i{position:absolute;right:1.5px;top:1.5px;width:8px;height:8px;border-radius:50%;background:#10131a}
+.togoff{width:20px;height:11px;border-radius:99px;background:#3a3e46;position:relative}
+.togoff i{position:absolute;left:1.5px;top:1.5px;width:8px;height:8px;border-radius:50%;background:#79808a}
+.shf::after{content:" ▾";color:#4a5057}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Settings document — the whole takeover, one glance (RFC §11.5 + new tenants: backups, keyboard, connectors, void-on-glass)</span></div>
+
+<div class="dv-rowh">A — the sheet</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>The full inventory — translucent inset sheet over the live board; commit-on-click, Esc closes, nothing to save. Rows whose data travels with the project wear a “this world” chip</div>
+    <div class="dv-card" style="width:680px;height:520px;position:relative;background:#17191d">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:26px 26px"></div>
+      <div style="position:absolute;left:30px;top:60px;width:80px;height:104px;border-radius:2px;background:repeating-linear-gradient(115deg,#4a5560 0 12px,#414b55 12px 24px)"></div>
+      <div style="position:absolute;right:36px;bottom:40px;width:70px;height:92px;border-radius:2px;background:repeating-linear-gradient(100deg,#5a564a 0 12px,#4f4b40 12px 24px)"></div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;background:rgba(23,25,29,.94);border:1px solid #3a4048;border-radius:10px;box-shadow:0 14px 44px rgba(0,0,0,.5);padding:14px 18px 12px;box-sizing:border-box">
+        <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:11px;font-weight:600;color:#dde3ea">Settings</span><span style="font:8px ui-monospace,Menlo,monospace;color:#79808a">changes apply as you click · esc closes</span></div>
+        <div style="display:flex;gap:22px;margin-top:6px">
+          <div style="flex:1">
+            <div class="sh shf">Appearance</div>
+            <div class="sr"><b>theme</b><span class="seg"><span class="on">dark</span><span>light</span><span>glass</span></span></div>
+            <div class="sr"><b>grid</b><span class="seg"><span class="on">lines</span><span>dots</span><span>none</span></span></div>
+            <div class="sr"><b>board color</b><span style="display:flex;gap:3px"><span style="width:9px;height:9px;border-radius:2.5px;background:#1b2733;outline:1px solid #4a9df0;outline-offset:1px"></span><span style="width:9px;height:9px;border-radius:2.5px;background:#22301f"></span><span style="width:9px;height:9px;border-radius:2.5px;background:#33241f"></span><span style="width:9px;height:9px;border-radius:2.5px;background:#2c2233"></span><span style="width:9px;height:9px;border-radius:2.5px;background:#3a362f"></span><span style="width:9px;height:9px;border-radius:2.5px;background:#e8e0cd"></span></span><span class="tw">this world</span></div>
+            <div class="sr"><b>stage &amp; void</b><span class="tog"><i></i></span></div>
+            <div class="sr" style="color:#79808a"><b>stage &amp; void <span style="font-size:7.5px">— off on glass: the desktop is the stage</span></b></div>
+            <div class="sr"><b>window opacity</b><span style="width:52px;height:3px;border-radius:2px;background:#3a3e46;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:80%;border-radius:2px;background:#4a9df0"></span></span></div>
+            <div class="sh shf">Behavior</div>
+            <div class="sr"><b>charm corner</b><span class="seg"><span class="on">lower-right</span><span>upper-right</span></span></div>
+            <div class="sr"><b>chrome fade</b><span style="width:52px;height:3px;border-radius:2px;background:#3a3e46;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:45%;border-radius:2px;background:#4a9df0"></span></span><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad">4s</span></div>
+            <div class="sr"><b>mirror drops to library</b><span class="tog"><i></i></span><span class="tw">this world</span></div>
+            <div class="sh" style="color:#5a6572">Window <span style="color:#4a5057">▸</span> <span style="font-size:7px;text-transform:none;letter-spacing:0">— folded</span></div>
+          </div>
+          <div style="flex:1">
+            <div class="sh shf">Backups &amp; export</div>
+            <div class="sr"><b>obsidian vault beside project</b><span class="tog"><i></i></span><span class="tw">this world</span></div>
+            <div class="sr"><b>session snapshots</b><span class="seg"><span>off</span><span class="on">every session</span></span><span class="tw">this world</span></div>
+            <div class="sr" style="color:#79808a"><b style="padding-left:10px">+ idle checkpoint after 10 quiet min · 214 MB on disk</b></div>
+            <div class="sr"><b style="color:#8ec2f5">restore from backup…</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#79808a">→ new project, never in-place</span></div>
+            <div class="sr"><b>trash retention</b><span class="seg"><span class="on">never</span><span>30d</span><span>60d</span><span>90d</span></span><span class="tw">this world</span></div>
+            <div class="sh shf">Keyboard</div>
+            <div class="sr"><b style="color:#8ec2f5">view all bindings ▸</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#79808a">rebinding coming soon</span></div>
+            <div class="sh shf">Connectors</div>
+            <div class="sr"><b>page picker</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad">attached</span><span class="tog"><i></i></span></div>
+            <div class="sr"><b>cloud folder sync</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad">storage</span><span class="togoff"><i></i></span></div>
+            <div class="sr"><b style="color:#8ec2f5">browse connector store ▸</b></div>
+            <div class="sh shf">Advanced</div>
+            <div class="sr"><b>advanced</b><span class="tog"><i></i></span></div>
+            <div class="sr"><b style="padding-left:10px">enable connector store</b><span class="tog"><i></i></span></div>
+            <div class="sr" style="color:#79808a"><b style="padding-left:20px">AI connectors in the store</b><span class="togoff"><i></i></span></div>
+            <div class="sr" style="color:#79808a"><b style="padding-left:20px;font-size:7.5px">nested rows exist only while advanced is on — nothing AI runs or phones out while off</b></div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:14px;bottom:10px;font:8.5px ui-monospace,Menlo,monospace;color:#5a6572">the board stays live behind the sheet — theme clicks repaint the world in place</div>
+    </div>
+  </div>
+</div>
+
+<div class="dv-rowh">B — the sections that needed decisions</div>
+<div class="dv-opts">
+  <div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Backups &amp; export, expanded — Obsidian mirror, snapshots, restore list; git push is NATIVE, anything else is a connector</div>
+    <div class="dv-card" style="width:330px;background:#17191d;padding:12px 14px">
+      <div class="sh shf">Backups &amp; export</div>
+      <div class="sr"><b>obsidian vault beside project</b><span class="tog"><i></i></span><span class="tw">this world</span></div>
+      <div class="sr" style="color:#79808a"><b style="padding-left:10px">notes as markdown + boards as .canvas, regenerated at session end</b></div>
+      <div class="sr"><b>session snapshots</b><span class="seg"><span>off</span><span class="on">every session</span></span><span class="tw">this world</span></div>
+      <div class="sr"><b>push snapshots to a git remote</b><span class="togoff"><i></i></span></div>
+      <div class="sr" style="color:#79808a"><b style="padding-left:10px">git is built in — set a remote and every snapshot pushes</b></div>
+      <div class="sr"><b style="color:#8ec2f5">send snapshots elsewhere ▸ connector store</b></div>
+      <div class="sr" style="color:#79808a"><b style="padding-left:10px">opens the store filtered to storage; attaching lights the relevant rows here</b></div>
+      <div style="border-top:1px solid #2e3138;margin:7px 0 4px"></div>
+      <div class="sr"><b style="color:#8ec2f5">restore from backup…</b></div>
+      <div style="font:8px ui-monospace,Menlo,monospace;color:#9aa3ad;line-height:2;padding-left:10px">jul 6 · today · 214 MB<br>jul 5 · yesterday<br>jun 30 · last week</div>
+      <div class="sr" style="color:#79808a"><b style="padding-left:10px">a chosen snapshot becomes a NEW project beside this one</b></div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Connectors — one store; storage and AI are just sections of it; attaching IS the consent for that connector's traffic</div>
+    <div class="dv-card" style="width:330px;background:#17191d;padding:12px 14px">
+      <div class="sh shf">Connectors</div>
+      <div class="sr" style="color:#79808a"><b>nothing fetches from a source you haven't attached</b></div>
+      <div class="sr" style="color:#79808a"><b>git is built in — everything else arrives here</b></div>
+      <div class="sh" style="color:#5a6572">attached</div>
+      <div class="sr"><b>page picker</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad">import</span><span class="tog"><i></i></span></div>
+      <div class="sr"><b>booru drops</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad">import</span><span class="tog"><i></i></span></div>
+      <div class="sh" style="color:#5a6572">available</div>
+      <div class="sr"><b>cloud folder sync</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad">storage</span><span style="font:7.5px ui-monospace,Menlo,monospace;color:#8ec2f5">attach</span></div>
+      <div class="sr"><b>pinterest boards</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad">import</span><span style="font:7.5px ui-monospace,Menlo,monospace;color:#8ec2f5">attach</span></div>
+      <div style="border-top:1px solid #2e3138;margin:7px 0 4px"></div>
+      <div class="sh" style="color:#5a6572">AI — revealed by Advanced → AI connectors</div>
+      <div class="sr" style="color:#79808a"><b>reverse image search</b><span style="font:7.5px ui-monospace,Menlo,monospace">locked</span></div>
+      <div class="sr" style="color:#79808a"><b>format my text</b><span style="font:7.5px ui-monospace,Menlo,monospace">locked</span></div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Keyboard — the registry printed; same names the tooltips teach; filter field, view-only</div>
+    <div class="dv-card" style="width:330px;background:#17191d;padding:12px 14px">
+      <div class="sh shf">Keyboard</div>
+      <div style="display:flex;align-items:center;gap:5px;border:1px solid #3a3e46;border-radius:4px;padding:3px 6px;font-size:8.5px;color:#79808a;margin:3px 0 6px">⌕ filter…</div>
+      <div class="sh" style="color:#5a6572">board</div>
+      <div class="sr"><b>undo</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.06);border-radius:3px;padding:0 4px">⌘Z</span></div>
+      <div class="sr"><b>bookmark this board</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.06);border-radius:3px;padding:0 4px">⌘D</span></div>
+      <div class="sr"><b>pin tool</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.06);border-radius:3px;padding:0 4px">N</span></div>
+      <div class="sh" style="color:#5a6572">global</div>
+      <div class="sr"><b>quick open</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.06);border-radius:3px;padding:0 4px">⌘P</span></div>
+      <div class="sr"><b>back · forward</b><span style="font:7.5px ui-monospace,Menlo,monospace;color:#9aa3ad;background:rgba(255,255,255,.06);border-radius:3px;padding:0 4px">⌘[ ⌘]</span></div>
+      <div class="sr" style="color:#79808a;margin-top:4px"><b>rebinding coming soon</b></div>
+    </div>
+  </div>
+  <div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Void on glass — the disabled row uses the 5b “disabled + why” tooltip shape; no toggle until someone asks</div>
+    <div class="dv-card" style="width:330px;height:150px;position:relative;background:linear-gradient(125deg,#66727f,#7d7568 55%,#93826f)">
+      <div style="position:absolute;inset:12px;border-radius:8px;background:rgba(23,25,29,.62);backdrop-filter:blur(4px);padding:10px 12px;box-sizing:border-box">
+        <div class="sh">Appearance <span style="color:#5a6572">· glass theme active</span></div>
+        <div class="sr"><b>theme</b><span class="seg"><span>dark</span><span>light</span><span class="on">glass</span></span></div>
+        <div class="sr" style="opacity:.5"><b>stage &amp; void</b><span class="togoff"><i></i></span></div>
+        <div style="position:absolute;left:96px;top:74px;display:flex;padding:4px 8px;border-radius:6px;background:rgba(16,19,26,.95);border:1px solid #3a3e46;font-size:9.5px;color:#dde3ea">Stage &amp; void — the desktop is the stage on glass</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="dv-next">Try next: “light-theme sheet” · “what does attach ask? — connector consent dialog” · “ratify the sheet; on to the gallery audit”</p>
+</section>
+</x-dc>
+</body>
+</html>

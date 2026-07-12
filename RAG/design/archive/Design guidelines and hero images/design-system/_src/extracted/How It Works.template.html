@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="6a58b0d1-b0a3-47af-a233-90ccea8de7f6"></script>
+</head>
+<body>
+
+<x-dc>
+<helmet data-dc-atomics="">
+<style>
+body{margin:0}
+doc-page:not(:defined){visibility:hidden}
+</style>
+</helmet>
+<x-import component-from-global-scope="doc-page" from="b2b32b6f-06f0-44e6-ab67-6310e2d5df90#/doc-page.js" size="letter" margin="0.7in" hint-size="100%,1400px">
+
+<h1 style="font-size:26px;margin:0 0 4px;letter-spacing:-.01em">Expanding Worlds — how it works</h1>
+<p style="margin:0 0 26px;font-size:13.5px;color:#777;line-height:1.5">A storyboard of the app, function by function. No jargon, no spec — just what you'd see and do.</p>
+
+<!-- ============ 1 THE WINDOW ============ -->
+<h2 style="font-size:17px;margin:24px 0 12px">1 · The window is the board</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:10px;top:9px;display:flex;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#ff5f57"></span><span style="width:8px;height:8px;border-radius:50%;background:#febc2e"></span><span style="width:8px;height:8px;border-radius:50%;background:#28c840"></span></div>
+      <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:3px">
+        <span style="width:15px;height:15px;border-radius:4px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#8b94a1;font-size:8px;display:flex;align-items:center;justify-content:center">⌕</span>
+        <span style="width:15px;height:15px;border-radius:4px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#8b94a1;font-size:8px;display:flex;align-items:center;justify-content:center">⊛</span>
+        <span style="width:15px;height:15px;border-radius:4px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#8b94a1;font-size:8px;display:flex;align-items:center;justify-content:center">▤</span>
+        <span style="width:15px;height:15px;border-radius:4px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#8b94a1;font-size:8px;display:flex;align-items:center;justify-content:center">☰</span>
+      </div>
+      <div style="position:absolute;left:78px;top:42px;width:56px;height:72px;border-radius:2px;background:#4a5560"></div>
+      <div style="position:absolute;left:146px;top:66px;width:64px;height:46px;border-radius:2px;background:#5a564a"></div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:8px;display:flex;gap:3px;padding:4px 6px;border-radius:7px;background:rgba(31,34,40,.95);border:1px solid rgba(255,255,255,.09)">
+        <span style="width:14px;height:14px;border-radius:4px;background:#4a9df0;color:#10131a;font-size:8px;display:flex;align-items:center;justify-content:center">▸</span>
+        <span style="width:14px;height:14px;color:#8b94a1;font-size:8px;display:flex;align-items:center;justify-content:center">T</span>
+        <span style="width:14px;height:14px;color:#8b94a1;font-size:8px;display:flex;align-items:center;justify-content:center">▢</span>
+        <span style="width:14px;height:14px;color:#8b94a1;font-size:8px;display:flex;align-items:center;justify-content:center">✎</span>
+        <span style="width:1px;height:12px;background:rgba(255,255,255,.12);margin:1px 2px"></span>
+        <span style="width:14px;height:14px;color:#8b94a1;font-size:9px;display:flex;align-items:center;justify-content:center">−</span>
+        <span style="width:14px;height:14px;color:#8b94a1;font-size:9px;display:flex;align-items:center;justify-content:center">+</span>
+      </div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">No panels, no menus. Tools live in a small dock at the bottom; four little buttons top-right open search, the graph, the outline, and settings.</figcaption>
+  </figure>
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:78px;top:42px;width:56px;height:72px;border-radius:2px;background:#4a5560"></div>
+      <div style="position:absolute;left:146px;top:66px;width:64px;height:46px;border-radius:2px;background:#5a564a"></div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">Step away (or just stop moving the mouse) and every control fades out. The board becomes a quiet reference wall until your cursor comes back.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 2 PLACING ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">2 · Putting things on it</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:110px;top:46px;width:60px;height:78px;border-radius:2px;background:#5d4b45;border:1.5px dashed rgba(255,255,255,.5)"></div>
+      <div style="position:absolute;left:120px;top:132px;font-size:10px;color:#8b94a1">drop anywhere</div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">Drag images straight from your desktop or browser. They land where you drop them — position is the filing system.</figcaption>
+  </figure>
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:104px;top:40px;width:72px;height:94px;border-radius:2px;background:#5d4b45"></div>
+      <div style="position:absolute;left:88px;top:30px;font-size:11px;color:#8b94a1">↻</div>
+      <div style="position:absolute;left:184px;top:80px;font-size:11px;color:#8b94a1">⇔</div>
+      <div style="position:absolute;left:132px;top:80px;font-size:11px;color:#dde3ea">✥</div>
+      <div style="position:absolute;left:182px;top:32px;font-size:11px;color:#8b94a1">⤡</div>
+      <div style="position:absolute;left:40px;top:148px;font-size:10px;color:#8b94a1">the cursor tells you what a spot does</div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">No knobs or handles on your art. Inside moves it, edges stretch it, corners scale it, just outside a corner rotates it — the cursor changes to show you.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 3 CHARM BAR ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">3 · Click once to work on a picture</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:104px;top:30px;width:72px;height:94px;border-radius:2px;background:#5d4b45;outline:1.5px solid #4a9df0;outline-offset:2px"></div>
+      <div style="position:absolute;left:82px;top:134px;display:flex;gap:3px;padding:4px 6px;border-radius:7px;background:rgba(31,34,40,.95);border:1px solid rgba(255,255,255,.09)">
+        <span style="width:14px;height:14px;color:#dde3ea;font-size:8px;display:flex;align-items:center;justify-content:center">⌗</span>
+        <span style="width:14px;height:14px;color:#dde3ea;font-size:8px;display:flex;align-items:center;justify-content:center">⇋</span>
+        <span style="width:14px;height:14px;color:#dde3ea;font-size:8px;display:flex;align-items:center;justify-content:center">⇵</span>
+        <span style="width:1px;height:12px;background:rgba(255,255,255,.12);margin:1px 2px"></span>
+        <span style="width:14px;height:14px;color:#d08652;font-size:8px;display:flex;align-items:center;justify-content:center">▤</span>
+        <span style="width:14px;height:14px;color:#dde3ea;font-size:8px;display:flex;align-items:center;justify-content:center">▦</span>
+        <span style="width:14px;height:14px;color:#dde3ea;font-size:8px;display:flex;align-items:center;justify-content:center">#</span>
+        <span style="width:14px;height:14px;color:#dde3ea;font-size:8px;display:flex;align-items:center;justify-content:center">⊘</span>
+      </div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">One click selects it and a small bar appears underneath: crop, flip, give it a note, give it a canvas of its own, tag it, lock it.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 4 NOTES ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">4 · Every picture can carry words</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:36px;top:40px;width:72px;height:94px;border-radius:2px;background:#5d4b45">
+        <span style="position:absolute;right:4px;bottom:4px;width:9px;height:11px;border:1.2px solid rgba(255,255,255,.9);border-radius:1.5px;background:rgba(20,22,26,.5)"></span>
+      </div>
+      <div style="position:absolute;left:112px;top:80px;width:16px;border-top:1.2px dashed #d08652"></div>
+      <div style="position:absolute;left:128px;top:34px;width:120px;height:110px;border-radius:7px;background:rgba(31,34,40,.96);border:1px solid rgba(255,255,255,.12);padding:8px;box-sizing:border-box">
+        <div style="font-size:9.5px;font-weight:600;color:#dde3ea">Goblin chief</div>
+        <div style="font-size:8px;color:#d08652;margin-top:3px">#goblin  #artist-x</div>
+        <div style="font-size:8.5px;line-height:1.5;color:#8b94a1;margin-top:5px">Chieftain of the warren beneath the <span style="color:#4a9df0">Northern Reach</span>. Owes <span style="color:#4a9df0">Yorren</span> a life-debt…</div>
+      </div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">A tiny page icon in the corner means “this one has words.” Click it and the note opens right beside the picture. Write links like <span style="color:#2f7fd6">[[Yorren]]</span> to connect notes to each other — that's how the world quietly becomes a wiki.</figcaption>
+  </figure>
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:36px;top:40px;width:72px;height:94px;border-radius:2px;background:#4a5560"></div>
+      <div style="position:absolute;left:16px;bottom:12px;width:13px;height:16px;border:1.2px solid #8b94a1;border-radius:2px;background:rgba(255,255,255,.06)"></div>
+      <div style="position:absolute;left:36px;bottom:14px;font-size:10px;color:#8b94a1">← the board itself has a note too</div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">The board has its own page icon, fixed in the lower-left corner — for the story of the whole place, not just one picture. And words don't need a picture at all: the pin tool drops a note anywhere on the board. Notes only save once you actually type something.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 5 WORLDS ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">5 · Pictures can open into whole boards</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:96px;top:36px;width:96px;height:66px;border-radius:2px;background:#5a564a">
+        <span style="position:absolute;right:4px;bottom:4px;display:flex;gap:2px">
+          <span style="width:9px;height:11px;border:1.2px solid rgba(255,255,255,.9);border-radius:1.5px;background:rgba(20,22,26,.5)"></span>
+          <span style="width:11px;height:11px;border:1.2px solid rgba(255,255,255,.9);border-radius:1.5px;background:rgba(20,22,26,.5)"></span>
+        </span>
+      </div>
+      <div style="position:absolute;left:110px;top:108px;font-size:10px;color:#8b94a1">two icons = words AND a world</div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">Give any picture a canvas of its own — the region map opens into a board of everything in that region. A little frame icon marks it. Double-click the picture to open everything it has at once.</figcaption>
+  </figure>
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:16px 16px"></div>
+      <div style="position:absolute;left:10px;top:9px;display:flex;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#ff5f57"></span><span style="width:8px;height:8px;border-radius:50%;background:#febc2e"></span><span style="width:8px;height:8px;border-radius:50%;background:#28c840"></span></div>
+      <div style="position:absolute;left:52px;top:8px;font-size:9px;color:#8b94a1">Homeworld ▸ Northern Reach</div>
+      <div style="position:absolute;left:60px;top:48px;width:52px;height:66px;border-radius:2px;background:#455548"></div>
+      <div style="position:absolute;left:128px;top:70px;width:60px;height:44px;border-radius:2px;background:#4d5266"></div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">Inside, it's just another board — boards inside boards, as deep as the world goes. The path at the top is the way back.</figcaption>
+  </figure>
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:10px;top:9px;display:flex;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#ff5f57"></span><span style="width:8px;height:8px;border-radius:50%;background:#febc2e"></span><span style="width:8px;height:8px;border-radius:50%;background:#28c840"></span></div>
+      <div style="position:absolute;left:52px;top:7px;display:flex;align-items:center;gap:4px;font-size:9px;color:#8b94a1">
+        <span>⌂</span><span style="color:#4a9df0">Homeworld</span><span>▸</span><span>Northern Reach</span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:9px;height:9px;border:1px solid #4a9df0;border-radius:50% 50% 0 50%;transform:rotate(45deg);background:#1b1d22"><span style="width:3px;height:3px;border-radius:50%;background:#4a9df0"></span></span>
+      </div>
+      <div style="position:absolute;left:120px;top:24px;width:130px;border-radius:6px;background:rgba(31,34,40,.97);border:1px solid rgba(255,255,255,.12);padding:5px;font-size:8px;color:#dde3ea">
+        <div style="display:flex;gap:4px;padding:3px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="color:#666">⋮⋮</span><span style="flex:1">Homeworld</span><span style="color:#8b94a1">⌘1</span><span style="color:#666">✕</span></div>
+        <div style="display:flex;gap:4px;padding:3px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="color:#666">⋮⋮</span><span style="flex:1">Character refs</span><span style="color:#8b94a1">⌘2</span><span style="color:#666">✕</span></div>
+        <div style="display:flex;gap:4px;padding:3px"><span style="color:#4a9df0">＋ bookmark this board</span></div>
+      </div>
+      <div style="position:absolute;left:20px;top:120px;width:52px;height:40px;border-radius:2px;background:#455548"></div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">The path shows the route you took; click any name to go back there. The little map-pin at its end holds your bookmarks — your working boards, one key each (⌘1, ⌘2…). Swipe or ⌘[ to go back, like a browser.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 6 TAGS ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">6 · Finding things again</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;left:8px;top:10px;width:128px;border-radius:7px;background:rgba(31,34,40,.96);border:1px solid rgba(255,255,255,.12);padding:7px;box-sizing:border-box">
+        <div style="font-size:8.5px;color:#dde3ea;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:4px">⌕ #artist-x <span style="float:right;color:#d08652">◎ lens</span></div>
+        <div style="display:flex;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="width:12px;height:15px;background:#5d4b45;border-radius:1px"></span><span style="font-size:8px;color:#dde3ea">Goblin chief</span></div>
+        <div style="display:flex;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="width:12px;height:15px;background:#4d5266;border-radius:1px"></span><span style="font-size:8px;color:#dde3ea">Yorren</span></div>
+        <div style="display:flex;gap:4px;align-items:center;padding:4px 0"><span style="width:12px;height:15px;background:#4a5560;border-radius:1px"></span><span style="font-size:8px;color:#dde3ea">Mirelle <span style="color:#8b94a1">· other board</span></span></div>
+      </div>
+      <div style="position:absolute;left:158px;top:30px;width:44px;height:56px;border-radius:2px;background:#5a564a;opacity:.18"></div>
+      <div style="position:absolute;left:216px;top:56px;width:40px;height:52px;border-radius:2px;background:#5d4b45;outline:1.5px solid #d08652;outline-offset:2px"></div>
+      <div style="position:absolute;left:170px;top:110px;width:38px;height:48px;border-radius:2px;background:#455548;opacity:.18"></div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">Tag your pictures (the artist, the character, whatever helps). Search a tag and you get a list with thumbnails from every board — jump straight to any of them. Flip on the <span style="color:#b85c33">lens</span> and the current board dims to just the matches.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 7 GRAPH ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">7 · Seeing the world you've built</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#14161a;overflow:hidden">
+      <div style="position:absolute;left:96px;top:70px;width:60px;border-top:1px solid rgba(255,255,255,.18);transform:rotate(18deg);transform-origin:0 0"></div>
+      <div style="position:absolute;left:150px;top:96px;width:56px;border-top:1px solid rgba(255,255,255,.18);transform:rotate(-30deg);transform-origin:0 0"></div>
+      <div style="position:absolute;left:150px;top:96px;width:50px;border-top:1px solid rgba(255,255,255,.18);transform:rotate(115deg);transform-origin:0 0"></div>
+      <div style="position:absolute;left:64px;top:44px;width:34px;height:42px;border-radius:2px;background:#4a5560;border:1px solid rgba(255,255,255,.15)"></div>
+      <div style="position:absolute;left:138px;top:82px;width:30px;height:38px;border-radius:2px;background:#5d4b45;border:1px solid rgba(255,255,255,.15)"></div>
+      <div style="position:absolute;left:196px;top:52px;width:34px;height:26px;border-radius:2px;background:#5a564a;border:1px solid rgba(255,255,255,.15)"></div>
+      <div style="position:absolute;left:124px;top:146px;width:7px;height:7px;border-radius:50%;background:#8ab4d8"></div>
+      <div style="position:absolute;left:238px;top:130px;width:30px;height:38px;border-radius:2px;background:#534d40;border:1.2px dashed #d08652"></div>
+      <div style="position:absolute;left:8px;top:8px;font-size:8px;color:#8b94a1;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:2px 6px">hide empty ✓</div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">The graph view: your notes' links drawn as a living map — and the nodes are your actual pictures. Dots are notes without images; a dashed ring means a picture that has no words yet. Click anything to fly to it.</figcaption>
+  </figure>
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#14161a;overflow:hidden">
+      <div style="position:absolute;left:14px;top:12px;font-size:9.5px;line-height:1.9;color:#dde3ea;font-family:ui-monospace,Menlo,monospace;white-space:pre">▾ ▦ Homeworld
+   ▤ (its note)
+   ▾ ▦ Northern Reach
+       ▤ Goblin chief
+       ▤ Warren scout camp
+   ▾ ▦ Character refs
+       ▤ Mirelle   #artist-x
+       ▤ Yorren</div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">The outline view: the same world as a table of contents — every board, every note, in order. Together they're the campaign bible you never sat down to write.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 8 LIBRARY ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">8 · Your whole collection, in one place</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#14161a;overflow:hidden">
+      <div style="position:absolute;left:50%;transform:translateX(-50%);top:8px;display:flex;border:1px solid rgba(255,255,255,.14);border-radius:5px;overflow:hidden;font-size:7.5px">
+        <span style="padding:2px 7px;color:#8b94a1">graph</span>
+        <span style="padding:2px 7px;color:#8b94a1;border-left:1px solid rgba(255,255,255,.14)">outline</span>
+        <span style="padding:2px 7px;color:#10131a;background:#4a9df0;border-left:1px solid rgba(255,255,255,.14)">gallery</span>
+      </div>
+      <div style="position:absolute;left:12px;top:30px;display:flex;gap:4px;font-size:7.5px">
+        <span style="color:#dde3ea;border:1px solid rgba(255,255,255,.2);border-radius:7px;padding:1px 6px">date ▾</span>
+        <span style="color:#d08652;border:1px solid #d08652;border-radius:7px;padding:1px 6px">#creature ✕</span>
+        <span style="color:#8b94a1;border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:1px 6px">untagged</span>
+      </div>
+      <div style="position:absolute;left:12px;top:50px;right:12px;display:grid;grid-template-columns:repeat(7,1fr);gap:5px">
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45;outline:1.5px solid #4a9df0;outline-offset:1px"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#455548"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4d5266"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#534d40"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5d4b45"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4d5266"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#455548"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#534d40"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#5a564a"></div>
+        <div style="aspect-ratio:3/4;border-radius:2px;background:#4a5560"></div>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:8px;display:flex;gap:8px;padding:4px 8px;border-radius:6px;background:rgba(31,34,40,.97);border:1px solid rgba(255,255,255,.12);font-size:7.5px">
+        <span style="color:#dde3ea">1 selected</span><span style="color:#4a9df0"># tag</span><span style="color:#4a9df0">⌖ place</span>
+      </div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">The gallery: every image you've ever collected, as a browsable grid — sort, filter by tag, select a batch to tag or place. Drop a thousand files on it and they import in the background while you keep working.</figcaption>
+  </figure>
+  <figure style="margin:0;width:288px">
+    <div style="position:relative;width:288px;height:180px;border-radius:8px;background:#1b1d22;overflow:hidden">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px"></div>
+      <div style="position:absolute;right:8px;top:10px;width:110px;height:150px;border-radius:6px;background:rgba(31,34,40,.97);border:1px solid #4a9df0;padding:5px;box-sizing:border-box">
+        <div style="font-size:7.5px;color:#dde3ea;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:3px"><b>Ref Library</b> <span style="color:#8b94a1">· source</span></div>
+        <div style="font-size:7px;color:#8b94a1;padding:3px 0">bring tags: <span style="color:#dde3ea">all</span> · none · pick</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px">
+          <div style="aspect-ratio:3/4;border-radius:1.5px;background:#8a8578"></div>
+          <div style="aspect-ratio:3/4;border-radius:1.5px;background:#9a8f7e;outline:1px solid #4a9df0"></div>
+          <div style="aspect-ratio:3/4;border-radius:1.5px;background:#7e8a94"></div>
+          <div style="aspect-ratio:3/4;border-radius:1.5px;background:#94867e"></div>
+          <div style="aspect-ratio:3/4;border-radius:1.5px;background:#7e9486"></div>
+          <div style="aspect-ratio:3/4;border-radius:1.5px;background:#8a8578"></div>
+        </div>
+      </div>
+      <div style="position:absolute;left:60px;top:60px;width:42px;height:54px;border-radius:2px;background:#9a8f7e;border:1.5px dashed #4a9df0;opacity:.8"></div>
+      <div style="position:absolute;left:30px;top:126px;font-size:9px;color:#8b94a1">drag from the library into your world</div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">Open your library beside any world and drag things in — the file copies over, tags and all, so every project stays complete in itself.</figcaption>
+  </figure>
+</div>
+
+<!-- ============ 9 YOURS ============ -->
+<h2 style="font-size:17px;margin:26px 0 12px">9 · Making it yours</h2>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+  <figure style="margin:0;width:288px">
+    <div style="display:flex;gap:8px">
+      <div style="position:relative;width:90px;height:120px;border-radius:6px;background:#17191d;overflow:hidden"><div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:15px 15px"></div><div style="position:absolute;left:26px;top:34px;width:34px;height:44px;background:#5d4b45;border-radius:2px"></div></div>
+      <div style="position:relative;width:90px;height:120px;border-radius:6px;background:#f1efea;overflow:hidden"><div style="position:absolute;inset:0;background-image:radial-gradient(rgba(0,0,0,.14) 1px,transparent 1.2px);background-size:14px 14px"></div><div style="position:absolute;left:26px;top:34px;width:34px;height:44px;background:#b09284;border-radius:2px"></div></div>
+      <div style="position:relative;width:90px;height:120px;border-radius:6px;background:linear-gradient(125deg,#66727f,#93826f);overflow:hidden"><div style="position:absolute;inset:8px;border-radius:4px;background:rgba(21,23,27,.5);backdrop-filter:blur(3px)"></div><div style="position:absolute;left:26px;top:34px;width:34px;height:44px;background:#5d4b45;border-radius:2px"></div></div>
+    </div>
+    <figcaption style="font-size:12.5px;line-height:1.5;color:#444;margin-top:7px">Dark, light, or glass — where the window itself goes translucent over your desktop. Grid lines, dots, or nothing. A handful of flat wall colors. That's the whole theme system, on purpose: the tool stays neutral so the art leads.</figcaption>
+  </figure>
+</div>
+
+<p style="font-size:12.5px;color:#888;margin:28px 0 0;border-top:1px solid #ddd;padding-top:10px">The idea in one line: <b>arrange pictures the way you already do — and without any extra ceremony, notes, links and tags turn the arrangement into a world you can search, map, and read.</b></p>
+
+</x-import>
+
+</x-dc>
+
+
+</body></html>
