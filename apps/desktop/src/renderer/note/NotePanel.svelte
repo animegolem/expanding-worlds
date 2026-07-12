@@ -59,6 +59,7 @@
   } from './paper/bound-geometry'
   import { openTagPanel } from '../tags/tag-panel'
   import TagAddField from '../tags/TagAddField.svelte'
+  import RemovableTagChip from '../tags/RemovableTagChip.svelte'
   import { wikiLinkSuggestions } from './suggestions'
   import { wikiLinkActivation, wikiLinkDecorations } from './wiki-link-plugin'
   import { themeTokenValue } from '../theme'
@@ -254,6 +255,16 @@
     tagChips = response.ok
       ? (response.result as Array<{ id: string; name: string; color: string | null }>)
       : []
+  }
+
+  async function removeTag(tagId: string): Promise<void> {
+    if (!paneProject || !tagNodeId) return
+    const result = await paneProject.execute('UnassignTagFromNode', { tagId, nodeId: tagNodeId })
+    if (result.status !== 'committed') {
+      error = result.status === 'error' ? result.message : 'the project changed underneath (retry)'
+      return
+    }
+    await refreshTagChips()
   }
 
   // §7.2 phantom view: a projection only.
@@ -1372,18 +1383,16 @@
     <div class="tag-chips" data-testid="panel-tag-chips">
       {#each tagChips as tag (tag.id)}
         <!-- §4.8 door 2: a chip opens THE tag panel anchored to itself. -->
-        <button
-          type="button"
-          class="tag-chip"
-          data-testid={`panel-tag-chip-${tag.id}`}
-          style={tag.color ? `color:${tag.color}` : ''}
-          onclick={(event) => {
+        <RemovableTagChip
+          testid={`panel-tag-chip-${tag.id}`}
+          name={tag.name}
+          color={tag.color}
+          onopen={(event) => {
             const rect = event.currentTarget.getBoundingClientRect()
             openTagPanel(tag.id, { x: rect.left, y: rect.bottom })
           }}
-        >
-          #{tag.name}
-        </button>
+          onremove={() => void removeTag(tag.id)}
+        />
       {/each}
       <TagAddField
         nodeId={tagNodeId}

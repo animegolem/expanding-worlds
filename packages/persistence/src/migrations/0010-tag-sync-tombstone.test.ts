@@ -38,10 +38,10 @@ describe('migration 0010: tag-sync tombstones', () => {
   })
 
   it('registers 0010 over the reserved-0009 gap in the migration ledger', () => {
-    expect(MIGRATIONS.map((migration) => migration.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 10])
+    expect(MIGRATIONS.map((migration) => migration.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 10, 11])
     expect(
       project.db.all<{ id: number }>('SELECT id FROM migrations ORDER BY id').map((row) => row.id),
-    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 10])
+    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 10, 11])
   })
 
   it('enforces one tombstone per project and name key', () => {

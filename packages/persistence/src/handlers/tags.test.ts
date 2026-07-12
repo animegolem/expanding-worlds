@@ -55,6 +55,36 @@ function createNode(): string {
   return nodeId
 }
 
+function createImageNode(contentHash: string): string {
+  const nodeId = uuidv7()
+  const assetId = uuidv7()
+  const now = new Date().toISOString()
+  handle.db.run(
+    `INSERT INTO asset
+       (id, project_id, kind, content_hash, original_filename, mime_type,
+        storage_path, lifecycle_state, created_at, updated_at)
+     VALUES (?, ?, 'image', ?, 'image.png', 'image/png', 'assets/image.png',
+             'active', ?, ?)`,
+    assetId,
+    handle.projectId,
+    contentHash,
+    now,
+    now,
+  )
+  handle.db.run(
+    `INSERT INTO node
+       (id, project_id, appearance_kind, appearance_asset_id,
+        lifecycle_state, created_at, updated_at)
+     VALUES (?, ?, 'image', ?, 'active', ?, ?)`,
+    nodeId,
+    handle.projectId,
+    assetId,
+    now,
+    now,
+  )
+  return nodeId
+}
+
 function createTag(name: string): string {
   const tagId = uuidv7()
   committed('CreateTag', { tagId, name })
@@ -190,6 +220,27 @@ describe('tag assignment (invariant 8: node-only, M:N)', () => {
     }
     expect(assignments(t1)).toHaveLength(2)
     expect(assignments(t2)).toHaveLength(2)
+  })
+
+  it('suppresses sync for an image unassign and lifts the exact row on reassign', () => {
+    const tagId = createTag('Scout')
+    const imageNodeId = createImageNode('shared-hash')
+    const plainNodeId = createNode()
+    committed('AssignTagToNode', { tagId, nodeId: imageNodeId })
+    committed('AssignTagToNode', { tagId, nodeId: plainNodeId })
+
+    const unassign = committed('UnassignTagFromNode', { tagId, nodeId: imageNodeId })
+    committed('UnassignTagFromNode', { tagId, nodeId: plainNodeId })
+    expect(
+      handle.db.all(
+        `SELECT content_hash, name_key, node_id
+           FROM tag_unassign_suppression WHERE project_id = ?`,
+        handle.projectId,
+      ),
+    ).toEqual([{ content_hash: 'shared-hash', name_key: 'scout', node_id: imageNodeId }])
+
+    undo(unassign.inverse)
+    expect(handle.db.all('SELECT * FROM tag_unassign_suppression')).toEqual([])
   })
 
   it('rejects duplicates, missing records, and absent assignments structurally', () => {

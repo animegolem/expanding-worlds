@@ -77,7 +77,15 @@ interface AssignmentRow {
   nodeId: string
 }
 
+interface NodeSuppressionRow {
+  contentHash: string
+  nameKey: string
+  nodeId: string
+}
+
 const pairKey = (left: string, right: string): string => `${left}\u0000${right}`
+const tripleKey = (contentHash: string, nameKey: string, nodeId: string): string =>
+  `${contentHash}\u0000${nameKey}\u0000${nodeId}`
 
 /**
  * Plan the additive §4.8 union across two real project handles. Only active
@@ -148,6 +156,16 @@ export function planTagSync(
       )
       .map((row) => row.nameKey),
   )
+  const nodeSuppressions = new Set(
+    destinationDb
+      .all<NodeSuppressionRow>(
+        `SELECT content_hash AS contentHash, name_key AS nameKey, node_id AS nodeId
+           FROM tag_unassign_suppression
+          WHERE project_id = ?`,
+        destinationProjectId,
+      )
+      .map((row) => tripleKey(row.contentHash, row.nameKey, row.nodeId)),
+  )
 
   const nodesByHash = new Map<string, string[]>()
   for (const row of destinationNodes) {
@@ -167,6 +185,7 @@ export function planTagSync(
     const destinationTagId = tagIdByKey.get(sourceTag.nameKey) ?? null
     let planned = plannedByKey.get(sourceTag.nameKey)
     for (const nodeId of matchingNodes) {
+      if (nodeSuppressions.has(tripleKey(sourceTag.contentHash, sourceTag.nameKey, nodeId))) continue
       if (destinationTagId && assigned.has(pairKey(destinationTagId, nodeId))) continue
       if (!planned) {
         planned = {

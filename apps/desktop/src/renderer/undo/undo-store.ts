@@ -150,7 +150,7 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   UnplaceCard: { class: 'exempt', why: 'internal-inverse of PlaceAsCard' },
   UnmakeNoteIndependent: { class: 'exempt', why: 'internal-inverse of MakeNoteIndependent' },
   UnmergeTag: { class: 'exempt', why: 'internal-inverse of MergeTag' },
-  UnassignTagFromNode: { class: 'exempt', why: 'internal-inverse of AssignTagToNode' },
+  UnassignTagFromNode: { class: 'captured', why: 'AI-IMP-285 deliberate chip-removal verb; inverse AssignTagToNode' },
   RestoreContent: { class: 'exempt', why: 'internal-inverse: DeleteContent undo path' },
   RestorePlacement: { class: 'exempt', why: 'internal-inverse: placement delete undo path' },
   RestoreRecord: { class: 'captured', why: '§9.7 user restore; inverse re-trashes the record' },
