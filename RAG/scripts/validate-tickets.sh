@@ -31,11 +31,27 @@ warn() { echo "$1: WARN  $2"; WARNS=$((WARNS + 1)); }
 collect_files() {
   if [[ "${1:-}" == "--changed" ]]; then
     local ref="${2:-origin/main}"
-    git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$ref"... -- \
-        'RAG/AI-EPIC/*.md' 'RAG/AI-IMP/*.md' 'RAG/AI-LOG/*.md' \
-      | while read -r rel; do echo "$ROOT_DIR/$rel"; done
+    # Derive pathspecs from where this script actually lives, so a
+    # renamed ticket root keeps working; and union in untracked
+    # files — `git diff` alone misses brand-new tickets, which are
+    # exactly the ones most likely to carry unfilled templates.
+    local rag_rel="${RAG_DIR#"$ROOT_DIR"/}"
+    {
+      git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$ref"... -- \
+          "$rag_rel/AI-EPIC/*.md" "$rag_rel/AI-IMP/*.md" "$rag_rel/AI-LOG/*.md"
+      git -C "$ROOT_DIR" ls-files --others --exclude-standard -- \
+          "$rag_rel/AI-EPIC/*.md" "$rag_rel/AI-IMP/*.md" "$rag_rel/AI-LOG/*.md"
+    } | sort -u | while read -r rel; do echo "$ROOT_DIR/$rel"; done
   elif [[ $# -gt 0 ]]; then
-    printf '%s\n' "$@"
+    # Normalize to absolute paths — the duplicate-node_id check
+    # excludes "self" by exact path match, so a relative argument
+    # would report a file as its own duplicate.
+    local f
+    for f in "$@"; do
+      if [[ "$f" = /* ]]; then printf '%s\n' "$f"
+      else printf '%s\n' "$(cd "$(dirname "$f")" && pwd)/$(basename "$f")"
+      fi
+    done
   else
     find "$RAG_DIR/AI-EPIC" "$RAG_DIR/AI-IMP" "$RAG_DIR/AI-LOG" \
          -maxdepth 1 -name '*.md' 2>/dev/null | sort
@@ -197,8 +213,20 @@ validate_file() {
   # -- unfilled template placeholders ----------------------------------------
   grep -q '{LOC|' "$file" \
     && err "$file" "unfilled {LOC|N} placeholder left in body"
-  grep -qE '\{\{[a-zA-Z-]+\}\}' "$file" \
+  # Any double-brace content is template text — digits, slashes,
+  # and spaces included ({{TICKET-A}}, {{path/to/...}}, {{YYYY-MM-DD}}).
+  grep -qE '\{\{[^}]+\}\}' "$file" \
     && err "$file" "unfilled {{placeholder}} left in body"
+  # The AI-IMP frontmatter ships single-brace placeholders
+  # ({more tags as needed}, {0.0-1.0}, {YYYY-MM-DD}, {Legal
+  # Values: ...}). Frontmatter values are never legitimately
+  # brace-wrapped, so scope the single-brace check there — the
+  # body stays free for code snippets.
+  awk 'NR == 1 && $0 != "---" { exit }
+       /^---$/ { fm++; if (fm == 2) exit; next }
+       fm == 1' "$file" \
+    | grep -qE '(:[[:space:]]*|^[[:space:]]*-[[:space:]]*)\{' \
+    && err "$file" "unfilled {placeholder} left in frontmatter"
 }
 
 # ---------------------------------------------------------------------------
