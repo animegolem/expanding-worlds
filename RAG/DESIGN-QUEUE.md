@@ -611,6 +611,30 @@ all moved into the RFC.
   anatomy is a queued kit session, see the entry below. AI-IMP-207
   half 2 unblocks against this table.
 
+- **The dock species split — RULED (owner, 2026-07-11; the
+  vestigial-toolbar conversation, owner's "biggest thing to figure
+  out").** The beta dock is one surface wearing four species; the
+  split is cosigned as the input for the dock kit session:
+  (1) TOOLS — the dock slims to the toolbelt proper + contextual
+  tool options while a tool is armed; OWNER ADDITION: the shape
+  tools consolidate into ONE shape tool with a popover/flyout
+  (the AI-IMP-190 hold-picker, now ruled) AND the shape set fills
+  out toward the Miro baseline (190's comparison table is the
+  benchmark). (2) SELECTION VERBS — the fifteen-verb strip
+  (order/align/distribute/arrange/normalize/zoom-selection +
+  group/lock/hide) leaves the dock for ONE arrange charm on the
+  charm bar opening a grouped popover (the appearance-popover
+  pattern). (3) STYLE PROPERTIES split by host: armed tool →
+  dock tool-options; selected shape → the charm bar's appearance
+  popover. (4) ZOOM CLUSTER becomes standalone corner chrome —
+  written out as a proposal for the design team to try in the
+  kit ("I'll try it in the design team, and we'll see what it
+  looks like"). Hands the dock kit session three clean drawings:
+  toolbelt, arrange popover, zoom corner. Answers the DESIGN-GAPS
+  dock-family, arrange-surface, shape-hold-picker, and
+  beta-controls-sweep items at the conversation level — the kit
+  session draws them.
+
 - **The universal command palette (owner + lead, 2026-07-11 —
   design push, born from the rail ruling).** Search leaves the
   rail and merges with quick-open into one centered, scrim-dimmed
