@@ -7,8 +7,8 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 5 | 3 |
-| Deferred | 1 | 1 |
+| Planned | 5 | 4 |
+| Deferred | 1 | 0 |
 | Cancelled | 0 | 0 |
 | Completed | 20 | 236 |
 | **Total** | **28** | **272** |
@@ -87,7 +87,7 @@
 - [[AI-IMP-204-gallery-preview-inspector|IMP-204]] — planned, no epic dependency found
 - [[AI-IMP-207-rail-surface-exclusivity|IMP-207]] — planned, no epic dependency found
 - [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
-- [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — in-progress, no epic dependency found
+- [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
 - [[AI-IMP-219-destructive-gc|IMP-219]] — planned, no epic dependency found
 - [[AI-IMP-220-trash-retention-job|IMP-220]] — planned, no epic dependency found
 - [[AI-IMP-221-gallery-undo-coordination|IMP-221]] — planned, no epic dependency found
@@ -148,9 +148,9 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/src/renderer/tags/TagPanel.svelte (851 LOC)
 - apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
 - apps/desktop/e2e/panels.spec.ts (826 LOC)
+- RAG/DESIGN-QUEUE.md (797 LOC)
 - apps/desktop/src/main/snapshot.ts (791 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (785 LOC)
-- RAG/DESIGN-QUEUE.md (762 LOC)
 - spike/src/adapters/konva/index.ts (735 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (726 LOC)
 - apps/desktop/src/utility/index.ts (709 LOC)
@@ -310,7 +310,7 @@ Generated from tracked files; binary assets excluded.
   - [[AI-IMP-066-toasts-and-perch|IMP-066]] Toasts and perch — completed
   - [[AI-IMP-067-pin-dock-tool|IMP-067]] Pin dock tool — completed
 - [[AI-EPIC-008-export-import-signoff|EPIC-008]] Export import signoff — 2026-07-07
-  - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — deferred
+  - [[AI-IMP-093-export-size-preflight|IMP-093]] Export size preflight — planned
   - [[AI-IMP-120-git-snapshot-engine|IMP-120]] Git snapshot engine — completed
   - [[AI-IMP-121-restore-from-backup|IMP-121]] Restore from backup — completed
   - [[AI-IMP-122-snapshot-remote-push|IMP-122]] Snapshot remote push — completed

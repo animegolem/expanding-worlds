@@ -4,7 +4,7 @@ tags:
   - IMP-LIST
   - Implementation
   - export
-kanban_status: deferred
+kanban_status: planned
 depends_on:
 parent_epic: [[AI-EPIC-008-export-import-signoff]]
 confidence_score: 0.85
@@ -21,6 +21,10 @@ date_completed:
 > surface to attach the preflight to. This ticket rides EPIC-008;
 > §16's rev 0.18 "reports rather than blocks" language already
 > defines the ask-once acknowledge shape it must take.
+
+> UN-DEFERRED 2026-07-11 (lead triage, owner go): EPIC-008 shipped —
+> Settings export + .ewproj import are live (AI-IMP-157/158), so the
+> surface this preflight attaches to exists. Ordinary buildable ticket.
 
 
 §16/§14.4 (FR-5): once library-scale projects exist, exports get
