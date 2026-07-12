@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.69         | 10 July 2026     |
+| Accepted for Phase 1 | 0.70         | 11 July 2026     |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -906,6 +906,21 @@ stays home; the user never files a tag into a scope).
   matched by name-key, created-if-missing — a `creator:` tag
   cannot arrive uncategorized. Until categories ship, flat tag
   names sync by name_key.
+- **Removal is the chip's ✕, and removal survives sync (rev
+  0.70, from the ratified lifecycle push N4+T2).** Tag removal's
+  one gesture is the tag chip growing a ✕ on hover in
+  remove-capable habitats (the note meta strip and the tag
+  panel's carrier rows); finding surfaces keep their filter-✕ and
+  the two never share a habitat — the habitat disambiguates,
+  copy never needs to. UnassignTagFromNode leaves the undo-exempt
+  class and joins structural undo (inverse AssignTagToNode).
+  Because sync unions per-node assignments by content hash, a
+  bare unassign on mirrored content would silently re-acquire its
+  tag at the next settle — so per-node unassign on mirrored
+  content also writes a NARROW suppression (content hash + tag,
+  this node), the per-node sibling of the project-scope
+  tombstone. Sync may re-offer through recognition; it never
+  re-applies what a hand removed.
 
 ## 4.9 Decoration
 
@@ -2438,6 +2453,27 @@ exactly as long as the broken state does. The §11.4 no-silent-hang
 requirement surfaces here; a transient toast alone never satisfies
 it. The interim status strip retires only when this perch ships.
 
+**The silence budget (rev 0.70, ratified lifecycle push GR-3).**
+Every outcome is assigned exactly one voice, and silence is a
+voice that must be earned. Seven classes: (1) succeeded where
+you're looking — THE WORLD is the feedback, no echo; (2) succeeded
+somewhere you can't see — a toast naming where; (3) the app
+decided for you — a toast stating the decision as fact, fired only
+when the app chose, never on an explicit pick; (4) failed with its
+surface open — an inline sentence in place, no toast doubling;
+(5) failed with no surface — an error toast, fact then reassurance,
+sticky if unrecoverable; (6) an ongoing condition — the perch,
+never a toast; (7) a routine echo of your own act — sanctioned
+silence, the undo entry is the receipt. Failure is never class 1
+or 7: `if (error) return` is a defect pattern everywhere. A new
+surface that cannot name its outcome's class is not done. What
+happens while you're gone reports when you're back: quit-time and
+background outcomes land as perch conditions or one arrival toast
+at next open, never racing a closing window. This finally gives
+the perch its producer contract: integrity errors, persistent
+failures (a retry failing twice becomes a condition), and an
+incomplete quit backup reported at next open.
+
 ## 8.7 Ghost overlay mode (deferred with scope)
 
 The PureRef-completing feature (rev 0.21): a per-window mode for
@@ -2526,6 +2562,17 @@ deletion synonym.
 The Trash view MUST expose its retention setting clearly. Automatic
 permanent deletion defaults to Never; later options MAY include 30, 60,
 or 90 days.
+
+**Retention runs at open and after-reports (rev 0.70, owner
+decision Q2 at the lifecycle push).** The retention pass runs at
+project open with Purge semantics only. Its voice is a §8.6
+class-6 perch condition — "5 items left trash after 60 days" —
+dismissable, linking to trash; there is no advance notice, because
+the trash view itself prints the amended promise ("deleted things
+wait here… until you say otherwise, or N days pass, per your
+setting"). The setting lives in the trash view as that sentence's
+amendment; Never stays the default. A purge the user never
+scheduled is impossible by construction.
 
 ## 9.2 Delete Placement
 
@@ -2638,6 +2685,22 @@ Empty Trash purges all eligible trashed records after an impact summary.
 Automatic retention, when enabled, applies the same purge rules to
 records older than the configured duration.
 
+**Restore is undoable; purge is not, honestly (rev 0.70, ratified
+lifecycle push GR-4/G2+G5).** RestoreRecord joins structural undo
+(inverse re-trashes); the restore toast and its fly-to offer stay —
+§8.6 class 2, succeeded where you can't see. Empty Trash and every
+purge stay OUTSIDE undo: pretending otherwise would poison the
+trash's "waits here, whole" promise, so irreversibility is the only
+thing that confirms — impact as counted fact in the user's nouns
+("This removes 35 items forever — 28 images, 5 notes, 2 boards"),
+plain verbs, danger ink on the acting button only, never warning
+tone. A confirmation that cannot print a count is not ready to
+ship. Bulk verbs are ONE undo group per gesture wherever they
+live (the gallery bar, the trash view, future bulk surfaces):
+⌘Z after "trash 30" is thirty things returning; partial failure
+splits the receipt (the toast's counts), never the group; and the
+inverse of a bulk verb re-selects what it brings back.
+
 **The trash browser (rev 0.46, ratified).** Entered only through
 the ☰ menu's Trash… row (rev 0.45 §8.2), the browser is a takeover
 in the gallery/settings family: ONE flat list across kinds — kind
@@ -2668,6 +2731,16 @@ When purge nonetheless outruns a stale inverse (rev 0.40): every
 inverse command VALIDATES like any command and refuses with a typed
 error when its records are gone — undo after purge degrades to a
 clear refusal, never a broken render or a half-restored state.
+
+**The sweep is scheduled (rev 0.70, owner decision Q3 at the
+lifecycle push).** Blobs eligible for at least 30 days sweep
+during End Session's data half — a natural commit point where the
+snapshot precedes the sweep, so git history holds what disk
+releases. No sweep ever runs mid-session; destroy-nothing keeps
+its grace period. Settings shows the dry-run fact beside the
+backup size ("cleanup can reclaim 1.2 GB") — the only
+forward-looking voice either sweep gets; per §8.6, sweeps report,
+they never ask.
 
 # 10. Commands and undo
 
@@ -2767,6 +2840,20 @@ survive application restart. Recoverable history across sessions is
 Trash's responsibility, and project time travel remains future work.
 Committing any new durable command clears the redo stack.
 
+**The ledger governs user gestures only (rev 0.70, ratified
+lifecycle push GR-4).** Every USER-GESTURE commit path reaches the
+undo coordinator — a surface issuing raw envelopes for a user verb
+is a defect regardless of what it does with them. SYSTEM writes
+(the §4.8 tag sync's settle-moment envelopes, migrations, repairs)
+live deliberately OUTSIDE the ledger: they never enter the stack,
+never clear redo, and are structurally unreachable by ⌘Z. One
+gesture is one entry, bulk included; a verb's copy names its
+take-back home (ledger verbs say nothing — the entry is the
+receipt; trash verbs name Trash; purge verbs say "forever"), and a
+verb whose copy cannot name its home is misclassified. Redo never
+lies: ⌘⇧Z either replays exactly what was undone onto the world it
+left, or it does nothing.
+
 Committed commands persist a lightweight metadata log recording
 command ID, type, version, issued_at, and resulting project_revision.
 The log supports provenance references such as trashed_by_command_id
@@ -2780,6 +2867,15 @@ canvas is active (ratified rev 0.58 from the shipped fence: undo acts
 where your hands are, and a board you cannot see never changes under
 you). The earlier navigate-and-center direction and its apply-in-place
 setting are retired.
+
+One scoped exception (rev 0.70, from the ratified B1 birth ruling):
+undoing a board-birth group while STANDING INSIDE the newborn board
+flies the camera back to the origin first, then unmakes. Decline-
+in-place cannot hold here — the active canvas itself is what the
+inverse removes, so "a board you cannot see never changes under
+you" has no board to protect; the flight makes the unmaking
+witnessed instead of impossible. This is the only case in which
+undo navigates.
 
 Note-body edits do not enter the structural undo stack. Inside a
 focused editor, undo is CodeMirror's fine-grained local history, which
@@ -2890,6 +2986,27 @@ similar is survivable exactly when writes stop at a clean moment.
 Quit performs the same sequence (the §10.2 quit flush already does
 half of it); the button is the same ritual without leaving the
 app.
+
+**End Session lives (rev 0.70, owner decision Q4 at the lifecycle
+push — the deferred surface above graduates).** The ☰ row enables
+the moment a project is open; grayed-since-install retires. The
+full ritual is: flush editor buffers → mirror (when enabled) →
+push tags across mirror edges (§4.8 settle moment — already in the
+shipped quit path) → snapshot → GC sweep (§9.8, after the snapshot
+commits) → close → release the lock. A quiet §8.6-form sentence
+names the running step; the ritual is interruptible until the
+close step, then it completes. It closes to the PROJECT SELECTOR
+through the cover — the birth flight of §6 inverted, the world
+receding into its cover card; opening a project zooms back in
+(one motion vocabulary, selector to deepest board; the selector's
+own anatomy is a queued design session and this ruling binds only
+the transition and the moment below). The just-closed card carries
+a quiet "put away — safe to sync" note: the selector IS the
+teaching surface for the single-writer sync discipline — a place,
+not an alert. Quit runs the identical sequence, and its 15-second
+snapshot timeout stops being silent: a timeout mid-backup becomes
+a perch condition at next open ("last session closed before its
+backup finished").
 
 **Session snapshots (rev 0.24, deferred with scope).** The
 end-session boundary is a natural commit point, so git becomes a
@@ -4803,3 +4920,23 @@ Accepted for the Phase 1 prototype:
   restructure and sentences-as-titles (§4.5). Visual maturation
   (the mat/card reading of image+caption as one object) is held
   for the design pass after tester contact.
+
+- The lifecycle push ratified (rev 0.70, owner-read 10–11 July;
+  domain rulings folded here, presentation grammar stays
+  kit-normative in `RAG/design/expanding-worlds-lifecycles-1.1.zip`
+  per the EPIC-028 precedent): the §8.6 silence budget (seven
+  outcome classes, failure always speaks, report-at-return, the
+  perch's producer contract); retention at open with after-report
+  (§9.1, Q2); the end-session GC sweep with dry-run count (§9.8,
+  Q3); End Session live, closing to the selector through the
+  cover, quit timeout reported at next open (§11.4, Q4); restore
+  captured / purge honestly outside undo / bulk verbs one group
+  with re-selected inverses (§9.7); the ledger scoped to user
+  gestures with system writes outside it, and the one navigating
+  undo (the birth-group exception to rev 0.58's decline-in-place)
+  (§10.2); tag removal as the chip's ✕ with per-node suppression
+  so removal survives sync (§4.8). The remaining bundle rulings —
+  three-state sentences (GR-1), the exit ladder's new rungs
+  (GR-2), the pin tool arc (S3+S1), the board-birth doors (B1),
+  and link repair (N4) — are presentation grammar: tickets cite
+  the kit documents directly.
