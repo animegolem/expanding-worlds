@@ -6,14 +6,9 @@
   sheet chrome). Features that don't exist yet render aria-disabled
   with an "arrives with…" tooltip, the same grammar as the waiting
   rail charms. Tiers are invisible here: app-tier keys go through the
-  settings store, trash retention dispatches its §9 command.
+  settings store.
 -->
 <script lang="ts">
-  import {
-    COMMAND_SET_TRASH_RETENTION,
-    type SetTrashRetentionPayload,
-    type TrashRetention,
-  } from '@ew/commands'
   import { DROP_BEHAVIOR_KEY, DROP_BEHAVIOR_VALUES, type DropBehavior } from '@ew/protocol'
   import { showFirstRun } from '../chrome/first-run'
   import { toast } from '../chrome/status'
@@ -39,8 +34,6 @@
   } from '../settings/project-settings'
 
   let settings = $state<AppSettings>({ ...APP_SETTING_DEFAULTS })
-  let retention = $state<TrashRetention>('never')
-  let projectId = $state<string | null>(null)
   let projectSettings = $state<Record<string, unknown>>({})
   // Merge note (EPIC-027): C10-011's ProjectSettingWriter was the same
   // finding as AI-IMP-251, which merged first — 251's writer stands.
@@ -59,13 +52,9 @@
   $effect(() => {
     void (async () => {
       try {
-        const project = await runQuery<{ id: string }>('getProject')
-        projectId = project.id
-        retention = await runQuery<TrashRetention>('getTrashRetention')
         projectSettings = await runQuery<Record<string, unknown>>('getSettings')
       } catch {
-        // The rows render on defaults; retention control disables
-        // itself while projectId is unknown.
+        // The rows render on defaults while the project is unavailable.
       }
     })()
   })
@@ -74,26 +63,6 @@
     const response = await window.ew.project.query(name, args)
     if (!response.ok) throw new Error(`${name} failed: ${response.code}`)
     return response.result as T
-  }
-
-  const RETENTIONS: TrashRetention[] = ['never', '30d', '60d', '90d']
-  async function setRetention(value: TrashRetention): Promise<void> {
-    if (!projectId || value === retention) return
-    const previous = retention
-    retention = value
-    const result = await window.ew.project.execute({
-      commandId: window.ew.util.newId(),
-      projectId,
-      commandType: COMMAND_SET_TRASH_RETENTION,
-      commandVersion: 1,
-      issuedAt: new Date().toISOString(),
-      payload: { retention: value } satisfies SetTrashRetentionPayload,
-    })
-    if (result.status !== 'committed') {
-      retention = previous
-      const detail = result.status === 'error' ? result.message : 'revision conflict'
-      toast(`Couldn't change Trash retention: ${detail}`, { kind: 'error' })
-    }
   }
 
   // §7.8 metadata sections (AI-IMP-119): per-section global defaults,
@@ -341,13 +310,6 @@
     return settings.fadeDelayMs === 'never'
       ? FADE_MAX_S
       : Math.round(settings.fadeDelayMs / 1000)
-  }
-
-  const RETENTION_LABELS: Record<TrashRetention, string> = {
-    never: 'Never',
-    '30d': '30 days',
-    '60d': '60 days',
-    '90d': '90 days',
   }
 
   // §8.2: every registered binding, grouped by scope, view-only.
@@ -705,16 +667,6 @@
       'set by the first image drop (§14.4)',
       'settings-row-mirror-drops',
     )}
-
-    <div class="row" data-testid="settings-row-retention">
-      <span class="row-label">Trash retention</span>
-      {@render segmented(
-        'settings-retention',
-        RETENTIONS.map((value) => ({ value, label: RETENTION_LABELS[value] })),
-        retention,
-        (value) => void setRetention(value as TrashRetention),
-      )}
-    </div>
 
     <div class="row" data-testid="settings-row-drop-behavior">
       <span class="row-label">Multi-image drop</span>

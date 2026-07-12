@@ -4,7 +4,7 @@
   charm itself stays for as long as any condition holds.
 -->
 <script lang="ts">
-  import type { Condition } from './status'
+  import { dismissCondition, type Condition } from './status'
 
   const {
     conditions,
@@ -31,7 +31,29 @@
 <div class="condition-panel" data-testid="perch-panel" bind:this={panel}>
   <ul>
     {#each conditions as condition (condition.id)}
-      <li data-testid="perch-condition">{condition.detail}</li>
+      <li data-testid="perch-condition">
+        <span>{condition.detail}</span>
+        {#if condition.action}
+          <button
+            type="button"
+            class="condition-action"
+            data-testid={condition.action.testid}
+            onclick={() => {
+              condition.action?.run()
+              onclose()
+            }}
+          >{condition.action.label}</button>
+        {/if}
+        {#if condition.dismissible}
+          <button
+            type="button"
+            class="condition-dismiss"
+            aria-label="Dismiss condition"
+            data-testid={`dismiss-${condition.id}`}
+            onclick={() => dismissCondition(condition.id)}
+          >×</button>
+        {/if}
+      </li>
     {/each}
   </ul>
 </div>
@@ -66,6 +88,17 @@
     display: flex;
     gap: 0.4rem;
   }
+
+  .condition-action,
+  .condition-dismiss {
+    border: 0;
+    background: transparent;
+    color: var(--ew-accent);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .condition-dismiss { margin-left: auto; color: var(--ew-text-muted); }
 
   li::before {
     content: '⚠';

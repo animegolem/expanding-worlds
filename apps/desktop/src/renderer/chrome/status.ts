@@ -15,6 +15,7 @@
 import type { SnapshotPushState } from '@ew/protocol'
 import { wake } from './engagement'
 import { TOAST_DURATION_MS } from './feel'
+import { openTakeover } from './takeover'
 
 export type ToastKind = 'info' | 'success' | 'error'
 
@@ -51,6 +52,13 @@ export interface ToastEntry {
 export interface Condition {
   id: string
   detail: string
+  action?: ToastAction
+  dismissible?: boolean
+}
+
+export interface ConditionOptions {
+  action?: ToastAction
+  dismissible?: boolean
 }
 
 type ToastsListener = (toasts: readonly ToastEntry[]) => void
@@ -115,14 +123,33 @@ export function dismissToast(id: number): void {
  * the condition's detail; `clear` removes it. The perch exists while
  * at least one condition is raised and not a moment longer.
  */
-export function condition(id: string): { raise: (detail: string) => void; clear: () => void } {
+export function dismissCondition(id: string): void {
+  if (!conditions.some((c) => c.id === id)) return
+  conditions = conditions.filter((c) => c.id !== id)
+  emitConditions()
+}
+
+export function condition(id: string): {
+  raise: (detail: string, options?: ConditionOptions) => void
+  clear: () => void
+} {
   return {
-    raise(detail: string): void {
+    raise(detail: string, options: ConditionOptions = {}): void {
       const existing = conditions.find((c) => c.id === id)
-      if (existing?.detail === detail) return
+      const next: Condition = {
+        id,
+        detail,
+        ...(options.action === undefined ? {} : { action: options.action }),
+        ...(options.dismissible === undefined ? {} : { dismissible: options.dismissible }),
+      }
+      if (
+        existing?.detail === next.detail &&
+        existing.action === next.action &&
+        existing.dismissible === next.dismissible
+      ) return
       conditions = existing
-        ? conditions.map((c) => (c.id === id ? { id, detail } : c))
-        : [...conditions, { id, detail }]
+        ? conditions.map((c) => (c.id === id ? next : c))
+        : [...conditions, next]
       emitConditions()
       // §11.4: an ongoing condition arriving while the board is
       // wallpaper wakes the chrome — the perch must not fade in
@@ -130,9 +157,7 @@ export function condition(id: string): { raise: (detail: string) => void; clear:
       wake()
     },
     clear(): void {
-      if (!conditions.some((c) => c.id === id)) return
-      conditions = conditions.filter((c) => c.id !== id)
-      emitConditions()
+      dismissCondition(id)
     },
   }
 }
@@ -186,11 +211,13 @@ export function attachServiceStatus(): void {
   if (serviceAttached) return
   serviceAttached = true
   const service = condition('project-service')
+  const retention = condition('trash-retention')
   let outage = false
   const apply = (event: {
     status: 'restarting' | 'ok' | 'failed'
     message?: string
     recovery?: RecoverySummary
+    retention?: { retention: 'never' | '30d' | '60d' | '90d'; purged: unknown[] }
   }): void => {
     if (event.status === 'restarting') {
       outage = true
@@ -205,6 +232,24 @@ export function attachServiceStatus(): void {
       // status === 'ok': the open succeeded. Surface any repairs the
       // recovery pass performed (§11.4), then resolve a prior outage.
       reportRecoveryRepairs(event.recovery)
+      const retentionReport = event.retention
+      const purged = retentionReport?.purged.length ?? 0
+      if (purged > 0 && retentionReport && retentionReport.retention !== 'never') {
+        const days = retentionReport.retention.slice(0, -1)
+        retention.raise(
+          `${purged} item${purged === 1 ? '' : 's'} left trash after ${days} days`,
+          {
+            dismissible: true,
+            action: {
+              label: 'Open Trash',
+              testid: 'retention-open-trash',
+              run: () => openTakeover('trash'),
+            },
+          },
+        )
+      } else {
+        retention.clear()
+      }
       if (outage) {
         outage = false
         service.clear()
@@ -327,5 +372,6 @@ export function __resetStatusForTests(): void {
   conditions = []
   toastListeners.clear()
   conditionListeners.clear()
+  serviceAttached = false
   snapshotPushAttached = false
 }

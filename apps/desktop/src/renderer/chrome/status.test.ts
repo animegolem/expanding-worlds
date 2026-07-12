@@ -1,10 +1,12 @@
-import type { SnapshotPushState } from '@ew/protocol'
+import type { ServiceStatusEvent, SnapshotPushState } from '@ew/protocol'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TOAST_DURATION_MS } from './feel'
 import {
   __resetStatusForTests,
   attachSnapshotPush,
+  attachServiceStatus,
   condition,
+  dismissCondition,
   dismissToast,
   onConditionsChanged,
   onToastsChanged,
@@ -127,6 +129,60 @@ describe('status store (RFC §8.6)', () => {
     unsub()
     condition('a').clear()
     expect(calls).toBe(1)
+  })
+})
+
+describe('retention perch wiring (§9.1 rev 0.70)', () => {
+  beforeEach(() => {
+    __resetStatusForTests()
+  })
+
+  afterEach(() => {
+    __resetStatusForTests()
+    vi.unstubAllGlobals()
+  })
+
+  it('raises an actionable dismissible condition and clears on a clean open', async () => {
+    let emit: (event: ServiceStatusEvent) => void = () => {}
+    vi.stubGlobal('window', {
+      addEventListener: () => {},
+      ew: {
+        project: {
+          onServiceStatus: (cb: typeof emit) => {
+            emit = cb
+            return () => {}
+          },
+          serviceStatus: async () => null,
+        },
+      },
+    })
+    vi.stubGlobal('document', { documentElement: { addEventListener: () => {} } })
+    const seen = { current: [] as readonly Condition[] }
+    onConditionsChanged((conditions) => (seen.current = conditions))
+    attachServiceStatus()
+
+    emit({
+      status: 'ok',
+      retention: {
+        retention: '60d',
+        purged: [{ kind: 'note', id: 'n1' }],
+        failed: [],
+      },
+    })
+    expect(seen.current[0]).toMatchObject({
+      id: 'trash-retention',
+      detail: '1 item left trash after 60 days',
+      dismissible: true,
+      action: { label: 'Open Trash', testid: 'retention-open-trash' },
+    })
+    dismissCondition('trash-retention')
+    expect(seen.current).toEqual([])
+
+    emit({
+      status: 'ok',
+      retention: { retention: '60d', purged: [], failed: [] },
+    })
+    expect(seen.current).toEqual([])
   })
 })
 

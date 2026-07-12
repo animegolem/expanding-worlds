@@ -48,6 +48,7 @@ import { registerFrameQueries } from './queries-frames'
 import { registerStructureQueries } from './queries-structure'
 import { runRecovery, type RecoveryReport } from './recovery'
 import { registerSettingsQueries, setProjectSetting } from './settings'
+import { runTrashRetention, type RetentionPurgeReport } from './retention'
 
 export interface ProjectInfo {
   projectId: string
@@ -96,6 +97,8 @@ export interface ProjectService {
   }): { assetId: string; contentHash: string } | null
   /** §11.4 startup recovery outcome for this open. */
   recovery(): RecoveryReport
+  /** §9.1 rev 0.70 project-open expiration through PurgeRecord. */
+  runTrashRetention(now?: () => Date): RetentionPurgeReport
   /** §11.4 involuntary checkpoint (AI-IMP-096): PRAGMA
    * wal_checkpoint(TRUNCATE) so the -wal file returns to zero and the
    * .sqlite is complete at rest (the OS may sleep and a cloud daemon
@@ -232,6 +235,13 @@ export function openProjectService(dir: string, options: ServiceOptions = {}): P
       },
       subscribe: (fn) => dispatcher.subscribe(fn),
       recovery: () => recoveryReport,
+      runTrashRetention: (now = () => new Date()) =>
+        runTrashRetention({
+          db: handle.db,
+          projectId: handle.projectId,
+          execute: (envelope) => dispatcher.execute(envelope),
+          now,
+        }),
       checkpoint: () => {
         // A read-only source took no lock and left the WAL to its
         // writable owner — checkpointing here would be a no-op the

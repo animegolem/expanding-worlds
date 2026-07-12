@@ -10,14 +10,19 @@
   Empty Trash sits at the bottom behind the §9 impact-summary
   confirmation and loops PurgeRecord over every eligible record.
 
-  The takeover owns no canvas gateway, so commands go straight through
-  window.ew.project.execute with a hand-rolled envelope (the
-  GalleryActionBar precedent). Toasts live in the chrome layer above
-  the takeover cover, so a restore toast persists when the row's
+  The takeover owns an independent project command port, so every
+  durable verb reaches revision fan-out and the session coordinator
+  without borrowing a canvas host. Toasts live in the chrome layer
+  above the takeover cover, so a restore toast persists when the row's
   fly-to action later closes this view.
 -->
 <script lang="ts">
   import type { CommandGateway } from '@ew/canvas-engine'
+  import {
+    COMMAND_SET_TRASH_RETENTION,
+    type SetTrashRetentionPayload,
+    type TrashRetention,
+  } from '@ew/commands'
   import { onDestroy } from 'svelte'
   import { navigateTo } from '../chrome/navigation'
   import { toast } from '../chrome/status'
@@ -72,6 +77,15 @@
   let emptySummary = $state('')
   let emptyKindCount = $state(0)
   let busy = $state(false)
+  let retention = $state<TrashRetention>('never')
+
+  const RETENTIONS: TrashRetention[] = ['never', '30d', '60d', '90d']
+  const RETENTION_LABELS: Record<TrashRetention, string> = {
+    never: 'Never',
+    '30d': '30 days',
+    '60d': '60 days',
+    '90d': '90 days',
+  }
 
   // ------------------------------------------------ command plumbing
   // This takeover owns a renderer-level gateway independent of the canvas
@@ -146,6 +160,7 @@
   }
 
   async function load(): Promise<void> {
+    retention = (await query<TrashRetention>('getTrashRetention')) ?? 'never'
     const view = await query<TrashViewModel>('getTrashView')
     if (!view) {
       rows = []
@@ -191,6 +206,32 @@
     )
     rows = draft
     loaded = true
+  }
+
+  async function setRetention(value: TrashRetention): Promise<void> {
+    if (busy || value === retention) return
+    const previous = retention
+    retention = value
+    const gateway = await commandGateway()
+    const result = await gateway.execute(
+      COMMAND_SET_TRASH_RETENTION,
+      { retention: value } satisfies SetTrashRetentionPayload,
+    )
+    if (result.status !== 'committed') {
+      retention = previous
+      const detail = result.status === 'error' ? result.message : 'revision conflict'
+      toast(`Couldn't change Trash retention: ${detail}`, {
+        kind: 'error',
+        surface: 'trash-retention-error',
+      })
+    }
+  }
+
+  function retentionPromise(): string {
+    if (retention === 'never') {
+      return 'deleted things wait here, whole, until you say otherwise.'
+    }
+    return `deleted things wait here, whole, until you say otherwise, or ${RETENTION_LABELS[retention]} pass, per your setting.`
   }
 
   $effect(() => {
@@ -316,9 +357,7 @@
   {#if !loaded}
     <p class="quiet" data-testid="trash-loading">Loading Trash…</p>
   {:else if rows.length === 0}
-    <p class="quiet" data-testid="trash-empty">
-      nothing here — deleted things wait here, whole, until you say otherwise.
-    </p>
+    <p class="quiet" data-testid="trash-empty">nothing here — {retentionPromise()}</p>
   {:else}
     <ul class="list" data-testid="trash-list">
       {#each rows as row (row.kind + row.id)}
@@ -385,6 +424,24 @@
       {/if}
     </div>
   {/if}
+
+  <div class="retention" data-testid="trash-retention">
+    {#if rows.length > 0}
+      <p class="retention-promise" data-testid="trash-retention-promise">{retentionPromise()}</p>
+    {/if}
+    <div class="retention-control" role="group" aria-label="Trash retention">
+      {#each RETENTIONS as value (value)}
+        <button
+          type="button"
+          class:selected={retention === value}
+          data-testid={`trash-retention-${value}`}
+          aria-pressed={retention === value}
+          disabled={busy}
+          onclick={() => void setRetention(value)}
+        >{RETENTION_LABELS[value]}</button>
+      {/each}
+    </div>
+  </div>
 </div>
 
 <style>
@@ -399,6 +456,44 @@
   .quiet {
     padding: 2rem 0.5rem;
     color: var(--ew-text-muted);
+  }
+
+  .retention {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0.4rem 0;
+    border-top: 1px solid var(--ew-border);
+  }
+
+  .retention-promise {
+    margin: 0;
+    color: var(--ew-text-muted);
+    font-size: 0.75rem;
+  }
+
+  .retention-control {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--ew-border-strong);
+    border-radius: 6px;
+    background: var(--ew-surface-raised);
+  }
+  .retention-control button {
+    padding: 0.28rem 0.5rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--ew-text-muted);
+    font: inherit;
+    font-size: 0.75rem;
+  }
+  .retention-control button.selected {
+    background: var(--ew-accent);
+    color: var(--ew-on-accent);
   }
 
   .list {

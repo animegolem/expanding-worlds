@@ -113,7 +113,7 @@ function onUtilityDied(reason: string): void {
     restartAttempted = false
     broadcastService(
       'recovery' in response
-        ? { status: 'ok', recovery: response.recovery }
+        ? { status: 'ok', recovery: response.recovery, retention: response.retention }
         : { status: 'ok' },
     )
   })
@@ -920,7 +920,7 @@ void app.whenReady().then(() => {
     // is covered by its own boot kick.
     broadcastService(
       'recovery' in response
-        ? { status: 'ok', recovery: response.recovery }
+        ? { status: 'ok', recovery: response.recovery, retention: response.retention }
         : { status: 'ok' },
     )
   })

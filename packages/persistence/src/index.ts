@@ -155,6 +155,7 @@ export {
   type TrashView,
 } from './queries-lifecycle'
 export { computeGcEligibleBlobs, exportLeaseGuardedHashes } from './gc'
+export { runTrashRetention, type RetentionPurgeItem, type RetentionPurgeReport } from './retention'
 export { runRecovery, type RecoveryCtx, type RecoveryReport } from './recovery'
 export {
   openProjectService,

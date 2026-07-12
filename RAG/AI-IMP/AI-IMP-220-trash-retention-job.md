@@ -49,6 +49,14 @@ it; if silent, project-open + a line in the ticket. E2e: seed a
 trashed node with a backdated trashed_at, reopen, gone; a fresh
 one survives.
 
+Pre-implementation correction (2026-07-12): rev 0.70 names project
+open and moves the retention control out of Settings into TrashView's
+promise sentence. The stored command/query existed, but there was no
+consumer. The open pass now issues system PurgeRecord envelopes through
+the ordinary dispatcher before the healthy-open response; its report
+drives one generic, dismissible perch condition with an Open Trash
+action. A clean later open clears stale condition state.
+
 ### Files to Touch
 
 `packages/persistence/src/handlers/lifecycle.ts` (or a sibling
@@ -60,12 +68,12 @@ sweep module), utility/main open-episode wiring, unit + e2e.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Expiration drives the existing purge handlers only; trigger
+- [x] Expiration drives the existing purge handlers only; trigger
       moment matches the RFC (or the silence is recorded).
-- [ ] Backdated-trash e2e purges; fresh trash survives; "never"
+- [x] Backdated-trash e2e purges; fresh trash survives; "never"
       (if present) skips.
-- [ ] Pass logged with counts.
-- [ ] Gates: build, per-package units, lint, e2e in 4+ foreground
+- [x] Pass logged with counts.
+- [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
 - [ ] HUMAN-TESTING entry appended at merge by the lead.
 
@@ -84,3 +92,8 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The condition store originally carried text only. Optional generic
+  action/dismiss metadata was added rather than a retention-only perch.
+- An initial e2e rerun used a stale renderer bundle after a copy-only
+  change; rebuilding first restored the expected Trash sentence pin.

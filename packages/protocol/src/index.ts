@@ -38,8 +38,20 @@ export interface RecoverySummary {
   integrityErrors: string[]
 }
 
+export interface RetentionPurgeReport {
+  retention: 'never' | '30d' | '60d' | '90d'
+  purged: Array<{ kind: 'note' | 'node' | 'canvas'; id: string }>
+  failed: Array<{ kind: 'note' | 'node' | 'canvas'; id: string }>
+}
+
 export type InitProjectResponse =
-  | { type: 'init-project'; ok: true; project: ProjectInfo; recovery: RecoverySummary }
+  | {
+      type: 'init-project'
+      ok: true
+      project: ProjectInfo
+      recovery: RecoverySummary
+      retention: RetentionPurgeReport
+    }
   | { type: 'init-project'; ok: false; code: string; message: string }
 
 export interface CloseProjectRequest {
@@ -555,6 +567,7 @@ export interface ServiceStatusEvent {
   status: 'restarting' | 'ok' | 'failed'
   message?: string
   recovery?: RecoverySummary
+  retention?: RetentionPurgeReport
 }
 
 /** Envelope used on the main → utility request channel. */

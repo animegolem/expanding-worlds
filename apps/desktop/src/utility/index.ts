@@ -101,13 +101,22 @@ async function handle(request: ProjectRequest): Promise<ProjectResponse> {
         }
         if (request.title !== undefined) initOptions.title = request.title
         service = openProjectService(request.dir, initOptions)
-        unsubscribe = service.subscribe((event) => post({ kind: 'event', event }))
         const { repairs, integrityErrors } = service.recovery()
+        const retention = service.runTrashRetention()
+        unsubscribe = service.subscribe((event) => post({ kind: 'event', event }))
+        if (retention.purged.length > 0 || retention.failed.length > 0) {
+          console.info('[retention] project-open purge', {
+            retention: retention.retention,
+            purged: retention.purged,
+            failed: retention.failed,
+          })
+        }
         return {
           type: 'init-project',
           ok: true,
           project: service.info(),
           recovery: { repairs, integrityErrors },
+          retention,
         }
       } catch (err) {
         service = null

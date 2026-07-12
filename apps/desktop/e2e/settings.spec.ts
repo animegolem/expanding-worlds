@@ -2,13 +2,13 @@ import { mkdtempSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
-import { exec, launchApp, launchAppInDir, revision, runQuery } from './helpers'
+import { exec, launchApp, launchAppInDir, revision } from './helpers'
 
 /**
  * §11.5 settings takeover (AI-IMP-074): commit-on-click with no save
- * step, live apply behind the sheet, and two-tier persistence — app
- * settings follow the app-config dir, trash retention follows the
- * project database. EW_APP_CONFIG_DIR keeps these instances out of
+ * step, live apply behind the sheet, and app-tier persistence. Project-
+ * owned controls live on their owning surfaces (trash retention moved
+ * to Trash in rev 0.70). EW_APP_CONFIG_DIR keeps these instances out of
  * the real user config.
  */
 
@@ -70,11 +70,7 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   // App-tier changes never enter command history: same revision.
   expect(await revision(win)).toBe(revisionBefore)
 
-  // Trash retention is the project-tier row (its §9 command).
-  await win.getByTestId('settings-retention-30d').click()
-  await expect
-    .poll(() => runQuery<string>(win, 'getTrashRetention'))
-    .toBe('30d')
+  await expect(win.getByTestId('settings-row-retention')).toHaveCount(0)
 
   // Esc closes; nothing to save.
   await win.keyboard.press('Escape')
@@ -98,20 +94,15 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   expect(persisted['flatCanvasColor']).toBe('--ew-canvas-flat-3')
   expect(persisted['windowOpacity']).toBe(0.8)
 
-  // Relaunch on the same project + config: both tiers survive, and
+  // Relaunch on the same project + config: app settings survive, and
   // the theme applies before the user touches anything.
   const second = await launchAppInDir(projectDir, { EW_APP_CONFIG_DIR: configDir })
   await expect.poll(() => currentTheme(second.win)).toBe('light')
-  expect(await runQuery<string>(second.win, 'getTrashRetention')).toBe('30d')
   // 'always' survived the relaunch: strip up at boot, no hover.
   // (Asserted before opening settings — a takeover unmounts it.)
   await expect(second.win.getByTestId('title-strip')).toBeVisible()
   await openSettings(second.win)
   await expect(second.win.getByTestId('settings-theme-light')).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
-  await expect(second.win.getByTestId('settings-retention-30d')).toHaveAttribute(
     'aria-pressed',
     'true',
   )

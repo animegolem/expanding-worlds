@@ -165,7 +165,7 @@ export const UNDO_POLICY: Readonly<Record<string, UndoPolicyEntry>> = {
   DeleteDecoration: { class: 'exempt', why: 'not-a-renderer-verb: deletion goes through DeleteContent' },
   MergeTag: { class: 'exempt', why: 'deferred: no renderer gesture yet (flagged for owner ratification)' },
   SetTagAppearance: { class: 'exempt', why: 'deferred: no renderer gesture yet (flagged for owner ratification)' },
-  SetTrashRetention: { class: 'exempt', why: 'settings verb: changed/reverted via Settings, not Mod+Z' },
+  SetTrashRetention: { class: 'exempt', why: 'Trash-view setting: changed/reverted on its owning surface, not Mod+Z' },
   // CreateNote (loose-note creation, NotePanel) is a deliberate verb, but
   // capturing it shares relink-create's created-note-residue hazard (undo
   // would delete a note the user may have started editing). Capture is

@@ -27,6 +27,8 @@ annotations.
   also check once at launch, silently.
 
 ### Under the hood
+- AI-IMP-220: optional Trash retention now runs at project open through
+  ordinary purge semantics and reports completed cleanup from the perch.
 - AI-IMP-270: create-and-attach note gestures now redo by restoring the
   same recoverable note, preserving its id, title, and later body edits.
 - AI-IMP-278: launch/on-demand release check (public GitHub API, no

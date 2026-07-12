@@ -6,6 +6,7 @@ import { CommandRegistry, type CommandResult, type CommittedResult, type Inverse
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Dispatcher, type CommandContext } from '../dispatcher'
 import { computeGcEligibleBlobs } from '../gc'
+import { runTrashRetention } from '../retention'
 import { createProject, type ProjectHandle } from '../project'
 import { QueryRegistry } from '../queries'
 import { registerNoteQueries } from '../queries-notes'
@@ -781,6 +782,41 @@ describe('SetTrashRetention (§9.1)', () => {
     )
     const set = committed('SetTrashRetention', { retention: '30d' })
     expect(set.inverse).toMatchObject({ payload: { retention: 'never' } })
+  })
+
+  it('purges only expired records through PurgeRecord and Never skips', () => {
+    const old = createNote('Old retention')
+    const fresh = createNote('Fresh retention')
+    committed('TrashNote', { noteId: old })
+    committed('TrashNote', { noteId: fresh })
+    handle.db.run(
+      'UPDATE note SET trashed_at = ? WHERE id = ?',
+      '2026-01-01T00:00:00.000Z',
+      old,
+    )
+    handle.db.run(
+      'UPDATE note SET trashed_at = ? WHERE id = ?',
+      '2026-06-20T00:00:00.000Z',
+      fresh,
+    )
+    const context = {
+      db: handle.db,
+      projectId: handle.projectId,
+      execute: (envelope: Parameters<typeof dispatcher.execute>[0]) => dispatcher.execute(envelope),
+      now: () => new Date('2026-07-12T00:00:00.000Z'),
+    }
+
+    expect(runTrashRetention(context)).toEqual({ retention: 'never', purged: [], failed: [] })
+    committed('SetTrashRetention', { retention: '30d' })
+    const beforeLog = commandLogCount()
+    expect(runTrashRetention(context)).toEqual({
+      retention: '30d',
+      purged: [{ kind: 'note', id: old }],
+      failed: [],
+    })
+    expect(row('note', old)).toBeUndefined()
+    expect(row('note', fresh)).toMatchObject({ lifecycle_state: 'trashed' })
+    expect(commandLogCount()).toBe(beforeLog + 1)
   })
 })
 
