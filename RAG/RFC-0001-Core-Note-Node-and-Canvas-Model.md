@@ -2263,6 +2263,11 @@ containing canvas centered on the matching decoration. Trashed records
 are excluded by default and the no-match state says so. Typing a
 leading # switches the field to tag mode with tag-name completion;
 committed tags crystallize into removable pills, AND-only in Phase 1.
+Matching over the NAME-SPACE (titles, tag names, filenames) is
+fzf-shaped (kit push 1.2): space-separated terms are fuzzy
+subsequences ANDed together, plain terms also match tags, and
+#-terms constrain to tags one pill each; note BODIES stay substring
+search, and completion lists elsewhere stay prefix + count-ordered.
 
 Placeable results drag OUT of the palette as placements: the
 palette folds mid-drag and the drop joins the ordinary place flow
@@ -4995,8 +5000,9 @@ Accepted for the Phase 1 prototype:
   the kit documents directly.
 
 - The kit push ratified (rev 0.71, design sessions 2026-07-11→12,
-  lead one-object review + design revision 1.1; presentation
-  grammar stays kit-normative in `RAG/design/design-push/` — the
+  lead one-object review + design revisions 1.1/1.2; presentation
+  grammar stays kit-normative in the versioned
+  `RAG/design/expanding-worlds-design-package-<ver>.zip` — the
   package supersedes the lifecycles zip as the kit documents'
   home): the reservation frame and charm halo written as
   §8.8.3/§8.8.4 (token NAMES normative, values kit-owned); search
