@@ -24,6 +24,8 @@ const ROUNDS = 5
 const RECYCLED_CORPSE_RETRIES = 1
 // The winner holds well past every loser's convergence to LOCKED, so a
 // release can never hand off a spurious second WIN.
+// A loaded runner can deschedule a ready worker past a fixed hold, so the
+// worker also waits for the round's attempted-worker barrier before release.
 const HOLD_MS = 400
 
 const FIXTURES = join(import.meta.dirname, '..', 'test-fixtures')
@@ -108,11 +110,23 @@ function plantCorpse(dir: string, deadPid: number): void {
 
 type WorkerOutcome = { kind: 'WIN' | 'LOCKED'; diagnostic: string }
 
-function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promise<WorkerOutcome> {
+function runWorker(
+  dir: string,
+  staleAfterMs: number,
+  barrierDir: string,
+  delayAfterGoMs = 0,
+): Promise<WorkerOutcome> {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       process.execPath,
-      [workerBundle, dir, String(staleAfterMs), barrierDir, String(HOLD_MS)],
+      [
+        workerBundle,
+        dir,
+        String(staleAfterMs),
+        barrierDir,
+        String(HOLD_MS),
+        String(delayAfterGoMs),
+      ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     )
     let out = ''
@@ -136,12 +150,19 @@ function runWorker(dir: string, staleAfterMs: number, barrierDir: string): Promi
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-async function runRound(dir: string, staleAfterMs: number, deadPid: number): Promise<WorkerOutcome[]> {
+async function runRound(
+  dir: string,
+  staleAfterMs: number,
+  deadPid: number,
+  delayedWorkerMs = 0,
+): Promise<WorkerOutcome[]> {
   plantCorpse(dir, deadPid)
   const barrierDir = mkdtempSync(join(tmpdir(), 'ew-lock-barrier-'))
   try {
     const outcomes = Promise.all(
-      Array.from({ length: WORKERS }, () => runWorker(dir, staleAfterMs, barrierDir)),
+      Array.from({ length: WORKERS }, (_, index) =>
+        runWorker(dir, staleAfterMs, barrierDir, index === 0 ? delayedWorkerMs : 0),
+      ),
     )
     // Release the barrier only once every worker is ready, so the race is
     // truly simultaneous and no straggler acquires after the winner frees.
@@ -151,6 +172,14 @@ async function runRound(dir: string, staleAfterMs: number, deadPid: number): Pro
       await sleep(5)
     }
     writeFileSync(join(barrierDir, 'go'), '')
+    // Readiness proves startup, not that the OS scheduled each child to call
+    // acquire after "go". Keep the winner live until every child has returned
+    // from its one attempt, ruling out a legal sequential handoff.
+    while (readdirSync(barrierDir).filter((f) => f.startsWith('attempted.')).length < WORKERS) {
+      if (Date.now() > deadline) throw new Error('workers never completed their lock attempts')
+      await sleep(5)
+    }
+    writeFileSync(join(barrierDir, 'settled'), '')
     return await outcomes
   } finally {
     rmSync(barrierDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
@@ -168,6 +197,22 @@ describe('lock probe recycled-corpse retry policy', () => {
     expect(shouldRetryRecycledCorpse(0, false, live, 0)).toBe(false)
     expect(shouldRetryRecycledCorpse(1, true, live, 0)).toBe(false)
   })
+})
+
+describe('lock probe attempt barrier', () => {
+  it(
+    'does not count a ready worker descheduled past the fixed hold as a sequential winner',
+    async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'ew-lock-probe-delay-'))
+      try {
+        const outcomes = await runRound(dir, 30_000, deadSameHostPid(), HOLD_MS + 300)
+        expect(outcomes.filter((outcome) => outcome.kind === 'WIN')).toHaveLength(1)
+      } finally {
+        rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+      }
+    },
+    120_000,
+  )
 })
 
 describe('single-writer lock under multi-process contention (AI-IMP-226 / CA-001)', () => {
