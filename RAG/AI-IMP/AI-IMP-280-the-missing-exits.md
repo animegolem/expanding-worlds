@@ -107,6 +107,13 @@ Escape/fade behave exactly as printed.
 
 ### Issues Encountered
 
+- Round-1 verification corrected the scope: the universal three-exit rule also
+  requires click-away on FirstRunGuide, MirrorAsk, RecognitionChip, and
+  DropBehaviorAsk. First-run Escape/scrim use the existing `skipFirstRun`
+  dismissal; an unanswered MirrorAsk dissolves without persisting “No”. Drop
+  idle intentionally resolves every queued batch while explicit dismissal
+  resolves only the visible head.
+
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
 This section is filled out post work as you fill out the checklists.

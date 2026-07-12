@@ -157,6 +157,14 @@ test('mirror on: drop pins immediately, library gains one unplaced node; duplica
   await dropPng(win, PNG_1PX, 'capture-again.png', { x: 240, y: 200 })
   await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(2)
   await expect(win.getByTestId('mirror-chip')).toBeVisible({ timeout: 10_000 })
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('mirror-chip')).toBeVisible()
+  await win.getByRole('button', { name: 'Dismiss' }).click()
+  await expect(win.getByTestId('mirror-chip')).toHaveCount(0)
+  await dropPng(win, PNG_1PX, 'capture-third.png', { x: 300, y: 240 })
+  await expect(win.getByTestId('mirror-chip')).toBeVisible({ timeout: 10_000 })
+  await win.mouse.click(1000, 700)
+  await expect(win.getByTestId('mirror-chip')).toHaveCount(0)
   expect(await libraryUnplacedCount(win)).toBe(1)
 
   await app.close()
@@ -382,4 +390,20 @@ test('first-drop ask: no leaves the library untouched, yes mirrors from then on'
   await expect(second.win.getByTestId('mirror-ask')).not.toBeVisible()
 
   await second.app.close()
+})
+
+test('MirrorAsk Escape dissolves without persisting a choice', async () => {
+  const libDir = await seedLibrary(false)
+  const { app, win } = await launchApp('ew-e2e-mirror-ask-escape-')
+  await designateLibrary(win, libDir)
+  await dropPng(win, PNG_1PX, 'first.png')
+  await expect(win.getByTestId('mirror-ask')).toBeVisible({ timeout: 10_000 })
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('mirror-ask')).toHaveCount(0)
+  const value = await win.evaluate(async () => {
+    const settings = await window.ew.project.query('getSettings')
+    return settings.ok ? (settings.result as Record<string, unknown>)['mirror_drops'] : 'failed'
+  })
+  expect(value).toBeUndefined()
+  await app.close()
 })

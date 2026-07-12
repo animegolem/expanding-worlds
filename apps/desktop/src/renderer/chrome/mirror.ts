@@ -300,11 +300,28 @@ export function answerMirrorAsk(yes: boolean): void {
   if (yes) for (const drop of parked) schedule(() => mirrorOne(drop))
 }
 
+/** Leave an unanswered ask undecided. The setting remains unset, so
+ * the next drop may ask again; this is the engagement-fade contract. */
+export function dismissMirrorAsk(): void {
+  if (ask === null) return
+  ask = null
+  pendingAsk = []
+  emit()
+}
+
 /** Explicit ignore — same outcome as the engagement fade. */
 export function dismissMirrorChip(id: number): void {
   if (!chips.some((chip) => chip.id === id)) return
   clearChipTimer(id)
   chips = chips.filter((chip) => chip.id !== id)
+  emit()
+}
+
+/** Pointer-away exit for the transient chip family. */
+export function dismissAllMirrorChips(): void {
+  if (chips.length === 0) return
+  chips = []
+  clearAllChipTimers()
   emit()
 }
 

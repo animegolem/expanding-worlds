@@ -12,7 +12,12 @@
     placeAnchoredElement,
     type AnchoredElementOptions,
   } from './anchored-placement-dom'
-  import { answerMirrorAsk, onMirrorUiChanged, type MirrorAskState } from './mirror'
+  import {
+    answerMirrorAsk,
+    dismissMirrorAsk,
+    onMirrorUiChanged,
+    type MirrorAskState,
+  } from './mirror'
 
   let ask = $state<MirrorAskState | null>(null)
   $effect(() => onMirrorUiChanged((ui) => (ask = ui.ask)))
@@ -27,7 +32,21 @@
       margin: 12,
     }
   }
+
+  function onWindowKeydown(event: KeyboardEvent): void {
+    if (ask && event.key === 'Escape') {
+      event.preventDefault()
+      dismissMirrorAsk()
+    }
+  }
+
+  function onWindowPointerdown(event: PointerEvent): void {
+    if (!ask || (event.target as Element | null)?.closest('.mirror-ask')) return
+    dismissMirrorAsk()
+  }
 </script>
+
+<svelte:window onkeydown={onWindowKeydown} onpointerdown={onWindowPointerdown} />
 
 {#if ask}
   <div

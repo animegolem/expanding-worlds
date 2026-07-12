@@ -129,6 +129,9 @@ test('overlapping multi-drops queue; answering both imports every file (AI-IMP-1
     // Batch 1: three images → the multi-drop ask (no remembered choice).
     await dropFiles(win, distinctImages(3, 1), 200, 160)
     await expect(win.getByTestId('drop-ask')).toContainText('3 images dropped')
+    await expect(win.getByTestId('drop-ask')).toContainText(
+      'esc or walking away lands them separate',
+    )
 
     // Batch 2: four images dropped WHILE batch 1's ask is still up. The
     // old single-slot code would overwrite batch 1's parked closure here
