@@ -6,12 +6,12 @@ tags:
   - lock
   - reliability
   - windows
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-263]
 parent_epic:
 confidence_score: 0.85
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-12
 ---
 
 
@@ -80,24 +80,24 @@ fixture fix.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Wait for AI-IMP-263's diagnostic run to convict and fix the probe
+- [x] Wait for AI-IMP-263's diagnostic run to convict and fix the probe
       fixture; rebase onto its merged main commit.
-- [ ] P1: inject a persistent `readFileSync` denial against an old live
+- [x] P1: inject a persistent `readFileSync` denial against an old live
       same-host lock; prove acquire surfaces the original error and never
       calls `unlinkSync`.
-- [ ] P1: validate parseable holder shape; prove invalid stable content is
+- [x] P1: validate parseable holder shape; prove invalid stable content is
       handled as corruption while a valid live holder is never evicted.
-- [ ] P1 candidate: inject guard `statSync` failure and a removable live
+- [x] P1 candidate: inject guard `statSync` failure and a removable live
       guard; prove the current double-reclaimer path, then fix so no removal
       occurs without a confirmed stale timestamp.
-- [ ] P2: inject transient and persistent release-unlink failures; prove
+- [x] P2: inject transient and persistent release-unlink failures; prove
       transient recovery, persistent surfacing, token safety, and a valid
       retry of the same lock object's release.
-- [ ] P2: inject persistent guard-rmdir failure; preserve and surface the
+- [x] P2: inject persistent guard-rmdir failure; preserve and surface the
       filesystem error rather than fabricating `ProjectLockedError`.
-- [ ] P4: update reclaim outcome, release, unreadable-state, and timeout
+- [x] P4: update reclaim outcome, release, unreadable-state, and timeout
       fallback comments to match executable behavior; remove dead wording.
-- [ ] `pnpm -r build` and `pnpm --filter='./packages/*' test` green; Windows
+- [x] `pnpm -r build` and `pnpm --filter='./packages/*' test` green; Windows
       lock probe and desktop smoke remain green.
 
 ### Acceptance Criteria
@@ -127,6 +127,17 @@ You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
 
-Ticket cut from the accepted AI-IMP-263 standing full-file review. No
-remediation is implemented here; the explicit dependency prevents composite
-lock work from obscuring the probe fixture's still-unconvicted Windows cause.
+Ticket was cut from the accepted AI-IMP-263 standing full-file review and
+implemented only after 263 convicted and repaired the probe fixture. The work
+re-verified every finding against post-263 main. Holder reads
+now distinguish absence, invalid content, valid holders, and filesystem
+failure at acquire, heartbeat, reclaim, and release. Guard age and removal
+likewise preserve filesystem dispositions. Release remains live and retryable
+until token-verified removal succeeds. The focused fault suite is green at
+19/19, including heartbeat read-denial surfacing. At wave tip the 16-process probe passed 20/20 consecutive invocations
+(200 rounds across both staleness policies), and `CI=true pnpm check` passed:
+60 domain, 19 commands, 1 shared-ui, 1 protocol, 407 canvas-engine, 652
+persistence, and 486 desktop unit tests, plus lint and spike typecheck. The
+final 258-case desktop e2e run was green with 257 first-pass successes and one
+unrelated `import.spec.ts` context-menu timeout that passed on configured retry;
+the immediately preceding full run was 258/258 first-pass green.

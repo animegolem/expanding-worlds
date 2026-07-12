@@ -82,6 +82,12 @@ export interface LockHolder {
   heartbeatAt: string
 }
 
+type HolderRead =
+  | { kind: 'holder'; holder: LockHolder }
+  | { kind: 'absent' }
+  | { kind: 'invalid'; error: Error }
+  | { kind: 'error'; error: NodeJS.ErrnoException }
+
 export class ProjectLockedError extends Error {
   readonly code = 'PROJECT_LOCKED'
   constructor(readonly holder: LockHolder) {
@@ -159,9 +165,16 @@ export class ProjectLock {
       }
 
       // 2. Owner file present. A holder we cannot justify removing wins.
-      const holder = readHolder(path)
-      if (holder && !isReclaimable(holder, staleAfterMs)) {
-        throw new ProjectLockedError(holder)
+      const owner = readHolder(path)
+      if (owner.kind === 'error') {
+        if (!isRetryableFilesystemError(owner.error)) throw owner.error
+        lastTransient = owner.error
+        backoff(attempt)
+        continue
+      }
+      if (owner.kind === 'absent') continue
+      if (owner.kind === 'holder' && !isReclaimable(owner.holder, staleAfterMs)) {
+        throw new ProjectLockedError(owner.holder)
       }
       // Reaching here means the path is genuinely contended (a corpse
       // exists), not permission-broken: any earlier transient is stale.
@@ -183,20 +196,25 @@ export class ProjectLock {
     // reclaim BECAUSE of that error is a permission problem, not a
     // lock problem); a reclaimable corpse with no error is unresolved
     // contention; the synthesized holder is the last resort.
-    const finalHolder = readHolder(path)
-    if (finalHolder && !isReclaimable(finalHolder, staleAfterMs)) {
-      throw new ProjectLockedError(finalHolder)
+    const finalOwner = readHolder(path)
+    if (finalOwner.kind === 'error') throw finalOwner.error
+    if (finalOwner.kind === 'holder' && !isReclaimable(finalOwner.holder, staleAfterMs)) {
+      throw new ProjectLockedError(finalOwner.holder)
     }
     if (lastTransient) throw lastTransient
-    throw new ProjectLockedError(finalHolder ?? synthHolder(token))
+    throw new ProjectLockedError(
+      finalOwner.kind === 'holder' ? finalOwner.holder : synthHolder(token),
+    )
   }
 
   #beat(): void {
     if (this.#released) return
-    const holder = readHolder(this.#path)
+    const owner = readHolder(this.#path)
+    if (owner.kind === 'error') throw owner.error
     // Never clobber a lock someone else reclaimed after judging ours
     // stale (e.g. this process was suspended past the stale window).
-    if (!holder || holder.token !== this.#token) return
+    if (owner.kind !== 'holder' || owner.holder.token !== this.#token) return
+    const holder = owner.holder
     holder.heartbeatAt = new Date().toISOString()
     const tmp = `${this.#path}.${this.#token}.tmp`
     writeFileSync(tmp, JSON.stringify(holder))
@@ -205,16 +223,36 @@ export class ProjectLock {
 
   release(): void {
     if (this.#released) return
-    this.#released = true
-    if (this.#timer) clearInterval(this.#timer)
-    const holder = readHolder(this.#path)
-    if (holder && holder.token === this.#token) {
+    let lastTransient: NodeJS.ErrnoException | null = null
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const owner = readHolder(this.#path)
+      if (owner.kind === 'error') throw owner.error
+      if (owner.kind === 'invalid') throw owner.error
+      if (owner.kind === 'absent' || owner.holder.token !== this.#token) {
+        this.#finishRelease()
+        return
+      }
       try {
         unlinkSync(this.#path)
-      } catch {
-        // Already gone; releasing is idempotent.
+        this.#finishRelease()
+        return
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+          this.#finishRelease()
+          return
+        }
+        if (!isRetryableRemovalError(err)) throw err
+        lastTransient = err as NodeJS.ErrnoException
+        backoff(attempt)
       }
     }
+    throw lastTransient!
+  }
+
+  #finishRelease(): void {
+    this.#released = true
+    if (this.#timer) clearInterval(this.#timer)
+    this.#timer = null
   }
 }
 
@@ -244,11 +282,9 @@ function isReclaimable(holder: LockHolder, staleAfterMs: number): boolean {
 }
 
 /**
- * Serialized stale-lock removal. Returns true when the owner file has been
- * cleared (caller should re-race the O_EXCL create) and false when the
- * caller should back off and retry — because the guard is held by another
- * reclaimer, or because a racer already reinstalled a live holder (which
- * the caller then refuses on its next pass).
+ * Serialized stale-lock removal. The outcome says whether the owner file
+ * was cleared and may preserve a transient filesystem error for truthful
+ * timeout diagnosis. A false result asks the caller to back off and retry.
  */
 function reclaimUnderGuard(
   path: string,
@@ -273,17 +309,30 @@ function reclaimUnderGuard(
     if (code !== 'EEXIST') throw err
     // Guard is held. If it is itself abandoned (a reclaimer crashed
     // mid-swap), steal it; mkdir re-arbitrates the retake next pass.
-    if (guardIsStale(guardPath)) removeGuard(guardPath)
+    const guard = inspectGuard(guardPath)
+    if (guard.kind === 'error') {
+      if (isRetryableFilesystemError(guard.error)) {
+        return { removed: false, transient: guard.error }
+      }
+      throw guard.error
+    }
+    if (guard.kind === 'stale') removeGuard(guardPath)
     return { removed: false }
   }
   try {
     // Under the guard, re-read: a racer may have reclaimed already, or a
     // foreign holder may have refreshed its heartbeat, or the holder may
     // have exited.
-    const holder = readHolder(path)
-    if (holder) {
-      if (!isReclaimable(holder, staleAfterMs)) return { removed: false }
-    } else if (!unreadableLongEnough(path)) {
+    const owner = readHolder(path)
+    if (owner.kind === 'error') {
+      if (isRetryableFilesystemError(owner.error)) {
+        return { removed: false, transient: owner.error }
+      }
+      throw owner.error
+    }
+    if (owner.kind === 'holder') {
+      if (!isReclaimable(owner.holder, staleAfterMs)) return { removed: false }
+    } else if (owner.kind === 'invalid' && !unreadableLongEnough(path)) {
       // Torn read of a live holder mid-write: leave it, retry a read.
       return { removed: false }
     }
@@ -316,18 +365,25 @@ function reclaimUnderGuard(
  * reject a directory removal while its own handles drain, so give that a few
  * jittered retries. Other filesystem failures are real and must surface.
  */
-function removeGuard(guardPath: string): boolean {
+function removeGuard(guardPath: string): void {
+  let lastTransient: NodeJS.ErrnoException | null = null
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       rmdirSync(guardPath)
-      return true
+      return
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return true
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return
       if (!isRetryableRemovalError(err)) throw err
+      lastTransient = err as NodeJS.ErrnoException
       backoff(attempt)
     }
   }
-  return false
+  throw lastTransient!
+}
+
+function isRetryableFilesystemError(err: unknown): boolean {
+  const code = (err as NodeJS.ErrnoException).code
+  return code === 'EPERM' || code === 'EBUSY'
 }
 
 function isRetryableRemovalError(err: unknown): boolean {
@@ -335,11 +391,16 @@ function isRetryableRemovalError(err: unknown): boolean {
   return code === 'EPERM' || code === 'EBUSY' || code === 'ENOTEMPTY'
 }
 
-function guardIsStale(guardPath: string): boolean {
+function inspectGuard(
+  guardPath: string,
+): { kind: 'stale' | 'present' | 'absent' } | { kind: 'error'; error: NodeJS.ErrnoException } {
   try {
     return Date.now() - statSync(guardPath).mtimeMs >= RECLAIM_GUARD_STALE_MS
-  } catch {
-    return true // vanished — treat as stealable; the mkdir retake decides.
+      ? { kind: 'stale' }
+      : { kind: 'present' }
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { kind: 'absent' }
+    return { kind: 'error', error: err as NodeJS.ErrnoException }
   }
 }
 
@@ -386,15 +447,42 @@ function holderIsDead(holder: LockHolder): boolean {
   }
 }
 
-function readHolder(path: string): LockHolder | null {
+function readHolder(path: string): HolderRead {
+  let text: string
   try {
-    return JSON.parse(readFileSync(path, 'utf8')) as LockHolder
-  } catch {
-    return null
+    text = readFileSync(path, 'utf8')
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { kind: 'absent' }
+    return { kind: 'error', error: err as NodeJS.ErrnoException }
+  }
+  try {
+    const value: unknown = JSON.parse(text)
+    if (!isLockHolder(value)) throw new Error('project lock holder has an invalid shape')
+    return { kind: 'holder', holder: value }
+  } catch (err) {
+    return { kind: 'invalid', error: err as Error }
   }
 }
 
-/** A placeholder holder for the (unreached) retry-exhaustion error. */
+function isLockHolder(value: unknown): value is LockHolder {
+  if (typeof value !== 'object' || value === null) return false
+  const holder = value as Record<string, unknown>
+  return (
+    typeof holder.pid === 'number' &&
+    Number.isSafeInteger(holder.pid) &&
+    holder.pid > 0 &&
+    typeof holder.hostname === 'string' &&
+    holder.hostname.length > 0 &&
+    typeof holder.token === 'string' &&
+    holder.token.length > 0 &&
+    typeof holder.acquiredAt === 'string' &&
+    Number.isFinite(Date.parse(holder.acquiredAt)) &&
+    typeof holder.heartbeatAt === 'string' &&
+    Number.isFinite(Date.parse(holder.heartbeatAt))
+  )
+}
+
+/** A placeholder holder for otherwise-unresolved retry exhaustion. */
 function synthHolder(token: string): LockHolder {
   const now = new Date().toISOString()
   return { pid: process.pid, hostname: hostname(), token, acquiredAt: now, heartbeatAt: now }

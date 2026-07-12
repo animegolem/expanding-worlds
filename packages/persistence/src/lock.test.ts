@@ -18,6 +18,13 @@ const faults = vi.hoisted(() => ({
   failNextExclusiveCreate: false,
   failAllExclusiveCreate: false,
   failAllGuardMkdir: false,
+  failAllLockReads: false,
+  failAllGuardStats: false,
+  failNextLockUnlink: false,
+  failAllLockUnlinks: false,
+  failAllGuardRmdirs: false,
+  lockUnlinkCalls: 0,
+  guardRmdirCalls: 0,
 }))
 
 vi.mock('node:fs', async (importOriginal) => {
@@ -42,6 +49,45 @@ vi.mock('node:fs', async (importOriginal) => {
       }
       return actual.mkdirSync(...args)
     },
+    readFileSync: (...args: Parameters<typeof actual.readFileSync>) => {
+      if (faults.failAllLockReads && String(args[0]).endsWith('project.lock')) {
+        const err = new Error('injected persistent lock read denial') as NodeJS.ErrnoException
+        err.code = 'EACCES'
+        throw err
+      }
+      return actual.readFileSync(...args)
+    },
+    statSync: (...args: Parameters<typeof actual.statSync>) => {
+      if (faults.failAllGuardStats && String(args[0]).endsWith('project.lock.reclaim')) {
+        const err = new Error('injected persistent guard stat denial') as NodeJS.ErrnoException
+        err.code = 'EACCES'
+        throw err
+      }
+      return actual.statSync(...args)
+    },
+    unlinkSync: (...args: Parameters<typeof actual.unlinkSync>) => {
+      if (String(args[0]).endsWith('project.lock')) {
+        faults.lockUnlinkCalls++
+        if (faults.failNextLockUnlink || faults.failAllLockUnlinks) {
+          faults.failNextLockUnlink = false
+          const err = new Error('injected lock unlink failure') as NodeJS.ErrnoException
+          err.code = 'EPERM'
+          throw err
+        }
+      }
+      return actual.unlinkSync(...args)
+    },
+    rmdirSync: (...args: Parameters<typeof actual.rmdirSync>) => {
+      if (String(args[0]).endsWith('project.lock.reclaim')) {
+        faults.guardRmdirCalls++
+        if (faults.failAllGuardRmdirs) {
+          const err = new Error('injected guard rmdir failure') as NodeJS.ErrnoException
+          err.code = 'EPERM'
+          throw err
+        }
+      }
+      return actual.rmdirSync(...args)
+    },
   }
 })
 
@@ -55,6 +101,13 @@ afterEach(() => {
   faults.failNextExclusiveCreate = false
   faults.failAllExclusiveCreate = false
   faults.failAllGuardMkdir = false
+  faults.failAllLockReads = false
+  faults.failAllGuardStats = false
+  faults.failNextLockUnlink = false
+  faults.failAllLockUnlinks = false
+  faults.failAllGuardRmdirs = false
+  faults.lockUnlinkCalls = 0
+  faults.guardRmdirCalls = 0
   rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 })
 
@@ -125,6 +178,113 @@ describe('ProjectLock', () => {
     }
     expect((thrown as NodeJS.ErrnoException).code).toBe('EPERM')
     expect(thrown).not.toBeInstanceOf(ProjectLockedError)
+  })
+
+  it('surfaces lock read denial without unlinking an old live holder (AI-IMP-264)', () => {
+    const live: LockHolder = {
+      pid: process.pid,
+      hostname: hostname(),
+      token: 'live-token',
+      acquiredAt: new Date(0).toISOString(),
+      heartbeatAt: new Date(0).toISOString(),
+    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(live))
+    faults.failAllLockReads = true
+
+    expect(() => ProjectLock.acquire(dir, { retryWindowMs: 20 })).toThrowError(
+      expect.objectContaining({ code: 'EACCES' }),
+    )
+    expect(faults.lockUnlinkCalls).toBe(0)
+  })
+
+  it('reclaims old parseable content only after validating its holder shape (AI-IMP-264)', () => {
+    const lockPath = join(dir, LOCK_FILENAME)
+    writeFileSync(lockPath, JSON.stringify({ pid: process.pid, hostname: hostname() }))
+    const old = new Date(Date.now() - 2_000)
+    utimesSync(lockPath, old, old)
+
+    const lock = ProjectLock.acquire(dir, { retryWindowMs: 100 })
+    try {
+      const holder = JSON.parse(readFileSync(lockPath, 'utf8')) as LockHolder
+      expect(holder.token).not.toBeUndefined()
+    } finally {
+      lock.release()
+    }
+  })
+
+  it('never removes a reclaim guard whose age cannot be inspected (AI-IMP-264)', () => {
+    const corpse: LockHolder = {
+      pid: 999999,
+      hostname: 'ghost-host',
+      token: 'corpse-token',
+      acquiredAt: new Date(0).toISOString(),
+      heartbeatAt: new Date(0).toISOString(),
+    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(corpse))
+    mkdirSync(join(dir, RECLAIM_GUARD_DIRNAME))
+    faults.failAllGuardStats = true
+
+    expect(() => ProjectLock.acquire(dir, { staleAfterMs: 0, retryWindowMs: 20 })).toThrowError(
+      expect.objectContaining({ code: 'EACCES' }),
+    )
+    expect(faults.guardRmdirCalls).toBe(0)
+  })
+
+  it('retries transient release removal and remains retryable after persistence (AI-IMP-264)', () => {
+    const transient = ProjectLock.acquire(dir)
+    faults.failNextLockUnlink = true
+    transient.release()
+    expect(existsSync(join(dir, LOCK_FILENAME))).toBe(false)
+
+    const persistent = ProjectLock.acquire(dir)
+    faults.failAllLockUnlinks = true
+    expect(() => persistent.release()).toThrowError(expect.objectContaining({ code: 'EPERM' }))
+    expect(existsSync(join(dir, LOCK_FILENAME))).toBe(true)
+    faults.failAllLockUnlinks = false
+    persistent.release()
+    expect(existsSync(join(dir, LOCK_FILENAME))).toBe(false)
+  })
+
+  it('keeps release retryable when holder verification is denied (AI-IMP-264)', () => {
+    const lock = ProjectLock.acquire(dir)
+    faults.failAllLockReads = true
+    expect(() => lock.release()).toThrowError(expect.objectContaining({ code: 'EACCES' }))
+    expect(faults.lockUnlinkCalls).toBe(0)
+    faults.failAllLockReads = false
+    lock.release()
+    expect(existsSync(join(dir, LOCK_FILENAME))).toBe(false)
+  })
+
+  it('surfaces heartbeat holder-read denial instead of silently stopping (AI-IMP-264)', () => {
+    vi.useFakeTimers()
+    const lock = ProjectLock.acquire(dir, { heartbeatMs: 20 })
+    try {
+      faults.failAllLockReads = true
+      expect(() => vi.advanceTimersByTime(20)).toThrowError(
+        expect.objectContaining({ code: 'EACCES' }),
+      )
+    } finally {
+      faults.failAllLockReads = false
+      lock.release()
+      vi.useRealTimers()
+    }
+  })
+
+  it('surfaces exhausted reclaim-guard removal instead of fabricating contention (AI-IMP-264)', () => {
+    const corpse: LockHolder = {
+      pid: 999999,
+      hostname: 'ghost-host',
+      token: 'corpse-token',
+      acquiredAt: new Date(0).toISOString(),
+      heartbeatAt: new Date(0).toISOString(),
+    }
+    writeFileSync(join(dir, LOCK_FILENAME), JSON.stringify(corpse))
+    faults.failAllGuardRmdirs = true
+
+    expect(() => ProjectLock.acquire(dir, { staleAfterMs: 0, retryWindowMs: 20 })).toThrowError(
+      expect.objectContaining({ code: 'EPERM' }),
+    )
+    expect(faults.guardRmdirCalls).toBe(5)
   })
 
   it('reclaims a stale lock', () => {
