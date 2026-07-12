@@ -10,6 +10,19 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **THE SWEEPS** (AI-IMP-220/219, 2026-07-12): set Trash
+  retention to 30 days — the control now lives IN the Trash view,
+  amending its own promise sentence ("…or 30 days pass, per your
+  setting"); does it feel owned by Trash? At next open after
+  anything ages out, the ⚠ perch carries "N items left trash
+  after 30 days" with an Open Trash action — try the action and
+  the dismiss. In Settings, the backup line now adds "cleanup can
+  reclaim …" — does it read as a calm fact, not a nag? The
+  invisible half: GC now only runs at End Session/quit, only on
+  things unreferenced 30+ days, and a mid-sweep quit just means
+  the rest waits — nothing to feel, worth knowing it exists.
+
+
 - [ ] **THE TRUST WAVE** (AI-IMP-231/221/270, 2026-07-12 — the
   release-gate work): in the gallery, select a pile of images →
   Trash from the action bar → ⌘Z — ALL of them return AND come

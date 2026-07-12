@@ -5,11 +5,12 @@ tags:
   - Implementation
   - persistence
   - trash
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.75
 date_created: 2026-07-09
+date_completed: 2026-07-12
 ---
 
 
@@ -75,7 +76,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Pass logged with counts.
 - [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -97,3 +98,12 @@ You MUST document any failed implementations, blockers or missing tests.
   action/dismiss metadata was added rather than a retention-only perch.
 - An initial e2e rerun used a stale renderer bundle after a copy-only
   change; rebuilding first restored the expected Trash sentence pin.
+Codex wave (sweeps range). Round-1 review corrected the ticket:
+the retention setting was live only as a stored value (no
+expiration consumer existed), and rev 0.70 moved its control into
+the Trash view's own promise sentence — moved, not duplicated.
+The perch gained a GENERIC action/dismiss metadata seam (verdict
+condition: not retention-shaped — GR-1 R5 and the quit-timeout
+condition are its next consumers). System purges run through the
+one dispatcher path before the healthy-open response and never
+touch the renderer ledger.

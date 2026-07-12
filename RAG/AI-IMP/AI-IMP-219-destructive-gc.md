@@ -5,11 +5,12 @@ tags:
   - Implementation
   - persistence
   - gc
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.6
 date_created: 2026-07-09
+date_completed: 2026-07-12
 ---
 
 
@@ -93,7 +94,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       logged.
 - [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -118,3 +119,17 @@ You MUST document any failed implementations, blockers or missing tests.
   now ref-counts its whole inventory across every awaited export phase.
 - The first Settings e2e exposed the cleanup sentence accidentally
   patched into export-progress copy; the snapshot cluster now owns it.
+Codex wave. Round-1 review found the shipped GRACE VIOLATION:
+recovery deleted filesystem orphans immediately at open behind a
+comment claiming age checks — retired; orphans join the same
+30-day clock. The eligibility clock is the verdict-ratified
+LOSABLE settings ledger (gc_eligibility_v1, compacted every pass;
+losing it restarts clocks — more conservative, never less; a
+migration graduates it only if the field shows hoarder scale).
+Export leases became real (ref-counted around live exports).
+Teardown: guards recomputed at delete time, DB transaction (jobs +
+unreferenced Asset rows) → durable pending receipt → file deletes
+→ manifest line → ledger clear; the quit-budget deadline stops
+BETWEEN hashes and un-swept debt stays matured for the next
+settle. verifyCanonicalBlobs stays silent after sweeps by
+construction.
