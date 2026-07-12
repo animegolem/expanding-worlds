@@ -120,68 +120,74 @@
 
 ## Size Watch
 
-Generated from tracked files; binary assets excluded.
+Generated from tracked files; binary assets excluded. Review status
+comes from `RAG/.loc-reviews.tsv`: `review current` means the exact
+content blob is unchanged; `review stale` shows LOC drift and the latest
+Git edit date so a second review can be judged.
 
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
 - RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4805 LOC)
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
-- apps/desktop/src/renderer/canvas/host.ts (2172 LOC)
-- apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC)
-- apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC)
-- packages/persistence/src/queries-structure.test.ts (1335 LOC)
-- apps/desktop/src/main/index.ts (1317 LOC)
-- apps/desktop/src/renderer/canvas/charms-ui.ts (1219 LOC)
-- packages/canvas-engine/src/renderers/placement.test.ts (1176 LOC)
-- packages/persistence/src/queries-structure.ts (1139 LOC)
-- packages/canvas-engine/src/renderers/placement.ts (1103 LOC)
-- apps/desktop/src/renderer/views/SettingsView.svelte (1087 LOC)
-- packages/persistence/src/handlers/lifecycle.test.ts (1053 LOC)
-- apps/desktop/src/renderer/views/OutlineView.svelte (1045 LOC)
-- apps/desktop/e2e/notes.spec.ts (1025 LOC)
-- apps/desktop/src/renderer/menus/ContextMenu.ts (963 LOC)
+- apps/desktop/src/renderer/canvas/host.ts (2172 LOC) — review current: 2026-07-12T01:53:22Z at 2172 LOC; unchanged; last edit 2026-07-10T05:46:57-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- apps/desktop/src/renderer/note/NotePanel.svelte (2161 LOC) — review current: 2026-07-12T01:53:22Z at 2161 LOC; unchanged; last edit 2026-07-10T16:36:30-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- apps/desktop/src/renderer/views/GalleryView.svelte (1803 LOC) — review current: 2026-07-12T01:53:22Z at 1803 LOC; unchanged; last edit 2026-07-09T19:59:53-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- packages/persistence/src/queries-structure.test.ts (1335 LOC) — review current: 2026-07-12T01:53:24Z at 1335 LOC; unchanged; last edit 2026-07-11T04:02:07-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
+- apps/desktop/src/main/index.ts (1317 LOC) — review stale: 2026-07-12T01:53:22Z at 1256 LOC; +61 LOC; last edit 2026-07-11T20:55:35-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- apps/desktop/src/renderer/canvas/charms-ui.ts (1219 LOC) — review current: 2026-07-12T01:53:22Z at 1219 LOC; unchanged; last edit 2026-07-10T20:28:49-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- packages/canvas-engine/src/renderers/placement.test.ts (1176 LOC) — review current: 2026-07-12T01:53:24Z at 1176 LOC; unchanged; last edit 2026-07-10T18:46:52-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
+- packages/persistence/src/queries-structure.ts (1139 LOC) — review current: 2026-07-12T01:53:22Z at 1139 LOC; unchanged; last edit 2026-07-11T04:02:07-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- packages/canvas-engine/src/renderers/placement.ts (1103 LOC) — review current: 2026-07-12T01:53:22Z at 1103 LOC; unchanged; last edit 2026-07-10T18:46:52-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- apps/desktop/src/renderer/views/SettingsView.svelte (1087 LOC) — review stale: 2026-07-12T01:53:22Z at 1022 LOC; +65 LOC; last edit 2026-07-11T20:55:35-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- packages/persistence/src/handlers/lifecycle.test.ts (1053 LOC) — review current: 2026-07-12T01:53:24Z at 1053 LOC; unchanged; last edit 2026-07-10T18:46:38-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
+- apps/desktop/src/renderer/views/OutlineView.svelte (1045 LOC) — review current: 2026-07-12T01:53:22Z at 1045 LOC; unchanged; last edit 2026-07-11T07:47:57-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- apps/desktop/e2e/notes.spec.ts (1025 LOC) — review current: 2026-07-12T01:53:24Z at 1025 LOC; unchanged; last edit 2026-07-09T16:14:23-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
+- apps/desktop/src/renderer/menus/ContextMenu.ts (963 LOC) — review current: 2026-07-12T01:53:22Z at 963 LOC; unchanged; last edit 2026-07-11T04:02:07-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
 - RAG/HUMAN-TESTING.md (914 LOC)
-- apps/desktop/src/renderer/note/panels.ts (880 LOC)
-- apps/desktop/e2e/board-tooling.spec.ts (878 LOC)
-- apps/desktop/src/renderer/tags/TagPanel.svelte (851 LOC)
-- apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC)
-- apps/desktop/e2e/panels.spec.ts (826 LOC)
+- RAG/design/App Icon Document.dc.html (883 LOC)
+- apps/desktop/src/renderer/note/panels.ts (880 LOC) — review current: 2026-07-12T01:53:22Z at 880 LOC; unchanged; last edit 2026-07-10T05:46:56-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- apps/desktop/e2e/board-tooling.spec.ts (878 LOC) — review current: 2026-07-12T01:53:24Z at 878 LOC; unchanged; last edit 2026-07-09T16:26:57-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
+- apps/desktop/src/renderer/tags/TagPanel.svelte (851 LOC) — review current: 2026-07-12T01:53:22Z at 851 LOC; unchanged; last edit 2026-07-10T23:39:35-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- apps/desktop/src/renderer/chrome/Dock.svelte (833 LOC) — review current: 2026-07-12T01:53:22Z at 833 LOC; unchanged; last edit 2026-07-08T04:06:00-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- apps/desktop/e2e/panels.spec.ts (826 LOC) — review current: 2026-07-12T01:53:24Z at 826 LOC; unchanged; last edit 2026-07-08T13:08:40-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
 - RAG/DESIGN-QUEUE.md (797 LOC)
-- apps/desktop/src/main/snapshot.ts (791 LOC)
-- packages/persistence/src/handlers/lifecycle.ts (785 LOC)
-- spike/src/adapters/konva/index.ts (735 LOC)
-- apps/desktop/src/renderer/menus/inventory.ts (726 LOC)
-- apps/desktop/src/utility/index.ts (709 LOC)
-- packages/persistence/src/handlers/placements.ts (704 LOC)
-- apps/desktop/e2e/undo.spec.ts (674 LOC)
-- spike/src/adapters/pixi/index.ts (664 LOC)
-- apps/desktop/src/renderer/canvas/board-tooling.ts (661 LOC)
+- apps/desktop/src/main/snapshot.ts (791 LOC) — review current: 2026-07-12T01:53:23Z at 791 LOC; unchanged; last edit 2026-07-10T05:46:57-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
+- packages/persistence/src/handlers/lifecycle.ts (785 LOC) — review current: 2026-07-12T01:53:22Z at 785 LOC; unchanged; last edit 2026-07-10T18:46:38-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- RAG/design/Usage Storyboard.dc.html (751 LOC)
+- spike/src/adapters/konva/index.ts (735 LOC) — review current: 2026-07-12T01:53:23Z at 735 LOC; unchanged; last edit 2026-07-03T21:27:01-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
+- apps/desktop/src/renderer/menus/inventory.ts (726 LOC) — review current: 2026-07-12T01:53:23Z at 726 LOC; unchanged; last edit 2026-07-10T20:28:49-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
+- apps/desktop/src/utility/index.ts (709 LOC) — review current: 2026-07-12T01:53:22Z at 709 LOC; unchanged; last edit 2026-07-10T23:39:35-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- packages/persistence/src/handlers/placements.ts (704 LOC) — review current: 2026-07-12T01:53:22Z at 704 LOC; unchanged; last edit 2026-07-10T18:46:38-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
+- RAG/design/UI Vision v2.dc.html (675 LOC)
+- apps/desktop/e2e/undo.spec.ts (674 LOC) — review current: 2026-07-12T01:53:24Z at 674 LOC; unchanged; last edit 2026-07-09T20:12:55-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
+- spike/src/adapters/pixi/index.ts (664 LOC) — review current: 2026-07-12T01:53:23Z at 664 LOC; unchanged; last edit 2026-07-03T21:25:52-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
+- apps/desktop/src/renderer/canvas/board-tooling.ts (661 LOC) — review current: 2026-07-12T01:53:22Z at 661 LOC; unchanged; last edit 2026-07-09T20:30:43-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
 - packages/persistence/src/handlers/placements.test.ts (651 LOC)
 - packages/persistence/src/invariants.spec.ts (650 LOC)
+- RAG/scripts/generate-index.sh (650 LOC)
 - packages/persistence/src/handlers/pin.test.ts (638 LOC)
 - packages/persistence/src/handlers/frames.test.ts (621 LOC)
 - apps/desktop/e2e/context-menus.spec.ts (620 LOC)
 - packages/persistence/src/handlers/notes.test.ts (618 LOC)
 - apps/desktop/e2e/tags.spec.ts (612 LOC)
-- apps/desktop/src/renderer/note/NotePanels.svelte (601 LOC)
+- apps/desktop/src/renderer/note/NotePanels.svelte (601 LOC) — review current: 2026-07-12T01:53:22Z at 601 LOC; unchanged; last edit 2026-07-08T10:49:34-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
 
 ### > 300 LOC
 
 - apps/desktop/e2e/decorations.spec.ts (584 LOC)
-- packages/protocol/src/index.ts (579 LOC)
+- packages/protocol/src/index.ts (579 LOC) — review current: 2026-07-12T01:53:23Z at 579 LOC; unchanged; last edit 2026-07-10T23:39:35-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - apps/desktop/src/renderer/note/editor-markdown.ts (579 LOC)
-- RAG/scripts/generate-index.sh (575 LOC)
 - packages/persistence/src/handlers/nodes.test.ts (574 LOC)
-- apps/desktop/src/renderer/canvas/import-surfaces.ts (565 LOC)
-- apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC)
+- apps/desktop/src/renderer/canvas/import-surfaces.ts (565 LOC) — review current: 2026-07-12T01:53:22Z at 565 LOC; unchanged; last edit 2026-07-09T20:32:03-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC) — review current: 2026-07-12T01:53:23Z at 564 LOC; unchanged; last edit 2026-07-08T04:06:00-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - RAG/spike-reports/rust-persistence-seams.md (558 LOC)
 - apps/desktop/e2e/shell.spec.ts (555 LOC)
-- packages/persistence/src/handlers/tags.ts (554 LOC)
+- packages/persistence/src/handlers/tags.ts (554 LOC) — review current: 2026-07-12T01:53:22Z at 554 LOC; unchanged; last edit 2026-07-10T23:39:35-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
-- apps/desktop/src/renderer/views/TrashView.svelte (548 LOC)
-- apps/desktop/src/renderer/canvas/gestures-ui.ts (548 LOC)
-- apps/desktop/src/renderer/chrome/SearchPanel.svelte (546 LOC)
+- apps/desktop/src/renderer/views/TrashView.svelte (548 LOC) — review current: 2026-07-12T01:53:23Z at 548 LOC; unchanged; last edit 2026-07-07T07:19:51-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
+- apps/desktop/src/renderer/canvas/gestures-ui.ts (548 LOC) — review current: 2026-07-12T01:53:23Z at 548 LOC; unchanged; last edit 2026-07-09T20:12:55-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
+- apps/desktop/src/renderer/chrome/SearchPanel.svelte (546 LOC) — review current: 2026-07-12T01:53:23Z at 546 LOC; unchanged; last edit 2026-07-10T05:45:08-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - apps/desktop/e2e/slice.spec.ts (540 LOC)
 - apps/desktop/src/renderer/chrome/TitleStrip.svelte (537 LOC)
 - apps/desktop/e2e/import.spec.ts (520 LOC)
@@ -192,20 +198,21 @@ Generated from tracked files; binary assets excluded.
 - packages/commands/src/payloads/structure.ts (503 LOC)
 - apps/desktop/e2e/caption.spec.ts (493 LOC)
 - apps/desktop/src/renderer/theme.css (491 LOC)
-- packages/persistence/src/handlers/notes.ts (490 LOC)
-- packages/persistence/src/handlers/pin.ts (489 LOC)
+- packages/persistence/src/handlers/notes.ts (490 LOC) — review current: 2026-07-12T01:53:22Z at 490 LOC; unchanged; last edit 2026-07-09T20:12:55-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- packages/persistence/src/handlers/pin.ts (489 LOC) — review current: 2026-07-12T01:53:23Z at 489 LOC; unchanged; last edit 2026-07-10T05:45:08-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - packages/persistence/src/handlers/tags.test.ts (480 LOC)
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
-- packages/persistence/src/handlers/nodes.ts (465 LOC)
+- packages/persistence/src/handlers/nodes.ts (465 LOC) — review current: 2026-07-12T01:53:22Z at 465 LOC; unchanged; last edit 2026-07-10T05:45:08-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
 - spike/webkit-renderer/src/tiering.ts (463 LOC)
 - packages/canvas-engine/src/renderers/decorations/decorations.test.ts (463 LOC)
-- packages/persistence/src/export/project-import.ts (459 LOC)
-- packages/persistence/src/export/project-export.ts (457 LOC)
+- packages/persistence/src/export/project-import.ts (459 LOC) — review current: 2026-07-12T01:53:23Z at 459 LOC; unchanged; last edit 2026-07-10T05:46:56-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
+- packages/persistence/src/export/project-export.ts (457 LOC) — review current: 2026-07-12T01:53:23Z at 457 LOC; unchanged; last edit 2026-07-10T05:46:56-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - packages/canvas-engine/src/gestures/resize.test.ts (441 LOC)
-- RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - packages/persistence/src/queries-search.test.ts (435 LOC)
+- RAG/design/archive/Design-Team-Letter-1.md (435 LOC)
 - apps/desktop/src/renderer/canvas/crop-editor.ts (431 LOC)
+- RAG/CODE-AUDIT-2026-07-10-CODEX.md (426 LOC)
 - packages/persistence/src/export/project-export.test.ts (425 LOC)
 - packages/canvas-engine/src/tools/draw-tools.ts (422 LOC)
 - apps/desktop/src/renderer/chrome/BookmarkMenu.svelte (415 LOC)
@@ -213,6 +220,7 @@ Generated from tracked files; binary assets excluded.
 - packages/persistence/src/lock.ts (401 LOC)
 - packages/canvas-engine/src/hit-test.test.ts (397 LOC)
 - apps/desktop/src/renderer/views/outline-model.ts (396 LOC)
+- RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md (394 LOC)
 - apps/desktop/e2e/frames.spec.ts (393 LOC)
 - apps/desktop/src/renderer/undo/undo-store.ts (387 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.test.ts (386 LOC)
@@ -240,6 +248,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/frames-drop.spec.ts (346 LOC)
 - packages/persistence/src/import/pipeline.test.ts (340 LOC)
 - packages/canvas-engine/src/arrange.test.ts (338 LOC)
+- RAG/CODE-AUDIT-2026-07-10-HELPER-CONSISTENCY.md (336 LOC)
 - apps/desktop/src/renderer/chrome/RestoreDialog.svelte (334 LOC)
 - packages/persistence/src/handlers/decorations.ts (333 LOC)
 - packages/canvas-engine/src/controller.ts (332 LOC)
@@ -249,7 +258,7 @@ Generated from tracked files; binary assets excluded.
 - apps/desktop/e2e/perf.spec.ts (324 LOC)
 - packages/canvas-engine/src/arrange.ts (320 LOC)
 - apps/desktop/src/renderer/undo/undo-stack.ts (318 LOC)
-- packages/persistence/src/service.ts (315 LOC)
+- packages/persistence/src/service.ts (315 LOC) — review current: 2026-07-12T02:04:22Z at 315 LOC; unchanged; last edit 2026-07-09T18:09:26-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; composition-root rationale is in audit R3.
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - apps/desktop/src/renderer/chrome/FirstRunGuide.svelte (312 LOC)
 - RAG/spike-reports/tiptap-verdict.md (309 LOC)

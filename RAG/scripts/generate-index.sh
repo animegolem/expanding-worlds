@@ -7,7 +7,8 @@
 set -euo pipefail
 
 RAG_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-INDEX_FILE="$RAG_DIR/INDEX.md"
+INDEX_FILE=${INDEX_FILE:-"$RAG_DIR/INDEX.md"}
+LOC_REVIEW_FILE=${LOC_REVIEW_FILE:-"$RAG_DIR/.loc-reviews.tsv"}
 TODAY=$(date +%Y-%m-%d)
 
 # Use TAB as delimiter to avoid conflicts with | in wikilinks
@@ -303,6 +304,67 @@ echo "[generate-index] Scanning large files..."
 
 ROOT_DIR="$(cd "$RAG_DIR/.." && pwd)"
 
+# -----------------------------------------------------------------------------
+# loc_review_suffix: Describe current review status for one Size Watch entry.
+# The exact content blob is authoritative; Git's last commit date is displayed
+# for context because filesystem mtimes change during checkout/install work.
+# -----------------------------------------------------------------------------
+loc_review_suffix() {
+  local file="$1"
+  local current_loc="$2"
+
+  [[ -f "$LOC_REVIEW_FILE" ]] || return 0
+
+  local record
+  record=$(awk -F '\t' -v path="$file" '$0 !~ /^#/ && $1 == path { print; exit }' "$LOC_REVIEW_FILE")
+  [[ -n "$record" ]] || return 0
+
+  local reviewed_path reviewed_at reviewed_commit reviewed_blob reviewed_loc review_ref review_note
+  # TAB is shell whitespace, so consecutive TABs would collapse and shift an
+  # optional empty review_ref into review_note. Translate to a non-whitespace
+  # separator before parsing to preserve empty columns.
+  record=${record//$'\t'/$'\x1f'}
+  IFS=$'\x1f' read -r reviewed_path reviewed_at reviewed_commit reviewed_blob reviewed_loc review_ref review_note <<< "$record"
+
+  if [[ -z "$reviewed_at" || -z "$reviewed_blob" || ! "$reviewed_loc" =~ ^[0-9]+$ ]]; then
+    echo "[generate-index] WARNING: invalid LOC review record for $file" >&2
+    return 0
+  fi
+
+  local current_blob last_edit delta delta_text state
+  current_blob=$(git -C "$ROOT_DIR" hash-object -- "$file")
+  if ! git -C "$ROOT_DIR" diff --quiet HEAD -- "$file"; then
+    last_edit="working tree"
+  else
+    last_edit=$(git -C "$ROOT_DIR" log -1 --format=%cI -- "$file")
+    [[ -n "$last_edit" ]] || last_edit="uncommitted"
+  fi
+
+  if [[ "$current_blob" == "$reviewed_blob" ]]; then
+    state="review current"
+    delta_text="unchanged"
+  else
+    state="review stale"
+    delta=$((current_loc - reviewed_loc))
+    if [[ "$delta" -gt 0 ]]; then
+      delta_text="+$delta LOC"
+    elif [[ "$delta" -lt 0 ]]; then
+      delta_text="$delta LOC"
+    else
+      delta_text="same LOC, content changed"
+    fi
+  fi
+
+  printf ' — %s: %s at %s LOC; %s; last edit %s' \
+    "$state" "$reviewed_at" "$reviewed_loc" "$delta_text" "$last_edit"
+  if [[ -n "${review_ref:-}" && "$review_ref" != "-" ]]; then
+    printf '; %s' "$review_ref"
+  fi
+  if [[ -n "${review_note:-}" && "$review_note" != "-" ]]; then
+    printf '; note: %s' "$review_note"
+  fi
+}
+
 while IFS= read -r -d '' file; do
   path="$ROOT_DIR/$file"
   [[ -f "$path" ]] || continue
@@ -516,14 +578,22 @@ EOF
   if [[ -s "$LARGE_FILES" ]]; then
     echo "## Size Watch"
     echo ""
-    echo "Generated from tracked files; binary assets excluded."
+    echo "Generated from tracked files; binary assets excluded. Review status"
+    echo "comes from \`RAG/.loc-reviews.tsv\`: \`review current\` means the exact"
+    echo "content blob is unchanged; \`review stale\` shows LOC drift and the latest"
+    echo "Git edit date so a second review can be judged."
     echo ""
 
     # Check if any files over 600
     if sort -rn "$LARGE_FILES" | awk -F '\t' '$1 > 600 { found=1 } END { exit !found }'; then
       echo "### > 600 LOC"
       echo ""
-      sort -rn "$LARGE_FILES" | awk -F '\t' '$1 > 600 { print "- " $2 " (" $1 " LOC)" }'
+      sort -rn "$LARGE_FILES" | while IFS=$'\t' read -r lines file; do
+        [[ "$lines" -gt 600 ]] || continue
+        printf -- '- %s (%s LOC)' "$file" "$lines"
+        loc_review_suffix "$file" "$lines"
+        printf '\n'
+      done
       echo ""
     fi
 
@@ -531,7 +601,12 @@ EOF
     if sort -rn "$LARGE_FILES" | awk -F '\t' '$1 > 300 && $1 <= 600 { found=1 } END { exit !found }'; then
       echo "### > 300 LOC"
       echo ""
-      sort -rn "$LARGE_FILES" | awk -F '\t' '$1 > 300 && $1 <= 600 { print "- " $2 " (" $1 " LOC)" }'
+      sort -rn "$LARGE_FILES" | while IFS=$'\t' read -r lines file; do
+        [[ "$lines" -gt 300 && "$lines" -le 600 ]] || continue
+        printf -- '- %s (%s LOC)' "$file" "$lines"
+        loc_review_suffix "$file" "$lines"
+        printf '\n'
+      done
       echo ""
     fi
 
