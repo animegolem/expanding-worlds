@@ -6,12 +6,13 @@ tags:
   - ci
   - persistence
   - test-harness
-kanban_status: in-progress
+kanban_status: completed
 depends_on:
   - AI-IMP-226
 parent_epic:
 confidence_score: 0.95
 date_created: 2026-07-09
+date_completed: 2026-07-12
 ---
 
 
@@ -55,7 +56,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
       reason recorded beside the lifecycle callback.
 - [x] Focused lock probe passes locally.
 - [x] CI-equivalent build, non-desktop units, lint, and spike typecheck pass.
-- [ ] Fable reviews and merges the candidate; CI confirms the Linux
+- [x] Fable reviews and merges the candidate; CI confirms the Linux
       contention probe on GitHub Actions.
 
 ### Acceptance Criteria
@@ -70,3 +71,23 @@ without a false empty-output failure.
 - The audit worktree needed `CI=true` for pnpm's no-TTY dependency
   guard and `npm ci --prefix spike --ignore-scripts` to reproduce the
   CI workflow's separate spike typecheck setup.
+- Pre-implementation review found the requested probe fix had already
+  landed in `fa2f011` and remained on main; this round therefore closes
+  the stale ticket with fresh validation rather than duplicating it.
+- The repo-wide child-process census found the same exit-before-drain
+  assumption in `process.spec.ts`'s `waitForLine`. Its missing-marker
+  rejection now waits for `close`, with a deterministic lifecycle pin;
+  exit-code-only and utility-lifecycle listeners remain correctly on
+  `exit`.
+- The composite wave's first Linux oracle reported two WIN outcomes in one
+  round. Its post-release snapshot was consistent with a sequential handoff,
+  but was not sufficient to exonerate production. Timestamp instrumentation
+  then reproduced two overlapping winners locally (74815 acquired at 3514 ms,
+  74812 at 3515 ms; both began release at 3915 ms), convicting a real race in
+  the new guarded-read disposition. That source defect is repaired in 264.
+- The start barrier proved readiness but not post-`go` scheduling. An added
+  attempted-worker barrier keeps the winner live until all 16 children return
+  from their one acquire call, while retaining the minimum hold. Diagnostics
+  include acquire/release timestamps. A deterministic regression delays one
+  ready worker beyond the old hold and still admits exactly one winner; the
+  assertion remains strict.

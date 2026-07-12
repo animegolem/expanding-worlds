@@ -10,11 +10,17 @@ import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { setTimeout } from 'node:timers'
 
-const [dir, staleStr, barrierDir, holdStr] = process.argv.slice(2)
+const [dir, staleStr, barrierDir, holdStr, delayAfterGoStr = '0'] = process.argv.slice(2)
 const { ProjectLock, ProjectLockedError } = await import('../dist/index.js')
 
 const staleAfterMs = Number(staleStr)
 const holdMs = Number(holdStr)
+const delayAfterGoMs = Number(delayAfterGoStr)
+const settledPath = join(barrierDir, 'settled')
+
+function markAttempted() {
+  writeFileSync(join(barrierDir, `attempted.${process.pid}`), '')
+}
 
 function pathState(path) {
   try {
@@ -44,21 +50,41 @@ const goPath = join(barrierDir, 'go')
 while (!existsSync(goPath)) {
   await new Promise((r) => setTimeout(r, 2))
 }
+if (delayAfterGoMs > 0) await new Promise((r) => setTimeout(r, delayAfterGoMs))
 
+const acquireStartedAtMs = Date.now()
 try {
   const lock = ProjectLock.acquire(dir, { staleAfterMs, heartbeatMs: 1000 })
-  await new Promise((r) => setTimeout(r, holdMs))
+  const acquiredAtMs = Date.now()
+  markAttempted()
+  // A fixed hold alone is not a barrier: a loaded CI runner may deschedule a
+  // worker after "go" for longer than the hold, allowing a sequential second
+  // winner. Keep the winner live until every sibling has completed its one
+  // acquire attempt; retain the minimum hold to exercise live contention.
+  await Promise.all([
+    new Promise((r) => setTimeout(r, holdMs)),
+    (async () => {
+      while (!existsSync(settledPath)) await new Promise((r) => setTimeout(r, 2))
+    })(),
+  ])
+  const releaseStartedAtMs = Date.now()
   lock.release()
+  const releaseCompletedAtMs = Date.now()
   process.stdout.write(
     `WIN workerPid=${process.pid} ` +
+      `acquireStartedAtMs=${acquireStartedAtMs} acquiredAtMs=${acquiredAtMs} ` +
+      `releaseStartedAtMs=${releaseStartedAtMs} releaseCompletedAtMs=${releaseCompletedAtMs} ` +
       `postReleaseLock=${lockState(join(dir, 'project.lock'))} ` +
       `guard=${pathState(join(dir, 'project.lock.reclaim'))}\n`,
   )
   process.exit(0)
 } catch (err) {
+  markAttempted()
+  const completedAtMs = Date.now()
   if (err instanceof ProjectLockedError) {
     process.stdout.write(
       `LOCKED workerPid=${process.pid} ` +
+        `acquireStartedAtMs=${acquireStartedAtMs} completedAtMs=${completedAtMs} ` +
         `lock=${lockState(join(dir, 'project.lock'))} ` +
         `guard=${pathState(join(dir, 'project.lock.reclaim'))}\n`,
     )
