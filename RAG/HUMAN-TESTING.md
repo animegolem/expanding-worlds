@@ -10,6 +10,22 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **THE TRUST WAVE** (AI-IMP-231/221/270, 2026-07-12 — the
+  release-gate work): in the gallery, select a pile of images →
+  Trash from the action bar → ⌘Z — ALL of them return AND come
+  back selected (this was "undo restores one of thirty"). Tag a
+  dozen at once → ⌘Z — the tag leaves all of them, and a
+  freshly-created tag vanishes with it. Restore something from
+  the Trash view → ⌘Z re-trashes it (restore is now a real undo
+  citizen; a SOLO trash from a right-click stays deliberately
+  un-undoable — Trash view is its recovery home). Start a big
+  multi-file import and quickly tag something mid-import → ⌘Z
+  undoes the TAG, not the import; ⌘Z again while the import still
+  runs says "still importing — not ready to undo" instead of
+  doing nothing silently. And the alph classic: caption → promote
+  to note → ⌘Z → ⌘⇧Z → edit the note → ⌘Z — nothing duplicates,
+  the note keeps its identity and your edits.
+
 - [ ] **THE UPDATE PERCH** (AI-IMP-278, 2026-07-11): owner — check
   the mac menu bar: the app silhouette should render crisply in
   both themes (it's a template image), show a • beside it when a

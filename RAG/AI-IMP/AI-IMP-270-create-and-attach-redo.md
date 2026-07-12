@@ -5,12 +5,12 @@ tags:
   - Implementation
   - persistence
   - undo
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.6
 date_created: 2026-07-10
-date_completed:
+date_completed: 2026-07-12
 ---
 
 
@@ -112,3 +112,11 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Codex wave. The review grew the surface count from three to SIX
+(AttachNotePicker, NotePanel, ContextMenu, caption promotion,
+outliner capture, NewBoardPalette) — all covered.
+RestoreAndAttachNote restores the retained row (no title/body
+snapshot — later edits survive undo/redo), rebinds links
+(invariant 27), inverses to DetachAndTrashNote; the
+panels.spec undo bypass became a real round trip; caption
+promotion e2e proves undo→redo→undo with preserved identity.

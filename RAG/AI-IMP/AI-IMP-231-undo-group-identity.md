@@ -5,11 +5,12 @@ tags:
   - Implementation
   - undo
   - P2
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.75
 date_created: 2026-07-09
+date_completed: 2026-07-12
 ---
 
 
@@ -63,7 +64,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Probe regression: interleaved groups → separate entries.
 - [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -153,3 +154,12 @@ thread an explicit group token through the `runAsUndoGroup` sites and add
 mechanism given the renderer's explicit style and the sandbox), OR gate
 this on AI-IMP-232 first (its bounded waits shrink the overlap window,
 though they do not close it). No code from this ticket was committed.
+Codex wave (trust range, round-1 review + round-2 build). The
+review widened the fence (verdict-granted): token threading
+reached the canvas-engine gateway + all 29 runAsUndoGroup sites.
+The ordering gap the review found (completion-order lied about
+interleaved gestures) was ruled at verdict: order reserves at
+gesture START; ⌘Z on a still-open newest group declines with a
+named notice. Tokens are renderer-local symbols — structurally
+unserializable into durable envelopes, with a test proving the
+envelope stays clean.

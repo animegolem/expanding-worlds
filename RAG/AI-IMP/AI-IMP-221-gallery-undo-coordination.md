@@ -5,11 +5,12 @@ tags:
   - Implementation
   - gallery
   - undo
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.6
 date_created: 2026-07-09
+date_completed: 2026-07-12
 ---
 
 
@@ -86,7 +87,7 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [x] Redo never stale after gallery verbs; e2e pins it.
 - [x] Gates: build, per-package units, lint, e2e in 4+ foreground
       shards.
-- [ ] HUMAN-TESTING entry appended at merge by the lead.
+- [x] HUMAN-TESTING entry appended at merge by the lead.
 
 ### Acceptance Criteria
 
@@ -103,3 +104,15 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+Codex wave. Verdict AMENDED the round-1 proposal: solo trash
+verbs KEEP the Trash recovery home (owner ruling 182 stands);
+bulk gestures capture as one group via the group-only policy
+class — the surface defines the contract. Review also found bulk
+PLACE was N fire-and-forget commits (now one awaited group) and
+that re-selection needed a receipt seam (gallery-reselect.ts,
+scoped to bulk trash). Two integration defects self-convicted
+pre-submission: frame-load's broadcast resolved from non-target
+boards; live selectedIds mutated mid-gesture (now snapshotted).
+Purge clears redo and stays exempt. Flag standing for the owner:
+solo-exempt vs bulk-captured is the faithful reading of 182 +
+G2+G5 — unify later if wanted.
