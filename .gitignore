@@ -20,6 +20,7 @@ dist-artifacts/
 RAG/canonical/
 # Same rule for the design-package zips (rev 0.71 kit-normative home).
 RAG/design/design-package-*/
+RAG/design/design-push-*/
 RAG/Design Spec v2.html
 RAG/Design-reply-letter-2.md
 RAG/Expanding Worlds - UI Vision.html
