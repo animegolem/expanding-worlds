@@ -941,3 +941,29 @@ glyph edges sharpen as you zoom in instead of turning to mush (the
 label re-rasters as you cross zoom steps; no visible pop expected).
 Also worth a glance on a large image placement: its title should
 look exactly as before (no regression at 100%+ display scaling).
+
+## THE GR WAVE — exits, voices, finding states, the pin arc (AI-IMP-279/280/281/282, 2026-07-12)
+
+**Build:** next tagged build (or a reloaded `pnpm dev` window after
+`pnpm -r build`).
+**Try (owner mac + alph Windows):**
+- **Exits:** on a fresh profile, dismiss the welcome guide three ways
+  across three runs — Esc, clicking the dark scrim, the Skip button —
+  each should count as Skip (it never returns). Drop an image that
+  raises the keep-together ask: Esc it, walk away from one, answer
+  one — the walked-away ask should just dissolve and may ask again on
+  a later drop (the card says so on itself).
+- **Voices:** rename/move the library folder while the app is closed,
+  then open — the gallery should say a calm sentence about the
+  library, not show an empty board. Search for a tag WITHOUT the #
+  prefix and read the zero-hit sentence. Pull the last pin of a node
+  and confirm the notice names what happened.
+- **Finding states:** open a big project and watch the gallery/Trash/
+  outline arrive — each should show its loading sentence, never a
+  blank flash, and "try again" only where trying again means anything.
+- **Pin arc:** arm the pin tool — a ghost pin rides the cursor,
+  tip-anchored, seats with a soft 180ms settle when you click. Rapidly
+  click several spots, then Esc mid-ghost, switch tools mid-ghost, and
+  re-click the dock pin button — every path should leave NO stray
+  ghost and return you to select (tooltips say "esc returns to
+  select"). If a pin fails to commit, your draft should survive.

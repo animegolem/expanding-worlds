@@ -5,7 +5,8 @@ tags:
   - Implementation
   - renderer
   - lifecycle-push
-kanban_status: planned
+kanban_status: completed
+date_completed: 2026-07-12
 depends_on: []
 parent_epic:
 confidence_score: 0.85
@@ -76,15 +77,15 @@ exactly as drawn in GR-2's A1 specimen.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] First-run guide closes on Escape as rung 8; ladder order
+- [x] First-run guide closes on Escape as rung 8; ladder order
       preserved (inner surfaces still peel first).
-- [ ] Every transient chip carries a ✕ and dismisses on outside
+- [x] Every transient chip carries a ✕ and dismisses on outside
       click; the timer stays; Escape deliberately does not touch
       chips (pinned by test).
-- [ ] MirrorAsk gains Escape with the sibling's semantics.
-- [ ] The drop ask prints its dismissal contract on itself,
+- [x] MirrorAsk gains Escape with the sibling's semantics.
+- [x] The drop ask prints its dismissal contract on itself,
       copy per the GR-2 specimen.
-- [ ] e2e pins for all four; full `CI=true pnpm check` green
+- [x] e2e pins for all four; full `CI=true pnpm check` green
       (pipefail, counts read); CHANGELOG [Unreleased];
       HUMAN-TESTING entry.
 

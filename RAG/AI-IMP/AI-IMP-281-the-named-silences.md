@@ -6,7 +6,8 @@ tags:
   - renderer
   - main-process
   - lifecycle-push
-kanban_status: planned
+kanban_status: completed
+date_completed: 2026-07-12
 depends_on: []
 parent_epic:
 confidence_score: 0.85
@@ -82,16 +83,16 @@ notice.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Rows 1–3: inline sentence + two error toasts, copy per the
+- [x] Rows 1–3: inline sentence + two error toasts, copy per the
       table; no toast doubles an inline sentence.
-- [ ] Rows 4–5: decision toasts fire only on app-decided
+- [x] Rows 4–5: decision toasts fire only on app-decided
       outcomes; explicit picks stay silent (pinned).
-- [ ] Row 6: last-placement pull-pin speaks class 2 naming the
+- [x] Row 6: last-placement pull-pin speaks class 2 naming the
       trash home.
-- [ ] Row 7: timeout fact persisted at quit; perch condition at
+- [x] Row 7: timeout fact persisted at quit; perch condition at
       next open; clears correctly.
-- [ ] Rows 8–9: mirror escalation threshold + seed-failure toast.
-- [ ] Every changed outcome arguable from the table (comment cites
+- [x] Rows 8–9: mirror escalation threshold + seed-failure toast.
+- [x] Every changed outcome arguable from the table (comment cites
       its class); full `CI=true pnpm check` green (pipefail,
       counts read); CHANGELOG [Unreleased]; HUMAN-TESTING entry.
 

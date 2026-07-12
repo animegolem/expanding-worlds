@@ -5,7 +5,8 @@ tags:
   - Implementation
   - renderer
   - lifecycle-push
-kanban_status: planned
+kanban_status: completed
+date_completed: 2026-07-12
 depends_on: []
 parent_epic:
 confidence_score: 0.85
@@ -80,21 +81,21 @@ sentence.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Gallery: error sentence + one retry verb; catch no longer
+- [x] Gallery: error sentence + one retry verb; catch no longer
       substitutes an empty index; ratified empties untouched.
-- [ ] Library scope: transport strings translated to the user's
+- [x] Library scope: transport strings translated to the user's
       frame; raw string logged, never rendered.
-- [ ] Trash: error sentence with the reassurance clause; null
+- [x] Trash: error sentence with the reassurance clause; null
       query no longer renders empty.
-- [ ] Search: zero-hit sentence, error sentence, unhandled
+- [x] Search: zero-hit sentence, error sentence, unhandled
       rejection fixed, stale rows cleared; type hole closed.
-- [ ] Outline: loading sentence distinct from empty.
-- [ ] Perch producer: second consecutive retry failure registers
+- [x] Outline: loading sentence distinct from empty.
+- [x] Perch producer: second consecutive retry failure registers
       a condition; surface keeps its sentence; condition clears on
       success.
-- [ ] No spinner anywhere; every new state uses the one quiet-
+- [x] No spinner anywhere; every new state uses the one quiet-
       sentence vehicle.
-- [ ] e2e pins per surface; full `CI=true pnpm check` green
+- [x] e2e pins per surface; full `CI=true pnpm check` green
       (pipefail, counts read); CHANGELOG [Unreleased];
       HUMAN-TESTING entry (break the library folder and walk the
       surfaces).

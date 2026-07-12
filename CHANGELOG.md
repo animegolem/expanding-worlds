@@ -26,7 +26,47 @@ annotations.
   Updates section with a "Check for updates" button; packaged builds
   also check once at launch, silently.
 
+### For testers (undo that matches your hand)
+- Changed: bulk gestures — dropping a stack of images, deleting a
+  multi-selection — now undo as ONE ⌘Z step instead of many. Sending a
+  single item to Trash stays out of undo (Trash itself is the recovery
+  home); restoring from Trash is undoable like any other move.
+
+### For testers (the app finds its voice)
+- New: when a view has nothing to show, it now says why — loading,
+  empty, and trouble each get their own calm sentence in the gallery,
+  Trash, search, and outline, with a "try again" where it helps. No
+  spinners, no programmer-speak.
+- New: every floating card, ask, and chip can be dismissed the way you
+  expect — Esc, clicking away, or its ✕. The welcome guide's Esc counts
+  as Skip. An unanswered drop-ask just dissolves; it may ask again on a
+  later drop, and it says so on the card.
+- Changed: the pin tool completes its arc — the ghost pin rides your
+  cursor at true size, seats with a soft settle, Esc (or re-clicking
+  the tool) returns you to select, and a failed pin keeps your draft
+  instead of eating it.
+
 ### Under the hood
+- AI-IMP-231: renderer-local undo group tokens; group order reserves at
+  gesture start; ⌘Z on a still-open group declines by name.
+- AI-IMP-221: undo policy classes split solo-exempt vs bulk-captured
+  trash; RestoreRecord captured; purge clears redo and stays exempt.
+- AI-IMP-264: lock holder reads are discriminated dispositions; never
+  unlink after observing absence (the CI-caught split-brain fix);
+  guard removal is evidence-based and loud on exhaustion.
+- AI-IMP-244: lock-probe workers await stream close, not process exit —
+  the child-output lifecycle race is shut.
+- AI-IMP-280: transient chrome gains complete exits (Escape ladder
+  rungs, scrim clicks, chip ✕/outside-dismiss, ask dissolution).
+- AI-IMP-281: nine silent outcomes gain their ratified voices; losable
+  quit-timeout fact voiced from the next-open perch; shared
+  failure→perch producer.
+- AI-IMP-279: finding surfaces get exclusive loading/error/empty states
+  through one presentational FindingState; transport text never
+  reaches the user.
+- AI-IMP-282: kit-canonical pin ghost, atomic provisional pair, generic
+  tool-leave seam in canvas-engine, sticky-exit tooltips, failed
+  CreatePin retains draft.
 - AI-IMP-219: End Session now ages and reclaims blobs only after a
   guarded 30-day grace, with a dry-run byte fact beside backup size.
 - AI-IMP-220: optional Trash retention now runs at project open through

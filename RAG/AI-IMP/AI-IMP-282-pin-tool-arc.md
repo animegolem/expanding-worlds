@@ -6,7 +6,8 @@ tags:
   - renderer
   - tools
   - lifecycle-push
-kanban_status: planned
+kanban_status: completed
+date_completed: 2026-07-12
 depends_on: []
 parent_epic:
 confidence_score: 0.85
@@ -83,18 +84,18 @@ inside the phantom.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Provisional pair is one lifecycle object; rapid clicks
+- [x] Provisional pair is one lifecycle object; rapid clicks
       REPLACE (old pair discarded whole); no dot-less phantom
       reachable (pinned by test).
-- [ ] Escape with nothing inner returns to select and discards
+- [x] Escape with nothing inner returns to select and discards
       the pair; tool switch / dock click / N re-press identical;
       all silent (GR-3 class 7).
-- [ ] Ghost = canonical pin at 45%, tip on click point; 180ms
+- [x] Ghost = canonical pin at 45%, tip on click point; 180ms
       seat on commit; plain fade on discard; generic dot removed.
-- [ ] Sticky family tooltips carry the exit clause.
-- [ ] CreatePin failure: phantom + draft + inline sentence
+- [x] Sticky family tooltips carry the exit clause.
+- [x] CreatePin failure: phantom + draft + inline sentence
       survive; ghost waits.
-- [ ] Full `CI=true pnpm check` green (pipefail, counts read);
+- [x] Full `CI=true pnpm check` green (pipefail, counts read);
       CHANGELOG [Unreleased]; HUMAN-TESTING entry (the feel of
       ghost/seat and the one-provisional rule).
 
