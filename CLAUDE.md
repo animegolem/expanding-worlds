@@ -100,6 +100,15 @@ never delegated. Implementation may be decomposed:
 
 - One commit per ticket or reviewed merge; commit messages explain the
   decision, not just the change.
+- LOC is not a defect (the 2026-07-11 audit standard: a split needs
+  independently owned behavior with a stable extraction seam —
+  `RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md`). After deliberately
+  reviewing a Size Watch file's cohesion, record it:
+  `./RAG/scripts/approve-loc-review.sh --review-ref <audit/ticket>
+  --note "<one-line conclusion>" <file>`, then regenerate the index —
+  INDEX.md reports each review current or stale (exact blob, LOC
+  drift). `review stale` is a re-review nudge when next touching the
+  file, never a refactor mandate.
 - RFC edits keep §5 invariants, §17 slice, §18 acceptance criteria,
   §19 open questions, and §20 decision summary consistent, and bump
   the revision in the header table.
