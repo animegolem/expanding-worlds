@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.70         | 11 July 2026     |
+| Accepted for Phase 1 | 0.71         | 12 July 2026     |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -468,7 +468,11 @@ placement MAY carry.
   node, no note, and deliberately NO outline row — like appearance,
   it is a property of the placement, so the same node placed twice
   may carry two different captions. It moves, scales, and deletes
-  with its placement.
+  with its placement. (Amended rev 0.71: the caption never becomes
+  an outline ENTRY, but its text MAY render as display meta on its
+  placement's existing row — it is how you tell WHICH placement a
+  row points at. Display meta only: no search hit, no selection
+  identity, no row of its own.)
 - A caption renders beneath the placement through the label
   machinery (world-scaled, the §8.2 fade ladder, the crisp-raster
   buckets), wrapped to the placement's width and clamped to a few
@@ -491,9 +495,11 @@ placement MAY carry.
   snapshot projection like any placement property. Joining §11.1
   full-text search is DEFERRED WITH SCOPE: when it lands, captions
   are indexed scoped to their placement's node and a caption hit
-  points at the IMAGE — the caption is the model's one
-  searchable-but-never-outlined text, and that asymmetry is
-  deliberate (search finds thoughts; the outline registers ideas).
+  points at the IMAGE — the caption is the model's one text that is
+  searchable but never an outline ENTRY, and that asymmetry is
+  deliberate (search finds thoughts; the outline registers ideas;
+  rev 0.71 lets the text ride an existing placement row as display
+  meta without weakening either half).
 
 ## 4.6 Appearance
 
@@ -2242,16 +2248,30 @@ to one Project ID.
 ## 8.3 Search and quick-open
 
 Full-text search covers note titles and bodies, tag names, asset
-original filenames, and canvas text decorations. Search lives in the
-⌕ charm's panel; results group by kind: a note result opens the note
+original filenames, and canvas text decorations. Search is a layer,
+not a place (rev 0.71, superseding the ⌕-anchored panel of rev
+0.17): the palette opens centered over the scrimmed board — the
+board stays visible, and exit leaves it exactly as it was — with
+two doors to the ONE surface: the keyboard chord and the rail's ⌕
+charm (the board menu's multi-door pattern; the centered palette is
+the ruled exception to the grow-from-opener physics, because the
+keyboard summons it). Results group by kind and each group HEADER
+names its ↵ verb: a board result dives, a note result opens the note
 panel, a tag result opens the tag panel (§4.8), a filename match
 surfaces the nodes using that asset, and a canvas-text match opens the
 containing canvas centered on the matching decoration. Trashed records
-are excluded by default. Typing a leading # switches the field to tag
-mode with tag-name completion.
+are excluded by default and the no-match state says so. Typing a
+leading # switches the field to tag mode with tag-name completion;
+committed tags crystallize into removable pills, AND-only in Phase 1.
+
+Placeable results drag OUT of the palette as placements: the
+palette folds mid-drag and the drop joins the ordinary place flow
+(§6.10). Only placeable rows offer the drag affordance — no
+affordance, no dead drag (the GR-3 named-silence rule applied to
+drags). The same two rules govern the §4.8 tag panel's rows.
 
 A keyboard-summoned quick-open MUST navigate by title across notes and
-canvas-owning nodes; the ⌕ panel is its realization. Selecting a note
+canvas-owning nodes; the palette is its realization. Selecting a note
 opens the note panel; selecting a canvas opens it as the active
 canvas. Quick-open matches by title_key and does not include phantom
 titles, which remain reachable through links and wiki-link
@@ -2541,6 +2561,29 @@ contract, ratified with the owner:
 Lands as AI-EPIC-016's opening infrastructure (the menu grammar
 needs the same ladder); the two trapped-modal pairs are
 bugfix-grade and go in the next hardening batch (AI-IMP-101).
+
+### 8.8.3 The reservation frame (rev 0.71)
+
+Clauses 3–4 matured into normative geometry (subsection numbers
+match the kits' standing citations): the chrome bands form one
+named RESERVATION FRAME — strip (top) · rail (right) · dock
+(bottom) · plus a uniform gutter — declared as chrome.css tokens
+whose NAMES are normative while their VALUES stay kit-owned
+(kit-1.4 proposal: strip 40 · rail 56 · dock 64 growing to 112
+when an armed tool shows its defaults row · gutter 24). The left
+edge reserves nothing. Every floating surface clamps inside
+frame + gutter; takeovers fill the frame, never the window. On
+touch the strip band is 0 (no cursor, no reveal to serve) and all
+bands grow with the density token. Every kit ships an edges
+specimen proving its surface against the frame (KIT-PREFLIGHT §F).
+
+### 8.8.4 The charm halo (rev 0.71)
+
+Clause 6 matured: a selected node's clearance envelope is its card
+bounds + 12px + the charm height — the HALO. Anything chrome
+places near a selected node (anchored panels, overlays, toasts
+avoiding a selection) pads by the halo, never the card edge, so
+charms are never grazed by well-meaning chrome.
 
 # 9. Deletion, trash, and resource retention
 
@@ -3392,7 +3435,11 @@ loose means no place.
 
 The relationship graph is a separate projection from the art canvas
 and SHOULD ship as the ⊛ takeover view (rev 0.17): a force layout
-with physics the user can grab. **Wiki links are the only edges** —
+with physics the user can grab. The sim MUST sleep (rev 0.71):
+below a calm threshold the loop stops outright, and grab, filter
+change, or resize wakes it — a settling world is world physics, but
+an asymptote idling forever is ambient motion, refused (and an iPad
+battery sink). **Wiki links are the only edges** —
 structure lives in the outline, and drawn lines, arrows, and connectors
 are decorations that never appear as semantic edges; a future
 explicit relationship feature may promote semantic edges through a
@@ -4128,9 +4175,11 @@ after Phase 1.
 5. (Resolved, rev 0.17.) The first graph is a force layout with
 wiki links as the only edges (§14.2).
 
-6. (Resolved, rev 0.17.) The shell model of §8.2 and the note
-panels of §8.5 replace workspace tabs, docking, and the docked note
-pane; only the project-switcher charm's menu remains undesigned.
+6. (Resolved, rev 0.17; closed rev 0.71.) The shell model of §8.2
+and the note panels of §8.5 replace workspace tabs, docking, and the
+docked note pane; the project-switcher charm's menu — the last
+undesigned piece — is drawn as the world picker (kit push 2026-07-12:
+world cards wear their ◎ faces, "you are here" marked).
 
 7. (Resolved, rev 0.11.) Background replacement preserves canvas
 coordinates by fitting the new image into the prior stage extent
@@ -4915,11 +4964,15 @@ Accepted for the Phase 1 prototype:
   menu verb + charm; promoted to a note through a title-or-body
   routing dialogue whose answer can persist as an app setting;
   FTS deferred with scope (a caption hit points at the image;
-  searchable-but-never-outlined is deliberate). The refused
+  searchable but never an outline ENTRY is deliberate — amended
+  rev 0.71: caption text MAY render as display meta on its
+  placement's existing outline row, no row of its own). The refused
   alternatives are recorded with it: the node-gets-title
   restructure and sentences-as-titles (§4.5). Visual maturation
-  (the mat/card reading of image+caption as one object) is held
-  for the design pass after tester contact.
+  landed rev 0.71: the caption is the museum label made of paper —
+  the plaque (cream face, slim frame, narrower than its print,
+  centered beneath it as an invariant, one-shot pop birth beat) —
+  per the Caption Card kit.
 
 - The lifecycle push ratified (rev 0.70, owner-read 10–11 July;
   domain rulings folded here, presentation grammar stays
@@ -4940,3 +4993,28 @@ Accepted for the Phase 1 prototype:
   (GR-2), the pin tool arc (S3+S1), the board-birth doors (B1),
   and link repair (N4) — are presentation grammar: tickets cite
   the kit documents directly.
+
+- The kit push ratified (rev 0.71, design sessions 2026-07-11→12,
+  lead one-object review + design revision 1.1; presentation
+  grammar stays kit-normative in `RAG/design/design-push/` — the
+  package supersedes the lifecycles zip as the kit documents'
+  home): the reservation frame and charm halo written as
+  §8.8.3/§8.8.4 (token NAMES normative, values kit-owned); search
+  as a centered two-door palette superseding the ⌕-anchored panel,
+  with drag-out-as-place on placeable rows only (§8.3); GR-5, the
+  touch dialect, ratified §1–6 with the lead's guards — chrome
+  fades dim-never-gone on touch, and the dock-slot flyout header
+  names its tool where long-press-tooltip is shadowed; corner dots
+  whenever selected (amendment 28); the graph sim sleeps (§14.2);
+  the caption's outline row meta and plaque form (§4.5); the world
+  picker closes §19 Q6. The remaining rulings — dock defaults row
+  + one-geometry sweep of the beta natives, shape flyout, board
+  menu's three doors + the ground menu's HERE section, containers
+  everywhere (strip gradient retired, supersedes decision-01),
+  arrange ⌗ riding the selection charm bar, identity corner ◎ as
+  the canonical where-does-this-live surface, the eyedropper tool,
+  note-paper postures + open-as-flight, gallery adoption,
+  arrange-by grouping, one pin one globe — are presentation
+  grammar: tickets cite DESIGN-LETTER.md and the kit documents
+  directly. Preflight waiver terms: the addendum-8 kits fill
+  KIT-PREFLIGHT before their implementation tickets cut.
