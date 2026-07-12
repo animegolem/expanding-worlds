@@ -762,9 +762,12 @@ the week's testing says so. Lands with the AI-IMP-173 fix wave.)
 - **Dot-palette regularization** to `oklch(.76 .09 h)` (design
   pass, explicitly unratified): make the call with real art on the
   board — style-kit turn territory.
-- **Charm rail vertical position**: top-aligned below the path
-  track shipped in UI Vision v2; vertical centering considered and
-  left open. Trivial code change whenever decided.
+- **Charm rail vertical position — DISSOLVED into the kit pass
+  (owner, 2026-07-11):** no standalone call needed; spacing across
+  views needs a general pass (the rail currently BLOCKS UI on most
+  lenses) — the rail will likely move off the wall a bit and each
+  view adjusts to compensate, settled per-surface in the final-ish
+  UI kits. The top-vs-centered question dies with it.
 - **Manual note side-flip verb** ("open on the other side"):
   deferred until asked for (Note Lifecycle Document).
 - **Object shapes** (owner musing, Icon Document t7): extruded
