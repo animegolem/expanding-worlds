@@ -10,7 +10,8 @@ depends_on: [AI-IMP-130]
 parent_epic:
 confidence_score: 0.85
 date_created: 2026-07-07
-date_completed: 2026-07-07---
+date_completed: 2026-07-07
+---
 
 
 # AI-IMP-141-chrome-cosmetic-sweep

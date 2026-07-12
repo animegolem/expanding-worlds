@@ -1,5 +1,5 @@
 ---
-node_id:
+node_id: 2026-07-07-LOG-AI-twelve-closes-and-two-epics-worth
 tags:
   - AI-log
   - development-summary

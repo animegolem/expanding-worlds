@@ -1,13 +1,17 @@
 > Verbatim instance artifact from expanding-worlds (orchestrator: Claude,
 > implementer: Codex, channel: .codex/). Names are instance-specific;
 > the shape is the skill.
+>
+> Corrected snapshot (2026-07-11): the original "accepted" semantics
+> predated the destructive-op fence and told Codex to delete its own
+> worktree and branch; superseded here and in the live protocol.
+> Clone isolation is now current practice (was "planned").
 
 # .codex/ channel protocol — Codex watcher ⇄ Claude (lead dev)
 
-> New here, or unsure how the timing works? Read
-> `LETTER-FROM-CLAUDE-2026-07-07.md` first — it explains the two
-> clocks (your 15-min tick is the only timer; Claude's side is
-> edge-triggered files, not a daemon) and a hook fix you owe.
+> The two clocks: your 15-min tick is the only timer in the
+> system; Claude's side is edge-triggered files (a hash-watch
+> injects inbox changes into the next active turn), not a daemon.
 
 Local, gitignored hand-off channel. Three surfaces:
 
@@ -23,7 +27,7 @@ turn. Codex polls `outbox/` on its 15-minute schedule.
 
 ## Work submissions (Codex → inbox)
 
-When Codex does implementation work: set up your own git worktree,
+When Codex does implementation work: work in your isolated clone,
 commit on a branch named `codex/<id>`, do NOT push, and submit by
 writing `inbox/<id>.md`:
 
@@ -72,9 +76,10 @@ Claude.
 
 Semantics on Codex's side:
 
-- **accepted** — Claude has merged to main. Clean up: remove your
-  worktree and the `codex/<id>` branch; you may delete both the
-  inbox and outbox files for the id.
+- **accepted** — Claude has merged to main. Do NOT clean up: the
+  destructive-op fence applies even now — the lead owns worktree/
+  branch removal. You may delete both the inbox and outbox files
+  for the id and stop tracking it.
 - **amend** — apply the numbered amendments, resubmit (same id,
   round+1). Do not start unrelated work in the same submission.
 - **declined** — stop work on that branch; do not resubmit the same
@@ -112,10 +117,10 @@ gitignored; never commit anything in `.codex/`.
 - No git command targets anything outside the sitting's own worktree
   directory. No `-D`, `--force` deletion forms, `update-ref`,
   `reflog expire`, or `gc` anywhere, ever.
-- Rationale: sitting worktrees share the canonical repo's .git; a
-  destructive op inside one can reach shared history. Isolation
-  upgrade (clones replacing worktrees) is planned at a sitting
-  boundary; this fence applies regardless.
+- Rationale: the fence was written when sittings shared the
+  canonical repo's .git via worktrees, where a destructive op
+  could reach shared history. Isolated clones have since replaced
+  worktrees at a sitting boundary; the fence applies regardless.
 
 ## Sitting economics (2026-07-11, owner ruling on the 5h-limit quirk)
 

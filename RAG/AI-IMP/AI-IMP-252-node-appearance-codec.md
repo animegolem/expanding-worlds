@@ -10,7 +10,8 @@ depends_on: []
 parent_epic: [[AI-EPIC-027-hardening-and-consolidation]]
 confidence_score: 0.75
 date_created: 2026-07-10
-date_completed: 2026-07-10---
+date_completed: 2026-07-10
+---
 
 
 # AI-IMP-252-node-appearance-codec

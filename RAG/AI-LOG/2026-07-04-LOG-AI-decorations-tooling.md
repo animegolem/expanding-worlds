@@ -1,5 +1,5 @@
 ---
-node_id:
+node_id: 2026-07-04-LOG-AI-decorations-tooling
 tags:
   - AI-log
   - development-summary

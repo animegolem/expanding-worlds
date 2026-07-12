@@ -1,5 +1,5 @@
 ---
-node_id:
+node_id: 2026-07-06-LOG-AI-five-revs-and-the-linux-hunt
 tags:
   - AI-log
   - development-summary

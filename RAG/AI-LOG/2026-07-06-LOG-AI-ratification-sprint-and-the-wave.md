@@ -1,5 +1,5 @@
 ---
-node_id:
+node_id: 2026-07-06-LOG-AI-ratification-sprint-and-the-wave
 tags:
   - AI-log
   - development-summary

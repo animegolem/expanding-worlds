@@ -15,6 +15,10 @@ domain behavior.
   items).
 - Run `./RAG/scripts/generate-index.sh` after any ticket change;
   `RAG/INDEX.md` is the kanban and is never edited by hand.
+  `./RAG/scripts/validate-tickets.sh` (or `--changed` for a diff) is
+  the loud gate for record defects the index normalizer silently
+  patches — run it before closing tickets; agents run it before
+  submitting.
 - Check checklist items only after the change is implemented AND
   validated. Fill Issues Encountered honestly, including deviations.
 - End every implementation session with an `RAG/AI-LOG/` entry (the

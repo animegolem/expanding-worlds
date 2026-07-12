@@ -161,6 +161,7 @@ Git edit date so a second review can be judged.
 - spike/src/adapters/pixi/index.ts (664 LOC) — review current: 2026-07-12T01:53:23Z at 664 LOC; unchanged; last edit 2026-07-03T21:25:52-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - apps/desktop/src/renderer/canvas/board-tooling.ts (661 LOC) — review current: 2026-07-12T01:53:22Z at 661 LOC; unchanged; last edit 2026-07-09T20:30:43-05:00; RAG/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
 - packages/persistence/src/handlers/placements.test.ts (651 LOC)
+- RAG/skills/wave-orchestration/scripts/generate-index.sh (650 LOC)
 - RAG/scripts/generate-index.sh (650 LOC)
 - packages/persistence/src/invariants.spec.ts (650 LOC)
 - packages/persistence/src/handlers/pin.test.ts (638 LOC)
