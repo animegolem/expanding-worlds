@@ -8,21 +8,38 @@
  */
 import type { CanvasHostHandle } from './host'
 import { Z } from '../z'
-import { onPanelsChanged, openPinPhantom, panelRecords } from '../note/panels'
+import {
+  discardPinPhantoms,
+  onPanelsChanged,
+  openPinPhantom,
+  panelRecords,
+} from '../note/panels'
+
+const pinCanonicalUrl = new URL(
+  '../../../resources/icons/masters/pin-canonical.svg',
+  import.meta.url,
+).href
 
 export interface PinToolHandle {
   destroy(): void
 }
 
 export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): PinToolHandle {
-  let dot: HTMLDivElement | null = null
+  let dot: HTMLImageElement | null = null
   let dotWorld: { x: number; y: number; canvasId: string } | null = null
+  let phantomKey: number | null = null
   let frame = 0
 
-  function removeDot(): void {
-    dot?.remove()
+  function discardPair(): void {
+    phantomKey = null
+    discardPinPhantoms()
+    if (!dot) return
+    const retiring = dot
     dot = null
     dotWorld = null
+    delete retiring.dataset['testid']
+    retiring.style.opacity = '0'
+    setTimeout(() => retiring.remove(), 120)
   }
 
   function layout(): void {
@@ -33,8 +50,8 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
     }
     const screen = host.controller.camera.worldToScreen({ x: dotWorld.x, y: dotWorld.y })
     dot.style.display = 'block'
-    dot.style.left = `${screen.x - 6}px`
-    dot.style.top = `${screen.y - 6}px`
+    dot.style.left = `${screen.x - 15.6}px`
+    dot.style.top = `${screen.y - 44}px`
   }
 
   function schedule(): void {
@@ -46,12 +63,14 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
   }
 
   function placeDot(world: { x: number; y: number }): void {
-    removeDot()
-    dot = document.createElement('div')
-    dot.dataset['testid'] = 'pin-provisional-dot'
+    discardPair()
+    dot = document.createElement('img')
+    dot.src = pinCanonicalUrl
+    dot.alt = ''
+    dot.dataset['testid'] = 'pin-provisional-ghost'
     dot.style.cssText =
-      `position:absolute;width:12px;height:12px;border-radius:50%;z-index:${Z.affordance};` +
-      'background:var(--ew-node-dot-default);border:2px solid var(--ew-text);opacity:0.85;pointer-events:none;'
+      `position:absolute;width:31.2px;height:44px;z-index:${Z.affordance};` +
+      'opacity:0.45;pointer-events:none;transition:opacity 180ms ease,transform 180ms ease;transform-origin:50% 100%;'
     element.appendChild(dot)
     dotWorld = { ...world, canvasId: host.canvasId }
     layout()
@@ -61,18 +80,32 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
   // focused; the tool stays active for repeated placement.
   host.tools.onPlacePin = (world) => {
     placeDot(world)
-    openPinPhantom(host.canvasId, world.x, world.y)
+    phantomKey = openPinPhantom(host.canvasId, world.x, world.y)
   }
 
   const disposers = [
+    host.tools.registerToolLeave('pin', discardPair),
     host.controller.camera.onChanged(() => schedule()),
     host.onSceneApplied(() => schedule()),
     // The dot exists exactly as long as an unpersisted pin phantom
     // does: materialized (request became a note) or discarded
     // (record gone) both clear it.
     onPanelsChanged(() => {
-      const alive = panelRecords().some((record) => record.request.kind === 'pin-phantom')
-      if (!alive) removeDot()
+      if (phantomKey === null || !dot) return
+      const record = panelRecords().find((candidate) => candidate.key === phantomKey)
+      if (record?.request.kind === 'pin-phantom') return
+      if (record?.request.kind === 'note' && record.anchor.kind === 'placement') {
+        const seated = dot
+        seated.dataset['seated'] = 'true'
+        seated.style.opacity = '1'
+        seated.style.transform = 'scale(0.94)'
+        dot = null
+        dotWorld = null
+        phantomKey = null
+        setTimeout(() => seated.remove(), 180)
+      } else {
+        discardPair()
+      }
     }),
   ]
 
@@ -81,7 +114,7 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
       host.tools.onPlacePin = null
       if (frame) cancelAnimationFrame(frame)
       for (const dispose of disposers) dispose()
-      removeDot()
+      discardPair()
     },
   }
 }

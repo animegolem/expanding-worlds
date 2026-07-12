@@ -421,11 +421,11 @@
         if (result.status === 'error') {
           const found = conflictFrom(result, 'create', title)
           if (found) conflict = found
-          else error = result.message
+          else error = "this pin didn't take — try again"
           return
         }
         if (result.status !== 'committed') {
-          error = 'the project changed underneath (retry)'
+          error = "this pin didn't take — try again"
           return
         }
         canvasDraft = ''

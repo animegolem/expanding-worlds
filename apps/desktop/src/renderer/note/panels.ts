@@ -244,7 +244,7 @@ async function resolveAnchor(noteId: string): Promise<PanelAnchor> {
   return { kind: 'none' }
 }
 
-function setTethered(request: PanelRequest, anchor: PanelAnchor): void {
+function setTethered(request: PanelRequest, anchor: PanelAnchor): number {
   const current = tethered()
   if (current) {
     // Replacing the tethered content while its buffer sits in the big
@@ -269,6 +269,7 @@ function setTethered(request: PanelRequest, anchor: PanelAnchor): void {
     ]
   }
   notify()
+  return tethered()!.key
 }
 
 let nextBeatSeq = 1
@@ -313,8 +314,18 @@ export function openPhantomPanel(title: string): void {
 
 /** The §6.2 pin tool: a focused phantom panel at the clicked spot;
  * nothing persists until the first committed edit. */
-export function openPinPhantom(canvasId: string, x: number, y: number): void {
-  setTethered({ kind: 'pin-phantom', canvasId, x, y }, { kind: 'point', canvasId, x, y })
+export function openPinPhantom(canvasId: string, x: number, y: number): number {
+  return setTethered({ kind: 'pin-phantom', canvasId, x, y }, { kind: 'point', canvasId, x, y })
+}
+
+/** Pin-tool leave/re-arm owns provisional cleanup, including a phantom
+ * that was pinned away from the single tethered slot. */
+export function discardPinPhantoms(): void {
+  for (const record of [...records]) {
+    // Provisional drafts deliberately bypass the persisted-note flush
+    // boundary: leaving the tool means discard, synchronously.
+    if (record.request.kind === 'pin-phantom') finishClosePanel(record.key)
+  }
 }
 
 /** The canvas corner charm (§8.5): the active canvas's own note. */

@@ -67,6 +67,7 @@ export class ToolManager {
   /** Events delegated to the controller mid-gesture keep flowing there. */
   #passthrough = false
   #changed = new Set<(tool: ToolKind) => void>()
+  #leave = new Map<ToolKind, Set<() => void>>()
   style: ToolStyle = {
     stroke: DEFAULT_STROKE,
     strokeScale: 1,
@@ -97,7 +98,11 @@ export class ToolManager {
   }
 
   setTool(tool: ToolKind): void {
-    if (tool === this.#active) return
+    if (tool === this.#active) {
+      if (tool !== 'select') this.setTool('select')
+      return
+    }
+    for (const leave of this.#leave.get(this.#active) ?? []) leave()
     this.#cancelSession()
     this.#active = tool
     for (const listener of this.#changed) listener(tool)
@@ -106,6 +111,13 @@ export class ToolManager {
   onChanged(listener: (tool: ToolKind) => void): () => void {
     this.#changed.add(listener)
     return () => this.#changed.delete(listener)
+  }
+
+  registerToolLeave(tool: ToolKind, leave: () => void): () => void {
+    const listeners = this.#leave.get(tool) ?? new Set<() => void>()
+    listeners.add(leave)
+    this.#leave.set(tool, listeners)
+    return () => listeners.delete(leave)
   }
 
   pointerDown(screen: Point, modifiers: PointerModifiers = {}): void {
@@ -185,6 +197,10 @@ export class ToolManager {
   escape(): void {
     if (this.#session) {
       this.#cancelSession()
+      return
+    }
+    if (this.#active !== 'select') {
+      this.setTool('select')
       return
     }
     this.#target.escape()

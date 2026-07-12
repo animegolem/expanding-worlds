@@ -63,9 +63,19 @@ describe('ToolManager routing', () => {
     expect(calls).toHaveLength(0)
   })
 
-  it('escape with no session forwards to the controller', () => {
+  it('escape with an armed tool runs its leave disposer and returns to select', () => {
     const { tools, calls } = setup()
+    let left = 0
+    tools.registerToolLeave('rect', () => left++)
     tools.setTool('rect')
+    tools.escape()
+    expect(tools.active).toBe('select')
+    expect(left).toBe(1)
+    expect(calls).toEqual([])
+  })
+
+  it('escape in select still forwards to the controller', () => {
+    const { tools, calls } = setup()
     tools.escape()
     expect(calls.map((c) => c.method)).toEqual(['escape'])
   })
