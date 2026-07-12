@@ -6,8 +6,8 @@
   highlighted Create row (plain Enter commits, Escape cancels via §8.3
   routing).
 
-  oncreate runs the house composition in ONE undo group, mirroring the
-  §4.9 frame ritual (host.commitFrame):
+  Enter prepares renderer memory and hands a ⊡ ghost to S4 place mode.
+  The seating click runs the house composition in ONE undo group:
     1. CreateNode            — the bare node.
     2. CreateNoteAndAttach   — names it. A node's name IS its attached
        note's title; the pin wizard names by creating a titled note
@@ -17,21 +17,23 @@
     3. CreateCanvas          — the board the node is the inside of.
     4. CreatePlacement       — the board-object on the ORIGIN board.
 
-  The placement is LAST on purpose: the undo group fences to its final
+  Nothing durable exists during carry, so Escape simply drops it. The
+  placement is LAST on purpose: the undo group fences to its final
   command's canvas (undo-stack), so a single Mod+Z FROM THE ORIGIN board
   reverses the whole act. Recorded LIFO, undo runs
   DeleteDraftPlacement → DeleteDraftCanvas → DetachAndTrashNote →
   DeleteDraftNode, each landing on a state its draft-guard accepts. The
   node carries no explicit appearance — an appearance-less node renders
   as the default dot, exactly what a make-canvas placement shows — and
-  the dive hint chip falls out of the node owning a canvas. On success we
-  dive into the new board.
+  the dive hint chip falls out of the node owning a canvas. Success dives;
+  a refused seat rolls back its partial group and keeps the ghost.
 -->
 <script lang="ts">
   import { uuidv7 } from '@ew/domain'
   import type { CanvasHostHandle } from '../canvas/host'
   import { navigateTo } from '../chrome/navigation'
-  import { runAsUndoGroup } from '../undo/undo-store'
+  import { rollbackLatestBirthAttempt, runAsUndoGroup } from '../undo/undo-store'
+  import { requestPlaceMode } from '../canvas/place-mode'
   import CommandPalette, { type PaletteItem } from './CommandPalette.svelte'
 
   let {
@@ -44,8 +46,6 @@
     at: { x: number; y: number }
     onclose: () => void
   } = $props()
-
-  let error = $state<string | null>(null)
 
   // Create-only: there is no existing board to pick from this prompt, so
   // the palette shows no rows until a name is typed (§8.4 owner ruling —
@@ -70,7 +70,7 @@
     return 'The project changed underneath — retry.'
   }
 
-  async function createBoard(rawTitle: string): Promise<void> {
+  function createBoard(rawTitle: string): void {
     const title = rawTitle.trim()
     if (title.length === 0) return
     const nodeId = uuidv7()
@@ -80,45 +80,51 @@
     const originCanvasId = handle.canvasId
     const conflict = 'A board with that name already exists — choose another.'
 
-    let failure: string | null = null
-    // fail-stop (CA-007): inspect every result; the first non-commit
-    // aborts the group before the next command. The group collapses to
-    // whatever committed — every partial is a clean draft the single
-    // recorded entry still undoes (matching host.commitFrame).
-    await runAsUndoGroup(async (groupToken) => {
-      failure = outcome(await handle.gateway.execute('CreateNode', { nodeId }, { groupToken }), conflict)
-      if (failure !== null) return
-      failure = outcome(
-        await handle.gateway.execute('CreateNoteAndAttach', { nodeId, noteId, title }, { groupToken }),
-        conflict,
-      )
-      if (failure !== null) return
-      failure = outcome(
-        await handle.gateway.execute('CreateCanvas', { canvasId: newCanvasId, nodeId }, { groupToken }),
-        conflict,
-      )
-      if (failure !== null) return
-      failure = outcome(
-        await handle.gateway.execute('CreatePlacement', {
-          placementId,
-          canvasId: originCanvasId,
-          nodeId,
-          x: at.x,
-          y: at.y,
-        }, { groupToken }),
-        conflict,
-      )
-    })
+    requestPlaceMode({
+      kind: 'board-birth',
+      worldX: at.x,
+      worldY: at.y,
+      commit: async (world) => {
+        let failure: string | null = null
+        let committedCount = 0
+        await runAsUndoGroup(async (groupToken) => {
+          failure = outcome(await handle.gateway.execute('CreateNode', { nodeId }, { groupToken }), conflict)
+          if (failure !== null) return
+          committedCount += 1
+          failure = outcome(
+            await handle.gateway.execute('CreateNoteAndAttach', { nodeId, noteId, title }, { groupToken }),
+            conflict,
+          )
+          if (failure !== null) return
+          committedCount += 1
+          failure = outcome(
+            await handle.gateway.execute('CreateCanvas', { canvasId: newCanvasId, nodeId }, { groupToken }),
+            conflict,
+          )
+          if (failure !== null) return
+          committedCount += 1
+          failure = outcome(
+            await handle.gateway.execute('CreatePlacement', {
+              placementId,
+              canvasId: originCanvasId,
+              nodeId,
+              x: world.x,
+              y: world.y,
+            }, { groupToken }),
+            conflict,
+          )
+          if (failure === null) committedCount += 1
+        }, { birth: { originCanvasId, newbornCanvasId: newCanvasId, title } })
 
-    if (failure !== null) {
-      // Keep the palette open so the user can amend the name and retry.
-      error = failure
-      return
-    }
+        if (failure !== null) {
+          if (committedCount > 0) await rollbackLatestBirthAttempt()
+          return { ok: false, message: failure }
+        }
+        await navigateTo(newCanvasId, title)
+        return { ok: true }
+      },
+    })
     onclose()
-    // §8.4 dive: never read items()/camera synchronously after this —
-    // navigateTo applies the scene asynchronously (AI-IMP-113).
-    await navigateTo(newCanvasId, title)
   }
 </script>
 
@@ -127,8 +133,7 @@
   placeholder="Name your new board…"
   {search}
   {createLabel}
-  {error}
   oncommit={() => {}}
-  oncreate={(query) => void createBoard(query)}
+  oncreate={createBoard}
   {onclose}
 />

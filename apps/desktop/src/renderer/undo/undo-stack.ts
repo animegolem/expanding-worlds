@@ -32,9 +32,9 @@ import type { CommandResult, InverseCommand } from '@ew/commands'
  *
  * V1 same-canvas fence. Entries record the canvas they acted on.
  * Undoing/redoing an entry that belongs to another board is declined
- * with a toast naming that board and the entry is LEFT in place (so it
- * is still undoable once the user is on that canvas). Navigation-on-undo
- * (§10.2's navigate-and-center behavior) is deliberately deferred.
+ * with a toast naming that board and the entry is LEFT in place. The one
+ * §10.2 exception is a typed birth group: undo from inside its newborn
+ * navigates to the origin before applying the inverse members.
  *
  * This class is pure — all IO (executing commands, reading the active
  * canvas, board names, toasts) is injected — so it unit-tests without a
@@ -63,6 +63,8 @@ export interface StackAction {
   order: number
   /** Renderer-side receipt effect that follows this action across redo. */
   afterUndo?: () => Promise<void> | void
+  /** The sole navigating-undo exception: a newly born board. */
+  birth?: { originCanvasId: string; newbornCanvasId: string; title: string }
   /** A partial-step repair replays the committed prefix. Once that
    * succeeds, restore this exact grouped action instead of deriving a
    * smaller opposite from the repair commands. */
@@ -89,6 +91,8 @@ export interface UndoStackDeps {
   toast: (message: string) => void
   /** Fires after any depth change so chrome (☰ rows) re-reads. */
   onChanged: () => void
+  /** Navigate out of a newborn before its birth records are removed. */
+  beforeBirthUndo?: (birth: NonNullable<StackAction['birth']>) => Promise<void>
 }
 
 export const UNDO_STALE_TOAST = 'That change can no longer be undone'
@@ -181,6 +185,7 @@ export class UndoStack {
     order = this.nextOrder(),
     clearRedo = true,
     afterUndo?: () => Promise<void> | void,
+    birth?: StackAction['birth'],
   ): void {
     const undoable = commands.filter((c) => c.inverse !== null)
     if (undoable.length === 0) return
@@ -191,6 +196,7 @@ export class UndoStack {
       canvasId: undoable[undoable.length - 1]!.canvasId,
       order,
       ...(afterUndo === undefined ? {} : { afterUndo }),
+      ...(birth === undefined ? {} : { birth }),
     })
     if (clearRedo) this.#redo = []
     this.#deps.onChanged()
@@ -210,6 +216,13 @@ export class UndoStack {
     await this.#serialize(this.#redo, this.#undo, 'redo')
   }
 
+  /** Narrow fail-stop cleanup for a refused board-birth seating attempt. */
+  async rollbackBirthAttempt(): Promise<void> {
+    await this.#serialize(this.#undo, this.#redo, 'undo', true)
+    this.#redo = []
+    this.#deps.onChanged()
+  }
+
   /**
    * Serialize undo/redo so a second call cannot begin while the first's
    * bookkeeping is still landing (AI-IMP-181). DROP, not queue: a
@@ -220,9 +233,14 @@ export class UndoStack {
    * `event.repeat`, so the overlap rarely reaches here; this is the belt
    * to that suspenders (and covers the ☰ row / fire-and-forget paths).
    */
-  #serialize(from: StackAction[], to: StackAction[], verb: 'undo' | 'redo'): Promise<void> {
+  #serialize(
+    from: StackAction[],
+    to: StackAction[],
+    verb: 'undo' | 'redo',
+    ignoreCanvasFence = false,
+  ): Promise<void> {
     if (this.#inFlight) return this.#inFlight
-    const done = this.#step(from, to, verb).finally(() => {
+    const done = this.#step(from, to, verb, ignoreCanvasFence).finally(() => {
       this.#inFlight = null
     })
     this.#inFlight = done
@@ -257,16 +275,32 @@ export class UndoStack {
     if (had) this.#deps.onChanged()
   }
 
-  async #step(from: StackAction[], to: StackAction[], verb: 'undo' | 'redo'): Promise<void> {
+  async #step(
+    from: StackAction[],
+    to: StackAction[],
+    verb: 'undo' | 'redo',
+    ignoreCanvasFence = false,
+  ): Promise<void> {
     const action = from[from.length - 1]
     if (!action) return
+
+    // RFC §10.2's one exception: leave a newborn before deleting the
+    // canvas the user is standing inside. Redo never navigates.
+    if (
+      verb === 'undo' &&
+      action.birth &&
+      action.birth.newbornCanvasId === this.#deps.currentCanvasId() &&
+      this.#deps.beforeBirthUndo
+    ) {
+      await this.#deps.beforeBirthUndo(action.birth)
+    }
 
     // V1 same-canvas fence: decline cross-board entries with a toast
     // naming the board AND the direction being declined (AI-IMP-181 M-38:
     // a declined redo says "redo it," not "undo it"); leave the entry so
     // it is actionable once the user is on that canvas (navigation-on-undo
     // is deferred).
-    if (action.canvasId !== this.#deps.currentCanvasId()) {
+    if (!ignoreCanvasFence && action.canvasId !== this.#deps.currentCanvasId()) {
       const name = await this.#deps.boardLabel(action.canvasId)
       this.#deps.toast(`That change was made on ${name} — open that board to ${verb} it`)
       return
@@ -316,6 +350,7 @@ export class UndoStack {
         canvasId: action.canvasId,
         order: action.order,
         ...(action.afterUndo === undefined ? {} : { afterUndo: action.afterUndo }),
+        ...(action.birth === undefined ? {} : { birth: action.birth }),
       },
     )
     if (verb === 'undo' && action.afterUndo) {
@@ -343,6 +378,7 @@ export class UndoStack {
         canvasId: action.canvasId,
         order: action.order,
         ...(action.afterUndo === undefined ? {} : { afterUndo: action.afterUndo }),
+        ...(action.birth === undefined ? {} : { birth: action.birth }),
         repairOf: action,
       })
       this.#deps.toast(verb === 'undo' ? PARTIAL_UNDO_TOAST : PARTIAL_REDO_TOAST)

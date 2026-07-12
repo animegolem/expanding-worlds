@@ -42,6 +42,9 @@ function harness(
     boardLabel: () => opts.boardLabel ?? 'Some Board',
     toast: (m) => toasts.push(m),
     onChanged: vi.fn(),
+    beforeBirthUndo: async (birth) => {
+      canvasId = birth.originCanvasId
+    },
   }
   return {
     stack: new UndoStack(deps),
@@ -213,6 +216,44 @@ describe('UndoStack (RFC §10.2)', () => {
     h.setCanvas('board-2')
     await h.stack.undo()
     expect(h.log).toEqual(['inv-Move'])
+  })
+
+  it('navigates a birth undo out of its newborn before applying the group', async () => {
+    const h = harness(selfInverting, { canvasId: 'newborn' })
+    const cap = (type: string) => ({
+      commandType: type,
+      commandVersion: 1,
+      payload: {},
+      inverse: { commandType: `inv-${type}`, commandVersion: 1, payload: {} },
+      canvasId: 'origin',
+    })
+    h.stack.recordGroup(
+      [cap('CreateNode'), cap('CreateCanvas'), cap('CreatePlacement')],
+      undefined,
+      true,
+      undefined,
+      { originCanvasId: 'origin', newbornCanvasId: 'newborn', title: 'Harbor' },
+    )
+    await h.stack.undo()
+    expect(h.log).toEqual(['inv-CreatePlacement', 'inv-CreateCanvas', 'inv-CreateNode'])
+    expect(h.toasts).toEqual([])
+    await h.stack.redo()
+    expect(h.log.slice(3)).toEqual(['inv-CreateNode', 'inv-CreateCanvas', 'inv-CreatePlacement'])
+  })
+
+  it('rolls back a partial birth across its placement-last fence and drops redo', async () => {
+    const h = harness(selfInverting, { canvasId: 'origin' })
+    h.stack.record({
+      commandType: 'CreateCanvas',
+      commandVersion: 1,
+      payload: {},
+      inverse: { commandType: 'DeleteDraftCanvas', commandVersion: 1, payload: {} },
+      canvasId: 'newborn',
+    })
+    await h.stack.rollbackBirthAttempt()
+    expect(h.log).toEqual(['DeleteDraftCanvas'])
+    expect(h.stack.canUndo()).toBe(false)
+    expect(h.stack.canRedo()).toBe(false)
   })
 
   it('names the direction in a cross-canvas decline: redo says "redo it" (AI-IMP-181 M-38)', async () => {

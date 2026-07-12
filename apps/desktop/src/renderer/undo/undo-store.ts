@@ -5,6 +5,7 @@ import {
   type CommandGroupToken,
 } from '@ew/canvas-engine'
 import { toast } from '../chrome/status'
+import { navigateTo } from '../chrome/navigation'
 import { UndoStack, type CapturedCommand } from './undo-stack'
 
 /**
@@ -200,6 +201,7 @@ interface PendingGroup {
   commands: CapturedCommand[]
   order: number
   afterUndo?: () => Promise<void> | void
+  birth?: { originCanvasId: string; newbornCanvasId: string; title: string }
 }
 
 /** Explicit gesture identity replaces the old temporal global window. */
@@ -240,6 +242,11 @@ export function undo(): void {
   void stack?.undo()
 }
 
+/** Roll back a refused board-birth seating attempt before keeping its carry alive. */
+export async function rollbackLatestBirthAttempt(): Promise<void> {
+  await stack?.rollbackBirthAttempt()
+}
+
 export function redo(): void {
   void stack?.redo()
 }
@@ -260,6 +267,8 @@ export interface UndoGroupOptions {
   operation?: string
   /** Optional renderer receipt applied after this group's undo succeeds. */
   afterUndo?: () => Promise<void> | void
+  /** RFC §10.2's single typed navigate-before-undo exception. */
+  birth?: { originCanvasId: string; newbornCanvasId: string; title: string }
 }
 
 export async function runAsUndoGroup<T>(
@@ -276,6 +285,7 @@ export async function runAsUndoGroup<T>(
     commands: [],
     order,
     ...(options.afterUndo === undefined ? {} : { afterUndo: options.afterUndo }),
+    ...(options.birth === undefined ? {} : { birth: options.birth }),
   }
   pendingGroups.set(token, group)
   try {
@@ -289,7 +299,7 @@ export async function runAsUndoGroup<T>(
     if (group.commands.length === 1) {
       stack?.record(group.commands[0]!, order, false, group.afterUndo)
     } else if (group.commands.length > 1) {
-      stack?.recordGroup(group.commands, order, false, group.afterUndo)
+      stack?.recordGroup(group.commands, order, false, group.afterUndo, group.birth)
     }
   }
 }
@@ -348,6 +358,7 @@ export function attachUndo(): () => void {
       boardLabel,
       toast: (message) => void toast(message, { surface: 'undo' }),
       onChanged: notify,
+      beforeBirthUndo: (birth) => navigateTo(birth.originCanvasId),
     })
 
     offCommitted = onCommittedAnywhere((notice) => {
