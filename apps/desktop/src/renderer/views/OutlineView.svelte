@@ -12,7 +12,7 @@
   import { NODE_DRAG_MIME, NOTE_DRAG_MIME } from '../canvas/import-surfaces'
   import { closeTakeover } from '../chrome/takeover'
   import { navigateTo } from '../chrome/navigation'
-  import { toast } from '../chrome/status'
+  import { failurePerch, toast } from '../chrome/status'
   import { tooltip } from '../chrome/tooltip'
   import {
     requestCenterPlacements,
@@ -24,6 +24,7 @@
   import type { ProjectPort } from '../note/note-editor'
   import TagAddField from '../tags/TagAddField.svelte'
   import TextInput from '../ui/TextInput.svelte'
+  import FindingState from '../ui/FindingState.svelte'
   import { disabled, enabled, type OutlineActionBag } from '../outline/actions'
   import { createOutlineActionDoors } from '../outline/inventory'
   import { Z } from '../z'
@@ -66,6 +67,8 @@
   let looseNotes = $state<OutlineLooseNote[]>([])
   let facetCounts = $state<OutlineFacetCounts>(EMPTY_COUNTS)
   let errorMessage = $state<string | null>(null)
+  let loaded = $state(false)
+  const outlineFailures = failurePerch('outline-query', "The outline still can't load")
   let refreshToken = $state(0)
 
   // Facets, query, fold, selection, and lens are view state only.
@@ -117,6 +120,8 @@
   }
 
   async function refresh(): Promise<void> {
+    loaded = false
+    errorMessage = null
     try {
       const [tree, unplaced, loose, counts] = await Promise.all([
         runQuery<OutlineCanvas[]>('getOutlineTree'),
@@ -131,8 +136,13 @@
       facetCounts = counts
       refreshToken += 1
       errorMessage = null
+      loaded = true
+      outlineFailures.succeeded()
     } catch (err) {
-      errorMessage = err instanceof Error ? err.message : String(err)
+      console.error('[outline] refresh failed:', err)
+      errorMessage = "The outline couldn't load —"
+      loaded = true
+      outlineFailures.failed()
     }
   }
 
@@ -171,7 +181,9 @@
         if (request === previewRequest) {
           previewModel = null
           filmstrip = null
-          errorMessage = err instanceof Error ? err.message : String(err)
+          console.error('[outline] preview failed:', err)
+          errorMessage = "The outline couldn't load —"
+          outlineFailures.failed()
         }
       } finally {
         if (request === previewRequest) previewLoading = false
@@ -503,7 +515,9 @@
 
 <div class="outline" data-testid="outline-view">
   {#if errorMessage}
-    <p class="error" role="alert">{errorMessage}</p>
+    <FindingState message={errorMessage} error testid="outline-error" onretry={() => void refresh()} />
+  {:else if !loaded}
+    <FindingState message="Reading the outline…" testid="outline-loading" />
   {/if}
 
   <div class="facet-bar" data-testid="outline-filters">
@@ -545,7 +559,7 @@
 
   <div class="panes">
     <div class="tree" role="tree" aria-label="Project outline" data-testid="outline-tree">
-      {#if rows.length === 0}
+      {#if loaded && !errorMessage && rows.length === 0}
         <p class="empty">No rows match this worklist.</p>
       {/if}
       {#each rows as row (row.key)}
@@ -743,12 +757,6 @@
     min-height: 0;
     color: var(--ew-text);
     font-size: 0.8rem;
-  }
-
-  .error {
-    flex: none;
-    margin: 0 0 0.5rem;
-    color: var(--ew-danger);
   }
 
   .facet-bar {

@@ -29,6 +29,8 @@
   import { closeSearchPanel, type SearchPanelState } from './search'
   import { contextMenuOpen } from '../menus/ContextMenu'
   import { tooltip } from './tooltip'
+  import { failurePerch } from './status'
+  import FindingState from '../ui/FindingState.svelte'
 
   // Read-model shapes (persistence queries-search / queries-structure).
   interface SearchResults {
@@ -90,6 +92,9 @@
   let cursor = $state(0)
   let inputEl = $state<HTMLInputElement | null>(null)
   let listEl = $state<HTMLElement | null>(null)
+  let searchError = $state(false)
+  let retryNonce = $state(0)
+  const searchFailures = failurePerch('search-query', 'Search is still unavailable')
 
   // Same §8.5 point grammar as the tag panel: client coords of the
   // summoning charm, clamped into the host; the panel hangs to the
@@ -139,27 +144,39 @@
   $effect(() => {
     const q = query
     const mode = panel.mode
+    void retryNonce
     if (mode === 'search' && q.startsWith('#')) return
     const timer = setTimeout(() => {
       void (async () => {
-        if (q.trim().length === 0) {
+        try {
+          if (q.trim().length === 0) {
+            results = null
+            quick = []
+            searchError = false
+            return
+          }
+          if (mode === 'quick') {
+            const entries = await runQuery<QuickOpenEntry[]>('quickOpen', { query: q })
+            if (query === q && panel.mode === mode) {
+              quick = entries
+              cursor = 0
+            }
+          } else {
+            const next = await runQuery<SearchResults>('searchProject', { query: q })
+            if (query === q && panel.mode === mode) {
+              results = next
+              expanded = {}
+              cursor = 0
+            }
+          }
+          searchError = false
+          searchFailures.succeeded()
+        } catch {
+          if (query !== q || panel.mode !== mode) return
           results = null
           quick = []
-          return
-        }
-        if (mode === 'quick') {
-          const entries = await runQuery<QuickOpenEntry[]>('quickOpen', { query: q })
-          if (query === q && panel.mode === mode) {
-            quick = entries
-            cursor = 0
-          }
-        } else {
-          const next = await runQuery<SearchResults>('searchProject', { query: q })
-          if (query === q && panel.mode === mode) {
-            results = next
-            expanded = {}
-            cursor = 0
-          }
+          searchError = true
+          searchFailures.failed()
         }
       })()
     }, 120)
@@ -418,8 +435,10 @@
         </li>
       {/each}
     </ul>
+  {:else if searchError}
+    <FindingState message="Search stumbled — keep typing or" error testid="search-error" onretry={() => (retryNonce += 1)} />
   {:else if query.trim().length > 0 && !tagMode}
-    <p class="empty" data-testid="search-empty">No matches.</p>
+    <FindingState message={`No matches for "${query}" — tags need their # prefix.`} testid="search-empty" />
   {/if}
 </div>
 
@@ -539,8 +558,4 @@
     font-size: 0.68rem;
   }
 
-  .empty {
-    margin: 0.4rem 0 0;
-    color: var(--ew-text-muted);
-  }
 </style>
