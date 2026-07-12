@@ -578,15 +578,43 @@ all moved into the RFC.
   + RFC rev pending the owner's build-slot call (vs EPIC-025
   palette picker).
 
-- **Right-rail membership** (alph's stacking screenshot + owner
-  diagnosis, 2026-07-08 — blocks AI-IMP-207 half 2): the rail's
-  surfaces are different kinds of thing (full-screen lens, overlay,
-  anchored menu, card, OS window) and currently stack. Exclusivity
-  is RULED (one open surface, 207 builds it); the conversation
-  decides membership — owner's hypothesis: "probably only toggles
-  that fully change the lens should be on that right-hand side,"
-  and the menu-openers need to be rethought as something else. 207
-  drafts the classification table as the conversation's input.
+- **Right-rail membership — RULED (owner, 2026-07-11; the table
+  conversation).** The classification table was drawn from code
+  and cosigned: the rail becomes LENS TOGGLES ONLY — ⊞ gallery,
+  ▤ outline, ⊛ graph (inert-with-why until real) — plus the ⚠
+  PERCH reclassified as its own species pinned at the rail's foot
+  (not a charm; the app's one status organ, now load-bearing per
+  GR-3 class 6 / the iPad sync perch). The rail reads as "ways of
+  seeing this world" and survives to glass untranslated. The
+  leavers: ☰ MENU → the title strip (window chrome on the 46px
+  band; CHECK ITEM: the strip's Board-menu button already owns
+  the upper-left corner and holds the strip up while open — the
+  owner has caught it standing after unhover; the ☰ move must
+  settle that corner's composition). ⧉ PROJECT dissolves — switch
+  is the project picker (which, owner refinement: presents as an
+  OVERLAY reached by the universal-motions zoom — exit zooms OUT
+  through the cover to the picker, enter zooms back in; the
+  current non-overlay UI is interim), and open-as-source moves
+  into the gallery takeover as a scope affordance. ⌕ SEARCH is
+  ruled FUNCTIONALLY: it dissolves into a UNIVERSAL COMMAND
+  PALETTE — centered, scrim-dimmed, fuzzy-picker (G7 quick-open +
+  the 211 palette + command verbs, one surface); "I agree
+  functionally… that's more of a design push" — the palette's
+  anatomy is a queued kit session, see the entry below. AI-IMP-207
+  half 2 unblocks against this table.
+
+- **The universal command palette (owner + lead, 2026-07-11 —
+  design push, born from the rail ruling).** Search leaves the
+  rail and merges with quick-open into one centered, scrim-dimmed
+  fuzzy palette (⌘K family): find notes/boards/tags/assets AND
+  issue commands from one field. Functional direction RATIFIED;
+  the kit session decides anatomy — result grouping (finds vs
+  verbs), the scrim's place in the GR-2 ladder (rung 3), how tag
+  `#` and command prefixes read, what the empty state teaches,
+  and the touch dialect. Input docs: SearchPanel's shipped
+  behavior (G7 holes: type hole, no error state), the 211
+  palette, N6 (COMPLETE, the reference), B1's ⊡ naming palette
+  framing (create rows are habitat-framed).
 
 (macOS move/resize chord RESOLVED 2026-07-07: owner ruled GO on
 both move AND resize — "I do want the resize… we have so many key
