@@ -68,7 +68,7 @@
     releaseSourceSlot,
     sourceSlotHolder,
   } from '../chrome/source-slot'
-  import { toast } from '../chrome/status'
+  import { failurePerch, toast } from '../chrome/status'
   import { consumeGalleryEverythingRequest } from '../chrome/first-run'
   import { closeTakeover } from '../chrome/takeover'
   import { tooltip } from '../chrome/tooltip'
@@ -79,6 +79,7 @@
   import GalleryFacets from './GalleryFacets.svelte'
   import GalleryQuickLook from './GalleryQuickLook.svelte'
   import TextInput from '../ui/TextInput.svelte'
+  import FindingState from '../ui/FindingState.svelte'
   import { bucketByDate, type GalleryBucket } from './gallery-buckets'
   import { onGalleryReselect } from './gallery-reselect'
   import {
@@ -155,6 +156,8 @@
 
   let index = $state<IndexEntry[]>([])
   let loaded = $state(false)
+  let queryError = $state(false)
+  const galleryFailures = failurePerch('gallery-query', "the gallery still can't load")
   let items = $state<Record<string, Item>>({})
   // Bumped when the cache clears; in-flight hydrations from an
   // older generation are dropped instead of resurrecting stale rows.
@@ -272,18 +275,25 @@
 
   async function refresh(args: typeof facetArgs): Promise<void> {
     const generation = itemsGeneration
-    let next: IndexEntry[]
+    queryError = false
+    loaded = false
     try {
-      next = await runQuery<IndexEntry[]>('getGalleryIndex', args)
+      const next = await runQuery<IndexEntry[]>('getGalleryIndex', args)
+      if (generation !== itemsGeneration) return
+      index = next
+      loaded = true
+      galleryFailures.succeeded()
     } catch {
-      next = []
+      if (generation !== itemsGeneration) return
+      queryError = true
+      loaded = true
+      galleryFailures.failed()
+      return
     }
     // A scope flip (or project push) bumped the generation while this
     // query flew: the rows belong to the other transport — drop them
     // whole, the hydration cache's staleness rule (089 extends it).
     if (generation !== itemsGeneration) return
-    index = next
-    loaded = true
     // A project push (trash, external edits) can retire selected
     // nodes: prune the selection to ids still in the grid. Runs after
     // the await, so these reads are outside the effect's tracking.
@@ -400,7 +410,9 @@
     }
     if (!opened.ok) {
       needsLibrary = true
-      libraryError = opened.message
+      libraryDirInput = dir
+      console.error('[gallery] library open failed:', opened.message)
+      libraryError = "The library didn't open — its folder may have moved."
       return
     }
     if (store) {
@@ -1334,12 +1346,14 @@
             …at the default location, seeded with a small example set
           </span>
         </div>
-        {#if libraryError}
-          <p class="designate-error" data-testid="gallery-designate-error">{libraryError}</p>
-        {/if}
+        {#if libraryError}<FindingState message={libraryError} error testid="gallery-designate-error" onretry={designateLibrary} />{/if}
       </div>
     {:else if scope === 'everything' && !sourceOpen}
-      <p class="empty" data-testid="gallery-scope-waiting">Opening the library…</p>
+      <FindingState message="Opening the library…" testid="gallery-scope-waiting" />
+    {:else if queryError}
+      <FindingState message="The gallery couldn't load —" error testid="gallery-error" onretry={() => void refresh(facetArgs)} />
+    {:else if !loaded}
+      <FindingState message="Opening the library…" testid="gallery-loading" />
     {:else if loaded && index.length === 0}
       <p class="empty" data-testid="gallery-empty">
         {#if kinds.length > 0 || tagFilters.length > 0 || untagged || unplaced}
@@ -1588,11 +1602,6 @@
 
   .designate-row button:hover {
     background: var(--ew-surface-subtle);
-  }
-
-  .designate .designate-error {
-    margin: 0.6rem 0 0;
-    color: var(--ew-danger);
   }
 
   /* 094: the create-new alternative under the designate row. */

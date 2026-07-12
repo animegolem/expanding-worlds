@@ -261,7 +261,7 @@ export function attachGesturesUI(
           detail: {
             message:
               trashedNodes.length === 1
-                ? 'Node moved to Trash with its last placement.'
+                ? 'that was its last pin — the sticky moved to trash.'
                 : `${trashedNodes.length} nodes moved to Trash with their last placements.`,
             keepNodeIds: trashedNodes,
           },

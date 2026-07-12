@@ -120,6 +120,16 @@ function cameraCenterDistance(win: Page, box: { width: number; height: number },
   }
 }
 
+test('zero-hit search names the query and teaches the tag prefix', async () => {
+  const { app, win } = await launchApp('ew-e2e-search-empty-')
+  await win.getByTestId('charm-search').click()
+  await win.getByTestId('search-input').fill('nothing-here-8472')
+  await expect(win.getByTestId('search-empty')).toHaveText(
+    'No matches for "nothing-here-8472" — tags need their # prefix.',
+  )
+  await app.close()
+})
+
 test('search mode: grouped kinds; note, tag, and asset-location activation (§8.3)', async () => {
   const { app, win } = await launchApp('ew-e2e-search-')
   const world = await seedSearchWorld(win)

@@ -56,6 +56,17 @@ async function openGallery(win: Page): Promise<void> {
   await expect(win.getByTestId('takeover-gallery')).toBeVisible()
 }
 
+test('an unavailable library renders user copy, never the transport message', async () => {
+  const { app, win } = await launchApp('ew-e2e-scope-error-')
+  await win.evaluate(() => window.ew.settings.setApp('libraryProjectDir', '/not/a/project'))
+  await openGallery(win)
+  await win.getByTestId('gallery-scope-everything').click()
+  const error = win.getByTestId('gallery-designate-error')
+  await expect(error).toContainText("The library didn't open — its folder may have moved.")
+  await expect(error).not.toContainText('source-slot')
+  await app.close()
+})
+
 test('this world · everything: entries and tag vocabulary swap; actions grey; primary untouched', async () => {
   // Library fixture through an ordinary session (secondary.spec.ts
   // pattern), then the world under test with its own material.

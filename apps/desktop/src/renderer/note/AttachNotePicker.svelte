@@ -14,6 +14,7 @@
   import CommandPalette, { type PaletteItem } from './CommandPalette.svelte'
   import { requestOpenNote } from './open-note'
   import TitleConflictDialog, { type TitleConflict } from './TitleConflictDialog.svelte'
+  import { toast } from '../chrome/status'
 
   let {
     handle,
@@ -134,6 +135,7 @@
           id: noteId_,
         })
         if (restored.status === 'committed') await attach(noteId_)
+        else toast("couldn't restore that note — it's still in trash.", { kind: 'error' })
       })()
     }}
     onChooseDifferent={() => (conflict = null)}

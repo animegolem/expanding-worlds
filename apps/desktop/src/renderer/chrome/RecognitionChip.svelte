@@ -16,6 +16,7 @@
   } from './anchored-placement-dom'
   import {
     applyMirrorChipTags,
+    dismissAllMirrorChips,
     dismissMirrorChip,
     onMirrorUiChanged,
     type MirrorChip,
@@ -44,7 +45,14 @@
       handle.gateway.execute(commandType, payload),
     )
   }
+
+  function onWindowPointerdown(event: PointerEvent): void {
+    if (chips.length === 0 || (event.target as Element | null)?.closest('.chip')) return
+    dismissAllMirrorChips()
+  }
 </script>
+
+<svelte:window onpointerdown={onWindowPointerdown} />
 
 {#each chips as chip (chip.id)}
   {#if chip.kind === 'recognition'}
@@ -71,10 +79,12 @@
           Ignore
         </button>
       {/if}
+      <button type="button" aria-label="Dismiss" onclick={() => dismissMirrorChip(chip.id)}>✕</button>
     </div>
   {:else}
     <div class="chip summary" role="status" data-testid="mirror-summary-chip">
       <span class="message">{chip.message}</span>
+      <button type="button" aria-label="Dismiss" onclick={() => dismissMirrorChip(chip.id)}>✕</button>
     </div>
   {/if}
 {/each}

@@ -119,6 +119,12 @@ its sentence.
 
 ### Issues Encountered
 
+- Round-1 verification corrected Outline: it already caught and rendered an
+  error, but leaked transport text, had no initial-loading state, and could
+  render empty at the same time. The quiet sentence extracted as a
+  presentation-only `FindingState`; query lifecycle, retry count, copy, and
+  perch ownership remain local to each surface.
+
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
 This section is filled out post work as you fill out the checklists.

@@ -32,6 +32,7 @@
   let focused = $state(false)
   let allTags = $state<TagOption[]>([])
   let busy = $state(false)
+  let errorMessage = $state<string | null>(null)
 
   async function loadVocab(): Promise<void> {
     const response = await window.ew.project.query('listTags')
@@ -46,6 +47,7 @@
   async function assign(name: string): Promise<void> {
     if (busy) return
     busy = true
+    errorMessage = null
     try {
       // AI-IMP-182: one add-tag gesture = one Mod+Z. The group folds the
       // create-and-assign pair into a single entry (both GROUP_ONLY).
@@ -57,7 +59,10 @@
           allTags,
         ),
       )
-      if (outcome.status === 'error') return
+      if (outcome.status !== 'committed') {
+        errorMessage = "that tag didn't stick — try again."
+        return
+      }
       tagName = ''
       // Refresh the vocabulary so a just-created tag completes next,
       // then let the panel rebuild its chips.
@@ -104,12 +109,15 @@
     </span>
   {/if}
 </span>
+{#if errorMessage}<span class="assign-error" role="alert">{errorMessage}</span>{/if}
 
 <style>
   .tag-add {
     position: relative;
     display: inline-flex;
   }
+
+  .assign-error { color: var(--ew-danger); font-size: 0.7rem; }
 
   input {
     width: 6.5rem;

@@ -20,6 +20,7 @@
   import { applyMenuCascade } from './menu-cascade'
   import { tooltip } from './tooltip'
   import { runAsUndoGroup } from '../undo/undo-store'
+  import { toast } from './status'
 
   // `closing` drives the unpin fade (RFC §8.2 rev 0.64, AI-IMP-166): the
   // ceremony is for arrival, so close is a plain opacity fade over
@@ -85,7 +86,12 @@
         ? ({ kind: 'node', id: row.ownerNodeId } as const)
         : ({ kind: 'canvas', id: row.canvasId } as const)
     const result = await handle.gateway.execute('RestoreRecord', restore)
-    if (result.status !== 'committed') return
+    if (result.status !== 'committed') {
+      toast("couldn't bring that board back — it stays bookmarked and in trash.", {
+        kind: 'error',
+      })
+      return
+    }
     await jumpToBookmark(handle, row)
     onClose()
   }

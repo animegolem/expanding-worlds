@@ -421,11 +421,11 @@
         if (result.status === 'error') {
           const found = conflictFrom(result, 'create', title)
           if (found) conflict = found
-          else error = result.message
+          else error = "this pin didn't take — try again"
           return
         }
         if (result.status !== 'committed') {
-          error = 'the project changed underneath (retry)'
+          error = "this pin didn't take — try again"
           return
         }
         canvasDraft = ''
@@ -993,7 +993,7 @@
     })
     window.dispatchEvent(
       new CustomEvent('ew-board-notice', {
-        detail: { message: 'Images live on the board — placed beside the note.' },
+        detail: { message: "notes don't hold images yet — it landed on the board." },
       }),
     )
   }

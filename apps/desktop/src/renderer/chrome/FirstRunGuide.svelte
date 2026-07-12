@@ -72,11 +72,12 @@
   // already owns focus (see the effect above) and every descendant
   // (picks, footer buttons) bubbles keydown up to it, so one listener
   // here covers the whole card regardless of which control is focused.
-  // No Escape handling lives here (AI-IMP-183 is silent on this
-  // surface — the guide has no Escape-to-dismiss today), so there is
-  // nothing to collide with.
   function onCardKeydown(event: KeyboardEvent): void {
-    if (event.key === 'ArrowRight') {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
+      void skipFirstRun()
+    } else if (event.key === 'ArrowRight') {
       event.stopPropagation()
       next()
     } else if (event.key === 'ArrowLeft') {
@@ -87,7 +88,12 @@
 </script>
 
 {#if visible}
-  <div class="first-run" data-testid="first-run-guide">
+  <div
+    class="first-run"
+    data-testid="first-run-guide"
+    role="presentation"
+    onclick={() => void skipFirstRun()}
+  >
     <div
       class="card"
       data-testid="first-run-card"
@@ -96,6 +102,7 @@
       role="dialog"
       aria-label="Welcome"
       onkeydown={onCardKeydown}
+      onclick={(event) => event.stopPropagation()}
     >
       <h2 class="title" data-testid="first-run-title">{page.title}</h2>
       {#if page.body}

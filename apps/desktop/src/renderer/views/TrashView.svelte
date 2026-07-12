@@ -25,10 +25,11 @@
   } from '@ew/commands'
   import { onDestroy } from 'svelte'
   import { navigateTo } from '../chrome/navigation'
-  import { toast } from '../chrome/status'
+  import { failurePerch, toast } from '../chrome/status'
   import { closeTakeover } from '../chrome/takeover'
   import { requestCenterPlacements, requestOpenNote } from '../note/open-note'
   import { createProjectCommandPort } from '../project-command-port'
+  import FindingState from '../ui/FindingState.svelte'
 
   type Kind = 'note' | 'node' | 'canvas'
 
@@ -73,6 +74,8 @@
 
   let rows = $state<Row[]>([])
   let loaded = $state(false)
+  let loadError = $state(false)
+  const trashFailures = failurePerch('trash-query', "Trash still can't load")
   let confirmingEmpty = $state(false)
   let emptySummary = $state('')
   let emptyKindCount = $state(0)
@@ -160,13 +163,17 @@
   }
 
   async function load(): Promise<void> {
+    loadError = false
+    loaded = false
     retention = (await query<TrashRetention>('getTrashRetention')) ?? 'never'
-    const view = await query<TrashViewModel>('getTrashView')
-    if (!view) {
-      rows = []
+    const response = await window.ew.project.query('getTrashView')
+    if (!response.ok) {
+      loadError = true
       loaded = true
+      trashFailures.failed()
       return
     }
+    const view = response.result as TrashViewModel
     const draft: Row[] = [
       ...view.notes.map(
         (n): Row => ({ kind: 'note', id: n.id, title: n.title, trashedAt: n.trashedAt, impact: '' }),
@@ -206,6 +213,7 @@
     )
     rows = draft
     loaded = true
+    trashFailures.succeeded()
   }
 
   async function setRetention(value: TrashRetention): Promise<void> {
@@ -354,8 +362,10 @@
 </script>
 
 <div class="trash" data-testid="trash-view">
-  {#if !loaded}
-    <p class="quiet" data-testid="trash-loading">Loading Trash…</p>
+  {#if loadError}
+    <FindingState message="Trash couldn't load —" error testid="trash-error" onretry={() => void load()} afterRetry=" Nothing was deleted." />
+  {:else if !loaded}
+    <FindingState message="Loading Trash…" testid="trash-loading" />
   {:else if rows.length === 0}
     <p class="quiet" data-testid="trash-empty">nothing here — {retentionPromise()}</p>
   {:else}

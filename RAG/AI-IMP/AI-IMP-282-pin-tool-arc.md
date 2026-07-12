@@ -113,6 +113,13 @@ failure inline; the ghost remains until the user leaves.
 
 ### Issues Encountered
 
+- Round-1 verification corrected the tool-manager path to
+  `packages/canvas-engine/src/tools/tool-mode.ts` and confirmed provisional
+  rendering is imperative DOM, not Pixi. `pin-canonical.svg` existed only in
+  the ratified kit; it is transferred verbatim into the desktop master assets.
+  The canvas-engine tool manager exposes a generic leave registration while
+  the renderer-owned pin tool owns all phantom/ghost cleanup.
+
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
 This section is filled out post work as you fill out the checklists.

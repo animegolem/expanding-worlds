@@ -646,7 +646,7 @@
           class:active={activeTool === shape.kind}
           data-testid={`tool-${shape.kind}`}
           onclick={() => setTool(shape.kind)}
-          use:tooltip={{ name: shape.label }}
+          use:tooltip={{ name: shape.label, shortcut: 'esc returns to select' }}
         >
           <span class="glyph">{shape.glyph}</span>
           {shape.label}
@@ -663,7 +663,13 @@
         class:active={activeTool === tool.kind}
         data-testid={`tool-${tool.kind}`}
         onclick={() => setTool(tool.kind)}
-        use:tooltip={{ name: tool.label, shortcut: formatBinding(tool.key) }}
+        use:tooltip={{
+          name: tool.label,
+          shortcut:
+            tool.kind !== 'select'
+              ? `${formatBinding(tool.key)} · esc returns to select`
+              : formatBinding(tool.key),
+        }}
       >
         {tool.glyph}
       </button>
@@ -685,7 +691,11 @@
         class:active={activeTool === tool.kind}
         data-testid={`tool-${tool.kind}`}
         onclick={() => setTool(tool.kind)}
-        use:tooltip={{ name: tool.label, shortcut: formatBinding(tool.key) }}
+        use:tooltip={{
+          name: tool.label,
+          shortcut:
+            `${formatBinding(tool.key)} · esc returns to select`,
+        }}
       >
         {tool.glyph}
       </button>

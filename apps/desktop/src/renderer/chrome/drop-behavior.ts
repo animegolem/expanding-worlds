@@ -1,5 +1,6 @@
 import { DROP_BEHAVIOR_KEY, type DropBehavior } from '@ew/protocol'
 import { onEngagementChanged, wake } from './engagement'
+import { toast } from './status'
 
 /**
  * Multi-drop behavior decision (RFC-0001 §4.9 rev 0.38, AI-IMP-129).
@@ -45,6 +46,10 @@ interface PendingDrop {
   run: (choice: DropChoice) => void
 }
 
+function announceSeparate(count: number): void {
+  toast(`${count} images landed separate`, { surface: 'drop-auto-decision' })
+}
+
 type Listener = (ask: DropAskState | null) => void
 
 let ask: DropAskState | null = null
@@ -73,7 +78,10 @@ function attach(): void {
     pendingAsk = []
     ask = null
     emit()
-    for (const req of queued) req.run('separate')
+    for (const req of queued) {
+      req.run('separate')
+      announceSeparate(req.count)
+    }
   })
 }
 
@@ -148,6 +156,7 @@ export function answerDropBehavior(choice: DropChoice, remember: boolean): void 
  *  then present the next parked ask. */
 export function dismissDropAsk(): void {
   if (ask === null) return
+  announceSeparate(ask.count)
   resolveHead('separate', false)
 }
 

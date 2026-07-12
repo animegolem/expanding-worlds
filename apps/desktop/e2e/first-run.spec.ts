@@ -16,6 +16,30 @@ import { launchApp, launchAppInDir, seedPlacedNote } from './helpers'
 // of 3 artists, 9 works, and the explainer note.
 const SEED_BOARD_COUNT = 3
 
+test('Escape is the guide Skip exit and marks the profile seen', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-firstrun-escape-cfg-'))
+  const { app, win } = await launchApp('ew-e2e-firstrun-escape-', {
+    EW_SUPPRESS_FIRST_RUN: '0',
+    EW_APP_CONFIG_DIR: configDir,
+  })
+  await expect(win.getByTestId('first-run-guide')).toBeVisible()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('first-run-guide')).toHaveCount(0)
+  await expect.poll(async () => (await win.evaluate(() => window.ew.settings.appAll())).firstRunSeen).toBe(true)
+  await app.close()
+})
+
+test('clicking the first-run scrim uses the same Skip exit', async () => {
+  const { app, win } = await launchApp('ew-e2e-firstrun-scrim-', {
+    EW_SUPPRESS_FIRST_RUN: '0',
+  })
+  const guide = win.getByTestId('first-run-guide')
+  await expect(guide).toBeVisible()
+  await guide.click({ position: { x: 5, y: 5 } })
+  await expect(guide).toHaveCount(0)
+  await app.close()
+})
+
 test('a fresh profile shows the guide and renders the ratified page-2 copy verbatim', async () => {
   const { app, win } = await launchApp('ew-e2e-firstrun-', { EW_SUPPRESS_FIRST_RUN: '0' })
 

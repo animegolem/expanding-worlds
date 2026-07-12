@@ -241,8 +241,18 @@ test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', asy
   const before = await revisionOf()
   await win.keyboard.press('n')
   await win.mouse.click(box.x + 400, box.y + 300)
-  await expect(win.getByTestId('pin-provisional-dot')).toBeVisible()
+  await expect(win.getByTestId('pin-provisional-ghost')).toBeVisible()
+  await expect(win.getByTestId('pin-provisional-ghost')).toHaveCSS('opacity', '0.45')
   await expect(win.getByTestId('pin-phantom')).toBeVisible()
+  // Re-click replaces the provisional pair whole; switching tools clears it.
+  await win.mouse.click(box.x + 440, box.y + 330)
+  await expect(win.getByTestId('pin-provisional-ghost')).toHaveCount(1)
+  await expect(win.getByTestId('pin-phantom')).toHaveCount(1)
+  await win.keyboard.press('v')
+  await expect(win.getByTestId('pin-provisional-ghost')).toHaveCount(0)
+  await expect(win.getByTestId('pin-phantom')).toHaveCount(0)
+  await win.keyboard.press('n')
+  await win.mouse.click(box.x + 400, box.y + 300)
   // Nothing persists yet (§6.2): revision untouched while drafting.
   expect(await revisionOf()).toBe(before)
   await win.getByTestId('pin-phantom-draft').fill('Harbor Watch')
@@ -252,7 +262,7 @@ test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', asy
   expect(await revisionOf()).toBe(before + 1)
   // The provisional dot yielded to the real placement, and the panel
   // re-tethered into the ordinary note editor.
-  await expect(win.getByTestId('pin-provisional-dot')).toHaveCount(0)
+  await expect(win.getByTestId('pin-provisional-ghost')).toHaveCount(0)
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor Watch/)
 
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
@@ -271,10 +281,12 @@ test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', asy
   // (Click left of the open panel — DOM panels sit above the canvas.)
   const beforeEscape = await revisionOf()
   await win.mouse.click(box.x + 200, box.y + 550)
-  await expect(win.getByTestId('pin-provisional-dot')).toBeVisible()
+  await expect(win.getByTestId('pin-provisional-ghost')).toBeVisible()
   await win.getByTestId('pin-phantom-draft').press('Escape')
   await expect(win.getByTestId('pin-phantom')).toHaveCount(0)
-  await expect(win.getByTestId('pin-provisional-dot')).toHaveCount(0)
+  await expect(win.getByTestId('pin-provisional-ghost')).toHaveCount(0)
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('tool-select')).toHaveClass(/active/)
   expect(await revisionOf()).toBe(beforeEscape)
   expect(await placements(win)).toBe(1)
 
@@ -334,6 +346,7 @@ test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', asy
 
   // -- duplicate title through the pin tool: the §7.7 conflict dialog
   // appears, nothing is created, and Choose Different keeps drafting.
+  await win.keyboard.press('n')
   await win.mouse.click(box.x + 500, box.y + 500)
   await win.getByTestId('pin-phantom-draft').fill('Harbor Watch')
   await win.getByTestId('pin-phantom-draft').blur()
@@ -341,7 +354,7 @@ test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', asy
   expect(await placements(win)).toBe(2)
   await win.getByTestId('conflict-choose-different').click()
   await win.getByTestId('pin-phantom-draft').press('Escape')
-  await expect(win.getByTestId('pin-provisional-dot')).toHaveCount(0)
+  await expect(win.getByTestId('pin-provisional-ghost')).toHaveCount(0)
   await win.keyboard.press('v')
 
   // -- direct CreatePin + inverse round-trip (revision +1 each).

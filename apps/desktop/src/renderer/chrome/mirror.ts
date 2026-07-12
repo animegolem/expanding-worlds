@@ -21,6 +21,7 @@ import type { CommandResult } from '@ew/commands'
 import { onEngagementChanged, wake } from './engagement'
 import { onImportProgressChanged } from './import-progress'
 import { MIRROR_CHIP_LIFETIME_MS } from './feel'
+import { failurePerch } from './status'
 
 /** One committed foreground import, offered to the mirror. */
 export interface MirrorDrop {
@@ -67,6 +68,10 @@ let pendingAsk: MirrorDrop[] = []
 
 /** Session flags: ONE quiet notice, however many drops fail. */
 let noticeShown = false
+const mirrorFailures = failurePerch(
+  'library-mirror',
+  "drops aren't reaching the library — the next drop retries",
+)
 /** The library slot opens lazily on the first mirror and stays open;
  * a dead-slot failure clears this so the retry rides the next drop. */
 let libraryOpen = false
@@ -235,8 +240,10 @@ async function mirrorOne(drop: MirrorDrop): Promise<void> {
     // notice" and notice is the honest v1 (ticket Design/Approach).
     if (mirrored.code === 'NO_SECONDARY' || mirrored.code === 'NO_PROJECT') libraryOpen = false
     quietNotice(`Library mirror failed — drops are not mirrored (${mirrored.message})`)
+    mirrorFailures.failed()
     return
   }
+  mirrorFailures.succeeded()
   if (drop.bulk) bulkMirrored += 1
 }
 
@@ -300,11 +307,28 @@ export function answerMirrorAsk(yes: boolean): void {
   if (yes) for (const drop of parked) schedule(() => mirrorOne(drop))
 }
 
+/** Leave an unanswered ask undecided. The setting remains unset, so
+ * the next drop may ask again; this is the engagement-fade contract. */
+export function dismissMirrorAsk(): void {
+  if (ask === null) return
+  ask = null
+  pendingAsk = []
+  emit()
+}
+
 /** Explicit ignore — same outcome as the engagement fade. */
 export function dismissMirrorChip(id: number): void {
   if (!chips.some((chip) => chip.id === id)) return
   clearChipTimer(id)
   chips = chips.filter((chip) => chip.id !== id)
+  emit()
+}
+
+/** Pointer-away exit for the transient chip family. */
+export function dismissAllMirrorChips(): void {
+  if (chips.length === 0) return
+  chips = []
+  clearAllChipTimers()
   emit()
 }
 
@@ -351,6 +375,7 @@ export function __resetMirrorForTests(): void {
   clearAllChipTimers()
   pendingAsk = []
   noticeShown = false
+  mirrorFailures.succeeded()
   libraryOpen = false
   chain = Promise.resolve()
   inFlight = 0

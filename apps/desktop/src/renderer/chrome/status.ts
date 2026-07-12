@@ -162,6 +162,26 @@ export function condition(id: string): {
   }
 }
 
+/** GR-1/GR-3 retry-to-perch producer. A second consecutive failure
+ * becomes an ongoing condition; any success reconciles the episode. */
+export function failurePerch(id: string, detail: string, threshold = 2): {
+  failed: () => void
+  succeeded: () => void
+} {
+  const perch = condition(id)
+  let failures = 0
+  return {
+    failed(): void {
+      failures += 1
+      if (failures >= threshold) perch.raise(detail)
+    },
+    succeeded(): void {
+      failures = 0
+      perch.clear()
+    },
+  }
+}
+
 /** Subscribe to the toast stack; fires immediately, returns unsub. */
 export function onToastsChanged(listener: ToastsListener): () => void {
   toastListeners.add(listener)

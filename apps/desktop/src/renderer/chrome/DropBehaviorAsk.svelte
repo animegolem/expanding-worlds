@@ -55,9 +55,14 @@
       dismissDropAsk()
     }
   }
+
+  function onPointerdown(event: PointerEvent): void {
+    if (!ask || (event.target as Element | null)?.closest('.drop-ask')) return
+    dismissDropAsk()
+  }
 </script>
 
-<svelte:window on:keydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onpointerdown={onPointerdown} />
 
 {#if ask}
   <div
@@ -88,6 +93,7 @@
       <input type="checkbox" data-testid="drop-ask-remember" bind:checked={remember} />
       Remember for this project
     </label>
+    <span class="default-copy">esc or walking away lands them separate</span>
   </div>
 {/if}
 
@@ -139,5 +145,10 @@
     font-size: 0.78rem;
     color: var(--ew-text-muted);
     cursor: pointer;
+  }
+
+  .default-copy {
+    color: var(--ew-text-muted);
+    font-size: 0.68rem;
   }
 </style>
