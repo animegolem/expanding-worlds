@@ -10,6 +10,7 @@ import { itemWorldAABB, type ScenePlacement } from '@ew/canvas-engine'
 import type { CommandResult } from '@ew/commands'
 import { placeAnchored } from '../chrome/anchored-placement'
 import { Z } from '../z'
+import { currentSelectionHalo } from './selection-halo'
 import type { CanvasHostHandle } from './host'
 import {
   CAPTION_EDITOR_EVENT,
@@ -78,6 +79,7 @@ export function attachCaptionEditor(
       y: { preferred: 'after', fallback: 'before' },
       gap: 6,
       margin: 4,
+      avoid: currentSelectionHalo() ?? undefined,
     })
     textarea.style.left = `${placed.x}px`
     textarea.style.top = `${placed.y}px`

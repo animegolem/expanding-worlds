@@ -39,12 +39,14 @@ export interface AnchoredPlacementOptions {
   y: AxisPreference
   gap?: number | Partial<PlacementGap>
   margin?: number
+  avoid?: PlacementRect | undefined
 }
 
 export interface AnchoredPlacement {
   x: number
   y: number
   flipped: boolean
+  avoided?: boolean
 }
 
 export const DEFAULT_CHROME_BANDS: Readonly<ChromeBands> = {
@@ -130,6 +132,15 @@ function placeAxis(input: AxisInput): { position: number; flipped: boolean } {
   }
 }
 
+function intersects(a: PlacementRect, b: PlacementRect): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  )
+}
+
 /**
  * Place a measured surface in the host coordinate system. Reserved bands
  * and the outer margin reduce the usable region before either axis flips
@@ -191,7 +202,53 @@ export function placeAnchored(options: AnchoredPlacementOptions): AnchoredPlacem
     gap: gap.y,
   })
 
-  return { x: x.position, y: y.position, flipped: x.flipped || y.flipped }
+  const normal = { x: x.position, y: y.position, flipped: x.flipped || y.flipped }
+  if (!options.avoid) return normal
+
+  const avoid = {
+    x: options.avoid.x,
+    y: options.avoid.y,
+    width: finiteNonNegative(options.avoid.width),
+    height: finiteNonNegative(options.avoid.height),
+  }
+  const normalRect = { x: normal.x, y: normal.y, ...surface }
+  if (!intersects(normalRect, avoid)) return { ...normal, avoided: true }
+
+  const clampX = (value: number): number =>
+    Math.min(Math.max(freeLeft, value), Math.max(freeLeft, freeRight - surface.width))
+  const clampY = (value: number): number =>
+    Math.min(Math.max(freeTop, value), Math.max(freeTop, freeBottom - surface.height))
+  const bySide = {
+    above: { x: clampX(normal.x), y: avoid.y - surface.height },
+    below: { x: clampX(normal.x), y: avoid.y + avoid.height },
+    left: { x: avoid.x - surface.width, y: clampY(normal.y) },
+    right: { x: avoid.x + avoid.width, y: clampY(normal.y) },
+  }
+  const order: Array<keyof typeof bySide> = []
+  const add = (side: keyof typeof bySide): void => {
+    if (!order.includes(side)) order.push(side)
+  }
+  if (options.y.preferred === 'after') add('below')
+  if (options.y.preferred === 'before') add('above')
+  if (options.x.preferred === 'after') add('right')
+  if (options.x.preferred === 'before') add('left')
+  if (options.y.fallback === 'after') add('below')
+  if (options.y.fallback === 'before') add('above')
+  if (options.x.fallback === 'after') add('right')
+  if (options.x.fallback === 'before') add('left')
+  ;(['below', 'above', 'right', 'left'] as const).forEach(add)
+
+  for (const side of order) {
+    const at = bySide[side]
+    const rect = { ...at, ...surface }
+    const inside =
+      at.x >= freeLeft &&
+      at.y >= freeTop &&
+      at.x + surface.width <= freeRight &&
+      at.y + surface.height <= freeBottom
+    if (inside && !intersects(rect, avoid)) return { ...normal, ...at, avoided: true }
+  }
+  return { ...normal, avoided: false }
 }
 
 export function pointAnchor(x: number, y: number): PlacementRect {

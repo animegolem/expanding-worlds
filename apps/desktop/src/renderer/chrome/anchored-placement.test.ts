@@ -111,6 +111,58 @@ describe('placeAnchored (§8.8)', () => {
     })
     expect(placed).toEqual({ x: 407, y: 311, flipped: false })
   })
+
+  it('keeps a clear preferred placement when an avoid rect is present', () => {
+    expect(
+      placeAnchored({
+        anchor: pointAnchor(100, 100),
+        surface: { width: 80, height: 60 },
+        host: HOST,
+        x: { preferred: 'after' },
+        y: { preferred: 'after' },
+        avoid: { x: 300, y: 300, width: 100, height: 100 },
+      }),
+    ).toEqual({ x: 100, y: 100, flipped: false, avoided: true })
+  })
+
+  it('chooses the preferred non-intersecting side before clamping', () => {
+    expect(
+      placeAnchored({
+        anchor: { x: 300, y: 250, width: 100, height: 80 },
+        surface: { width: 120, height: 70 },
+        host: HOST,
+        x: { preferred: 'center' },
+        y: { preferred: 'after', fallback: 'before' },
+        avoid: { x: 280, y: 230, width: 160, height: 140 },
+      }),
+    ).toEqual({ x: 290, y: 370, flipped: false, avoided: true })
+  })
+
+  it('treats an exact halo edge touch as non-intersection', () => {
+    const placed = placeAnchored({
+      anchor: pointAnchor(200, 200),
+      surface: { width: 80, height: 60 },
+      host: HOST,
+      x: { preferred: 'start' },
+      y: { preferred: 'start' },
+      avoid: { x: 120, y: 200, width: 80, height: 60 },
+    })
+    expect(placed).toEqual({ x: 200, y: 200, flipped: false, avoided: true })
+  })
+
+  it('keeps the reservation frame when no side can clear the halo', () => {
+    const placed = placeAnchored({
+      anchor: pointAnchor(100, 100),
+      surface: { width: 600, height: 400 },
+      host: HOST,
+      x: { preferred: 'start' },
+      y: { preferred: 'start' },
+      avoid: { x: 0, y: 0, width: 800, height: 600 },
+    })
+    expect(placed.avoided).toBe(false)
+    expect(placed.x).toBeGreaterThanOrEqual(24)
+    expect(placed.y).toBeGreaterThanOrEqual(70)
+  })
 })
 
 describe('anchored-surface adoption guard', () => {

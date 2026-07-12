@@ -6,12 +6,12 @@ tags:
   - chrome
   - canvas
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-286]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.8
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-12
 ---
 
 # AI-IMP-287-charm-halo-clearance
@@ -66,18 +66,18 @@ Node-anchored popover call sites (appearance popover et al. —
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify the kit's halo envelope (Home Canvas kit +
+- [x] Round-1: verify the kit's halo envelope (Home Canvas kit +
       preflight F2) and enumerate every node-anchored positioner
       in current source; record the list here.
-- [ ] selectionHaloRect() exported from charms-ui.ts with unit
+- [x] selectionHaloRect() exported from selection-halo.ts with unit
       tests (halo = card + 12 + charm height; empty when no
       selection).
-- [ ] anchored-placement.ts honors `avoid` (flip/clamp away from
+- [x] anchored-placement.ts honors `avoid` (flip/clamp away from
       the halo, still inside the reservation frame); unit tests.
-- [ ] All enumerated node-anchored call sites pass the halo.
-- [ ] No positioner measures clearance off raw card bounds
+- [x] All enumerated node-anchored call sites pass the halo.
+- [x] No positioner measures clearance off raw card bounds
       (assert via test or targeted grep in review).
-- [ ] Full local gate green with counts read.
+- [x] Full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -92,3 +92,19 @@ unchanged from today.
 
 ### Issues Encountered
 
+#### Round-1 source verification (2026-07-12)
+
+- The kit drawing is ambiguous about which sides include charm height;
+  shipped selection furniture resolves it. The pure halo is card + 12 on
+  left/right/top and card + 12 + the measured selection-bar height on
+  bottom, with a 32px fallback.
+- The four raw node-relative positioners are charm tags, charm
+  appearance, the node context menu, and caption editing/promotion.
+  TagPanel remains point-anchored to its opener and receives only the
+  reservation-frame clamp.
+- `placeAnchored` gains an optional avoid rect. It chooses a
+  non-intersecting side first, then the reservation frame wins in a
+  degenerate viewport; the result reports `avoided: false` when both
+  constraints cannot be satisfied.
+- Halo measurement is event driven through a mounted-provider
+  registration. No render-frame polling is introduced.
