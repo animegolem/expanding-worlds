@@ -6,7 +6,7 @@ tags:
   - canvas
   - decorations
   - design-pass
-kanban_status: planned
+kanban_status: cancelled
 depends_on: []
 parent_epic:
 confidence_score: 0.6
@@ -15,6 +15,8 @@ date_created: 2026-07-08
 
 
 # AI-IMP-190-shape-picker-and-gap-review
+
+> SUPERSEDED (2026-07-12): the hold flyout is ruled and drawn (kit 2a; DESIGN-LETTER ruling 3) and re-scoped as AI-IMP-290 under AI-EPIC-029, which cites this ticket's Miro comparison table as the shape-set benchmark — the table stays authoritative reading.
 
 ## Summary of Issue #1
 

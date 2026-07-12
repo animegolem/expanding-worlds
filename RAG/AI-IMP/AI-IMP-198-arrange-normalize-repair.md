@@ -6,7 +6,7 @@ tags:
   - canvas
   - dock
   - bug
-kanban_status: planned
+kanban_status: cancelled
 depends_on: []
 parent_epic:
 confidence_score: 0.6
@@ -15,6 +15,8 @@ date_created: 2026-07-08
 
 
 # AI-IMP-198-arrange-normalize-repair
+
+> SUPERSEDED (2026-07-12): arrange rides the selection charm bar (kit ruling 7 — one ⌗ charm, grouped popover) and the repair is re-scoped as AI-IMP-291 under AI-EPIC-029, which carries this ticket's align-center defect and cites its PureRef/Figma audit.
 
 ## Summary of Issue #1
 

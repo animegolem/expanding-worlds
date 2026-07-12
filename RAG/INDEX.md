@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 5 | 5 |
+| Planned | 6 | 19 |
 | Deferred | 1 | 0 |
-| Cancelled | 0 | 0 |
-| Completed | 20 | 251 |
-| **Total** | **28** | **279** |
+| Cancelled | 0 | 1 |
+| Completed | 20 | 252 |
+| **Total** | **29** | **294** |
 
 ## In Progress
 
@@ -73,6 +73,28 @@
 
 ---
 
+### [[AI-EPIC-029-the-kit-adoption-push|EPIC-029: The kit adoption push]]
+> The app ships faster than its design language: the dock is a
+
+**IMPs:**
+- [[AI-IMP-286-reservation-frame-tokens|IMP-286]] Reservation frame tokens — planned
+- [[AI-IMP-287-charm-halo-clearance|IMP-287]] Charm halo clearance — planned
+- [[AI-IMP-288-kit-input-components|IMP-288]] Kit input components — planned
+- [[AI-IMP-289-dock-rebuild|IMP-289]] Dock rebuild — planned
+- [[AI-IMP-290-shape-flyout|IMP-290]] Shape flyout — planned
+- [[AI-IMP-291-arrange-and-restyle-panels|IMP-291]] Arrange and restyle panels — planned
+- [[AI-IMP-292-board-and-ground-menus|IMP-292]] Board and ground menus — planned
+- [[AI-IMP-293-rail-recomposition|IMP-293]] Rail recomposition — planned
+- [[AI-IMP-294-search-palette|IMP-294]] Search palette — planned
+- [[AI-IMP-295-identity-corner|IMP-295]] Identity corner — planned
+- [[AI-IMP-296-note-paper-postures|IMP-296]] Note paper postures — planned
+- [[AI-IMP-297-caption-plaque|IMP-297]] Caption plaque — planned
+- [[AI-IMP-298-lens-wires|IMP-298]] Lens wires — planned
+- [[AI-IMP-299-gallery-kit-adoption|IMP-299]] Gallery kit adoption — planned
+- [[AI-IMP-300-settings-sheet-adoption|IMP-300]] Settings sheet adoption — planned
+
+---
+
 ## Anomalies
 
 ### Orphaned IMPs (no epic dependency)
@@ -80,16 +102,15 @@
 - [[AI-IMP-185-gesture-pipeline-hardening|IMP-185]] — planned, no epic dependency found
 - [[AI-IMP-186-frame-appearance-membership-guard|IMP-186]] — planned, no epic dependency found
 - [[AI-IMP-187-rotated-adornment-geometry|IMP-187]] — planned, no epic dependency found
-- [[AI-IMP-189-dock-tooling-design-pass|IMP-189]] — planned, no epic dependency found
-- [[AI-IMP-190-shape-picker-and-gap-review|IMP-190]] — planned, no epic dependency found
+- [[AI-IMP-189-dock-tooling-design-pass|IMP-189]] — cancelled, no epic dependency found
+- [[AI-IMP-190-shape-picker-and-gap-review|IMP-190]] — cancelled, no epic dependency found
 - [[AI-IMP-195-image-crispness|IMP-195]] — planned, no epic dependency found
 - [[AI-IMP-197-frame-drop-feel-and-reflow|IMP-197]] — planned, no epic dependency found
-- [[AI-IMP-198-arrange-normalize-repair|IMP-198]] — planned, no epic dependency found
+- [[AI-IMP-198-arrange-normalize-repair|IMP-198]] — cancelled, no epic dependency found
 - [[AI-IMP-201-wheel-over-panel-passthrough|IMP-201]] — planned, no epic dependency found
 - [[AI-IMP-202-desk-physics-absent|IMP-202]] — planned, no epic dependency found
 - [[AI-IMP-204-gallery-preview-inspector|IMP-204]] — planned, no epic dependency found
-- [[AI-IMP-207-rail-surface-exclusivity|IMP-207]] — planned, no epic dependency found
-- [[AI-IMP-208-make-canvas-charm-design-push|IMP-208]] — planned, no epic dependency found
+- [[AI-IMP-207-rail-surface-exclusivity|IMP-207]] — cancelled, no epic dependency found
 - [[AI-IMP-217-webkit-renderer-spike|IMP-217]] — planned, no epic dependency found
 - [[AI-IMP-222-import-streaming|IMP-222]] — planned, no epic dependency found
 - [[AI-IMP-225-band-and-menu-test-refinements|IMP-225]] — planned, no epic dependency found
@@ -123,7 +144,7 @@ Git edit date so a second review can be judged.
 ### > 600 LOC
 
 - pnpm-lock.yaml (5910 LOC)
-- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (4942 LOC)
+- RAG/RFC-0001-Core-Note-Node-and-Canvas-Model.md (5026 LOC)
 - spike/tauri-shell/src-tauri/Cargo.lock (4391 LOC)
 - apps/desktop/src/renderer/note/NotePanel.svelte (2234 LOC) — review stale: 2026-07-12T01:53:22Z at 2161 LOC; +73 LOC; last edit 2026-07-12T13:52:12-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
 - apps/desktop/src/renderer/canvas/host.ts (2172 LOC) — review stale: 2026-07-12T01:53:22Z at 2172 LOC; same LOC, content changed; last edit 2026-07-12T00:32:05-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
@@ -145,7 +166,6 @@ Git edit date so a second review can be judged.
 - apps/desktop/src/renderer/tags/TagPanel.svelte (871 LOC) — review stale: 2026-07-12T01:53:22Z at 851 LOC; +20 LOC; last edit 2026-07-12T13:52:04-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
 - apps/desktop/e2e/panels.spec.ts (847 LOC) — review stale: 2026-07-12T01:53:24Z at 826 LOC; +21 LOC; last edit 2026-07-12T06:49:32-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
 - apps/desktop/src/renderer/chrome/Dock.svelte (843 LOC) — review stale: 2026-07-12T01:53:22Z at 833 LOC; +10 LOC; last edit 2026-07-12T06:50:35-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
-- RAG/DESIGN-QUEUE.md (810 LOC)
 - packages/persistence/src/handlers/lifecycle.ts (802 LOC) — review stale: 2026-07-12T01:53:22Z at 785 LOC; +17 LOC; last edit 2026-07-12T00:32:05-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
 - apps/desktop/src/main/snapshot.ts (791 LOC) — review stale: 2026-07-12T01:53:23Z at 791 LOC; same LOC, content changed; last edit 2026-07-12T01:33:51-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - apps/desktop/src/utility/index.ts (755 LOC) — review stale: 2026-07-12T01:53:22Z at 709 LOC; +46 LOC; last edit 2026-07-12T01:33:51-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
@@ -176,7 +196,6 @@ Git edit date so a second review can be judged.
 - apps/desktop/src/renderer/canvas/import-surfaces.ts (568 LOC) — review stale: 2026-07-12T01:53:22Z at 565 LOC; +3 LOC; last edit 2026-07-12T00:32:05-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
 - apps/desktop/src/renderer/chrome/SourcePanel.svelte (564 LOC) — review current: 2026-07-12T01:53:23Z at 564 LOC; unchanged; last edit 2026-07-08T04:06:00-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - apps/desktop/src/renderer/chrome/SearchPanel.svelte (561 LOC) — review stale: 2026-07-12T01:53:23Z at 546 LOC; +15 LOC; last edit 2026-07-12T06:49:32-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
-- RAG/spike-reports/rust-persistence-seams.md (558 LOC)
 - apps/desktop/e2e/shell.spec.ts (555 LOC)
 - apps/desktop/e2e/gestures.spec.ts (554 LOC)
 - apps/desktop/src/renderer/canvas/gestures-ui.ts (548 LOC) — review stale: 2026-07-12T01:53:23Z at 548 LOC; same LOC, content changed; last edit 2026-07-12T06:49:32-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
@@ -255,7 +274,6 @@ Git edit date so a second review can be judged.
 - apps/desktop/e2e/search.spec.ts (315 LOC)
 - apps/desktop/e2e/beats.spec.ts (314 LOC)
 - packages/persistence/src/gc.ts (312 LOC)
-- RAG/spike-reports/tiptap-verdict.md (309 LOC)
 - packages/persistence/src/handlers/frames.ts (306 LOC)
 - apps/desktop/e2e/note-lifecycle.spec.ts (306 LOC)
 - apps/desktop/e2e/gallery-selection.spec.ts (303 LOC)
@@ -422,7 +440,7 @@ Git edit date so a second review can be judged.
 - [[AI-EPIC-023-paper-note-lifecycle|EPIC-023]] Paper note lifecycle — 2026-07-07
   - [[AI-IMP-134-paper-hardware-and-the-bound-page|IMP-134]] Paper hardware and the bound page — completed
   - [[AI-IMP-135-lifecycle-transitions-and-beats|IMP-135]] Lifecycle transitions and beats — completed
-  - [[AI-IMP-194-note-paper-shape|IMP-194]] Note paper shape — planned
+  - [[AI-IMP-194-note-paper-shape|IMP-194]] Note paper shape — cancelled
 - [[AI-EPIC-028-the-outliner-control-panel|EPIC-028]] The outliner control panel — 2026-07-11
   - [[AI-IMP-273-outliner-read-models|IMP-273]] Outliner read models — completed
   - [[AI-IMP-274-outliner-two-pane-shell|IMP-274]] Outliner two pane shell — completed

@@ -7,7 +7,7 @@ tags:
   - rail
   - bug
   - design-first
-kanban_status: planned
+kanban_status: cancelled
 depends_on: []
 parent_epic:
 confidence_score: 0.6
@@ -16,6 +16,8 @@ date_created: 2026-07-08
 
 
 # AI-IMP-207-rail-surface-exclusivity
+
+> SUPERSEDED (2026-07-12): half 1 (exclusivity) shipped earlier; half 2 (membership) was ruled by the rail table (DESIGN-QUEUE, 2026-07-11) and drawn in the kit push — re-scoped as AI-IMP-293 under AI-EPIC-029.
 
 ## Summary of Issue #1
 

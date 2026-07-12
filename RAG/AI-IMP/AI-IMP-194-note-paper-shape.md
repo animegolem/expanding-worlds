@@ -6,7 +6,7 @@ tags:
   - notes
   - design-pass
   - paper
-kanban_status: planned
+kanban_status: cancelled
 depends_on: [AI-IMP-134]
 parent_epic: [[AI-EPIC-023-paper-note-lifecycle]]
 confidence_score: 0.6
@@ -15,6 +15,8 @@ date_created: 2026-07-08
 
 
 # AI-IMP-194-note-paper-shape
+
+> SUPERSEDED (2026-07-12): the Note Paper kit rules the non-bound presentation this ticket was blocked on (postures, hardware law, open-as-flight; DESIGN-LETTER rulings 8-9). Re-scoped as AI-IMP-296 under AI-EPIC-029.
 
 ## Summary of Issue #1
 

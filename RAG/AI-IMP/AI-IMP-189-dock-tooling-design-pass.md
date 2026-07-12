@@ -6,7 +6,7 @@ tags:
   - chrome
   - design-pass
   - dock
-kanban_status: planned
+kanban_status: cancelled
 depends_on: []
 parent_epic:
 confidence_score: 0.55
@@ -15,6 +15,8 @@ date_created: 2026-07-08
 
 
 # AI-IMP-189-dock-tooling-design-pass
+
+> SUPERSEDED (2026-07-12): the kit push drew the full dock family (Home Canvas kit, DESIGN-LETTER ruling 2) and the rebuild is re-scoped as AI-IMP-289 under AI-EPIC-029. This restyle-only ticket is retired; nothing here remains unowned.
 
 ## Summary of Issue #1
 

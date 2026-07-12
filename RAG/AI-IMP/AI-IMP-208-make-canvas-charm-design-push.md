@@ -6,15 +6,18 @@ tags:
   - design
   - charms
 assignee: owner
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic:
 confidence_score: 0.8
 date_created: 2026-07-08
+date_completed: 2026-07-12
 ---
 
 
 # AI-IMP-208-make-canvas-charm-design-push
+
+> COMPLETED BY THE KIT PUSH (2026-07-12): the Make-canvas charm landed in the B1 "A Board Is Born" lifecycle + Home Canvas kit (post-click = the dive, ruled rev 0.70 and shipped in AI-IMP-283); the charm-bar drawing exists. Owner design deliverable satisfied.
 
 ## Summary of Issue #1
 
