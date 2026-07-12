@@ -994,3 +994,23 @@ look exactly as before (no regression at 100%+ display scaling).
   then the birth unmakes — one entry. The make-canvas charm on a node
   that already fronts a board should be calm-inert with a tooltip
   saying why, not grayed-out-dead.
+
+## 2026-07-12 — frame wave (AI-IMP-286/287/288, EPIC-029 phase A)
+
+**Build:** next tagged build (or a reloaded `pnpm dev` window after
+`pnpm -r build`).
+**Try (a feel pass on "nothing overlaps anymore"):**
+- Toggle the reservation inspector (dev chord — same family as the
+  feel dial) and confirm the four tinted bands read sensibly at your
+  window sizes; the left edge should reserve nothing.
+- Open popovers near every edge: search, tag panel, note format bar,
+  context menus in the corners. Everything should land inside the
+  frame with even breathing room — nothing tucked under strip, rail,
+  or dock.
+- Select a node near each screen edge and open its appearance, tags,
+  context menu, and caption editor. None of them should graze the
+  selection bar under the card; in a tiny window they may cover it
+  (frame wins) but must never leave the frame.
+- Nothing else should look different — this wave is invisible if it
+  worked. The four new input controls are dormant until the dock
+  rebuild; skip them.

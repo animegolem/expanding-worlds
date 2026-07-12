@@ -12,6 +12,23 @@ annotations.
 
 ## [Unreleased]
 
+### For testers (the chrome learns its edges)
+- Changed: floating menus, tooltips, and pop-up panels now respect a
+  shared frame — nothing opens under the title strip, the right rail,
+  or the dock anymore, and pop-ups near a selected image keep clear of
+  its buttons instead of grazing them. You shouldn't notice anything —
+  that's the point; if a menu ever covers chrome, that's now a bug.
+
+### Under the hood (frame wave, EPIC-029 phase A)
+- AI-IMP-286 — reservation-frame band tokens + frame provider; all
+  anchored surfaces and takeovers clamp inside frame + gutter; density
+  switch scaffolding; release-present dev inspector; literal-band guard.
+- AI-IMP-287 — measured bottom-only selection halo; avoid-rect
+  placement (frame-first on degeneracy) on the four raw-node paths.
+- AI-IMP-288 — kit input primitives (ColorPicker, SwatchRow,
+  PickerList, Stepper) with pure state modules; exact 12-tuple
+  no-native-inputs guard (natives retire in phases B–C).
+
 ### For testers
 - Changed (your field report): the outline preview no longer chases the
   mouse — hovering rows only highlights them. Selection is deliberate:
