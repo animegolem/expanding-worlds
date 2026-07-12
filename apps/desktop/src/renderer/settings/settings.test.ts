@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { __resetStatusForTests, onToastsChanged, type ToastEntry } from '../chrome/status'
+import {
+  __resetStatusForTests,
+  onConditionsChanged,
+  onToastsChanged,
+  type Condition,
+  type ToastEntry,
+} from '../chrome/status'
 import { __resetSettingsForTests, appSettings, initSettings, setAppSetting } from './settings'
 
 // CA-015 (AI-IMP-237): the renderer's optimistic app-setting apply
@@ -17,6 +23,8 @@ interface EwSettingsStub {
 
 function stubWindow(settings: EwSettingsStub): void {
   vi.stubGlobal('window', {
+    addEventListener: () => {},
+    removeEventListener: () => {},
     ew: {
       settings,
       window: {
@@ -25,12 +33,23 @@ function stubWindow(settings: EwSettingsStub): void {
       },
     },
   })
-  vi.stubGlobal('document', { documentElement: { dataset: {} as Record<string, string> } })
+  vi.stubGlobal('document', {
+    documentElement: {
+      dataset: {} as Record<string, string>,
+      addEventListener: () => {},
+    },
+  })
 }
 
 function trackToasts(): { current: readonly ToastEntry[] } {
   const box: { current: readonly ToastEntry[] } = { current: [] }
   onToastsChanged((toasts) => (box.current = toasts))
+  return box
+}
+
+function trackConditions(): { current: readonly Condition[] } {
+  const box: { current: readonly Condition[] } = { current: [] }
+  onConditionsChanged((conditions) => (box.current = conditions))
   return box
 }
 
@@ -137,6 +156,25 @@ describe('initSettings — CA-015 corrupt-file recovery toast', () => {
     expect(toasts.current).toHaveLength(1)
     expect(toasts.current[0]?.message).toMatch(/reset to defaults/i)
     expect(toasts.current[0]?.kind).toBe('error')
+  })
+
+  it('consumes an incomplete-quit fact into a dismissible perch', async () => {
+    const setApp = vi.fn(() => Promise.resolve({ ok: true }))
+    stubWindow({
+      appAll: () => Promise.resolve({ lastQuitBackupIncomplete: true }),
+      setApp,
+      onAppChanged: () => () => {},
+    })
+    const conditions = trackConditions()
+    await initSettings()
+    expect(conditions.current).toMatchObject([
+      {
+        id: 'last-quit-backup',
+        detail: 'last session closed before its backup finished.',
+        dismissible: true,
+      },
+    ])
+    expect(setApp).toHaveBeenCalledWith('lastQuitBackupIncomplete', false)
   })
 })
 

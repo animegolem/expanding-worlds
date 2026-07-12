@@ -437,7 +437,7 @@ export async function pullLandmarkPin(placementId: string): Promise<void> {
   if (isLast) {
     window.dispatchEvent(
       new CustomEvent('ew-board-notice', {
-        detail: { message: 'Node moved to Trash with its last placement.' },
+        detail: { message: 'that was its last pin — the sticky moved to trash.' },
       }),
     )
     return

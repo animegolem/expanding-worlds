@@ -10,6 +10,7 @@ import {
   type DropChoice,
   type DropSource,
 } from './drop-behavior'
+import { __resetStatusForTests, onToastsChanged, type ToastEntry } from './status'
 
 /**
  * AI-IMP-178: overlapping multi-drops must QUEUE, not clobber. The old
@@ -44,10 +45,12 @@ beforeEach(() => {
   })
   vi.stubGlobal('document', { documentElement: { addEventListener: vi.fn() } })
   __resetDropBehaviorForTests()
+  __resetStatusForTests()
 })
 
 afterEach(() => {
   __resetDropBehaviorForTests()
+  __resetStatusForTests()
   vi.unstubAllGlobals()
 })
 
@@ -77,6 +80,11 @@ function makeReq(count: number, source: DropSource = 'drop') {
 }
 
 describe('drop-behavior queue (AI-IMP-178)', () => {
+  function trackToasts(): { current: readonly ToastEntry[] } {
+    const box: { current: readonly ToastEntry[] } = { current: [] }
+    onToastsChanged((toasts) => (box.current = toasts))
+    return box
+  }
   it('a concrete stored behavior runs immediately and never asks', async () => {
     storedBehavior = 'group-and-sort'
     const ask = trackAsk()
@@ -162,6 +170,7 @@ describe('drop-behavior queue (AI-IMP-178)', () => {
   })
 
   it('dismiss keeps the head separate, then presents the next parked ask', async () => {
+    const toasts = trackToasts()
     const ask = trackAsk()
     const a = makeReq(2)
     const b = makeReq(3)
@@ -170,12 +179,21 @@ describe('drop-behavior queue (AI-IMP-178)', () => {
 
     dismissDropAsk()
     expect(a.runs).toEqual(['separate'])
+    expect(toasts.current.at(-1)?.message).toBe('2 images landed separate')
     expect(ask.current).toMatchObject({ count: 3 }) // B presents
     expect(b.runs).toEqual([])
 
     dismissDropAsk()
     expect(b.runs).toEqual(['separate'])
     expect(ask.current).toBeNull()
+  })
+
+  it('an explicit separate choice stays silent', async () => {
+    const toasts = trackToasts()
+    const { req } = makeReq(3)
+    await requestDropBehavior(req)
+    answerDropBehavior('separate', false)
+    expect(toasts.current).toEqual([])
   })
 
   it('answering with no ask showing is a no-op', () => {

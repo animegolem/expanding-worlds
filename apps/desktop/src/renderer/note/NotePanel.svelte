@@ -993,7 +993,7 @@
     })
     window.dispatchEvent(
       new CustomEvent('ew-board-notice', {
-        detail: { message: 'Images live on the board — placed beside the note.' },
+        detail: { message: "notes don't hold images yet — it landed on the board." },
       }),
     )
   }

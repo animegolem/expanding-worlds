@@ -8,6 +8,7 @@ import {
   condition,
   dismissCondition,
   dismissToast,
+  failurePerch,
   onConditionsChanged,
   onToastsChanged,
   reportRecoveryRepairs,
@@ -129,6 +130,17 @@ describe('status store (RFC §8.6)', () => {
     unsub()
     condition('a').clear()
     expect(calls).toBe(1)
+  })
+
+  it('promotes the second consecutive failure to a perch and success clears it', () => {
+    const seen = trackConditions()
+    const failures = failurePerch('finding', 'finding still unavailable')
+    failures.failed()
+    expect(seen.current).toEqual([])
+    failures.failed()
+    expect(seen.current).toMatchObject([{ id: 'finding', detail: 'finding still unavailable' }])
+    failures.succeeded()
+    expect(seen.current).toEqual([])
   })
 })
 

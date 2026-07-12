@@ -110,6 +110,14 @@ backup finished" until dismissed.
 
 ### Issues Encountered
 
+- Round-1 verification found row 5 already voiced with drifted copy and row 6
+  already voiced by both pull-pin paths after the trust merge; both are exact
+  copy/channel corrections. Snapshot completion was not observable because
+  `runSnapshot()` returns void, so the quit boundary records only an actual
+  race timeout. Seed failure already crosses utility IPC as `seeded: false` and
+  is voiced in renderer `first-run.ts`. Mirror escalation counts only genuine
+  mirror writes and clears after a later success.
+
 <!--
 The comments under the 'Issues Encountered' heading are the only comments you MUST not remove
 This section is filled out post work as you fill out the checklists.

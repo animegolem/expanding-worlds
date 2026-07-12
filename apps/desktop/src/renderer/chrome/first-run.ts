@@ -15,6 +15,7 @@
  * "the library opens pre-arranged").
  */
 import { openTakeover, registerInputBlocker } from './takeover'
+import { toast } from './status'
 
 /** App-tier setting keys (flat app-settings.json, no migration). */
 export const FIRST_RUN_SEEN_KEY = 'firstRunSeen'
@@ -112,6 +113,9 @@ async function ensureExampleLibrary(): Promise<void> {
       title: 'Library',
     })
     if (!created.ok) return
+    if (!created.seeded) {
+      toast("the starter images didn't arrive — the gallery starts empty.", { kind: 'error' })
+    }
     await window.ew.secondary.close('library')
     await window.ew.settings.setApp('libraryProjectDir', dir)
   } catch {

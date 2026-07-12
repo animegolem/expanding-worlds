@@ -300,6 +300,7 @@ function appConfigDir(): string {
 }
 
 const APP_SETTINGS_FILENAME = 'app-settings.json'
+const LAST_QUIT_BACKUP_INCOMPLETE_KEY = 'lastQuitBackupIncomplete'
 let appSettings: Record<string, unknown> | null = null
 // Set when loadAppSettings() had to recover from a corrupt file;
 // app-settings:get consumes (reads and clears) it once so the
@@ -1319,10 +1320,14 @@ app.on('window-all-closed', () => {
   // even on failure and is time-bounded so a backup hiccup never traps
   // quit; then close the project so the writer lock releases promptly
   // (§11.1) and kill the utility.
-  void Promise.race([
-    runEndSessionData(Date.now() + 15_000),
-    new Promise((resolve) => setTimeout(resolve, 15_000)),
-  ])
+  let dataFinished = false
+  const dataWork = runEndSessionData(Date.now() + 15_000).then(() => {
+    dataFinished = true
+  })
+  void Promise.race([dataWork, new Promise((resolve) => setTimeout(resolve, 15_000))])
+    .then(() => {
+      setAppSetting(LAST_QUIT_BACKUP_INCOMPLETE_KEY, !dataFinished)
+    })
     .then(() =>
       Promise.race([
         callUtility({ type: 'close-project' }),

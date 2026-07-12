@@ -670,7 +670,9 @@ test('image dropped on a note panel lands on the board beside it (§6.1, AI-IMP-
   ).toBeLessThan(300)
 
   // A word about where it went.
-  await expect(win.getByTestId('board-notice')).toContainText('Images live on the board')
+  await expect(win.getByTestId('board-notice')).toContainText(
+    "notes don't hold images yet — it landed on the board.",
+  )
 
   // The note body is exactly as seeded — the drop never reached the editor.
   const note = await runQuery<{ body: string }>(win, 'getNote', { noteId })

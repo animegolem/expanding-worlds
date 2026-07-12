@@ -12,7 +12,7 @@
  */
 import { setFadeDelay } from '../chrome/engagement'
 import { CHROME_FADE_DELAY_MS } from '../chrome/feel'
-import { toast } from '../chrome/status'
+import { condition, toast } from '../chrome/status'
 import { applyTheme, type ThemeName } from '../theme'
 
 export type FadeDelay = number | 'never'
@@ -120,6 +120,12 @@ export async function initSettings(): Promise<void> {
   initialized = true
   try {
     const raw = await window.ew.settings.appAll()
+    if (raw['lastQuitBackupIncomplete'] === true) {
+      condition('last-quit-backup').raise('last session closed before its backup finished.', {
+        dismissible: true,
+      })
+      void window.ew.settings.setApp('lastQuitBackupIncomplete', false)
+    }
     current = sanitize(raw)
     // CA-015 (AI-IMP-237): main flags a corrupt-file recovery once,
     // on the read that discovers it. A silent reset to defaults would
