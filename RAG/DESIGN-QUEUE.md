@@ -590,7 +590,15 @@ all moved into the RFC.
   band; CHECK ITEM: the strip's Board-menu button already owns
   the upper-left corner and holds the strip up while open — the
   owner has caught it standing after unhover; the ☰ move must
-  settle that corner's composition). ⧉ PROJECT dissolves — switch
+  settle that corner's composition — SETTLED same day, owner
+  cosign: the BOARD MENU MOVES ONTO THE BOARD'S CRUMB in the path
+  bar — click the board's name for board operations (genre-native
+  title menu; board verbs live on the board's identity, which is
+  also where the unnamed-board nag and the rename gesture live).
+  The top-right corner then belongs to ☰ alone, and the strip's
+  reveal/tuck goes pure — nothing left holds it up. Every menu
+  sits on the noun it operates: window chrome on the band, board
+  verbs on the name, lenses on the rail). ⧉ PROJECT dissolves — switch
   is the project picker (which, owner refinement: presents as an
   OVERLAY reached by the universal-motions zoom — exit zooms OUT
   through the cover to the picker, enter zooms back in; the
