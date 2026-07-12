@@ -771,6 +771,19 @@ the week's testing says so. Lands with the AI-IMP-173 fix wave.)
 - **Object shapes** (owner musing, Icon Document t7): extruded
   box/pyramid/cylinder decorations for lightly skeuomorphic maps —
   awaits the decorations epic turn.
+- **Resource-side lock fencing** (lead musing, 2026-07-12, from
+  the Kleppmann/antirez fencing-token literature after the probe
+  caught a double-winner): our single-writer lock is lease-shaped
+  (heartbeat = renewal, reclaim = expiry), which is exactly the
+  family where a paused-then-resuming holder can outlive its
+  lease. Defense-in-depth option if the field ever demands it: the
+  RESOURCE checks a generation, not just the lock — e.g. a lock
+  generation embedded in SQLite (user_version or a meta row)
+  bumped at acquire and verified inside each write transaction,
+  making a stale writer's commits refuse even if the lockfile
+  lies. Cheap, local, no distributed store needed. Tabled until
+  the locks amend round settles and only if its diagnosis points
+  at concurrency rather than the probe harness.
 - **Book-cover-opens beat** (~200ms, musing): a one-shot world
   beat when a note first opens; feasibility at build.
 - **Painterly icon commission / pixel-glyph theme variant**: the
