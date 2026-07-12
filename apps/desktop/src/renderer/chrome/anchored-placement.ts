@@ -38,7 +38,7 @@ export interface AnchoredPlacementOptions {
   x: AxisPreference
   y: AxisPreference
   gap?: number | Partial<PlacementGap>
-  margin?: number
+  margin?: number | undefined
   avoid?: PlacementRect | undefined
 }
 

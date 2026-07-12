@@ -20,10 +20,11 @@ export function placeAnchoredElement(
     const measured = node.getBoundingClientRect()
     const options = current()
     const frame = reservationFrame(options.host)
+    const customBands = options.bands !== undefined
     const at = placeAnchored({
       ...options,
       bands: options.bands ?? frame.bands,
-      margin: options.margin ?? frame.gutter,
+      margin: customBands ? options.margin : frame.gutter,
       surface: { width: measured.width, height: measured.height },
     })
     node.style.left = `${at.x}px`
