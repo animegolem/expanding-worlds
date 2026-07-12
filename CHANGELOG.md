@@ -46,7 +46,33 @@ annotations.
   the tool) returns you to select, and a failed pin keeps your draft
   instead of eating it.
 
+### For testers (the world holds its shape)
+- Fixed (your report family): removing a tag from an image now exists —
+  hover any tag chip on a note's meta strip or in the tag panel and
+  click its ✕. And it STAYS removed: closing and reopening the project
+  no longer brings back a tag you took off, even when the library still
+  carries it. Re-adding it by hand tells sync it's welcome again.
+- New: a broken link whose note sits in Trash now offers "Restore it
+  and relink" — one click, and one ⌘Z takes it all back. Phantom notes
+  keep your half-written draft if you close the panel; Escape discards
+  it and says so first.
+- New: making a board is one gesture now — name it, carry the ⊡ to
+  where it belongs, click to seat it, and you're standing inside via
+  the same dive both doors share. Escape mid-carry leaves no trace.
+  ⌘Z right after a birth flies you home first, then unmakes it.
+
 ### Under the hood
+- AI-IMP-285: migration 0011 `tag_unassign_suppression` (STRICT,
+  node-scoped); unassign writes / assign lifts in the dispatcher
+  transaction; planner excludes exact triples; UnassignTagFromNode
+  exempt→captured (the one sanctioned policy flip).
+- AI-IMP-284: RestoreRecord→RelinkBrokenLinks as one token group;
+  233's compound inverse preserved with evidence; session-scoped
+  phantom drafts; bound-token open failure speaks class 5.
+- AI-IMP-283: delay-all birth carry through a place-mode variant
+  (nothing durable until seat); guarded rollback on refused seats;
+  typed birth metadata drives the sole §10.2 navigating undo;
+  make-canvas shares the door-1 dive, inert with a why-tooltip.
 - AI-IMP-231: renderer-local undo group tokens; group order reserves at
   gesture start; ⌘Z on a still-open group declines by name.
 - AI-IMP-221: undo policy classes split solo-exempt vs bulk-captured

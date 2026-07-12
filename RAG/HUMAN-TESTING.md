@@ -967,3 +967,30 @@ look exactly as before (no regression at 100%+ display scaling).
   re-click the dock pin button — every path should leave NO stray
   ghost and return you to select (tooltips say "esc returns to
   select"). If a pin fails to commit, your draft should survive.
+
+## THE WORLD WAVE — tag removal survives, link repair, a board is born (AI-IMP-283/284/285, 2026-07-12)
+
+**Build:** next tagged build (or a reloaded `pnpm dev` window after
+`pnpm -r build`).
+**Try (owner mac + alph Windows — the tag one is alph's exact ask):**
+- **Tag removal (alph's flow):** tag an image that also lives in the
+  library, hover the chip on the note meta strip — an ✕ appears —
+  click it. The chip vanishes silently; ⌘Z brings it back. Now remove
+  it again, close the project, reopen: **it must stay gone** even
+  though the library still carries it. Re-add it by hand, close/open
+  again — now it's allowed to travel again. Also check the tag panel's
+  carrier rows (same ✕) and that removing the last carrier leaves the
+  panel open on its empty state. Gallery facet chips and search pills
+  must still FILTER, never remove.
+- **Link repair:** make a note with a [[link]] to a note, trash the
+  target. The broken-link panel should offer "Restore it and relink" —
+  one click restores + binds; one ⌘Z returns to trashed-and-broken.
+  Type into a phantom (unresolved link), close the panel, reopen —
+  draft's still there; Escape discards and the panel says it will.
+- **A board is born:** "New board…" → name it → Enter hands you the ⊡
+  on the cursor → click to seat → one continuous 240ms dive and you're
+  inside; the path grew a crumb. Escape mid-carry: nothing anywhere.
+  ⌘Z while standing inside a fresh birth: the camera flies home FIRST,
+  then the birth unmakes — one entry. The make-canvas charm on a node
+  that already fronts a board should be calm-inert with a tooltip
+  saying why, not grayed-out-dead.
