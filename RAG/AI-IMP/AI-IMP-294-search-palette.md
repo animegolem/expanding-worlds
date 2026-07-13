@@ -42,7 +42,9 @@ unit-tested, drag-out places, G7 defects fixed with tests.
   contract).
 - Tab is the crystallizer for EVERY typed resolution (tag pills
   today; the board-scope pill when it lands) — build completion
-  commit on Tab, not Enter; Enter fires the ↵ verb.
+  commit on Tab, not Enter; Enter fires the ↵ verb. Tab is ALWAYS
+  OPTIONAL: uncommitted fragments keep fuzzy-matching live (the
+  fzf soul) — pills pin a resolution, never gate one.
 - The board-scope pill ("on: <canvas>", tab-completed from a board
   name) is queued for the kit to draw — NOT in this ticket's scope;
   leave the pill row extensible (pills are a list of typed facets,

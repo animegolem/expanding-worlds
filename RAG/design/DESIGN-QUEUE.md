@@ -640,7 +640,10 @@ all moved into the RFC.
   of a board name TAB-COMPLETES into a scope pill ("on: Silica
   Vale") narrowing results to that canvas; Tab is the UNIVERSAL
   crystallizer (fragment → best resolution → Tab commits the typed
-  pill — tag pill, scope pill — Enter fires the verb); scoped
+  pill — tag pill, scope pill — Enter fires the verb), and Tab is
+  ALWAYS OPTIONAL (owner cosign): raw fragments keep fuzzy-matching
+  live without ever committing — pills pin a resolution, they are
+  never a toll; scoped
   no-match speaks per GR-1 ("not on this board — found 3
   elsewhere"). Lead lean, owner pending: kit draws the pill
   anatomy first; AI-IMP-294 ships the ratified grammar and the
