@@ -222,8 +222,8 @@ Git edit date so a second review can be judged.
 - RAG/design/archive/Design guidelines and hero images/design-system/_src/extracted/Expanding Worlds - UI Vision.template.html (505 LOC)
 - RAG/design/archive/Design guidelines and hero images/Design-Artifacts-v2.0/design-system/_src/extracted/Expanding Worlds - UI Vision.template.html (505 LOC)
 - packages/persistence/src/lock.ts (493 LOC)
+- CHANGELOG.md (492 LOC)
 - packages/persistence/src/handlers/notes.ts (490 LOC) — review current: 2026-07-12T01:53:22Z at 490 LOC; unchanged; last edit 2026-07-09T20:12:55-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
-- CHANGELOG.md (490 LOC)
 - packages/persistence/src/handlers/pin.ts (489 LOC) — review current: 2026-07-12T01:53:23Z at 489 LOC; unchanged; last edit 2026-07-10T05:45:08-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - packages/persistence/src/queries-notes.test.ts (478 LOC)
 - apps/desktop/e2e/navigation.spec.ts (478 LOC)
