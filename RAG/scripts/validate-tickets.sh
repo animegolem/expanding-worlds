@@ -39,6 +39,11 @@ collect_files() {
     {
       git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$ref"... -- \
           "$rag_rel/AI-EPIC/*.md" "$rag_rel/AI-IMP/*.md" "$rag_rel/AI-LOG/*.md"
+      # Working tree vs HEAD: staged + unstaged edits — the triple-dot
+      # above reads commits only and silently skipped tracked-unstaged
+      # ticket edits (content-wave round-1 finding, 2026-07-13).
+      git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR HEAD -- \
+          "$rag_rel/AI-EPIC/*.md" "$rag_rel/AI-IMP/*.md" "$rag_rel/AI-LOG/*.md"
       git -C "$ROOT_DIR" ls-files --others --exclude-standard -- \
           "$rag_rel/AI-EPIC/*.md" "$rag_rel/AI-IMP/*.md" "$rag_rel/AI-LOG/*.md"
     } | sort -u | while read -r rel; do echo "$ROOT_DIR/$rel"; done
