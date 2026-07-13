@@ -116,6 +116,18 @@ jobs:
         working-directory: apps/desktop
         run: xvfb-run --auto-servernum npx playwright test --shard=${{ matrix.shard }}/4
 
+      # Failure evidence: error-context page snapshots + traces are
+      # written locally but were never uploaded, leaving red shards
+      # diagnosable only by guesswork (dock-wave round 3 lesson).
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-shard-${{ matrix.shard }}-failure
+          path: apps/desktop/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   # AI-IMP-242: the first tester lives on Windows daily; until this job
   # the whole test estate ran macOS-local + Linux-CI. Units + the
   # AI-IMP-226 multi-process lock probe (file locking is exactly where
