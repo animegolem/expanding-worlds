@@ -85,6 +85,41 @@ all moved into the RFC.
   should ever have to ask. UNBLOCKS AI-IMP-259's display half;
   the sweep ticket cites the grammar doc.
 
+- **PROPORTION LAW — the design language's missing section (owner +
+  lead, 2026-07-13, from the v0.25.0 feel pass; SEEDS THE NOTES
+  EPIC).** The kit's grammar speaks in fixed tokens (40px strips,
+  12px halos) and edge-bindings, and has NO vocabulary for ratios
+  between things — which is why this kept failing to convey. The
+  isolating evidence: two bound notes, same components, same law —
+  a squarish image gives a ~50/50 book with a readable column
+  (okay); a tall portrait gives a needle of tiny text running down
+  the image's full height (never acceptable). The shipped law binds
+  the page's edge and height to the image and says nothing about
+  the page's OWN proportions.
+
+  **The ruling, owner-approved wording:** *The page's MEASURE is
+  sovereign. A bound page's width is set by its readable measure
+  (~45–65 characters at its own type size) — never derived from the
+  image's aspect. The shared edge binds position; height-matching
+  is subordinate: when honoring the image's height would starve the
+  measure below minimum, the page keeps its measure and its own
+  height, and the ring seam runs only along the shared extent.*
+
+  Generalized as a new law family — PROPORTION LAW: (1) page
+  measure is sovereign (above); (2) surfaces center OPTICALLY in
+  their available space — the reservation frame is a collision
+  floor, never a layout anchor (the v0.25.0 left-shunt is this
+  failing); (3) no readable surface may fall below its minimum
+  measure regardless of what it is bound to. Ratio invariants are
+  CHECKABLE ("is the column ever narrower than N characters") —
+  they can gate like tokens do.
+
+  Owner is revising the design kit against this now; the ruling
+  lands in the notes epic as the bound posture's governing rule and
+  in the RFC with that epic's ratification. Kit revision should
+  also decide the seam behavior when page and image heights diverge
+  (partial ring run — how it's drawn).
+
 - **Reading a note on the board — the open-verb as a camera verb**
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
   you're right"; the detailed ruling below still needs its answers
