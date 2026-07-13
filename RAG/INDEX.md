@@ -6,8 +6,8 @@
 
 | Status | EPICs | IMPs |
 |--------|-------|------|
-| In Progress | 2 | 0 |
-| Planned | 6 | 16 |
+| In Progress | 3 | 0 |
+| Planned | 5 | 16 |
 | Deferred | 1 | 0 |
 | Cancelled | 0 | 1 |
 | Completed | 20 | 255 |
@@ -37,6 +37,28 @@
 - [[AI-IMP-253-e2e-helper-adoption|IMP-253]] E2e helper adoption — planned
 - [[AI-IMP-254-persistence-test-temp-cleanup|IMP-254]] Persistence test temp cleanup — planned
 - [[AI-IMP-256-codex-epic-027-resolutions-merge|IMP-256]] Codex epic 027 resolutions merge — completed
+
+---
+
+### [[AI-EPIC-029-the-kit-adoption-push|EPIC-029: The kit adoption push]]
+> The app ships faster than its design language: the dock is a
+
+**IMPs:**
+- [[AI-IMP-286-reservation-frame-tokens|IMP-286]] Reservation frame tokens — completed
+- [[AI-IMP-287-charm-halo-clearance|IMP-287]] Charm halo clearance — completed
+- [[AI-IMP-288-kit-input-components|IMP-288]] Kit input components — completed
+- [[AI-IMP-289-dock-rebuild|IMP-289]] Dock rebuild — planned
+- [[AI-IMP-290-shape-flyout|IMP-290]] Shape flyout — planned
+- [[AI-IMP-291-arrange-and-restyle-panels|IMP-291]] Arrange and restyle panels — planned
+- [[AI-IMP-292-board-and-ground-menus|IMP-292]] Board and ground menus — planned
+- [[AI-IMP-293-rail-recomposition|IMP-293]] Rail recomposition — planned
+- [[AI-IMP-294-search-palette|IMP-294]] Search palette — planned
+- [[AI-IMP-295-identity-corner|IMP-295]] Identity corner — planned
+- [[AI-IMP-296-note-paper-postures|IMP-296]] Note paper postures — planned
+- [[AI-IMP-297-caption-plaque|IMP-297]] Caption plaque — planned
+- [[AI-IMP-298-lens-wires|IMP-298]] Lens wires — planned
+- [[AI-IMP-299-gallery-kit-adoption|IMP-299]] Gallery kit adoption — planned
+- [[AI-IMP-300-settings-sheet-adoption|IMP-300]] Settings sheet adoption — planned
 
 ---
 
@@ -70,28 +92,6 @@
 
 **IMPs:**
 - [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — completed
-
----
-
-### [[AI-EPIC-029-the-kit-adoption-push|EPIC-029: The kit adoption push]]
-> The app ships faster than its design language: the dock is a
-
-**IMPs:**
-- [[AI-IMP-286-reservation-frame-tokens|IMP-286]] Reservation frame tokens — completed
-- [[AI-IMP-287-charm-halo-clearance|IMP-287]] Charm halo clearance — completed
-- [[AI-IMP-288-kit-input-components|IMP-288]] Kit input components — completed
-- [[AI-IMP-289-dock-rebuild|IMP-289]] Dock rebuild — planned
-- [[AI-IMP-290-shape-flyout|IMP-290]] Shape flyout — planned
-- [[AI-IMP-291-arrange-and-restyle-panels|IMP-291]] Arrange and restyle panels — planned
-- [[AI-IMP-292-board-and-ground-menus|IMP-292]] Board and ground menus — planned
-- [[AI-IMP-293-rail-recomposition|IMP-293]] Rail recomposition — planned
-- [[AI-IMP-294-search-palette|IMP-294]] Search palette — planned
-- [[AI-IMP-295-identity-corner|IMP-295]] Identity corner — planned
-- [[AI-IMP-296-note-paper-postures|IMP-296]] Note paper postures — planned
-- [[AI-IMP-297-caption-plaque|IMP-297]] Caption plaque — planned
-- [[AI-IMP-298-lens-wires|IMP-298]] Lens wires — planned
-- [[AI-IMP-299-gallery-kit-adoption|IMP-299]] Gallery kit adoption — planned
-- [[AI-IMP-300-settings-sheet-adoption|IMP-300]] Settings sheet adoption — planned
 
 ---
 

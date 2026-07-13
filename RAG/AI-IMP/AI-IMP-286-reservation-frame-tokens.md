@@ -132,3 +132,14 @@ to 0 and the popover re-clamps without a reload.
 - Furniture stays positioned inside its reservation band rather than
   stretching to fill it. The provider exposes the dock's 112 expanded
   value while this ticket leaves the shipped dock expansion state false.
+- Round-3 post-merge correction (2026-07-12): the DOM adapter
+  (`placeAnchoredElement`) let legacy caller margins override the
+  frame gutter on defaulted bands — viewport edges landed at 4/8px
+  instead of 24. Convicted by the strengthened e2e pin (an anchored
+  surface, SearchPanel, in addition to the takeover) after the lead
+  had merged round 2; fixed in one commit (bands defaulted → gutter
+  owns the edge; explicit bands remain the opt-out seam with their
+  own margin). Lesson recorded: the acceptance item asked for an
+  anchored surface AND a takeover — the first spec asserted only
+  the takeover despite its name; weak evidence hides adapter
+  mismatches.
