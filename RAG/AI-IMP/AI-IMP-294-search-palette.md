@@ -34,6 +34,22 @@ unhandled rejection leaving stale results. Done means: the palette
 replaces SearchPanel's panel form, both doors work, fzf matcher
 unit-tested, drag-out places, G7 defects fixed with tests.
 
+### Lead clarifications (2026-07-12, pre-build)
+
+- "Titles" in the fzf name-space explicitly includes CANVAS-OWNING
+  node titles — a board result must fuzzy-match and its ↵ dives
+  (owner confirmed the intent; it was always §8.3's quick-open
+  contract).
+- Tab is the crystallizer for EVERY typed resolution (tag pills
+  today; the board-scope pill when it lands) — build completion
+  commit on Tab, not Enter; Enter fires the ↵ verb.
+- The board-scope pill ("on: <canvas>", tab-completed from a board
+  name) is queued for the kit to draw — NOT in this ticket's scope;
+  leave the pill row extensible (pills are a list of typed facets,
+  not a tags-only array).
+- Captions stay OUT of both paths (caption-FTS is deferred, rev
+  0.68); when it lands it joins the SUBSTRING path, never fzf.
+
 ### Out of Scope
 
 - Command verbs in the palette (open DESIGN-QUEUE conversation).

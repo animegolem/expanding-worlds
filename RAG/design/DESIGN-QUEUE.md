@@ -632,9 +632,24 @@ all moved into the RFC.
   tags · filenames), plain terms also match tags, #-terms
   constrain to tags one pill each; bodies stay substring,
   completion elsewhere stays prefix (RFC §8.3). STILL OPEN for a
-  design conversation: the COMMAND half — does the 211 command
+  design conversation: (a) the COMMAND half — does the 211 command
   family join this palette (find + verbs, one field) as the rail
   ruling intended, and how do command prefixes read against `#`?
+  (b) THE SCOPE PILL (owner + lead, 2026-07-12 evening): a
+  board-scope facet — palette opens project-wide, a typed fragment
+  of a board name TAB-COMPLETES into a scope pill ("on: Silica
+  Vale") narrowing results to that canvas; Tab is the UNIVERSAL
+  crystallizer (fragment → best resolution → Tab commits the typed
+  pill — tag pill, scope pill — Enter fires the verb); scoped
+  no-match speaks per GR-1 ("not on this board — found 3
+  elsewhere"). Lead lean, owner pending: kit draws the pill
+  anatomy first; AI-IMP-294 ships the ratified grammar and the
+  scope pill fast-follows. (c) CAPTIONS ruled at the conversation
+  level (owner 50-50 → lead recommendation accepted pending
+  cosign): captions join SUBSTRING search when caption-FTS lands
+  (rev 0.68 deferral unchanged — hit points at the image), NEVER
+  the fzf name-space; fzf = names (titles incl. canvas-owning
+  nodes · tags · filenames), substring = prose (bodies, captions).
   Input docs: SearchPanel shipped behavior (G7 holes), the 211
   palette, N6, Search UI Kit + wireframes.
 
