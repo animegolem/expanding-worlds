@@ -12,6 +12,8 @@ annotations.
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-07-13
+
 ### For testers (paper, plaques, and one lens)
 - New: opening a bound note is a FLIGHT — the camera eases out until
   image and page fill your view; Escape flies back to exactly where
