@@ -29,10 +29,10 @@ describe('keymap registry', () => {
   beforeEach(() => __resetRegistry())
 
   it('declare stores and returns the combo, retrievable by id and scope', () => {
-    const combo: Combo = { mod: true, key: 'p' }
-    const returned = declare('quick-open', { name: 'Quick open', scope: 'global', combo })
+    const combo: Combo = { mod: true, key: 'k' }
+    const returned = declare('quick-open', { name: 'Search', scope: 'global', combo })
     expect(returned).toBe(combo)
-    expect(getBinding('quick-open')?.name).toBe('Quick open')
+    expect(getBinding('quick-open')?.name).toBe('Search')
     declare('flip', { name: 'Flip', scope: 'board', combo: { shift: true, code: 'KeyH' } })
     expect(allBindings()).toHaveLength(2)
     expect(bindingsInScope('board').map((b) => b.id)).toEqual(['flip'])
@@ -49,16 +49,16 @@ describe('keymap registry', () => {
   describe('matches', () => {
     it('requires Mod (⌘ or Ctrl), rejects when absent or when Alt/Shift disallowed', () => {
       declare('quick-open', {
-        name: 'Quick open',
+        name: 'Search',
         scope: 'global',
-        combo: { mod: true, shift: false, alt: false, key: 'p' },
+        combo: { mod: true, shift: false, alt: false, key: 'k' },
       })
-      expect(matches(ev({ key: 'p', metaKey: true }), 'quick-open')).toBe(true)
-      expect(matches(ev({ key: 'p', ctrlKey: true }), 'quick-open')).toBe(true)
-      expect(matches(ev({ key: 'P', metaKey: true }), 'quick-open')).toBe(true) // case-insensitive
-      expect(matches(ev({ key: 'p' }), 'quick-open')).toBe(false) // no mod
-      expect(matches(ev({ key: 'p', metaKey: true, altKey: true }), 'quick-open')).toBe(false)
-      expect(matches(ev({ key: 'p', metaKey: true, shiftKey: true }), 'quick-open')).toBe(false)
+      expect(matches(ev({ key: 'k', metaKey: true }), 'quick-open')).toBe(true)
+      expect(matches(ev({ key: 'k', ctrlKey: true }), 'quick-open')).toBe(true)
+      expect(matches(ev({ key: 'K', metaKey: true }), 'quick-open')).toBe(true) // case-insensitive
+      expect(matches(ev({ key: 'k' }), 'quick-open')).toBe(false) // no mod
+      expect(matches(ev({ key: 'k', metaKey: true, altKey: true }), 'quick-open')).toBe(false)
+      expect(matches(ev({ key: 'k', metaKey: true, shiftKey: true }), 'quick-open')).toBe(false)
     })
 
     it('treats an unspecified modifier as don’t-care (board keys keep loose predicates)', () => {
@@ -92,9 +92,9 @@ describe('keymap registry', () => {
 
   describe('formatCombo', () => {
     it('stacks glyphs on macOS, spells + joins elsewhere', () => {
-      const quickOpen: Combo = { mod: true, key: 'p' }
-      expect(formatCombo(quickOpen, 'mac')).toBe('⌘P')
-      expect(formatCombo(quickOpen, 'other')).toBe('Ctrl+P')
+      const quickOpen: Combo = { mod: true, key: 'k' }
+      expect(formatCombo(quickOpen, 'mac')).toBe('⌘K')
+      expect(formatCombo(quickOpen, 'other')).toBe('Ctrl+K')
 
       const front: Combo = { mod: true, shift: true, code: 'BracketRight' }
       expect(formatCombo(front, 'mac')).toBe('⇧⌘]')
@@ -141,7 +141,7 @@ describe('keymap registry', () => {
   // these were authored on. Pins the exact combos each platform shows.
   describe('platform contract (darwin vs linux)', () => {
     const cases: Array<{ id: string; combo: Combo; mac: string; linux: string }> = [
-      { id: 'quick-open', combo: { mod: true, key: 'p' }, mac: '⌘P', linux: 'Ctrl+P' },
+      { id: 'quick-open', combo: { mod: true, key: 'k' }, mac: '⌘K', linux: 'Ctrl+K' },
       { id: 'nav-back', combo: { mod: true, key: '[' }, mac: '⌘[', linux: 'Ctrl+[' },
       { id: 'bookmark-jump', combo: { mod: true, glyph: '1–9' }, mac: '⌘1–9', linux: 'Ctrl+1–9' },
       { id: 'bookmark-current', combo: { mod: true, key: 'd' }, mac: '⌘D', linux: 'Ctrl+D' },

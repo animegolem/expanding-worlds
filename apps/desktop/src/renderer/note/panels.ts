@@ -561,7 +561,7 @@ export function openBigEditor(key: number, opts?: { torn?: boolean }): void {
   bigEditorKey = key
   bigEditorTorn = opts?.torn === true
   // §8.5 modal (AI-IMP-183 M-11/M-29): register the editor as an input
-  // blocker so Mod+P quick-open and Mod+[/] Back/Forward are suppressed
+  // blocker so Mod+K search and Mod+[/] Back/Forward are suppressed
   // under it (they guard on takeoverActive()); registering also notifies
   // the takeover store, retiring the tag/search panels — which removes
   // the M-12 capture-steal by construction (the panels are gone before

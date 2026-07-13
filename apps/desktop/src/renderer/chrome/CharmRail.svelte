@@ -113,8 +113,8 @@
           // takeover covers the board returns to the board first —
           // the panel must never open beneath the cover (§8.2).
           if (takeover !== null) closeTakeover()
-          const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-          toggleSearchPanel({ x: rect.left, y: rect.top })
+          void event
+          toggleSearchPanel()
         }}
         use:tooltip={{ name: charm.name }}
       >

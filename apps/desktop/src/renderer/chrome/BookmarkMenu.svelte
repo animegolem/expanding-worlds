@@ -48,7 +48,7 @@
     // Stay live: undo, another window, or purge elsewhere re-lists.
     const offChanged = window.ew.project.onChanged(() => void refresh())
     // AI-IMP-183 (M-24): consume Escape (capture + stopPropagation, the
-    // SearchPanel:328 pattern) so it closes the menu without reaching the
+    // search-palette pattern) so it closes the menu without reaching the
     // canvas host and clearing the selection underneath.
     const onKeydown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return

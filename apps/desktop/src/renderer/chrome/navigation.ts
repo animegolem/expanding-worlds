@@ -204,7 +204,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
     // should stay put. Deliberately NARROWER than the sibling guard: a
     // contenteditable is EXCLUDED so Mod+[/] still navigates from inside
     // the rich note editor (an accepted behavior — panels.spec back-from-
-    // editor, and §8.3's Mod+P works from the editor too; the editor's
+    // editor, and §8.3's Mod+K works from the editor too; the editor's
     // own keymaps are §8.2-excluded and don't bind these chords).
     const target = event.target as HTMLElement | null
     if (
@@ -228,7 +228,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
       void forward()
     }
   }
-  // §8.3 Mod+P quick-open: CAPTURE phase, so it works from board
+  // §8.3 Mod+K search palette: CAPTURE phase, so it works from board
   // focus AND from inside an open note editor (CodeMirror's own
   // keydown handlers run on the editor DOM before window-bubble
   // listeners; capture on window runs before any of them).
@@ -237,7 +237,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
     if (!matches(event, KEY.quickOpen)) return
     event.preventDefault()
     event.stopPropagation()
-    openSearchPanel('quick', null)
+    openSearchPanel('quick')
   }
   window.addEventListener('keydown', onQuickOpenKey, true)
   // Mouse buttons 4/5 arrive as pointer buttons 3/4.

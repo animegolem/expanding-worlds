@@ -133,12 +133,12 @@ test('Keyboard section lists registered bindings by scope, read-only (§8.2, AI-
 
   // A binding from each scope renders with its platform-specific combo
   // string. formatCombo keys off the renderer's navigator.platform: on
-  // macOS it stacks glyphs (⌘P, ⇧⌘]), elsewhere it spells modifiers and
-  // joins with '+' (Ctrl+P, Ctrl+Shift+]). The renderer shares this
+  // macOS it stacks glyphs (⌘K, ⇧⌘]), elsewhere it spells modifiers and
+  // joins with '+' (Ctrl+K, Ctrl+Shift+]). The renderer shares this
   // machine, so process.platform is the correct oracle — assert the
   // EXACT string this platform must show (CI on Linux prints Ctrl form).
   const mac = process.platform === 'darwin'
-  await expect(win.getByTestId('settings-key-combo-quick-open')).toHaveText(mac ? '⌘P' : 'Ctrl+P')
+  await expect(win.getByTestId('settings-key-combo-quick-open')).toHaveText(mac ? '⌘K' : 'Ctrl+K')
   await expect(win.getByTestId('settings-key-combo-nav-back')).toHaveText(mac ? '⌘[' : 'Ctrl+[')
   await expect(win.getByTestId('settings-key-combo-bookmark-jump')).toHaveText(
     mac ? '⌘1–9' : 'Ctrl+1–9',

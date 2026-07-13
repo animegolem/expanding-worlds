@@ -372,11 +372,11 @@ test('Mod+D bookmarks the current board — the menu ＋ row’s twin (§8.1, AI
   await app.close()
 })
 
-test('migrated shortcuts still fire: Mod+P opens quick-open post-registry (§8.3, AI-IMP-117)', async () => {
+test('migrated shortcuts still fire: Mod+K opens search post-registry (§8.3, AI-IMP-117)', async () => {
   const { app, win } = await launchApp('ew-e2e-modp-migrated-')
-  // The quick-open binding now resolves through matches(event,'quick-open');
+  // The search binding now resolves through matches(event,'quick-open');
   // it must still summon the search panel in quick mode.
-  await win.keyboard.press('ControlOrMeta+p')
+  await win.keyboard.press('ControlOrMeta+k')
   const panel = win.getByTestId('search-panel')
   await expect(panel).toBeVisible()
   await expect(panel).toHaveAttribute('data-mode', 'quick')

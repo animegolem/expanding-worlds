@@ -8,7 +8,7 @@ import { exec, launchApp } from './helpers'
  * using-node locations that navigate and center, canvas text →
  * navigate to the containing canvas centered on the decoration (a
  * §8.1 history entry; Back returns). Leading # flips the field to
- * tag-name completion. Mod+P summons the same panel in quick-open
+ * tag-name completion. Mod+K summons the same palette
  * mode — title matches over notes and canvas-owning nodes — and is
  * suppressed under a takeover but alive inside the note editor.
  */
@@ -22,6 +22,7 @@ interface SearchWorld {
   boardBCanvasId: string
   ruinsTagId: string
   watcherNoteId: string
+  watcherNodeId: string
   assetPlacementId: string
   decorationId: string
 }
@@ -108,7 +109,7 @@ async function seedSearchWorld(win: Page): Promise<SearchWorld> {
     .toBe(1)
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
 
-  return { rootCanvasId, boardBCanvasId, ruinsTagId, watcherNoteId, assetPlacementId, decorationId }
+  return { rootCanvasId, boardBCanvasId, ruinsTagId, watcherNoteId, watcherNodeId, assetPlacementId, decorationId }
 }
 
 function cameraCenterDistance(win: Page, box: { width: number; height: number }, x: number, y: number) {
@@ -120,12 +121,13 @@ function cameraCenterDistance(win: Page, box: { width: number; height: number },
   }
 }
 
-test('zero-hit search names the query and teaches the tag prefix', async () => {
+test('zero-hit search names the query and teaches the Trash boundary', async () => {
   const { app, win } = await launchApp('ew-e2e-search-empty-')
   await win.getByTestId('charm-search').click()
+  await expect(win.getByTestId('search-rest')).toContainText('Find anything in this world')
   await win.getByTestId('search-input').fill('nothing-here-8472')
   await expect(win.getByTestId('search-empty')).toHaveText(
-    'No matches for "nothing-here-8472" — tags need their # prefix.',
+    'No active matches for "nothing-here-8472" — Trash stays out of search.',
   )
   await app.close()
 })
@@ -171,19 +173,12 @@ test('search mode: grouped kinds; note, tag, and asset-location activation (§8.
   // locations; a location navigates (§8.1 entry), selects, centers.
   await win.getByTestId('charm-search').click()
   await win.getByTestId('search-input').fill('gate')
-  await expect(panel.getByTestId('search-group-Assets')).toBeVisible()
+  await expect(panel.getByTestId('search-group-Images').first()).toBeVisible()
   await expect(panel.getByTestId('search-group-Canvas text')).toBeVisible()
   const assetRow = panel.locator('[data-testid="search-hit"][data-kind="asset"]')
   await expect(assetRow).toContainText('gate-map.png')
-  // One flat cursor walks ACROSS groups: ArrowDown steps from the
-  // asset row into the canvas-text group.
-  await expect(assetRow).toHaveAttribute('aria-selected', 'true')
-  await win.keyboard.press('ArrowDown')
-  await expect(
-    panel.locator('[data-testid="search-hit"][data-kind="canvas-text"]'),
-  ).toHaveAttribute('aria-selected', 'true')
-  await win.keyboard.press('ArrowUp')
-  await expect(assetRow).toHaveAttribute('aria-selected', 'true')
+  // The flat keyboard cursor walks the grouped result universe.
+  await expect(panel.locator('[data-testid="search-hit"][aria-selected="true"]')).toHaveCount(1)
   await assetRow.click()
   const locRow = panel.locator('[data-testid="search-hit"][data-kind="asset-loc"]')
   await expect(locRow).toContainText('Ruins Board')
@@ -242,14 +237,17 @@ test('canvas-text match navigates cross-canvas centered on the decoration; # fli
     .poll(() => win.evaluate(() => window.__ewDebug!.canvasId()))
     .toBe(world.rootCanvasId)
 
-  // Leading # flips to tag mode: a CUSTOM completion list (never
-  // <datalist>), Enter lands on the tag panel.
+  // Leading # keeps fuzzy matching live. Tab crystallizes the typed
+  // resolution into a custom pill (never <datalist>); Enter still
+  // fires the selected row's named verb.
   await win.getByTestId('charm-search').click()
   await win.getByTestId('search-input').fill('#ru')
   await expect(
-    panel.locator('[data-testid="search-hit"][data-kind="tag-completion"]'),
+    panel.locator('[data-testid="search-hit"][data-kind="tag"]'),
   ).toHaveText(/ruins/)
-  await win.keyboard.press('Enter')
+  await win.keyboard.press('Tab')
+  await expect(panel.getByTestId('search-facet')).toHaveText(/ruins/)
+  await panel.locator('[data-testid="search-hit"][data-kind="tag"]').click()
   await expect(panel).not.toBeVisible()
   await expect(win.getByTestId('tag-panel')).toBeVisible()
   await expect(win.getByTestId('tag-panel-input')).toHaveValue('ruins')
@@ -257,29 +255,30 @@ test('canvas-text match navigates cross-canvas centered on the decoration; # fli
   await app.close()
 })
 
-test('Mod+P quick-open: keyboard round trip to a note and to a canvas; takeover guard; editor focus (§8.3)', async () => {
+test('Mod+K palette: keyboard round trip to a note and to a canvas; takeover guard; editor focus (§8.3)', async () => {
   const { app, win } = await launchApp('ew-e2e-search-quick-')
   const world = await seedSearchWorld(win)
 
   // Suppressed while a takeover owns the window (068 guard).
   await win.getByTestId('charm-outline').click()
-  await win.keyboard.press('ControlOrMeta+p')
+  await win.keyboard.press('ControlOrMeta+k')
   await expect(win.getByTestId('search-panel')).not.toBeVisible()
   // The ⌕ CHARM is a mode switch instead: it returns to the board
   // and opens the panel — never a panel beneath the cover (§8.2).
   await win.getByTestId('charm-search').click()
   await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
   await expect(win.getByTestId('search-panel')).toBeVisible()
-  // And the reverse: a takeover OPENING retires an open panel — the
-  // two share a z-plane, and the takeover owns the window (§8.2).
+  // The scrim is an explicit exit and prevents click-through. Exit,
+  // then open a takeover; the two never coexist.
+  await win.keyboard.press('Escape')
   await win.getByTestId('charm-outline').click()
   await expect(win.getByTestId('takeover-outline')).toBeVisible()
   await expect(win.getByTestId('search-panel')).not.toBeVisible()
   await win.getByTestId('charm-outline').click()
   await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
 
-  // Round trip 1: board focus → Mod+P → title → Enter → note panel.
-  await win.keyboard.press('ControlOrMeta+p')
+  // Round trip 1: board focus → Mod+K → title → Enter → note panel.
+  await win.keyboard.press('ControlOrMeta+k')
   const panel = win.getByTestId('search-panel')
   await expect(panel).toBeVisible()
   await expect(panel).toHaveAttribute('data-mode', 'quick')
@@ -294,12 +293,17 @@ test('Mod+P quick-open: keyboard round trip to a note and to a canvas; takeover 
   // second by the stable sort) → ArrowDown → Enter navigates, a
   // history entry.
   await win.locator('[data-testid="note-editor-content"]').click()
-  await win.keyboard.press('ControlOrMeta+p')
+  await win.keyboard.press('ControlOrMeta+k')
   await expect(panel).toBeVisible()
   await win.getByTestId('search-input').fill('ruins board')
   await expect(panel.locator('[data-testid="search-hit"]')).toHaveCount(2)
-  await win.keyboard.press('ArrowDown')
-  await win.keyboard.press('Enter')
+  await win.getByTestId('search-input').press('ArrowDown')
+  await expect(panel).toHaveAttribute('data-cursor', '1')
+  await expect(panel.locator('[data-testid="search-hit"][data-kind="canvas"]')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  await win.getByTestId('search-input').press('Enter')
   await expect(panel).not.toBeVisible()
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.canvasId()))
@@ -310,6 +314,66 @@ test('Mod+P quick-open: keyboard round trip to a note and to a canvas; takeover 
   }))
   expect(nav.entries).toEqual([world.rootCanvasId, world.boardBCanvasId])
   expect(nav.cursor).toBe(1)
+
+  await app.close()
+})
+
+test('fuzzy tag facets crystallize and image-node drag-out uses the ordinary placement/undo flow', async () => {
+  const { app, win } = await launchApp('ew-e2e-search-drag-')
+  const world = await seedSearchWorld(win)
+  const sentinelTagId = crypto.randomUUID()
+  await exec(win, 'CreateTag', { tagId: sentinelTagId, name: 'sentinel' })
+  await exec(win, 'AssignTagToNode', { tagId: sentinelTagId, nodeId: world.watcherNodeId })
+
+  await win.keyboard.press('ControlOrMeta+k')
+  const panel = win.getByTestId('search-panel')
+  const input = win.getByTestId('search-input')
+
+  // Two fragments resolve independently onto the tag axis. Tab is
+  // optional completion—not Enter—and Backspace eats the last pill.
+  await input.fill('#rui')
+  await win.keyboard.press('Tab')
+  await expect(panel.getByTestId('search-facet')).toHaveText(/ruins/)
+  await input.fill('#sen')
+  await win.keyboard.press('Tab')
+  await expect(panel.getByTestId('search-facet')).toHaveCount(2)
+  await expect(panel.locator('[data-testid="search-hit"][data-kind="note"]')).toHaveText('Watcher')
+  await input.press('Backspace')
+  await expect(panel.getByTestId('search-facet')).toHaveCount(1)
+  await input.press('Backspace')
+  await expect(panel.getByTestId('search-facet')).toHaveCount(0)
+
+  await input.fill('gte mp')
+  const image = panel.locator('[data-testid="search-hit"][data-kind="image-node"]')
+  await expect(image).toContainText('gate-map.png')
+  await expect(image).toHaveAttribute('draggable', 'true')
+  await input.fill('#rui')
+  await expect(panel.locator('[data-testid="search-hit"][data-kind="tag"]')).not.toHaveAttribute(
+    'draggable',
+    'true',
+  )
+
+  await input.fill('gte mp')
+  await win.evaluate(() => {
+    const dt = new DataTransfer()
+    const row = document.querySelector<HTMLElement>(
+      '[data-testid="search-hit"][data-kind="image-node"]',
+    )!
+    row.dispatchEvent(new DragEvent('dragstart', { dataTransfer: dt, bubbles: true, cancelable: true }))
+    const host = document.querySelector<HTMLElement>('[data-testid="canvas-host"]')!
+    const rect = host.getBoundingClientRect()
+    host.dispatchEvent(new DragEvent('drop', {
+      dataTransfer: dt,
+      clientX: rect.left + 260,
+      clientY: rect.top + 220,
+      bubbles: true,
+      cancelable: true,
+    }))
+  })
+  await expect(panel).not.toBeVisible()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(2)
+  await win.evaluate(() => window.__ewUndo!.undo())
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(1)
 
   await app.close()
 })

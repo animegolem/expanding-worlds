@@ -9,7 +9,7 @@ import { launchApp, seedPlacedNote } from './helpers'
  *
  *  - Escape inside a text field never leaks to the board (M-09 root fix).
  *  - Escape closing a floating panel never clears the selection (M-24).
- *  - The big editor is a takeover-FAMILY input blocker: Mod+P quick-open
+ *  - The big editor is a takeover-FAMILY input blocker: Mod+K search
  *    cannot open behind it, and opening it retires the search panel
  *    (M-11 / M-12 / M-29).
  */
@@ -52,7 +52,7 @@ test('Escape closing the search panel leaves the canvas selection intact (M-24)'
   const selected = await win.evaluate(() => window.__ewDebug!.selection())
 
   const panel = win.getByTestId('search-panel')
-  await win.keyboard.press('ControlOrMeta+p')
+  await win.keyboard.press('ControlOrMeta+k')
   await expect(panel).toBeVisible()
 
   await win.keyboard.press('Escape')
@@ -63,10 +63,10 @@ test('Escape closing the search panel leaves the canvas selection intact (M-24)'
   await app.close()
 })
 
-test('the big editor blocks Mod+P quick-open and retires the search panel (M-11/M-12/M-29)', async () => {
+test('the big editor blocks Mod+K search and retires the search palette (M-11/M-12/M-29)', async () => {
   const { app, win } = await launchApp('ew-e2e-esc-blocker-')
   const box = (await win.getByTestId('canvas-host').boundingBox())!
-  // Place away from the top-center where the quick-open panel anchors, so
+  // Place away from the top-center where the search palette sits, so
   // the note pane's expand button is never occluded by it.
   await seedPlacedNote(win, 'Alpha', 'first', { x: 460, y: 380 })
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
@@ -76,22 +76,23 @@ test('the big editor blocks Mod+P quick-open and retires the search panel (M-11/
   const panel = win.getByTestId('search-panel')
   const editor = win.getByTestId('big-editor')
 
-  // Open quick-open, THEN the big editor: registering the editor's input
+  // Open search, exit its click-blocking scrim, THEN the big editor: registering the editor's input
   // blocker notifies the takeover store, retiring the panel (M-12/M-29).
-  await win.keyboard.press('ControlOrMeta+p')
+  await win.keyboard.press('ControlOrMeta+k')
   await expect(panel).toBeVisible()
+  await win.keyboard.press('Escape')
   await win.getByTestId('panel-expand').click()
   await expect(editor).toBeVisible()
   await expect(panel).not.toBeVisible()
 
-  // Under the editor, Mod+P is suppressed — no panel opens behind it (M-11).
-  await win.keyboard.press('ControlOrMeta+p')
+  // Under the editor, Mod+K is suppressed — no palette opens behind it (M-11).
+  await win.keyboard.press('ControlOrMeta+k')
   await expect(panel).not.toBeVisible()
 
-  // Close the editor; the blocker releases and quick-open works again.
+  // Close the editor; the blocker releases and search works again.
   await win.getByTestId('big-editor-done').click()
   await expect(editor).toHaveCount(0)
-  await win.keyboard.press('ControlOrMeta+p')
+  await win.keyboard.press('ControlOrMeta+k')
   await expect(panel).toBeVisible()
 
   await app.close()

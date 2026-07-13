@@ -66,9 +66,9 @@ export const KEY = {
 
 // ---- global ----
 declare(KEY.quickOpen, {
-  name: 'Quick open',
+  name: 'Search',
   scope: 'global',
-  combo: { mod: true, shift: false, alt: false, key: 'p' },
+  combo: { mod: true, shift: false, alt: false, key: 'k' },
 })
 declare(KEY.navBack, {
   name: 'Back',

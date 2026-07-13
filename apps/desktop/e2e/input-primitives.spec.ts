@@ -76,16 +76,21 @@ async function focusRing(win: Page, testid: string): Promise<FocusRing> {
   }, testid)
 }
 
-test('pill field (search) renders the shared skin at 999px', async () => {
+test('compound search field keeps a bare shared input inside palette-owned furniture', async () => {
   const { app, win } = await launchApp('ew-e2e-input-pill-')
   try {
     await win.getByTestId('charm-search').click()
     await expect(win.getByTestId('search-input')).toBeVisible()
 
-    const style = await fieldStyle(win, 'search-input')
-    expect(style.borderRadius).toBe('999px')
-    expect(style.background).toBe(style.tokenBackground)
-    expect(style.borderColor).toBe(style.tokenBorder)
+    const input = await win.getByTestId('search-input').evaluate((el) => {
+      const style = getComputedStyle(el)
+      return { borderRadius: style.borderRadius, borderWidth: style.borderWidth }
+    })
+    expect(input.borderRadius).toBe('0px')
+    expect(input.borderWidth).toBe('0px')
+    const field = await fieldStyle(win, 'search-query-field')
+    expect(field.borderRadius).toBe('7px')
+    expect(field.borderColor).toBe(field.tokenBorder)
   } finally {
     await app.close()
   }
@@ -126,7 +131,7 @@ test('standard field (settings remote) renders the shared skin at 5px', async ()
   }
 })
 
-test('pill field (search) carries the uniform focus ring', async () => {
+test('compound search field carries the uniform focus ring on its outer boundary', async () => {
   const { app, win } = await launchApp('ew-e2e-input-pill-focus-')
   try {
     await win.getByTestId('charm-search').click()
@@ -134,7 +139,22 @@ test('pill field (search) carries the uniform focus ring', async () => {
 
     // AI-IMP-153: the ruling puts the SAME ring on the pill variant that
     // the standard variant carries — never the browser default.
-    const ring = await focusRing(win, 'search-input')
+    await win.getByTestId('search-input').focus()
+    const ring = await win.getByTestId('search-query-field').evaluate((el) => {
+      const style = getComputedStyle(el)
+      const probe = document.createElement('div')
+      probe.style.outline = '2px solid var(--ew-focus-ring)'
+      document.body.appendChild(probe)
+      const tokenColor = getComputedStyle(probe).outlineColor
+      probe.remove()
+      return {
+        width: style.outlineWidth,
+        style: style.outlineStyle,
+        offset: style.outlineOffset,
+        color: style.outlineColor,
+        tokenColor,
+      }
+    })
     expect(ring.width).toBe('2px')
     expect(ring.style).toBe('solid')
     expect(ring.offset).toBe('1px')
