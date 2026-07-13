@@ -118,3 +118,8 @@ outside the allowlist.
 - Appearance-charm swatches are the visual/behavioral precedent. The
   four components remain unadopted primitives in this ticket; call-site
   migration belongs to the named follow-ups.
+- Kit 1.4 delta (2026-07-13, post-close): the BARE input variant was
+  ruled (letter 37) — a scoped third variant legal only inside
+  kit-drawn composed surfaces. It ships with the phase-C wave as
+  `TextInput variant="bare"` (AI-IMP-294 consumes it); recorded here
+  because this ticket owns the input family.

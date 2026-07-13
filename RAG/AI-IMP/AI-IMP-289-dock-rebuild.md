@@ -124,3 +124,8 @@ the DOM)
 - Final gate: persistence 658, canvas-engine 409, desktop 541, and
   hidden-window Playwright 268 passed; the native guard leaves only
   TitleStrip's reserved `bg-color` tuple.
+- Kit 1.4 delta (2026-07-13, post-close): the eyedropper glyph
+  master landed (`assets/eyedropper.svg`, DESIGN-1.3-QUEUE item 1).
+  The interim inline pipette swaps to the master in the phase-C
+  wave — one file, recorded here because this ticket shipped the
+  interim.

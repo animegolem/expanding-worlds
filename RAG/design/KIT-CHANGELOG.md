@@ -16,6 +16,23 @@ dirs stay local (gitignored); the zip is canonical.
 
 ## Design package (the rev 0.71 kit-document home)
 
+### package 1.4 — 2026-07-13
+
+- The 1.3 correction queue resolved in full (letter addendum 14,
+  items 35–39): reservation tokens ADDED to kit chrome.css with
+  strip RULED at the shipped 46; the charm-halo envelope drawn
+  unambiguously (12px all sides, charm height bottom-only — future
+  furniture amends the section first); the BARE input ruled as a
+  scoped third variant (legal only inside kit-drawn composed
+  surfaces — palette, tag field, big-editor title; standalone keeps
+  the two-variant grammar); eyedropper glyph master shipped
+  (assets/eyedropper.svg, ⊙ retired); preflights filled for Menu /
+  Outliner / Caption Card / Settings; multi-select arrange demo +
+  edge-clamp specimen in the Home Canvas kit; note-paper edges +
+  zoom-ruler specimens landed. UN-GATES EPIC-029 phases C and D in
+  full. No RFC delta — every ruling lands kit-side or confirms
+  shipped values.
+
 ### package 1.3 — 2026-07-12
 
 - Addendum 13 + `DESIGN-1.3-QUEUE.md`: the code lead's one-object
