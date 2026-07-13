@@ -247,8 +247,8 @@ test('sort-on-drop: a multi-item drop into a frame arranges; the toggle OFF stop
     // Turn sort-on-drop OFF on this frame, then drop three more in.
     await win.getByTestId('canvas-host').click({ position: { x: 5, y: 5 } })
     await selectItem(win, frameId)
-    await expect(win.getByTestId('frame-sort-on-drop')).toBeVisible()
-    await win.getByTestId('frame-sort-on-drop').click() // On → Off
+    await expect(win.getByTestId('charm-frame-sort-on-drop')).toBeVisible()
+    await win.getByTestId('charm-frame-sort-on-drop').click() // On → Off
     await win.getByTestId('canvas-host').click({ position: { x: 5, y: 5 } })
     await win.keyboard.press('Escape')
 
@@ -282,7 +282,7 @@ test('sort-on-drop: a multi-item drop into a frame arranges; the toggle OFF stop
     // and all six members compact-pack (a shelf row spans the frame).
     await win.getByTestId('canvas-host').click({ position: { x: 5, y: 5 } })
     await selectItem(win, frameId)
-    await win.getByTestId('frame-sort').click()
+    await win.getByTestId('charm-frame-sort-now').click()
     await expect
       .poll(async () => {
         const members = (await placements(win)).filter((p) => [a, b, c, d, e, f].includes(p.id))

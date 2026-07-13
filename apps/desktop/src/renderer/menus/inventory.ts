@@ -143,6 +143,7 @@ export interface MultiSubject {
   count: number
   placementCount: number
   decorationCount: number
+  groupedDecorationCount: number
 }
 
 /** The frame subject (§8.4): a placement wearing the frame appearance
@@ -213,6 +214,9 @@ export interface MenuActions {
   flipAll(axis: 'x' | 'y'): void
   gatherIntoFrame(): void
   lockAll(): void
+  groupDecorations(): void
+  ungroupDecorations(): void
+  hideDecorations(): void
   deleteSelection(): void
   // ---- frame ----
   toggleFrameSortOnDrop(): void
@@ -522,22 +526,6 @@ function decorationMenu(subject: DecorationSubject, a: MenuActions): MenuGroup[]
   ]
 }
 
-/** The §8.4 Align family submenu (family 'align'): the six align verbs
- * plus the two distribute verbs (distribute is not its own submenu
- * family, so it nests inside Align). */
-function alignSubmenu(a: MenuActions): MenuItem[] {
-  return [
-    { id: 'align-left', label: 'Align left', run: () => a.align('left') },
-    { id: 'align-hcenter', label: 'Align centers', run: () => a.align('hcenter') },
-    { id: 'align-right', label: 'Align right', run: () => a.align('right') },
-    { id: 'align-top', label: 'Align top', run: () => a.align('top') },
-    { id: 'align-vmiddle', label: 'Align middles', run: () => a.align('vmiddle') },
-    { id: 'align-bottom', label: 'Align bottom', run: () => a.align('bottom') },
-    { id: 'distribute-h', label: 'Distribute horizontally', run: () => a.distribute('horizontal') },
-    { id: 'distribute-v', label: 'Distribute vertically', run: () => a.distribute('vertical') },
-  ]
-}
-
 /**
  * §8.4 multi-select menu: count header — align/distribute/flips —
  * Gather into a frame · tags · lock all — "Delete N items". Gather is
@@ -554,7 +542,7 @@ function multiMenu(subject: MultiSubject, a: MenuActions): MenuGroup[] {
     {
       id: 'arrange',
       items: [
-        { id: 'align', label: 'Align…', family: 'align', submenu: alignSubmenu(a) },
+        ...zOrderRows(a),
         { id: 'flip-h', label: 'Flip horizontal', shortcutId: 'board-flip-h', run: () => a.flipAll('x') },
         { id: 'flip-v', label: 'Flip vertical', shortcutId: 'board-flip-v', run: () => a.flipAll('y') },
       ],
@@ -562,6 +550,24 @@ function multiMenu(subject: MultiSubject, a: MenuActions): MenuGroup[] {
     {
       id: 'group',
       items: [
+        {
+          id: 'group-decorations',
+          label: 'Group decorations',
+          ...(subject.placementCount > 0
+            ? { disabledReason: 'Group decorations needs a decoration-only selection' }
+            : subject.decorationCount >= 2
+            ? { run: a.groupDecorations }
+            : { disabledReason: 'Group needs at least two decorations' }),
+        },
+        {
+          id: 'ungroup-decorations',
+          label: 'Ungroup decorations',
+          ...(subject.placementCount > 0
+            ? { disabledReason: 'Ungroup decorations needs a decoration-only selection' }
+            : subject.groupedDecorationCount > 0
+            ? { run: a.ungroupDecorations }
+            : { disabledReason: 'Ungroup needs grouped decorations' }),
+        },
         {
           id: 'gather-into-frame',
           label: 'Gather into a frame',
@@ -572,6 +578,15 @@ function multiMenu(subject: MultiSubject, a: MenuActions): MenuGroup[] {
           ...(subject.placementCount > 0
             ? { run: a.gatherIntoFrame }
             : { disabledReason: 'Gather into a frame — frames hold items, not decorations' }),
+        },
+        {
+          id: 'hide-decorations',
+          label: 'Hide decorations',
+          ...(subject.placementCount > 0
+            ? { disabledReason: 'Hide decorations needs a decoration-only selection' }
+            : subject.decorationCount > 0
+            ? { run: a.hideDecorations }
+            : { disabledReason: 'Hide applies to decorations, not placed items' }),
         },
         { id: 'tags', label: 'Tags…', disabledReason: COMING_SOON.multiTags },
         {
@@ -619,7 +634,7 @@ function frameMenu(subject: FrameSubject, a: MenuActions): MenuGroup[] {
           run: a.toggleFrameSortOnDrop,
         },
         { id: 'frame-sort-now', label: 'Sort in frame', run: a.sortFrameNow },
-        { id: 'frame-fill', label: 'Fill from library…', run: a.fillFrameFromLibrary },
+        { id: 'frame-fill', label: 'Add from library…', run: a.fillFrameFromLibrary },
       ],
     },
     {

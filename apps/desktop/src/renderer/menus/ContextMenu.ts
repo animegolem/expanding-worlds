@@ -32,6 +32,7 @@ import { uuidv7 } from '@ew/domain'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from '../canvas/host'
 import type { BoardTooling } from '../canvas/board-tooling'
+import type { DecorationsUi } from '../canvas/decorations-ui'
 import { placeAnchored, pointAnchor } from '../chrome/anchored-placement'
 import { navigateTo } from '../chrome/navigation'
 import { takeoverActive } from '../chrome/takeover'
@@ -90,6 +91,7 @@ export function attachContextMenu(
   element: HTMLElement,
   onError: (message: string) => void,
   tooling: BoardTooling,
+  decorationsUi: DecorationsUi,
 ): ContextMenuHandle {
   let menu: HTMLDivElement | null = null
   /** Enabled, focusable rows in the currently open menu, in order. */
@@ -533,6 +535,9 @@ export function attachContextMenu(
       flipAll: noop,
       gatherIntoFrame: noop,
       lockAll: noop,
+      groupDecorations: noop,
+      ungroupDecorations: noop,
+      hideDecorations: noop,
       deleteSelection: noop,
       toggleFrameSortOnDrop: noop,
       sortFrameNow: noop,
@@ -729,11 +734,15 @@ export function attachContextMenu(
     return {
       ...baseStubActions(),
       // align/distribute act on the live selection (unchanged here).
+      reorder: (op) => void tooling.reorder(op),
       align: (op) => void tooling.align(op),
       distribute: (axis) => void tooling.distribute(axis),
       flipAll: (axis) => void flipAll(placementIds, axis),
       gatherIntoFrame: () => void gatherIntoFrame(items, placementIds),
       lockAll: () => void lockAll(items, placementIds, decorationIds),
+      groupDecorations: () => void decorationsUi.groupSelection(),
+      ungroupDecorations: () => void decorationsUi.ungroupSelection(),
+      hideDecorations: () => void decorationsUi.hideSelection(),
       deleteSelection: () => void deleteContent(placementIds, decorationIds),
     }
   }
@@ -882,6 +891,9 @@ export function attachContextMenu(
         count: selected.length,
         placementCount,
         decorationCount: selected.length - placementCount,
+        groupedDecorationCount: selected.filter(
+          (item) => item.itemKind === 'decoration' && item.groupId !== null,
+        ).length,
       }
       render('multi', menuFor(subject, multiActions(selected)), at)
       return

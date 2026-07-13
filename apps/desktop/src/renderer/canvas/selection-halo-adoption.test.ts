@@ -8,7 +8,7 @@ const read = (relative: string): string =>
 describe('node-relative halo adoption', () => {
   it('covers the four ruled raw-node paths', () => {
     const charms = read('./charms-ui.ts')
-    expect(charms.match(/avoid:\s*selectionHalo/g)).toHaveLength(2)
+    expect(charms.match(/avoid:\s*selectionHalo/g)).toHaveLength(3)
     expect(read('../menus/ContextMenu.ts')).toContain('currentSelectionHalo()')
     expect(read('./caption-editor.ts')).toContain('avoid: currentSelectionHalo()')
     expect(read('./PromoteCaptionDialog.svelte')).toContain('avoid: currentSelectionHalo()')

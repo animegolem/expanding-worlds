@@ -292,45 +292,17 @@ test('multi-select menu: count header + Gather into a frame = ONE undo (§8.4)',
     await expect(win.getByTestId('context-menu')).toBeVisible()
     expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('multi')
 
-    // Count header leads; gather/align present; Delete names the count.
+    // Count header leads; align moved to ⌗; Delete names the count.
     await expect(win.getByTestId('ctx-count')).toHaveText('2 items selected')
-    await expect(win.getByTestId('ctx-align')).toBeVisible()
+    await expect(win.getByTestId('ctx-align')).toHaveCount(0)
     await expect(win.getByTestId('ctx-gather-into-frame')).toBeVisible()
     // (the row also carries its mono ⌫ shortcut chip, so match the label)
     await expect(win.getByTestId('ctx-delete')).toContainText('Delete 2 items')
 
-    // Toggle the align flyout OPEN then CLOSED via its anchor: closeSub
-    // must truncate the shared keyboard `rows` back to the shell so a
-    // stranded flyout verb can never be reached (AI-IMP-156). After the
-    // toggle, End focuses the LAST real row — never a detached
-    // `ctx-align-*` child that lingered in `rows`.
-    await win.getByTestId('ctx-align').click()
-    await expect(win.getByTestId('ctx-submenu-align')).toBeVisible()
-    await win.getByTestId('ctx-align').click()
-    await expect(win.getByTestId('ctx-submenu-align')).toHaveCount(0)
-    await expect(win.getByTestId('context-menu')).toBeVisible()
-    await win.keyboard.press('End')
-    const focused = await win.evaluate(() => {
-      const el = document.activeElement as HTMLElement | null
-      const menu = document.querySelector('[data-testid="context-menu"]')
-      return {
-        testid: el?.dataset?.['testid'] ?? null,
-        inMenu: !!(menu && el && menu.contains(el)),
-      }
-    })
-    expect(focused.testid?.startsWith('ctx-align-')).toBe(false)
-    expect(focused.inMenu).toBe(true)
-
-    // Align flyout: pressing a child must run the verb, close the WHOLE
-    // menu, and leave no orphaned flyout (Codex review, PR #9 — the
-    // sibling-parented flyout was "outside" the pointer guard and got
-    // stranded while the parent closed under it).
-    await win.getByTestId('ctx-align').click()
-    await expect(win.getByTestId('ctx-submenu-align')).toBeVisible()
-    await win.getByTestId('ctx-align-left').click()
-    await expect(win.getByTestId('context-menu')).toHaveCount(0)
-    await expect(win.getByTestId('ctx-submenu-align')).toHaveCount(0)
-    // The verb really ran: equal-sized pins align-left onto one center x.
+    await win.keyboard.press('Escape')
+    await win.getByTestId('charm-arrange').click()
+    await win.getByTestId('align-left').click()
+    // The ruled charm verb really ran: equal-sized pins align-left.
     await expect
       .poll(async () => {
         const [pa, pb] = [await placement(win, a.placementId), await placement(win, b.placementId)]
@@ -408,17 +380,17 @@ test('decoration lock/hide via menu = ONE undo each; Dock style traffic stays ou
     await expect.poll(() => hidden()).toBe(0)
     expect(await undoDepth(win)).toBe(d0)
 
-    // A Dock style edit commits the SAME command type (UpdateDecoration)
-    // through the same gateway but is NOT a captured gesture: the stack
-    // must not grow (the §8.4 verb capture is gesture-shaped, not
-    // type-shaped).
+    // Restyle is selection furniture and one captured undo gesture.
     await win.mouse.click(box.x + deco.cx, box.y + deco.cy)
-    await expect(win.getByTestId('selection-style-controls')).toBeVisible()
-    await win.getByTestId('sel-stroke-width').fill('7')
+    await win.getByTestId('charm-restyle').click()
+    const width = win.getByTestId('restyle-panel').locator('label').filter({ hasText: 'width' }).locator('input')
+    await width.fill('7')
     await win.keyboard.press('Tab')
     await expect
       .poll(async () => (await decorations(win)).find((d) => d.id === deco.id)?.data['strokeWidth'])
-      .toBe(7)
+      .toBe(7.1)
+    expect(await undoDepth(win)).toBe(d0 + 1)
+    await undoOnce(win)
     expect(await undoDepth(win)).toBe(d0)
   } finally {
     await app.close()

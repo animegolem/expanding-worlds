@@ -82,8 +82,8 @@ describe('shape renderer', () => {
     expect(bounds.height).toBeGreaterThanOrEqual(20)
   })
 
-  it('draws ellipse and triangle variants and survives invalid data', () => {
-    for (const shape of ['ellipse', 'triangle'] as const) {
+  it('draws ellipse, triangle, and diamond variants and survives invalid data', () => {
+    for (const shape of ['ellipse', 'triangle', 'diamond'] as const) {
       const item = makeDecoration({
         kind: 'shape',
         data: { shape, x: 0, y: 0, width: 30, height: 12, ...stroke },
@@ -102,7 +102,7 @@ describe('shape renderer', () => {
     // A sharp triangle apex under the default miter join (limit 10)
     // spikes up to 5x strokeWidth past the vertex at thick strokes
     // (AI-IMP-027); rect corners are fixed 90deg and stay miters.
-    const strokeStyleOf = (shape: 'rect' | 'triangle'): string | undefined => {
+    const strokeStyleOf = (shape: 'rect' | 'triangle' | 'diamond'): string | undefined => {
       const item = makeDecoration({
         kind: 'shape',
         data: { shape, x: 0, y: 0, width: 20, height: 80, stroke: DEFAULT_STROKE, strokeWidth: 12 },
@@ -113,11 +113,12 @@ describe('shape renderer', () => {
       return instruction && 'style' in instruction.data ? instruction.data.style.join : undefined
     }
     expect(strokeStyleOf('triangle')).toBe('round')
+    expect(strokeStyleOf('diamond')).toBe('round')
     expect(strokeStyleOf('rect')).toBe('miter')
   })
 
   it('zero-size shapes do not crash', () => {
-    for (const shape of ['rect', 'ellipse', 'triangle'] as const) {
+    for (const shape of ['rect', 'ellipse', 'triangle', 'diamond'] as const) {
       const item = makeDecoration({
         kind: 'shape',
         data: { shape, x: 10, y: 10, width: 0, height: 0, ...stroke },

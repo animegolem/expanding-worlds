@@ -20,6 +20,7 @@ export type ToolKind =
   | 'rect'
   | 'ellipse'
   | 'triangle'
+  | 'diamond'
   | 'shape-arrow'
   | 'path'
   | 'line'
@@ -40,6 +41,10 @@ export interface ToolStyle {
   fill: string | null
   /** Canvas text color. */
   textColor: string
+  /** Session-local defaults for the next canvas-text decoration. The
+   * multiplier preserves §4.9's legible-at-creation sizing across zooms. */
+  textFontFamily?: string
+  textSizeScale?: number
 }
 
 /** The controller surface the ToolManager needs; CanvasController satisfies it. */
@@ -73,6 +78,8 @@ export class ToolManager {
     strokeScale: 1,
     fill: null,
     textColor: DEFAULT_STROKE,
+    textFontFamily: 'sans-serif',
+    textSizeScale: 1,
   }
   /** The desktop text-entry overlay hooks in here (§12.2 DOM overlay). */
   onPlaceText: ((world: Point) => void) | null = null

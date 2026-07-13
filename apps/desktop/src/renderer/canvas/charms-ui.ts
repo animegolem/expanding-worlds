@@ -14,12 +14,12 @@
  */
 import {
   adornedWorldAABB,
-  isFurnitureVisible,
   itemWorldAABB,
   unionBounds,
   type SceneItem,
   type ScenePlacement,
 } from '@ew/canvas-engine'
+import { mount, unmount } from 'svelte'
 import type { NodeAppearance } from '@ew/commands'
 import { uuidv7 } from '@ew/domain'
 import { FRAME_SORT_ON_DROP_PREFIX } from '@ew/protocol'
@@ -43,10 +43,18 @@ import { themeTokenValue } from '../theme'
 import { CHARM_MIN_SCREEN_PX, HINT_CHARM_REST_OPACITY } from '../chrome/feel'
 import { ICON_SVG_DATA_URLS } from './icon-atlas.generated'
 import { placeAnchored, type PlacementRect } from '../chrome/anchored-placement'
+import ArrangePopover from './ArrangePopover.svelte'
+import RestylePanel from './RestylePanel.svelte'
+import {
+  commitRestyle,
+  restyleEligibility,
+  restyleValues,
+} from './selection-restyle'
 import {
   registerSelectionHaloProvider,
   selectionHaloRect,
 } from './selection-halo'
+import { isSelectionBelowFurnitureFloor } from './selection-furniture'
 
 export interface CharmsUiHandle {
   destroy(): void
@@ -155,20 +163,11 @@ function injectStyles(): void {
  * nothing to dismiss. Zoom-only (never camera x/y), so a pan at
  * constant zoom can never flip this.
  */
-export function isSelectionBelowFurnitureFloor(
-  selectedItems: readonly SceneItem[],
-  zoom: number,
-): boolean {
-  const bounds = unionBounds(selectedItems)
-  if (!bounds) return false
-  const maxEdge = Math.max(bounds.width, bounds.height) * zoom
-  return !isFurnitureVisible(maxEdge)
-}
-
 export function attachCharmsUi(
   host: CanvasHostHandle,
   element: HTMLElement,
   tooling: BoardTooling,
+  onError: (message: string) => void,
 ): CharmsUiHandle {
   injectStyles()
   const layer = document.createElement('div')
@@ -195,6 +194,13 @@ export function attachCharmsUi(
     'padding:2px 8px;background:var(--ew-surface-menu);border:1px solid var(--ew-border);' +
     'border-radius:10px;box-shadow:0 8px 22px var(--ew-shadow);pointer-events:auto;font-size:13px;'
   layer.appendChild(bar)
+
+  const arrangeHost = document.createElement('div')
+  arrangeHost.style.cssText = `position:absolute;display:none;z-index:${Z.popover};pointer-events:auto;`
+  layer.appendChild(arrangeHost)
+  const restyleHost = document.createElement('div')
+  restyleHost.style.cssText = `position:absolute;display:none;z-index:${Z.popover};pointer-events:auto;`
+  layer.appendChild(restyleHost)
 
   // §4.8 rev 0.45: the `#` popover is a completing add-field ABOVE the
   // node's chips — one shared component with the note-panel chip row.
@@ -562,6 +568,7 @@ export function attachCharmsUi(
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset['testid'] = testId
+    button.dataset['placementOnly'] = 'true'
     button.textContent = glyph
     button.style.cssText =
       'width:26px;height:26px;padding:0;display:flex;align-items:center;justify-content:center;' +
@@ -579,6 +586,7 @@ export function attachCharmsUi(
 
   function divider(): void {
     const line = document.createElement('span')
+    line.dataset['placementOnly'] = 'true'
     line.style.cssText = 'width:1px;height:16px;background:var(--ew-border);margin:0 3px;'
     bar.appendChild(line)
   }
@@ -590,12 +598,23 @@ export function attachCharmsUi(
     return item && item.itemKind === 'placement' ? item : null
   }
 
+  function selectedItems(): SceneItem[] {
+    return host.controller.selectedItems()
+  }
+
+  function selectedDecorations(): import('@ew/canvas-engine').SceneDecoration[] {
+    return selectedItems().filter(
+      (item): item is import('@ew/canvas-engine').SceneDecoration => item.itemKind === 'decoration',
+    )
+  }
+
   let selectionHalo: PlacementRect | null = null
   function selectedScreenRect(): PlacementRect | null {
-    const selected = selectedPlacement()
+    const items = selectedItems()
+    const selected = items.length === 1 && items[0]?.itemKind === 'placement' ? items[0] : null
     const bounds = selected
       ? adornedWorldAABB(selected, host.controller.camera.zoom)
-      : null
+      : unionBounds(items)
     if (!bounds) return null
     const topLeft = host.controller.camera.worldToScreen({ x: bounds.x, y: bounds.y })
     const bottomRight = host.controller.camera.worldToScreen({
@@ -771,6 +790,161 @@ export function attachCharmsUi(
       })
   })
 
+  let arrangeMount: ReturnType<typeof mount> | null = null
+  let restyleMount: ReturnType<typeof mount> | null = null
+  let arrangeOpen = false
+  let restyleOpen = false
+  let restyleSelectionKey = ''
+
+  function closeArrange(): void {
+    arrangeOpen = false
+    arrangeHost.style.display = 'none'
+    if (arrangeMount) void unmount(arrangeMount)
+    arrangeMount = null
+  }
+
+  function closeRestyle(): void {
+    restyleOpen = false
+    restyleSelectionKey = ''
+    restyleHost.style.display = 'none'
+    if (restyleMount) void unmount(restyleMount)
+    restyleMount = null
+  }
+
+  const restyleButton = barButton('charm-restyle', '◧', { name: 'Restyle selection' }, () => {
+    if (restyleButton.dataset['disabled'] === 'true') return
+    if (restyleOpen) {
+      closeRestyle()
+      return
+    }
+    closeArrange()
+    const decorations = selectedDecorations()
+    const eligible = restyleEligibility(decorations)
+    if (!eligible.family || decorations.length !== selectedItems().length) return
+    const lead = decorations[0]
+    if (!lead) return
+    const palette = [
+      '--ew-node-dot-blue',
+      '--ew-node-dot-teal',
+      '--ew-node-dot-gold',
+      '--ew-node-dot-red',
+    ].map(themeTokenValue)
+    restyleHost.style.display = 'block'
+    restyleSelectionKey = decorations.map((item) => item.id).sort().join('|')
+    restyleMount = mount(RestylePanel, {
+      target: restyleHost,
+      props: {
+        family: eligible.family,
+        values: restyleValues(lead),
+        palette,
+        onpatch: (patch: Record<string, unknown>) => {
+          void commitRestyle(host, decorations, eligible.family!, patch).catch((error: unknown) =>
+            onError(error instanceof Error ? error.message : String(error)),
+          )
+        },
+      },
+    })
+    restyleOpen = true
+    schedule()
+  })
+  restyleButton.dataset['placementOnly'] = 'false'
+
+  const arrangeButton = barButton(
+    'charm-arrange',
+    '⌗',
+    { name: 'Arrange — align, spread, pack, equalize' },
+    () => {
+      if (arrangeOpen) {
+        closeArrange()
+        return
+      }
+      closeRestyle()
+      arrangeHost.style.display = 'block'
+      arrangeMount = mount(ArrangePopover, {
+        target: arrangeHost,
+        props: {
+          onalign: (op: import('@ew/canvas-engine').AlignOp) => void tooling.align(op),
+          ondistribute: (axis: import('@ew/canvas-engine').DistributeAxis) => void tooling.distribute(axis),
+          onarrange: (key: import('@ew/canvas-engine').ArrangeSortKey) => void tooling.arrange(key),
+          onnormalize: (mode: import('@ew/canvas-engine').NormalizeMode) => void tooling.normalize(mode),
+        },
+      })
+      arrangeOpen = true
+      schedule()
+    },
+  )
+  arrangeButton.dataset['placementOnly'] = 'false'
+
+  function syncSelectionButtons(items: readonly SceneItem[]): void {
+    const placement = items.length === 1 && items[0]?.itemKind === 'placement'
+    for (const element of bar.querySelectorAll<HTMLElement>('[data-placement-only="true"]'))
+      element.style.display = placement ? '' : 'none'
+    arrangeButton.style.display = items.length >= 2 ? 'flex' : 'none'
+    const decorations = items.filter(
+      (item): item is import('@ew/canvas-engine').SceneDecoration => item.itemKind === 'decoration',
+    )
+    const selectionKey = decorations.map((item) => item.id).sort().join('|')
+    if (restyleOpen && selectionKey !== restyleSelectionKey) closeRestyle()
+    const eligible = restyleEligibility(decorations)
+    const allDecorations = decorations.length === items.length
+    const showRestyle = decorations.length > 0
+    const enabled = showRestyle && allDecorations && eligible.family !== null
+    restyleButton.style.display = showRestyle ? 'flex' : 'none'
+    restyleButton.dataset['disabled'] = enabled ? 'false' : 'true'
+    restyleButton.setAttribute('aria-disabled', String(!enabled))
+    restyleButton.style.opacity = enabled ? '1' : '0.4'
+    restyleButton.style.cursor = enabled ? 'pointer' : 'default'
+    barTips.get(restyleButton)?.update({
+      name: enabled
+        ? 'Restyle selection'
+        : allDecorations
+          ? (eligible.reason ?? 'Restyle needs one shared style family')
+          : 'Restyle does not apply to placed items',
+    })
+    if (!enabled && restyleOpen) closeRestyle()
+    if (items.length < 2 && arrangeOpen) closeArrange()
+  }
+
+  function positionSelectionPanel(surface: HTMLElement, opener: HTMLElement): void {
+    const hostBounds = element.getBoundingClientRect()
+    const openerBounds = opener.getBoundingClientRect()
+    const anchor = {
+      x: openerBounds.left - hostBounds.left,
+      y: openerBounds.top - hostBounds.top,
+      width: openerBounds.width,
+      height: openerBounds.height,
+    }
+    const bounds = surface.getBoundingClientRect()
+    const placed = placeAnchored({
+      anchor,
+      surface: { width: bounds.width, height: bounds.height },
+      host: { x: 0, y: 0, width: hostBounds.width, height: hostBounds.height },
+      x: { preferred: 'center' },
+      y: { preferred: 'after', fallback: 'before' },
+      gap: 8,
+      avoid: selectionHalo ?? undefined,
+    })
+    surface.style.left = `${placed.x}px`
+    surface.style.top = `${placed.y}px`
+  }
+
+  const onSelectionPanelPointer = (event: PointerEvent): void => {
+    const target = event.target as Node
+    if (bar.contains(target) || arrangeHost.contains(target) || restyleHost.contains(target)) return
+    closeArrange()
+    closeRestyle()
+  }
+  const onSelectionPanelKey = (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape' || (!arrangeOpen && !restyleOpen)) return
+    event.preventDefault()
+    closeArrange()
+    closeRestyle()
+  }
+  document.addEventListener('pointerdown', onSelectionPanelPointer, true)
+  window.addEventListener('keydown', onSelectionPanelKey, true)
+  disposers.push(() => document.removeEventListener('pointerdown', onSelectionPanelPointer, true))
+  disposers.push(() => window.removeEventListener('keydown', onSelectionPanelKey, true))
+
   // ---------------------------------------- frame sort chip (§4.9)
   // AI-IMP-138 (owner ruling 2026-07-07: "it has to be in the charm
   // bar"). Shown ONLY when the single selection is a frame. The chip
@@ -835,6 +1009,15 @@ export function attachCharmsUi(
     },
   )
   sortNowButton.textContent = '⊞'
+  const frameAddButton = chipButton(
+    'charm-frame-add-library',
+    { name: 'Add from library' },
+    () => {
+      const placement = selectedPlacement()
+      if (placement?.appearanceKind === 'frame') tooling.loadIntoFrame(placement.id)
+    },
+  )
+  frameAddButton.textContent = '＋'
   setSortChipState(true)
 
   /** Show/refresh the frame chip for the selection (or hide it). Reads
@@ -845,6 +1028,7 @@ export function attachCharmsUi(
     frameDivider.style.display = isFrame ? '' : 'none'
     sortToggle.style.display = isFrame ? '' : 'none'
     sortNowButton.style.display = isFrame ? '' : 'none'
+    frameAddButton.style.display = isFrame ? '' : 'none'
     if (!isFrame || !selected) {
       sortChipFrameId = null
       return
@@ -1146,18 +1330,20 @@ export function attachCharmsUi(
     // ADORNED bounds (body + the §4.5 label when one shows) so the bar
     // clears the title instead of covering it; identical to the raw
     // body AABB when no label shows (AI-IMP-161).
+    const selectionItems = selectedItems()
     const selected = selectedPlacement()
-    const aabb = selected ? adornedWorldAABB(selected, camera.zoom) : null
-    if (selected && aabb) {
-      const bottomCenter = camera.worldToScreen({
-        x: aabb.x + aabb.width / 2,
-        y: aabb.y + aabb.height,
-      })
+    const screenRect = selectedScreenRect()
+    if (selectionItems.length > 0 && screenRect) {
+      const bottomCenter = {
+        x: screenRect.x + screenRect.width / 2,
+        y: screenRect.y + screenRect.height,
+      }
       bar.style.display = 'flex'
+      syncSelectionButtons(selectionItems)
       // Toggle the §4.9 frame chip BEFORE measuring, so the bar width
       // (and thus its centering) accounts for it.
       syncFrameChip(selected)
-      syncCaptionButton(selected)
+      if (selected) syncCaptionButton(selected)
       const barWidth = bar.offsetWidth || 200
       bar.style.left = `${bottomCenter.x - barWidth / 2}px`
       bar.style.top = `${bottomCenter.y + 10}px`
@@ -1166,18 +1352,18 @@ export function attachCharmsUi(
       // LIVE bar height (AI-IMP-141) — the old fixed +44 encoded the
       // pre-restyle 32px bar and would sit under the taller kit bar.
       const popoverTop = bottomCenter.y + 10 + (bar.offsetHeight || 40) + 2
-      lockButton.textContent = selected.locked === 1 ? '🔓' : '🔒'
-      const tipSpec = selected.locked === 1 ? 'Unlock' : 'Lock'
-      lockButton.setAttribute('aria-label', tipSpec)
-      const canMakeCanvas = selected.childCanvasId === null
-      makeCanvasButton.dataset['disabled'] = canMakeCanvas ? 'false' : 'true'
-      makeCanvasButton.style.opacity = canMakeCanvas ? '1' : '0.4'
-      makeCanvasButton.style.cursor = canMakeCanvas ? 'pointer' : 'default'
-      barTips.get(makeCanvasButton)?.update(canMakeCanvas ? makeCanvasTip : alreadyCanvasTip)
-      // Crop is a §4.6 image-appearance verb: live only when the
-      // selection wears an image (AI-IMP-159).
-      setCropEnabled(selected.appearanceKind === 'image' && selected.assetContentHash !== null)
-      if (chipsFor === selected.id) {
+      if (selected) {
+        lockButton.textContent = selected.locked === 1 ? '🔓' : '🔒'
+        const tipSpec = selected.locked === 1 ? 'Unlock' : 'Lock'
+        lockButton.setAttribute('aria-label', tipSpec)
+        const canMakeCanvas = selected.childCanvasId === null
+        makeCanvasButton.dataset['disabled'] = canMakeCanvas ? 'false' : 'true'
+        makeCanvasButton.style.opacity = canMakeCanvas ? '1' : '0.4'
+        makeCanvasButton.style.cursor = canMakeCanvas ? 'pointer' : 'default'
+        barTips.get(makeCanvasButton)?.update(canMakeCanvas ? makeCanvasTip : alreadyCanvasTip)
+        setCropEnabled(selected.appearanceKind === 'image' && selected.assetContentHash !== null)
+      }
+      if (selected && chipsFor === selected.id) {
         const card = selectedScreenRect()
         const bounds = element.getBoundingClientRect()
         const surface = chips.getBoundingClientRect()
@@ -1198,7 +1384,7 @@ export function attachCharmsUi(
         chipsFor = null
         chips.style.display = 'none'
       }
-      if (appearanceFor === selected.id) {
+      if (selected && appearanceFor === selected.id) {
         const card = selectedScreenRect()
         const bounds = element.getBoundingClientRect()
         const surface = appearance.getBoundingClientRect()
@@ -1221,6 +1407,8 @@ export function attachCharmsUi(
       } else {
         closeAppearance()
       }
+      if (arrangeOpen) positionSelectionPanel(arrangeHost, arrangeButton)
+      if (restyleOpen) positionSelectionPanel(restyleHost, restyleButton)
     } else {
       selectionHalo = null
       bar.style.display = 'none'
@@ -1228,6 +1416,8 @@ export function attachCharmsUi(
       chipsFor = null
       chips.style.display = 'none'
       closeAppearance()
+      closeArrange()
+      closeRestyle()
     }
   }
 
@@ -1286,6 +1476,8 @@ export function attachCharmsUi(
     destroy() {
       if (frame) cancelAnimationFrame(frame)
       for (const dispose of disposers) dispose()
+      closeArrange()
+      closeRestyle()
       for (const id of [...entries.keys()]) removeEntry(id)
       layer.remove()
     },

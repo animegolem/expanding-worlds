@@ -1,54 +1,52 @@
 <!--
-  The floating dock (RFC §8.2, AI-IMP-059): bottom-center — tool modes
-  (shape kinds behind one flyout) · divider · zoom cluster; the
-  selection-conditional segment (z-order, align, distribute, zoom to
-  selection, decoration group/lock/hide) joins only while a selection
-  exists. Contextual rows above the dock carry the tool style options
-  and the selection restyle controls ported from DecorationToolbar
-  (AI-IMP-021/034/055 — the fresh-data composition rules are theirs).
+  The floating dock (RFC §8.2, AI-IMP-059): bottom-center — tool modes,
+  one defaults row for the armed tool, eyedropper, and zoom cluster.
+  Selection verbs live with selection furniture/context menus; they
+  never change the Dock's species (AI-IMP-291).
   AI-IMP-067 adds the ◉ pin tool between connector and the divider.
 -->
 <script lang="ts">
-  import {
-    isTextData,
-    type AlignOp,
-    type ArrangeSortKey,
-    type DistributeAxis,
-    type NormalizeMode,
-    type ReorderOp,
-    type TextData,
-    type ToolKind,
-    type SceneDecoration,
-  } from '@ew/canvas-engine'
+  import { onDestroy } from 'svelte'
+  import { type ToolKind } from '@ew/canvas-engine'
   import { themeTokenValue } from '../theme'
-  import { measureTextWorld } from '../canvas/text-entry'
   import { FONT_STACKS, loadFontOptions, type FontOption } from '../canvas/system-fonts'
+  import { defaultsKind, rememberToolColor } from '../canvas/tool-defaults'
+  import ColorPicker from '../ui/ColorPicker.svelte'
+  import PickerList from '../ui/PickerList.svelte'
+  import Stepper from '../ui/Stepper.svelte'
+  import SwatchRow from '../ui/SwatchRow.svelte'
+  import { placeAnchoredElement } from './anchored-placement-dom'
+  import { dispatchReservationChange } from './reservation'
   import type { CanvasHostHandle } from '../canvas/host'
-  import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { BoardTooling } from '../canvas/board-tooling'
   import { KEY } from '../keys/bindings'
   import { formatBinding, getBinding, matches } from '../keys/registry'
   import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
+  import {
+    currentShape,
+    rememberShape,
+    SHAPE_OPTIONS,
+    ShapeHoldGesture,
+    tailOffset,
+    type ShapeToolKind,
+  } from './shape-flyout'
+
+  interface EyeDropperResult { sRGBHex: string }
+  interface EyeDropperApi { open(): Promise<EyeDropperResult> }
+  interface EyeDropperConstructor { new (): EyeDropperApi }
+  declare global { interface Window { EyeDropper?: EyeDropperConstructor } }
 
   const {
     handle,
-    ui,
     tooling,
     hostElement,
   }: {
     handle: CanvasHostHandle
-    ui: DecorationsUi
     tooling: BoardTooling
     hostElement: HTMLElement
   } = $props()
 
-  const SHAPE_KINDS: Array<{ kind: ToolKind; label: string; glyph: string }> = [
-    { kind: 'rect', label: 'Rect', glyph: '▭' },
-    { kind: 'ellipse', label: 'Ellipse', glyph: '◯' },
-    { kind: 'triangle', label: 'Triangle', glyph: '△' },
-    { kind: 'shape-arrow', label: 'Arrow shape', glyph: '➤' },
-  ]
   // Tool keys (AI-IMP-117): the binding id carries the shortcut. Both
   // the dispatch map and the tooltip chip read from the registry, so
   // the letter lives in exactly one place.
@@ -73,58 +71,39 @@
     [...PLAIN_TOOLS, ...DRAW_TOOLS].map((tool) => [getBinding(tool.key)!.combo.key!, tool.kind]),
   )
 
-  const alignOps: Array<{ op: AlignOp; label: string }> = [
-    { op: 'left', label: 'Left' },
-    { op: 'hcenter', label: 'Center' },
-    { op: 'right', label: 'Right' },
-    { op: 'top', label: 'Top' },
-    { op: 'vmiddle', label: 'Middle' },
-    { op: 'bottom', label: 'Bottom' },
-  ]
-  const distributeOps: Array<{ axis: DistributeAxis; label: string }> = [
-    { axis: 'horizontal', label: 'Distribute H' },
-    { axis: 'vertical', label: 'Distribute V' },
-  ]
-  // The z-order chords live in the registry (AI-IMP-136); the chip
-  // prints each from its binding so the letter can't drift.
-  const reorderOps: Array<{ op: ReorderOp; label: string; key: string }> = [
-    { op: 'forward', label: 'Forward', key: KEY.boardSendForward },
-    { op: 'backward', label: 'Backward', key: KEY.boardSendBackward },
-    { op: 'front', label: 'To front', key: KEY.boardSendFront },
-    { op: 'back', label: 'To back', key: KEY.boardSendBack },
-  ]
-  // §4.9 rev 0.38: compact-pack sort keys and normalize modes. No chord
-  // is assigned (the family is broad and grows with EPIC-016 menus);
-  // they ship reachable from this dock surface per the ticket allowance.
-  const arrangeOps: Array<{ key: ArrangeSortKey; label: string; tip: string }> = [
-    { key: 'default', label: 'Arrange', tip: 'Compact-pack (current order)' },
-    { key: 'name', label: 'By name', tip: 'Compact-pack by name' },
-    { key: 'importDate', label: 'By date', tip: 'Compact-pack by import order' },
-    { key: 'area', label: 'By size', tip: 'Compact-pack largest first' },
-  ]
-  const normalizeOps: Array<{ mode: NormalizeMode; label: string; tip: string }> = [
-    { mode: 'height', label: 'Eq. H', tip: 'Equalize height (median)' },
-    { mode: 'width', label: 'Eq. W', tip: 'Equalize width (median)' },
-    { mode: 'size', label: 'Eq. size', tip: 'Equalize size (median)' },
-    { mode: 'area', label: 'Eq. area', tip: 'Equalize area (median)' },
-  ]
-
   let activeTool = $state<ToolKind>(handle.tools.active)
-  let lastShapeKind = $state<ToolKind>('rect')
+  let lastShapeKind = $state<ShapeToolKind>(currentShape())
   let shapeFlyoutOpen = $state(false)
+  let shapeButton = $state<HTMLButtonElement | null>(null)
+  let shapeFlyout = $state<HTMLElement | null>(null)
+  let shapeTailX = $state(12)
+  let shapeFlyoutBelow = $state(false)
   let zoomPct = $state(Math.round(handle.controller.camera.zoom * 100))
 
-  let stroke = $state(handle.tools.style.stroke)
-  let fill = $state<string | null>(handle.tools.style.fill)
-  let textColor = $state(handle.tools.style.textColor)
-  let strokeScale = $state(handle.tools.style.strokeScale)
+  const shapeHold = new ShapeHoldGesture(() => (shapeFlyoutOpen = true))
+  onDestroy(() => shapeHold.cancel())
 
-  let selected = $state<SceneDecoration[]>([])
-  let selectionCount = $state(handle.controller.selection.size)
-  // §4.9 frame actions (AI-IMP-129): the single selected frame (a
-  // placement with the 'frame' appearance), and its sort-on-drop flag.
-  let selectedFrameId = $state<string | null>(null)
-  let sortOnDrop = $state(true)
+  // AI-IMP-289: defaults are deliberately session/host-local. They feed
+  // ToolManager's next-create snapshot; they are not selection restyle
+  // state and do not invent a project/app settings contract.
+  let ink = $state(handle.tools.style.stroke)
+  let fill = $state<string | null>(handle.tools.style.fill)
+  let strokeScale = $state(handle.tools.style.strokeScale)
+  let textFontFamily = $state(handle.tools.style.textFontFamily ?? 'sans-serif')
+  let textSizeScale = $state(handle.tools.style.textSizeScale ?? 1)
+  let recentColors = $state<string[]>([
+    ...new Set([ink, themeTokenValue('--ew-accent'), themeTokenValue('--ew-warn')]),
+  ])
+  let pickerKind = $state<'ink' | 'fill' | null>(null)
+  let pickerOpen = $state(false)
+  let pickerAnchor = $state<HTMLElement | null>(null)
+  let inkAnchor = $state<HTMLElement | null>(null)
+  let fillAnchor = $state<HTMLElement | null>(null)
+  let fontListOpen = $state(false)
+  let fontAnchor = $state<HTMLButtonElement | null>(null)
+  let dockElement = $state<HTMLElement | null>(null)
+  let defaultsShift = $state(0)
+  const eyedropperAvailable = typeof window !== 'undefined' && typeof window.EyeDropper === 'function'
 
   // §4.9 rev 0.13: installed fonts, enumerated lazily on the picker's
   // first user gesture; curated stacks until then (and on failure).
@@ -136,43 +115,23 @@
     void loadFontOptions().then((options) => (fontOptions = options))
   }
 
-  function currentFrameId(): string | null {
-    const items = handle.controller.selectedItems()
-    if (items.length !== 1) return null
-    const item = items[0]!
-    return item.itemKind === 'placement' && item.appearanceKind === 'frame' ? item.id : null
-  }
-
-  function refresh(): void {
-    selected = ui.selectedDecorations()
-    selectionCount = handle.controller.selection.size
-    const frameId = currentFrameId()
-    if (frameId !== selectedFrameId) {
-      selectedFrameId = frameId
-      if (frameId) {
-        void tooling.frameSortOnDrop(frameId).then((on) => {
-          if (selectedFrameId === frameId) sortOnDrop = on
-        })
-      }
-    }
-  }
-
-  function toggleSortOnDrop(): void {
-    const id = selectedFrameId
-    if (!id) return
-    const next = !sortOnDrop
-    sortOnDrop = next
-    void tooling.setFrameSortOnDrop(id, next)
-  }
+  const fontItems = $derived(
+    fontOptions.map((font, index) => ({
+      id: font.value,
+      label: font.label,
+      value: font.value,
+      curated: index < FONT_STACKS.length,
+    })),
+  )
 
   $effect(() => {
     const offTool = handle.tools.onChanged((tool) => {
       activeTool = tool
-      if (SHAPE_KINDS.some((s) => s.kind === tool)) lastShapeKind = tool
+      if (isShapeTool(tool)) {
+        lastShapeKind = tool
+        rememberShape(tool)
+      }
     })
-    const offSelection = handle.controller.selection.onChanged(() => refresh())
-    // Deterministic (AI-IMP-054): the host signals every applied scene.
-    const offScene = handle.onSceneApplied(() => refresh())
     const offCamera = handle.controller.camera.onChanged(
       () => (zoomPct = Math.round(handle.controller.camera.zoom * 100)),
     )
@@ -205,454 +164,267 @@
       if (tool) handle.tools.setTool(tool)
     }
     window.addEventListener('keydown', onKeydown)
-    refresh()
     return () => {
       offTool()
-      offSelection()
-      offScene()
       offCamera()
       window.removeEventListener('keydown', onKeydown)
     }
   })
 
   $effect(() => {
-    handle.tools.style.stroke = stroke
+    handle.tools.style.stroke = ink
     handle.tools.style.fill = fill
-    handle.tools.style.textColor = textColor
+    handle.tools.style.textColor = ink
     handle.tools.style.strokeScale = strokeScale
+    handle.tools.style.textFontFamily = textFontFamily
+    handle.tools.style.textSizeScale = textSizeScale
   })
 
-  const shapeActive = $derived(SHAPE_KINDS.some((s) => s.kind === activeTool))
+  const shapeActive = $derived(isShapeTool(activeTool))
   const shapeGlyph = $derived(
-    SHAPE_KINDS.find((s) => s.kind === (shapeActive ? activeTool : lastShapeKind))?.glyph ?? '▭',
+    SHAPE_OPTIONS.find((s) => s.kind === (shapeActive ? activeTool : lastShapeKind))?.glyph ?? '▭',
   )
-  const hasGroup = $derived(selected.some((d) => d.groupId !== null))
-  const allLocked = $derived(selected.length > 0 && selected.every((d) => d.locked === 1))
-  const toolOptionsVisible = $derived(
-    activeTool !== 'select' && activeTool !== 'pin' && activeTool !== 'frame',
-  )
+  const activeDefaults = $derived(defaultsKind(activeTool))
+  const shapeDefaultsVisible = $derived(activeDefaults === 'shape')
+  const lineDefaultsVisible = $derived(activeDefaults === 'line')
+  const toolOptionsVisible = $derived(activeDefaults !== null)
+
+  $effect(() => {
+    const root = document.documentElement
+    if (toolOptionsVisible) root.dataset['dockExpanded'] = 'true'
+    else delete root.dataset['dockExpanded']
+    dispatchReservationChange(root)
+    return () => {
+      delete root.dataset['dockExpanded']
+      dispatchReservationChange(root)
+    }
+  })
+
+  function rememberColor(color: string): void {
+    recentColors = rememberToolColor(recentColors, color)
+  }
+
+  function chooseInk(color: string): void {
+    ink = color
+    rememberColor(color)
+  }
+
+  function chooseFill(color: string): void {
+    fill = color
+    rememberColor(color)
+  }
+
+  function openPicker(kind: 'ink' | 'fill', anchor: HTMLElement): void {
+    pickerAnchor = anchor
+    pickerKind = kind
+    pickerOpen = true
+  }
+
+  async function sampleInk(): Promise<void> {
+    if (!window.EyeDropper) return
+    try {
+      const result = await new window.EyeDropper().open()
+      chooseInk(result.sRGBHex)
+    } catch {
+      // Cancellation is the native API's ordinary exit; it changes no default.
+    }
+  }
+
+  $effect(() => {
+    activeTool
+    queueMicrotask(() => {
+      if (!dockElement) return
+      const testId = shapeDefaultsVisible ? 'dock-shape' : `tool-${activeTool}`
+      const button = dockElement.querySelector<HTMLElement>(`[data-testid="${testId}"]`)
+      const main = dockElement.querySelector<HTMLElement>('.dock-row.main')
+      if (!button || !main) { defaultsShift = 0; return }
+      const target = button.getBoundingClientRect()
+      const row = main.getBoundingClientRect()
+      defaultsShift = target.left + target.width / 2 - (row.left + row.width / 2)
+    })
+  })
 
   function setTool(kind: ToolKind): void {
     handle.tools.setTool(kind)
     shapeFlyoutOpen = false
   }
 
+  function isShapeTool(kind: string | null): kind is ShapeToolKind {
+    return SHAPE_OPTIONS.some((shape) => shape.kind === kind)
+  }
+
+  function pickShape(kind: ShapeToolKind): void {
+    lastShapeKind = kind
+    rememberShape(kind)
+    // ToolManager toggles an already-active non-select tool back to select;
+    // a picker choice means "keep this armed", never "toggle it off".
+    if (handle.tools.active !== kind) handle.tools.setTool(kind)
+    shapeFlyoutOpen = false
+  }
+
+  function quickShapePress(): void {
+    if (shapeActive) shapeFlyoutOpen = true
+    else pickShape(lastShapeKind)
+  }
+
+  function beginShapePress(event: PointerEvent): void {
+    if (event.button !== 0) return
+    ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
+    shapeHold.press()
+  }
+
+  function endShapePress(event: PointerEvent): void {
+    if (event.button !== 0) return
+    const button = event.currentTarget as HTMLElement
+    if (button.hasPointerCapture?.(event.pointerId)) button.releasePointerCapture(event.pointerId)
+    const outcome = shapeHold.release()
+    if (outcome === 'quick') {
+      quickShapePress()
+      return
+    }
+    const hit = document.elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLElement>('[data-shape-kind]')
+      ?.dataset['shapeKind'] ?? null
+    if (isShapeTool(hit)) pickShape(hit)
+    else shapeFlyoutOpen = false
+  }
+
+  function cancelShapePress(): void {
+    shapeHold.cancel()
+    shapeFlyoutOpen = false
+  }
+
+  function shapeFlyoutPlaced(
+    placement: { x: number; flipped: boolean },
+    surface: { width: number },
+  ): void {
+    if (!shapeButton) return
+    const anchor = shapeButton.getBoundingClientRect()
+    shapeTailX = tailOffset(anchor.left + anchor.width / 2, placement.x, surface.width)
+    shapeFlyoutBelow = placement.flipped
+  }
+
+  $effect(() => {
+    if (!shapeFlyoutOpen) return
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      shapeFlyoutOpen = false
+      shapeButton?.focus()
+    }
+    const onRelease = (event: PointerEvent): void => {
+      const target = event.target as Node | null
+      if (target && (shapeButton?.contains(target) || shapeFlyout?.contains(target))) return
+      shapeFlyoutOpen = false
+    }
+    window.addEventListener('keydown', onKey, true)
+    window.addEventListener('pointerup', onRelease, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('pointerup', onRelease, true)
+    }
+  })
+
   function zoomBy(factor: number): void {
     const bounds = hostElement.getBoundingClientRect()
     handle.controller.camera.zoomAt({ x: bounds.width / 2, y: bounds.height / 2 }, factor)
   }
 
-  function run(action: () => Promise<void>): void {
-    // The commit's project-changed → scene-applied signal refreshes us.
-    void action()
-  }
-
-  // §4.9 rev 0.12: whole-object type controls for a single selected
-  // text decoration; bounds re-measured through the same DOM metrics
-  // the entry overlay uses.
-  const selectedText = $derived(
-    selected.length === 1 && selected[0]!.kind === 'text' && isTextData(selected[0]!.data)
-      ? selected[0]!
-      : null,
-  )
-  const textData = $derived(selectedText ? (selectedText.data as TextData) : null)
-
-  function updateText(patch: Partial<TextData>): void {
-    if (!selectedText || !textData) return
-    const decorationId = selectedText.id
-    run(async () => {
-      // Compose from FRESH data, not this component's snapshot
-      // (AI-IMP-049 lesson): two quick edits would otherwise silently
-      // revert the first one.
-      const response = await window.ew.project.query('getCanvasContents', {
-        canvasId: handle.canvasId,
-      })
-      const fresh = response.ok
-        ? (response.result as Array<{ id: string; data?: unknown }>).find(
-            (item) => item.id === decorationId,
-          )
-        : null
-      const base = fresh && isTextData(fresh.data) ? fresh.data : textData
-      if (!base) return
-      const next = { ...base, ...patch }
-      const measured = measureTextWorld(next.text, next)
-      await handle.gateway.execute('UpdateDecoration', {
-        decorationId,
-        set: { data: { ...next, ...measured } },
-      })
-    })
-  }
-
-  // §4.9 rev 0.16 / AI-IMP-055: drawn decorations stay restylable
-  // after placement. Stroke-bearing kinds only; text has its own row.
-  const STYLED_KINDS = new Set(['shape', 'line', 'arrow', 'path', 'connector'])
-  const selectedStyled = $derived(selected.filter((d) => STYLED_KINDS.has(d.kind)))
-  const styledLead = $derived(
-    selectedStyled.length > 0
-      ? (selectedStyled[0]!.data as {
-          stroke?: string
-          strokeWidth?: number
-          fill?: string
-          cornerRadius?: number
-          shape?: string
-        })
-      : null,
-  )
-  const selectedRects = $derived(
-    selectedStyled.filter((d) => d.kind === 'shape' && (d.data as { shape?: string }).shape === 'rect'),
-  )
-  const selectedShapes = $derived(selectedStyled.filter((d) => d.kind === 'shape'))
-
-  /** One UpdateDecoration per eligible selected decoration, each
-   * composed from FRESH data (AI-IMP-049 lesson). `fill` and
-   * `cornerRadius` only apply where they mean something. */
-  function updateStyled(patch: {
-    stroke?: string
-    strokeWidth?: number
-    fill?: string | null
-    cornerRadius?: number
-  }): void {
-    const targets = selectedStyled.map((d) => ({ id: d.id, kind: d.kind }))
-    if (targets.length === 0) return
-    run(async () => {
-      const response = await window.ew.project.query('getCanvasContents', {
-        canvasId: handle.canvasId,
-      })
-      if (!response.ok) return
-      const byId = new Map(
-        (response.result as Array<{ id: string; data?: unknown }>).map((item) => [item.id, item]),
-      )
-      for (const target of targets) {
-        const fresh = byId.get(target.id)
-        if (!fresh || typeof fresh.data !== 'object' || fresh.data === null) continue
-        const base = fresh.data as Record<string, unknown>
-        const isShape = target.kind === 'shape'
-        const isRect = isShape && base['shape'] === 'rect'
-        const next: Record<string, unknown> = { ...base }
-        if (patch.stroke !== undefined) next['stroke'] = patch.stroke
-        if (patch.strokeWidth !== undefined) next['strokeWidth'] = patch.strokeWidth
-        if (patch.fill !== undefined && isShape) {
-          if (patch.fill === null) delete next['fill']
-          else next['fill'] = patch.fill
-        }
-        if (patch.cornerRadius !== undefined && isRect) next['cornerRadius'] = patch.cornerRadius
-        await handle.gateway.execute('UpdateDecoration', {
-          decorationId: target.id,
-          set: { data: next },
-        })
-      }
-    })
-  }
 </script>
 
-<div class="dock-stack" data-testid="dock" data-dock-expanded="false">
+<div class="dock-stack" data-testid="dock" data-dock-expanded={toolOptionsVisible} bind:this={dockElement}>
   {#if toolOptionsVisible}
-    <div class="dock-row contextual" data-testid="tool-options">
-      <label>
-        Stroke
-        <input type="color" data-testid="style-stroke" bind:value={stroke} />
-      </label>
-      <label>
-        Weight ×
-        <input
-          type="number"
-          min="0.25"
-          max="8"
-          step="0.25"
-          data-testid="style-stroke-width"
-          bind:value={strokeScale}
-        />
-      </label>
-      <label>
-        Fill
-        <input
-          type="color"
-          data-testid="style-fill"
-          value={fill ?? themeTokenValue('--ew-color-input-empty')}
-          oninput={(e) => (fill = (e.currentTarget as HTMLInputElement).value)}
-        />
-        <button type="button" data-testid="style-fill-none" disabled={fill === null} onclick={() => (fill = null)}>
-          none
-        </button>
-      </label>
-      <label>
-        Text
-        <input type="color" data-testid="style-text-color" bind:value={textColor} />
-      </label>
-    </div>
-  {/if}
-
-  {#if styledLead}
-    <div class="dock-row contextual" data-testid="selection-style-controls">
-      <label>
-        Stroke
-        <input
-          type="color"
-          data-testid="sel-stroke"
-          value={styledLead.stroke ?? themeTokenValue('--ew-text')}
-          onchange={(e) => updateStyled({ stroke: (e.currentTarget as HTMLInputElement).value })}
-        />
-      </label>
-      <label>
-        Width
-        <input
-          type="number"
-          min="0.1"
-          step="0.5"
-          data-testid="sel-stroke-width"
-          value={styledLead.strokeWidth ?? 2}
-          onchange={(e) => {
-            const width = Number((e.currentTarget as HTMLInputElement).value)
-            if (Number.isFinite(width) && width > 0) updateStyled({ strokeWidth: width })
-          }}
-        />
-      </label>
-      {#if selectedShapes.length > 0}
-        <label>
-          Fill
-          <input
-            type="color"
-            data-testid="sel-fill"
-            value={styledLead.fill ?? themeTokenValue('--ew-color-input-empty')}
-            onchange={(e) => updateStyled({ fill: (e.currentTarget as HTMLInputElement).value })}
-          />
-          <button type="button" data-testid="sel-fill-none" onclick={() => updateStyled({ fill: null })}>
-            none
+    <div
+      class="dock-row defaults"
+      data-testid="tool-defaults"
+      data-defaults-tool={activeTool}
+      style:transform={`translateX(${defaultsShift}px)`}
+    >
+      {#if activeTool === 'text'}
+        <span class="default-field font-default">
+          <span>font</span>
+          <button
+            type="button"
+            class:active={fontListOpen}
+            data-testid="default-font"
+            bind:this={fontAnchor}
+            onclick={() => { ensureFonts(); fontListOpen = !fontListOpen }}
+          >
+            {fontOptions.find((font) => font.value === textFontFamily)?.label ?? textFontFamily} ▾
           </button>
-        </label>
+        </span>
+        <span class="default-field" data-testid="default-text-size">
+          <span>size</span>
+          <Stepper bind:value={textSizeScale} min={0.5} max={3} step={0.1} />
+          <span class="unit">×</span>
+        </span>
       {/if}
-      {#if selectedRects.length > 0}
-        <label>
-          Round %
-          <input
-            type="number"
-            min="0"
-            max="100"
-            step="5"
-            data-testid="sel-rounding"
-            value={Math.round((styledLead.cornerRadius ?? 0) * 100)}
-            onchange={(e) => {
-              const percent = Number((e.currentTarget as HTMLInputElement).value)
-              if (Number.isFinite(percent) && percent >= 0 && percent <= 100)
-                updateStyled({ cornerRadius: percent / 100 })
-            }}
+
+      <span class="default-field" bind:this={inkAnchor} data-testid="default-ink">
+        <span>{activeTool === 'text' ? 'ink' : 'stroke'}</span>
+        <SwatchRow
+          value={ink}
+          recent={recentColors}
+          onselect={chooseInk}
+          onopen={() => inkAnchor && openPicker('ink', inkAnchor)}
+        />
+      </span>
+
+      {#if shapeDefaultsVisible}
+        <span class="default-field" data-testid="default-stroke-weight">
+          <span>weight</span>
+          <Stepper bind:value={strokeScale} min={0.25} max={8} step={0.25} />
+          <span class="unit">×</span>
+        </span>
+        <span class="default-field" bind:this={fillAnchor} data-testid="default-fill">
+          <span>fill</span>
+          <SwatchRow
+            value={fill ?? ink}
+            recent={recentColors}
+            onselect={chooseFill}
+            onopen={() => fillAnchor && openPicker('fill', fillAnchor)}
           />
-        </label>
+          <button type="button" class="none" aria-pressed={fill === null} onclick={() => (fill = null)}>none</button>
+        </span>
+      {:else if lineDefaultsVisible}
+        <span class="default-field" data-testid="default-stroke-weight">
+          <span>weight</span>
+          <Stepper bind:value={strokeScale} min={0.25} max={8} step={0.25} />
+          <span class="unit">×</span>
+        </span>
       {/if}
     </div>
-  {/if}
 
-  {#if textData}
-    <div class="dock-row contextual" data-testid="text-style-controls">
-      <label>
-        Size
-        <input
-          type="number"
-          min="1"
-          max="512"
-          data-testid="text-size"
-          value={textData.fontSize}
-          onchange={(e) => {
-            const size = Number((e.currentTarget as HTMLInputElement).value)
-            if (Number.isFinite(size) && size > 0) updateText({ fontSize: size })
-          }}
+    {#if fontListOpen && fontAnchor}
+      <div
+        class="font-picker"
+        data-testid="default-font-list"
+        use:placeAnchoredElement={() => ({
+          anchor: fontAnchor!.getBoundingClientRect(),
+          host: { x: 0, y: 0, width: innerWidth, height: innerHeight },
+          x: { preferred: 'center' },
+          y: { preferred: 'before', fallback: 'after' },
+          gap: 8,
+        })}
+      >
+        <PickerList
+          items={fontItems}
+          value={textFontFamily}
+          onselect={(value) => { textFontFamily = value; fontListOpen = false }}
         />
-      </label>
-      <label>
-        Font
-        <select
-          data-testid="text-family"
-          value={textData.fontFamily ?? 'sans-serif'}
-          onpointerdown={ensureFonts}
-          onfocus={ensureFonts}
-          onchange={(e) => updateText({ fontFamily: (e.currentTarget as HTMLSelectElement).value })}
-        >
-          {#if textData.fontFamily && !fontOptions.some((f) => f.value === textData.fontFamily)}
-            <option value={textData.fontFamily}>{textData.fontFamily}</option>
-          {/if}
-          {#each fontOptions as family (family.value)}
-            <option value={family.value}>{family.label}</option>
-          {/each}
-        </select>
-      </label>
-      <button
-        type="button"
-        class:active={textData.bold === true}
-        data-testid="text-bold"
-        onclick={() => updateText({ bold: !textData!.bold })}
-      >
-        B
-      </button>
-      <button
-        type="button"
-        class:active={textData.italic === true}
-        data-testid="text-italic"
-        onclick={() => updateText({ italic: !textData!.italic })}
-      >
-        I
-      </button>
-      <label>
-        Color
-        <input
-          type="color"
-          data-testid="text-selected-color"
-          value={textData.color}
-          onchange={(e) => updateText({ color: (e.currentTarget as HTMLInputElement).value })}
-        />
-      </label>
-    </div>
-  {/if}
+      </div>
+    {/if}
 
-  {#if selectionCount > 0}
-    <div class="dock-row contextual" data-testid="selection-controls">
-      {#each reorderOps as entry (entry.op)}
-        <button
-          type="button"
-          data-testid={`order-${entry.op}`}
-          onclick={() => void tooling.reorder(entry.op)}
-          use:tooltip={{ name: entry.label, shortcut: formatBinding(entry.key) }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each alignOps as entry (entry.op)}
-        <button
-          type="button"
-          data-testid={`align-${entry.op}`}
-          disabled={selectionCount < 2}
-          onclick={() => void tooling.align(entry.op)}
-          use:tooltip={{ name: `Align ${entry.label.toLowerCase()}` }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each distributeOps as entry (entry.axis)}
-        <button
-          type="button"
-          data-testid={`distribute-${entry.axis}`}
-          disabled={selectionCount < 3}
-          onclick={() => void tooling.distribute(entry.axis)}
-          use:tooltip={{ name: entry.label }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each arrangeOps as entry (entry.key)}
-        <button
-          type="button"
-          data-testid={`arrange-${entry.key}`}
-          disabled={selectionCount < 2}
-          onclick={() => void tooling.arrange(entry.key)}
-          use:tooltip={{ name: entry.tip }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each normalizeOps as entry (entry.mode)}
-        <button
-          type="button"
-          data-testid={`normalize-${entry.mode}`}
-          disabled={selectionCount < 2}
-          onclick={() => void tooling.normalize(entry.mode)}
-          use:tooltip={{ name: entry.tip }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      <button
-        type="button"
-        data-testid="zoom-selection"
-        onclick={() => tooling.zoomToSelection()}
-        use:tooltip={{ name: 'Zoom to selection' }}
-      >
-        Zoom selection
-      </button>
-      {#if selected.length > 0}
-        <span class="count">{selected.length} selected</span>
-        <button
-          type="button"
-          data-testid="deco-group"
-          disabled={selected.length < 2}
-          onclick={() => run(() => ui.groupSelection())}
-          use:tooltip={{ name: 'Group decorations' }}
-        >
-          Group
-        </button>
-        <button
-          type="button"
-          data-testid="deco-ungroup"
-          disabled={!hasGroup}
-          onclick={() => run(() => ui.ungroupSelection())}
-          use:tooltip={{ name: 'Ungroup decorations' }}
-        >
-          Ungroup
-        </button>
-        <button
-          type="button"
-          data-testid="deco-lock"
-          onclick={() => run(() => ui.setLockedOnSelection(!allLocked))}
-          use:tooltip={{ name: allLocked ? 'Unlock decorations' : 'Lock decorations' }}
-        >
-          {allLocked ? 'Unlock' : 'Lock'}
-        </button>
-        <button
-          type="button"
-          data-testid="deco-hide"
-          onclick={() => run(() => ui.hideSelection())}
-          use:tooltip={{ name: 'Hide decorations' }}
-        >
-          Hide
-        </button>
-      {/if}
-    </div>
-  {/if}
-
-  {#if selectedFrameId}
-    <div class="dock-row contextual" data-testid="frame-actions">
-      <button
-        type="button"
-        data-testid="frame-sort"
-        onclick={() => void tooling.sortFrame(selectedFrameId!)}
-        use:tooltip={{ name: 'Compact-pack this frame’s contents' }}
-      >
-        Sort in frame
-      </button>
-      <button
-        type="button"
-        class:active={sortOnDrop}
-        data-testid="frame-sort-on-drop"
-        aria-pressed={sortOnDrop}
-        onclick={toggleSortOnDrop}
-        use:tooltip={{ name: 'Arrange items dropped into this frame' }}
-      >
-        Sort on drop: {sortOnDrop ? 'On' : 'Off'}
-      </button>
-      <button
-        type="button"
-        data-testid="frame-load"
-        onclick={() => tooling.loadIntoFrame(selectedFrameId!)}
-        use:tooltip={{ name: 'Add items from the library into this frame' }}
-      >
-        Add from library
-      </button>
-    </div>
-  {/if}
-
-  {#if shapeFlyoutOpen}
-    <div class="dock-row flyout" data-testid="shape-flyout">
-      {#each SHAPE_KINDS as shape (shape.kind)}
-        <button
-          type="button"
-          class:active={activeTool === shape.kind}
-          data-testid={`tool-${shape.kind}`}
-          onclick={() => setTool(shape.kind)}
-          use:tooltip={{ name: shape.label, shortcut: 'esc returns to select' }}
-        >
-          <span class="glyph">{shape.glyph}</span>
-          {shape.label}
-        </button>
-      {/each}
-    </div>
+    {#if pickerOpen && pickerAnchor && pickerKind}
+      <ColorPicker
+        bind:open={pickerOpen}
+        value={pickerKind === 'fill' ? (fill ?? ink) : ink}
+        recent={recentColors}
+        anchor={pickerAnchor}
+        oncommit={(color) => pickerKind === 'fill' ? chooseFill(color) : chooseInk(color)}
+        onclose={() => (pickerKind = null)}
+      />
+    {/if}
   {/if}
 
   <div class="dock-row main">
@@ -679,10 +451,22 @@
       class="tool"
       class:active={shapeActive}
       data-testid="dock-shape"
-      onclick={() => (shapeFlyoutOpen = !shapeFlyoutOpen)}
+      aria-haspopup="menu"
+      aria-expanded={shapeFlyoutOpen}
+      bind:this={shapeButton}
+      onpointerdown={beginShapePress}
+      onpointerup={endShapePress}
+      onpointercancel={cancelShapePress}
+      onclick={(event) => {
+        event.preventDefault()
+        // Keyboard activation has no pointer detail; pointer activation was
+        // already classified at pointerup and must not run twice.
+        if (event.detail === 0) quickShapePress()
+      }}
       use:tooltip={{ name: 'Shapes', shortcut: formatBinding(KEY.toolShapes) }}
     >
       {shapeGlyph}
+      <span class="more" aria-hidden="true"></span>
     </button>
     {#each DRAW_TOOLS as tool (tool.kind)}
       <button
@@ -700,6 +484,25 @@
         {tool.glyph}
       </button>
     {/each}
+    <button
+      type="button"
+      class="tool pipette"
+      class:disabled={!eyedropperAvailable}
+      aria-disabled={!eyedropperAvailable}
+      aria-label="Eyedropper"
+      data-testid="tool-eyedropper"
+      onclick={() => eyedropperAvailable && void sampleInk()}
+      use:tooltip={{
+        name: eyedropperAvailable
+          ? 'Eyedropper — pick ink from the board'
+          : 'Eyedropper unavailable in this Chromium build',
+      }}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.4 3.6a2.4 2.4 0 0 0-3.4 0l-2.6 2.6 3.4 3.4 2.6-2.6a2.4 2.4 0 0 0 0-3.4Z" class="pipette-fill"></path>
+        <path d="M15.2 7.4 5.5 17.1c-.4.4-.7 1-.8 1.6l-.4 2.4a.6.6 0 0 0 .7.7l2.4-.4c.6-.1 1.1-.4 1.6-.8l9.7-9.7"></path>
+      </svg>
+    </button>
     <span class="divider"></span>
     <button
       type="button"
@@ -732,6 +535,42 @@
   </div>
 </div>
 
+{#if shapeFlyoutOpen && shapeButton}
+  <div
+    class="shape-flyout"
+    class:below={shapeFlyoutBelow}
+    data-testid="shape-flyout"
+    role="menu"
+    aria-label="Shapes"
+    bind:this={shapeFlyout}
+    use:placeAnchoredElement={() => ({
+      anchor: shapeButton!.getBoundingClientRect(),
+      host: { x: 0, y: 0, width: innerWidth, height: innerHeight },
+      x: { preferred: 'center' },
+      y: { preferred: 'before', fallback: 'after' },
+      gap: 8,
+      onplace: shapeFlyoutPlaced,
+    })}
+  >
+    <div class="shape-header">Shapes <span>· {formatBinding(KEY.toolShapes)}</span></div>
+    {#each SHAPE_OPTIONS as shape (shape.kind)}
+      <button
+        type="button"
+        class:active={lastShapeKind === shape.kind}
+        role="menuitemradio"
+        aria-checked={lastShapeKind === shape.kind}
+        data-testid={`tool-${shape.kind}`}
+        data-shape-kind={shape.kind}
+        onclick={() => pickShape(shape.kind)}
+      >
+        <span class="glyph">{shape.glyph}</span>
+        {shape.label}
+      </button>
+    {/each}
+    <span class="shape-tail" style:left={`${shapeTailX}px`} aria-hidden="true"></span>
+  </div>
+{/if}
+
 <style>
   .dock-stack {
     position: absolute;
@@ -761,12 +600,154 @@
     max-width: 78vw;
   }
 
+  .defaults {
+    position: relative;
+    flex-wrap: nowrap;
+    max-width: none;
+    white-space: nowrap;
+  }
+
+  .defaults::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 5px);
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    background: var(--ew-surface);
+    border-right: 1px solid var(--ew-border-panel);
+    border-bottom: 1px solid var(--ew-border-panel);
+  }
+
+  .default-field {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .default-field + .default-field {
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--ew-border);
+  }
+
+  .default-field :global(.stepper) {
+    grid-template-columns: auto 3.2rem auto;
+  }
+
+  .unit {
+    margin-left: -0.22rem;
+    font-family: var(--ew-font-editor);
+  }
+
+  .none {
+    height: 24px;
+    padding: 0 0.4rem;
+  }
+
+  .font-picker {
+    position: fixed;
+    z-index: 500;
+    pointer-events: auto;
+  }
+
   .tool {
+    position: relative;
     min-width: 1.9rem;
     height: 1.9rem;
     display: inline-grid;
     place-items: center;
     font-size: 0.95rem;
+  }
+
+  .more {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-bottom: 4px solid currentColor;
+    opacity: 0.65;
+  }
+
+  .shape-flyout {
+    position: fixed;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    min-width: 9.5rem;
+    padding: 0.32rem;
+    background: var(--ew-surface);
+    border: 1px solid var(--ew-border-panel);
+    border-radius: 8px;
+    color: var(--ew-text);
+    pointer-events: auto;
+  }
+
+  .shape-header {
+    padding: 0.2rem 0.38rem 0.35rem;
+    font-family: var(--ew-font-editor);
+    font-size: 0.66rem;
+    color: var(--ew-text-muted);
+    border-bottom: 1px solid var(--ew-border);
+    margin-bottom: 0.2rem;
+  }
+
+  .shape-header span {
+    color: var(--ew-text-subtle);
+  }
+
+  .shape-flyout button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 1.75rem;
+    border-color: transparent;
+    background: transparent;
+    text-align: left;
+  }
+
+  .shape-flyout button:hover {
+    background: var(--ew-surface-hover);
+  }
+
+  .shape-flyout button.active {
+    background: var(--ew-accent);
+  }
+
+  .shape-tail {
+    position: absolute;
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    transform: translateX(-50%) rotate(45deg);
+    background: var(--ew-surface);
+    border-right: 1px solid var(--ew-border-panel);
+    border-bottom: 1px solid var(--ew-border-panel);
+  }
+
+  .shape-flyout.below .shape-tail {
+    top: -6px;
+    bottom: auto;
+    border: 0;
+    border-left: 1px solid var(--ew-border-panel);
+    border-top: 1px solid var(--ew-border-panel);
+  }
+
+  .pipette svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .pipette .pipette-fill {
+    fill: currentColor;
+    stroke: none;
   }
 
   .divider {
@@ -781,11 +762,6 @@
     text-align: center;
     font-variant-numeric: tabular-nums;
     opacity: 0.85;
-  }
-
-  .count {
-    opacity: 0.7;
-    margin: 0 0.2rem;
   }
 
   .glyph {
@@ -812,32 +788,9 @@
     cursor: default;
   }
 
-  label {
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
+  button.disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 
-  input[type='color'] {
-    width: 1.6rem;
-    height: 1.3rem;
-    padding: 0;
-    border: 1px solid var(--ew-border-strong);
-    background: transparent;
-  }
-
-  input[type='number'] {
-    width: 3rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 4px;
-  }
-
-  select {
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 4px;
-  }
 </style>

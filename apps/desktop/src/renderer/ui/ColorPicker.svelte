@@ -23,7 +23,7 @@
     <button type="button" class="sv" aria-label="Saturation and value" style={`--hue:${hsv.h}`} onpointerdown={pickSv}></button>
     <button type="button" class="hue" aria-label="Hue" onpointerdown={pickHue}></button>
     <input type="text" aria-label="Hex color" bind:value={hexText} onkeydown={(event) => { if (event.key === 'Enter') commit(hexText) }} onblur={() => commit(hexText)} />
-    <div class="recent">{#each recent.slice(0, 12) as color (color)}<button type="button" class="recent-color" style={`--swatch:${color}`} aria-label={`Use ${color}`} onclick={() => commit(color)}></button>{/each}</div>
+    <div class="recent">{#each recent.slice(0, 9) as color (color)}<button type="button" class="recent-color" style={`--swatch:${color}`} aria-label={`Use ${color}`} onclick={() => commit(color)}></button>{/each}</div>
     <SwatchRow {value} {recent} onselect={commit} onopen={() => {}} />
     {#if eyedropper}{@render eyedropper()}{/if}
   </div>

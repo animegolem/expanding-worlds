@@ -30,7 +30,7 @@ describe('decoration data validators', () => {
   })
 
   it('accepts and rejects shape data for every shape discriminator', () => {
-    for (const shape of ['rect', 'ellipse', 'triangle'] as const) {
+    for (const shape of ['rect', 'ellipse', 'triangle', 'diamond'] as const) {
       expect(isShapeData({ shape, x: 0, y: 0, width: 10, height: 5, ...stroke })).toBe(true)
       expect(
         isShapeData({ shape, x: 0, y: 0, width: 10, height: 5, rotation: 0.4, fill: '#123', ...stroke }),

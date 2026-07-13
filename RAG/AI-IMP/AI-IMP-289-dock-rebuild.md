@@ -6,12 +6,12 @@ tags:
   - dock
   - chrome
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-286, AI-IMP-288]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.75
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-12
 ---
 
 # AI-IMP-289-dock-rebuild
@@ -19,10 +19,11 @@ date_completed:
 ## Summary of Issue #1
 
 The dock is the app's most kit-divorced surface (SURFACE-REVIEW #1:
-SEVERE on all three axes): 11 native controls, ~22 contextual
-word-buttons wrapping to 78vw, dead text-tool controls, 4px inputs,
-and a sort-on-drop toggle that goes stale because the dock never
-subscribes to the settings broadcast. The kit's ruling (letter 2):
+SEVERE on all three axes): 11 native controls, 25 selection buttons
+plus 3 frame buttons wrapping to 78vw, dead text-tool controls, and
+4px inputs. The proposed sort-on-drop diagnosis was false: the
+surviving frame charm already owns the live settings subscription;
+the stale Dock row retires with the contextual rows. The kit's ruling (letter 2):
 the dock stays PURE — toolbelt only — plus ONE kit-drawn defaults
 row above it while a tool is armed (what the NEXT thing gets); the
 stacking contextual rows retire entirely (selection restyle moves
@@ -48,14 +49,16 @@ stale-toggle bug fixed; dead controls gone.
 Dock.svelte slims to the toolbelt (glyph buttons, kit geometry,
 tooltips with the armed exit clause). The defaults row renders
 above the dock from the armed tool's default set: text → font
-(PickerList) + size (Stepper) + ink (SwatchRow); shape/line → ink +
-stroke weight; scope label deliberately absent (letter: watch the
-tester). Ink row = last-3 + picker block + eyedropper ⊙ (Electron's
-Chromium ships `window.EyeDropper`; sample commits to the ink).
-Sort-on-drop: subscribe to the settings broadcast the charm bar
-already uses and unify the vocabulary (top-10 #9); "Add from
-library" moves to its ruled home (round-1 confirms against the
-kit — likely the frame's charm bar, not the dock). Dead text-tool
+(PickerList) + 0.5–3× multiplier over legibleFontSize + ink
+(SwatchRow); shape → stroke/weight/fill; line-family → stroke/weight.
+Defaults are session/host-local; no project persistence is invented.
+Ink uses recents windows 3/6/9 per kit code plus a picker block and
+eyedropper ⊙ in a Dock slot after the tools (Electron's Chromium ships
+`window.EyeDropper`; sample commits to the ink). The pipette SVG is
+ported inline from the kit; DESIGN-1.3-QUEUE item 1 remains the later
+canonical-master swap. "Add from library" moves to the frame charm
+and frame context menu in AI-IMP-291, in the same commit that removes
+its Dock row. Dead text-tool
 stroke/weight/fill controls are removed with their plumbing.
 
 ### Files to Touch
@@ -77,25 +80,24 @@ stroke/weight/fill controls are removed with their plumbing.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify the 11 natives, the ~22 word-buttons, the
-      stale-toggle mechanism (Dock.svelte:146-177 region vs
-      charms-ui.ts settings broadcast), dead text-tool controls,
+- [x] Round-1: verified the 11 natives, 25 selection + 3 frame
+      buttons, exonerated the alleged dead subscription, dead controls,
       and the kit's defaults-row drawing (1d) + preflight F4;
       record corrections here; confirm 291's landing order keeps
       selection verbs reachable.
-- [ ] Toolbelt: kit geometry, tooltips, no natives, no contextual
+- [x] Toolbelt: kit geometry, tooltips, no natives, no contextual
       rows at rest.
-- [ ] Defaults row per armed tool from kit components (288); dock
+- [x] Defaults row per armed tool from kit components (288); dock
       band grows 64→112 via the 286 token; row disarms with the
       tool.
-- [ ] Ink row: last-3 + ColorPicker block + eyedropper ⊙ sampling
+- [x] Ink row: last-3 + ColorPicker block + eyedropper ⊙ sampling
       via window.EyeDropper with a fallback disabled state (why-
       tooltip) if the API is absent.
-- [ ] Sort-on-drop subscribes to the settings broadcast; one
-      vocabulary with the charm bar; stale-toggle regression test.
-- [ ] Dead text-tool controls and their plumbing removed.
-- [ ] Word-button contextual rows removed (sequenced with 291).
-- [ ] Unit + e2e updated; tool-mode (282) suite green; full local
+- [x] Sort-on-drop remains fresh through the frame charm's existing
+      settings subscription; pin that surviving door with a regression.
+- [x] Dead text-tool controls and their plumbing removed.
+- [x] Word-button contextual rows removed (sequenced with 291).
+- [x] Unit + e2e updated; tool-mode (282) suite green; full local
       gate green with counts read.
 
 ### Acceptance Criteria
@@ -116,3 +118,9 @@ the DOM)
 
 ### Issues Encountered
 
+- Round-1 sequencing correction: contextual rows remain through 289
+  and 290. AI-IMP-291 installs every replacement door before removing
+  all 28 contextual buttons in its own atomic commit.
+- Final gate: persistence 658, canvas-engine 409, desktop 541, and
+  hidden-window Playwright 268 passed; the native guard leaves only
+  TitleStrip's reserved `bg-color` tuple.

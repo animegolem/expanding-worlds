@@ -135,15 +135,14 @@ test('frame sort chip tracks the live setting toggled from the Dock (Codex P3)',
     const chip = win.getByTestId('charm-frame-sort-on-drop')
     await expect(chip).toHaveText('▦ grid')
 
-    // Toggle sort-on-drop from the DOCK (a different surface) without
-    // reselecting the frame; the setting broadcast reaches the chip and
-    // it flips live — the exact staleness the fix closes.
-    await expect(win.getByTestId('frame-sort-on-drop')).toBeVisible()
-    await win.getByTestId('frame-sort-on-drop').click()
+    // The surviving charm owns the live settings subscription; the
+    // retired Dock row no longer creates a second stale read model.
+    await expect(win.getByTestId('frame-sort-on-drop')).toHaveCount(0)
+    await chip.click()
     await expect(chip).toHaveText('◇ float')
 
     // Toggle back: the chip tracks the setting in both directions.
-    await win.getByTestId('frame-sort-on-drop').click()
+    await chip.click()
     await expect(chip).toHaveText('▦ grid')
   } finally {
     await app.close()

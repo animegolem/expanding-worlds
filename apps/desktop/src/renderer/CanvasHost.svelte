@@ -103,14 +103,14 @@
         tooling = attachBoardTooling(h, element, notify)
         // §8.4 context menu (AI-IMP-136): owns right-click, needs tooling
         // for the backdrop family + zoom-fit, so it attaches after it.
-        menu = attachContextMenu(h, element, notify, tooling)
+        menu = attachContextMenu(h, element, notify, tooling, ui)
         textEntry = attachTextEntry(h, element)
         openNote = attachOpenNoteSurface(h, element)
         detachPanels = attachPanels(h)
         // The charm bar reads/sets the §4.9 frame sort-on-drop flag
         // (AI-IMP-138) through the SAME board-tooling path the Dock uses,
         // so tooling (attached above) is handed in.
-        charms = attachCharmsUi(h, element, tooling)
+        charms = attachCharmsUi(h, element, tooling, notify)
         // §4.9/§8.2 on-edge frame title (AI-IMP-138): a sibling adornment
         // layer, zoom-gated by the shrink ladder, never in exports.
         framesFurniture = attachFramesFurniture(h, element)

@@ -88,16 +88,16 @@ test('select frame → Add from library → pick a tile (no self-dismiss) → ca
     const frameNodeId = await nodeIdOf(win, frameId)
     await win.getByTestId('tool-select').click()
 
-    // Select the frame → the dock's frame-actions row appears.
+    // Select the frame → its charm actions appear.
     const at = await screenOf(win, 250, 250)
     await win.mouse.click(at.x, at.y)
     await expect
       .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
       .toContain(frameId)
-    await expect(win.getByTestId('frame-actions')).toBeVisible()
+    await expect(win.getByTestId('charm-frame-add-library')).toBeVisible()
 
     // Add from library → the gallery takeover opens over the parked frame.
-    await win.getByTestId('frame-load').click()
+    await win.getByTestId('charm-frame-add-library').click()
     await expect(win.getByTestId('takeover-gallery')).toBeVisible()
 
     // The BUG (AI-IMP-196): the picker self-dismissed on the first

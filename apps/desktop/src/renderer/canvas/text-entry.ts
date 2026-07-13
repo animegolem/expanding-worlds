@@ -1,6 +1,7 @@
 import { uuidv7 } from '@ew/domain'
-import { hitTest, isTextData, legibleFontSize, type Point, type SceneDecoration } from '@ew/canvas-engine'
+import { hitTest, isTextData, type Point, type SceneDecoration } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from './host'
+import { nextTextDefaults } from './tool-defaults'
 
 /**
  * DOM text-entry overlay (RFC §12.2, AI-IMP-021): a world-positioned
@@ -135,6 +136,7 @@ export function attachTextEntry(
           text,
           fontSize: target.fontSize,
           color: target.color,
+          ...(target.fontFamily ? { fontFamily: target.fontFamily } : {}),
           ...measured,
         },
       })
@@ -182,11 +184,11 @@ export function attachTextEntry(
 
   // Text tool click → place a new entry legible at the current zoom.
   handle.tools.onPlaceText = (world) => {
+    const defaults = nextTextDefaults(handle.tools.style, handle.controller.camera.zoom)
     open({
       existing: null,
       world,
-      fontSize: legibleFontSize(handle.controller.camera.zoom),
-      color: handle.tools.style.textColor,
+      ...defaults,
     })
   }
 

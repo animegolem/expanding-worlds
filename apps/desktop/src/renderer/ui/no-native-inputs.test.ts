@@ -7,9 +7,6 @@ type NativeKind = 'color' | 'number' | 'select' | 'datalist'
 interface NativeUse { file: string; kind: NativeKind; testid: string }
 const renderer = fileURLToPath(new URL('..', import.meta.url))
 const allowed = new Set([
-  ...['style-stroke', 'style-fill', 'style-text-color', 'sel-stroke', 'sel-fill', 'text-selected-color'].map((id) => `chrome/Dock.svelte|color|${id}`),
-  ...['style-stroke-width', 'sel-stroke-width', 'sel-rounding', 'text-size'].map((id) => `chrome/Dock.svelte|number|${id}`),
-  'chrome/Dock.svelte|select|text-family',
   'chrome/TitleStrip.svelte|color|bg-color',
 ])
 const key = (entry: NativeUse): string => `${entry.file}|${entry.kind}|${entry.testid}`
@@ -47,9 +44,9 @@ function rendererNatives(): NativeUse[] {
 }
 
 describe('no new native kit inputs', () => {
-  it('holds the exact twelve-control retirement allowlist', () => {
+  it('leaves exactly the TitleStrip tuple reserved to AI-IMP-292', () => {
     const actual = rendererNatives().map(key).sort()
-    expect(actual).toHaveLength(12)
+    expect(actual).toHaveLength(1)
     expect(new Set(actual).size).toBe(actual.length)
     expect(actual).toEqual([...allowed].sort())
   })

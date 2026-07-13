@@ -1,6 +1,6 @@
 import { EW_FURNITURE_MIN_PX, type SceneItem, type ScenePlacement } from '@ew/canvas-engine'
 import { describe, expect, it } from 'vitest'
-import { isSelectionBelowFurnitureFloor } from './charms-ui'
+import { isSelectionBelowFurnitureFloor } from './selection-furniture'
 
 /**
  * AI-IMP-192 (§8.2 shrink ladder): unit coverage for the pure

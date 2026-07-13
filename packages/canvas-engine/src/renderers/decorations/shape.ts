@@ -5,7 +5,7 @@ import type { ItemRenderer } from '../registry'
 
 /**
  * Shape decoration (kind 'shape', discriminated by data.shape):
- * rect | ellipse | triangle. Geometry is drawn centered on the local
+ * rect | ellipse | triangle | diamond | arrow. Geometry is drawn centered on the local
  * origin so data.rotation applies about the box center; (data.x,
  * data.y) remains the top-left of the unrotated bounding box, which
  * is what hit-testing reads. Invalid data renders nothing.
@@ -40,6 +40,11 @@ export function shapeArrowPolygon(w: number, h: number): number[] {
   ]
 }
 
+/** Four-point basic diamond, centered in the same w×h box as every shape. */
+export function diamondPolygon(w: number, h: number): number[] {
+  return [0, -h / 2, w / 2, 0, 0, h / 2, -w / 2, 0]
+}
+
 function draw(gfx: Graphics, data: ShapeData): void {
   gfx.clear()
   const w = data.width
@@ -51,6 +56,7 @@ function draw(gfx: Graphics, data: ShapeData): void {
   else if (data.shape === 'rect') gfx.rect(-w / 2, -h / 2, w, h)
   else if (data.shape === 'ellipse') gfx.ellipse(0, 0, w / 2, h / 2)
   else if (data.shape === 'arrow') gfx.poly(shapeArrowPolygon(w, h))
+  else if (data.shape === 'diamond') gfx.poly(diamondPolygon(w, h))
   else gfx.poly([0, -h / 2, w / 2, h / 2, -w / 2, h / 2])
   if (data.fill !== undefined) gfx.fill({ color: data.fill })
   // Triangles and arrows join with 'round': their vertex angles are
