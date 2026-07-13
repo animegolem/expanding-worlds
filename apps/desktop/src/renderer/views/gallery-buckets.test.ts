@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bucketByDate } from './gallery-buckets'
+import { bucketByDate, bucketByName, NAME_GROUP_THRESHOLD } from './gallery-buckets'
 
 /** §14.4 grouped time: relative → months → years degradation. */
 describe('gallery date buckets', () => {
@@ -39,6 +39,27 @@ describe('gallery date buckets', () => {
     ]
     expect(bucketByDate(sameDay, now)).toEqual([
       { key: 'today', label: 'Today', startIndex: 0, count: 3 },
+    ])
+  })
+})
+
+describe('gallery name buckets', () => {
+  it('stays flat through the exact 24-item threshold', () => {
+    expect(
+      bucketByName(Array.from({ length: NAME_GROUP_THRESHOLD }, () => ({ noteTitle: 'Alpha' }))),
+    ).toEqual([])
+  })
+
+  it('groups sorted title runs past the threshold without exposing untitled ids', () => {
+    const entries = [
+      ...Array.from({ length: 2 }, () => ({ noteTitle: null })),
+      ...Array.from({ length: 12 }, () => ({ noteTitle: 'Alpha' })),
+      ...Array.from({ length: 12 }, () => ({ noteTitle: 'Beta' })),
+    ]
+    expect(bucketByName(entries)).toEqual([
+      { key: 'name-#-0', label: '#', startIndex: 0, count: 2 },
+      { key: 'name-A-2', label: 'A', startIndex: 2, count: 12 },
+      { key: 'name-B-14', label: 'B', startIndex: 14, count: 12 },
     ])
   })
 })

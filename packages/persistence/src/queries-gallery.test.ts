@@ -140,6 +140,8 @@ describe('gallery read models (§14.4)', () => {
     expect(kinds.get(noted)).toBe('note')
     expect(kinds.get(image)).toBe('image')
     expect(kinds.get(board)).toBe('board')
+    expect(index.find((entry) => entry.nodeId === noted)?.noteTitle).toBe('Clipping')
+    expect(index.find((entry) => entry.nodeId === bare)?.noteTitle).toBeNull()
     // Newest first: creation order was bare→noted→image→board.
     expect(index.map((e) => e.nodeId)).toEqual([board, image, noted, bare])
 
