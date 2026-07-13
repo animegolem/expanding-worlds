@@ -7,8 +7,8 @@ type NativeKind = 'color' | 'number' | 'select' | 'datalist'
 interface NativeUse { file: string; kind: NativeKind; testid: string }
 const renderer = fileURLToPath(new URL('..', import.meta.url))
 const allowed = new Set([
-  ...['style-stroke', 'style-fill', 'style-text-color', 'sel-stroke', 'sel-fill', 'text-selected-color'].map((id) => `chrome/Dock.svelte|color|${id}`),
-  ...['style-stroke-width', 'sel-stroke-width', 'sel-rounding', 'text-size'].map((id) => `chrome/Dock.svelte|number|${id}`),
+  ...['sel-stroke', 'sel-fill', 'text-selected-color'].map((id) => `chrome/Dock.svelte|color|${id}`),
+  ...['sel-stroke-width', 'sel-rounding', 'text-size'].map((id) => `chrome/Dock.svelte|number|${id}`),
   'chrome/Dock.svelte|select|text-family',
   'chrome/TitleStrip.svelte|color|bg-color',
 ])
@@ -47,9 +47,9 @@ function rendererNatives(): NativeUse[] {
 }
 
 describe('no new native kit inputs', () => {
-  it('holds the exact twelve-control retirement allowlist', () => {
+  it('holds the shrinking retirement allowlist after tool defaults adopt kit controls', () => {
     const actual = rendererNatives().map(key).sort()
-    expect(actual).toHaveLength(12)
+    expect(actual).toHaveLength(8)
     expect(new Set(actual).size).toBe(actual.length)
     expect(actual).toEqual([...allowed].sort())
   })

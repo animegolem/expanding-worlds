@@ -23,6 +23,13 @@
   import { themeTokenValue } from '../theme'
   import { measureTextWorld } from '../canvas/text-entry'
   import { FONT_STACKS, loadFontOptions, type FontOption } from '../canvas/system-fonts'
+  import { defaultsKind, rememberToolColor } from '../canvas/tool-defaults'
+  import ColorPicker from '../ui/ColorPicker.svelte'
+  import PickerList from '../ui/PickerList.svelte'
+  import Stepper from '../ui/Stepper.svelte'
+  import SwatchRow from '../ui/SwatchRow.svelte'
+  import { placeAnchoredElement } from './anchored-placement-dom'
+  import { dispatchReservationChange } from './reservation'
   import type { CanvasHostHandle } from '../canvas/host'
   import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { BoardTooling } from '../canvas/board-tooling'
@@ -30,6 +37,11 @@
   import { formatBinding, getBinding, matches } from '../keys/registry'
   import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
+
+  interface EyeDropperResult { sRGBHex: string }
+  interface EyeDropperApi { open(): Promise<EyeDropperResult> }
+  interface EyeDropperConstructor { new (): EyeDropperApi }
+  declare global { interface Window { EyeDropper?: EyeDropperConstructor } }
 
   const {
     handle,
@@ -114,10 +126,27 @@
   let shapeFlyoutOpen = $state(false)
   let zoomPct = $state(Math.round(handle.controller.camera.zoom * 100))
 
-  let stroke = $state(handle.tools.style.stroke)
+  // AI-IMP-289: defaults are deliberately session/host-local. They feed
+  // ToolManager's next-create snapshot; they are not selection restyle
+  // state and do not invent a project/app settings contract.
+  let ink = $state(handle.tools.style.stroke)
   let fill = $state<string | null>(handle.tools.style.fill)
-  let textColor = $state(handle.tools.style.textColor)
   let strokeScale = $state(handle.tools.style.strokeScale)
+  let textFontFamily = $state(handle.tools.style.textFontFamily ?? 'sans-serif')
+  let textSizeScale = $state(handle.tools.style.textSizeScale ?? 1)
+  let recentColors = $state<string[]>([
+    ...new Set([ink, themeTokenValue('--ew-accent'), themeTokenValue('--ew-warn')]),
+  ])
+  let pickerKind = $state<'ink' | 'fill' | null>(null)
+  let pickerOpen = $state(false)
+  let pickerAnchor = $state<HTMLElement | null>(null)
+  let inkAnchor = $state<HTMLElement | null>(null)
+  let fillAnchor = $state<HTMLElement | null>(null)
+  let fontListOpen = $state(false)
+  let fontAnchor = $state<HTMLButtonElement | null>(null)
+  let dockElement = $state<HTMLElement | null>(null)
+  let defaultsShift = $state(0)
+  const eyedropperAvailable = typeof window !== 'undefined' && typeof window.EyeDropper === 'function'
 
   let selected = $state<SceneDecoration[]>([])
   let selectionCount = $state(handle.controller.selection.size)
@@ -135,6 +164,15 @@
     fontsLoaded = true
     void loadFontOptions().then((options) => (fontOptions = options))
   }
+
+  const fontItems = $derived(
+    fontOptions.map((font, index) => ({
+      id: font.value,
+      label: font.label,
+      value: font.value,
+      curated: index < FONT_STACKS.length,
+    })),
+  )
 
   function currentFrameId(): string | null {
     const items = handle.controller.selectedItems()
@@ -216,10 +254,12 @@
   })
 
   $effect(() => {
-    handle.tools.style.stroke = stroke
+    handle.tools.style.stroke = ink
     handle.tools.style.fill = fill
-    handle.tools.style.textColor = textColor
+    handle.tools.style.textColor = ink
     handle.tools.style.strokeScale = strokeScale
+    handle.tools.style.textFontFamily = textFontFamily
+    handle.tools.style.textSizeScale = textSizeScale
   })
 
   const shapeActive = $derived(SHAPE_KINDS.some((s) => s.kind === activeTool))
@@ -228,9 +268,65 @@
   )
   const hasGroup = $derived(selected.some((d) => d.groupId !== null))
   const allLocked = $derived(selected.length > 0 && selected.every((d) => d.locked === 1))
-  const toolOptionsVisible = $derived(
-    activeTool !== 'select' && activeTool !== 'pin' && activeTool !== 'frame',
-  )
+  const activeDefaults = $derived(defaultsKind(activeTool))
+  const shapeDefaultsVisible = $derived(activeDefaults === 'shape')
+  const lineDefaultsVisible = $derived(activeDefaults === 'line')
+  const toolOptionsVisible = $derived(activeDefaults !== null)
+
+  $effect(() => {
+    const root = document.documentElement
+    if (toolOptionsVisible) root.dataset['dockExpanded'] = 'true'
+    else delete root.dataset['dockExpanded']
+    dispatchReservationChange(root)
+    return () => {
+      delete root.dataset['dockExpanded']
+      dispatchReservationChange(root)
+    }
+  })
+
+  function rememberColor(color: string): void {
+    recentColors = rememberToolColor(recentColors, color)
+  }
+
+  function chooseInk(color: string): void {
+    ink = color
+    rememberColor(color)
+  }
+
+  function chooseFill(color: string): void {
+    fill = color
+    rememberColor(color)
+  }
+
+  function openPicker(kind: 'ink' | 'fill', anchor: HTMLElement): void {
+    pickerAnchor = anchor
+    pickerKind = kind
+    pickerOpen = true
+  }
+
+  async function sampleInk(): Promise<void> {
+    if (!window.EyeDropper) return
+    try {
+      const result = await new window.EyeDropper().open()
+      chooseInk(result.sRGBHex)
+    } catch {
+      // Cancellation is the native API's ordinary exit; it changes no default.
+    }
+  }
+
+  $effect(() => {
+    activeTool
+    queueMicrotask(() => {
+      if (!dockElement) return
+      const testId = shapeDefaultsVisible ? 'dock-shape' : `tool-${activeTool}`
+      const button = dockElement.querySelector<HTMLElement>(`[data-testid="${testId}"]`)
+      const main = dockElement.querySelector<HTMLElement>('.dock-row.main')
+      if (!button || !main) { defaultsShift = 0; return }
+      const target = button.getBoundingClientRect()
+      const row = main.getBoundingClientRect()
+      defaultsShift = target.left + target.width / 2 - (row.left + row.width / 2)
+    })
+  })
 
   function setTool(kind: ToolKind): void {
     handle.tools.setTool(kind)
@@ -345,41 +441,99 @@
   }
 </script>
 
-<div class="dock-stack" data-testid="dock" data-dock-expanded="false">
+<div class="dock-stack" data-testid="dock" data-dock-expanded={toolOptionsVisible} bind:this={dockElement}>
   {#if toolOptionsVisible}
-    <div class="dock-row contextual" data-testid="tool-options">
-      <label>
-        Stroke
-        <input type="color" data-testid="style-stroke" bind:value={stroke} />
-      </label>
-      <label>
-        Weight ×
-        <input
-          type="number"
-          min="0.25"
-          max="8"
-          step="0.25"
-          data-testid="style-stroke-width"
-          bind:value={strokeScale}
+    <div
+      class="dock-row defaults"
+      data-testid="tool-defaults"
+      data-defaults-tool={activeTool}
+      style:transform={`translateX(${defaultsShift}px)`}
+    >
+      {#if activeTool === 'text'}
+        <span class="default-field font-default">
+          <span>font</span>
+          <button
+            type="button"
+            class:active={fontListOpen}
+            data-testid="default-font"
+            bind:this={fontAnchor}
+            onclick={() => { ensureFonts(); fontListOpen = !fontListOpen }}
+          >
+            {fontOptions.find((font) => font.value === textFontFamily)?.label ?? textFontFamily} ▾
+          </button>
+        </span>
+        <span class="default-field" data-testid="default-text-size">
+          <span>size</span>
+          <Stepper bind:value={textSizeScale} min={0.5} max={3} step={0.1} />
+          <span class="unit">×</span>
+        </span>
+      {/if}
+
+      <span class="default-field" bind:this={inkAnchor} data-testid="default-ink">
+        <span>{activeTool === 'text' ? 'ink' : 'stroke'}</span>
+        <SwatchRow
+          value={ink}
+          recent={recentColors}
+          onselect={chooseInk}
+          onopen={() => inkAnchor && openPicker('ink', inkAnchor)}
         />
-      </label>
-      <label>
-        Fill
-        <input
-          type="color"
-          data-testid="style-fill"
-          value={fill ?? themeTokenValue('--ew-color-input-empty')}
-          oninput={(e) => (fill = (e.currentTarget as HTMLInputElement).value)}
-        />
-        <button type="button" data-testid="style-fill-none" disabled={fill === null} onclick={() => (fill = null)}>
-          none
-        </button>
-      </label>
-      <label>
-        Text
-        <input type="color" data-testid="style-text-color" bind:value={textColor} />
-      </label>
+      </span>
+
+      {#if shapeDefaultsVisible}
+        <span class="default-field" data-testid="default-stroke-weight">
+          <span>weight</span>
+          <Stepper bind:value={strokeScale} min={0.25} max={8} step={0.25} />
+          <span class="unit">×</span>
+        </span>
+        <span class="default-field" bind:this={fillAnchor} data-testid="default-fill">
+          <span>fill</span>
+          <SwatchRow
+            value={fill ?? ink}
+            recent={recentColors}
+            onselect={chooseFill}
+            onopen={() => fillAnchor && openPicker('fill', fillAnchor)}
+          />
+          <button type="button" class="none" aria-pressed={fill === null} onclick={() => (fill = null)}>none</button>
+        </span>
+      {:else if lineDefaultsVisible}
+        <span class="default-field" data-testid="default-stroke-weight">
+          <span>weight</span>
+          <Stepper bind:value={strokeScale} min={0.25} max={8} step={0.25} />
+          <span class="unit">×</span>
+        </span>
+      {/if}
     </div>
+
+    {#if fontListOpen && fontAnchor}
+      <div
+        class="font-picker"
+        data-testid="default-font-list"
+        use:placeAnchoredElement={() => ({
+          anchor: fontAnchor!.getBoundingClientRect(),
+          host: { x: 0, y: 0, width: innerWidth, height: innerHeight },
+          x: { preferred: 'center' },
+          y: { preferred: 'before', fallback: 'after' },
+          gap: 8,
+        })}
+      >
+        <PickerList
+          items={fontItems}
+          value={textFontFamily}
+          onselect={(value) => { textFontFamily = value; fontListOpen = false }}
+        />
+      </div>
+    {/if}
+
+    {#if pickerOpen && pickerAnchor && pickerKind}
+      <ColorPicker
+        bind:open={pickerOpen}
+        value={pickerKind === 'fill' ? (fill ?? ink) : ink}
+        recent={recentColors}
+        anchor={pickerAnchor}
+        oncommit={(color) => pickerKind === 'fill' ? chooseFill(color) : chooseInk(color)}
+        onclose={() => (pickerKind = null)}
+      />
+    {/if}
   {/if}
 
   {#if styledLead}
@@ -700,6 +854,25 @@
         {tool.glyph}
       </button>
     {/each}
+    <button
+      type="button"
+      class="tool pipette"
+      class:disabled={!eyedropperAvailable}
+      aria-disabled={!eyedropperAvailable}
+      aria-label="Eyedropper"
+      data-testid="tool-eyedropper"
+      onclick={() => eyedropperAvailable && void sampleInk()}
+      use:tooltip={{
+        name: eyedropperAvailable
+          ? 'Eyedropper — pick ink from the board'
+          : 'Eyedropper unavailable in this Chromium build',
+      }}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.4 3.6a2.4 2.4 0 0 0-3.4 0l-2.6 2.6 3.4 3.4 2.6-2.6a2.4 2.4 0 0 0 0-3.4Z" class="pipette-fill"></path>
+        <path d="M15.2 7.4 5.5 17.1c-.4.4-.7 1-.8 1.6l-.4 2.4a.6.6 0 0 0 .7.7l2.4-.4c.6-.1 1.1-.4 1.6-.8l9.7-9.7"></path>
+      </svg>
+    </button>
     <span class="divider"></span>
     <button
       type="button"
@@ -761,12 +934,78 @@
     max-width: 78vw;
   }
 
+  .defaults {
+    position: relative;
+    flex-wrap: nowrap;
+    max-width: none;
+    white-space: nowrap;
+  }
+
+  .defaults::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 5px);
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    background: var(--ew-surface);
+    border-right: 1px solid var(--ew-border-panel);
+    border-bottom: 1px solid var(--ew-border-panel);
+  }
+
+  .default-field {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .default-field + .default-field {
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--ew-border);
+  }
+
+  .default-field :global(.stepper) {
+    grid-template-columns: auto 3.2rem auto;
+  }
+
+  .unit {
+    margin-left: -0.22rem;
+    font-family: var(--ew-font-mono);
+  }
+
+  .none {
+    height: 24px;
+    padding: 0 0.4rem;
+  }
+
+  .font-picker {
+    position: fixed;
+    z-index: 500;
+    pointer-events: auto;
+  }
+
   .tool {
     min-width: 1.9rem;
     height: 1.9rem;
     display: inline-grid;
     place-items: center;
     font-size: 0.95rem;
+  }
+
+  .pipette svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .pipette .pipette-fill {
+    fill: currentColor;
+    stroke: none;
   }
 
   .divider {
@@ -808,6 +1047,11 @@
   }
 
   button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  button.disabled {
     opacity: 0.4;
     cursor: default;
   }

@@ -155,6 +155,29 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   await win.getByTestId('canvas-host').click({ position: { x: 400, y: 400 } })
   await win.keyboard.press('t')
   await expect(win.getByTestId('tool-text')).toHaveClass(/active/)
+  // AI-IMP-289: an armed tool grows exactly one kit-defaults row,
+  // advertises the reservation-band growth, and contains no retired
+  // native select/color/number controls.
+  const defaults = win.getByTestId('tool-defaults')
+  await expect(defaults).toHaveAttribute('data-defaults-tool', 'text')
+  await expect(win.getByTestId('dock')).toHaveAttribute('data-dock-expanded', 'true')
+  await expect.poll(() => win.evaluate(() => document.documentElement.dataset['dockExpanded'])).toBe('true')
+  await expect(defaults.locator('select,input[type="color"],input[type="number"]')).toHaveCount(0)
+  await win.getByTestId('default-font').click()
+  await expect(win.getByTestId('default-font-list').getByRole('option')).toHaveCount(3)
+  await win.getByTestId('default-font-list').getByRole('option', { name: 'Serif' }).click()
+  await expect(win.getByTestId('default-font')).toContainText('Serif')
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('tool-select')).toHaveClass(/active/)
+  await expect(defaults).toHaveCount(0)
+  await expect.poll(() => win.evaluate(() => document.documentElement.dataset['dockExpanded'] ?? null)).toBeNull()
+
+  const eyeDropperPresent = await win.evaluate(
+    () => typeof (window as Window & { EyeDropper?: unknown }).EyeDropper === 'function',
+  )
+  await expect(win.getByTestId('tool-eyedropper')).toHaveAttribute('aria-disabled', String(!eyeDropperPresent))
+
+  await win.keyboard.press('t')
   await win.keyboard.press('v')
   await expect(win.getByTestId('tool-select')).toHaveClass(/active/)
 
