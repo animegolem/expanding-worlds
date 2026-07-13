@@ -63,6 +63,7 @@
   import { openTagPanel } from '../tags/tag-panel'
   import TagAddField from '../tags/TagAddField.svelte'
   import RemovableTagChip from '../tags/RemovableTagChip.svelte'
+  import { engageTagLens } from '../tags/lens-coordinator'
   import { wikiLinkSuggestions } from './suggestions'
   import { wikiLinkActivation, wikiLinkDecorations } from './wiki-link-plugin'
   import { themeTokenValue } from '../theme'
@@ -1552,6 +1553,7 @@
           name={tag.name}
           color={tag.color}
           onopen={(event) => {
+            void engageTagLens(tag)
             const rect = event.currentTarget.getBoundingClientRect()
             openTagPanel(tag.id, { x: rect.left, y: rect.bottom })
           }}

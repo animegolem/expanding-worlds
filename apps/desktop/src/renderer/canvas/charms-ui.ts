@@ -33,6 +33,7 @@ import { requestAttachNote, requestOpenNote } from '../note/open-note'
 import { closeNotePanel, isNoteOpen } from '../note/panels'
 import { appSettings, onAppSettingsChanged } from '../settings/settings'
 import { openTagPanel } from '../tags/tag-panel'
+import { engageTagLens } from '../tags/lens-coordinator'
 import { assignTagByName, filterTagCompletions } from '../tags/tag-assign'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { importErrorNotice } from './import-surfaces'
@@ -535,12 +536,13 @@ export function attachCharmsUi(
       chip.style.cssText =
         'padding:1px 7px;border-radius:9px;border:1px solid var(--ew-border-strong);cursor:pointer;' +
         `background:var(--ew-surface-raised);color:${tag.color ?? 'var(--ew-tag-default)'};font-size:11px;`
-      const tip = tooltip(chip, { name: 'Open the tag panel' })
+      const tip = tooltip(chip, { name: `Lens #${tag.name} and open tag panel` })
       disposers.push(tip.destroy)
       // §4.8 door 1: the chip opens THE tag panel anchored to itself;
       // the chip popover has served its purpose and folds.
       chip.addEventListener('click', (event) => {
         event.stopPropagation()
+        void engageTagLens(tag)
         const rect = chip.getBoundingClientRect()
         openTagPanel(tag.id, { x: rect.left, y: rect.bottom })
         chipsFor = null

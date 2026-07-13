@@ -125,10 +125,23 @@ test('charm-bar door: carriers with locations, lens toggle, layered Escape, cros
     .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
     .toEqual([world.placementA])
   await win.getByTestId('charm-tags').click()
+  const revisionBeforeLens = (
+    await runQuery<{ revision: number }>(win, 'getProject')
+  ).revision
   await win.getByTestId(`tag-chip-${world.ruinsTagId}`).click()
   const panel = win.getByTestId('tag-panel')
   await expect(panel).toBeVisible()
   await expect(win.getByTestId('tag-panel-input')).toHaveValue('ruins')
+
+  // The charm chip is itself a lens door. Identity, engine members,
+  // active chip, and the panel all arrive together without a command.
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.lens()))
+    .toEqual([world.placementA])
+  await expect(win.getByTestId('active-tag-lens')).toContainText('#ruins')
+  expect((await runQuery<{ revision: number }>(win, 'getProject')).revision).toBe(
+    revisionBeforeLens,
+  )
 
   // Every carrier is a row — the unplaced one wears the loose badge —
   // and locations print with canvas labels ("here" on this board).
@@ -142,8 +155,11 @@ test('charm-bar door: carriers with locations, lens toggle, layered Escape, cros
   const rowB = panel.locator(`[data-node-id="${world.carrierBNodeId}"]`)
   await expect(rowB.getByTestId(`tag-row-fly-${world.placementB}`)).toContainText('Ruins Board')
 
-  // Lens toggle ON: only carrier placements on the ACTIVE canvas are
-  // members; the untagged neighbor dims to the engine's factor.
+  // The active chip drops only the lens and leaves the panel. Re-engage
+  // through the panel door: both doors yield the identical board state.
+  await win.getByRole('button', { name: 'Drop #ruins lens' }).click()
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.lens())).toBeNull()
+  await expect(panel).toBeVisible()
   await win.getByTestId('tag-panel-lens').click()
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.lens()))
@@ -189,6 +205,17 @@ test('charm-bar door: carriers with locations, lens toggle, layered Escape, cros
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
     .toEqual([world.placementB])
+  await expect
+    .poll(() =>
+      win.evaluate(
+        (id) => ({
+          lens: window.__ewDebug!.lens(),
+          birthCount: window.__ewDebug!.arrivalBirthCount(id),
+        }),
+        world.placementB,
+      ),
+    )
+    .toEqual({ lens: null, birthCount: 1 })
   const nav = await win.evaluate(() => ({
     entries: window.__ewNav!.entries().map((entry) => entry.canvasId),
     cursor: window.__ewNav!.cursor(),
@@ -258,6 +285,13 @@ test('note-panel door opens the panel; the completion field swaps the tag (§4.8
   await expect(panel).toBeVisible()
   await expect(win.getByTestId('tag-panel-input')).toHaveValue('ruins')
   await expect(panel.getByTestId('tag-panel-row')).toHaveCount(3)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.lens()))
+    .toEqual([world.placementA])
+  await expect(win.getByTestId('active-tag-lens')).toContainText('#ruins')
+  expect(
+    await win.evaluate((id) => window.__ewDebug!.lensAlpha(id), world.otherPlacement),
+  ).toBe(DIM)
 
   // Exactly one tag at a time: typing offers name completion from the
   // project vocabulary; picking one swaps the whole panel to it.
@@ -267,6 +301,10 @@ test('note-panel door opens the panel; the completion field swaps the tag (§4.8
   await win.getByTestId('tag-panel-option').click()
   await expect(input).toHaveValue('camp')
   await expect(panel.getByTestId('tag-panel-row')).toHaveCount(1)
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.lens()))
+    .toEqual([world.otherPlacement])
+  await expect(win.getByTestId('active-tag-lens')).toContainText('#camp')
   // The camp carrier (untagged by "ruins") is placed on the root
   // board — its location line renders, and the lens toggle stays
   // enabled because it has a placement here.
@@ -531,9 +569,12 @@ test('UI rename: pencil → edit → Enter renames across surfaces; conflict toa
   // carries the assignment, so the carrier row survives.
   await expect(panel.getByTestId('tag-panel-row')).toHaveCount(1)
 
-  // Propagation (§17 item 8), now from a UI gesture: close the panel
-  // (Escape consumes the press — selection survives), then the charm
-  // chip row and completion vocabulary read the new name.
+  // Propagation (§17 item 8), now from a UI gesture: the chip door left
+  // a live lens, so Escape drops it before the next press closes the
+  // panel. Both consume cleanly and the selection survives.
+  await win.keyboard.press('Escape')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.lens())).toBeNull()
+  await expect(panel).toBeVisible()
   await win.keyboard.press('Escape')
   await expect(panel).not.toBeVisible()
   await expect(win.evaluate(() => window.__ewDebug!.selection())).resolves.toEqual([placementId])
@@ -604,7 +645,11 @@ test('UI rename: Escape cancels the edit, leaving the panel open and the name un
   // No RenameTag ran: the vocabulary still holds only "ruins".
   expect(await runQuery<unknown[]>(win, 'listTags')).toHaveLength(1)
 
-  // A second Escape peels the panel.
+  // The next Escape peels the chip-door lens; only the third closes the
+  // panel (editor → lens → panel, one layer per press).
+  await win.keyboard.press('Escape')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.lens())).toBeNull()
+  await expect(panel).toBeVisible()
   await win.keyboard.press('Escape')
   await expect(panel).not.toBeVisible()
 

@@ -34,6 +34,12 @@
   import { runAsUndoGroup } from '../undo/undo-store'
   import { deleteLocalTag } from './tag-delete'
   import RemovableTagChip from './RemovableTagChip.svelte'
+  import {
+    engageTagLensMembers,
+    onTagLensChanged,
+    toggleTagLensMembers,
+    type TagLensState,
+  } from './lens-coordinator'
 
   interface TagViewPlacement {
     placementId: string
@@ -69,9 +75,11 @@
   let allTags = $state<Array<{ id: string; name: string }>>([])
   let search = $state('')
   let searchFocus = $state(false)
-  let lensOn = $state(false)
+  let activeLens = $state<TagLensState | null>(null)
   let activeCanvasId = $state(handle.canvasId)
   let errorMessage = $state<string | null>(null)
+  const lensOn = $derived(activeLens?.tagId === panel.tagId)
+  $effect(() => onTagLensChanged((next) => (activeLens = next)))
 
   // AI-IMP-171: rename THIS tag. The pencil swaps the completion
   // switcher region into an editor for the current name — a distinct
@@ -137,7 +145,7 @@
     void refresh().then(() => {
       if (panel.tagId !== tagId) return
       search = view?.tag.name ?? ''
-      if (lensOn) applyLens()
+      if (handle.lens() !== null) applyLens()
     })
   })
   // Project changes replace the view; a lens left on must retarget to
@@ -345,31 +353,14 @@
   )
 
   function applyLens(): void {
-    if (activePlacementIds.length === 0) {
-      handle.clearLens()
-      lensOn = false
-      return
-    }
-    handle.setLens(activePlacementIds)
-    lensOn = true
+    if (!view) return
+    engageTagLensMembers(view.tag, activePlacementIds)
   }
 
   function toggleLens(): void {
-    if (lensOn) {
-      handle.clearLens()
-      lensOn = false
-    } else {
-      applyLens()
-    }
+    if (!view) return
+    toggleTagLensMembers(view.tag, activePlacementIds)
   }
-
-  // The lens is engine view state: Escape (or a scene reapply that
-  // empties the set) drops it there — the toggle follows.
-  $effect(() =>
-    handle.onLensChanged((ids) => {
-      if (ids === null) lensOn = false
-    }),
-  )
 
   // Layered Escape, one layer per press. The rename editor peels FIRST
   // and CONSUMES the press (capture + stopPropagation, the
