@@ -93,6 +93,21 @@ DESIGN-QUEUE)
       built plainly this wave (existing chooser seam, kit Button);
       wants its drawn anatomy.
 
+### Kit 1.5 record items (content wave round 1, 2026-07-13)
+
+- [ ] **Density segment ships TWO options** (compact/comfortable);
+      the kit's `auto` is deferred until a modality detector exists —
+      an auto identical to compact would be a quiet lie. Redraw or
+      keep-and-wait deliberately.
+- [ ] **Wiki-link hover as a lens door deferred** — the shipped link
+      machinery has no placement-highlight hook; the tag-chip doors
+      land this wave, the hover door wants a drawn+wired pass later.
+- [ ] **Posture durability nuance**: the kit's "rebind = one verb,
+      one undo" holds for durable transitions (place-as-card, detach
+      to world); pin/tape panel postures are deliberately session
+      presentation state and NOT undo steps — the Note Paper kit's
+      prose should acknowledge the split.
+
 ## Resolved
 
 *(All pointers below: the kit push of 2026-07-12,
