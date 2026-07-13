@@ -114,7 +114,7 @@ jobs:
 
       - name: Desktop e2e shard ${{ matrix.shard }}/4 (minus perf)
         working-directory: apps/desktop
-        run: xvfb-run --auto-servernum npx playwright test --shard=${{ matrix.shard }}/4
+        run: xvfb-run --auto-servernum npx playwright test --shard=${{ matrix.shard }}/4 --trace on-first-retry
 
       # Failure evidence: error-context page snapshots + traces are
       # written locally but were never uploaded, leaving red shards
