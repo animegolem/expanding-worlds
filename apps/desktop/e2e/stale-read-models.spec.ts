@@ -76,10 +76,11 @@ test('backdrop verbs never carry a stale board’s asset across navigation (M-02
     // On A the backdrop family is LIVE (proves the cache holds A's bg).
     await win.mouse.click(box.x + 950, box.y + 620, { button: 'right' })
     await expect(win.getByTestId('context-menu')).toBeVisible()
-    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('board')
-    await expect(win.getByTestId('ctx-reset-backdrop')).not.toHaveAttribute('aria-disabled', 'true')
-    await expect(win.getByTestId('ctx-edit-backdrop')).not.toHaveAttribute('aria-disabled', 'true')
-    await expect(win.getByTestId('ctx-set-backdrop')).toHaveText('Replace backdrop…')
+    await win.getByTestId('ctx-board').click()
+    await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'board')
+    await expect(win.getByTestId('bg-reset')).not.toHaveAttribute('aria-disabled', 'true')
+    await expect(win.getByTestId('bg-edit')).not.toHaveAttribute('aria-disabled', 'true')
+    await expect(win.getByTestId('bg-set-from-file')).toHaveText('Replace bg from image…')
     await win.keyboard.press('Escape')
     await expect(win.getByTestId('context-menu')).toBeHidden()
 
@@ -93,11 +94,12 @@ test('backdrop verbs never carry a stale board’s asset across navigation (M-02
     // "Replace…" — the cache followed the navigation.
     await win.mouse.click(box.x + 950, box.y + 620, { button: 'right' })
     await expect(win.getByTestId('context-menu')).toBeVisible()
-    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('board')
-    await expect(win.getByTestId('ctx-set-backdrop')).toHaveText('Set backdrop image…')
-    await expect(win.getByTestId('ctx-reset-backdrop')).toHaveAttribute('aria-disabled', 'true')
-    await expect(win.getByTestId('ctx-edit-backdrop')).toHaveAttribute('aria-disabled', 'true')
-    await expect(win.getByTestId('ctx-remove-backdrop')).toHaveAttribute('aria-disabled', 'true')
+    await win.getByTestId('ctx-board').click()
+    await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'board')
+    await expect(win.getByTestId('bg-set-from-file')).toHaveText('Bg from image…')
+    await expect(win.getByTestId('bg-reset')).toHaveAttribute('aria-disabled', 'true')
+    await expect(win.getByTestId('bg-edit')).toHaveAttribute('aria-disabled', 'true')
+    await expect(win.getByTestId('bg-remove')).toHaveAttribute('aria-disabled', 'true')
 
     // And no Reset could have written A's asset onto B: B stays empty.
     expect(await backgroundAssetId(win, boardB)).toBeNull()

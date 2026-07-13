@@ -15,6 +15,7 @@
   import { openTakeover } from './takeover'
   import { tooltip } from './tooltip'
   import { canRedo, canUndo, onUndoChanged, redo, undo } from '../undo/undo-store'
+  import { requestSettingsIntent } from './settings-intent'
 
   const { onclose }: { onclose: () => void } = $props()
 
@@ -207,10 +208,12 @@
   <button
     type="button"
     role="menuitem"
-    class="deferred"
-    aria-disabled="true"
     data-testid="menu-export"
-    use:tooltip={{ name: 'Export — arrives with the export epic' }}
+    onclick={() => {
+      onclose()
+      requestSettingsIntent('export')
+      openTakeover('settings')
+    }}
   >
     <span class="label">Export…</span>
   </button>

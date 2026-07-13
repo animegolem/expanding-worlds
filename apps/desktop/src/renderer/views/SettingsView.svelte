@@ -9,10 +9,12 @@
   settings store.
 -->
 <script lang="ts">
+  import { tick } from 'svelte'
   import { DROP_BEHAVIOR_KEY, DROP_BEHAVIOR_VALUES, type DropBehavior } from '@ew/protocol'
   import { showFirstRun } from '../chrome/first-run'
   import { toast } from '../chrome/status'
   import { closeTakeover } from '../chrome/takeover'
+  import { onSettingsIntent } from '../chrome/settings-intent'
   import { tooltip } from '../chrome/tooltip'
   import Button from '../ui/Button.svelte'
   import TextInput from '../ui/TextInput.svelte'
@@ -48,6 +50,14 @@
   })
 
   $effect(() => onAppSettingsChanged((next) => (settings = { ...next })))
+  $effect(() => onSettingsIntent((intent) => {
+    if (intent !== 'export') return
+    void tick().then(() => {
+      const row = document.querySelector<HTMLElement>('[data-testid="settings-row-export"]')
+      row?.scrollIntoView({ block: 'center' })
+      row?.querySelector<HTMLElement>('[data-testid="settings-export-run"]')?.focus()
+    })
+  }))
 
   $effect(() => {
     void (async () => {

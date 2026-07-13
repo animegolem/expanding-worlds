@@ -566,7 +566,10 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
 
   // Background color sits beneath the image: both fields coexist.
   const beforeColor = await revision(win)
-  await win.getByTestId('bg-color').fill('#336699')
+  await openBoardMenu(win)
+  await win.getByTestId('ctx-backdrop-color-picker').click()
+  await win.getByLabel('Hex color').fill('#336699')
+  await win.getByLabel('Hex color').press('Enter')
   await expect.poll(async () => (await sceneBackground(win)).color).toBe('#336699')
   expect(await contentCommandsSince(win, beforeColor)).toHaveLength(1)
   expect((await sceneBackground(win)).assetId).toBe(asset1)
@@ -591,6 +594,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
   // Remove Background: one command; the color layer stays. (The
   // replace above flew the camera — settle its debounced persist.)
   const beforeRemove = await revision(win)
+  await openBoardMenu(win)
   await win.getByTestId('bg-remove').click()
   await expect.poll(async () => (await sceneBackground(win)).assetId).toBeNull()
   expect(await contentCommandsSince(win, beforeRemove)).toHaveLength(1)
@@ -598,6 +602,7 @@ test('background lifecycle: set, edit in explicit mode, reset, replace, remove, 
 
   // Clear the color: one command.
   const beforeClear = await revision(win)
+  await openBoardMenu(win)
   await win.getByTestId('bg-color-clear').click()
   await expect.poll(async () => (await sceneBackground(win)).color).toBeNull()
   expect(await contentCommandsSince(win, beforeClear)).toHaveLength(1)
@@ -815,6 +820,7 @@ test('background stage: grid, normalize, replace preserves extent, from-selectio
   expect(replaced.y).toBe(60)
 
   // Remove → grid returns.
+  await openBoardMenu(win)
   await win.getByTestId('bg-remove').click()
   await expect
     .poll(async () => (await win.evaluate(() => window.__ewDebug!.stage())).gridVisible)

@@ -412,7 +412,7 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
     // Every deferred row is aria-disabled and inert: clicking it must
     // neither close the menu nor open anything. (Trash… went live with
     // AI-IMP-102 and is asserted separately below.)
-    for (const id of ['menu-undo', 'menu-redo', 'menu-end-session', 'menu-export']) {
+    for (const id of ['menu-undo', 'menu-redo', 'menu-end-session']) {
       await expect(win.getByTestId(id)).toHaveAttribute('aria-disabled', 'true')
       // force past actionability: even a real DOM click must do nothing.
       await win.getByTestId(id).click({ force: true })
@@ -420,6 +420,15 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
       await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
       await expect(win.getByTestId('help-about-dialog')).toHaveCount(0)
     }
+
+    // Export is honest: it opens Settings at the live export control.
+    await expect(win.getByTestId('menu-export')).not.toHaveAttribute('aria-disabled', 'true')
+    await win.getByTestId('menu-export').click()
+    await expect(win.getByTestId('rail-menu')).toHaveCount(0)
+    await expect(win.getByTestId('takeover-settings')).toBeVisible()
+    await expect(win.getByTestId('settings-export-run')).toBeFocused()
+    await win.keyboard.press('Escape')
+    await win.getByTestId('charm-menu').click()
 
     // Help/About opens a clamped dialog with a real semver version and
     // the repo address; Esc closes it, leaving the menu behind.

@@ -70,7 +70,7 @@
        rail and toasts stay — the rail is the way back (§8.2), and
        errors surface everywhere. -->
   {#if !takeoverOpen}
-    <TitleStrip {handle} {tooling} {ui} />
+    <TitleStrip {tooling} />
     <PathBar {handle} />
     <Dock {handle} {tooling} {hostElement} />
   {/if}

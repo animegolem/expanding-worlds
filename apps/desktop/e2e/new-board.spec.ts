@@ -31,6 +31,12 @@ async function placements(win: Page, id: string): Promise<SceneItem[]> {
   return scene.items.filter((i) => i.itemKind === 'placement')
 }
 
+async function enterBoardMenu(win: Page): Promise<void> {
+  await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'ground')
+  await win.getByTestId('ctx-board').click()
+  await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'board')
+}
+
 /** True when the canvas no longer exists (its scene is absent). */
 async function canvasAbsent(win: Page, id: string): Promise<boolean> {
   return win.evaluate(async (canvas) => {
@@ -49,7 +55,7 @@ test('New board…: verb → palette → name+Enter → dive, one Mod+Z reverses
     // Right-click empty board → the board menu leads with New board….
     await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
     await expect(win.getByTestId('context-menu')).toBeVisible()
-    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('board')
+    await enterBoardMenu(win)
     await expect(win.getByTestId('ctx-new-board')).toBeVisible()
 
     // The verb opens the command palette as a create-only naming prompt.
@@ -105,6 +111,7 @@ test('New board… carry: Escape abandons renderer memory and creates nothing', 
     const box = (await win.getByTestId('canvas-host').boundingBox())!
     const origin = await canvasId(win)
     await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
+    await enterBoardMenu(win)
     await win.getByTestId('ctx-new-board').click()
     await win.getByTestId('new-board-query').fill('Never Born')
     await win.getByTestId('new-board-query').press('Enter')
@@ -126,6 +133,7 @@ test('New board… refused seat keeps the carry alive; Escape leaves nothing', a
     const box = (await win.getByTestId('canvas-host').boundingBox())!
     const origin = await canvasId(win)
     await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
+    await enterBoardMenu(win)
     await win.getByTestId('ctx-new-board').click()
     await win.getByTestId('new-board-query').fill('Try Again')
     await win.getByTestId('new-board-query').press('Enter')
@@ -151,6 +159,7 @@ test('New board… palette: Escape cancels cleanly, leaving the board untouched 
     const origin = await canvasId(win)
 
     await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
+    await enterBoardMenu(win)
     await win.getByTestId('ctx-new-board').click()
     await expect(win.getByTestId('new-board')).toBeVisible()
     await win.getByTestId('new-board-query').fill('Discarded')

@@ -10,7 +10,7 @@
   let panel = $state<HTMLElement | null>(null), hexText = $state(value)
   let hsv = $state(hexToHsv(value) ?? { h: 0, s: 0, v: 0 })
   const anchored = () => ({ anchor: anchor.getBoundingClientRect(), host: { x: 0, y: 0, width: innerWidth, height: innerHeight }, x: { preferred: 'center' as const }, y: { preferred: 'after' as const, fallback: 'before' as const }, gap: 8 })
-  function commit(color: string): void { const normalized = normalizeHex(color); if (!normalized) return; value = normalized; hexText = normalized; hsv = hexToHsv(normalized)!; recent = recentColors(recent, normalized); oncommit?.(normalized) }
+  function commit(color: string): void { const normalized = normalizeHex(color); if (!normalized) return; const changed = normalizeHex(value) !== normalized; value = normalized; hexText = normalized; hsv = hexToHsv(normalized)!; recent = recentColors(recent, normalized); if (changed) oncommit?.(normalized) }
   function close(): void { open = false; onclose?.(); anchor.focus() }
   function pickSv(event: PointerEvent): void { const rect = (event.currentTarget as HTMLElement).getBoundingClientRect(); hsv = { ...hsv, ...svFromPoint(rect, event.clientX, event.clientY) }; commit(hsvToHex(hsv)) }
   function pickHue(event: PointerEvent): void { const rect = (event.currentTarget as HTMLElement).getBoundingClientRect(); hsv = { ...hsv, h: hueFromPoint(rect, event.clientX) }; commit(hsvToHex(hsv)) }

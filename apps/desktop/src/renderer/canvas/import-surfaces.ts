@@ -367,6 +367,39 @@ export function importFilesAt(
   return importFiles(host, importErrorNotice, files, world, clientAnchor, canvasId)
 }
 
+export interface ClipboardImageProbe {
+  files: File[]
+  disabledReason: string | null
+}
+
+/**
+ * Ground-menu paste is a user-initiated clipboard read. Probe once when
+ * that menu opens, retain the returned Files, and either expose a live
+ * row or an honest inert-with-why row. The existing window paste handler
+ * remains the fast keyboard path.
+ */
+export async function readClipboardImageFiles(): Promise<ClipboardImageProbe> {
+  if (!navigator.clipboard?.read) {
+    return { files: [], disabledReason: 'Paste here is unavailable in this Chromium build' }
+  }
+  try {
+    const items = await navigator.clipboard.read()
+    const files: File[] = []
+    for (const item of items) {
+      const type = item.types.find((entry) => entry.startsWith('image/'))
+      if (!type) continue
+      const blob = await item.getType(type)
+      const extension = type.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png'
+      files.push(new File([blob], `clipboard-image.${extension}`, { type }))
+    }
+    return files.length > 0
+      ? { files, disabledReason: null }
+      : { files: [], disabledReason: 'Paste here — the clipboard has no image' }
+  } catch {
+    return { files: [], disabledReason: 'Paste here — the clipboard could not be read' }
+  }
+}
+
 export function attachImportSurfaces(
   host: CanvasHostHandle,
   element: HTMLElement,

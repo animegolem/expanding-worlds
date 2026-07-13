@@ -9,6 +9,7 @@ import {
   type BoardSubject,
   type DecorationSubject,
   type FrameSubject,
+  type GroundSubject,
   type ItemSubject,
   type MenuActions,
   type MenuGroup,
@@ -146,9 +147,12 @@ describe('menuFor — item inventory (§8.4)', () => {
 })
 
 describe('menuFor — board inventory (§8.4)', () => {
-  const EMPTY_BOARD: BoardSubject = { kind: 'board', hasBackgroundImage: false, hasColor: false }
+  const EMPTY_BOARD: BoardSubject = {
+    kind: 'board', hasBackgroundImage: false, hasColor: false,
+    hasImageSelection: false, hiddenDecorations: [],
+  }
 
-  it('leads with New board, then paste / select-all / fit, backdrop family, color row, board note', () => {
+  it('leads with New board, then select-all / fit, backdrop family, color row, board note', () => {
     const groups = menuFor(EMPTY_BOARD, stubActions())
     expect(groups.map((g) => g.id)).toEqual([
       'create',
@@ -161,7 +165,7 @@ describe('menuFor — board inventory (§8.4)', () => {
     expect(byId(groups, 'new-board')!.run).toBeDefined()
     expect(byId(groups, 'select-all')!.shortcutId).toBe('board-select-all')
     expect(byId(groups, 'zoom-to-fit')!.shortcutId).toBe('board-zoom-fit')
-    expect(byId(groups, 'paste')!.disabledReason).toBeTruthy()
+    expect(byId(groups, 'paste')).toBeUndefined()
     expect(byId(groups, 'backdrop-color')!.colorRow).toBeDefined()
     expect(byId(groups, 'board-note')!.run).toBeDefined()
   })
@@ -174,10 +178,29 @@ describe('menuFor — board inventory (§8.4)', () => {
   it('gates the backdrop-edit verbs on a present backdrop', () => {
     const withBg = menuFor({ ...EMPTY_BOARD, hasBackgroundImage: true }, stubActions())
     expect(byId(withBg, 'remove-backdrop')!.run).toBeDefined()
-    expect(byId(withBg, 'set-backdrop')!.label).toBe('Replace backdrop…')
+    expect(byId(withBg, 'set-backdrop')!.label).toBe('Replace bg from image…')
     const noBg = menuFor(EMPTY_BOARD, stubActions())
     expect(byId(noBg, 'remove-backdrop')!.disabledReason).toBeTruthy()
-    expect(byId(noBg, 'set-backdrop')!.label).toBe('Set backdrop image…')
+    expect(byId(noBg, 'set-backdrop')!.label).toBe('Bg from image…')
+  })
+})
+
+describe('menuFor — empty-ground HERE inventory', () => {
+  const GROUND: GroundSubject = { kind: 'ground', pasteDisabledReason: null }
+
+  it('is exactly paste/text/pin/shape/frame followed by the board door', () => {
+    const groups = menuFor(GROUND, stubActions())
+    expect(groups.map((group) => group.id)).toEqual(['here', 'board-door'])
+    expect(allItems(groups).map((item) => item.id)).toEqual([
+      'paste-here', 'text-here', 'pin-here', 'shape-here', 'frame-here', 'board',
+    ])
+    expect(allItems(groups).some((item) => item.id.includes('arrange'))).toBe(false)
+  })
+
+  it('keeps empty clipboard paste visible and inert with the reason', () => {
+    const row = byId(menuFor({ ...GROUND, pasteDisabledReason: 'Clipboard empty' }, stubActions()), 'paste-here')!
+    expect(row.run).toBeUndefined()
+    expect(row.disabledReason).toBe('Clipboard empty')
   })
 })
 

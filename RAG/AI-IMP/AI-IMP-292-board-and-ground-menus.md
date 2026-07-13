@@ -6,12 +6,12 @@ tags:
   - menus
   - chrome
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-286, AI-IMP-288]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.8
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-13
 ---
 
 # AI-IMP-292-board-and-ground-menus
@@ -76,24 +76,24 @@ e2e: board-menu three-doors spec + ground-creation spec.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify the current board menu's anatomy + strip
+- [x] Round-1: verify the current board menu's anatomy + strip
       hold-open path, the §6.7 verb inventory, where ☰/export row
       lives, and the kit pages (4a/4b/4d + ground menu); record
       corrections here.
-- [ ] ❖ in a chrome container on the board's crumb; MenuPopover
+- [x] ❖ in a chrome container on the board's crumb; MenuPopover
       with §6.7 verbs; swatch row replaces the native color input;
       "bg from image…" copy.
-- [ ] Ground right-click + long-press open the combined menu; HERE
+- [x] Ground right-click + long-press open the combined menu; HERE
       verbs create at the click point (paste honors clipboard
       availability with an inert+why row, never hidden).
-- [ ] No arrange verbs in the ground menu.
-- [ ] Strip gradient retired; reveal/tuck pure; nothing holds the
+- [x] No arrange verbs in the ground menu.
+- [x] Strip gradient retired; reveal/tuck pure; nothing holds the
       strip after unhover (regression test).
-- [ ] ☰ Export row honest: routes to the live Settings export (or
+- [x] ☰ Export row honest: routes to the live Settings export (or
       the row is removed if the menu ruling says so — record).
-- [ ] Old board-menu component deleted; no native color inputs
+- [x] Old board-menu component deleted; no native color inputs
       remain in the strip/menu path (guard allowlist shrinks).
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -110,3 +110,25 @@ the click point.
 
 ### Issues Encountered
 
+- Pre-implementation review (2026-07-13): the package-1.4 Home Canvas
+  drawing still placed ❖ at strip top-right, but the later owner-ruled
+  rail table assigns that corner solely to ☰ and puts board verbs on
+  the current-board crumb. The crumb ruling governs; design will align
+  in kit 1.5.
+- The shipped board inventory was broader than the kit specimen. The
+  ruled no-loss inventory keeps New board, Select all, Zoom fit, the
+  §6.7 background family/color, Note for board, and hidden-decoration
+  recovery behind ❖. HERE is exactly paste/text/pin/shape/frame; the
+  kit's extra library row remains owned by source/place mode.
+- Shape/frame HERE rows seed the existing draw session at the captured
+  ground point (the kit's “armed — drag from here”), rather than
+  inventing default geometry. Clipboard paste probes image availability
+  at menu-open and reuses the ordinary import pipeline; empty or denied
+  clipboards stay visible with a reason.
+- Export was already live in Settings; only the ☰ row was stale. It now
+  opens Settings with the export control scrolled and focused.
+- Validation: lint and spike typecheck passed; persistence passed 658/658
+  on its isolated rerun after the first full-gate process collided with a
+  concurrent lock-probe temp bundle; canvas-engine passed 409/409; desktop
+  units passed 543/543 and the hidden-window desktop e2e estate passed
+  269/269.

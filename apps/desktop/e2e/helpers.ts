@@ -109,11 +109,9 @@ export async function seedPlacedNote(
 }
 
 /**
- * Chrome helpers (AI-IMP-059): the title strip is hover-revealed at
- * the top edge; the Board menu (background ops, hidden list) hangs
- * off it and closes on Escape, its button, or a pointerdown outside it
- * (AI-IMP-215 — §8.2 desk physics: a click on empty board puts it down).
- * Both helpers are idempotent.
+ * Chrome helpers: the title strip remains hover-revealed window
+ * furniture; the board menu's canonical door is ❖ in the current
+ * PathBar crumb. Both helpers are idempotent.
  */
 export async function revealTitleStrip(win: Page): Promise<void> {
   if (await win.getByTestId('title-strip').isVisible().catch(() => false)) return
@@ -126,7 +124,6 @@ export async function revealTitleStrip(win: Page): Promise<void> {
 
 export async function openBoardMenu(win: Page): Promise<void> {
   if (await win.getByTestId('board-menu').isVisible().catch(() => false)) return
-  await revealTitleStrip(win)
   await win.getByTestId('board-menu-button').click()
   await expect(win.getByTestId('board-menu')).toBeVisible()
 }

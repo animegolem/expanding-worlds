@@ -36,6 +36,10 @@
   interface EyeDropperApi { open(): Promise<EyeDropperResult> }
   interface EyeDropperConstructor { new (): EyeDropperApi }
   declare global { interface Window { EyeDropper?: EyeDropperConstructor } }
+  const eyedropperGlyphUrl = new URL(
+    '../../../resources/icons/masters/eyedropper.svg',
+    import.meta.url,
+  ).href
 
   const {
     handle,
@@ -500,10 +504,7 @@
           : 'Eyedropper unavailable in this Chromium build',
       }}
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M20.4 3.6a2.4 2.4 0 0 0-3.4 0l-2.6 2.6 3.4 3.4 2.6-2.6a2.4 2.4 0 0 0 0-3.4Z" class="pipette-fill"></path>
-        <path d="M15.2 7.4 5.5 17.1c-.4.4-.7 1-.8 1.6l-.4 2.4a.6.6 0 0 0 .7.7l2.4-.4c.6-.1 1.1-.4 1.6-.8l9.7-9.7"></path>
-      </svg>
+      <span class="pipette-glyph" style={`--pipette-glyph: url("${eyedropperGlyphUrl}")`} aria-hidden="true"></span>
     </button>
     <span class="divider"></span>
     <button
@@ -737,19 +738,12 @@
     border-top: 1px solid var(--ew-border-panel);
   }
 
-  .pipette svg {
+  .pipette-glyph {
     width: 14px;
     height: 14px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .pipette .pipette-fill {
-    fill: currentColor;
-    stroke: none;
+    background: currentColor;
+    -webkit-mask: var(--pipette-glyph) center / contain no-repeat;
+    mask: var(--pipette-glyph) center / contain no-repeat;
   }
 
   .divider {
