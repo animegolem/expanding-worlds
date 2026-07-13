@@ -198,10 +198,8 @@ async function importPng(win: Page, color: string): Promise<string> {
 test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', async () => {
   const { app, win } = await launch('ew-e2e-board-')
 
-  // The selection segment does not exist without a selection
-  // (AI-IMP-059: it joins the dock only while one exists, §8.2).
-  await expect(win.getByTestId('align-left')).toHaveCount(0)
-  await expect(win.getByTestId('distribute-horizontal')).toHaveCount(0)
+  // Selection verbs live in selection furniture, never the Dock.
+  await expect(win.getByTestId('charm-arrange')).not.toBeVisible()
 
   // Seed three 40×40 dot placements.
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
@@ -234,6 +232,7 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
 
   // Align Top: exactly one TransformContent; every center lands on 150.
   const beforeAlign = await revision(win)
+  await win.getByTestId('charm-arrange').click()
   await win.getByTestId('align-top').click()
   await expect
     .poll(async () => (await scenePlacements(win)).map((p) => p.y))
@@ -330,13 +329,8 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   const fittedSelectionViaFit = await win.evaluate(() => window.__ewDebug!.camera())
   expect(fittedSelectionViaFit).not.toEqual(fittedAll)
 
-  // The explicit "Zoom selection" button shares the exact same bounds
-  // + flyTo path (dedup'd through one helper), so it lands on the same
-  // camera target rather than merely "a different one."
-  await win.getByTestId('zoom-selection').click()
-  expect(await contentCommandsSince(win, beforeZoom)).toHaveLength(0)
-  await waitForFlightSettled(win)
-  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(fittedSelectionViaFit)
+  // The old explicit row retired; Dock ⤢ is selection-aware.
+  await expect(win.getByTestId('zoom-selection')).toHaveCount(0)
 
   // The ⇧1 chord dispatches through the identical zoomToFit(), so it
   // also frames the still-active selection, not the whole stage.
@@ -395,6 +389,7 @@ test('arrange packs by import order and normalize equalizes height — one undo 
 
   // Arrange by import date: one command, a compact 2×2 grid.
   const beforeArrange = await revision(win)
+  await win.getByTestId('charm-arrange').click()
   await win.getByTestId('arrange-importDate').click()
   await expect
     .poll(async () => {
@@ -458,6 +453,7 @@ test('normalize equalizes height to the median with one undo (AI-IMP-128)', asyn
   const before = new Map((await placementGeom(win)).map((p) => [p.id, p.h]))
 
   const beforeNorm = await revision(win)
+  await win.getByTestId('charm-arrange').click()
   await win.getByTestId('normalize-height').click()
   await expect
     .poll(async () => (await placementGeom(win)).every((p) => Math.abs(p.h - 300) < 1e-6))
@@ -689,7 +685,7 @@ test('delete selection with §9.2 notice, z-order recovery, select-all (AI-IMP-0
     })
     .toBe(smallId)
 
-  // Select all, then the toolbar's To front on the small rect.
+  // Select all, then use the ruled context-menu destination.
   await win.keyboard.press('Control+KeyA')
   expect(await win.evaluate(() => window.__ewDebug!.selection().length)).toBe(2)
   // Clear first: clicking an already-selected item keeps the multi
@@ -697,7 +693,8 @@ test('delete selection with §9.2 notice, z-order recovery, select-all (AI-IMP-0
   await win.mouse.click(box.x + 550, box.y + 450)
   await win.mouse.click(box.x + 300, box.y + 300)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
-  await win.getByTestId('order-front').click()
+  await win.mouse.click(box.x + 300, box.y + 300, { button: 'right' })
+  await win.getByTestId('ctx-bring-to-front').click()
   await expect
     .poll(async () => {
       await win.mouse.click(box.x + 300, box.y + 300)

@@ -226,31 +226,39 @@ describe('menuFor — decoration inventory (§8.4)', () => {
 })
 
 describe('menuFor — multi-select inventory (§8.4)', () => {
-  const MULTI: MultiSubject = { kind: 'multi', count: 3, placementCount: 2, decorationCount: 1 }
+  const MULTI: MultiSubject = { kind: 'multi', count: 3, placementCount: 2, decorationCount: 1, groupedDecorationCount: 0 }
 
-  it('leads with a count HEADER, then align/flips, gather/tags/lock, Delete N', () => {
+  it('leads with a count HEADER, then z-order/flips and eligible state verbs', () => {
     const groups = menuFor(MULTI, stubActions())
     expect(groups.map((g) => g.id)).toEqual(['header', 'arrange', 'group', 'destructive'])
     const header = byId(groups, 'count')!
     expect(header.header).toBe(true)
     expect(header.label).toBe('3 items selected')
     expect(header.run).toBeUndefined()
-    // Align is a family submenu; gather is actionable; tags is coming-soon.
-    expect(byId(groups, 'align')!.family).toBe('align')
-    expect(byId(groups, 'align')!.submenu!.map((r) => r.id)).toContain('distribute-h')
+    expect(byId(groups, 'bring-to-front')!.run).toBeDefined()
+    expect(byId(groups, 'bring-to-front')!.shortcutId).toBe('board-send-front')
+    expect(byId(groups, 'send-to-back')!.shortcutId).toBe('board-send-back')
     expect(byId(groups, 'gather-into-frame')!.run).toBeDefined()
     expect(byId(groups, 'tags')!.disabledReason).toBeTruthy()
     expect(byId(groups, 'lock-all')!.run).toBeDefined()
+    expect(byId(groups, 'lock-all')!.shortcutId).toBe('board-lock')
+    expect(byId(groups, 'group-decorations')!.disabledReason).toBeTruthy()
+    expect(byId(groups, 'hide-decorations')!.run).toBeUndefined()
+    expect(byId(groups, 'hide-decorations')!.disabledReason).toContain('decoration-only')
+    expect(byId(groups, 'ungroup-decorations')!.disabledReason).toContain('decoration-only')
   })
 
   it('disables Gather (with reason) on a decoration-only selection, keeps Lock all (AI-IMP-154)', () => {
-    const decoOnly: MultiSubject = { kind: 'multi', count: 2, placementCount: 0, decorationCount: 2 }
+    const decoOnly: MultiSubject = { kind: 'multi', count: 2, placementCount: 0, decorationCount: 2, groupedDecorationCount: 2 }
     const groups = menuFor(decoOnly, stubActions())
     // Frames capture placements only — no empty frame from an enabled row.
     expect(byId(groups, 'gather-into-frame')!.run).toBeUndefined()
     expect(byId(groups, 'gather-into-frame')!.disabledReason).toBeTruthy()
     // Decorations are lockable, so Lock all stays actionable.
     expect(byId(groups, 'lock-all')!.run).toBeDefined()
+    expect(byId(groups, 'group-decorations')!.run).toBeDefined()
+    expect(byId(groups, 'ungroup-decorations')!.run).toBeDefined()
+    expect(byId(groups, 'hide-decorations')!.run).toBeDefined()
   })
 
   it('names the count in the Delete verb and marks it danger-last', () => {

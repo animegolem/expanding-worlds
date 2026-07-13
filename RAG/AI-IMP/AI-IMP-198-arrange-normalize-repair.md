@@ -18,6 +18,11 @@ date_created: 2026-07-08
 
 > SUPERSEDED (2026-07-12): arrange rides the selection charm bar (kit ruling 7 — one ⌗ charm, grouped popover) and the repair is re-scoped as AI-IMP-291 under AI-EPIC-029, which carries this ticket's align-center defect and cites its PureRef/Figma audit.
 
+> ROUND-1 EXONERATION (2026-07-12): source review proved the premise
+> false. Center/middle modifies exactly one axis and preserves cross-axis
+> spread. AI-IMP-291 repairs legibility and adds a named five-item
+> regression; it does not change the algorithm.
+
 ## Summary of Issue #1
 
 Owner review FAIL on AI-IMP-128 (2026-07-08): the arrange (reading

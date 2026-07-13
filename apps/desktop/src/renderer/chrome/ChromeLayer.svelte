@@ -72,7 +72,7 @@
   {#if !takeoverOpen}
     <TitleStrip {handle} {tooling} {ui} />
     <PathBar {handle} />
-    <Dock {handle} {ui} {tooling} {hostElement} />
+    <Dock {handle} {tooling} {hostElement} />
   {/if}
   <CharmRail />
   <Toasts {handle} />

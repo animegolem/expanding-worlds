@@ -347,6 +347,7 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
     .poll(() => win.evaluate(() => window.__ewDebug!.selection().length))
     .toBeGreaterThanOrEqual(3)
   rev = await revision(win)
+  await win.getByTestId('charm-arrange').click()
   await win.getByTestId('align-top').click()
   await expect.poll(() => revision(win)).toBe(rev + 1)
   rev = await revision(win)
@@ -367,8 +368,7 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
     .poll(() => win.evaluate(() => window.__ewDebug!.camera().zoom))
     .not.toBe(zoomBefore)
   expect(await contentCommandsSince(win, rev)).toHaveLength(0)
-  await win.getByTestId('zoom-selection').click()
-  expect(await contentCommandsSince(win, rev)).toHaveLength(0)
+  await expect(win.getByTestId('zoom-selection')).toHaveCount(0)
 
   // ---- Item 9: the same node placed twice, plus a zero-node note
   // placed from the outline's loose bin (labeled dot appears;

@@ -197,7 +197,8 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.selection().sort()))
     .toEqual([rect.id, ellipse.id].sort())
-  await win.getByTestId('deco-group').click()
+  await win.mouse.click(...at(530, 320), { button: 'right' })
+  await win.getByTestId('ctx-group-decorations').click()
   await expect
     .poll(async () => {
       const ds = await decorations()
@@ -247,7 +248,8 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     .toBe((rect.data['x'] as number) + 20)
 
   // AND ungrouping restores individual selection semantics.
-  await win.getByTestId('deco-ungroup').click()
+  await win.mouse.click(...at(550, 340), { button: 'right' })
+  await win.getByTestId('ctx-ungroup-decorations').click()
   await expect
     .poll(async () => (await decorations()).find((d) => d.id === rect.id)?.groupId ?? null)
     .toBeNull()
@@ -264,7 +266,8 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
     .toEqual([triangle.id])
-  await win.getByTestId('deco-lock').click()
+  await win.mouse.click(...at(530, 420), { button: 'right' })
+  await win.getByTestId('ctx-lock').click()
   await expect
     .poll(async () => (await decorations()).find((d) => d.id === triangle.id)?.locked)
     .toBe(1)
@@ -282,7 +285,8 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
     .toEqual([line.id])
-  await win.getByTestId('deco-hide').click()
+  await win.mouse.click(...at(530, 510), { button: 'right' })
+  await win.getByTestId('ctx-hide').click()
   await expect
     .poll(async () => (await decorations()).find((d) => d.id === line.id)?.hidden)
     .toBe(1)
@@ -367,40 +371,28 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   expect(moved.x).toBeGreaterThan(200)
   expect(moved.y).toBeGreaterThan(300)
 
-  // AI-IMP-034: whole-object type controls on a single selected text.
-  await expect(win.getByTestId('text-style-controls')).toBeVisible()
-  await win.getByTestId('text-size').fill('32')
-  await win.getByTestId('text-size').press('Enter')
+  // AI-IMP-034/291: whole-object type controls live in ◧.
+  await win.getByTestId('charm-restyle').click()
+  const textPanel = win.getByTestId('restyle-panel')
+  const textSize = textPanel.locator('label').filter({ hasText: 'size' }).locator('input')
+  await textSize.fill('32')
+  await textSize.press('Enter')
   await expect
     .poll(async () => (await byKind('text'))[0]!.data['fontSize'])
     .toBe(32)
-  // The toolbar composes edits from its (120ms-refreshed) snapshot —
-  // wait for it to reflect the size before layering the bold toggle.
-  await expect(win.getByTestId('text-size')).toHaveValue('32')
-  await win.getByTestId('text-bold').click()
+  await expect(textSize).toHaveValue('32')
+  await textPanel.getByRole('button', { name: 'B', exact: true }).click()
   await expect.poll(async () => (await byKind('text'))[0]!.data['bold']).toBe(true)
   const sizedBounds = (await byKind('text'))[0]!.data as { measuredHeight?: number }
   expect(sizedBounds.measuredHeight).toBeGreaterThan(30)
 
-  // AI-IMP-037: the family picker enumerates installed fonts on its
-  // first user gesture and stores the choice with a stack fallback.
-  await win.getByTestId('text-family').click()
-  await expect
-    .poll(async () => win.locator('[data-testid="text-family"] option').count(), {
-      timeout: 10_000,
-    })
-    .toBeGreaterThan(3)
-  const systemFamily = await win.evaluate(() => {
-    const select = document.querySelector<HTMLSelectElement>('[data-testid="text-family"]')!
-    const opt = [...select.options].find((o) => o.value.includes('",'))
-    return opt?.value ?? null
-  })
-  expect(systemFamily).not.toBeNull()
-  await win.getByTestId('text-family').selectOption(systemFamily!)
+  // AI-IMP-037: PickerList replaces the native family select while
+  // retaining curated/system font loading.
+  await expect(textPanel.getByRole('option').first()).toBeVisible()
+  await textPanel.getByRole('option', { name: 'Serif', exact: true }).click()
   await expect
     .poll(async () => ((await byKind('text'))[0]!.data as { fontFamily?: string }).fontFamily)
-    .toBe(systemFamily)
-  expect(systemFamily).toContain('sans-serif')
+    .toBe('serif')
 
   // Art-text resize: dragging the SE corner ZONE (AI-IMP-062 — no
   // drawn handles) scales fontSize uniformly. Corner from the text's
@@ -560,23 +552,31 @@ test('selection restyle: stroke, fill, width, rounding after placement (AI-IMP-0
       return item!.data!
     }, id)
 
-  // Select the rect; the selection-style row appears.
+  // Select the rect; selection furniture owns restyle.
   const box = (await win.getByTestId('canvas-host').boundingBox())!
   await win.mouse.click(box.x + 250, box.y + 450)
   await expect
     .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
     .toEqual([rectId])
-  await expect(win.getByTestId('selection-style-controls')).toBeVisible()
+  await win.getByTestId('charm-restyle').click()
+  await expect(win.getByTestId('restyle-panel')).toBeVisible()
 
   // One UpdateDecoration per edit: stroke, fill, none, rounding.
-  await win.getByTestId('sel-stroke').fill('#ff0000')
+  await win.getByRole('button', { name: 'Open stroke color picker' }).click()
+  let hex = win.getByRole('textbox', { name: 'Hex color' })
+  await hex.fill('#ff0000')
+  await hex.press('Enter')
   await expect.poll(async () => (await dataOf(rectId))['stroke']).toBe('#ff0000')
-  await win.getByTestId('sel-fill').fill('#00ff00')
+  await win.getByRole('button', { name: 'Open fill color picker' }).click()
+  hex = win.getByRole('textbox', { name: 'Hex color' })
+  await hex.fill('#00ff00')
+  await hex.press('Enter')
   await expect.poll(async () => (await dataOf(rectId))['fill']).toBe('#00ff00')
-  await win.getByTestId('sel-rounding').fill('50')
-  await win.getByTestId('sel-rounding').blur()
+  const rounding = win.getByTestId('restyle-panel').locator('label').filter({ hasText: 'round' }).locator('input')
+  await rounding.fill('50')
+  await rounding.press('Enter')
   await expect.poll(async () => (await dataOf(rectId))['cornerRadius']).toBe(0.5)
-  await win.getByTestId('sel-fill-none').click()
+  await win.getByTestId('restyle-panel').getByRole('button', { name: 'none' }).click()
   await expect.poll(async () => (await dataOf(rectId))['fill']).toBeUndefined()
 
   // Multi-select rect + line: stroke applies to both.
@@ -588,7 +588,11 @@ test('selection restyle: stroke, fill, width, rounding after placement (AI-IMP-0
   await expect
     .poll(async () => (await win.evaluate(() => window.__ewDebug!.selection())).length)
     .toBe(2)
-  await win.getByTestId('sel-stroke').fill('#0000ff')
+  await win.getByTestId('charm-restyle').click()
+  await win.getByRole('button', { name: 'Open stroke color picker' }).click()
+  hex = win.getByRole('textbox', { name: 'Hex color' })
+  await hex.fill('#0000ff')
+  await hex.press('Enter')
   await expect.poll(async () => (await dataOf(rectId))['stroke']).toBe('#0000ff')
   await expect.poll(async () => (await dataOf(lineId))['stroke']).toBe('#0000ff')
 

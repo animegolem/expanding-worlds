@@ -83,6 +83,24 @@ describe('alignPayload', () => {
     expect((next[0]! as { x: number }).x).toBe(100)
   })
 
+  it('vertical-middle aligns five horizontal-spread nodes without collapsing their x spread', () => {
+    const items: SceneItem[] = [
+      makePlacement({ x: 40, y: 80, width: 30, height: 20 }),
+      makePlacement({ x: 130, y: 180, width: 50, height: 60 }),
+      makePlacement({ x: 260, y: 40, width: 80, height: 35 }),
+      makePlacement({ x: 410, y: 250, width: 24, height: 90 }),
+      makePlacement({ x: 560, y: 130, width: 70, height: 45 }),
+    ]
+    const beforeX = items.map((item) => (item as { x: number }).x)
+    const next = apply(items, alignPayload('c1', items, 'vmiddle'))
+    expect(next.map((item) => (item as { x: number }).x)).toEqual(beforeX)
+    const centersY = next.map((item) => {
+      const box = itemWorldAABB(item)!
+      return box.y + box.height / 2
+    })
+    for (const center of centersY) expect(center).toBeCloseTo(centersY[0]!, 9)
+  })
+
   it('returns null below two items', () => {
     expect(alignPayload('c1', [makePlacement()], 'left')).toBeNull()
     expect(alignPayload('c1', [], 'left')).toBeNull()

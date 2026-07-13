@@ -1,28 +1,14 @@
 <!--
-  The floating dock (RFC §8.2, AI-IMP-059): bottom-center — tool modes
-  (shape kinds behind one flyout) · divider · zoom cluster; the
-  selection-conditional segment (z-order, align, distribute, zoom to
-  selection, decoration group/lock/hide) joins only while a selection
-  exists. Contextual rows above the dock carry the tool style options
-  and the selection restyle controls ported from DecorationToolbar
-  (AI-IMP-021/034/055 — the fresh-data composition rules are theirs).
+  The floating dock (RFC §8.2, AI-IMP-059): bottom-center — tool modes,
+  one defaults row for the armed tool, eyedropper, and zoom cluster.
+  Selection verbs live with selection furniture/context menus; they
+  never change the Dock's species (AI-IMP-291).
   AI-IMP-067 adds the ◉ pin tool between connector and the divider.
 -->
 <script lang="ts">
   import { onDestroy } from 'svelte'
-  import {
-    isTextData,
-    type AlignOp,
-    type ArrangeSortKey,
-    type DistributeAxis,
-    type NormalizeMode,
-    type ReorderOp,
-    type TextData,
-    type ToolKind,
-    type SceneDecoration,
-  } from '@ew/canvas-engine'
+  import { type ToolKind } from '@ew/canvas-engine'
   import { themeTokenValue } from '../theme'
-  import { measureTextWorld } from '../canvas/text-entry'
   import { FONT_STACKS, loadFontOptions, type FontOption } from '../canvas/system-fonts'
   import { defaultsKind, rememberToolColor } from '../canvas/tool-defaults'
   import ColorPicker from '../ui/ColorPicker.svelte'
@@ -32,7 +18,6 @@
   import { placeAnchoredElement } from './anchored-placement-dom'
   import { dispatchReservationChange } from './reservation'
   import type { CanvasHostHandle } from '../canvas/host'
-  import type { DecorationsUi } from '../canvas/decorations-ui'
   import type { BoardTooling } from '../canvas/board-tooling'
   import { KEY } from '../keys/bindings'
   import { formatBinding, getBinding, matches } from '../keys/registry'
@@ -54,12 +39,10 @@
 
   const {
     handle,
-    ui,
     tooling,
     hostElement,
   }: {
     handle: CanvasHostHandle
-    ui: DecorationsUi
     tooling: BoardTooling
     hostElement: HTMLElement
   } = $props()
@@ -87,42 +70,6 @@
   const TOOL_SHORTCUTS = new Map<string, ToolKind>(
     [...PLAIN_TOOLS, ...DRAW_TOOLS].map((tool) => [getBinding(tool.key)!.combo.key!, tool.kind]),
   )
-
-  const alignOps: Array<{ op: AlignOp; label: string }> = [
-    { op: 'left', label: 'Left' },
-    { op: 'hcenter', label: 'Center' },
-    { op: 'right', label: 'Right' },
-    { op: 'top', label: 'Top' },
-    { op: 'vmiddle', label: 'Middle' },
-    { op: 'bottom', label: 'Bottom' },
-  ]
-  const distributeOps: Array<{ axis: DistributeAxis; label: string }> = [
-    { axis: 'horizontal', label: 'Distribute H' },
-    { axis: 'vertical', label: 'Distribute V' },
-  ]
-  // The z-order chords live in the registry (AI-IMP-136); the chip
-  // prints each from its binding so the letter can't drift.
-  const reorderOps: Array<{ op: ReorderOp; label: string; key: string }> = [
-    { op: 'forward', label: 'Forward', key: KEY.boardSendForward },
-    { op: 'backward', label: 'Backward', key: KEY.boardSendBackward },
-    { op: 'front', label: 'To front', key: KEY.boardSendFront },
-    { op: 'back', label: 'To back', key: KEY.boardSendBack },
-  ]
-  // §4.9 rev 0.38: compact-pack sort keys and normalize modes. No chord
-  // is assigned (the family is broad and grows with EPIC-016 menus);
-  // they ship reachable from this dock surface per the ticket allowance.
-  const arrangeOps: Array<{ key: ArrangeSortKey; label: string; tip: string }> = [
-    { key: 'default', label: 'Arrange', tip: 'Compact-pack (current order)' },
-    { key: 'name', label: 'By name', tip: 'Compact-pack by name' },
-    { key: 'importDate', label: 'By date', tip: 'Compact-pack by import order' },
-    { key: 'area', label: 'By size', tip: 'Compact-pack largest first' },
-  ]
-  const normalizeOps: Array<{ mode: NormalizeMode; label: string; tip: string }> = [
-    { mode: 'height', label: 'Eq. H', tip: 'Equalize height (median)' },
-    { mode: 'width', label: 'Eq. W', tip: 'Equalize width (median)' },
-    { mode: 'size', label: 'Eq. size', tip: 'Equalize size (median)' },
-    { mode: 'area', label: 'Eq. area', tip: 'Equalize area (median)' },
-  ]
 
   let activeTool = $state<ToolKind>(handle.tools.active)
   let lastShapeKind = $state<ShapeToolKind>(currentShape())
@@ -158,13 +105,6 @@
   let defaultsShift = $state(0)
   const eyedropperAvailable = typeof window !== 'undefined' && typeof window.EyeDropper === 'function'
 
-  let selected = $state<SceneDecoration[]>([])
-  let selectionCount = $state(handle.controller.selection.size)
-  // §4.9 frame actions (AI-IMP-129): the single selected frame (a
-  // placement with the 'frame' appearance), and its sort-on-drop flag.
-  let selectedFrameId = $state<string | null>(null)
-  let sortOnDrop = $state(true)
-
   // §4.9 rev 0.13: installed fonts, enumerated lazily on the picker's
   // first user gesture; curated stacks until then (and on failure).
   let fontOptions = $state<FontOption[]>(FONT_STACKS)
@@ -184,35 +124,6 @@
     })),
   )
 
-  function currentFrameId(): string | null {
-    const items = handle.controller.selectedItems()
-    if (items.length !== 1) return null
-    const item = items[0]!
-    return item.itemKind === 'placement' && item.appearanceKind === 'frame' ? item.id : null
-  }
-
-  function refresh(): void {
-    selected = ui.selectedDecorations()
-    selectionCount = handle.controller.selection.size
-    const frameId = currentFrameId()
-    if (frameId !== selectedFrameId) {
-      selectedFrameId = frameId
-      if (frameId) {
-        void tooling.frameSortOnDrop(frameId).then((on) => {
-          if (selectedFrameId === frameId) sortOnDrop = on
-        })
-      }
-    }
-  }
-
-  function toggleSortOnDrop(): void {
-    const id = selectedFrameId
-    if (!id) return
-    const next = !sortOnDrop
-    sortOnDrop = next
-    void tooling.setFrameSortOnDrop(id, next)
-  }
-
   $effect(() => {
     const offTool = handle.tools.onChanged((tool) => {
       activeTool = tool
@@ -221,9 +132,6 @@
         rememberShape(tool)
       }
     })
-    const offSelection = handle.controller.selection.onChanged(() => refresh())
-    // Deterministic (AI-IMP-054): the host signals every applied scene.
-    const offScene = handle.onSceneApplied(() => refresh())
     const offCamera = handle.controller.camera.onChanged(
       () => (zoomPct = Math.round(handle.controller.camera.zoom * 100)),
     )
@@ -256,11 +164,8 @@
       if (tool) handle.tools.setTool(tool)
     }
     window.addEventListener('keydown', onKeydown)
-    refresh()
     return () => {
       offTool()
-      offSelection()
-      offScene()
       offCamera()
       window.removeEventListener('keydown', onKeydown)
     }
@@ -279,8 +184,6 @@
   const shapeGlyph = $derived(
     SHAPE_OPTIONS.find((s) => s.kind === (shapeActive ? activeTool : lastShapeKind))?.glyph ?? '▭',
   )
-  const hasGroup = $derived(selected.some((d) => d.groupId !== null))
-  const allLocked = $derived(selected.length > 0 && selected.every((d) => d.locked === 1))
   const activeDefaults = $derived(defaultsKind(activeTool))
   const shapeDefaultsVisible = $derived(activeDefaults === 'shape')
   const lineDefaultsVisible = $derived(activeDefaults === 'line')
@@ -427,107 +330,6 @@
     handle.controller.camera.zoomAt({ x: bounds.width / 2, y: bounds.height / 2 }, factor)
   }
 
-  function run(action: () => Promise<void>): void {
-    // The commit's project-changed → scene-applied signal refreshes us.
-    void action()
-  }
-
-  // §4.9 rev 0.12: whole-object type controls for a single selected
-  // text decoration; bounds re-measured through the same DOM metrics
-  // the entry overlay uses.
-  const selectedText = $derived(
-    selected.length === 1 && selected[0]!.kind === 'text' && isTextData(selected[0]!.data)
-      ? selected[0]!
-      : null,
-  )
-  const textData = $derived(selectedText ? (selectedText.data as TextData) : null)
-
-  function updateText(patch: Partial<TextData>): void {
-    if (!selectedText || !textData) return
-    const decorationId = selectedText.id
-    run(async () => {
-      // Compose from FRESH data, not this component's snapshot
-      // (AI-IMP-049 lesson): two quick edits would otherwise silently
-      // revert the first one.
-      const response = await window.ew.project.query('getCanvasContents', {
-        canvasId: handle.canvasId,
-      })
-      const fresh = response.ok
-        ? (response.result as Array<{ id: string; data?: unknown }>).find(
-            (item) => item.id === decorationId,
-          )
-        : null
-      const base = fresh && isTextData(fresh.data) ? fresh.data : textData
-      if (!base) return
-      const next = { ...base, ...patch }
-      const measured = measureTextWorld(next.text, next)
-      await handle.gateway.execute('UpdateDecoration', {
-        decorationId,
-        set: { data: { ...next, ...measured } },
-      })
-    })
-  }
-
-  // §4.9 rev 0.16 / AI-IMP-055: drawn decorations stay restylable
-  // after placement. Stroke-bearing kinds only; text has its own row.
-  const STYLED_KINDS = new Set(['shape', 'line', 'arrow', 'path', 'connector'])
-  const selectedStyled = $derived(selected.filter((d) => STYLED_KINDS.has(d.kind)))
-  const styledLead = $derived(
-    selectedStyled.length > 0
-      ? (selectedStyled[0]!.data as {
-          stroke?: string
-          strokeWidth?: number
-          fill?: string
-          cornerRadius?: number
-          shape?: string
-        })
-      : null,
-  )
-  const selectedRects = $derived(
-    selectedStyled.filter((d) => d.kind === 'shape' && (d.data as { shape?: string }).shape === 'rect'),
-  )
-  const selectedShapes = $derived(selectedStyled.filter((d) => d.kind === 'shape'))
-
-  /** One UpdateDecoration per eligible selected decoration, each
-   * composed from FRESH data (AI-IMP-049 lesson). `fill` and
-   * `cornerRadius` only apply where they mean something. */
-  function updateStyled(patch: {
-    stroke?: string
-    strokeWidth?: number
-    fill?: string | null
-    cornerRadius?: number
-  }): void {
-    const targets = selectedStyled.map((d) => ({ id: d.id, kind: d.kind }))
-    if (targets.length === 0) return
-    run(async () => {
-      const response = await window.ew.project.query('getCanvasContents', {
-        canvasId: handle.canvasId,
-      })
-      if (!response.ok) return
-      const byId = new Map(
-        (response.result as Array<{ id: string; data?: unknown }>).map((item) => [item.id, item]),
-      )
-      for (const target of targets) {
-        const fresh = byId.get(target.id)
-        if (!fresh || typeof fresh.data !== 'object' || fresh.data === null) continue
-        const base = fresh.data as Record<string, unknown>
-        const isShape = target.kind === 'shape'
-        const isRect = isShape && base['shape'] === 'rect'
-        const next: Record<string, unknown> = { ...base }
-        if (patch.stroke !== undefined) next['stroke'] = patch.stroke
-        if (patch.strokeWidth !== undefined) next['strokeWidth'] = patch.strokeWidth
-        if (patch.fill !== undefined && isShape) {
-          if (patch.fill === null) delete next['fill']
-          else next['fill'] = patch.fill
-        }
-        if (patch.cornerRadius !== undefined && isRect) next['cornerRadius'] = patch.cornerRadius
-        await handle.gateway.execute('UpdateDecoration', {
-          decorationId: target.id,
-          set: { data: next },
-        })
-      }
-    })
-  }
 </script>
 
 <div class="dock-stack" data-testid="dock" data-dock-expanded={toolOptionsVisible} bind:this={dockElement}>
@@ -623,262 +425,6 @@
         onclose={() => (pickerKind = null)}
       />
     {/if}
-  {/if}
-
-  {#if styledLead}
-    <div class="dock-row contextual" data-testid="selection-style-controls">
-      <label>
-        Stroke
-        <input
-          type="color"
-          data-testid="sel-stroke"
-          value={styledLead.stroke ?? themeTokenValue('--ew-text')}
-          onchange={(e) => updateStyled({ stroke: (e.currentTarget as HTMLInputElement).value })}
-        />
-      </label>
-      <label>
-        Width
-        <input
-          type="number"
-          min="0.1"
-          step="0.5"
-          data-testid="sel-stroke-width"
-          value={styledLead.strokeWidth ?? 2}
-          onchange={(e) => {
-            const width = Number((e.currentTarget as HTMLInputElement).value)
-            if (Number.isFinite(width) && width > 0) updateStyled({ strokeWidth: width })
-          }}
-        />
-      </label>
-      {#if selectedShapes.length > 0}
-        <label>
-          Fill
-          <input
-            type="color"
-            data-testid="sel-fill"
-            value={styledLead.fill ?? themeTokenValue('--ew-color-input-empty')}
-            onchange={(e) => updateStyled({ fill: (e.currentTarget as HTMLInputElement).value })}
-          />
-          <button type="button" data-testid="sel-fill-none" onclick={() => updateStyled({ fill: null })}>
-            none
-          </button>
-        </label>
-      {/if}
-      {#if selectedRects.length > 0}
-        <label>
-          Round %
-          <input
-            type="number"
-            min="0"
-            max="100"
-            step="5"
-            data-testid="sel-rounding"
-            value={Math.round((styledLead.cornerRadius ?? 0) * 100)}
-            onchange={(e) => {
-              const percent = Number((e.currentTarget as HTMLInputElement).value)
-              if (Number.isFinite(percent) && percent >= 0 && percent <= 100)
-                updateStyled({ cornerRadius: percent / 100 })
-            }}
-          />
-        </label>
-      {/if}
-    </div>
-  {/if}
-
-  {#if textData}
-    <div class="dock-row contextual" data-testid="text-style-controls">
-      <label>
-        Size
-        <input
-          type="number"
-          min="1"
-          max="512"
-          data-testid="text-size"
-          value={textData.fontSize}
-          onchange={(e) => {
-            const size = Number((e.currentTarget as HTMLInputElement).value)
-            if (Number.isFinite(size) && size > 0) updateText({ fontSize: size })
-          }}
-        />
-      </label>
-      <label>
-        Font
-        <select
-          data-testid="text-family"
-          value={textData.fontFamily ?? 'sans-serif'}
-          onpointerdown={ensureFonts}
-          onfocus={ensureFonts}
-          onchange={(e) => updateText({ fontFamily: (e.currentTarget as HTMLSelectElement).value })}
-        >
-          {#if textData.fontFamily && !fontOptions.some((f) => f.value === textData.fontFamily)}
-            <option value={textData.fontFamily}>{textData.fontFamily}</option>
-          {/if}
-          {#each fontOptions as family (family.value)}
-            <option value={family.value}>{family.label}</option>
-          {/each}
-        </select>
-      </label>
-      <button
-        type="button"
-        class:active={textData.bold === true}
-        data-testid="text-bold"
-        onclick={() => updateText({ bold: !textData!.bold })}
-      >
-        B
-      </button>
-      <button
-        type="button"
-        class:active={textData.italic === true}
-        data-testid="text-italic"
-        onclick={() => updateText({ italic: !textData!.italic })}
-      >
-        I
-      </button>
-      <label>
-        Color
-        <input
-          type="color"
-          data-testid="text-selected-color"
-          value={textData.color}
-          onchange={(e) => updateText({ color: (e.currentTarget as HTMLInputElement).value })}
-        />
-      </label>
-    </div>
-  {/if}
-
-  {#if selectionCount > 0}
-    <div class="dock-row contextual" data-testid="selection-controls">
-      {#each reorderOps as entry (entry.op)}
-        <button
-          type="button"
-          data-testid={`order-${entry.op}`}
-          onclick={() => void tooling.reorder(entry.op)}
-          use:tooltip={{ name: entry.label, shortcut: formatBinding(entry.key) }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each alignOps as entry (entry.op)}
-        <button
-          type="button"
-          data-testid={`align-${entry.op}`}
-          disabled={selectionCount < 2}
-          onclick={() => void tooling.align(entry.op)}
-          use:tooltip={{ name: `Align ${entry.label.toLowerCase()}` }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each distributeOps as entry (entry.axis)}
-        <button
-          type="button"
-          data-testid={`distribute-${entry.axis}`}
-          disabled={selectionCount < 3}
-          onclick={() => void tooling.distribute(entry.axis)}
-          use:tooltip={{ name: entry.label }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each arrangeOps as entry (entry.key)}
-        <button
-          type="button"
-          data-testid={`arrange-${entry.key}`}
-          disabled={selectionCount < 2}
-          onclick={() => void tooling.arrange(entry.key)}
-          use:tooltip={{ name: entry.tip }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      {#each normalizeOps as entry (entry.mode)}
-        <button
-          type="button"
-          data-testid={`normalize-${entry.mode}`}
-          disabled={selectionCount < 2}
-          onclick={() => void tooling.normalize(entry.mode)}
-          use:tooltip={{ name: entry.tip }}
-        >
-          {entry.label}
-        </button>
-      {/each}
-      <button
-        type="button"
-        data-testid="zoom-selection"
-        onclick={() => tooling.zoomToSelection()}
-        use:tooltip={{ name: 'Zoom to selection' }}
-      >
-        Zoom selection
-      </button>
-      {#if selected.length > 0}
-        <span class="count">{selected.length} selected</span>
-        <button
-          type="button"
-          data-testid="deco-group"
-          disabled={selected.length < 2}
-          onclick={() => run(() => ui.groupSelection())}
-          use:tooltip={{ name: 'Group decorations' }}
-        >
-          Group
-        </button>
-        <button
-          type="button"
-          data-testid="deco-ungroup"
-          disabled={!hasGroup}
-          onclick={() => run(() => ui.ungroupSelection())}
-          use:tooltip={{ name: 'Ungroup decorations' }}
-        >
-          Ungroup
-        </button>
-        <button
-          type="button"
-          data-testid="deco-lock"
-          onclick={() => run(() => ui.setLockedOnSelection(!allLocked))}
-          use:tooltip={{ name: allLocked ? 'Unlock decorations' : 'Lock decorations' }}
-        >
-          {allLocked ? 'Unlock' : 'Lock'}
-        </button>
-        <button
-          type="button"
-          data-testid="deco-hide"
-          onclick={() => run(() => ui.hideSelection())}
-          use:tooltip={{ name: 'Hide decorations' }}
-        >
-          Hide
-        </button>
-      {/if}
-    </div>
-  {/if}
-
-  {#if selectedFrameId}
-    <div class="dock-row contextual" data-testid="frame-actions">
-      <button
-        type="button"
-        data-testid="frame-sort"
-        onclick={() => void tooling.sortFrame(selectedFrameId!)}
-        use:tooltip={{ name: 'Compact-pack this frame’s contents' }}
-      >
-        Sort in frame
-      </button>
-      <button
-        type="button"
-        class:active={sortOnDrop}
-        data-testid="frame-sort-on-drop"
-        aria-pressed={sortOnDrop}
-        onclick={toggleSortOnDrop}
-        use:tooltip={{ name: 'Arrange items dropped into this frame' }}
-      >
-        Sort on drop: {sortOnDrop ? 'On' : 'Off'}
-      </button>
-      <button
-        type="button"
-        data-testid="frame-load"
-        onclick={() => tooling.loadIntoFrame(selectedFrameId!)}
-        use:tooltip={{ name: 'Add items from the library into this frame' }}
-      >
-        Add from library
-      </button>
-    </div>
   {/if}
 
   <div class="dock-row main">
@@ -1091,7 +637,7 @@
 
   .unit {
     margin-left: -0.22rem;
-    font-family: var(--ew-font-mono);
+    font-family: var(--ew-font-editor);
   }
 
   .none {
@@ -1141,7 +687,7 @@
 
   .shape-header {
     padding: 0.2rem 0.38rem 0.35rem;
-    font-family: var(--ew-font-mono);
+    font-family: var(--ew-font-editor);
     font-size: 0.66rem;
     color: var(--ew-text-muted);
     border-bottom: 1px solid var(--ew-border);
@@ -1218,11 +764,6 @@
     opacity: 0.85;
   }
 
-  .count {
-    opacity: 0.7;
-    margin: 0 0.2rem;
-  }
-
   .glyph {
     margin-right: 0.3rem;
   }
@@ -1252,32 +793,4 @@
     cursor: default;
   }
 
-  label {
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-  }
-
-  input[type='color'] {
-    width: 1.6rem;
-    height: 1.3rem;
-    padding: 0;
-    border: 1px solid var(--ew-border-strong);
-    background: transparent;
-  }
-
-  input[type='number'] {
-    width: 3rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 4px;
-  }
-
-  select {
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 4px;
-  }
 </style>
