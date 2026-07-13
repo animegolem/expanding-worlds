@@ -52,7 +52,8 @@ test('New board…: verb → palette → name+Enter → dive, one Mod+Z reverses
     const box = (await win.getByTestId('canvas-host').boundingBox())!
     const origin = await canvasId(win)
 
-    // Right-click empty board → the board menu leads with New board….
+    // Right-click empty board → HERE → Board…; the canonical board
+    // inventory leads with New board….
     await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
     await expect(win.getByTestId('context-menu')).toBeVisible()
     await enterBoardMenu(win)

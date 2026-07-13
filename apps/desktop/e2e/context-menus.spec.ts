@@ -5,9 +5,10 @@ import { exec, launchApp, revision, runQuery } from './helpers'
  * AI-IMP-136 acceptance (RFC §8.4 rev 0.55): the ONE context-menu
  * surface. A right-click on an item opens the ratified item menu at the
  * cursor — grouped verbs, mono shortcut chips, Delete alone behind the
- * last divider — and a right-click on empty board opens the board menu
- * (paste / select-all / fit · backdrop family · color row · board
- * note). The three item round trips prove one-undo via undoDepth; the
+ * last divider — and a right-click on empty board opens HERE, whose
+ * Board… door reaches the canonical board menu (select-all / fit ·
+ * backdrop family · color row · board note). The three item round
+ * trips prove one-undo via undoDepth; the
  * board backdrop-color verb commits (SetCanvasBackgroundColor is not in
  * the renderer's undo allowlist — that seam lives in undo/, out of this
  * ticket's fence — so it is asserted as a commit, not a one-undo).

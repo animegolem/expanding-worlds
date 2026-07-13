@@ -731,9 +731,30 @@ test('AI-IMP-215: a board click outside the Board menu puts it down and is swall
 
   await openBoardMenu(win)
 
-  // §8.2 desk physics: a pointerdown on empty board (clear of the top-right
-  // menu) puts the menu down through its own close path...
-  await win.mouse.click(box.x + 150, box.y + 450)
+  // §8.2 desk physics: a pointerdown on empty board puts the menu down
+  // through its own close path. Derive the point from LIVE geometry: the
+  // Board door now grows from the crumb, whose Linux position lacks macOS's
+  // traffic-light inset, and disabled-reason rows make its height data-
+  // dependent. A fixed coordinate can therefore be inside the menu on one
+  // platform while outside it on another.
+  const menuBox = (await win.getByTestId('context-menu').boundingBox())!
+  const clickAway = await win.evaluate(({ canvas, menu }) => {
+    const candidates = [
+      { x: canvas.x + canvas.width / 2, y: canvas.y + canvas.height / 2 },
+      { x: canvas.x + canvas.width * 0.65, y: canvas.y + canvas.height * 0.65 },
+      { x: canvas.x + canvas.width * 0.35, y: canvas.y + canvas.height * 0.65 },
+    ]
+    return candidates.find((point) => {
+      const outsideMenu =
+        point.x < menu.x ||
+        point.x > menu.x + menu.width ||
+        point.y < menu.y ||
+        point.y > menu.y + menu.height
+      return outsideMenu && document.elementFromPoint(point.x, point.y)?.tagName === 'CANVAS'
+    }) ?? null
+  }, { canvas: box, menu: menuBox })
+  expect(clickAway).not.toBeNull()
+  await win.mouse.click(clickAway!.x, clickAway!.y)
   await expect(win.getByTestId('board-menu')).toHaveCount(0)
   // ...and the dismissing click is SWALLOWED (the gallery precedent,
   // AI-IMP-188): it lowered the menu and did NOT also deselect the pin.
