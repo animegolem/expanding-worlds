@@ -451,6 +451,8 @@
       class="tool"
       class:active={shapeActive}
       data-testid="dock-shape"
+      data-armed={shapeActive}
+      data-flyout-open={shapeFlyoutOpen}
       aria-haspopup="menu"
       aria-expanded={shapeFlyoutOpen}
       bind:this={shapeButton}

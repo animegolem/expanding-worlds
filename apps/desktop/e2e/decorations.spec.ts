@@ -13,11 +13,19 @@ declare global {
 }
 
 async function selectShapeTool(win: import('@playwright/test').Page, kind: string): Promise<void> {
-  await win.getByTestId('dock-shape').click()
-  // An inactive slot's first quick click arms its remembered face. Its
-  // armed re-press opens the flyout; an already-armed slot opens at once.
-  if ((await win.getByTestId(`tool-${kind}`).count()) === 0) await win.getByTestId('dock-shape').click()
-  await win.getByTestId(`tool-${kind}`).click()
+  const slot = win.getByTestId('dock-shape')
+  if ((await slot.getAttribute('data-armed')) !== 'true') {
+    await slot.click()
+    await expect(slot).toHaveAttribute('data-armed', 'true')
+  }
+  if ((await slot.getAttribute('data-flyout-open')) !== 'true') {
+    await slot.click()
+  }
+  await expect(slot).toHaveAttribute('data-flyout-open', 'true')
+  const row = win.getByTestId(`tool-${kind}`)
+  await expect(row).toBeVisible()
+  await row.click()
+  await expect(slot).toHaveAttribute('data-flyout-open', 'false')
 }
 
 /**

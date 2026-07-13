@@ -168,6 +168,12 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
 
   await win.getByTestId('dock-shape').click() // armed re-press
   await expect(win.getByTestId('shape-flyout')).toBeVisible()
+  await expect(win.getByTestId('dock-shape')).toHaveAttribute('data-flyout-open', 'true')
+  // Re-press while already open is deliberately idempotent-open, not a
+  // toggle-close. Only an explicit exit (outside/Escape/pick) dismisses.
+  await win.getByTestId('dock-shape').click()
+  await expect(win.getByTestId('shape-flyout')).toBeVisible()
+  await expect(win.getByTestId('dock-shape')).toHaveAttribute('data-flyout-open', 'true')
   await win.mouse.click(20, 200) // release outside closes without changing ellipse
   await expect(win.getByTestId('shape-flyout')).toHaveCount(0)
   await expect(win.getByTestId('dock-shape')).toHaveText('◯')

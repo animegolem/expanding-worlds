@@ -130,3 +130,11 @@ tests; shell + decorations Playwright 10 tests green after correcting the
 expected final decoration census from 8 to 10. `pnpm -r build` is green.
 The full wave gate passed: persistence 658, canvas-engine 409, desktop
 541, and hidden-window Playwright 268.
+
+Round-3 oracle correction: Linux shard 1 convicted the E2E helper's
+probe-then-act race, not the product protocol. The Dock slot now exposes
+`data-armed` and `data-flyout-open`; the helper reads those stable states,
+performs one required action, and awaits the visible flyout before choosing
+a row. Re-press while open is ruled idempotent-open; outside/Escape/pick are
+the explicit exits. A wave-wide sweep found no other count-probe driving a
+corrective action; remaining zero-count uses are terminal assertions.
