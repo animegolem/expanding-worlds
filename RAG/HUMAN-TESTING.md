@@ -1039,3 +1039,21 @@ look exactly as before (no regression at 100%+ display scaling).
 - Select a frame: sort-on-drop and "Add from library" live on the
   frame's toolbar/right-click now — confirm you can still find them
   without the old dock row.
+
+## 2026-07-13 — nav wave (AI-IMP-292/294/295/293, EPIC-029 phase C)
+
+**Build:** next tag (v0.25.0 at epic close).
+**Try (mac + alph Windows):**
+- Rail reads ⊞ ▤ ⊛(sleeping) ⌕ top-to-bottom; the ⚠ perch sits at the
+  foot when a condition exists. ☰ stays clickable from inside the
+  Gallery and Outline takeovers, and with "title strip: never" set.
+- Click the board's name-crumb ❖: paint a background swatch (no OS
+  color dialog), then right-click empty ground — HERE menu: pick
+  "text" and confirm it starts where you clicked.
+- Ctrl/⌘K: type two fragments, watch live fuzzy matching; Tab to pin
+  a pill; drag an image result onto the board; Esc — board exactly
+  as it was.
+- ◎ lower-left: drop an image on the profile slot (world gets its
+  face; one Ctrl/⌘Z takes it back), fly to a place from the list.
+- Switch world… from ☰ and cancel; Open folder as source… in the
+  gallery — picking a non-project folder should say so politely.

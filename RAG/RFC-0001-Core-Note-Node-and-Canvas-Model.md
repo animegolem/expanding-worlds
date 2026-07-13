@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.71         | 12 July 2026     |
+| Accepted for Phase 1 | 0.72         | 13 July 2026     |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -1870,7 +1870,12 @@ Every note surfaces its uses inside its own panel (rev 0.17): the
 panel header always shows a places count ("⌖ n places"), and
 activating it unfolds the Uses list in-panel, with a marker on the
 placement currently being read. One panel owns everything about a
-note: words, tags (its node's, §8.5), and places.
+note: words, tags (its node's, §8.5), and places — with ONE scoped
+exception (rev 0.72): for a CANVAS-OWNING node's own note, places
+live canonically in the identity corner ◎ (the rev 0.71 kit-push
+ruling made concrete); that note's panel shows a visible "Places
+live in ◎" affordance opening the corner instead of duplicating
+the list. Every other note keeps this section untouched.
 
 The Uses list and the link-activation chooser use the same location
 query, grouping model, and row grammar — the same rows as the §4.8
@@ -5024,3 +5029,8 @@ Accepted for the Phase 1 prototype:
   grammar: tickets cite DESIGN-LETTER.md and the kit documents
   directly. Preflight waiver terms: the addendum-8 kits fill
   KIT-PREFLIGHT before their implementation tickets cut.
+
+- The ◎ displacement made concrete (rev 0.72, nav-wave round 1):
+  §7.4 gains its one scoped exception — a canvas-owning node's own
+  note defers its places to the identity corner with a visible
+  affordance, never a duplicated list. All other notes unchanged.

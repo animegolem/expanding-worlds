@@ -113,14 +113,14 @@ rulings 1–33, kit DC pages, GR-5), KIT-PREFLIGHT waiver terms.
 - [x] FR-6: Selection charm-bar ⌗ arrange popover + ◧ restyle
       panel; align-center EXONERATED at round 1 — the defect was
       label ambiguity, fixed with a named regression. (AI-IMP-291)
-- [ ] FR-7: Board menu on the crumb (❖, MenuPopover, swatch row) +
+- [x] FR-7: Board menu on the crumb (❖, MenuPopover, swatch row) +
       ground menu HERE section. (AI-IMP-292)
-- [ ] FR-8: Rail recomposition — lens toggles only, ☰ to strip, ⚠
+- [x] FR-8: Rail recomposition — lens toggles only, ☰ to strip, ⚠
       perch at rail foot. (AI-IMP-293)
-- [ ] FR-9: Centered search palette — two doors, kind-verb headers,
+- [x] FR-9: Centered search palette — two doors, kind-verb headers,
       tag pills, fzf name-space matcher, drag-out, G7 error/type
       fixes. (AI-IMP-294)
-- [ ] FR-10: Identity corner ◎ panel. (AI-IMP-295)
+- [x] FR-10: Identity corner ◎ panel. (AI-IMP-295)
 - [ ] FR-11: Note-paper postures + open-as-flight. (AI-IMP-296)
 - [ ] FR-12: Caption plaque + outline row meta. (AI-IMP-297)
 - [ ] FR-13: Lens wires — tags-charm lens + placement hit ring +
@@ -146,6 +146,10 @@ rulings 1–33, kit DC pages, GR-5), KIT-PREFLIGHT waiver terms.
 
 ## Implementation Breakdown
 
+Phase C closed 2026-07-13 (three rounds: a stale test coordinate
+against the moved board menu — Linux lacks the traffic-light inset —
+repaired with measured geometry; the wave-gate evidence train ran
+its first live trials and halted correctly on the red oracle).
 Phase A closed 2026-07-12 (main e55d3b5d, + a round-3 gutter
 correction convicted by its own strengthened pin). Phase B closed
 2026-07-13 (three rounds: the oracle's red turned out to be runner

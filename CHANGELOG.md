@@ -12,6 +12,40 @@ annotations.
 
 ## [Unreleased]
 
+### For testers (the chrome finds its places)
+- Changed: the board's menu lives on its name now — click the ❖ on
+  the board's crumb in the path bar. Right-click (or long-press)
+  empty board gets a HERE menu: paste, text, pin, shape, frame — all
+  landing exactly where you clicked — with "board…" underneath.
+  The ☰ Export row works now (it takes you to Settings' live
+  export).
+- Changed: search is a centered palette on Ctrl/⌘K — the board stays
+  visible behind it and is exactly as you left it when you close.
+  Type fragments and they fuzzy-match names, boards, tags, and
+  filenames ("chi lif" finds #chieftain #life-debt); Tab pins a
+  suggestion into a pill when you want it, but plain typing keeps
+  matching live. Image results drag straight onto the board.
+- New: the ◎ button in the lower-left opens the world's own face —
+  drop an image on its profile slot to give the world a cover, read
+  its note, and fly to every place it lives.
+- Changed: the right rail is now just ways of seeing — gallery,
+  outline, graph (coming), search — with the warning perch at its
+  foot. ☰ sits alone in the top-right and stays reachable even
+  inside takeovers. Switching worlds and opening a folder as a
+  source both go through proper system pickers now.
+
+### Under the hood (nav wave, EPIC-029 phase C)
+- AI-IMP-292 — one board/ground menu inventory; ❖ on the crumb; HERE
+  section; strip reveal pure; native color input retired.
+- AI-IMP-294 — SearchPalette + fzf-match module; Mod+K; renderer
+  transport type fixed at source; node-only drag-out; bare TextInput
+  variant.
+- AI-IMP-295 — IdentityCorner + fail-stop profile helper; §7.4
+  canvas-owner deferral (RFC rev 0.72).
+- AI-IMP-293 — four-rung rail; perch at foot; ☰ persistent across
+  takeovers; main-validated one-use capabilities for switch/source
+  doors; rail hit-testing opt-in.
+
 ## [0.24.1] - 2026-07-13
 
 ### For testers (the dock grows up)
