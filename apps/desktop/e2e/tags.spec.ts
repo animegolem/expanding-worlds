@@ -614,7 +614,8 @@ test('UI rename: Escape cancels the edit, leaving the panel open and the name un
 test('a phantom note panel carries no tag add-field (§4.8, AI-IMP-108)', async () => {
   const { app, win } = await launchApp('ew-e2e-tag-add-phantom-')
   // The board's own note draft is a phantom until the first edit.
-  await win.getByTestId('corner-charm').click()
+  await win.getByTestId('identity-corner-button').click()
+  await win.getByTestId('identity-edit-note').click()
   await expect(win.getByTestId('canvas-phantom')).toBeVisible()
   await expect(win.getByTestId('tag-add-field')).toHaveCount(0)
   await expect(win.getByTestId('panel-tag-chips')).toHaveCount(0)

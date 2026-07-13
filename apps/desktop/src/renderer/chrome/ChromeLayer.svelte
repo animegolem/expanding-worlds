@@ -14,6 +14,7 @@
   import Dock from './Dock.svelte'
   import DropBehaviorAsk from './DropBehaviorAsk.svelte'
   import ImportProgressStrip from './ImportProgressStrip.svelte'
+  import IdentityCorner from './IdentityCorner.svelte'
   import MirrorAsk from './MirrorAsk.svelte'
   import PathBar from './PathBar.svelte'
   import RecognitionChip from './RecognitionChip.svelte'
@@ -73,6 +74,7 @@
     <TitleStrip {tooling} />
     <PathBar {handle} />
     <Dock {handle} {tooling} {hostElement} />
+    <IdentityCorner {handle} />
   {/if}
   <CharmRail />
   <Toasts {handle} />

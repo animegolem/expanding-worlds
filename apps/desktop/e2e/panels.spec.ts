@@ -5,8 +5,8 @@ import { exec, launchApp, revision, runQuery, seedPlacedNote } from './helpers'
  * AI-IMP-064 acceptance (RFC §8.5): tethered panels track their node
  * and get replaced; pinning accumulates and NOTHING auto-unpins; the
  * indicator escalates with how broken the spatial link is (tail →
- * halo → edge chip → origin label); the canvas corner charm is the
- * board's own page charm, ghost until the first committed edit.
+ * halo → edge chip → origin label); ◎ now owns the board-note door,
+ * ghost until the first committed edit.
  */
 
 test('pin accumulation and the escalation ladder (§8.5)', async () => {
@@ -441,14 +441,15 @@ test('cross-canvas activation re-tethers at the destination; uses rows fly as hi
   await app.close()
 })
 
-test('corner charm: ghost, first committed edit materializes, Escape never persists (§8.5)', async () => {
+test('identity corner note door: ghost, first edit materializes, Escape never persists (§8.5)', async () => {
   const { app, win } = await launchApp('ew-e2e-corner-')
 
   // Ghost while the board has no note.
-  await expect(win.getByTestId('corner-charm')).toHaveAttribute('data-state', 'ghost')
+  await expect(win.getByTestId('identity-corner-button')).toHaveAttribute('data-state', 'ghost')
 
   // Escape before typing: nothing ever existed.
-  await win.getByTestId('corner-charm').click()
+  await win.getByTestId('identity-corner-button').click()
+  await win.getByTestId('identity-edit-note').click()
   await expect(win.getByTestId('canvas-phantom')).toBeVisible()
   await win.getByTestId('canvas-phantom-draft').press('Escape')
   await expect(win.getByTestId('canvas-phantom')).toHaveCount(0)
@@ -460,17 +461,19 @@ test('corner charm: ghost, first committed edit materializes, Escape never persi
 
   // First committed edit: the first line becomes the title, the rest
   // the body; the charm turns solid at that moment.
-  await win.getByTestId('corner-charm').click()
+  await win.getByTestId('identity-corner-button').click()
+  await win.getByTestId('identity-edit-note').click()
   await win.getByTestId('canvas-phantom-draft').fill('Harbor Board\nwhere every voyage starts')
   await win.getByTestId('canvas-phantom-draft').blur()
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor Board/, { timeout: 10_000 })
   await expect(win.getByTestId('note-editor')).toContainText('where every voyage starts')
-  await expect(win.getByTestId('corner-charm')).toHaveAttribute('data-state', 'solid')
+  await expect(win.getByTestId('identity-corner-button')).toHaveAttribute('data-state', 'solid')
 
   // The solid charm opens straight to the note.
   await win.getByTestId('panel-close').click()
   await expect(win.getByTestId('note-pane')).toHaveCount(0)
-  await win.getByTestId('corner-charm').click()
+  await win.getByTestId('identity-corner-button').click()
+  await win.getByTestId('identity-edit-note').click()
   await expect(win.getByTestId('note-pane-title')).toHaveText(/Harbor Board/)
 
   await app.close()
@@ -542,12 +545,13 @@ test('place-on-board is ONE command; one undo removes the card and restores the 
   await app.close()
 })
 
-test('corner-charm create-and-attach undo → redo → undo preserves the note (AI-IMP-270)', async () => {
+test('identity note door create-and-attach undo → redo → undo preserves the note (AI-IMP-270)', async () => {
   const { app, win } = await launchApp('ew-e2e-compound-attach-')
 
   // The act: the first committed edit materializes note + attachment
   // as ONE revision bump, visible in the note panel.
-  await win.getByTestId('corner-charm').click()
+  await win.getByTestId('identity-corner-button').click()
+  await win.getByTestId('identity-edit-note').click()
   await expect(win.getByTestId('canvas-phantom')).toBeVisible()
   const before = await revision(win)
   await win.getByTestId('canvas-phantom-draft').fill('Ledger\nkept in salt-stained ink')
@@ -580,7 +584,7 @@ test('corner-charm create-and-attach undo → redo → undo preserves the note (
     lifecycleState: 'trashed',
   })
   // The board's charm is a ghost again: no active note anywhere.
-  await expect(win.getByTestId('corner-charm')).toHaveAttribute('data-state', 'ghost')
+  await expect(win.getByTestId('identity-corner-button')).toHaveAttribute('data-state', 'ghost')
 
   await win.evaluate(() => window.__ewUndo!.redo())
   await expect.poll(async () => {

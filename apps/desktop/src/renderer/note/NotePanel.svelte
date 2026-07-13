@@ -14,6 +14,7 @@
   import type { CanvasHostHandle } from '../canvas/host'
   import { importFilesAt } from '../canvas/import-surfaces'
   import { navigateTo } from '../chrome/navigation'
+  import { requestOpenIdentity } from '../chrome/identity'
   import { tooltip } from '../chrome/tooltip'
   import { LinkResolution } from './link-resolution'
   import { NoteEditorController, type NoteRecord, type ProjectPort } from './note-editor'
@@ -147,6 +148,21 @@
   // exists. Zero-node notes keep their §6.10 embodiment flow (Uses
   // list / outline); the control simply doesn't exist for them.
   let placeNode = $state<{ id: string; appearanceKind: string | null } | null>(null)
+  let canvasOwnerNodeId = $state<string | null>(null)
+  const identityOwnsPlaces = $derived(
+    placeNode !== null && placeNode.id === canvasOwnerNodeId,
+  )
+
+  async function refreshCanvasOwner(): Promise<void> {
+    const canvasId = handle.canvasId
+    const response = await window.ew.project.query('getCanvasScene', { canvasId })
+    if (handle.canvasId !== canvasId) return
+    canvasOwnerNodeId = response.ok && response.result !== null
+      ? (response.result as { nodeId: string }).nodeId
+      : null
+    if (record.anchor.kind === 'corner') void refreshPlaceNode()
+    if (placeNode?.id === canvasOwnerNodeId) usesOpen = false
+  }
 
   async function refreshPlaceNode(): Promise<void> {
     const project = paneProject
@@ -162,8 +178,11 @@
       if ((paneController?.note?.id ?? null) !== current) return
       const candidates = rows.filter((row) => row.noteId === current)
       // A shared note may ride several nodes (§6.4): prefer the
-      // panel's own anchor node, else the first.
-      const anchored = candidates.find((row) => row.id === subjectNodeId())
+      // panel's own placement node, or the active canvas owner when
+      // ◎ opened the note from the identity corner; else the first.
+      const preferredNodeId =
+        subjectNodeId() ?? (record.anchor.kind === 'corner' ? canvasOwnerNodeId : null)
+      const anchored = candidates.find((row) => row.id === preferredNodeId)
       placeNode = anchored ?? candidates[0] ?? null
     } catch {
       placeNode = null
@@ -1203,6 +1222,7 @@
         void refreshUses()
         void refreshMetadata()
         void refreshPlaceNode()
+        void refreshCanvasOwner()
         usesRefresh += 1
         const view = phantom
         if (view && paneProject) {
@@ -1225,10 +1245,14 @@
         registerPanelFlush(record.key, () => controller?.flushPending() ?? Promise.resolve()),
         registerPanelRename(record.key, (noteId, title) => void renameHere(noteId, title)),
         handle.controller.camera.onChanged(() => schedule()),
-        handle.onSceneApplied(() => schedule()),
+        handle.onSceneApplied(() => {
+          schedule()
+          void refreshCanvasOwner()
+        }),
       ]
       applyRequest()
       void refreshTagChips()
+      void refreshCanvasOwner()
       schedule()
     })()
 
@@ -1332,17 +1356,30 @@
       />
       {#if dirty}<span class="dirty" data-testid="note-pane-dirty" title="Unsaved burst">●</span>{/if}
       <span hidden data-testid="note-pane-title">{note.title}</span>
-      <!-- §7.4: the header always shows "⌖ n places"; clicking it
-           unfolds the uses list in-panel. -->
-      <button
-        type="button"
-        class="chrome-btn places"
-        data-testid="uses-toggle"
-        onclick={() => (usesOpen = !usesOpen)}
-        use:tooltip={{ name: 'Places — where this note lives' }}
-      >
-        ⌖ {uses?.totalPlacements ?? 0}
-      </button>
+      {#if identityOwnsPlaces}
+        <!-- The active canvas node's locations belong to the canonical
+             SELF surface. Keep the deferral visible; never silently remove
+             a door the note panel used to provide. -->
+        <button
+          type="button"
+          class="chrome-btn places identity-deferral"
+          data-testid="uses-identity-deferral"
+          onclick={requestOpenIdentity}
+          use:tooltip={{ name: 'Places live in the ◎ world identity' }}
+        >◎ places</button>
+      {:else}
+        <!-- §7.4: the header shows "⌖ n places"; clicking it unfolds
+             the uses list in-panel for every non-owner note. -->
+        <button
+          type="button"
+          class="chrome-btn places"
+          data-testid="uses-toggle"
+          onclick={() => (usesOpen = !usesOpen)}
+          use:tooltip={{ name: 'Places — where this note lives' }}
+        >
+          ⌖ {uses?.totalPlacements ?? 0}
+        </button>
+      {/if}
     {:else}
       <h2 data-testid="note-pane-title">
         {phantom ? phantom.title : record.request.kind === 'canvas-phantom' ? 'Canvas note' : 'Note'}
@@ -1579,7 +1616,7 @@
   {#if note && !phantom && metadata}
     <MetadataCard data={metadata} {activeCanvasId} onToggle={(value) => void toggleMetadata(value)} />
   {/if}
-  {#if usesOpen && note && !phantom && uses}
+  {#if usesOpen && !identityOwnsPlaces && note && !phantom && uses}
     <UsesList
       {uses}
       noteId={note.id}

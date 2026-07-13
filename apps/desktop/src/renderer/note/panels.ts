@@ -329,7 +329,7 @@ export function discardPinPhantoms(): void {
   }
 }
 
-/** The canvas corner charm (§8.5): the active canvas's own note. */
+/** The identity corner (§8.5): the active canvas's own note door. */
 export function openCornerPanel(nodeId: string, noteId: string | null): void {
   setTethered(
     noteId ? { kind: 'note', noteId } : { kind: 'canvas-phantom', nodeId },

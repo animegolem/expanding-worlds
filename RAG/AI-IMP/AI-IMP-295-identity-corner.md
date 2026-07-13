@@ -6,12 +6,12 @@ tags:
   - chrome
   - navigation
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-286]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.7
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-13
 ---
 
 # AI-IMP-295-identity-corner
@@ -74,21 +74,21 @@ e2e: identity corner open/profile-set/fly spec.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify the wireframe 6b anatomy, the reserve-
+- [x] Round-1: verify the wireframe 6b anatomy, the reserve-
       identity corner in the kit's frame drawing, the appearance
       command path for a canvas-owning node, and the §7.4 list
       owner; record corrections here.
-- [ ] ◎ button at lower-left inside the reservation frame; panel
+- [x] ◎ button at lower-left inside the reservation frame; panel
       grows from it; GR-2 exits; camera untouched by open/close.
-- [ ] Profile slot: drop + paste + browse set the canvas node's
+- [x] Profile slot: drop + paste + browse set the canvas node's
       face via existing commands, one undo group, with the beat;
       failure speaks (GR-3).
-- [ ] Note excerpt + ✎ opens the note panel (existing open path).
-- [ ] Places rows: §7.4 grammar; ⌖ flight is a §8.1 navigation
+- [x] Note excerpt + ✎ opens the note panel (existing open path).
+- [x] Places rows: §7.4 grammar; ⌖ flight is a §8.1 navigation
       event (history entry; regression test).
-- [ ] Drop-on-◎ itself does nothing (no dead-drop: the button is
+- [x] Drop-on-◎ itself does nothing (no dead-drop: the button is
       not a drop target and never advertises one).
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -103,3 +103,30 @@ flight that enters history
 
 ### Issues Encountered
 
+- Round-1 correction: no new persistence read model was needed.
+  `getCanvasScene` identifies the active canvas owner and the existing
+  `getOutlinePreview({ kind: 'node' })` projection already carries its
+  face, note excerpt, naming-safe place rows, and placement ids.
+- Round-1 correction: the old imperative `corner-charm` in
+  `charms-ui.ts` was duplicate lower-left furniture, not a reusable
+  shell. It was retired. Its existing empty-world note materialization
+  contract remains available through ◎'s ✎ door via `openCornerPanel`;
+  the old acceptance tests now exercise the new door.
+- The durable profile act is exactly one grouped
+  `SetNodeAppearance`; `importAsset` remains the ordinary managed-blob
+  ingress. A refused import never opens a group, and a refused command
+  fails stop with the sticky import-error surface. Any imported blob
+  left by a later command refusal is an ordinary GC-eligible orphan.
+- Full-file review found a shared-note interaction: a note may ride
+  several nodes, so opening it with a bare note id can make the panel's
+  first library row look like the subject. The identity door preserves
+  the existing `corner` anchor, and NotePanel prefers the active canvas
+  owner for that anchor before deciding to defer Places to ◎.
+- Validation: `pnpm check:ci` passed (commands 19/19, domain 60/60,
+  shared-ui 1/1, protocol 1/1, canvas-engine 409/409, persistence
+  658/658; workspace build, lint, and spike typecheck green). Desktop
+  units passed 553/553. Focused identity/legacy acceptance passed 5/5,
+  covering browse/drop/paste, one-undo restoration, drop-on-◎ no-op,
+  camera-stable GR-2 exit, history-backed place flight, owner-note
+  deferral, and the retained empty-world note path. The final nav-wave
+  all-shard E2E oracle remains the submission gate shared with 293.
