@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# The wave CLOSE TRAIN — runs ONLY after the lead has read
-# wave-gate.sh's evidence file and committed the close records
-# (CHANGELOG, HUMAN-TESTING, INDEX, ticket/epic state) locally.
+# The wave CLOSE TRAIN — runs ONLY after (1) the lead has read
+# wave-gate.sh's evidence file, (2) the ACCEPTANCE VERDICT is
+# WRITTEN to outbox (the archive copies whatever stands — the
+# nav-wave close archived an amend by running before the verdict),
+# and (3) the close records are COMMITTED locally
+# (CHANGELOG, HUMAN-TESTING, INDEX, ticket/epic state).
 # Mechanics only: push main, sync the local main pointer, delete
 # the ci branch, re-run the loud gates, archive the round files.
 # It refuses to run with a dirty tree (uncommitted close records
