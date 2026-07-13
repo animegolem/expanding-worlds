@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchApp, runQuery } from './helpers'
+import { openAppMenu, launchApp, runQuery } from './helpers'
 
 const PNG_1PX =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z9WQAAAAASUVORK5CYII='
@@ -26,7 +26,7 @@ test('End Session ages then sweeps an orphan, retires metadata, and manifests it
     await win.evaluate(() => window.ew.test.endSessionData('2026-01-01T00:00:00.000Z'))
     expect(existsSync(blob)).toBe(true)
 
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await win.getByTestId('menu-settings').click()
     await expect(win.getByTestId('settings-snapshots-note')).toContainText(
       'Cleanup can reclaim',

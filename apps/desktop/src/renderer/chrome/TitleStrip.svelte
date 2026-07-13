@@ -1,13 +1,14 @@
 <!--
   Hover-revealed title strip (RFC §8.2): window furniture at the top
   edge, hidden otherwise. Board identity/actions live on PathBar's
-  current crumb; this strip never owns a popover and never holds itself
-  open after the pointer leaves the band.
+  current crumb; the universal ☰ occupies the band's top-right but
+  remains independent of reveal so “never” cannot strand the app menu.
   Background EDIT mode renders as a persistent floating bar instead —
   Done/Cancel must not live behind a hover.
 -->
 <script lang="ts">
   import type { BoardTooling } from '../canvas/board-tooling'
+  import MenuPopover from './MenuPopover.svelte'
   import { fade } from 'svelte/transition'
   import { appSettings, onAppSettingsChanged } from '../settings/settings'
   import { tooltip } from './tooltip'
@@ -38,6 +39,7 @@
   const isLinux = platform !== 'darwin' && platform !== 'win32'
 
   let revealed = $state(false)
+  let menuOpen = $state(false)
   // §11.5 title-strip mode: hover-reveal (default) · always · never.
   let stripMode = $state(appSettings().titleStrip)
   $effect(() => onAppSettingsChanged((settings) => (stripMode = settings.titleStrip)))
@@ -58,8 +60,8 @@
   // would-be-chrome band (TITLE_STRIP_REVEAL_PX), NOT a pointer-events
   // overlay — the reveal-zone below is inert (pointer-events:none) so the
   // trigger arms reveal only and never sinks a canvas click beneath it.
-  // Below the band lowers the strip (the Board menu still holds it up via
-  // stripVisible while open). One source of truth for reveal/lower, so
+  // Below the band lowers the strip. ☰ is an independent top-right
+  // action and never holds the drag band up. One source of truth, so
   // there is no pointerleave-vs-band flicker in the strip's own gap.
   function onWindowPointerMove(event: PointerEvent): void {
     if (stripMode !== 'hover') return
@@ -117,6 +119,7 @@
   <div
     class="title-strip"
     class:mac={isMac}
+    class:win={platform === 'win32'}
     data-testid="title-strip"
     data-drag-region="drag"
     role="toolbar"
@@ -155,6 +158,30 @@
     {/if}
   </div>
 {/if}
+
+<!-- AI-IMP-293: ☰ owns the top-right while the title strip remains
+     pure window furniture. It is deliberately outside stripVisible:
+     the existing “never” preference hides the drag band, not the only
+     route back to Settings that can restore it. -->
+<div
+  class="title-menu no-drag"
+  class:win={platform === 'win32'}
+  class:linux={isLinux}
+>
+  <button
+    type="button"
+    class="menu-button no-drag"
+    class:active={menuOpen}
+    data-testid="charm-menu"
+    aria-label="Menu"
+    aria-expanded={menuOpen}
+    onclick={() => (menuOpen = !menuOpen)}
+    use:tooltip={{ name: 'Menu' }}
+  >☰</button>
+  {#if menuOpen}
+    <MenuPopover onclose={() => (menuOpen = false)} />
+  {/if}
+</div>
 
 {#if editing}
   <div class="bg-edit-bar" data-testid="bg-edit-bar">
@@ -225,10 +252,49 @@
     padding-left: 5rem;
   }
 
+  /* Windows' native titleBarOverlay controls own the trailing edge. */
+  .title-strip.win {
+    padding-right: 9rem;
+  }
+
   /* Every interactive child must opt back out of the drag region, or
      the OS eats the click as a window move. */
   .no-drag {
     -webkit-app-region: no-drag;
+  }
+
+  .title-menu {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.6rem;
+    z-index: 4;
+    pointer-events: auto;
+  }
+
+  .title-menu.win {
+    right: 9rem;
+  }
+
+  .title-menu.linux {
+    right: 5.8rem;
+  }
+
+  .menu-button {
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--ew-border);
+    border-radius: 7px;
+    background: var(--ew-surface-rail);
+    color: var(--ew-text);
+    cursor: pointer;
+  }
+
+  .menu-button.active {
+    background: var(--ew-accent);
+    border-color: var(--ew-accent);
+    color: var(--ew-on-accent);
   }
 
   .window-controls {

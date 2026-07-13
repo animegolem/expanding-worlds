@@ -122,6 +122,13 @@ export async function revealTitleStrip(win: Page): Promise<void> {
   await expect(win.getByTestId('title-strip')).toBeVisible()
 }
 
+/** Open the universal ☰ from its title-strip home (AI-IMP-293). */
+export async function openAppMenu(win: Page): Promise<void> {
+  if (await win.getByTestId('rail-menu').isVisible().catch(() => false)) return
+  await win.getByTestId('charm-menu').click()
+  await expect(win.getByTestId('rail-menu')).toBeVisible()
+}
+
 export async function openBoardMenu(win: Page): Promise<void> {
   if (await win.getByTestId('board-menu').isVisible().catch(() => false)) return
   await win.getByTestId('board-menu-button').click()

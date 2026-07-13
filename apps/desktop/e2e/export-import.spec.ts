@@ -2,7 +2,7 @@ import { chmodSync, existsSync, mkdtempSync, readdirSync, statSync } from 'node:
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
-import { exec, launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
+import { openAppMenu, exec, launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * §16 portable export (AI-IMP-157; container rev 0.57): the renderer →
@@ -15,7 +15,7 @@ import { exec, launchApp, launchAppInDir, runQuery, seedPlacedNote } from './hel
  */
 
 async function openSettings(win: Page): Promise<void> {
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-settings').click()
   await expect(win.getByTestId('settings-view')).toBeVisible()
 }

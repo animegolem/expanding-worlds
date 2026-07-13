@@ -1,11 +1,12 @@
 import { app, BrowserWindow, dialog, ipcMain, net, powerMonitor, protocol, session, shell, utilityProcess, type UtilityProcess } from 'electron'
-import { realpathSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { CommandEnvelope } from '@ew/commands'
 import {
   assertManagedPath,
   blobRelativePath,
+  DB_FILENAME,
   releaseImportDestination,
   reserveAvailableImportDestination,
   thumbnailRelativePath,
@@ -1085,6 +1086,29 @@ void app.whenReady().then(() => {
     BrowserWindow.fromWebContents(event.sender)?.close()
   })
   ipcMain.handle('project:ping', () => callUtility({ type: 'ping' }))
+  // AI-IMP-293: native project-directory doors. The renderer receives
+  // only a validated directory and, for switching, a one-use capability
+  // bound to the requesting webContents. Arbitrary renderer paths never
+  // reach the relaunch seam and selecting an ordinary folder can never
+  // create a project by accident.
+  ipcMain.handle('project:choose-directory', async (event, purpose: unknown) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win || (purpose !== 'switch' && purpose !== 'source')) {
+      return { ok: false, message: 'That project-directory request is not available.' }
+    }
+    const picked = await dialog.showOpenDialog(win, {
+      title: purpose === 'switch' ? 'Switch world' : 'Open folder as source',
+      properties: ['openDirectory'],
+    })
+    if (picked.canceled || picked.filePaths.length === 0) return null
+    const dir = picked.filePaths[0]!
+    if (!existsSync(join(dir, DB_FILENAME))) {
+      return { ok: false, message: 'That folder is not an Expanding Worlds project.' }
+    }
+    return purpose === 'switch'
+      ? { ok: true, dir, openToken: materializedProjectOpens.issue(event.sender, dir) }
+      : { ok: true, dir }
+  })
   ipcMain.handle('project:execute', (_event, envelope: CommandEnvelope) =>
     callUtility({ type: 'execute-command', envelope }),
   )

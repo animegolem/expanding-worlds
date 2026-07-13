@@ -65,6 +65,7 @@
   import { navigateTo } from '../chrome/navigation'
   import {
     acquireSourceSlot,
+    openSourcePanel,
     releaseSourceSlot,
     sourceSlotHolder,
   } from '../chrome/source-slot'
@@ -220,6 +221,7 @@
   let libraryError = $state<string | null>(null)
   let mirrorOff = $state(false)
   let libraryDirInput = $state('')
+  let choosingSource = $state(false)
   // 094: create-new-library path + clear-the-example affordance.
   let creatingLibrary = $state(false)
   let hasExample = $state(false)
@@ -244,6 +246,27 @@
   })
 
   const scopeReady = $derived(scope === 'this-world' || sourceOpen)
+
+  /** AI-IMP-293: ⧉'s old raw-path action moves into the gallery's
+   * scope chrome and becomes a native, main-validated folder choice.
+   * The takeover closes before the pinned source panel opens, matching
+   * every close-then-act chrome transition. */
+  async function chooseSourceProject(): Promise<void> {
+    if (choosingSource) return
+    choosingSource = true
+    try {
+      const chosen = await window.ew.project.chooseDirectory('source')
+      if (!chosen) return
+      if (!chosen.ok) {
+        toast(chosen.message, { kind: 'error', surface: 'gallery' })
+        return
+      }
+      closeTakeover()
+      openSourcePanel(chosen.dir)
+    } finally {
+      choosingSource = false
+    }
+  }
 
   // ---------------------------------------------------- 078 facets
   // Facet state is view state (§14.4): it composes into the index
@@ -1203,6 +1226,16 @@
         everything
       </button>
     </span>
+    <button
+      type="button"
+      class="open-source"
+      data-testid="gallery-open-source"
+      disabled={choosingSource}
+      onclick={() => void chooseSourceProject()}
+      use:tooltip={{ name: 'Open another world as a read-only source' }}
+    >
+      {choosingSource ? 'Opening…' : 'Open folder as source…'}
+    </button>
     <!-- 168: thumbnail-size slider (§14.4 rev 0.55) — rescales the
          bucketed grid live; the choice persists app-tier. -->
     <label class="thumb-size" use:tooltip={{ name: 'Thumbnail size' }}>
@@ -1490,6 +1523,25 @@
     align-items: center;
     gap: 0.4rem;
     color: var(--ew-text-muted);
+  }
+
+  .open-source {
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--ew-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ew-text-muted);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .open-source:hover:not(:disabled) {
+    background: var(--ew-surface-raised);
+  }
+
+  .open-source:disabled {
+    opacity: 0.55;
+    cursor: default;
   }
 
   .thumb-size input[type='range'] {

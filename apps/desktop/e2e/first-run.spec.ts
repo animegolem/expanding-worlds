@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchApp, launchAppInDir, seedPlacedNote } from './helpers'
+import { openAppMenu, launchApp, launchAppInDir, seedPlacedNote } from './helpers'
 
 /**
  * §19 first-run walkthrough (AI-IMP-145): the guide shows EXACTLY ONCE
@@ -132,7 +132,7 @@ test('the Settings replay action re-opens the guide', async () => {
   await win.getByTestId('first-run-skip').click()
   await expect(win.getByTestId('first-run-guide')).toHaveCount(0)
 
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-settings').click()
   await expect(win.getByTestId('settings-view')).toBeVisible()
   await win.getByTestId('settings-replay-guide').click()
@@ -189,7 +189,7 @@ test('a replayed guide blocks board input — Delete cannot reach a live selecti
 
   // Select it on the live board, then replay the guide over it.
   await win.keyboard.press(process.platform === 'darwin' ? 'Meta+a' : 'Control+a')
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-settings').click()
   await win.getByTestId('settings-replay-guide').click()
   await expect(win.getByTestId('first-run-guide')).toBeVisible()

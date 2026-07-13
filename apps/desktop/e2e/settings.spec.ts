@@ -2,7 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
-import { exec, launchApp, launchAppInDir, revision } from './helpers'
+import { openAppMenu, exec, launchApp, launchAppInDir, revision } from './helpers'
 
 /**
  * §11.5 settings takeover (AI-IMP-074): commit-on-click with no save
@@ -13,7 +13,7 @@ import { exec, launchApp, launchAppInDir, revision } from './helpers'
  */
 
 async function openSettings(win: Page): Promise<void> {
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-settings').click()
   await expect(win.getByTestId('settings-view')).toBeVisible()
 }
@@ -112,12 +112,17 @@ test('settings commit on click, apply live, and persist per tier across relaunch
     'arrives with the grid feature',
   )
 
-  // 'never' kills both the strip and its reveal zone live.
+  // 'never' kills both the drag strip and its reveal zone live, but
+  // AI-IMP-293's sole top-right ☰ remains — Settings cannot strand its
+  // own recovery route.
   await second.win.getByTestId('settings-title-strip-never').click()
   await second.win.keyboard.press('Escape')
   await expect(second.win.getByTestId('settings-view')).toHaveCount(0)
   await expect(second.win.getByTestId('title-strip')).toHaveCount(0)
   await expect(second.win.getByTestId('title-strip-reveal')).toHaveCount(0)
+  await expect(second.win.getByTestId('charm-menu')).toBeVisible()
+  await openAppMenu(second.win)
+  await expect(second.win.getByTestId('rail-menu')).toBeVisible()
   await second.app.close()
 })
 

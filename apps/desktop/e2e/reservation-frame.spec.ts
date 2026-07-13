@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { launchApp } from './helpers'
+import { openAppMenu, launchApp } from './helpers'
 
 test('reservation frame owns takeover edges and search uses its centered top-flush contract', async () => {
   const { app, win } = await launchApp('ew-e2e-reservation-frame-')
@@ -17,7 +17,7 @@ test('reservation frame owns takeover edges and search uses its centered top-flu
   expect(palette!.y + palette!.height).toBeLessThanOrEqual(viewport.height - 114)
   await win.getByTestId('search-close').click()
 
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-settings').click()
   const takeover = win.getByTestId('takeover-settings')
   await expect(takeover).toBeVisible()

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { launchApp } from './helpers'
+import { openAppMenu, launchApp } from './helpers'
 
 /**
  * AI-IMP-142 equivalence spot check: the migrated surfaces now render
@@ -99,7 +99,7 @@ test('compound search field keeps a bare shared input inside palette-owned furni
 test('standard field (settings remote) renders the shared skin at 5px', async () => {
   const { app, win } = await launchApp('ew-e2e-input-standard-')
   try {
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await win.getByTestId('menu-settings').click()
     await expect(win.getByTestId('settings-view')).toBeVisible()
     await win.getByTestId('settings-snapshots-commit-push').click()
