@@ -51,7 +51,9 @@ function placement(overrides: Partial<ScenePlacement> = {}): ScenePlacement {
 
 function harness(initial: ScenePlacement = placement()) {
   let current = initial
-  const execute = vi.fn(async () => ({ status: 'committed', newRevision: 2, inverse: null }))
+  const execute = vi.fn(async () => ({ status: 'committed', revision: 2, inverse: null }))
+  const captionPop = vi.fn()
+  const whenSceneApplied = vi.fn(async () => {})
   const element = document.createElement('div')
   Object.defineProperty(element, 'getBoundingClientRect', {
     value: () => ({ x: 0, y: 0, left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 }),
@@ -66,6 +68,8 @@ function harness(initial: ScenePlacement = placement()) {
       },
     },
     gateway: { execute },
+    beats: { captionPop },
+    whenSceneApplied,
     onSceneApplied: () => () => {},
   } as unknown as CanvasHostHandle
   const errors: string[] = []
@@ -73,6 +77,8 @@ function harness(initial: ScenePlacement = placement()) {
   return {
     element,
     execute,
+    captionPop,
+    whenSceneApplied,
     errors,
     handle,
     setPlacement(next: ScenePlacement) {
@@ -99,6 +105,8 @@ describe('placement caption editor (§4.5)', () => {
       placementId: 'placement-1',
       caption: 'I like the blue',
     })
+    await vi.waitFor(() => expect(h.captionPop).toHaveBeenCalledWith(['placement-1']))
+    expect(h.whenSceneApplied).toHaveBeenCalledWith({ revision: 2 })
     h.handle.destroy()
   })
 
@@ -129,6 +137,20 @@ describe('placement caption editor (§4.5)', () => {
       placementId: 'placement-1',
       caption: null,
     })
+    expect(h.captionPop).not.toHaveBeenCalled()
+    h.handle.destroy()
+  })
+
+  it('does not replay the birth beat when editing an existing caption', async () => {
+    const h = harness(placement({ caption: 'before' }))
+    requestCaptionEditor('placement-1')
+    await Promise.resolve()
+    const editor = h.element.querySelector<HTMLTextAreaElement>('[data-testid="caption-editor"]')!
+    editor.value = 'after'
+    editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await vi.waitFor(() => expect(h.execute).toHaveBeenCalledTimes(1))
+    expect(h.captionPop).not.toHaveBeenCalled()
+    expect(h.whenSceneApplied).not.toHaveBeenCalled()
     h.handle.destroy()
   })
 
@@ -160,7 +182,7 @@ describe('placement caption editor (§4.5)', () => {
       () =>
         new Promise((resolve) => {
           settleFirst = () =>
-            resolve({ status: 'committed', newRevision: 2, inverse: null })
+            resolve({ status: 'committed', revision: 2, inverse: null })
         }),
     )
     requestCaptionEditor('placement-1')

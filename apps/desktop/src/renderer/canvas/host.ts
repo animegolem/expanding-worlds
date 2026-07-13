@@ -9,6 +9,7 @@ import {
   createDefaultRegistry,
   createScenePlanes,
   cssColorToNumber,
+  captionPopScale,
   DragBeat,
   approachClearance,
   awayDisplay,
@@ -48,6 +49,7 @@ import {
   setPlacementTextureResident,
   syncFrameRegionStroke,
   syncPlacementIconLod,
+  syncPlacementCaptionPop,
   syncPlacementLabelOffset,
   TextureBudget,
   ToolManager,
@@ -76,6 +78,7 @@ import { Application, Container, Graphics, Texture } from 'pixi.js'
 import {
   EW_BEAT_AWAY_MS,
   EW_BEAT_AWAY_RISE_PX,
+  EW_BEAT_CAPTION_POP_MS,
   EW_BEAT_LIFT_MS,
   EW_BEAT_LIFT_SCALE,
   EW_BEAT_MAKE_ROOM_PX,
@@ -195,6 +198,7 @@ export interface CanvasHostHandle {
   beats: {
     strain(ids: readonly string[]): void
     away(ids: readonly string[]): void
+    captionPop(ids: readonly string[]): void
   }
   destroy(): void
 }
@@ -259,6 +263,15 @@ declare global {
       /** AI-IMP-087: the placement label's on-screen bounds (CSS px,
        * stage frame) — null when the placement has no label. */
       labelBounds: (id: string) => { x: number; y: number; width: number; height: number } | null
+      /** AI-IMP-297: actual caption-plaque local geometry + session
+       * birth count, proving centered/narrow layout and no replay. */
+      captionPlaque: (id: string) => {
+        width: number
+        height: number
+        centerX: number
+        bodyWidth: number
+        birthCount: number
+      } | null
       /** AI-IMP-087: outline/label clearance constants as shipped, so
        * e2e asserts against the real numbers (workspace dist is not
        * node-importable from a spec). */
@@ -429,6 +442,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       border: cssColorToNumber(themeTokenValue('--ew-frame-border')),
       label: cssColorToNumber(themeTokenValue('--ew-frame-label')),
     }),
+    plaqueColors: () => ({
+      face: cssColorToNumber(themeTokenValue('--ew-plaque-face')),
+      border: cssColorToNumber(themeTokenValue('--ew-plaque-border')),
+      text: cssColorToNumber(themeTokenValue('--ew-plaque-text')),
+      shadow: cssColorToNumber(themeTokenValue('--ew-plaque-shadow')),
+    }),
     // §8.5 radius + shared-texture shadow for image bodies (AI-IMP-140).
     imageTreatment: () => imageTreatment,
   }
@@ -507,6 +526,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const nudgeBeats = new Map<string, { seed: { x: number; y: number }; elapsed: number }>()
   const strainBeats = new Map<string, { elapsed: number }>()
   const pressBeats = new Map<string, { elapsed: number }>()
+  const captionPops = new Map<string, { elapsed: number }>()
+  const captionPopCounts = new Map<string, number>()
   // Make-room: eased clearance (screen px) per frame member while a drag
   // hovers its frame — the one allowed anticipatory motion.
   const makeRoom = new Map<
@@ -599,6 +620,18 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     object.position.set(item.x + worldX + pxX / zoom, item.y + worldY + pxY / zoom)
   }
 
+  function applyCaptionPop(id: string): void {
+    const item = sync.item(id)
+    const object = sync.get(id)
+    if (!object || item?.itemKind !== 'placement' || item.caption === null) return
+    const beat = captionPops.get(id)
+    syncPlacementCaptionPop(
+      object,
+      item,
+      beat ? captionPopScale(beat.elapsed, EW_BEAT_CAPTION_POP_MS) : 1,
+    )
+  }
+
   function redrawDragShadow(): void {
     dragShadowGfx.clear()
     if (dragBeats.size === 0) {
@@ -631,6 +664,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       nudgeBeats.size === 0 &&
       strainBeats.size === 0 &&
       pressBeats.size === 0 &&
+      captionPops.size === 0 &&
       makeRoom.size === 0 &&
       awayGhosts.length === 0
     )
@@ -678,6 +712,14 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         applyBeatTransform(id) // hold the steady −1%
       }
     }
+    for (const [id, pop] of captionPops) {
+      pop.elapsed += dt
+      applyCaptionPop(id)
+      if (pop.elapsed >= EW_BEAT_CAPTION_POP_MS) {
+        captionPops.delete(id)
+        applyCaptionPop(id)
+      }
+    }
     for (const [id, room] of makeRoom) {
       room.cur.x = approachClearance(room.cur.x, room.target.x, dt, EW_BEAT_MAKE_ROOM_TAU_MS)
       room.cur.y = approachClearance(room.cur.y, room.target.y, dt, EW_BEAT_MAKE_ROOM_TAU_MS)
@@ -722,6 +764,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       ) {
         applyBeatTransform(item.id)
       }
+      if (captionPops.has(item.id)) applyCaptionPop(item.id)
     }
   }
 
@@ -789,11 +832,23 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
   }
 
+  function popCaptions(ids: readonly string[]): void {
+    for (const id of ids) {
+      const item = sync.item(id)
+      if (item?.itemKind !== 'placement' || item.caption === null) continue
+      captionPops.set(id, { elapsed: 0 })
+      captionPopCounts.set(id, (captionPopCounts.get(id) ?? 0) + 1)
+      applyCaptionPop(id)
+    }
+  }
+
   function resetBeats(): void {
     dragBeats.clear()
     nudgeBeats.clear()
     strainBeats.clear()
     pressBeats.clear()
+    captionPops.clear()
+    captionPopCounts.clear()
     makeRoom.clear()
     roomActive.clear()
     lockedWas.clear()
@@ -2069,6 +2124,19 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const bounds = label.getBounds()
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
     },
+    captionPlaque: (id: string) => {
+      const item = sync.item(id)
+      const plaque = sync.get(id)?.children.find((child) => child.label === 'caption-plaque')
+      if (!plaque || item?.itemKind !== 'placement') return null
+      const bounds = plaque.getLocalBounds()
+      return {
+        width: bounds.width,
+        height: bounds.height,
+        centerX: bounds.x + bounds.width / 2,
+        bodyWidth: item.width ?? item.assetWidth ?? 0,
+        birthCount: captionPopCounts.get(id) ?? 0,
+      }
+    },
     outlineChrome: () => ({
       pad: SELECTION_OUTLINE_PAD_PX,
       stroke: SELECTION_OUTLINE_STROKE_PX,
@@ -2157,6 +2225,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     beats: {
       strain: strainItems,
       away: liftAway,
+      captionPop: popCaptions,
     },
     destroy() {
       textureBudget.releaseAll()

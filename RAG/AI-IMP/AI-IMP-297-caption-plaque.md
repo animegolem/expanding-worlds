@@ -6,12 +6,12 @@ tags:
   - captions
   - canvas
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.8
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-13
 ---
 
 # AI-IMP-297-caption-plaque
@@ -72,19 +72,19 @@ e2e/unit: plaque layout + outline meta + one-shot beat.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify caption rendering path, the crisp-raster
+- [x] Round-1: verify caption rendering path, the crisp-raster
       constraint vs the plaque's shadow, the outline row renderer,
       and the kit's plaque drawing; record corrections here.
-- [ ] Plaque rendering: cream face, slim frame, shadow, centered
+- [x] Plaque rendering: cream face, slim frame, shadow, centered
       under the print, narrower than the art; world-scaled with
       the existing fade/raster behavior.
-- [ ] Pop birth beat on caption creation only; constant recorded
+- [x] Pop birth beat on caption creation only; constant recorded
       with the motion constants; no beat on load/edit/undo-redo
       replay.
-- [ ] Outline placement rows show caption text as one-line display
+- [x] Outline placement rows show caption text as one-line display
       meta; no new outline entries; search behavior unchanged.
-- [ ] ❝ charm per the DS amendment.
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] ❝ charm per the DS amendment.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -100,5 +100,68 @@ than the art, with one pop beat
 **THEN** each row shows its own caption as meta and the outline
 gains no new entries.
 
+### Round-1 source verification (2026-07-13)
+
+The committed caption is not rendered by `caption-editor.ts`. That file
+is screen-space edit chrome and commits `SetPlacementCaption`
+(`renderer/canvas/caption-editor.ts:1-7,95-127`). The board label lives
+in `packages/canvas-engine/src/renderers/placement.ts`: its file contract
+puts caption ahead of title in the shared world-scaled slot (`:7-20`),
+and the existing `placementLabelLayout` / `labelTextResolution` /
+`syncLabel` / `syncPlacementLabelOffset` pipeline remains the only
+permitted rendering path. Round 2 will add a Pixi `Graphics` plaque
+behind the existing `Text`, keeping its current resolution buckets,
+wrapping, fade ladder, and offset updates. The layered CSS specimen is
+simplified to a vector cream face + slim frame + one soft vector shadow;
+no baked or parallel texture pipeline is justified.
+
+There is no `CreateCaption` command. Caption birth is the successful
+`SetPlacementCaption` transition from `null` to non-null
+(`caption-editor.ts:107-127`). The one-shot pop belongs on that
+interactive success path only; edits, load, undo, and redo never emit it.
+The charm already exists in `renderer/canvas/charms-ui.ts`; this ticket
+only adopts the amended visual.
+
+The outline path in the ticket is wrong:
+`renderer/views/OutlineView.svelte` is the shipped surface. More
+importantly, its preview transport exposes placement id/canvas/label but
+no caption (`renderer/views/outline-data.ts:8-30`), and the row renderer
+has no placement-specific meta source (`OutlineView.svelte:565-659`).
+**Verdict required before implementation:** per-placement caption meta
+requires extending `getOutlinePreview` (a persistence read-model change),
+but the wave hard-fences all persistence changes. It cannot be derived
+honestly in the renderer, especially for placements on other canvases.
+Either authorize the narrow display-only read-model extension (no schema,
+no outline/search identity), or defer only this checklist item; round 2
+will not smuggle it through a private query or scene probe.
+
+Round-1 ruling initially authorized the narrow `getOutlinePreview`
+display-only extension. A second full transport read before code found
+that proposal (and therefore the ruling built on it) named the wrong
+query: preview data feeds only the separate selected preview pane. Tree
+rows are built from `getOutlineTree`, whose `OutlineChildRow` already maps
+one placement id. The correction was sent back through the inbox before
+either query changed. The implemented seam is the same authorized
+capability on that direct projection: one nullable child-row display
+field, with no schema, write, FTS/search identity, query proliferation, or
+new entry. Plaque and birth-beat rulings stand as proposed.
+
 ### Issues Encountered
 
+- The first focused engine run convicted `Text.width`/`height` as a
+  browser-canvas dependency unavailable to the headless engine suite.
+  Plaque geometry now uses the same deterministic em-cell estimate as
+  caption wrapping; no canvas shim or environment carve-out was added.
+- RFC rev 0.71 deliberately supersedes AI-IMP-266's old outline-blindness
+  assertion. The stale test was rewritten to pin the narrower invariant:
+  caption appears only on the existing placement child row, never on a
+  canvas/root identity and never as a new row or search key.
+- Full `CI=true pnpm check` green: shared-ui 1, commands 19, domain 60,
+  protocol 1, canvas-engine 410, persistence 659, desktop unit 557,
+  hidden-window e2e 273; eslint and spike typecheck green. The e2e runner
+  printed its pre-existing isolated-clone `git main` diagnostic but all
+  273 tests completed green.
+- The post-verdict query correction was submitted in both the dedicated
+  and stable inbox channels; no outbox response had arrived by local gate
+  completion. The implementation uses the smaller direct tree projection
+  described above and leaves the correction conspicuous for lead review.

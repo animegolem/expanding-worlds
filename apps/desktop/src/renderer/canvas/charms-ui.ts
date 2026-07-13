@@ -658,7 +658,7 @@ export function attachCharmsUi(
     cropButton.style.cursor = isImage ? 'pointer' : 'default'
     barTips.get(cropButton)?.update(isImage ? cropTipSpec : cropDisabledTipSpec)
   }
-  const captionButton = barButton('charm-caption', '✎', { name: 'Add caption' }, () => {
+  const captionButton = barButton('charm-caption', '❝', { name: 'Add caption' }, () => {
     const placement = selectedPlacement()
     if (placement?.appearanceKind === 'image') requestCaptionEditor(placement.id)
   })

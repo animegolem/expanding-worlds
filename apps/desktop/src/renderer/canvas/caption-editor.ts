@@ -125,6 +125,14 @@ export function attachCaptionEditor(
       return
     }
     close()
+    // Birth is exactly null → non-null on this interactive success path.
+    // Wait for the committed scene so the plaque exists before its
+    // display-only beat is armed. Load, edit, removal, undo, and redo do
+    // not cross this seam and therefore cannot replay the pop.
+    if (placement.caption === null && next !== null) {
+      await host.whenSceneApplied({ revision: result.revision })
+      host.beats.captionPop([placement.id])
+    }
   }
 
   function open(request: CaptionEditorRequest): void {

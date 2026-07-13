@@ -628,7 +628,12 @@
             }}
           >
             <span class="kind-glyph">{row.glyph}</span>
-            <span class:identity-fallback={row.titleFallback !== 'none'} class="row-title">{row.title}</span>
+            <span class="row-copy">
+              <span class:identity-fallback={row.titleFallback !== 'none'} class="row-title">{row.title}</span>
+              {#if row.caption}
+                <span class="caption-meta" data-testid="outline-caption-meta">{row.caption}</span>
+              {/if}
+            </span>
           </button>
 
           <span class="badges">
@@ -896,6 +901,13 @@
     cursor: default;
   }
 
+  .row-copy {
+    display: inline-flex;
+    min-width: 0;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+
   .kind-glyph {
     flex: none;
     width: 1.1rem;
@@ -911,6 +923,15 @@
   .row-title {
     overflow: hidden;
     color: var(--ew-text-soft);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .caption-meta {
+    overflow: hidden;
+    color: var(--ew-text-muted);
+    font-size: 0.7rem;
+    font-style: italic;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

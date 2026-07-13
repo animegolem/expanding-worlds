@@ -133,7 +133,7 @@ async function note(win: Page, noteId: string): Promise<NoteRow> {
   return runQuery<NoteRow>(win, 'getNote', { noteId })
 }
 
-test('caption is placement-local, replaces its title label, persists, stays out of outline, and is one undo', async () => {
+test('caption is placement-local, replaces its title label, persists, stays out of outline identity, and is one undo', async () => {
   const launched = await launchApp('ew-e2e-caption-')
   let app = launched.app
   let win = launched.win
@@ -183,12 +183,40 @@ test('caption is placement-local, replaces its title label, persists, stays out 
     await win.getByTestId('caption-editor').press('Enter')
     await expect.poll(() => captionOf(win, firstPlacementId)).toBe(thought)
     expect(await captionOf(win, secondPlacementId)).toBeNull()
+    await expect
+      .poll(() => win.evaluate((id) => window.__ewDebug!.captionPlaque(id), firstPlacementId))
+      .toMatchObject({ birthCount: 1, bodyWidth: 240 })
+    const plaqueGeometry = await win.evaluate(
+      (id) => window.__ewDebug!.captionPlaque(id),
+      firstPlacementId,
+    )
+    expect(plaqueGeometry).not.toBeNull()
+    expect(plaqueGeometry!.width).toBeLessThan(plaqueGeometry!.bodyWidth)
+    expect(plaqueGeometry!.centerX).toBeCloseTo(0)
     // The caption occupies the first placement text slot; its title is
     // not stacked. The second placement of the same node keeps its title.
     await expect.poll(() => labels(win)).toEqual([thought, title].sort())
 
-    const outline = await runQuery<unknown>(win, 'getOutlineTree')
-    expect(JSON.stringify(outline)).not.toContain(thought)
+    const outline = await runQuery<
+      Array<{ children: Array<{ placementId: string; nodeId: string; caption: string | null }> }>
+    >(win, 'getOutlineTree')
+    const nodeRows = outline.flatMap((canvas) => canvas.children).filter((row) => row.nodeId === nodeId)
+    expect(nodeRows).toHaveLength(2)
+    expect(nodeRows.map((row) => [row.placementId, row.caption])).toEqual([
+      [firstPlacementId, thought],
+      [secondPlacementId, null],
+    ])
+
+    // Caption text is display meta on the placement's existing row —
+    // never a new entry and never the row's navigation identity.
+    await pinEngagement(win)
+    await win.getByTestId('charm-outline').click()
+    const outlineRows = win.getByTestId('outline-tree').locator(`[data-node-id="${nodeId}"]`)
+    await expect(outlineRows).toHaveCount(2)
+    await expect(outlineRows.getByTestId('outline-caption-meta')).toHaveCount(1)
+    await expect(outlineRows.getByTestId('outline-caption-meta')).toHaveText(thought)
+    await win.keyboard.press('Escape')
+    await expect(win.getByTestId('outline-view')).toHaveCount(0)
 
     await expect.poll(() => win.evaluate(() => window.__ewUndo !== undefined)).toBe(true)
     await win.evaluate(() => window.__ewUndo!.undo())
@@ -208,6 +236,9 @@ test('caption is placement-local, replaces its title label, persists, stays out 
     win = relaunched.win
     await expect.poll(() => captionOf(win, firstPlacementId)).toBe(thought)
     await expect.poll(() => labels(win)).toEqual([thought, title].sort())
+    await expect
+      .poll(() => win.evaluate((id) => window.__ewDebug!.captionPlaque(id), firstPlacementId))
+      .toMatchObject({ birthCount: 0 })
 
     // Edit pre-fills; committing empty clears. This also proves the menu
     // reflects the live Add/Edit state.
@@ -216,6 +247,9 @@ test('caption is placement-local, replaces its title label, persists, stays out 
     await win.getByTestId('caption-editor').fill('')
     await win.getByTestId('caption-editor').press('Enter')
     await expect.poll(() => captionOf(win, firstPlacementId)).toBeNull()
+    await expect
+      .poll(() => win.evaluate((id) => window.__ewDebug!.captionPlaque(id), firstPlacementId))
+      .toBeNull()
 
     // The image-only charm is the second entry surface and opens the
     // same editor instance. (The engagement clock is pinned for hidden
@@ -224,11 +258,15 @@ test('caption is placement-local, replaces its title label, persists, stays out 
     const host = (await win.getByTestId('canvas-host').boundingBox())!
     await win.mouse.click(host.x + firstAt.x, host.y + firstAt.y)
     await expect(win.getByTestId('charm-caption')).toBeVisible()
+    await expect(win.getByTestId('charm-caption')).toHaveText('❝')
     await win.getByTestId('charm-caption').click()
     await expect(win.getByTestId('caption-editor')).toBeVisible()
     await win.getByTestId('caption-editor').fill('Charm thought')
     await win.getByTestId('caption-editor').press('Enter')
     await expect.poll(() => captionOf(win, firstPlacementId)).toBe('Charm thought')
+    await expect
+      .poll(() => win.evaluate((id) => window.__ewDebug!.captionPlaque(id), firstPlacementId))
+      .toMatchObject({ birthCount: 1 })
     expect(await captionOf(win, secondPlacementId)).toBeNull()
   } finally {
     await app.close().catch(() => undefined)

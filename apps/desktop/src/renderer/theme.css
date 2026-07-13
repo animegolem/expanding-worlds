@@ -211,6 +211,13 @@
   --ew-tape-surface: rgba(214, 205, 182, 0.6);
   --ew-tape-border: rgba(160, 150, 125, 0.4);
   --ew-paper-torn: #f7f3ea;
+  /* §4.5 caption plaque (AI-IMP-297): museum paper in a slim metal
+     frame. The plaque stays cream across app themes because it is world
+     material, not chrome. */
+  --ew-plaque-face: #f4edda;
+  --ew-plaque-border: #9b9486;
+  --ew-plaque-text: #332f28;
+  --ew-plaque-shadow: #090b0e;
 
   /* Object icon set (Icon Document 2b family): top-light gradient
      pairs, stroke ≈ -lo darkened ~20%, restrained gloss. One color

@@ -9,6 +9,10 @@ export type OutlineFacet = 'all' | 'unplaced' | 'orphans' | 'disconnected' | 'un
 
 export interface OutlineChild {
   placementId: string
+  /** §4.5 display meta for this placement's existing row. It is never
+   * a row identity or a search key. Optional while older query fakes
+   * exercise the pre-rev-0.71 transport shape. */
+  caption?: string | null
   nodeId: string
   renderOrder: number
   appearanceKind: string | null
@@ -101,6 +105,7 @@ export interface OutlineViewRow {
   orphan: boolean
   untagged: boolean
   placementCount: number
+  caption: string | null
   selection: OutlineSelection
   node?: OutlineChild | OutlineLibraryNode
   note?: OutlineLooseNote
@@ -183,6 +188,7 @@ export function buildOutlineRows(options: BuildOutlineRowsOptions): OutlineViewR
       orphan: child.noteId === null,
       untagged: !nested && child.tags.length === 0,
       placementCount: child.placementCount,
+      caption: child.caption ?? null,
       selection: {
         key: branchKey,
         kind: child.childCanvasId ? 'board' : 'node',
@@ -253,6 +259,7 @@ export function buildOutlineRows(options: BuildOutlineRowsOptions): OutlineViewR
       orphan: looseOwner?.noteId === null,
       untagged: false,
       placementCount: 0,
+      caption: null,
       selection: {
         key: `canvas:${canvas.canvasId}`,
         kind: canvas.isRoot ? 'root' : 'board',
@@ -294,6 +301,7 @@ export function buildOutlineRows(options: BuildOutlineRowsOptions): OutlineViewR
     orphan: false,
     untagged: false,
     placementCount: 0,
+    caption: null,
     selection: {
       key: 'bin',
       kind: 'bin',
@@ -332,6 +340,7 @@ export function buildOutlineRows(options: BuildOutlineRowsOptions): OutlineViewR
         orphan: node.noteId === null,
         untagged: kind !== 'board' && node.tags.length === 0,
         placementCount: 0,
+        caption: null,
         selection: {
           key: `loose-node:${node.id}`,
           kind: node.childCanvasId ? 'board' : 'node',
@@ -367,6 +376,7 @@ export function buildOutlineRows(options: BuildOutlineRowsOptions): OutlineViewR
         orphan: false,
         untagged: false,
         placementCount: 0,
+        caption: null,
         selection: {
           key: `loose-note:${note.id}`,
           kind: 'note',

@@ -97,6 +97,12 @@ export interface RendererResources {
    */
   frameColors?: () => { fill: number; border: number; label: number }
   /**
+   * §4.5 caption plaque colors (AI-IMP-297), resolved from theme tokens
+   * by the host. The plaque remains in the shared world-label pipeline;
+   * this seam carries presentation colors only.
+   */
+  plaqueColors?: () => { face: number; border: number; text: number; shadow: number }
+  /**
    * §8.2 object-icon atlas (AI-IMP-132): the shared icon texture set,
    * loaded and token-resolved by the host. Absent means the icon
    * branch renders the generic glyph fallback (minimal test hosts).

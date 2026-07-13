@@ -5,6 +5,7 @@ import { itemWorldAABB } from '../hit-test'
 import {
   CARD_DEFAULT_HEIGHT,
   CARD_DEFAULT_WIDTH,
+  CAPTION_PLAQUE_WIDTH_RATIO,
   CAPTION_MAX_LINES,
   DEFAULT_DOT_RADIUS,
   LABEL_CLEARANCE_PX,
@@ -12,6 +13,7 @@ import {
   LABEL_OUTLINE_GAP_PX,
   SELECTION_OUTLINE_PAD_PX,
   SELECTION_OUTLINE_STROKE_PX,
+  captionPopScale,
   cssColorToNumber,
   cropFillMatrix,
   labelTextResolution,
@@ -21,6 +23,7 @@ import {
   placementRenderedMaxEdge,
   placementRenderer,
   setPlacementTextureResident,
+  syncPlacementCaptionPop,
   syncPlacementLabelOffset,
 } from './placement'
 import { NineSliceSprite, Rectangle, Texture } from 'pixi.js'
@@ -476,7 +479,11 @@ describe('placement labels (§4.5)', () => {
     const label = labelOf(object)!
     expect(label.text).toBe(placementLabelLayout(item)!.text)
     expect(label.style.wordWrap).toBe(true)
-    expect(label.style.wordWrapWidth).toBe(180)
+    expect(label.style.wordWrapWidth).toBeLessThan(180)
+    const plaque = object.getChildByLabel('caption-plaque') as Graphics
+    expect(plaque).toBeTruthy()
+    expect(plaque.width).toBeLessThanOrEqual(180 * CAPTION_PLAQUE_WIDTH_RATIO)
+    expect(object.getChildIndex(plaque)).toBeLessThan(object.getChildIndex(label))
   })
 
   it('renders a caption without a note and labelVisible hides it', () => {
@@ -516,7 +523,11 @@ describe('placement labels (§4.5)', () => {
     expect(layout.lineCount).toBe(CAPTION_MAX_LINES)
     expect(layout.text.split('\n')).toHaveLength(CAPTION_MAX_LINES)
     expect(layout.text.endsWith('…')).toBe(true)
-    expect(labelOf(placementRenderer.create(item, fakeResources()))!.text).toBe(layout.text)
+    const object = placementRenderer.create(item, fakeResources())
+    expect(labelOf(object)!.text).toBe(layout.text)
+    expect((object.getChildByLabel('caption-plaque') as Graphics).width).toBeLessThan(
+      item.width!,
+    )
   })
 
   it('splits wide and Unicode words while treating explicit newlines as hard breaks', () => {
@@ -560,10 +571,28 @@ describe('placement labels (§4.5)', () => {
     const object = placementRenderer.create(item, resources)
     const edited = { ...item, caption: 'Edited caption' }
     placementRenderer.update(object, edited, item, resources)
-    expect(labelOf(object)!.text).toBe('Edited caption')
+    expect(labelOf(object)!.text).toBe(placementLabelLayout(edited)!.text)
     const cleared = { ...edited, caption: null }
     placementRenderer.update(object, cleared, edited, resources)
     expect(labelOf(object)!.text).toBe('Title')
+    expect(object.getChildByLabel('caption-plaque')).toBeNull()
+  })
+
+  it('applies a plaque-only one-shot birth curve and lands exactly at rest', () => {
+    const item = makePlacement({ caption: 'Born here', width: 160, height: 80 })
+    const object = placementRenderer.create(item, fakeResources())
+    const label = labelOf(object)!
+    const plaque = object.getChildByLabel('caption-plaque') as Graphics
+    expect(captionPopScale(0, 280)).toBeCloseTo(0.92)
+    expect(captionPopScale(190, 280)).toBeGreaterThan(1)
+    expect(captionPopScale(280, 280)).toBe(1)
+    syncPlacementCaptionPop(object, item, captionPopScale(0, 280))
+    expect(label.scale.x).toBeCloseTo(0.92)
+    expect(plaque.scale.x).toBeCloseTo(0.92)
+    expect(object.scale.x).toBe(1)
+    syncPlacementCaptionPop(object, item, 1)
+    expect(label.scale.x).toBe(1)
+    expect(plaque.scale.x).toBe(1)
   })
 
   it('toggling visibility removes and restores the label', () => {
