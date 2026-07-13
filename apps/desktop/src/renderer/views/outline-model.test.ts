@@ -55,6 +55,7 @@ describe('outline row grammar', () => {
       children: [
         {
           placementId: 'placement-a',
+          caption: 'left study',
           nodeId: 'node-a',
           renderOrder: 1,
           appearanceKind: 'dot',
@@ -107,6 +108,36 @@ describe('outline row grammar', () => {
     expect(rows[0]).toMatchObject({ kind: 'pin', untagged: true, path: 'Home' })
     expect(outlineBadges(rows[0]!, false)).toEqual(['·orphan'])
     expect(outlineBadges(rows[0]!, true)).toEqual(['·orphan', '·untagged'])
+  })
+
+  it('carries placement-local caption meta without making it a search identity', () => {
+    const second = {
+      ...canvases[0]!.children[0]!,
+      placementId: 'placement-b',
+      caption: 'right study',
+    }
+    const withMirror = [{ ...canvases[0]!, children: [...canvases[0]!.children, second] }]
+    const rows = buildOutlineRows({
+      canvases: withMirror,
+      unplacedNodes: [],
+      looseNotes: [],
+      facet: 'all',
+      query: '',
+      expanded: {},
+    })
+    expect(rows.filter((row) => row.node).map((row) => row.caption)).toEqual([
+      'left study',
+      'right study',
+    ])
+    const captionSearch = buildOutlineRows({
+      canvases: withMirror,
+      unplacedNodes: [],
+      looseNotes: [],
+      facet: 'all',
+      query: 'left study',
+      expanded: {},
+    })
+    expect(captionSearch).toHaveLength(0)
   })
 
   it('treats a root-level non-root canvas as an unplaced board', () => {

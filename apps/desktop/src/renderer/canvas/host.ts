@@ -9,6 +9,7 @@ import {
   createDefaultRegistry,
   createScenePlanes,
   cssColorToNumber,
+  captionPopScale,
   DragBeat,
   approachClearance,
   awayDisplay,
@@ -48,6 +49,7 @@ import {
   setPlacementTextureResident,
   syncFrameRegionStroke,
   syncPlacementIconLod,
+  syncPlacementCaptionPop,
   syncPlacementLabelOffset,
   TextureBudget,
   ToolManager,
@@ -64,8 +66,10 @@ import {
   type SceneBackground,
   type SceneDecoration,
   type SceneItem,
+  type SceneCamera,
   type ScenePlacement,
   type ScenePlanes,
+  type ScreenInset,
   type SnapGuide,
   type IconAtlasResource,
 } from '@ew/canvas-engine'
@@ -74,6 +78,8 @@ import { Application, Container, Graphics, Texture } from 'pixi.js'
 import {
   EW_BEAT_AWAY_MS,
   EW_BEAT_AWAY_RISE_PX,
+  EW_BEAT_ARRIVAL_MS,
+  EW_BEAT_CAPTION_POP_MS,
   EW_BEAT_LIFT_MS,
   EW_BEAT_LIFT_SCALE,
   EW_BEAT_MAKE_ROOM_PX,
@@ -135,7 +141,10 @@ export interface CanvasHostHandle {
   effectiveItem(id: string): SceneItem | null
   /** Eased camera flight framing `bounds` (§6.9 rev 0.11); any user
    * camera input aborts it. */
-  flyTo(bounds: Rect): void
+  flyTo(bounds: Rect, inset?: ScreenInset): void
+  /** Eased flight to an exact camera state. Reading mode uses this for
+   * byte-exact Escape restore instead of re-fitting the old viewport. */
+  flyCameraTo(state: SceneCamera): void
   /** §6.7 rev 0.50: the content-defined lit stage extent (grow-only
    * target), or null when the board has a background image or no
    * content. Zoom-to-fit frames this so the framing matches what is
@@ -190,6 +199,8 @@ export interface CanvasHostHandle {
   beats: {
     strain(ids: readonly string[]): void
     away(ids: readonly string[]): void
+    captionPop(ids: readonly string[]): void
+    arrival(ids: readonly string[]): void
   }
   destroy(): void
 }
@@ -254,6 +265,15 @@ declare global {
       /** AI-IMP-087: the placement label's on-screen bounds (CSS px,
        * stage frame) — null when the placement has no label. */
       labelBounds: (id: string) => { x: number; y: number; width: number; height: number } | null
+      /** AI-IMP-297: actual caption-plaque local geometry + session
+       * birth count, proving centered/narrow layout and no replay. */
+      captionPlaque: (id: string) => {
+        width: number
+        height: number
+        centerX: number
+        bodyWidth: number
+        birthCount: number
+      } | null
       /** AI-IMP-087: outline/label clearance constants as shipped, so
        * e2e asserts against the real numbers (workspace dist is not
        * node-importable from a spec). */
@@ -267,6 +287,10 @@ declare global {
       lensAlpha: (id: string) => number | null
       /** Ids ringed by the last lens adornment pass. */
       lensRings: () => string[]
+      /** Ids carrying the transient fly-to arrival pulse. */
+      arrivalRings: () => string[]
+      /** Session count for the one-shot arrival pulse per placement. */
+      arrivalBirthCount: (id: string) => number
       /** §4.9 (AI-IMP-127): live membership index, applied-scene fresh. */
       frameMembers: (framePlacementId: string) => string[]
       worldToScreen: (x: number, y: number) => { x: number; y: number }
@@ -424,6 +448,12 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       border: cssColorToNumber(themeTokenValue('--ew-frame-border')),
       label: cssColorToNumber(themeTokenValue('--ew-frame-label')),
     }),
+    plaqueColors: () => ({
+      face: cssColorToNumber(themeTokenValue('--ew-plaque-face')),
+      border: cssColorToNumber(themeTokenValue('--ew-plaque-border')),
+      text: cssColorToNumber(themeTokenValue('--ew-plaque-text')),
+      shadow: cssColorToNumber(themeTokenValue('--ew-plaque-shadow')),
+    }),
     // §8.5 radius + shared-texture shadow for image bodies (AI-IMP-140).
     imageTreatment: () => imageTreatment,
   }
@@ -438,10 +468,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // Lens rings sit under the selection chrome: both can show on the
   // same item and the selection box must stay legible on top.
   const lensGfx = new Graphics()
+  const arrivalGfx = new Graphics()
   // Guides live in the world plane: drawSnapGuides authors world-unit
   // geometry with screen-constant dash/width divided by zoom (§6.9).
   const guidesGfx = new Graphics()
-  planes.overlay.addChild(lensGfx, selectionGfx, marqueeGfx)
+  planes.overlay.addChild(lensGfx, arrivalGfx, selectionGfx, marqueeGfx)
   planes.world.addChild(guidesGfx)
 
   const project = await runQuery<{ id: string; rootNodeId: string; revision: number }>(
@@ -502,6 +533,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   const nudgeBeats = new Map<string, { seed: { x: number; y: number }; elapsed: number }>()
   const strainBeats = new Map<string, { elapsed: number }>()
   const pressBeats = new Map<string, { elapsed: number }>()
+  const captionPops = new Map<string, { elapsed: number }>()
+  const captionPopCounts = new Map<string, number>()
+  const arrivalPulses = new Map<string, { elapsed: number }>()
+  const arrivalPulseCounts = new Map<string, number>()
+  let arrivalRingIds: string[] = []
   // Make-room: eased clearance (screen px) per frame member while a drag
   // hovers its frame — the one allowed anticipatory motion.
   const makeRoom = new Map<
@@ -594,6 +630,18 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     object.position.set(item.x + worldX + pxX / zoom, item.y + worldY + pxY / zoom)
   }
 
+  function applyCaptionPop(id: string): void {
+    const item = sync.item(id)
+    const object = sync.get(id)
+    if (!object || item?.itemKind !== 'placement' || item.caption === null) return
+    const beat = captionPops.get(id)
+    syncPlacementCaptionPop(
+      object,
+      item,
+      beat ? captionPopScale(beat.elapsed, EW_BEAT_CAPTION_POP_MS) : 1,
+    )
+  }
+
   function redrawDragShadow(): void {
     dragShadowGfx.clear()
     if (dragBeats.size === 0) {
@@ -626,6 +674,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       nudgeBeats.size === 0 &&
       strainBeats.size === 0 &&
       pressBeats.size === 0 &&
+      captionPops.size === 0 &&
+      arrivalPulses.size === 0 &&
       makeRoom.size === 0 &&
       awayGhosts.length === 0
     )
@@ -673,6 +723,19 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         applyBeatTransform(id) // hold the steady −1%
       }
     }
+    for (const [id, pop] of captionPops) {
+      pop.elapsed += dt
+      applyCaptionPop(id)
+      if (pop.elapsed >= EW_BEAT_CAPTION_POP_MS) {
+        captionPops.delete(id)
+        applyCaptionPop(id)
+      }
+    }
+    for (const [id, pulse] of arrivalPulses) {
+      pulse.elapsed += dt
+      if (pulse.elapsed >= EW_BEAT_ARRIVAL_MS) arrivalPulses.delete(id)
+    }
+    drawArrivalRings()
     for (const [id, room] of makeRoom) {
       room.cur.x = approachClearance(room.cur.x, room.target.x, dt, EW_BEAT_MAKE_ROOM_TAU_MS)
       room.cur.y = approachClearance(room.cur.y, room.target.y, dt, EW_BEAT_MAKE_ROOM_TAU_MS)
@@ -717,6 +780,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       ) {
         applyBeatTransform(item.id)
       }
+      if (captionPops.has(item.id)) applyCaptionPop(item.id)
     }
   }
 
@@ -784,11 +848,38 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     }
   }
 
+  function popCaptions(ids: readonly string[]): void {
+    for (const id of ids) {
+      const item = sync.item(id)
+      if (item?.itemKind !== 'placement' || item.caption === null) continue
+      captionPops.set(id, { elapsed: 0 })
+      captionPopCounts.set(id, (captionPopCounts.get(id) ?? 0) + 1)
+      applyCaptionPop(id)
+    }
+  }
+
+  /** Fly-to arrival: a transient ring next to the lens grammar, but
+   * deliberately independent from controller.lens so no outsider dims. */
+  function pulseArrival(ids: readonly string[]): void {
+    for (const id of new Set(ids)) {
+      if (!sync.item(id)) continue
+      arrivalPulses.set(id, { elapsed: 0 })
+      arrivalPulseCounts.set(id, (arrivalPulseCounts.get(id) ?? 0) + 1)
+    }
+    drawArrivalRings()
+  }
+
   function resetBeats(): void {
     dragBeats.clear()
     nudgeBeats.clear()
     strainBeats.clear()
     pressBeats.clear()
+    captionPops.clear()
+    captionPopCounts.clear()
+    arrivalPulses.clear()
+    arrivalPulseCounts.clear()
+    arrivalRingIds = []
+    arrivalGfx.clear()
     makeRoom.clear()
     roomActive.clear()
     lockedWas.clear()
@@ -874,6 +965,38 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     drawLensRings()
   }
 
+  function drawArrivalRings(): void {
+    arrivalGfx.clear()
+    arrivalRingIds = []
+    for (const [id, pulse] of arrivalPulses) {
+      const item = ephemeral.get(id) ?? sync.item(id)
+      if (!item) continue
+      const aabb = itemWorldAABB(item)
+      if (!aabb) continue
+      const progress = Math.min(1, pulse.elapsed / EW_BEAT_ARRIVAL_MS)
+      const tl = controller.camera.worldToScreen({ x: aabb.x, y: aabb.y })
+      const br = controller.camera.worldToScreen({
+        x: aabb.x + aabb.width,
+        y: aabb.y + aabb.height,
+      })
+      const pad = LENS_RING_OFFSET_PX + 2 + progress * 5
+      arrivalGfx
+        .roundRect(
+          tl.x - pad,
+          tl.y - pad,
+          br.x - tl.x + pad * 2,
+          br.y - tl.y + pad * 2,
+          pad,
+        )
+        .stroke({
+          width: LENS_RING_WIDTH_PX,
+          color: LENS_RING_COLOR,
+          alpha: 1 - progress,
+        })
+      arrivalRingIds.push(id)
+    }
+  }
+
   let lastGuides: SnapGuide[] = []
   let cameraTimer: ReturnType<typeof setTimeout> | null = null
   function persistCameraNow(): void {
@@ -912,6 +1035,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       }
       drawSelection()
       drawLensRings()
+      drawArrivalRings()
     },
     restoreItem(item: SceneItem) {
       ephemeral.delete(item.id)
@@ -922,6 +1046,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       applyBeatTransform(item.id)
       drawSelection()
       drawLensRings()
+      drawArrivalRings()
     },
     commitTransform(payload, meta) {
       // §8.2 SETTLE on release: ease every lifted body back to rest. The
@@ -963,6 +1088,7 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       drawSelection()
       // The dim rides the world plane; only the screen-space rings move.
       drawLensRings()
+      drawArrivalRings()
       // Dash/width are zoom-derived; redraw live guides at the new zoom.
       if (lastGuides.length > 0) drawSnapGuides(guidesGfx, lastGuides, controller.camera)
       persistCameraSoon()
@@ -2064,6 +2190,19 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       const bounds = label.getBounds()
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
     },
+    captionPlaque: (id: string) => {
+      const item = sync.item(id)
+      const plaque = sync.get(id)?.children.find((child) => child.label === 'caption-plaque')
+      if (!plaque || item?.itemKind !== 'placement') return null
+      const bounds = plaque.getLocalBounds()
+      return {
+        width: bounds.width,
+        height: bounds.height,
+        centerX: bounds.x + bounds.width / 2,
+        bodyWidth: item.width ?? item.assetWidth ?? 0,
+        birthCount: captionPopCounts.get(id) ?? 0,
+      }
+    },
     outlineChrome: () => ({
       pad: SELECTION_OUTLINE_PAD_PX,
       stroke: SELECTION_OUTLINE_STROKE_PX,
@@ -2074,6 +2213,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     clearLens: () => controller.lens.clear(),
     lensAlpha: (id: string) => sync.get(id)?.alpha ?? null,
     lensRings: () => [...lensRingIds],
+    arrivalRings: () => [...arrivalRingIds],
+    arrivalBirthCount: (id: string) => arrivalPulseCounts.get(id) ?? 0,
     // §4.9 frames (AI-IMP-127): the host's live membership index —
     // reflects the applied scene, so e2e gates carry/capture on it.
     frameMembers: (framePlacementId: string) =>
@@ -2125,8 +2266,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       return canvasId
     },
     effectiveItem: (id: string) => ephemeral.get(id) ?? sync.item(id) ?? null,
-    flyTo: (bounds: Rect) => {
-      const target = controller.camera.fitTarget(bounds, viewport())
+    flyTo: (bounds: Rect, inset?: ScreenInset) => {
+      const target = controller.camera.fitTarget(bounds, viewport(), 48, inset)
       if (target) {
         // An explicit framing action supersedes a wheel glide
         // (AI-IMP-098) — cancel first so the chase's next tick
@@ -2134,6 +2275,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         zoomChase.cancel()
         flight.flyTo(target)
       }
+    },
+    flyCameraTo: (state: SceneCamera) => {
+      zoomChase.cancel()
+      flight.flyTo(state)
     },
     contentStageExtent: () => (contentTarget ? { ...contentTarget } : null),
     commitFrame,
@@ -2148,6 +2293,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     beats: {
       strain: strainItems,
       away: liftAway,
+      captionPop: popCaptions,
+      arrival: pulseArrival,
     },
     destroy() {
       textureBudget.releaseAll()

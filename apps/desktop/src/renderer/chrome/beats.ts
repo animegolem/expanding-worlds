@@ -25,6 +25,13 @@ export const EW_BEAT_TEAR_MS = 300
 /** First-placement bloom: a freshly placed item settles onto the board. */
 export const EW_BEAT_BLOOM_MS = 240
 
+/** Caption plaque birth: one quiet pop with a whisper of overshoot. */
+export const EW_BEAT_CAPTION_POP_MS = 280
+
+/** Lens arrival: one adjacent ring pulse after a fly-to. It never
+ * engages the lens or dims outsiders (AI-IMP-298). */
+export const EW_BEAT_ARRIVAL_MS = 420
+
 /** Stage-edge growth: the content-defined stage glides as an edge grows
  * (the eased approach in stage-extent.ts), never snaps. */
 export const EW_BEAT_STAGE_EDGE_MS = 180

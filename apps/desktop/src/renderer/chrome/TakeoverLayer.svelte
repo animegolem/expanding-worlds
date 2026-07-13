@@ -55,7 +55,12 @@
   <div class="takeover" data-testid={`takeover-${kind}`} role="dialog" aria-label={TITLES[kind]}>
     <div class="sheet" class:inset={kind === 'settings'} bind:this={sheet} tabindex="-1">
       <header class="sheet-header">
-        <h1>{TITLES[kind]}</h1>
+        <div class="sheet-title">
+          <h1>{TITLES[kind]}</h1>
+          {#if kind === 'settings'}
+            <span data-testid="settings-commit-copy">Changes apply instantly · no save</span>
+          {/if}
+        </div>
         <button
           type="button"
           class="close"
@@ -115,7 +120,7 @@
   /* §11.5: the settings sheet is translucent and inset so the real
      board stays visible at the edges and through it. */
   .sheet.inset {
-    margin: 0;
+    margin: 0.75rem;
     border: 1px solid var(--ew-border);
     border-radius: 10px;
     background: var(--ew-surface-subtle);
@@ -133,6 +138,17 @@
     margin: 0;
     font-size: 0.95rem;
     font-weight: 600;
+  }
+
+  .sheet-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
+  }
+
+  .sheet-title span {
+    color: var(--ew-text-subtle);
+    font-size: 0.68rem;
   }
 
   .close {

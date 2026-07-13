@@ -27,6 +27,11 @@ export interface Size {
   height: number
 }
 
+export interface Rect extends Size {
+  x: number
+  y: number
+}
+
 export interface BindSideInput {
   /** Image aspect ratio: width / height. */
   aspect: number
@@ -66,6 +71,19 @@ export function chooseBindSide({
 export function pageBaseSize(side: BindSide, image: Size, freeExtent = DEFAULT_PAGE_EXTENT): Size {
   if (side === 'below') return { width: image.width, height: freeExtent }
   return { width: freeExtent, height: image.height }
+}
+
+/** The whole open book in world coordinates: print plus its bound page.
+ * Reading flight fits this rect, so the target is independent of the
+ * current camera and Escape can restore an exact camera snapshot. */
+export function openBookBounds(side: BindSide, image: Rect, page: Size): Rect {
+  if (side === 'left') {
+    return { x: image.x - page.width, y: image.y, width: image.width + page.width, height: image.height }
+  }
+  if (side === 'below') {
+    return { x: image.x, y: image.y, width: image.width, height: image.height + page.height }
+  }
+  return { x: image.x, y: image.y, width: image.width + page.width, height: image.height }
 }
 
 /** The bound edge whose length the rings straddle: the image height for

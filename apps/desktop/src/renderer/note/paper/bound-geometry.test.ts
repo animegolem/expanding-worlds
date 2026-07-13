@@ -5,6 +5,7 @@ import {
   DEFAULT_PAGE_EXTENT,
   MAX_RINGS,
   MIN_RINGS,
+  openBookBounds,
   pageBaseSize,
   ringCount,
   ringOffsets,
@@ -57,6 +58,36 @@ describe('pageBaseSize (shared-edge sizing)', () => {
 
   it('honors an explicit free extent', () => {
     expect(pageBaseSize('right', image, 250)).toEqual({ width: 250, height: 360 })
+  })
+})
+
+describe('openBookBounds (reading flight target)', () => {
+  const image = { x: 100, y: 200, width: 240, height: 360 }
+
+  it('unions a side-bound page with the print at either binding edge', () => {
+    const page = pageBaseSize('right', image)
+    expect(openBookBounds('right', image, page)).toEqual({
+      x: 100,
+      y: 200,
+      width: 540,
+      height: 360,
+    })
+    expect(openBookBounds('left', image, page)).toEqual({
+      x: -200,
+      y: 200,
+      width: 540,
+      height: 360,
+    })
+  })
+
+  it('unions a below-bound page without changing the shared width', () => {
+    const page = pageBaseSize('below', image)
+    expect(openBookBounds('below', image, page)).toEqual({
+      x: 100,
+      y: 200,
+      width: 240,
+      height: 660,
+    })
   })
 })
 

@@ -8,7 +8,12 @@ import {
   orientedCorners,
   unionBounds,
 } from './hit-test'
-import { LABEL_CLEARANCE_PX, LABEL_HEIGHT_RATIO, LABEL_TEXT_HEIGHT_RATIO } from './renderers/placement'
+import {
+  LABEL_CLEARANCE_PX,
+  LABEL_HEIGHT_RATIO,
+  LABEL_TEXT_HEIGHT_RATIO,
+  placementLabelWorldBottom,
+} from './renderers/placement'
 import { makeDecoration, makePlacement } from './test-helpers'
 
 describe('hitTest', () => {
@@ -166,10 +171,7 @@ describe('adornedWorldAABB — charm-bar bounds (AI-IMP-161)', () => {
       labelVisible: 1,
     })
     const adorned = adornedWorldAABB(item, ZOOM)!
-    const glyphs = 100 * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO * 3
-    expect(adorned.y + adorned.height).toBeCloseTo(
-      50 + LABEL_CLEARANCE_PX / ZOOM + glyphs,
-    )
+    expect(adorned.y + adorned.height).toBeCloseTo(placementLabelWorldBottom(item, ZOOM)!)
   })
 
   it('extends below a card only when the card has a caption', () => {

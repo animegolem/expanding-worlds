@@ -7,7 +7,7 @@ import { usableCanvasOwnerJoin } from './queries-structure'
  * Gallery read models (RFC-0001 §14.4, AI-IMP-077/078): the
  * file-browser projection over the project's nodes. Two queries,
  * split for virtualization: `getGalleryIndex` returns the COMPACT
- * whole-project index (id + timestamp + kind — enough to lay out
+ * whole-project index (id + timestamp + kind + nullable title — enough to lay out
  * buckets and rows without hydrating anything), and
  * `getGalleryItems` hydrates a viewport window by id batch. Entries
  * are ordinary nodes — the §14.4 standing guardrail: no gallery-only
@@ -47,6 +47,10 @@ export interface GalleryIndexEntry {
   nodeId: string
   createdAt: string
   kind: GalleryKind
+  /** Compact display key for name-sort section headers. Null keeps
+   * untitled rows on their existing short-code fallback without
+   * hydrating the viewport item projection. */
+  noteTitle: string | null
 }
 
 export interface GalleryItem {
@@ -152,7 +156,8 @@ export function registerGalleryQueries(registry: QueryRegistry): void {
     if (unplaced === true) where.push(`NOT EXISTS (${ACTIVE_PLACEMENT_EXISTS})`)
 
     return ctx.db.all<GalleryIndexEntry>(
-      `SELECT n.id AS nodeId, n.created_at AS createdAt, ${KIND_CASE} AS kind
+      `SELECT n.id AS nodeId, n.created_at AS createdAt, ${KIND_CASE} AS kind,
+              note.title AS noteTitle
        FROM node n
        LEFT JOIN note ON note.id = n.note_id
          AND note.lifecycle_state = 'active'

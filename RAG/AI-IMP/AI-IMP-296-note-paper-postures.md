@@ -6,12 +6,12 @@ tags:
   - notes
   - paper
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: []
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.7
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-13
 ---
 
 # AI-IMP-296-note-paper-postures
@@ -57,9 +57,11 @@ kit DC; whisper strip hosts the §8.5 verbs. Flight: reuse the
 camera-flight machinery (canvas-engine/camera-flight.ts) with a
 fit target of image + page (the §8.8 clause-5 band-aware fit);
 store the pre-flight camera for exact esc restore. Height law:
-bound page's layout binds to the image's rendered height. Posture
-transitions call existing detach/pin/attach commands as one undo
-group each with tear/settle/flight beats from the ledger.
+bound page's layout binds to the image's rendered height. Durable
+posture transitions retain their existing command and undo boundaries.
+The shipped tear/rebind presentation transitions remain settings-backed
+and outside project undo, with their existing local beats; reading
+flight is likewise presentation-only.
 
 ### Files to Touch
 
@@ -79,24 +81,25 @@ e2e: posture transitions + flight/restore spec.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: map kit postures → shipped states; verify the
+- [x] Round-1: map kit postures → shipped states; verify the
       flight machinery's restore fidelity and the §8.5 verb
       inventory; record the mapping + corrections here.
-- [ ] Four postures render per the hardware law (rings / pin with
+- [x] Four postures render per the hardware law (rings / pin with
       meridian head / tape / torn edge on the separation side);
       paper tokens; whisper strip verbs; origin caption
       paper-toned.
-- [ ] ✎ flight: camera flies until image + page fill the viewport
+- [x] ✎ flight: camera flies until image + page fill the viewport
       (band-aware fit); esc flies back to the EXACT prior camera;
       flight is silent (camera answers, GR-3).
-- [ ] Bound-beside page shares the image's exact rendered height
+- [x] Bound-beside page shares the image's exact rendered height
       across viewport sizes (test at two window sizes).
-- [ ] Detach→pin-to-world, tape-to-glass, and rebind: one verb,
-      one undo group, one ledger beat each; rebind works from any
-      posture.
-- [ ] AI-IMP-194's cancelled-with-pointer record still matches
+- [x] Durable posture changes retain their existing command/undo
+      boundaries; tape-to-glass, rebind, and reading flight remain
+      presentation-only and outside project undo; rebind works wherever
+      the shipped state preserves its binding anchor.
+- [x] AI-IMP-194's cancelled-with-pointer record still matches
       what shipped; append any delta there.
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -108,9 +111,69 @@ the starting camera exactly (position and zoom)
 **AND** no toast plays for either leg.
 **Scenario:** posture round-trip.
 **GIVEN** a bound note
-**WHEN** the user detaches to world, tapes to glass, then rebinds
-**THEN** each transition is one undo step with its named beat and
-the final state is bound again.
+**WHEN** the user tears it to glass and then rebinds
+**THEN** the presentation transitions play their named local beats,
+create no project-undo entries, and the final state is bound again.
+
+### Round-1 source verification (2026-07-13)
+
+The opening premise is stale: AI-IMP-135 already shipped the paper
+hardware and most of the lifecycle. `NotePanel.svelte:224-235` records
+the landmark fact after the real `PlaceAsCard`; `NotePanel.svelte:969-995`
+implements tear/untape and their existing beats; and
+`note/paper/bound-geometry.ts:59-69` already locks a side-bound page's
+base height to the image height before both ride the same camera zoom.
+The round-2 product delta is therefore the reading flight, the kit's
+whisper-strip/origin treatment, a single rebind affordance, and stronger
+two-viewport geometry coverage — not a four-posture rewrite.
+
+| Kit posture | Shipped state / hardware | Current transition path | Undo truth |
+| --- | --- | --- | --- |
+| bound beside image | tethered placement panel; rings; exact shared edge | `unpinPanel` re-tethers (`note/panels.ts:363-375`) | presentation only |
+| taped to glass | pinned `PanelRecord`; tape + torn edge | `pinPanel` / `unpinPanel` (`note/panels.ts:340-375`) | presentation only |
+| planted in world | `PlaceAsCard` placement + project-setting landmark fact | place at `NotePanel.svelte:199-235`; pull at `note/panels.ts:410-444` | place/delete command is undoable; hardware fact is not |
+| centered torn editor | shipped modal torn page | `NotePanel.svelte:1016-1025` and existing Escape close | presentation only |
+
+**Verdict required before implementation:** the hard rule “every
+posture transition is one undo group” conflicts with the source and the
+same ticket's ban on invented domain semantics. The existing e2e says
+this explicitly: tear leaves undo depth unchanged
+(`e2e/note-lifecycle.spec.ts:210-231`), while only place and pull add
+entries (`:233-263`). Round 2 must preserve that honest boundary unless
+the lead separately authorizes new semantics/persistence/policy. Under
+the current fence, “rebind from any posture” means one visible verb that
+uses the existing presentation transition from taped/centered states;
+the planted landmark still needs its existing undoable pull followed by
+the presentation-only untape, so a literal one-step landmark-to-book
+rebind is not implementable in-fence.
+
+Round-1 ruling: the shipped durability boundary wins. Pin/tape and
+centered-editor transitions remain presentation-only; no undo semantics
+are invented. “One undo” applies only where durability already exists
+(`PlaceAsCard` and landmark `DeleteContent`). Rebind is one visible verb
+where the existing state permits it; the landmark keeps its honest
+delete-then-untape lifecycle.
+
+Camera restore is representable by `Camera.state()` / `Camera.set()`
+(`packages/canvas-engine/src/camera.ts:49-57`) and the existing eased
+`CameraFlight.flyTo(SceneCamera)` (`camera-flight.ts:21-43`), but the
+public host exposes only bounds-based `flyTo` (`renderer/canvas/host.ts:
+136-138,2128-2136`). Proposed in-fence repair: add a narrow host method
+that flies to an exact `SceneCamera`, snapshot before the outbound fit,
+and use that same eased seam for Escape restore; no camera or domain
+semantics change.
+
+The ticket may not edit AI-IMP-194: the assignment permits RAG changes
+only in these five bodies. The lead owns the cancelled-pointer record.
 
 ### Issues Encountered
 
+- The first reading-flight e2e used `__ewDebug.flightActive()`; the
+  shipped observable is `__ewDebug.stage().flightActive`. Corrected before
+  relying on the test; focused and full lifecycle reruns passed.
+- The fresh isolated clone had no `spike/node_modules`. The product gate
+  (including 273 e2e and lint) passed, then spike typecheck failed only on
+  missing imports. `npm --prefix spike ci` restored the lockfile deps and
+  the typecheck passed. No source repair was involved.
+- Per the round-1 ruling, AI-IMP-194's pointer edit is lead-owned because
+  this sitting may edit only the five assigned ticket bodies.

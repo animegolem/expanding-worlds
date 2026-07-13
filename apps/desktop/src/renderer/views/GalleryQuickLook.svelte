@@ -15,7 +15,7 @@
   "no full-size image" line rather than a blown-up glyph.
 -->
 <script lang="ts">
-  import { tooltip } from '../chrome/tooltip'
+  import Button from '../ui/Button.svelte'
 
   interface PreviewItem {
     kind: 'image' | 'note' | 'board'
@@ -58,6 +58,7 @@
   <div
     class="frame"
     role="dialog"
+    tabindex="-1"
     aria-modal="true"
     aria-label="Quick Look"
     onclick={(event) => event.stopPropagation()}
@@ -76,16 +77,16 @@
       {/if}
     </div>
   </div>
-  <button
-    type="button"
-    class="close"
+  <Button
+    variant="default"
     data-testid="gallery-quicklook-close"
     aria-label="Close Quick Look"
+    style="position: absolute; top: 1rem; right: 1rem; font-size: 0.7rem;"
     onclick={onClose}
-    use:tooltip={{ name: 'Close Quick Look' }}
+    tip={{ name: 'Close Quick Look' }}
   >
     Esc
-  </button>
+  </Button>
 </div>
 
 <style>
@@ -153,16 +154,4 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    padding: 0.15rem 0.5rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text-muted);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 4px;
-    font-size: 0.7rem;
-    cursor: pointer;
-  }
 </style>

@@ -18,7 +18,9 @@
 -->
 <script lang="ts">
   import TextInput from '../ui/TextInput.svelte'
-  import { tooltip } from '../chrome/tooltip'
+  import Button from '../ui/Button.svelte'
+  import FacetChip from '../ui/FacetChip.svelte'
+  import Segmented from '../ui/Segmented.svelte'
 
   type GalleryKind = 'image' | 'note' | 'board'
   type GallerySort = 'date' | 'name' | 'size'
@@ -66,15 +68,15 @@
     onToggleUnplaced: () => void
   } = $props()
 
-  const SORTS: Array<{ key: GallerySort; label: string }> = [
-    { key: 'date', label: 'date' },
-    { key: 'name', label: 'name' },
-    { key: 'size', label: 'size' },
+  const SORTS = [
+    { value: 'date', label: 'date', testid: 'gallery-sort-date' },
+    { value: 'name', label: 'name', testid: 'gallery-sort-name' },
+    { value: 'size', label: 'size', testid: 'gallery-sort-size' },
   ]
-  const KINDS: Array<{ key: GalleryKind; label: string }> = [
-    { key: 'image', label: 'image' },
-    { key: 'note', label: 'note' },
-    { key: 'board', label: 'board' },
+  const KINDS: Array<{ value: GalleryKind; label: string }> = [
+    { value: 'image', label: 'image' },
+    { value: 'note', label: 'note' },
+    { value: 'board', label: 'board' },
   ]
 
   let search = $state('')
@@ -139,32 +141,21 @@
 </script>
 
 <div class="facets" data-testid="gallery-facets">
-  <span class="segmented" role="group" aria-label="Sort">
-    {#each SORTS as option (option.key)}
-      <button
-        type="button"
-        data-testid={`gallery-sort-${option.key}`}
-        aria-pressed={sort === option.key}
-        class:on={sort === option.key}
-        onclick={() => onSort(option.key)}
-      >
-        {option.label}
-      </button>
-    {/each}
-  </span>
+  <Segmented
+    options={SORTS}
+    value={sort}
+    ariaLabel="Sort"
+    onchange={(value) => onSort(value as GallerySort)}
+  />
 
   <span class="chips" role="group" aria-label="Kinds">
-    {#each KINDS as option (option.key)}
-      <button
-        type="button"
-        class="chip"
-        data-testid={`gallery-kind-${option.key}`}
-        aria-pressed={kinds.includes(option.key)}
-        class:on={kinds.includes(option.key)}
-        onclick={() => onToggleKind(option.key)}
-      >
-        {option.label}
-      </button>
+    {#each KINDS as option (option.value)}
+      <FacetChip
+        label={option.label}
+        testid={`gallery-kind-${option.value}`}
+        active={kinds.includes(option.value)}
+        onToggle={() => onToggleKind(option.value)}
+      />
     {/each}
   </span>
 
@@ -183,9 +174,10 @@
     {#if searchFocus && completions.length > 0}
       <span class="completions" data-testid="gallery-tag-completions">
         {#each completions as tag (tag.id)}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             data-testid="gallery-tag-option"
+            style="width: 100%; display: flex; justify-content: space-between; text-align: left;"
             onpointerdown={(e) => {
               e.preventDefault()
               pick(tag)
@@ -193,48 +185,25 @@
           >
             <span class="option-name">{tag.name}</span>
             <span class="option-count">{tag.count}</span>
-          </button>
+          </Button>
         {/each}
       </span>
     {/if}
   </span>
 
   {#each tags as tag (tag.id)}
-    <span class="active-tag" data-testid={`gallery-tag-chip-${tag.id}`}>
-      #{tag.name}
-      <button
-        type="button"
-        aria-label={`Remove ${tag.name} filter`}
-        onclick={() => onRemoveTag(tag.id)}
-        use:tooltip={{ name: `Remove #${tag.name} filter` }}
-      >
-        ✕
-      </button>
-    </span>
+    <FacetChip
+      label={`#${tag.name}`}
+      testid={`gallery-tag-chip-${tag.id}`}
+      removeLabel={`Remove #${tag.name} filter`}
+      onRemove={() => onRemoveTag(tag.id)}
+    />
   {/each}
 
   {#if showCleanup}
     <span class="chips cleanup" role="group" aria-label="Cleanup filters">
-      <button
-        type="button"
-        class="chip"
-        data-testid="gallery-filter-untagged"
-        aria-pressed={untagged}
-        class:on={untagged}
-        onclick={onToggleUntagged}
-      >
-        untagged
-      </button>
-      <button
-        type="button"
-        class="chip"
-        data-testid="gallery-filter-unplaced"
-        aria-pressed={unplaced}
-        class:on={unplaced}
-        onclick={onToggleUnplaced}
-      >
-        unplaced
-      </button>
+      <FacetChip label="untagged" testid="gallery-filter-untagged" active={untagged} onToggle={onToggleUntagged} />
+      <FacetChip label="unplaced" testid="gallery-filter-unplaced" active={unplaced} onToggle={onToggleUnplaced} />
     </span>
   {/if}
 </div>
@@ -252,31 +221,6 @@
     color: var(--ew-text);
   }
 
-  .segmented {
-    display: inline-flex;
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-
-  .segmented button {
-    padding: 0.2rem 0.65rem;
-    font: inherit;
-    background: transparent;
-    color: var(--ew-text-muted);
-    border: none;
-    cursor: pointer;
-  }
-
-  .segmented button + button {
-    border-left: 1px solid var(--ew-border);
-  }
-
-  .segmented button.on {
-    background: var(--ew-accent);
-    color: var(--ew-on-accent);
-  }
-
   .chips {
     display: inline-flex;
     gap: 0.3rem;
@@ -284,22 +228,6 @@
 
   .cleanup {
     margin-left: auto;
-  }
-
-  .chip {
-    padding: 0.18rem 0.6rem;
-    font: inherit;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text-muted);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    cursor: pointer;
-  }
-
-  .chip.on {
-    background: var(--ew-accent);
-    border-color: var(--ew-accent);
-    color: var(--ew-on-accent);
   }
 
   .field-wrap {
@@ -324,51 +252,13 @@
     min-width: 10rem;
     background: var(--ew-surface-menu);
     border: 1px solid var(--ew-border);
-    border-radius: 6px;
+    border-radius: 5px;
+    box-shadow: 0 6px 22px var(--ew-menu-shadow);
     overflow: hidden;
-  }
-
-  .completions button {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.8rem;
-    padding: 0.22rem 0.55rem;
-    background: transparent;
-    border: none;
-    color: var(--ew-text);
-    font-size: 0.74rem;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .completions button:hover {
-    background: var(--ew-surface-raised);
   }
 
   .option-count {
     color: var(--ew-text-muted);
   }
 
-  .active-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.14rem 0.3rem 0.14rem 0.55rem;
-    background: var(--ew-surface-raised);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-  }
-
-  .active-tag button {
-    padding: 0 0.15rem;
-    background: transparent;
-    border: none;
-    color: var(--ew-text-muted);
-    font-size: 0.7rem;
-    cursor: pointer;
-  }
-
-  .active-tag button:hover {
-    color: var(--ew-text);
-  }
 </style>

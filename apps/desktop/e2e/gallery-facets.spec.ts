@@ -7,8 +7,8 @@ import { exec, launchApp } from './helpers'
  * completion field with count-ordered suggestions (custom list,
  * never <datalist>), removable active-tag chips, and the two
  * cleanup toggles (untagged · unplaced). Every control commits on
- * click and the grid re-queries live; buckets are DATE sort's
- * presentation and the flat grid belongs to name/size. Note-kind
+ * click and the grid re-queries live; date bands always, name gains
+ * letter headers only past 24 items, and size remains flat. Note-kind
  * cells render as text posts (FR-8): title + clamped excerpt, tags
  * on hover via the title attribute.
  */
@@ -149,9 +149,8 @@ test('facets filter live: tag with counts, kinds, cleanup toggles, sort presenta
   await win.getByTestId('gallery-filter-untagged').click()
   await win.getByTestId('gallery-kind-image').click()
 
-  // Buckets are date sort's presentation: name sort renders the
-  // FLAT grid (no headers, no period control) and collates by
-  // label; returning to date restores the buckets.
+  // This four-item gallery is under name's calm threshold, so it stays
+  // flat (no headers/period control) while collating by label.
   await expect(win.getByTestId('gallery-period')).toBeVisible()
   await win.getByTestId('gallery-sort-name').click()
   await expect(win.getByTestId('gallery-sort-name')).toHaveAttribute('aria-pressed', 'true')
@@ -167,6 +166,45 @@ test('facets filter live: tag with counts, kinds, cleanup toggles, sort presenta
   await win.getByTestId('gallery-sort-date').click()
   await expect(win.locator('[data-testid="gallery-bucket"]').first()).toContainText('Today')
   await expect(win.getByTestId('gallery-period')).toBeVisible()
+
+  await app.close()
+})
+
+test('name groups past 24, size stays flat, and narrow facets wrap (AI-IMP-299)', async () => {
+  const { app, win } = await launchApp('ew-e2e-gallery-groups-')
+
+  for (let i = 0; i < 26; i += 1) {
+    const noteId = crypto.randomUUID()
+    const nodeId = crypto.randomUUID()
+    const prefix = i < 13 ? 'Alpha' : 'Beta'
+    await exec(win, 'CreateNote', {
+      noteId,
+      title: `${prefix} ${String(i).padStart(2, '0')}`,
+      body: '',
+    })
+    await exec(win, 'CreateNode', { nodeId })
+    await exec(win, 'AttachNoteToNode', { nodeId, noteId })
+  }
+
+  await win.getByTestId('charm-gallery').click()
+  await expect(win.getByTestId('takeover-gallery')).toBeVisible()
+  await win.getByTestId('gallery-sort-name').click()
+  const headers = win.getByTestId('gallery-bucket')
+  await expect(headers).toHaveCount(2)
+  await expect(headers.nth(0)).toContainText('A')
+  await expect(headers.nth(1)).toContainText('B')
+  await expect(win.getByTestId('gallery-period')).toHaveCount(0)
+
+  await win.getByTestId('gallery-sort-size').click()
+  await expect(headers).toHaveCount(0)
+
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0]?.setSize(560, 800)
+  })
+  await expect.poll(() => win.evaluate(() => innerWidth)).toBeLessThanOrEqual(560)
+  const sortBox = (await win.getByTestId('gallery-sort-date').boundingBox())!
+  const cleanupBox = (await win.getByTestId('gallery-filter-untagged').boundingBox())!
+  expect(cleanupBox.y).toBeGreaterThan(sortBox.y)
 
   await app.close()
 })

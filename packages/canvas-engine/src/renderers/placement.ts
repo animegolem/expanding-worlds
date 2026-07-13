@@ -37,6 +37,18 @@ const CAPTION_CELL_WIDTH_RATIO = 1
 
 const LABEL_COLOR = 0xc8cfd8
 
+/** §4.5 rev 0.71 caption plaque geometry, expressed from the existing
+ * label/body metrics so it scales and re-rasterizes with the ONE label
+ * pipeline. The outer width is strictly narrower than the print. */
+export const CAPTION_PLAQUE_WIDTH_RATIO = 0.9
+const CAPTION_PLAQUE_WRAP_RATIO = 0.82
+const CAPTION_PLAQUE_PADDING_X_EM = 0.7
+const CAPTION_PLAQUE_PADDING_Y_EM = 0.4
+const CAPTION_PLAQUE_RADIUS_EM = 0.28
+const CAPTION_PLAQUE_SHADOW_OFFSET_EM = 0.18
+const CAPTION_PLAQUE_SHADOW_ALPHA = 0.24
+const CAPTION_PLAQUE_BORDER_EM = 0.075
+
 /**
  * §6.9 selection outline geometry in SCREEN pixels (AI-IMP-087).
  * Defined here — next to the label clearance that must out-reach
@@ -716,7 +728,7 @@ export function placementLabelLayout(item: ScenePlacement): PlacementLabelLayout
     return { text: item.noteTitle, lineCount: 1, wrapWidth: null }
   }
 
-  const wrapWidth = Math.max(1, labelWidth(item))
+  const wrapWidth = Math.max(1, labelWidth(item) * CAPTION_PLAQUE_WRAP_RATIO)
   const fontSize = Math.max(1, labelBasis(item).height * LABEL_HEIGHT_RATIO)
   const maxChars = Math.max(1, Math.floor(wrapWidth / (fontSize * CAPTION_CELL_WIDTH_RATIO)))
   const lines: string[] = []
@@ -837,7 +849,99 @@ export function placementLabelWorldBottom(item: ScenePlacement, zoom: number): n
   const clearanceWorld = LABEL_CLEARANCE_PX / safeZoom
   const lineCount = placementLabelLayout(item)?.lineCount ?? 1
   const glyphWorld = basis * LABEL_HEIGHT_RATIO * LABEL_TEXT_HEIGHT_RATIO * lineCount
-  return bodyBottom + clearanceWorld + glyphWorld
+  const plaqueExtra =
+    item.caption === null
+      ? 0
+      : basis * LABEL_HEIGHT_RATIO * (CAPTION_PLAQUE_PADDING_Y_EM + CAPTION_PLAQUE_SHADOW_OFFSET_EM)
+  return bodyBottom + clearanceWorld + glyphWorld + plaqueExtra
+}
+
+/** The one-shot plaque birth curve. It arrives slightly small, whispers
+ * past rest once, and lands exactly at 1 — no loop and no model state. */
+export function captionPopScale(elapsedMs: number, durationMs: number): number {
+  if (!(durationMs > 0) || elapsedMs >= durationMs) return 1
+  const progress = Math.max(0, elapsedMs / durationMs)
+  const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3)
+  if (progress <= 0.68) {
+    return 0.92 + (1.015 - 0.92) * easeOut(progress / 0.68)
+  }
+  return 1.015 + (1 - 1.015) * easeOut((progress - 0.68) / 0.32)
+}
+
+/** Applies the plaque-only birth scale without moving or scaling its
+ * placement body. Flip signs counter-mirror both plaque and glyphs. */
+export function syncPlacementCaptionPop(
+  object: Container,
+  item: ScenePlacement,
+  scale: number,
+): void {
+  if (item.caption === null) return
+  const x = (item.flipX ? -1 : 1) * scale
+  const y = (item.flipY === 1 ? -1 : 1) * scale
+  const label = object.children.find((child) => child.label === 'label')
+  const plaque = object.children.find((child) => child.label === 'caption-plaque')
+  label?.scale.set(x, y)
+  plaque?.scale.set(x, y)
+}
+
+function syncCaptionPlaque(
+  container: Container,
+  item: ScenePlacement,
+  label: Text,
+  resources: RendererResources,
+): void {
+  const existing = container.children.find((child) => child.label === 'caption-plaque') as
+    | Graphics
+    | undefined
+  if (item.caption === null) {
+    existing?.destroy()
+    label.style.fill = LABEL_COLOR
+    return
+  }
+  const colors = resources.plaqueColors?.() ?? {
+    face: FRAME_FALLBACK.label,
+    border: FRAME_FALLBACK.border,
+    text: LABEL_COLOR,
+    shadow: FRAME_FALLBACK.fill,
+  }
+  label.style.fill = colors.text
+  const fontSize = Number(label.style.fontSize)
+  const borderWidth = Math.max(0.5, fontSize * CAPTION_PLAQUE_BORDER_EM)
+  // The invariant governs the OUTER metal edge, not merely its fill.
+  const maxWidth = Math.max(1, labelWidth(item) * CAPTION_PLAQUE_WIDTH_RATIO - borderWidth)
+  // Keep geometry deterministic and headless-safe: Pixi's Text.width /
+  // height invoke browser canvas metrics, while the label pipeline's
+  // wrap itself deliberately uses conservative em-cell estimates so
+  // rendering and adorned bounds can agree without a canvas context.
+  const lines = String(label.text).split('\n')
+  const longest = Math.max(1, ...lines.map((line) => Array.from(line).length))
+  const estimatedTextWidth = Math.min(
+    labelWidth(item) * CAPTION_PLAQUE_WRAP_RATIO,
+    longest * fontSize * CAPTION_CELL_WIDTH_RATIO,
+  )
+  const width = Math.min(
+    maxWidth,
+    Math.max(fontSize * 4, estimatedTextWidth + fontSize * CAPTION_PLAQUE_PADDING_X_EM * 2),
+  )
+  const textHeight = lines.length * fontSize * LABEL_TEXT_HEIGHT_RATIO
+  const height = textHeight + fontSize * CAPTION_PLAQUE_PADDING_Y_EM * 2
+  const x = -width / 2
+  const y = -fontSize * CAPTION_PLAQUE_PADDING_Y_EM
+  const radius = fontSize * CAPTION_PLAQUE_RADIUS_EM
+  let plaque = existing
+  if (!plaque) {
+    plaque = new Graphics()
+    plaque.label = 'caption-plaque'
+    plaque.eventMode = 'none'
+    container.addChildAt(plaque, container.getChildIndex(label))
+  }
+  plaque
+    .clear()
+    .roundRect(x, y + fontSize * CAPTION_PLAQUE_SHADOW_OFFSET_EM, width, height, radius)
+    .fill({ color: colors.shadow, alpha: CAPTION_PLAQUE_SHADOW_ALPHA })
+    .roundRect(x, y, width, height, radius)
+    .fill({ color: colors.face })
+    .stroke({ color: colors.border, width: borderWidth })
 }
 
 /**
@@ -891,13 +995,19 @@ export function labelZoomOpacity(renderedMaxEdgePx: number): number {
  * the container as scale sign, so the label counter-flips to stay
  * readable and stays below the body in world space.
  */
-function syncLabel(container: Container, item: ScenePlacement, zoom: number): void {
+function syncLabel(
+  container: Container,
+  item: ScenePlacement,
+  resources: RendererResources,
+  zoom: number,
+): void {
   const existing = container.children.find((child) => child.label === 'label') as
     | Text
     | undefined
   const layout = placementLabelLayout(item)
   if (layout === null || item.labelVisible !== 1) {
     existing?.destroy()
+    container.children.find((child) => child.label === 'caption-plaque')?.destroy()
     return
   }
   const fontSize = labelBasis(item).height * LABEL_HEIGHT_RATIO
@@ -926,6 +1036,8 @@ function syncLabel(container: Container, item: ScenePlacement, zoom: number): vo
     if (layout.wrapWidth !== null) label.style.wordWrapWidth = layout.wrapWidth
   }
   label.scale.set(item.flipX ? -1 : 1, item.flipY === 1 ? -1 : 1)
+  syncCaptionPlaque(container, item, label, resources)
+  syncPlacementCaptionPop(container, item, 1)
   syncPlacementLabelOffset(container, item, zoom)
 }
 
@@ -950,6 +1062,9 @@ export function syncPlacementLabelOffset(
 ): void {
   const label = object.children.find((child) => child.label === 'label') as Text | undefined
   if (!label) return
+  const plaque = object.children.find((child) => child.label === 'caption-plaque') as
+    | Graphics
+    | undefined
   const scale = Math.abs(item.scale) || 1
   const safeZoom = zoom > 0 ? zoom : 1
   const clearanceLocal = LABEL_CLEARANCE_PX / (safeZoom * scale)
@@ -958,13 +1073,16 @@ export function syncPlacementLabelOffset(
   // keeps the label below the body in world space (its own scale
   // sign, set in syncLabel, un-mirrors the glyphs).
   label.position.set(0, offset * (item.flipY === 1 ? -1 : 1))
+  plaque?.position.copyFrom(label.position)
   const opacity = labelZoomOpacity(placementRenderedMaxEdge(item, zoom))
   label.alpha = opacity
+  if (plaque) plaque.alpha = opacity
   // At opacity 0, also drop `visible` (not just alpha 0): pixi's
   // global-bounds walk skips !visible nodes, so getBounds collapses
   // to a zero rect — the observable "the label is gone" the e2e/debug
   // seam (labelBounds) polls for, and a small render-cost saving.
   label.visible = opacity > 0
+  if (plaque) plaque.visible = label.visible
   // AI-IMP-262: keep the glyph raster tracking the effective scale so
   // zooming in never upscales a small texture into blur. Guarded —
   // the resolution setter re-rasters unconditionally, so assign only
@@ -1069,7 +1187,7 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
     container.label = `placement:${item.id}`
     buildBody(container, item, resources)
     applyTransform(container, item)
-    syncLabel(container, item, resources.getZoom?.() ?? 1)
+    syncLabel(container, item, resources, resources.getZoom?.() ?? 1)
     return container
   },
   update(object, item, previous, resources) {
@@ -1098,6 +1216,6 @@ export const placementRenderer: ItemRenderer<ScenePlacement> = {
       }
     }
     applyTransform(object, item)
-    syncLabel(object, item, resources.getZoom?.() ?? 1)
+    syncLabel(object, item, resources, resources.getZoom?.() ?? 1)
   },
 }

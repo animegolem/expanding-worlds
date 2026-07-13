@@ -25,7 +25,6 @@
   import type { CommandResult } from '@ew/commands'
   import { onDestroy } from 'svelte'
   import { toast } from '../chrome/status'
-  import { tooltip } from '../chrome/tooltip'
   import { KEY } from '../keys/bindings'
   import { formatBinding } from '../keys/registry'
   import { createProjectCommandPort } from '../project-command-port'
@@ -273,9 +272,10 @@
       {#if tagFocus && tagName && completions().length > 0}
         <span class="completions" data-testid="gallery-action-tag-completions">
           {#each completions() as tag (tag.id)}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               data-testid="gallery-action-tag-option"
+              style="width: 100%; display: flex; justify-content: space-between; text-align: left;"
               onpointerdown={(event) => {
                 event.preventDefault()
                 void assignTag(tag.name)
@@ -283,7 +283,7 @@
             >
               <span class="opt-name">{tag.name}</span>
               <span class="opt-count">{tag.count}</span>
-            </button>
+            </Button>
           {/each}
         </span>
       {/if}
@@ -320,16 +320,15 @@
   >
     trash
   </Button>
-  <button
-    type="button"
-    class="clear"
+  <Button
+    variant="ghost"
     aria-label="Clear selection"
     data-testid="gallery-action-clear"
     onclick={onClear}
-    use:tooltip={{ name: 'Clear selection' }}
+    tip={{ name: 'Clear selection' }}
   >
     ✕
-  </button>
+  </Button>
 </div>
 
 <style>
@@ -361,19 +360,6 @@
     border-radius: 999px;
   }
 
-  .clear {
-    padding: 0.15rem 0.4rem;
-    background: transparent;
-    color: var(--ew-text-muted);
-    border: none;
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .clear:hover {
-    color: var(--ew-text);
-  }
-
   .field-wrap {
     position: relative;
   }
@@ -389,26 +375,9 @@
     min-width: 10rem;
     background: var(--ew-surface-menu);
     border: 1px solid var(--ew-border);
-    border-radius: 6px;
+    border-radius: 5px;
+    box-shadow: 0 6px 22px var(--ew-menu-shadow);
     overflow: hidden;
-  }
-
-  .completions button {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.8rem;
-    padding: 0.25rem 0.55rem;
-    background: transparent;
-    border: none;
-    color: var(--ew-text);
-    font: inherit;
-    font-size: 0.75rem;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .completions button:hover {
-    background: var(--ew-surface-raised);
   }
 
   .opt-count {

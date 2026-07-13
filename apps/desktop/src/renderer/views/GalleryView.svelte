@@ -80,8 +80,10 @@
   import GalleryFacets from './GalleryFacets.svelte'
   import GalleryQuickLook from './GalleryQuickLook.svelte'
   import TextInput from '../ui/TextInput.svelte'
+  import Button from '../ui/Button.svelte'
+  import Segmented from '../ui/Segmented.svelte'
   import FindingState from '../ui/FindingState.svelte'
-  import { bucketByDate, type GalleryBucket } from './gallery-buckets'
+  import { bucketByDate, bucketByName, type GalleryBucket } from './gallery-buckets'
   import { onGalleryReselect } from './gallery-reselect'
   import {
     bucketJumpTarget,
@@ -99,6 +101,7 @@
     nodeId: string
     createdAt: string
     kind: GalleryKind
+    noteTitle: string | null
   }
 
   interface Item {
@@ -573,9 +576,15 @@
     }),
   )
 
-  // Buckets are DATE sort's presentation (§14.4): name and size
-  // render the flat grid — no headers, no period control.
-  const buckets = $derived(sort === 'date' ? bucketByDate(index, new Date()) : [])
+  // Date always bands; name stays calm until the exact kit threshold;
+  // size is a flat visual gradient. All remain compact-index math.
+  const buckets = $derived(
+    sort === 'date'
+      ? bucketByDate(index, new Date())
+      : sort === 'name'
+        ? bucketByName(index)
+        : [],
+  )
   const columns = $derived(
     Math.max(2, Math.floor((viewportWidth - PAD * 2 + GAP) / (cellSize + GAP))),
   )
@@ -590,7 +599,7 @@
   const layout = $derived.by(() => {
     const rows: Row[] = []
     let top = 0
-    if (sort === 'date') {
+    if (buckets.length > 0) {
       for (const bucket of buckets) {
         rows.push({ kind: 'header', bucket, top })
         top += HEADER_H
@@ -619,6 +628,7 @@
 
   // The sticky header names the bucket the viewport is inside.
   const currentBucket = $derived.by(() => {
+    if (sort !== 'date') return null
     let current: GalleryBucket | null = buckets[0] ?? null
     for (const row of layout.rows) {
       if (row.kind !== 'header') continue
@@ -929,7 +939,11 @@
     // flat sorts (bucketJumpTarget returns null without buckets).
     if (mod) {
       if (!isVertical) return
-      const jump = bucketJumpTarget(buckets, current === -1 ? 0 : current, event.key === 'ArrowDown' ? 1 : -1)
+      const jump = bucketJumpTarget(
+        sort === 'date' ? buckets : [],
+        current === -1 ? 0 : current,
+        event.key === 'ArrowDown' ? 1 : -1,
+      )
       if (jump === null) return
       const header = layout.rows.find(
         (row) => row.kind === 'header' && row.bucket.startIndex === jump,
@@ -1206,36 +1220,24 @@
 <div class="gallery" data-testid="gallery-view">
   <!-- 089: the primary toggle — WHOSE gallery (§14.4). -->
   <div class="scope-bar">
-    <span class="segmented" role="group" aria-label="Scope">
-      <button
-        type="button"
-        data-testid="gallery-scope-this-world"
-        aria-pressed={scope === 'this-world'}
-        class:on={scope === 'this-world'}
-        onclick={() => setScope('this-world')}
-      >
-        this world
-      </button>
-      <button
-        type="button"
-        data-testid="gallery-scope-everything"
-        aria-pressed={scope === 'everything'}
-        class:on={scope === 'everything'}
-        onclick={() => setScope('everything')}
-      >
-        everything
-      </button>
-    </span>
-    <button
-      type="button"
-      class="open-source"
+    <Segmented
+      options={[
+        { value: 'this-world', label: 'this world', testid: 'gallery-scope-this-world' },
+        { value: 'everything', label: 'everything', testid: 'gallery-scope-everything' },
+      ]}
+      value={scope}
+      ariaLabel="Scope"
+      onchange={(value) => setScope(value as GalleryScope)}
+    />
+    <Button
+      variant="secondary"
       data-testid="gallery-open-source"
       disabled={choosingSource}
       onclick={() => void chooseSourceProject()}
-      use:tooltip={{ name: 'Open another world as a read-only source' }}
+      tip={{ name: 'Open another world as a read-only source' }}
     >
       {choosingSource ? 'Opening…' : 'Open folder as source…'}
-    </button>
+    </Button>
     <!-- 168: thumbnail-size slider (§14.4 rev 0.55) — rescales the
          bucketed grid live; the choice persists app-tier. -->
     <label class="thumb-size" use:tooltip={{ name: 'Thumbnail size' }}>
@@ -1263,14 +1265,14 @@
     <!-- 094: the clear-the-example affordance (§14.4) — present only
          while example-tagged content exists in the library. -->
     <div class="example-bar">
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         data-testid="gallery-clear-example"
         onclick={() => void clearExample()}
         disabled={clearingExample}
       >
         {clearingExample ? 'Clearing…' : 'Clear the example set'}
-      </button>
+      </Button>
       {#if clearError}
         <span class="clear-error" data-testid="gallery-clear-example-error">{clearError}</span>
       {/if}
@@ -1304,22 +1306,26 @@
 
   {#if currentBucket}
     <div class="current-header">
-      <button
-        type="button"
-        class="period"
+      <Button
+        variant="ghost"
         data-testid="gallery-period"
         aria-expanded={jumpOpen}
+        style="font-weight: 600;"
         onclick={() => (jumpOpen = !jumpOpen)}
       >
         {currentBucket.label} ▾
-      </button>
+      </Button>
       {#if jumpOpen}
         <ul class="period-list" data-testid="gallery-period-list">
           {#each buckets as bucket (bucket.key)}
             <li>
-              <button type="button" onclick={() => jumpTo(bucket)}>
+              <Button
+                variant="ghost"
+                style="width: 100%; display: flex; justify-content: space-between; text-align: left;"
+                onclick={() => jumpTo(bucket)}
+              >
                 {bucket.label} <span class="count">{bucket.count}</span>
-              </button>
+              </Button>
             </li>
           {/each}
         </ul>
@@ -1356,25 +1362,25 @@
               if (event.key === 'Enter') designateLibrary()
             }}
           />
-          <button
-            type="button"
+          <Button
+            variant="default"
             data-testid="gallery-designate-confirm"
             onclick={designateLibrary}
           >
             use as library
-          </button>
+          </Button>
         </div>
         <!-- 094: the create-new path — a fresh library at the app's
              default location, seeded with the §14.4 example set. -->
         <div class="designate-create">
-          <button
-            type="button"
+          <Button
+            variant="default"
             data-testid="gallery-create-library"
             onclick={() => void createLibrary()}
             disabled={creatingLibrary}
           >
             {creatingLibrary ? 'Creating…' : 'create a new library'}
-          </button>
+          </Button>
           <span class="create-hint">
             …at the default location, seeded with a small example set
           </span>
@@ -1525,25 +1531,6 @@
     color: var(--ew-text-muted);
   }
 
-  .open-source {
-    padding: 0.2rem 0.55rem;
-    border: 1px solid var(--ew-border);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--ew-text-muted);
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .open-source:hover:not(:disabled) {
-    background: var(--ew-surface-raised);
-  }
-
-  .open-source:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-
   .thumb-size input[type='range'] {
     width: 7rem;
     accent-color: var(--ew-accent);
@@ -1563,31 +1550,6 @@
     font-size: 0.85rem;
   }
 
-  .segmented {
-    display: inline-flex;
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-
-  .segmented button {
-    padding: 0.2rem 0.65rem;
-    font: inherit;
-    background: transparent;
-    color: var(--ew-text-muted);
-    border: none;
-    cursor: pointer;
-  }
-
-  .segmented button + button {
-    border-left: 1px solid var(--ew-border);
-  }
-
-  .segmented button.on {
-    background: var(--ew-accent);
-    color: var(--ew-on-accent);
-  }
-
   /* The honesty line (§14.4): quiet, one line, under the header. */
   .mirror-notice {
     flex: none;
@@ -1605,20 +1567,6 @@
     gap: 0.6rem;
     padding: 0.1rem 1rem 0.35rem;
     font-size: 0.78rem;
-  }
-
-  .example-bar button {
-    padding: 0.2rem 0.65rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 999px;
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .example-bar button:hover:not(:disabled) {
-    background: var(--ew-surface-subtle);
   }
 
   .example-bar .clear-error {
@@ -1642,40 +1590,12 @@
     gap: 0.45rem;
   }
 
-  .designate-row button {
-    padding: 0.3rem 0.75rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 5px;
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .designate-row button:hover {
-    background: var(--ew-surface-subtle);
-  }
-
   /* 094: the create-new alternative under the designate row. */
   .designate-create {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     margin-top: 0.8rem;
-  }
-
-  .designate-create button {
-    padding: 0.3rem 0.75rem;
-    background: var(--ew-surface-raised);
-    color: var(--ew-text);
-    border: 1px solid var(--ew-border-strong);
-    border-radius: 5px;
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .designate-create button:hover:not(:disabled) {
-    background: var(--ew-surface-subtle);
   }
 
   .designate-create .create-hint {
@@ -1690,21 +1610,6 @@
     border-bottom: 1px solid var(--ew-border);
   }
 
-  .period {
-    font: inherit;
-    font-weight: 600;
-    color: var(--ew-text);
-    background: none;
-    border: none;
-    padding: 0.3rem 0.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  .period:hover {
-    background: var(--ew-surface-subtle);
-  }
-
   .period-list {
     position: absolute;
     top: 100%;
@@ -1717,26 +1622,8 @@
     overflow-y: auto;
     background: var(--ew-surface-menu);
     border: 1px solid var(--ew-border);
-    border-radius: 8px;
-  }
-
-  .period-list button {
-    display: flex;
-    justify-content: space-between;
-    gap: 1.5rem;
-    width: 100%;
-    font: inherit;
-    color: var(--ew-text);
-    background: none;
-    border: none;
-    padding: 0.35rem 0.6rem;
     border-radius: 5px;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .period-list button:hover {
-    background: var(--ew-surface-subtle);
+    box-shadow: 0 6px 22px var(--ew-menu-shadow);
   }
 
   .count {
@@ -1765,9 +1652,18 @@
     height: 40px;
     display: flex;
     align-items: center;
-    font-size: 0.95rem;
-    font-weight: 600;
+    gap: 0.65rem;
+    font: 600 0.7rem/1 ui-monospace, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--ew-text-muted);
+  }
+
+  .bucket-header::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: var(--ew-border);
   }
 
   .row {

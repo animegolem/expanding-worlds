@@ -20,6 +20,27 @@ export interface GalleryBucket {
   count: number
 }
 
+/** Name headers stay quiet on small galleries; once the collection is
+ * past this exact kit threshold, contiguous first-letter runs become
+ * sections. Untitled items share the visible fallback header `#` — raw
+ * node ids never leak into presentation. */
+export const NAME_GROUP_THRESHOLD = 24
+
+export function bucketByName(
+  entries: ReadonlyArray<{ noteTitle: string | null }>,
+): GalleryBucket[] {
+  if (entries.length <= NAME_GROUP_THRESHOLD) return []
+  const buckets: GalleryBucket[] = []
+  for (let i = 0; i < entries.length; i += 1) {
+    const initial = entries[i]!.noteTitle?.trim().charAt(0).toLocaleUpperCase() ?? ''
+    const label = /^\p{L}$/u.test(initial) ? initial : '#'
+    const current = buckets.at(-1)
+    if (current?.label === label) current.count += 1
+    else buckets.push({ key: `name-${label}-${i}`, label, startIndex: i, count: 1 })
+  }
+  return buckets
+}
+
 const MONTHS = [
   'January',
   'February',

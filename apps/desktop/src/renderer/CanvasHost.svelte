@@ -25,6 +25,8 @@
   import AttachNotePicker from './note/AttachNotePicker.svelte'
   import NotePanels from './note/NotePanels.svelte'
   import TagPanel from './tags/TagPanel.svelte'
+  import ActiveLensChip from './tags/ActiveLensChip.svelte'
+  import { bindTagLensHost } from './tags/lens-coordinator'
   import { onTagPanelChanged, type TagPanelState } from './tags/tag-panel'
   import SearchPalette from './chrome/SearchPalette.svelte'
   import { onSearchPanelChanged, type SearchPanelState } from './chrome/search'
@@ -77,6 +79,7 @@
     let pinTool: PinToolHandle | null = null
     let placeMode: PlaceModeHandle | null = null
     let detachPanels: (() => void) | null = null
+    let detachTagLens: (() => void) | null = null
     let disposed = false
     // §9.2 board notices ride the ew-board-notice event to the §8.6
     // toast stack (chrome/status.ts) — no rendering here anymore.
@@ -107,6 +110,7 @@
         textEntry = attachTextEntry(h, element)
         openNote = attachOpenNoteSurface(h, element)
         detachPanels = attachPanels(h)
+        detachTagLens = bindTagLensHost(h)
         // The charm bar reads/sets the §4.9 frame sort-on-drop flag
         // (AI-IMP-138) through the SAME board-tooling path the Dock uses,
         // so tooling (attached above) is handed in.
@@ -140,6 +144,7 @@
       pinTool?.destroy()
       placeMode?.destroy()
       detachPanels?.()
+      detachTagLens?.()
       tooling?.destroy()
       ui?.destroy()
       mounted?.destroy()
@@ -172,6 +177,9 @@
   {/if}
   {#if tagPanel && handle}
     <TagPanel {handle} hostElement={element} panel={tagPanel} />
+  {/if}
+  {#if handle}
+    <ActiveLensChip />
   {/if}
   {#if searchPanel && handle}
     <SearchPalette {handle} panel={searchPanel} />

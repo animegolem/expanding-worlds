@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
@@ -22,6 +22,10 @@ function currentTheme(win: Page): Promise<string> {
   return win.evaluate(() => document.documentElement.dataset['theme'] ?? 'dark')
 }
 
+function currentDensity(win: Page): Promise<string> {
+  return win.evaluate(() => document.documentElement.dataset['density'] ?? 'compact')
+}
+
 test('settings commit on click, apply live, and persist per tier across relaunch', async () => {
   const configDir = mkdtempSync(join(tmpdir(), 'ew-e2e-appcfg-'))
   const first = await launchApp('ew-e2e-settings-', { EW_APP_CONFIG_DIR: configDir })
@@ -29,6 +33,10 @@ test('settings commit on click, apply live, and persist per tier across relaunch
 
   await openSettings(win)
   const revisionBefore = await revision(win)
+  await expect(win.getByTestId('settings-commit-copy')).toHaveText(
+    'Changes apply instantly · no save',
+  )
+  await expect(win.getByTestId('settings-section-notes')).toContainText('this world')
 
   // Theme repaints live behind the sheet, no apply button anywhere.
   await win.getByTestId('settings-theme-light').click()
@@ -38,7 +46,19 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   await win.getByTestId('settings-charm-corner-upper-right').click()
   await win.getByTestId('settings-title-strip-always').click()
   await win.getByTestId('settings-fade-never').click()
-  await expect(win.getByTestId('settings-fade-never')).toHaveAttribute('aria-pressed', 'true')
+  await expect(win.getByTestId('settings-fade-never')).toHaveAttribute('aria-checked', 'true')
+
+  // Density is app-tier and live: both the root token and a settings
+  // row's physical target grow without reopening the sheet.
+  const compactHeight = (await win.getByTestId('settings-row-density').boundingBox())!.height
+  await win.getByTestId('settings-density-comfortable').click()
+  await expect.poll(() => currentDensity(win)).toBe('comfortable')
+  await expect
+    .poll(async () => (await win.getByTestId('settings-row-density').boundingBox())!.height)
+    .toBeGreaterThan(compactHeight)
+  await expect
+    .poll(async () => (await win.getByTestId('settings-row-density').boundingBox())!.height)
+    .toBeGreaterThanOrEqual(44)
 
   // Flat canvas color repaints the background-less board live.
   await win.getByTestId('settings-flat-3').click()
@@ -93,11 +113,20 @@ test('settings commit on click, apply live, and persist per tier across relaunch
   expect(persisted['fadeDelayMs']).toBe('never')
   expect(persisted['flatCanvasColor']).toBe('--ew-canvas-flat-3')
   expect(persisted['windowOpacity']).toBe(0.8)
+  expect(persisted['density']).toBe('comfortable')
+
+  // An old inert key is ignored by the renderer codec rather than
+  // making a pre-300 settings file unreadable.
+  writeFileSync(
+    join(configDir, 'app-settings.json'),
+    `${JSON.stringify({ ...persisted, menuPlacement: 'system' }, null, 2)}\n`,
+  )
 
   // Relaunch on the same project + config: app settings survive, and
   // the theme applies before the user touches anything.
   const second = await launchAppInDir(projectDir, { EW_APP_CONFIG_DIR: configDir })
   await expect.poll(() => currentTheme(second.win)).toBe('light')
+  await expect.poll(() => currentDensity(second.win)).toBe('comfortable')
   // 'always' survived the relaunch: strip up at boot, no hover.
   // (Asserted before opening settings — a takeover unmounts it.)
   await expect(second.win.getByTestId('title-strip')).toBeVisible()
@@ -106,11 +135,41 @@ test('settings commit on click, apply live, and persist per tier across relaunch
     'aria-pressed',
     'true',
   )
-  // The disabled inventory still names what it waits for.
-  await expect(second.win.getByTestId('settings-row-grid')).toHaveAttribute(
-    'title',
-    'arrives with the grid feature',
+  await expect(second.win.getByTestId('settings-density-comfortable')).toHaveAttribute(
+    'aria-pressed',
+    'true',
   )
+
+  // Rows with no backing behavior leave rather than impersonating
+  // controls. This includes the stale menu-placement inventory.
+  for (const id of [
+    'settings-row-grid',
+    'settings-row-snap',
+    'settings-row-vault',
+    'settings-row-mirror-drops',
+    'settings-row-border',
+    'settings-row-corners',
+    'settings-row-menu-placement',
+  ]) {
+    await expect(second.win.getByTestId(id)).toHaveCount(0)
+  }
+
+  // Fold memory is renderer-session view state: it survives closing
+  // and reopening Settings, but never enters the app settings file.
+  await second.win.getByTestId('settings-fold-appearance').click()
+  await expect(second.win.getByTestId('settings-fold-appearance')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  )
+  await expect(second.win.getByTestId('settings-row-density')).toHaveCount(0)
+  await second.win.keyboard.press('Escape')
+  await openSettings(second.win)
+  await expect(second.win.getByTestId('settings-fold-appearance')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  )
+  await expect(second.win.getByTestId('settings-row-density')).toHaveCount(0)
+  await second.win.getByTestId('settings-fold-appearance').click()
 
   // 'never' kills both the drag strip and its reveal zone live, but
   // AI-IMP-293's sole top-right ☰ remains — Settings cannot strand its
@@ -170,7 +229,11 @@ test('Keyboard section lists registered bindings by scope, read-only (§8.2, AI-
   // inputs, or selects — unlike every other settings section).
   const controls = win
     .getByTestId('settings-section-keyboard')
-    .locator('button, input, select')
+    .locator(
+      '#settings-section-keyboard-body button, ' +
+        '#settings-section-keyboard-body input, ' +
+        '#settings-section-keyboard-body select',
+    )
   await expect(controls).toHaveCount(0)
 
   await app.close()

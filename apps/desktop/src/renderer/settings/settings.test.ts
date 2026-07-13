@@ -37,6 +37,7 @@ function stubWindow(settings: EwSettingsStub): void {
     documentElement: {
       dataset: {} as Record<string, string>,
       addEventListener: () => {},
+      dispatchEvent: () => true,
     },
   })
 }
@@ -213,5 +214,54 @@ describe('caption promotion routing', () => {
     await initSettings()
 
     expect(appSettings().captionPromotionRouting).toBe('ask')
+  })
+})
+
+describe('density', () => {
+  it.each(['compact', 'comfortable'] as const)('accepts and applies persisted %s density', async (density) => {
+    stubWindow({
+      appAll: () => Promise.resolve({ density }),
+      setApp: () => Promise.resolve({ ok: true }),
+      onAppChanged: () => () => {},
+    })
+
+    await initSettings()
+
+    expect(appSettings().density).toBe(density)
+    expect(document.documentElement.dataset['density']).toBe(density)
+  })
+
+  it('falls back from unknown density and applies changes live', async () => {
+    stubWindow({
+      appAll: () => Promise.resolve({ density: 'auto', menuPlacement: 'system' }),
+      setApp: () => Promise.resolve({ ok: true }),
+      onAppChanged: () => () => {},
+    })
+
+    await initSettings()
+    expect(appSettings().density).toBe('compact')
+    expect(document.documentElement.dataset['density']).toBe('compact')
+
+    setAppSetting('density', 'comfortable')
+    expect(document.documentElement.dataset['density']).toBe('comfortable')
+    expect('menuPlacement' in appSettings()).toBe(false)
+  })
+
+  it('restores the density token when persistence fails', async () => {
+    stubWindow({
+      appAll: () => Promise.resolve({ density: 'compact' }),
+      setApp: () => Promise.resolve({ ok: false, message: 'read only' }),
+      onAppChanged: () => () => {},
+    })
+    await initSettings()
+
+    setAppSetting('density', 'comfortable')
+    expect(document.documentElement.dataset['density']).toBe('comfortable')
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(appSettings().density).toBe('compact')
+    expect(document.documentElement.dataset['density']).toBe('compact')
   })
 })

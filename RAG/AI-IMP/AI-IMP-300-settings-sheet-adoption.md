@@ -5,12 +5,12 @@ tags:
   - Implementation
   - settings
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-286, AI-IMP-288]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.8
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-13
 ---
 
 # AI-IMP-300-settings-sheet-adoption
@@ -69,29 +69,91 @@ e2e: density switch + folding + placeholder-rows-gone; existing
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify SettingsView's current rows against the kit
+- [x] Round-1: verify SettingsView's current rows against the kit
       sheet; adjudicate each placeholder row (live control vs
       leaves) and record the table here; check stale-key
       tolerance.
-- [ ] Sheet anatomy: folding sections, scope chips, no-save header
+- [x] Sheet anatomy: folding sections, scope chips, no-save header
       copy, kit toggles/segmented/swatches; no natives.
-- [ ] Density segment: switches data-density live (bands + row
+- [x] Density segment: switches data-density live (bands + row
       heights respond without reload), persists at app tier.
-- [ ] Placeholder rows resolved per the round-1 table; no row
+- [x] Placeholder rows resolved per the round-1 table; no row
       presents a control that does nothing.
-- [ ] menuPlacement row + stored value removed safely.
-- [ ] Guard allowlist settings entries removed.
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] menuPlacement row + stored value removed safely.
+- [x] Guard allowlist settings entries removed.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
 **Scenario:** density is a setting.
 **GIVEN** the settings sheet open at desktop density
 **WHEN** the user switches density to comfortable
-**THEN** rows and bands grow live (44px targets) and the choice
+**THEN** rows grow live (44px targets), bands reflow through the
+286 density contract, and the choice
 survives a restart
 **AND** every visible settings row operates a real behavior
 **AND** the sheet's sections fold and remember their fold state
 per the kit.
 
+### Round-1 source verification (2026-07-13)
+
+The actual surface is `renderer/views/SettingsView.svelte`. It currently
+defines a local segmented snippet (`:344-364`) and flat sections, so
+round 2 adopts the shared Segmented from 299 plus kit sheet/fold anatomy.
+Fold memory has no specified durable tier and the wave forbids new
+persistence; proposed contract is renderer-session memory (survives
+closing/reopening Settings in the process, resets on restart).
+
+| Placeholder | Source truth | Round-2 ruling |
+| --- | --- | --- |
+| Grid | row is explicitly deferred (`SettingsView.svelte:391-396`); host always draws its adaptive grid when eligible (`renderer/canvas/host.ts:1325-1414`) with no setting seam | leaves |
+| Snap to grid | row is explicitly deferred (`SettingsView.svelte:515-520`); board gestures install shipped snapping unconditionally | leaves |
+| Border | frameless-window placeholder only (`SettingsView.svelte:749-754`) | leaves |
+| Rounded corners | frameless-window placeholder only (`SettingsView.svelte:756-761`) | leaves |
+
+`menuPlacement` is confirmed dead: it is typed/defaulted/sanitized in
+`renderer/settings/settings.ts:18-22,31-57,70-99`, while the visible row
+admits that no consumer exists (`SettingsView.svelte:763-781`). Removing
+that known property is safe because `sanitize` constructs defaults and
+copies only recognized keys, so an old JSON key is ignored without error.
+This is a codec cleanup, not a schema migration.
+
+Density has a partial live seam, not a setting. `data-density` already
+changes reservation geometry and is observed without reload
+(`renderer/chrome/reservation.ts:44-63,93-119`), and comfortable tokens
+already exist (`renderer/theme.css:304-306`), but `AppSettings` carries no
+density. Round-1 ruling: the app-tier codec is exactly
+`'compact' | 'comfortable'`; persist the selected token and apply the root
+attribute as a settings side effect. `auto` is deferred until a real
+modality detector exists—shipping an indistinguishable alias would be a
+quiet lie.
+
+The guard claims are stale here too: both relevant allowlists are already
+empty (`ui/input-styling-guard.test.ts:16-21` and
+`ui/no-native-inputs.test.ts:6-10`). Round 2 preserves the absolute guards;
+there is no Settings exception to remove.
+
 ### Issues Encountered
+
+- The acceptance text said comfortable made both rows and bands
+  "grow," but AI-IMP-286's ratified comfortable value sets the strip
+  reservation to `0`. The implementation preserves that existing
+  contract through `setReservationDensity`: row/control targets grow
+  to 44px while anchored/takeover geometry reflows live. No parallel
+  reservation semantics were invented.
+- The four-row round-1 table was not the whole inert inventory.
+  `Obsidian vault beside the project` and `Mirror drops to library`
+  were also non-interactive `deferredRow` instances. The accepted
+  ruling said all placeholder rows leave and every visible row must
+  operate, so both left with Grid/Snap/Border/Rounded/menu placement.
+- The first focused e2e run was 3/4 because the Keyboard section's
+  new fold button correctly made the old whole-section "zero
+  controls" assertion false. The product surface was sound; the pin
+  was narrowed to the read-only section body and the rerun passed
+  4/4. Focused final evidence: desktop build green; 33 settings/UI
+  units; 8/8 settings, reservation-frame, and shared-input e2e.
+- Full `CI=true pnpm check` passed: shared-ui 1, commands 19, domain
+  60, protocol 1, canvas-engine 410, persistence 659, desktop unit
+  570, hidden-window e2e 274/274 in 6.1m; ESLint and spike typecheck
+  green. The isolated-clone `git main` diagnostic remained harmless
+  and the known Svelte warning baseline was unchanged.

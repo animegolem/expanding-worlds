@@ -146,6 +146,7 @@
       const center = (): void => {
         const items = h.controller.items().filter((item) => wanted.has(item.id))
         if (items.length === 0) return
+        h.beats.arrival(items.map((item) => item.id))
         h.controller.selection.marquee(placementIds)
         const bounds = unionBounds(items)
         if (bounds) h.flyTo(bounds)

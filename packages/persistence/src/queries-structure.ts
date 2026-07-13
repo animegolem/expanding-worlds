@@ -67,6 +67,9 @@ interface NodeAppearanceColumns {
 /** One placement row inside an outline canvas entry (§14.1). */
 export interface OutlineChildRow extends NodeAppearanceColumns {
   placementId: string
+  /** §4.5 rev 0.71: display meta on this placement's existing row;
+   * never an outline/search identity or a row of its own. */
+  caption: string | null
   nodeId: string
   renderOrder: number
   noteId: string | null
@@ -770,6 +773,7 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       NodeAppearanceColumns & {
         canvasId: string
         placementId: string
+        caption: string | null
         nodeId: string
         renderOrder: number
         noteId: string | null
@@ -781,7 +785,8 @@ export function registerStructureQueries(registry: QueryRegistry): void {
         boardChildCount: number
       }
     >(
-      `SELECT p.canvas_id AS canvasId, p.id AS placementId, n.id AS nodeId,
+      `SELECT p.canvas_id AS canvasId, p.id AS placementId,
+              p.caption AS caption, n.id AS nodeId,
               p.render_order AS renderOrder, ${NODE_APPEARANCE_SELECT},
               note.id AS noteId, note.title AS noteTitle,
               child.id AS childCanvasId,

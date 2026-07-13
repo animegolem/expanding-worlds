@@ -357,7 +357,7 @@ describe('getOutlineTree / listLooseNotes (§14.1, AI-IMP-069)', () => {
     const imagePlacement = createPlacement(image)
     committed('SetPlacementCaption', {
       placementId: imagePlacement,
-      caption: 'outline-blind private observation',
+      caption: 'placement display observation',
     })
     const boardNode = createNode()
     const boardNoteId = insertNote('Ruins Board')
@@ -375,13 +375,15 @@ describe('getOutlineTree / listLooseNotes (§14.1, AI-IMP-069)', () => {
     committed('AssignTagToNode', { tagId, nodeId: image })
 
     const rows = query<Array<Record<string, unknown>>>('getOutlineTree')
-    expect(JSON.stringify(rows)).not.toContain('outline-blind private observation')
     for (const row of rows) {
+      // Caption meta is confined to the existing PLACEMENT child row;
+      // it never becomes a canvas/root identity field.
       expect(row).not.toHaveProperty('caption')
-      for (const child of row.children as Array<Record<string, unknown>>) {
-        expect(child).not.toHaveProperty('caption')
-      }
     }
+    const captioned = rows
+      .flatMap((row) => row.children as Array<Record<string, unknown>>)
+      .find((child) => child.placementId === imagePlacement)
+    expect(captioned).toMatchObject({ caption: 'placement display observation' })
     const byCanvas = new Map(rows.map((row) => [row.canvasId as string, row]))
     expect(rows[0]).toMatchObject({ canvasId: handle.rootCanvasId, isRoot: true, isRootLevel: true })
 
@@ -505,6 +507,24 @@ describe('outliner control-panel read models (AI-IMP-273)', () => {
       places: [],
     })
     expect(query('getOutlinePreview', { kind: 'note', noteId: uuidv7() })).toBeNull()
+  })
+
+  it('carries placement-local captions only as existing tree-row display meta', () => {
+    const nodeId = createNode()
+    const first = createPlacement(nodeId)
+    const second = createPlacement(nodeId)
+    committed('SetPlacementCaption', { placementId: first, caption: 'left study' })
+    committed('SetPlacementCaption', { placementId: second, caption: 'right study' })
+
+    const tree = query<OutlineCanvasRow[]>('getOutlineTree')
+    const rows = tree.flatMap((canvas) => canvas.children).filter((row) => row.nodeId === nodeId)
+    expect(rows.map((row) => ({ placementId: row.placementId, caption: row.caption }))).toEqual([
+      { placementId: first, caption: 'left study' },
+      { placementId: second, caption: 'right study' },
+    ])
+    // Two placements remain two ordinary placement rows: caption text
+    // creates no entry and changes no identity/count projection.
+    expect(rows).toHaveLength(2)
   })
 
   it('extends tree and unplaced-library rows with honest naming facts', () => {
