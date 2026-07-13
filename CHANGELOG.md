@@ -12,6 +12,8 @@ annotations.
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-07-13
+
 ### For testers (the dock grows up)
 - Changed: the dock is now just tools. Arm a tool and ONE row appears
   above it with that tool's defaults — font, size, ink for text;
