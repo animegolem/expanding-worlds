@@ -125,3 +125,24 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+## Summary of Issue #3 — CI input dispatch costs ~1s per mouse step (lead, 2026-07-13)
+
+Trace-measured on the dock-wave oracle reruns (runs 29216938460 /
+29218326828 / 29219899725, all deterministic): on the ubuntu runner
+under xvfb, EVERY multi-step `mouse.move` costs ~1.02s per step —
+eleven `steps: 4` drags at exactly 4.1s each in one test — while the
+same suite runs the same drags in milliseconds locally.
+`backgroundThrottling: false` is already set for hidden test windows
+(main/index.ts:819), so this is not the renderer timer clamp;
+suspects are GPU-less compositing frame cadence under xvfb (input
+dispatch awaiting frames) or Linux occlusion handling for
+never-shown windows. This is the substrate of the whole suite's CI
+cost (19-minute shards ≈ 16s/test average vs ~1.4s locally) — fixing
+it would roughly halve CI wall time and retire a class of
+budget-edge timeouts. Immediate mitigation shipped with the dock
+wave close: decorations.spec's budget raised 120s→240s, sized to the
+measured runner. The analysis here should measure per-step cost
+directly (a probe spec), then trial: xvfb frame rate flags, Electron
+`show:true` under xvfb (windows are "visible" to X but unseen),
+offscreen rendering mode, and Playwright input dispatch options.

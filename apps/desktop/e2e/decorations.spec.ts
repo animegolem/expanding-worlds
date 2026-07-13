@@ -39,7 +39,13 @@ async function selectShapeTool(win: import('@playwright/test').Page, kind: strin
  */
 
 test('decorations: draw, anchor, group, lock, hide, search', async () => {
-  test.setTimeout(120_000)
+  // The suite's longest acceptance walk. On the GPU-less CI runner
+  // every multi-step mouse drag costs ~1s/step (trace-measured,
+  // 2026-07-13: eleven 4-step drags at 4.1s each), and the dock wave
+  // grew the walk by the five-shape family — 120s now dies mid-test
+  // ON CI ONLY. Budget sized to the measured runner, not the laptop;
+  // the why-so-slow investigation is AI-IMP-269 Issue #3.
+  test.setTimeout(240_000)
   const projectDir = mkdtempSync(join(tmpdir(), 'ew-e2e-decorations-'))
   const app = await electron.launch({
     args: ['out/main/index.cjs'],
