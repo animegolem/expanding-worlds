@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { exec, launchApp, launchAppInDir, runQuery } from './helpers'
+import { openAppMenu, exec, launchApp, launchAppInDir, runQuery } from './helpers'
 
 test('retention purges on reopen, reports in the perch, and links back to Trash', async () => {
   const first = await launchApp('ew-e2e-retention-')
@@ -13,7 +13,7 @@ test('retention purges on reopen, reports in the perch, and links back to Trash'
   await exec(first.win, 'TrashNote', { noteId: oldNoteId })
   await exec(first.win, 'TrashNote', { noteId: freshNoteId })
 
-  await first.win.getByTestId('charm-menu').click()
+  await openAppMenu(first.win)
   await first.win.getByTestId('menu-trash').click()
   await first.win.getByTestId('trash-retention-30d').click()
   await expect(first.win.getByTestId('trash-retention-promise')).toContainText(

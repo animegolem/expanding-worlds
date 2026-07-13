@@ -182,7 +182,7 @@ function comboKeyLabel(combo: Combo): string {
 }
 
 /**
- * The tooltip/settings chip string. macOS stacks glyphs (⇧⌘P); other
+ * The tooltip/settings chip string. macOS stacks glyphs (⇧⌘K); other
  * platforms spell modifiers and join with `+` (Ctrl+Shift+P). Only
  * modifiers explicitly `true` print, so a "don't care" modifier never
  * shows up as a required key.

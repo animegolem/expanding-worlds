@@ -1,12 +1,10 @@
 <!--
   ☰ menu (RFC §8.2 rev 0.45, ratified inventory): top to bottom —
-  Undo · Redo · divider · Trash… · End Session · divider · Settings ·
-  Help/About, with the deferred Export… kept below (its §16 anchor).
-  Undo/Redo/Trash…/End Session render aria-disabled until their epics
-  land, each naming what enables it; Undo/Redo also PRINT their
-  shortcuts, so the menu is the self-teaching surface even disabled.
-  Settings opens the §11.5 takeover; Help/About opens a small anchored
-  dialog (portaled out per §8.8).
+  Undo · Redo · divider · Trash… · Restore · End Session · divider ·
+  Switch world… · Settings · Help/About · Export…. AI-IMP-293 moves
+  this unchanged menu from the rail into the title strip and makes the
+  native project chooser the switching door. Undo/Redo print their
+  shortcuts, so the menu remains self-teaching while disabled.
 -->
 <script lang="ts">
   import HelpAboutDialog from './HelpAboutDialog.svelte'
@@ -15,6 +13,8 @@
   import { openTakeover } from './takeover'
   import { tooltip } from './tooltip'
   import { canRedo, canUndo, onUndoChanged, redo, undo } from '../undo/undo-store'
+  import { requestSettingsIntent } from './settings-intent'
+  import { toast } from './status'
 
   const { onclose }: { onclose: () => void } = $props()
 
@@ -37,6 +37,28 @@
 
   let helpOpen = $state(false)
   let restoreOpen = $state(false)
+  let switchingWorld = $state(false)
+
+  async function switchWorld(): Promise<void> {
+    if (switchingWorld) return
+    switchingWorld = true
+    onclose()
+    try {
+      const chosen = await window.ew.project.chooseDirectory('switch')
+      if (!chosen) return
+      if (!chosen.ok) {
+        toast(chosen.message, { kind: 'error', surface: 'menu' })
+        return
+      }
+      if (!chosen.openToken) {
+        toast('That world could not be opened safely.', { kind: 'error', surface: 'menu' })
+        return
+      }
+      await window.ew.snapshot.open(chosen.openToken)
+    } finally {
+      switchingWorld = false
+    }
+  }
 
   // §11.4 restore (AI-IMP-121): the row is live only when there is a
   // backup to restore FROM — snapshots turned on AND at least one commit
@@ -185,6 +207,17 @@
   <button
     type="button"
     role="menuitem"
+    data-testid="menu-switch-world"
+    aria-disabled={switchingWorld}
+    class:deferred={switchingWorld}
+    onclick={() => void switchWorld()}
+  >
+    <span class="label">{switchingWorld ? 'Opening…' : 'Switch world…'}</span>
+  </button>
+
+  <button
+    type="button"
+    role="menuitem"
     data-testid="menu-settings"
     onclick={() => {
       onclose()
@@ -207,10 +240,12 @@
   <button
     type="button"
     role="menuitem"
-    class="deferred"
-    aria-disabled="true"
     data-testid="menu-export"
-    use:tooltip={{ name: 'Export — arrives with the export epic' }}
+    onclick={() => {
+      onclose()
+      requestSettingsIntent('export')
+      openTakeover('settings')
+    }}
   >
     <span class="label">Export…</span>
   </button>
@@ -230,8 +265,8 @@
 <style>
   .menu {
     position: absolute;
-    top: 0;
-    right: calc(100% + 0.35rem);
+    top: calc(100% + 0.35rem);
+    right: 0;
     display: flex;
     flex-direction: column;
     gap: 0.2rem;

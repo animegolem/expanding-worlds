@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { launchApp } from './helpers'
+import { openAppMenu, launchApp } from './helpers'
 
-test('reservation frame owns takeover and anchored-surface viewport edges', async () => {
+test('reservation frame owns takeover edges and search uses its centered top-flush contract', async () => {
   const { app, win } = await launchApp('ew-e2e-reservation-frame-')
 
   await expect.poll(() => win.evaluate(() => Boolean(window.__ewReservations))).toBe(true)
@@ -10,14 +10,14 @@ test('reservation frame owns takeover and anchored-surface viewport edges', asyn
   const viewport = await win.evaluate(() => ({ width: innerWidth, height: innerHeight }))
 
   await win.getByTestId('charm-search').click()
-  const anchored = await win.getByTestId('search-panel').boundingBox()
-  expect(anchored!.x).toBeGreaterThanOrEqual(24)
-  expect(anchored!.y).toBeGreaterThanOrEqual(46 + 24)
-  expect(anchored!.x + anchored!.width).toBeLessThanOrEqual(viewport.width - 56 - 24 + 1)
-  expect(anchored!.y + anchored!.height).toBeLessThanOrEqual(viewport.height - 64 - 24 + 1)
+  const palette = await win.getByTestId('search-panel').boundingBox()
+  expect(palette!.y).toBe(46)
+  expect(palette!.width).toBeLessThanOrEqual(viewport.width - 160)
+  expect(Math.abs(palette!.x + palette!.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(1)
+  expect(palette!.y + palette!.height).toBeLessThanOrEqual(viewport.height - 114)
   await win.getByTestId('search-close').click()
 
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-settings').click()
   const takeover = win.getByTestId('takeover-settings')
   await expect(takeover).toBeVisible()

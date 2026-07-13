@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
-import { launchApp, revealTitleStrip, seedPlacedNote } from './helpers'
+import { launchApp, openAppMenu, revealTitleStrip, seedPlacedNote } from './helpers'
 
 declare global {
   interface Window {
@@ -123,17 +123,24 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   const win = await app.firstWindow()
   await expect(win.getByTestId('canvas-host')).toBeVisible()
 
-  // Rail and dock are present; charms whose views haven't shipped
-  // stay disabled (outline and ☰ went live with AI-IMP-068, ⌕
-  // with AI-IMP-073, ⊞ with AI-IMP-077, ⧉ with AI-IMP-091).
+  // AI-IMP-293: the rail is exactly the four ways-of-seeing doors;
+  // project and menu have moved to their scoped homes.
   await expect(win.getByTestId('charm-rail')).toBeVisible()
   await expect(win.getByTestId('dock')).toBeVisible()
+  const railOrder = await win.getByTestId('charm-rail').evaluate((rail) =>
+    Array.from(rail.querySelectorAll(':scope > [data-testid^="charm-"]')).map(
+      (el) => (el as HTMLElement).dataset['testid'],
+    ),
+  )
+  expect(railOrder).toEqual(['charm-gallery', 'charm-outline', 'charm-graph', 'charm-search'])
   for (const id of ['graph']) {
     await expect(win.getByTestId(`charm-${id}`)).toHaveAttribute('aria-disabled', 'true')
   }
-  for (const id of ['project', 'search', 'outline', 'gallery', 'menu']) {
+  for (const id of ['search', 'outline', 'gallery']) {
     await expect(win.getByTestId(`charm-${id}`)).not.toHaveAttribute('aria-disabled', 'true')
   }
+  await expect(win.getByTestId('charm-project')).toHaveCount(0)
+  await expect(win.getByTestId('charm-menu')).toBeVisible()
   // Tool modes and the zoom cluster live in the dock.
   await expect(win.getByTestId('tool-select')).toBeVisible()
   await expect(win.getByTestId('dock-shape')).toBeVisible()
@@ -364,7 +371,7 @@ test('takeover framework: charm entry, Esc return, camera and board untouched', 
 
   // ☰ menu: Settings entry opens its takeover; opening a second kind
   // replaces the first implicitly through close-then-open.
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await expect(win.getByTestId('rail-menu')).toBeVisible()
   await win.getByTestId('menu-settings').click()
   await expect(win.getByTestId('rail-menu')).toHaveCount(0)
@@ -393,17 +400,38 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
   const { app, win } = await launchApp('ew-e2e-menu-')
 
   try {
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await expect(win.getByTestId('rail-menu')).toBeVisible()
 
     // The rows read top-to-bottom in the ratified geography.
-    const order = ['menu-undo', 'menu-redo', 'menu-trash', 'menu-restore', 'menu-end-session', 'menu-settings', 'menu-help', 'menu-export']
+    const order = ['menu-undo', 'menu-redo', 'menu-trash', 'menu-restore', 'menu-end-session', 'menu-switch-world', 'menu-settings', 'menu-help', 'menu-export']
     const domOrder = await win.getByTestId('rail-menu').evaluate((menu) =>
       Array.from(menu.querySelectorAll('[data-testid^="menu-"]')).map(
         (el) => (el as HTMLElement).dataset['testid'],
       ),
     )
     expect(domOrder).toEqual(order)
+
+    // Switch world is live through the native chooser. Cancellation is
+    // a clean close and never reaches the relaunch capability consumer.
+    await app.evaluate(async ({ dialog }) => {
+      const state = globalThis as { __ewSwitchChooserCalls?: number }
+      state.__ewSwitchChooserCalls = 0
+      dialog.showOpenDialog = async () => {
+        state.__ewSwitchChooserCalls = (state.__ewSwitchChooserCalls ?? 0) + 1
+        return { canceled: true, filePaths: [] }
+      }
+    })
+    await win.getByTestId('menu-switch-world').click()
+    await expect(win.getByTestId('rail-menu')).toHaveCount(0)
+    await expect
+      .poll(() =>
+        app.evaluate(
+          () => (globalThis as { __ewSwitchChooserCalls?: number }).__ewSwitchChooserCalls ?? 0,
+        ),
+      )
+      .toBe(1)
+    await openAppMenu(win)
 
     // Undo/Redo print their shortcuts — self-teaching even while off.
     await expect(win.getByTestId('menu-undo')).toContainText('⌘Z')
@@ -412,7 +440,7 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
     // Every deferred row is aria-disabled and inert: clicking it must
     // neither close the menu nor open anything. (Trash… went live with
     // AI-IMP-102 and is asserted separately below.)
-    for (const id of ['menu-undo', 'menu-redo', 'menu-end-session', 'menu-export']) {
+    for (const id of ['menu-undo', 'menu-redo', 'menu-end-session']) {
       await expect(win.getByTestId(id)).toHaveAttribute('aria-disabled', 'true')
       // force past actionability: even a real DOM click must do nothing.
       await win.getByTestId(id).click({ force: true })
@@ -420,6 +448,15 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
       await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
       await expect(win.getByTestId('help-about-dialog')).toHaveCount(0)
     }
+
+    // Export is honest: it opens Settings at the live export control.
+    await expect(win.getByTestId('menu-export')).not.toHaveAttribute('aria-disabled', 'true')
+    await win.getByTestId('menu-export').click()
+    await expect(win.getByTestId('rail-menu')).toHaveCount(0)
+    await expect(win.getByTestId('takeover-settings')).toBeVisible()
+    await expect(win.getByTestId('settings-export-run')).toBeFocused()
+    await win.keyboard.press('Escape')
+    await openAppMenu(win)
 
     // Help/About opens a clamped dialog with a real semver version and
     // the repo address; Esc closes it, leaving the menu behind.
@@ -446,7 +483,7 @@ test('☰ menu: ratified inventory, disabled rows inert, Help/About version', as
     await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
 
     // Trash… went live with AI-IMP-102: enabled, and opens its takeover.
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await expect(win.getByTestId('menu-trash')).not.toHaveAttribute('aria-disabled', 'true')
     await win.getByTestId('menu-trash').click()
     await expect(win.getByTestId('rail-menu')).toHaveCount(0)
@@ -471,7 +508,7 @@ test('☰ Help/About shortcuts link opens Settings and dismisses the ☰ popover
   const { app, win } = await launchApp('ew-e2e-menu-shortcuts-')
 
   try {
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await expect(win.getByTestId('rail-menu')).toBeVisible()
     await win.getByTestId('menu-help').click()
     await expect(win.getByTestId('help-about-dialog')).toBeVisible()

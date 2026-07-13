@@ -11,7 +11,7 @@ import { attachUndo, redo, undo } from './undo-store'
  * Structural undo/redo keyboard driver (RFC-0001 §10.2, AI-IMP-114),
  * mounted once from App.svelte. Mod+Z undoes, Shift+Mod+Z redoes.
  *
- * CAPTURE phase, like navigation's Mod+P (navigation.ts): CodeMirror
+ * CAPTURE phase, like navigation's Mod+K (navigation.ts): CodeMirror
  * and input fields install their own keydown handlers on their DOM, so
  * a window-capture listener runs first and can DEFER cleanly — inside
  * the editor or any text field, Mod+Z is the editor's fine-grained text

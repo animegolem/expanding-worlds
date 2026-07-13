@@ -7,7 +7,7 @@
  * trash → restore FROM THE TRASH VIEW → loose again.
  */
 import { test, expect } from '@playwright/test'
-import { launchApp, exec, runQuery } from './helpers'
+import { openAppMenu, launchApp, exec, runQuery } from './helpers'
 
 async function seedLooseNote(
   win: import('@playwright/test').Page,
@@ -37,7 +37,7 @@ test('outline loose bin: Trash removes the row; Trash-view restore returns it lo
   expect(trashed.notes).toHaveLength(1)
 
   // Restore through the trash takeover; the note returns LOOSE.
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-trash').click()
   await expect(win.getByTestId('takeover-trash')).toBeVisible()
   const trashRow = win.locator('[data-testid="trash-row"][data-kind="note"]')

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { launchApp } from './helpers'
+import { openAppMenu, launchApp } from './helpers'
 
 /**
  * AI-IMP-205 (§6.9 mouse/trackpad navigation scheme): middle-button
@@ -92,7 +92,7 @@ test('plain wheel pans in trackpad scheme and zooms in mouse scheme; pinch/Cmd z
     .toBeGreaterThan(1)
 
   // Flip to the mouse scheme through the real settings row.
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await win.getByTestId('menu-settings').click()
   await expect(win.getByTestId('settings-view')).toBeVisible()
   await win.getByTestId('settings-navigation-scheme-mouse').click()

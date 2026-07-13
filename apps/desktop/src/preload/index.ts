@@ -48,6 +48,11 @@ export interface SetAppSettingResult {
   message?: string
 }
 
+export type ChooseProjectDirectoryResult =
+  | { ok: true; dir: string; openToken?: string }
+  | { ok: false; message: string }
+  | null
+
 /**
  * The only capability surface the sandboxed renderer receives
  * (RFC-0001 §13.2): the Project API of §11.3. Nothing else crosses
@@ -172,6 +177,10 @@ const api = {
     },
   },
   project: {
+    chooseDirectory: (
+      purpose: 'switch' | 'source',
+    ): Promise<ChooseProjectDirectoryResult> =>
+      ipcRenderer.invoke('project:choose-directory', purpose) as Promise<ChooseProjectDirectoryResult>,
     ping: (): Promise<PingResponse> => ipcRenderer.invoke('project:ping') as Promise<PingResponse>,
     execute: async (envelope: CommandEnvelope): Promise<CommandResult> => {
       const response = (await ipcRenderer.invoke(

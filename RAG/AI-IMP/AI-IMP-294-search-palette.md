@@ -6,12 +6,12 @@ tags:
   - search
   - chrome
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-286, AI-IMP-288]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.7
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-13
 ---
 
 # AI-IMP-294-search-palette
@@ -103,28 +103,28 @@ e2e: palette doors/verbs/pills/drag-out; existing quick-open specs
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify SearchPanel/search.ts current shape, the G7
+- [x] Round-1: verify SearchPanel/search.ts current shape, the G7
       defects (type hole at :32/:194, rejection path), the summon
       chord, the board's drop payload contract, and the Search
       kit + wireframes; record corrections here.
-- [ ] fzf-match.ts: subsequence scoring, multi-term AND, tag-axis
+- [x] fzf-match.ts: subsequence scoring, multi-term AND, tag-axis
       terms; unit tests incl. the letter's example ("chi lif" →
       #chieftain ∧ #life-debt) and non-matches.
-- [ ] Palette component: centered geometry, scrim, three exits,
+- [x] Palette component: centered geometry, scrim, three exits,
       rest state teaches (kit copy), no-match names the trash
       exclusion, error state distinct from empty (GR-1).
-- [ ] Kind groups with ↵-verb headers; each verb wired to its
+- [x] Kind groups with ↵-verb headers; each verb wired to its
       existing action; keyboard walk (arrows + enter) works.
-- [ ] # tag mode: completion, pills with ✕, backspace eats last,
+- [x] # tag mode: completion, pills with ✕, backspace eats last,
       AND filtering.
-- [ ] Drag-out on placeable rows only; palette folds mid-drag;
+- [x] Drag-out on placeable rows only; palette folds mid-drag;
       drop places via the ordinary flow; no affordance on
       non-placeable rows.
-- [ ] G7 fixes: type extended at source; unhandled rejection
+- [x] G7 fixes: type extended at source; unhandled rejection
       handled with the error state; stale-results test.
-- [ ] Both doors toggle the same surface; exit restores board
+- [x] Both doors toggle the same surface; exit restores board
       exactly (camera untouched).
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -148,3 +148,26 @@ no-match) and recovers on retry.
 
 ### Issues Encountered
 
+- Round-1 correction: persistence already returned `usingCanvases`; the
+  type hole lived only in SearchPanel's renderer-local `SearchResults`.
+  The replacement type now models the IPC result without a cast or a
+  persistence change.
+- Round-1 correction: the board drop surface already accepts
+  `NODE_DRAG_MIME` and performs the ordinary `CreatePlacement` flow. The
+  palette therefore emits that existing payload only for unambiguous
+  node-backed image rows; it adds no placement command or drop path.
+- `listNodeLibrary`, `listLooseNotes`, and `listTags` are loaded as one
+  epoch-gated name-space snapshot. `searchProject` remains the note-body
+  and canvas-text path. Both paths reject stale completions, distinguish
+  failure from zero results, and recover on a later clean request.
+- The old anchored search/quick-open split is retired. Rail ⌕ and Mod+K
+  open the same centered palette; the retained `quick-open` registry id
+  is a stable internal identifier only.
+- Tab crystallizes tag resolutions while Enter always runs the row's
+  named verb. The pill list is typed (`kind: 'tag'`) so the deferred
+  board-scope facet can join without changing its shape.
+- Validation: commands 19/19, domain 60/60, shared-ui 1/1, protocol
+  1/1, canvas-engine 409/409, persistence 658/658, desktop units
+  549/549, and desktop e2e 267/270 first-pass with all three
+  environment launch/reopen flakes green on retry (final conclusion
+  green). Lint and spike typecheck passed.

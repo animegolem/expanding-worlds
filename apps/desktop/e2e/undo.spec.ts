@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { exec, launchApp, runQuery, seedPlacedNote } from './helpers'
+import { openAppMenu, exec, launchApp, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * AI-IMP-114 acceptance (RFC-0001 §10.2): the in-renderer structural
@@ -647,7 +647,7 @@ test('the ☰ Undo/Redo rows flip live with stack depth', async () => {
   const before = (await placements(win))[0]!
 
   // Empty stack: both rows disabled.
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await expect(win.getByTestId('menu-undo')).toHaveAttribute('aria-disabled', 'true')
   await expect(win.getByTestId('menu-redo')).toHaveAttribute('aria-disabled', 'true')
   await win.keyboard.press('Escape')
@@ -661,7 +661,7 @@ test('the ☰ Undo/Redo rows flip live with stack depth', async () => {
     Math.round(before.x + 100),
   )
 
-  await win.getByTestId('charm-menu').click()
+  await openAppMenu(win)
   await expect(win.getByTestId('menu-undo')).toHaveAttribute('aria-disabled', 'false')
   await expect(win.getByTestId('menu-redo')).toHaveAttribute('aria-disabled', 'true')
   // Clicking the row performs the undo and closes the menu.

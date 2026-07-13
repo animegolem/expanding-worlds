@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { exec, launchApp, launchAppInDir, runQuery } from './helpers'
+import { openAppMenu, exec, launchApp, launchAppInDir, runQuery } from './helpers'
 
 interface PlacementRow {
   id: string
@@ -331,7 +331,7 @@ test('body routing remembers the app-tier choice and skips the next routing choi
       body: 'soft edge in the distance',
     })
 
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await win.getByTestId('menu-settings').click()
     await expect(win.getByTestId('settings-row-caption-promotion-routing')).toBeVisible()
     await expect(win.getByTestId('settings-caption-promotion-routing-body')).toHaveAttribute(
@@ -449,7 +449,7 @@ test('remembered title routing skips the chooser and Settings can reset it', asy
     await expect.poll(() => nodeNoteId(win, second.nodeId)).not.toBeNull()
     await expect.poll(() => captionOf(win, second.placementId)).toBeNull()
 
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await win.getByTestId('menu-settings').click()
     await win.getByTestId('settings-caption-promotion-routing-ask').click()
     await expect(win.getByTestId('settings-caption-promotion-routing-ask')).toHaveAttribute(

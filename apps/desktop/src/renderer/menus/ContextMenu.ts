@@ -29,6 +29,7 @@ import {
 } from '@ew/canvas-engine'
 import { Z } from '../z'
 import { uuidv7 } from '@ew/domain'
+import { mount, unmount } from 'svelte'
 import type { CommandResult } from '@ew/commands'
 import type { CanvasHostHandle } from '../canvas/host'
 import type { BoardTooling } from '../canvas/board-tooling'
@@ -50,6 +51,9 @@ import {
 import { openCornerPanel } from '../note/panels'
 import { formatBinding } from '../keys/registry'
 import { themeTokenValue } from '../theme'
+import BoardColorRow from './BoardColorRow.svelte'
+import { OPEN_BOARD_MENU_EVENT, type BoardMenuRequest } from './board-menu-request'
+import { importFilesAt, readClipboardImageFiles } from '../canvas/import-surfaces'
 import { createOpenGeneration } from './open-generation'
 import { requestNewBoard } from './new-board'
 import {
@@ -57,6 +61,7 @@ import {
   type BoardSubject,
   type DecorationSubject,
   type FrameSubject,
+  type GroundSubject,
   type ItemSubject,
   type MenuActions,
   type MenuGroup,
@@ -94,9 +99,12 @@ export function attachContextMenu(
   decorationsUi: DecorationsUi,
 ): ContextMenuHandle {
   let menu: HTMLDivElement | null = null
+  let menuKind: MenuKind | null = null
   /** Enabled, focusable rows in the currently open menu, in order. */
   let rows: HTMLButtonElement[] = []
   let focusIndex = -1
+  let colorMount: ReturnType<typeof mount> | null = null
+  let groundOpenSerial = 0
   // §8.4 stale-open guard (AI-IMP-155): every render and close advances
   // this generation; an async open (openFrameMenu) captures it before
   // awaiting and bails if a newer open/close bumped it underneath.
@@ -108,7 +116,7 @@ export function attachContextMenu(
   const fileInput = document.createElement('input')
   fileInput.type = 'file'
   fileInput.accept = 'image/*'
-  fileInput.dataset['testid'] = 'ctx-backdrop-file-input'
+  fileInput.dataset['testid'] = 'bg-file-input'
   fileInput.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;'
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0]
@@ -125,8 +133,11 @@ export function attachContextMenu(
     // captured the prior value) sees itself as stale and bails. render()
     // calls close() first, so a newer open advances it too. AI-IMP-155.
     openGen.bump()
+    if (colorMount) void unmount(colorMount)
+    colorMount = null
     menu?.remove()
     menu = null
+    menuKind = null
     rows = []
     focusIndex = -1
     document.removeEventListener('pointerdown', onOutsidePointer, true)
@@ -134,7 +145,10 @@ export function attachContextMenu(
   }
 
   const onOutsidePointer = (event: PointerEvent): void => {
-    if (menu && !menu.contains(event.target as Node)) close()
+    if (!menu || menu.contains(event.target as Node)) return
+    const swallowsBoardClick = menuKind === 'board' && (event.target as Element | null)?.tagName === 'CANVAS'
+    close()
+    if (swallowsBoardClick) event.stopPropagation()
   }
 
   const onMenuKeyDown = (event: KeyboardEvent): void => {
@@ -355,50 +369,25 @@ export function attachContextMenu(
     wrap.dataset['testid'] = item.testid ?? `ctx-${item.id}`
     wrap.style.cssText =
       'display:flex;align-items:center;gap:0.3rem;flex-wrap:wrap;padding:0.2rem 0.5rem;'
-    const spec = item.colorRow!
-    for (const token of spec.swatchTokens) {
-      const name = token.replace('--ew-canvas-flat-', '')
-      const swatch = document.createElement('button')
-      swatch.type = 'button'
-      swatch.dataset['testid'] = `ctx-backdrop-color-${name}`
-      swatch.setAttribute('aria-label', `Backdrop color ${name}`)
-      swatch.style.cssText =
-        'width:18px;height:18px;padding:0;border-radius:4px;cursor:pointer;' +
-        `border:1px solid var(--ew-border-strong);background:var(${token});`
-      swatch.addEventListener('click', (event) => {
-        event.stopPropagation()
-        close()
-        spec.onPick(themeTokenValue(token))
-      })
-      wrap.appendChild(swatch)
-    }
-    // OS picker for arbitrary colors (§6.7).
-    const picker = document.createElement('input')
-    picker.type = 'color'
-    picker.dataset['testid'] = 'ctx-backdrop-color-picker'
-    picker.style.cssText =
-      'width:22px;height:20px;padding:0;border:1px solid var(--ew-border-strong);background:transparent;cursor:pointer;'
-    picker.addEventListener('change', () => {
-      close()
-      spec.onPick(picker.value)
-    })
-    picker.addEventListener('click', (event) => event.stopPropagation())
-    wrap.appendChild(picker)
-    // Clear back to the theme default.
-    const clear = document.createElement('button')
-    clear.type = 'button'
-    clear.dataset['testid'] = 'ctx-backdrop-color-clear'
-    clear.textContent = 'clear'
-    clear.style.cssText =
-      'padding:0.1rem 0.4rem;font:inherit;font-size:0.7rem;cursor:pointer;color:var(--ew-text);' +
-      'background:var(--ew-surface-raised);border:1px solid var(--ew-border-strong);border-radius:4px;'
-    clear.addEventListener('click', (event) => {
-      event.stopPropagation()
-      close()
-      spec.onPick(null)
-    })
-    wrap.appendChild(clear)
     parent.appendChild(wrap)
+    const spec = item.colorRow!
+    const background = tooling.background()
+    const palette = spec.swatchTokens.map((token) => themeTokenValue(token))
+    colorMount = mount(BoardColorRow, {
+      target: wrap,
+      props: {
+        value: background?.color ?? themeTokenValue('--ew-surface-solid'),
+        palette,
+        onpick: (color: string) => {
+          close()
+          spec.onPick(color)
+        },
+        onclear: () => {
+          close()
+          spec.onPick(null)
+        },
+      },
+    })
   }
 
   /** node-menu's inline title prompt, ported (§6.6 flows). Swaps the
@@ -448,6 +437,13 @@ export function attachContextMenu(
   ): void {
     close()
     menu = makeShell(kind)
+    menuKind = kind
+    if (kind === 'board') {
+      const marker = document.createElement('span')
+      marker.dataset['testid'] = 'board-menu'
+      marker.style.cssText = 'position:absolute;inset:0;pointer-events:none;'
+      menu.appendChild(marker)
+    }
     // AI-IMP-183 (M-13): a menu is now up — panels decline Escape to it.
     openContextMenus++
     rows = []
@@ -527,6 +523,14 @@ export function attachContextMenu(
       removeBackdrop: noop,
       setBackdropColor: noop,
       openBoardNote: noop,
+      setBackdropFromSelection: noop,
+      showHiddenDecoration: noop,
+      pasteHere: noop,
+      textHere: noop,
+      pinHere: noop,
+      shapeHere: noop,
+      frameHere: noop,
+      openBoardMenu: noop,
       setDecorationLock: noop,
       hideDecoration: noop,
       deleteDecoration: noop,
@@ -648,7 +652,67 @@ export function attachContextMenu(
       removeBackdrop: () => void tooling.removeBackground(),
       setBackdropColor: (color) => void tooling.setBackgroundColor(color),
       openBoardNote: () => void openBoardNote(),
+      setBackdropFromSelection: () => void tooling.setBackgroundFromSelection(),
+      showHiddenDecoration: (id) => void decorationsUi.show(id),
     }
+  }
+
+  function boardSubject(): BoardSubject {
+    const bg = tooling.background()
+    return {
+      kind: 'board',
+      hasBackgroundImage: bg?.assetId != null,
+      hasColor: bg?.color != null,
+      hasImageSelection: tooling.selectedImagePlacement() !== null,
+      hiddenDecorations: decorationsUi.hiddenDecorations().map(({ id, kind }) => ({ id, kind })),
+    }
+  }
+
+  function renderBoardMenu(at: { x: number; y: number }, world: { x: number; y: number }): void {
+    render('board', menuFor(boardSubject(), boardActions(world)), at)
+  }
+
+  function groundActions(
+    at: { x: number; y: number },
+    world: { x: number; y: number },
+    files: File[],
+  ): MenuActions {
+    const armAt = (tool: 'rect' | 'frame'): void => {
+      if (host.tools.active !== tool) host.tools.setTool(tool)
+      // Seed the ordinary draw session at the ground-menu point. The
+      // next pointer movement/up finishes the remembered shape or frame
+      // from HERE; no parallel creation semantics.
+      host.tools.pointerDown(at, { button: 0 })
+    }
+    return {
+      ...baseStubActions(),
+      pasteHere: () => void importFilesAt(
+        host,
+        files,
+        world,
+        host.canvasId,
+        { x: element.getBoundingClientRect().left + at.x, y: element.getBoundingClientRect().top + at.y },
+      ),
+      textHere: () => host.tools.onPlaceText?.(world),
+      pinHere: () => host.tools.onPlacePin?.(world),
+      shapeHere: () => armAt('rect'),
+      frameHere: () => armAt('frame'),
+      openBoardMenu: () => renderBoardMenu(at, world),
+    }
+  }
+
+  async function renderGroundMenu(
+    at: { x: number; y: number },
+    world: { x: number; y: number },
+  ): Promise<void> {
+    const serial = ++groundOpenSerial
+    const clipboard = await readClipboardImageFiles()
+    if (serial !== groundOpenSerial) return
+    const subject: GroundSubject = {
+      kind: 'ground',
+      pasteDisabledReason: clipboard.disabledReason,
+    }
+    render('ground', menuFor(subject, groundActions(at, world, clipboard.files)), at)
   }
 
   /** Mirrors gestures-ui.selectAll: every selectable item, locked or
@@ -868,15 +932,10 @@ export function attachContextMenu(
     const world = host.controller.camera.screenToWorld(at)
     const hit = hitTest(world, host.controller.items())
 
-    // Empty board → the board menu.
+    // Empty board → HERE first; its Board… row is the third door to
+    // the same board inventory the crumb opens.
     if (!hit) {
-      const bg = tooling.background()
-      const subject: BoardSubject = {
-        kind: 'board',
-        hasBackgroundImage: bg?.assetId != null,
-        hasColor: bg?.color != null,
-      }
-      render('board', menuFor(subject, boardActions(world)), at)
+      void renderGroundMenu(at, world)
       return
     }
 
@@ -981,14 +1040,70 @@ export function attachContextMenu(
     if (!element.contains(target)) event.preventDefault()
   }
 
+  const onBoardMenuRequest = (event: Event): void => {
+    if (takeoverActive()) return
+    const { clientX, clientY } = (event as CustomEvent<BoardMenuRequest>).detail
+    const bounds = element.getBoundingClientRect()
+    const at = { x: clientX - bounds.left, y: clientY - bounds.top }
+    const center = { x: bounds.width / 2, y: bounds.height / 2 }
+    renderBoardMenu(at, host.controller.camera.screenToWorld(center))
+  }
+
+  // Touch twin of empty-ground right click. Movement or release before
+  // the 550ms threshold cancels; firing cancels the controller's pending
+  // gesture before opening HERE so no marquee/pan survives underneath.
+  let longPressTimer: ReturnType<typeof setTimeout> | undefined
+  let longPressStart: { pointerId: number; at: { x: number; y: number }; world: { x: number; y: number } } | null = null
+  const cancelLongPress = (): void => {
+    clearTimeout(longPressTimer)
+    longPressTimer = undefined
+    longPressStart = null
+  }
+  const onLongPressDown = (event: PointerEvent): void => {
+    if (event.pointerType !== 'touch' || event.button !== 0 || event.target !== element.querySelector('canvas')) return
+    const bounds = element.getBoundingClientRect()
+    const at = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
+    const world = host.controller.camera.screenToWorld(at)
+    if (hitTest(world, host.controller.items())) return
+    longPressStart = { pointerId: event.pointerId, at, world }
+    longPressTimer = setTimeout(() => {
+      const pending = longPressStart
+      if (!pending) return
+      host.controller.escape()
+      void renderGroundMenu(pending.at, pending.world)
+      cancelLongPress()
+    }, 550)
+  }
+  const onLongPressMove = (event: PointerEvent): void => {
+    const pending = longPressStart
+    if (!pending || pending.pointerId !== event.pointerId) return
+    const bounds = element.getBoundingClientRect()
+    const at = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
+    if (Math.hypot(at.x - pending.at.x, at.y - pending.at.y) > 8) cancelLongPress()
+  }
+  const onLongPressEnd = (event: PointerEvent): void => {
+    if (longPressStart?.pointerId === event.pointerId) cancelLongPress()
+  }
+
   element.addEventListener('contextmenu', onContextMenu)
+  element.addEventListener('pointerdown', onLongPressDown, true)
+  element.addEventListener('pointermove', onLongPressMove, true)
+  element.addEventListener('pointerup', onLongPressEnd, true)
+  element.addEventListener('pointercancel', onLongPressEnd, true)
   document.addEventListener('contextmenu', onDocContextMenu)
+  window.addEventListener(OPEN_BOARD_MENU_EVENT, onBoardMenuRequest)
 
   return {
     destroy() {
       close()
+      cancelLongPress()
       element.removeEventListener('contextmenu', onContextMenu)
+      element.removeEventListener('pointerdown', onLongPressDown, true)
+      element.removeEventListener('pointermove', onLongPressMove, true)
+      element.removeEventListener('pointerup', onLongPressEnd, true)
+      element.removeEventListener('pointercancel', onLongPressEnd, true)
       document.removeEventListener('contextmenu', onDocContextMenu)
+      window.removeEventListener(OPEN_BOARD_MENU_EVENT, onBoardMenuRequest)
       fileInput.remove()
     },
   }

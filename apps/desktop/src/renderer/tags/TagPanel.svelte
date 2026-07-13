@@ -240,7 +240,7 @@
     }
     // Escape is consumed by the window-capture handler below (it must
     // preempt the panel's lens/close Escape and never leak to the
-    // canvas — the SearchPanel:328 pattern).
+    // canvas — the search-palette Escape pattern).
   }
 
   // ------------------------------------------------------ §4.8 delete
@@ -373,7 +373,7 @@
 
   // Layered Escape, one layer per press. The rename editor peels FIRST
   // and CONSUMES the press (capture + stopPropagation, the
-  // SearchPanel:328 pattern) so the edit cancels without leaking to the
+  // search-palette pattern) so the edit cancels without leaking to the
   // canvas or peeling the lens/closing the panel underneath. With no
   // editor: an active lens peels first (the host's own keydown handler
   // does it — we just decline the event); with no lens the panel closes

@@ -30,6 +30,7 @@ export const KEY = {
   undo: 'undo',
   redo: 'redo',
   boardSelectAll: 'board-select-all',
+  boardPaste: 'board-paste',
   boardSendForward: 'board-send-forward',
   boardSendFront: 'board-send-front',
   boardSendBackward: 'board-send-backward',
@@ -65,9 +66,9 @@ export const KEY = {
 
 // ---- global ----
 declare(KEY.quickOpen, {
-  name: 'Quick open',
+  name: 'Search',
   scope: 'global',
-  combo: { mod: true, shift: false, alt: false, key: 'p' },
+  combo: { mod: true, shift: false, alt: false, key: 'k' },
 })
 declare(KEY.navBack, {
   name: 'Back',
@@ -112,6 +113,11 @@ declare(KEY.boardSelectAll, {
   // Physical KeyA (code), mirroring the original gestures predicate —
   // fires whether or not Shift is held.
   combo: { mod: true, code: 'KeyA' },
+})
+declare(KEY.boardPaste, {
+  name: 'Paste at the board point',
+  scope: 'board',
+  combo: { mod: true, shift: false, alt: false, key: 'v' },
 })
 declare(KEY.boardSendForward, {
   name: 'Send forward',

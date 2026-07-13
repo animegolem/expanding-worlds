@@ -1,6 +1,6 @@
 <!--
   Shared text-input primitive (AI-IMP-142): the single home for the
-  chrome text-field look that TagPanel, SearchPanel and SettingsView
+  chrome text-field look that TagPanel, SearchPalette and SettingsView
   had each hand-rolled from the same tokens (surface-input fill,
   border-strong outline). Two variants encode the two shipped shapes:
 
@@ -21,7 +21,7 @@
 
   type Props = Omit<HTMLInputAttributes, 'type' | 'value'> & {
     /** pill = full-round (search/tag fields); standard = 5px chrome field. */
-    variant?: 'standard' | 'pill'
+    variant?: 'standard' | 'pill' | 'bare'
     /** Bindable field text. */
     value?: string
     /** Forwards the underlying <input> element (bind:ref for focus()). */
@@ -60,7 +60,7 @@
     opacity: 0.5;
   }
 
-  /* Pill: TagPanel + SearchPanel search fields — filter-in-place
+  /* Pill: TagPanel search fields and legacy consumers — filter-in-place
      grammar (font inherits the panel's 0.78rem). */
   .ew-text-input.pill {
     padding: 0.15rem 0.5rem;
@@ -74,6 +74,15 @@
     font-size: 0.8rem;
   }
 
+  /* Palette rider: the surrounding query container owns the field
+     furniture, so the actual input is deliberately bare. */
+  .ew-text-input.bare {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
   /* Focus is UNIFORM across both variants (kit 1.2 ruling): the shared
      2px --ew-focus-ring outline at offset 1px — never the browser
      default. */
@@ -81,4 +90,6 @@
     outline: 2px solid var(--ew-focus-ring);
     outline-offset: 1px;
   }
+
+  .ew-text-input.bare:focus { outline: none; }
 </style>

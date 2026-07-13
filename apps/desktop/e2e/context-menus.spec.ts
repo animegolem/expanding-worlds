@@ -178,7 +178,7 @@ test('item menu: ratified grammar + flip / z-order / delete one-undo round-trips
   }
 })
 
-test('board menu: offers paste / select-all / fit, backdrop family, color row (ยง8.4)', async () => {
+test('ground HERE leads to the shared board inventory; color and select-all stay live (ยง8.4)', async () => {
   const { app, win } = await launchApp('ew-e2e-ctxmenu-board-')
   try {
     await readyUndo(win)
@@ -186,17 +186,23 @@ test('board menu: offers paste / select-all / fit, backdrop family, color row (ย
     await seedPin(win, 'Anchor', { x: 400, y: 300 })
     await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
-    // Right-click empty board opens the board menu.
+    // Right-click empty board opens HERE first.
     await win.mouse.click(box.x + 950, box.y + 620, { button: 'right' })
     await expect(win.getByTestId('context-menu')).toBeVisible()
-    expect(await win.getByTestId('context-menu').getAttribute('data-kind')).toBe('board')
+    await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'ground')
+    for (const id of ['paste-here', 'text-here', 'pin-here', 'shape-here', 'frame-here', 'board']) {
+      await expect(win.getByTestId(`ctx-${id}`)).toBeVisible()
+    }
+    expect(await rowOrder(win)).not.toContain('ctx-arrange')
+    await win.getByTestId('ctx-board').click()
+    await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'board')
 
     // The ratified board offers: paste (coming-soon), select-all, fit,
     // the backdrop family, the color row, and the board note.
-    await expect(win.getByTestId('ctx-paste')).toHaveAttribute('aria-disabled', 'true')
+    await expect(win.getByTestId('ctx-paste')).toHaveCount(0)
     await expect(win.getByTestId('ctx-select-all')).toBeVisible()
     await expect(win.getByTestId('ctx-zoom-to-fit')).toBeVisible()
-    await expect(win.getByTestId('ctx-set-backdrop')).toBeVisible()
+    await expect(win.getByTestId('bg-set-from-file')).toBeVisible()
     await expect(win.getByTestId('ctx-backdrop-color')).toBeVisible()
     await expect(win.getByTestId('ctx-board-note')).toBeVisible()
     // No destructive row on the board menu.
@@ -210,7 +216,7 @@ test('board menu: offers paste / select-all / fit, backdrop family, color row (ย
     expect(await backgroundColor(win)).toBeNull()
     const before = await revision(win)
     const depthBefore = await undoDepth(win)
-    await win.getByTestId('ctx-backdrop-color-1').click()
+    await win.getByLabel('Recent colors').getByRole('button').first().click()
     await expect.poll(() => backgroundColor(win)).not.toBeNull()
     expect(await revision(win)).toBe(before + 1)
     expect(await undoDepth(win)).toBe(depthBefore + 1)
@@ -219,6 +225,7 @@ test('board menu: offers paste / select-all / fit, backdrop family, color row (ย
 
     // Select-all via the menu selects every item.
     await win.mouse.click(box.x + 950, box.y + 620, { button: 'right' })
+    await win.getByTestId('ctx-board').click()
     await win.getByTestId('ctx-select-all').click()
     await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
   } finally {

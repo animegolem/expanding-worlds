@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { exec, launchApp, runQuery } from './helpers'
+import { openAppMenu, exec, launchApp, runQuery } from './helpers'
 
 /**
  * AI-IMP-102 acceptance (RFC-0001 §9.7 rev 0.46): the trash browser.
@@ -57,7 +57,7 @@ test('trash browser: list, restore + fly-to, empty trash', async () => {
     await exec(win, 'TrashCanvas', { canvasId: canvasC })
 
     // Open the trash takeover through the ☰ Trash… row.
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await expect(win.getByTestId('rail-menu')).toBeVisible()
     await win.getByTestId('menu-trash').click()
     await expect(win.getByTestId('rail-menu')).toHaveCount(0)
@@ -106,7 +106,7 @@ test('trash browser: list, restore + fly-to, empty trash', async () => {
 
     // Reopen trash: two records remain (note + canvas). Empty Trash
     // shows the §9 impact summary, then purges on confirm.
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await win.getByTestId('menu-trash').click()
     await expect(win.getByTestId('trash-row')).toHaveCount(2)
 

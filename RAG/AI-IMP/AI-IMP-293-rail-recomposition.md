@@ -6,12 +6,12 @@ tags:
   - rail
   - chrome
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-292, AI-IMP-294]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.75
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-13
 ---
 
 # AI-IMP-293-rail-recomposition
@@ -72,22 +72,22 @@ e2e: rail composition + leavers-reachable spec; existing rail
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify current rail inventory + exclusivity
+- [x] Round-1: verify current rail inventory + exclusivity
       machinery, ⚠ perch rendering, TitleStrip corner state after
       292, the gallery scope surface, and 207's remaining scope;
       record corrections here.
-- [ ] Rail = ⊞ ▤ ⊛(inert+why) ⌕ + ⚠ perch at foot; kit geometry;
+- [x] Rail = ⊞ ▤ ⊛(inert+why) ⌕ + ⚠ perch at foot; kit geometry;
       tooltips; exclusivity regression-tested.
-- [ ] ☰ lives in the strip's top-right; its menu unchanged.
-- [ ] ⧉ removed; project switch reachable via the picker route;
+- [x] ☰ lives in the strip's top-right; its menu unchanged.
+- [x] ⧉ removed; project switch reachable via the picker route;
       open-as-source reachable via the gallery scope affordance
       (or flagged to the lead if the gallery side is undrawn in
       practice).
-- [ ] ⚠ perch keeps its producer contract (status.ts tests
+- [x] ⚠ perch keeps its producer contract (status.ts tests
       green); leaves with its last condition per the kit.
-- [ ] AI-IMP-207's cancelled-with-pointer record still matches
+- [x] AI-IMP-207's cancelled-with-pointer record still matches
       what shipped; half-1 record intact.
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -105,3 +105,51 @@ green).
 
 ### Issues Encountered
 
+Round-1 source verification corrected four ticket premises before
+implementation:
+
+- `status.ts` owns condition production only; the perch anchor is wholly
+  `CharmRail.svelte` layout. Per the accepted ruling, neither `status.ts`
+  nor AI-IMP-207 is edited.
+- No project-picker overlay exists yet. The interim “Switch world…” door
+  therefore lives in ☰ and reuses Electron's native directory-dialog
+  pattern plus the existing renderer-bound, one-use `restore:open`
+  capability. Main validates `project.sqlite` before issuing authority;
+  an arbitrary renderer path can neither relaunch nor silently create a
+  project.
+- The old ⧉ source door was a raw text field, not a chooser seam. It is
+  replaced by a native main-owned folder choice in the gallery scope bar,
+  then reuses the shipped `openSourcePanel`/source-slot path.
+- Pinning the perch makes the rail container full-height. The container is
+  deliberately pointer-transparent while each real charm and the perch
+  opts back into hit testing, so the new empty middle cannot steal board
+  gestures.
+
+The title-band ☰ retains the shipped menu inventory and behavior; the
+only added row is the accepted live “Switch world…” route. It is anchored
+independently at the band's top-right, so the drag strip keeps pure
+reveal/tuck behavior and the existing “title strip: never” setting cannot
+strand the only route back to Settings. Windows reserves the native
+overlay-control width and Linux keeps its drawn controls alongside it.
+
+Validation after a clean desktop build:
+
+- `pnpm check:ci`: green — commands 19, domain 60, shared-ui 1,
+  protocol 1, canvas-engine 409, persistence 658; repository build,
+  lint, and spike typecheck all green.
+- Desktop Vitest: 74 files, 553 tests green.
+- Focused 293 boundary gate: 19/19 green (shell/menu, Settings strip
+  modes, recovery/perch, source panel, loose-note Trash); the separate
+  board-tooling run was 7/7 green and pins the transparent full-height
+  rail against gesture interception.
+- All remaining specs that enter ☰ through the shared helper: 44/44
+  green (caption, export/import, first-run, GC, inputs, navigation
+  scheme, reservation, restore, retention, Trash, undo).
+
+One deliberately useful failed diagnostic preceded the final gate: the
+first full-height rail build left `pointer-events:auto` on its transparent
+middle. Playwright named the rail as the interceptor over Arrange; the
+container is now transparent and the regression passes. A second focused
+round exposed that TitleStrip's old takeover unmount would hide both ☰ and
+Linux controls; keeping window furniture mounted convicted and fixed that
+boundary before commit.

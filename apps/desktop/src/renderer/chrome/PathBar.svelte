@@ -41,6 +41,7 @@
   } from './navigation'
   import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
+  import { requestBoardMenu } from '../menus/board-menu-request'
 
   const { handle }: { handle: CanvasHostHandle } = $props()
 
@@ -177,16 +178,36 @@
       {#if index > 0}
         <span class="sep">▸</span>
       {/if}
-      <button
-        type="button"
-        class="crumb"
-        class:current={index === crumbs.length - 1}
-        data-testid={`nav-crumb-${index}`}
-        onclick={() => void goToIndex(index)}
-        use:tooltip={{ name: index === crumbs.length - 1 ? crumb.label : `Back to ${crumb.label}` }}
-      >
-        {crumb.label}
-      </button>
+      {#if index === crumbs.length - 1}
+        <span class="current-crumb">
+          <button
+            type="button"
+            class="crumb current"
+            data-testid={`nav-crumb-${index}`}
+            onclick={() => void goToIndex(index)}
+            use:tooltip={{ name: crumb.label }}
+          >{crumb.label}</button>
+          <button
+            type="button"
+            class="board-door"
+            data-testid="board-menu-button"
+            aria-label="Board menu"
+            onclick={(event) => {
+              const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+              requestBoardMenu({ clientX: rect.right, clientY: rect.bottom })
+            }}
+            use:tooltip={{ name: 'Board — background and hidden items' }}
+          >❖</button>
+        </span>
+      {:else}
+        <button
+          type="button"
+          class="crumb"
+          data-testid={`nav-crumb-${index}`}
+          onclick={() => void goToIndex(index)}
+          use:tooltip={{ name: `Back to ${crumb.label}` }}
+        >{crumb.label}</button>
+      {/if}
     {/each}
     <!-- The signature spot: the canonical pin, bare at cap-height beside
          the board name (§8.2 rev 0.64). no-drag carves it out of the
@@ -297,6 +318,19 @@
   button:hover {
     background: var(--ew-surface-hover);
   }
+
+  .current-crumb {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    border: 1px solid var(--ew-border-panel);
+    border-radius: 7px;
+    background: var(--ew-surface);
+    box-shadow: 0 6px 22px var(--ew-shadow);
+  }
+
+  .current-crumb .crumb { padding-right: 0.25rem; }
+  .current-crumb .board-door { min-width: 1.55rem; padding: 0.15rem 0.35rem; }
 
   /* Hover-revealed, never permanent (§8.1). Playwright still clicks
      them: opacity does not gate hit-testing. */

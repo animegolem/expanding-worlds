@@ -148,6 +148,13 @@ test('the perch stacks conditions with a count and clears to nothing', async () 
   await setCondition('e2e-a', 'Condition A holds')
   await expect(win.getByTestId('perch')).toBeVisible()
   await expect(win.getByTestId('perch-count')).toHaveCount(0)
+  const railWithPerch = (await win.getByTestId('charm-rail').boundingBox())!
+  const perchSlotBox = (await win.getByTestId('perch-slot').boundingBox())!
+  expect(
+    Math.abs(
+      perchSlotBox.y + perchSlotBox.height - (railWithPerch.y + railWithPerch.height),
+    ),
+  ).toBeLessThan(2)
 
   // Two conditions: still one charm, now with a count of 2.
   await setCondition('e2e-b', 'Condition B holds')

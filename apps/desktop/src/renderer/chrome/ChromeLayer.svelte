@@ -14,6 +14,7 @@
   import Dock from './Dock.svelte'
   import DropBehaviorAsk from './DropBehaviorAsk.svelte'
   import ImportProgressStrip from './ImportProgressStrip.svelte'
+  import IdentityCorner from './IdentityCorner.svelte'
   import MirrorAsk from './MirrorAsk.svelte'
   import PathBar from './PathBar.svelte'
   import RecognitionChip from './RecognitionChip.svelte'
@@ -65,14 +66,14 @@
       <i class="reserve bottom"></i><i class="reserve left"></i>
     </div>
   {/if}
-  <!-- Board-scoped chrome retires under a takeover (its surfaces sit
-       below the takeover cover and its shortcuts are dead); the mode
-       rail and toasts stay — the rail is the way back (§8.2), and
-       errors surface everywhere. -->
+  <!-- Window furniture stays across takeovers: ☰ is universal and
+       Linux's drawn controls must never disappear. Board-scoped
+       chrome retires under the cover; the mode rail and toasts stay. -->
+  <TitleStrip {tooling} />
   {#if !takeoverOpen}
-    <TitleStrip {handle} {tooling} {ui} />
     <PathBar {handle} />
     <Dock {handle} {tooling} {hostElement} />
+    <IdentityCorner {handle} />
   {/if}
   <CharmRail />
   <Toasts {handle} />

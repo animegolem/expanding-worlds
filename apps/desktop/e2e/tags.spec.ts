@@ -555,7 +555,7 @@ test('UI rename: pencil → edit → Enter renames across surfaces; conflict toa
 /**
  * AI-IMP-171: Escape while the rename editor is open cancels the edit
  * WITHOUT leaking to the canvas or closing the panel (the Escape-leak
- * defect family, SearchPanel:328). One press peels the editor; the next
+ * defect family, search-palette Escape routing). One press peels the editor; the next
  * peels the panel.
  */
 test('UI rename: Escape cancels the edit, leaving the panel open and the name unchanged (§17 item 8, AI-IMP-171)', async () => {
@@ -614,7 +614,8 @@ test('UI rename: Escape cancels the edit, leaving the panel open and the name un
 test('a phantom note panel carries no tag add-field (§4.8, AI-IMP-108)', async () => {
   const { app, win } = await launchApp('ew-e2e-tag-add-phantom-')
   // The board's own note draft is a phantom until the first edit.
-  await win.getByTestId('corner-charm').click()
+  await win.getByTestId('identity-corner-button').click()
+  await win.getByTestId('identity-edit-note').click()
   await expect(win.getByTestId('canvas-phantom')).toBeVisible()
   await expect(win.getByTestId('tag-add-field')).toHaveCount(0)
   await expect(win.getByTestId('panel-tag-chips')).toHaveCount(0)

@@ -107,7 +107,7 @@ export interface MenuGroup {
   items: MenuItem[]
 }
 
-export type MenuKind = 'item' | 'board' | 'decoration' | 'multi' | 'frame'
+export type MenuKind = 'item' | 'board' | 'ground' | 'decoration' | 'multi' | 'frame'
 
 /** The item subject: the right-clicked placement's live state. */
 export interface ItemSubject {
@@ -125,6 +125,14 @@ export interface BoardSubject {
   kind: 'board'
   hasBackgroundImage: boolean
   hasColor: boolean
+  hasImageSelection: boolean
+  hiddenDecorations: ReadonlyArray<{ id: string; kind: string }>
+}
+
+/** Empty-board ground: the HERE inventory precedes the board door. */
+export interface GroundSubject {
+  kind: 'ground'
+  pasteDisabledReason: string | null
 }
 
 /** The decoration subject (§8.4): a drawn adornment. Its menu is
@@ -161,6 +169,7 @@ export interface FrameSubject {
 export type MenuSubject =
   | ItemSubject
   | BoardSubject
+  | GroundSubject
   | DecorationSubject
   | MultiSubject
   | FrameSubject
@@ -204,6 +213,15 @@ export interface MenuActions {
   removeBackdrop(): void
   setBackdropColor(colorOrToken: string | null): void
   openBoardNote(): void
+  setBackdropFromSelection(): void
+  showHiddenDecoration(id: string): void
+  // ---- empty ground / HERE ----
+  pasteHere(): void
+  textHere(): void
+  pinHere(): void
+  shapeHere(): void
+  frameHere(): void
+  openBoardMenu(): void
   // ---- decoration ----
   setDecorationLock(): void
   hideDecoration(): void
@@ -232,7 +250,6 @@ const COMING_SOON = {
   replaceImage: 'Replace image… — arrives with the swap/replace pass',
   swapFor: 'Swap for… — arrives with the swap/replace pass',
   placeOnAnotherBoard: 'Place on another board… — arrives with the board picker',
-  paste: 'Paste — press ⌘V to paste an image for now',
   // §8.4 decoration / multi / frame verbs whose command does not exist
   // yet — disabled-with-reason rows (§8.2), listed in Issues Encountered.
   editStyle: 'Edit style — restyle from the toolbar while a decoration is selected',
@@ -251,6 +268,9 @@ export function menuFor(subject: MenuSubject, actions: MenuActions): MenuGroup[]
       break
     case 'board':
       groups = boardMenu(subject, actions)
+      break
+    case 'ground':
+      groups = groundMenu(subject, actions)
       break
     case 'decoration':
       groups = decorationMenu(subject, actions)
@@ -422,7 +442,6 @@ function boardMenu(subject: BoardSubject, a: MenuActions): MenuGroup[] {
     {
       id: 'board-actions',
       items: [
-        { id: 'paste', label: 'Paste', disabledReason: COMING_SOON.paste },
         { id: 'select-all', label: 'Select all', shortcutId: 'board-select-all', run: a.selectAll },
         {
           id: 'zoom-to-fit',
@@ -436,13 +455,23 @@ function boardMenu(subject: BoardSubject, a: MenuActions): MenuGroup[] {
       id: 'backdrop',
       items: [
         {
+          id: 'set-backdrop-from-selection',
+          label: 'Set bg from selection',
+          testid: 'bg-set-from-selection',
+          ...(subject.hasImageSelection
+            ? { run: a.setBackdropFromSelection }
+            : { disabledReason: 'Set bg from selection needs one selected image' }),
+        },
+        {
           id: 'set-backdrop',
-          label: hasBg ? 'Replace backdrop…' : 'Set backdrop image…',
+          label: hasBg ? 'Replace bg from image…' : 'Bg from image…',
+          testid: 'bg-set-from-file',
           run: a.setBackdropFromFile,
         },
         {
           id: 'edit-backdrop',
           label: 'Edit backdrop position',
+          testid: 'bg-edit',
           ...(hasBg
             ? { run: a.editBackdropPosition }
             : { disabledReason: 'Edit backdrop position — set a backdrop first' }),
@@ -450,6 +479,7 @@ function boardMenu(subject: BoardSubject, a: MenuActions): MenuGroup[] {
         {
           id: 'reset-backdrop',
           label: 'Reset backdrop',
+          testid: 'bg-reset',
           ...(hasBg
             ? { run: a.resetBackdrop }
             : { disabledReason: 'Reset backdrop — set a backdrop first' }),
@@ -457,6 +487,7 @@ function boardMenu(subject: BoardSubject, a: MenuActions): MenuGroup[] {
         {
           id: 'remove-backdrop',
           label: 'Remove backdrop',
+          testid: 'bg-remove',
           ...(hasBg
             ? { run: a.removeBackdrop }
             : { disabledReason: 'Remove backdrop — no backdrop set' }),
@@ -479,6 +510,40 @@ function boardMenu(subject: BoardSubject, a: MenuActions): MenuGroup[] {
         { id: 'board-note', label: 'Note for this board', run: a.openBoardNote },
       ],
     },
+    ...(subject.hiddenDecorations.length > 0
+      ? [{
+          id: 'hidden',
+          items: subject.hiddenDecorations.map((entry) => ({
+            id: `show-hidden-${entry.id}`,
+            label: `Show ${entry.kind}`,
+            testid: `deco-show-${entry.id}`,
+            run: () => a.showHiddenDecoration(entry.id),
+          })),
+        }]
+      : []),
+  ]
+}
+
+function groundMenu(subject: GroundSubject, a: MenuActions): MenuGroup[] {
+  return [
+    {
+      id: 'here',
+      items: [
+        {
+          id: 'paste-here',
+          label: 'Paste here',
+          shortcutId: 'board-paste',
+          ...(subject.pasteDisabledReason === null
+            ? { run: a.pasteHere }
+            : { disabledReason: subject.pasteDisabledReason }),
+        },
+        { id: 'text-here', label: 'Text here', shortcutId: 'tool-text', run: a.textHere },
+        { id: 'pin-here', label: 'Pin here', shortcutId: 'tool-pin', run: a.pinHere },
+        { id: 'shape-here', label: 'Shape here', shortcutId: 'tool-shapes', run: a.shapeHere },
+        { id: 'frame-here', label: 'Frame here', shortcutId: 'tool-frame', run: a.frameHere },
+      ],
+    },
+    { id: 'board-door', items: [{ id: 'board', label: 'Board…', run: a.openBoardMenu }] },
   ]
 }
 

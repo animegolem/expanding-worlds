@@ -26,7 +26,7 @@
   import NotePanels from './note/NotePanels.svelte'
   import TagPanel from './tags/TagPanel.svelte'
   import { onTagPanelChanged, type TagPanelState } from './tags/tag-panel'
-  import SearchPanel from './chrome/SearchPanel.svelte'
+  import SearchPalette from './chrome/SearchPalette.svelte'
   import { onSearchPanelChanged, type SearchPanelState } from './chrome/search'
 
   let {
@@ -174,7 +174,7 @@
     <TagPanel {handle} hostElement={element} panel={tagPanel} />
   {/if}
   {#if searchPanel && handle}
-    <SearchPanel {handle} hostElement={element} panel={searchPanel} />
+    <SearchPalette {handle} panel={searchPanel} />
   {/if}
   <!--
     §8.8 law 2 (rev 0.41): the root overlay host. Rendered LAST inside

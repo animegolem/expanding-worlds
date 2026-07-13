@@ -1,11 +1,11 @@
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { exec, launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
 
 /**
- * §14.4 open-as-source panels (AI-IMP-091): the project charm's menu
+ * §14.4 open-as-source panels (AI-IMP-091/293): the gallery scope row
  * opens a second project READ-ONLY as a pinned mini-gallery panel;
  * dragging a cell onto the board runs 090's ingest-by-copy with the
  * panel header's tag-border decision, then the ordinary placement at
@@ -55,22 +55,47 @@ async function seedSourceProject(dir: string, tagName: string): Promise<string> 
   return contentHash!
 }
 
-/** Open the source panel through its entry point: project charm →
- * menu → the open-as-source directory prompt (plain text field). */
-async function openSourcePanel(win: Page, dir: string): Promise<void> {
-  await win.getByTestId('charm-project').click()
-  await expect(win.getByTestId('project-menu')).toBeVisible()
-  await win.getByTestId('project-source-dir-input').fill(dir)
-  await win.getByTestId('project-source-dir-confirm').click()
+/** Open the source panel through the native gallery-scope door. */
+async function openSourcePanel(app: ElectronApplication, win: Page, dir: string): Promise<void> {
+  await app.evaluate(
+    async ({ dialog }, selectedDir) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [selectedDir] })
+    },
+    dir,
+  )
+  if (!(await win.getByTestId('takeover-gallery').isVisible().catch(() => false))) {
+    await win.getByTestId('charm-gallery').click()
+  }
+  await expect(win.getByTestId('takeover-gallery')).toBeVisible()
+  await win.getByTestId('gallery-open-source').click()
   await expect(win.getByTestId('source-panel')).toBeVisible()
 }
+
+test('gallery source chooser rejects an ordinary folder without creating or opening it', async () => {
+  const ordinaryDir = mkdtempSync(join(tmpdir(), 'ew-e2e-not-project-'))
+  const { app, win } = await launchApp('ew-e2e-source-refusal-')
+  await app.evaluate(
+    async ({ dialog }, selectedDir) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [selectedDir] })
+    },
+    ordinaryDir,
+  )
+
+  await win.getByTestId('charm-gallery').click()
+  await win.getByTestId('gallery-open-source').click()
+  await expect(win.getByTestId('takeover-gallery')).toBeVisible()
+  await expect(win.getByTestId('source-panel')).toHaveCount(0)
+  await expect(win.getByText('That folder is not an Expanding Worlds project.')).toBeVisible()
+
+  await app.close()
+})
 
 test('open as source: mini grid browses, border=all drag-out ingests and places at the drop point', async () => {
   const sourceDir = mkdtempSync(join(tmpdir(), 'ew-e2e-srcpanel-src-'))
   const sourceHash = await seedSourceProject(sourceDir, 'Character Ref')
 
   const { app, win } = await launchApp('ew-e2e-srcpanel-dst-')
-  await openSourcePanel(win, sourceDir)
+  await openSourcePanel(app, win, sourceDir)
 
   // The mini grid renders the tagged image with real pixels over the
   // cross-store URL (?scope=source; thumb 404s fall back to the
@@ -184,16 +209,10 @@ test('opening the panel while the gallery holds the source slot evicts gracefull
   await expect(cells).toHaveCount(1)
   await expect(cells.first()).toContainText('Library Entry')
 
-  // The panel replaces the gallery's hold: the gallery degrades to
-  // this-world with its notice line; the panel browses; no crash.
-  await openSourcePanel(win, libraryDir)
-  await expect(win.getByTestId('gallery-evicted-notice')).toBeVisible()
-  await expect(win.getByTestId('gallery-scope-this-world')).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
-  await expect(cells).toHaveCount(1)
-  await expect(cells.first()).toContainText('World Note')
+  // The gallery closes before the pinned panel takes the source slot;
+  // the panel browses and the board returns underneath it.
+  await openSourcePanel(app, win, libraryDir)
+  await expect(win.getByTestId('takeover-gallery')).toHaveCount(0)
   await expect(win.locator('[data-testid="source-cell"]')).toHaveCount(1)
 
   await app.close()

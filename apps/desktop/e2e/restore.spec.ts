@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
+import { openAppMenu, launchApp, launchAppInDir, runQuery, seedPlacedNote } from './helpers'
 
 /**
  * §11.4 restore-from-backup (AI-IMP-121, rev 0.52): Restore from backup…
@@ -87,7 +87,7 @@ test('the ☰ row gates on history and drives the picker to a restored copy', as
   const { app, win, projectDir } = await launchApp('ew-e2e-restore-ui-', NO_IDLE)
   try {
     // Fresh project, snapshots off: the row is visible but disabled.
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await expect(win.getByTestId('menu-restore')).toHaveAttribute('aria-disabled', 'true')
     await win.keyboard.press('Escape')
 
@@ -99,7 +99,7 @@ test('the ☰ row gates on history and drives the picker to a restored copy', as
     await win.evaluate(() => window.ew.test.snapshot('end-session'))
     expect(commitCount(projectDir)).toBe(2)
 
-    await win.getByTestId('charm-menu').click()
+    await openAppMenu(win)
     await expect(win.getByTestId('menu-restore')).not.toHaveAttribute('aria-disabled', 'true')
     await win.getByTestId('menu-restore').click()
 

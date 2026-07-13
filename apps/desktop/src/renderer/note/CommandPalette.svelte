@@ -94,7 +94,7 @@
   })
 
   // Autofocus, and hold a takeover-FAMILY input blocker for the palette's
-  // lifetime (AI-IMP-183): board shortcuts and Mod+P are suppressed under
+  // lifetime (AI-IMP-183): board shortcuts and Mod+K are suppressed under
   // it, and opening it retires the tag/search panels.
   $effect(() => {
     const release = registerInputBlocker(() => true)

@@ -6,9 +6,7 @@ import { describe, expect, it } from 'vitest'
 type NativeKind = 'color' | 'number' | 'select' | 'datalist'
 interface NativeUse { file: string; kind: NativeKind; testid: string }
 const renderer = fileURLToPath(new URL('..', import.meta.url))
-const allowed = new Set([
-  'chrome/TitleStrip.svelte|color|bg-color',
-])
+const allowed = new Set<string>()
 const key = (entry: NativeUse): string => `${entry.file}|${entry.kind}|${entry.testid}`
 
 function detect(source: string, file: string): NativeUse[] {
@@ -44,9 +42,9 @@ function rendererNatives(): NativeUse[] {
 }
 
 describe('no new native kit inputs', () => {
-  it('leaves exactly the TitleStrip tuple reserved to AI-IMP-292', () => {
+  it('has no native kit-input exceptions', () => {
     const actual = rendererNatives().map(key).sort()
-    expect(actual).toHaveLength(1)
+    expect(actual).toHaveLength(0)
     expect(new Set(actual).size).toBe(actual.length)
     expect(actual).toEqual([...allowed].sort())
   })
