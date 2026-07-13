@@ -10,10 +10,11 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { uuidv7, titleKey } from '@ew/domain'
-  import { itemWorldAABB } from '@ew/canvas-engine'
+  import { itemWorldAABB, type SceneCamera, type ScreenInset } from '@ew/canvas-engine'
   import type { CanvasHostHandle } from '../canvas/host'
   import { importFilesAt } from '../canvas/import-surfaces'
   import { navigateTo } from '../chrome/navigation'
+  import { reservationFrame } from '../chrome/reservation'
   import { requestOpenIdentity } from '../chrome/identity'
   import { tooltip } from '../chrome/tooltip'
   import { LinkResolution } from './link-resolution'
@@ -52,6 +53,7 @@
   import {
     boundEdgeLength,
     chooseBindSide,
+    openBookBounds,
     pageBaseSize,
     ringCount,
     ringOffsets,
@@ -769,6 +771,10 @@
    * panel's life on that image (§8.5); this caches which placement it
    * was made for so a re-anchor recomputes it. */
   let boundForPlacement = ''
+  /** Camera snapshot owned only while the open book is in reading flight.
+   * It is exact state, not a bounds approximation, so Escape returns to
+   * the precise pre-flight x/y/zoom through the same eased machinery. */
+  let readingReturnCamera = $state<SceneCamera | null>(null)
 
   const opacity = $derived(
     bound ? (pageStage === 'hidden' ? 0 : 1) : tetheredPanelOverviewOpacity(worldScale),
@@ -784,6 +790,52 @@
     const bounds = panelEl?.parentElement?.getBoundingClientRect()
     return { width: bounds?.width ?? 1280, height: bounds?.height ?? 800 }
   }
+
+  function readingInset(view: { width: number; height: number }): ScreenInset {
+    const frame = reservationFrame({ x: 0, y: 0, width: view.width, height: view.height })
+    return {
+      top: frame.rect.y,
+      left: frame.rect.x,
+      right: view.width - frame.rect.x - frame.rect.width,
+      bottom: view.height - frame.rect.y - frame.rect.height,
+    }
+  }
+
+  function readingBookBounds(): { x: number; y: number; width: number; height: number } | null {
+    if (!bound || record.anchor.kind !== 'placement' || record.anchor.canvasId !== handle.canvasId) {
+      return null
+    }
+    const item = handle.controller.items().find((candidate) => candidate.id === record.anchor.placementId)
+    const image = item ? itemWorldAABB(item) : null
+    return image ? openBookBounds(boundSide, image, pageBase) : null
+  }
+
+  function restoreReadingFlight(): boolean {
+    if (!readingReturnCamera) return false
+    const target = readingReturnCamera
+    readingReturnCamera = null
+    handle.flyCameraTo(target)
+    return true
+  }
+
+  function toggleReadingFlight(): void {
+    if (restoreReadingFlight()) return
+    const bounds = readingBookBounds()
+    if (!bounds) return
+    readingReturnCamera = handle.controller.camera.state()
+    handle.flyTo(bounds, readingInset(viewportSize()))
+  }
+
+  $effect(() => {
+    const onKeydown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || !readingReturnCamera) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      restoreReadingFlight()
+    }
+    window.addEventListener('keydown', onKeydown, true)
+    return () => window.removeEventListener('keydown', onKeydown, true)
+  })
 
   function layout(): void {
     activeCanvasId = handle.canvasId
@@ -971,6 +1023,7 @@
    * beat; nothing persists). The sticky spawns where the page sat, kept
    * inside the window at the pinned default size. */
   function tearOut(): void {
+    restoreReadingFlight()
     const view = viewportSize()
     pinPanel(
       record.key,
@@ -1022,6 +1075,7 @@
     const target = event.target as HTMLElement
     if (target.closest('button, input, textarea')) return
     if (editorHost && editorHost.contains(target)) return
+    restoreReadingFlight()
     openBigEditor(record.key, { torn: true })
   }
 
@@ -1330,7 +1384,7 @@
   ondropcapture={onSurfaceDrop}
   ondblclick={onPageDblClick}
 >
-  <header onpointerdown={onHeaderPointerDown}>
+  <header class="whisper-strip" data-testid="panel-whisper-strip" onpointerdown={onHeaderPointerDown}>
     {#if record.pinned || freeFloating}
       <!-- §8.5 (AI-IMP-258): the drag handle. The header is otherwise
            title-input + buttons — both refused as drag starts — which
@@ -1404,20 +1458,33 @@
            tethered card's next step is the pin. -->
       <button
         type="button"
-        class="chrome-btn"
+        class="chrome-btn paper-verb"
         data-testid="panel-place-on-board"
         onclick={() => void placeOnBoard()}
         use:tooltip={{ name: 'Place on board — make this note board content' }}
       >
-        ⤓
+        plant
       </button>
+    {/if}
+    {#if bound && note && !phantom}
+      <button
+        type="button"
+        class="chrome-btn paper-verb"
+        data-testid="panel-reading-flight"
+        aria-pressed={readingReturnCamera !== null}
+        onclick={toggleReadingFlight}
+        use:tooltip={{ name: readingReturnCamera ? 'Return to the prior view — Esc' : 'Read — fit print and page' }}
+      >✎ read</button>
     {/if}
     {#if note && !phantom}
       <button
         type="button"
-        class="chrome-btn"
+        class="chrome-btn paper-verb"
         data-testid="panel-expand"
-        onclick={() => openBigEditor(record.key)}
+        onclick={() => {
+          restoreReadingFlight()
+          openBigEditor(record.key)
+        }}
         use:tooltip={{ name: 'Expand — big editor over the board' }}
       >
         ⤢
@@ -1433,7 +1500,7 @@
         onclick={untape}
         use:tooltip={{ name: 'Un-tape — return this page to its book' }}
       >
-        ⤶
+        rebind
       </button>
     {/if}
     {#if !record.pinned}
@@ -1442,12 +1509,12 @@
              the page rips out and tapes itself to the glass. -->
         <button
           type="button"
-          class="chrome-btn"
+          class="chrome-btn paper-verb"
           data-testid="panel-tear"
           onclick={tearOut}
           use:tooltip={{ name: 'Tear out — tape this page to the glass' }}
         >
-          ⇱
+          tear
         </button>
       {:else}
         <button
@@ -1465,7 +1532,10 @@
       type="button"
       class="chrome-btn"
       data-testid={record.pinned ? `panel-close-${record.key}` : 'panel-close'}
-      onclick={() => closePanel(record.key)}
+      onclick={() => {
+        restoreReadingFlight()
+        closePanel(record.key)
+      }}
       use:tooltip={{ name: 'Close' }}
     >
       ✕
@@ -1906,6 +1976,8 @@
     gap: 0.3rem;
     padding: 0.4rem 0.45rem 0.25rem;
     cursor: default;
+    border-bottom: 1px solid var(--ew-paper-border);
+    background: var(--ew-paper-page);
   }
 
   .note-panel.pinned header,
@@ -1956,6 +2028,20 @@
     cursor: pointer;
   }
 
+  .paper-verb {
+    padding: 0.05rem 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.68rem;
+  }
+
+  .paper-verb:hover,
+  .paper-verb[aria-pressed='true'] {
+    border-color: var(--ew-paper-border-strong);
+    background: var(--ew-paper-surface);
+    color: var(--ew-paper-text-heading);
+  }
+
   .chrome-btn.places {
     font-size: 0.72rem;
     white-space: nowrap;
@@ -1968,10 +2054,10 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     padding: 0.05rem 0.4rem;
-    border: 1px solid var(--ew-paper-info-border);
+    border: 1px solid var(--ew-paper-border);
     border-radius: 9px;
-    background: var(--ew-paper-info-panel);
-    color: var(--ew-paper-info-text);
+    background: transparent;
+    color: var(--ew-paper-text-muted);
     font-size: 0.7rem;
     cursor: pointer;
   }

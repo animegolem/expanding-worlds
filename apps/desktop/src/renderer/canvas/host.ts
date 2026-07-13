@@ -64,8 +64,10 @@ import {
   type SceneBackground,
   type SceneDecoration,
   type SceneItem,
+  type SceneCamera,
   type ScenePlacement,
   type ScenePlanes,
+  type ScreenInset,
   type SnapGuide,
   type IconAtlasResource,
 } from '@ew/canvas-engine'
@@ -135,7 +137,10 @@ export interface CanvasHostHandle {
   effectiveItem(id: string): SceneItem | null
   /** Eased camera flight framing `bounds` (§6.9 rev 0.11); any user
    * camera input aborts it. */
-  flyTo(bounds: Rect): void
+  flyTo(bounds: Rect, inset?: ScreenInset): void
+  /** Eased flight to an exact camera state. Reading mode uses this for
+   * byte-exact Escape restore instead of re-fitting the old viewport. */
+  flyCameraTo(state: SceneCamera): void
   /** §6.7 rev 0.50: the content-defined lit stage extent (grow-only
    * target), or null when the board has a background image or no
    * content. Zoom-to-fit frames this so the framing matches what is
@@ -2125,8 +2130,8 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
       return canvasId
     },
     effectiveItem: (id: string) => ephemeral.get(id) ?? sync.item(id) ?? null,
-    flyTo: (bounds: Rect) => {
-      const target = controller.camera.fitTarget(bounds, viewport())
+    flyTo: (bounds: Rect, inset?: ScreenInset) => {
+      const target = controller.camera.fitTarget(bounds, viewport(), 48, inset)
       if (target) {
         // An explicit framing action supersedes a wheel glide
         // (AI-IMP-098) — cancel first so the chase's next tick
@@ -2134,6 +2139,10 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
         zoomChase.cancel()
         flight.flyTo(target)
       }
+    },
+    flyCameraTo: (state: SceneCamera) => {
+      zoomChase.cancel()
+      flight.flyTo(state)
     },
     contentStageExtent: () => (contentTarget ? { ...contentTarget } : null),
     commitFrame,

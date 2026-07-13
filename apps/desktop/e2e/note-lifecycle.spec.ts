@@ -96,10 +96,45 @@ test('portrait image: page binds to a side at the image height and tracks it thr
   await expect(pane).toHaveAttribute('data-bound-side', /^(left|right)$/)
   await expect(win.getByTestId('binder-rings')).toHaveCount(1)
 
-  // Shared edge: page height = image height, at 100% and at 50%.
+  // Shared edge: page height = image height at two window sizes and
+  // through camera zoom. Window chrome may reflow; the book seam may not.
   await expectEdgeTracks(win, 'height', img)
+  await win.setViewportSize({ width: 1040, height: 720 })
+  await expectEdgeTracks(win, 'height', img)
+  await win.setViewportSize({ width: 1280, height: 800 })
   await setZoom(win, 0.5)
   await expectEdgeTracks(win, 'height', img)
+
+  await app.close()
+})
+
+test('reading flight fits the whole open book and Escape restores the exact prior camera', async () => {
+  const { app, win } = await launchApp('ew-e2e-book-reading-flight-')
+  const img = await seedImageNote(win, { w: 200, h: 320, x: 500, y: 400, title: 'Reading' })
+  const startingCamera = { x: 91, y: 47, zoom: 0.83 }
+  await win.evaluate((camera) => window.__ewDebug!.setCamera(camera), startingCamera)
+  await openImageNote(win, img)
+
+  const pane = win.getByTestId('note-pane')
+  await expect(pane).toHaveAttribute('data-bound-side', /^(left|right)$/)
+  await expect(pane.getByTestId('panel-whisper-strip')).toBeVisible()
+  const before = await win.evaluate(() => window.__ewDebug!.camera())
+  expect(before).toEqual(startingCamera)
+
+  const read = pane.getByTestId('panel-reading-flight')
+  await read.click()
+  await expect(read).toHaveAttribute('aria-pressed', 'true')
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.stage().flightActive), { timeout: 5_000 })
+    .toBe(false)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).not.toEqual(before)
+
+  await win.keyboard.press('Escape')
+  await expect
+    .poll(() => win.evaluate(() => window.__ewDebug!.stage().flightActive), { timeout: 5_000 })
+    .toBe(false)
+  expect(await win.evaluate(() => window.__ewDebug!.camera())).toEqual(before)
+  await expect(read).toHaveAttribute('aria-pressed', 'false')
 
   await app.close()
 })
