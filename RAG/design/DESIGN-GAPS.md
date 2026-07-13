@@ -78,6 +78,21 @@ DESIGN-QUEUE)
       Session row copy resolved rev 0.70 Q4; Empty-trash confirm
       resolved — the Trash kit's burn ceremony).
 
+### Kit 1.5 record items (from the nav wave's round 1, 2026-07-13)
+
+- [ ] **❖ displaced to the crumb**: the Home Canvas kit draws ❖ at
+      strip top-right, but the owner's rail-table ruling (board verbs
+      on the board's identity) puts it on the PathBar crumb and 293
+      gives the strip corner to ☰ alone. Kit 1.5 redraws ❖ at the
+      crumb.
+- [ ] **HERE menu ships five verbs** (paste·text·pin·shape·frame);
+      the kit's "from the library…" row deferred — source panel and
+      place mode carry the capability. Re-add deliberately or retire
+      from the drawing.
+- [ ] **Gallery scope chrome gains "Open folder as source…"** —
+      built plainly this wave (existing chooser seam, kit Button);
+      wants its drawn anatomy.
+
 ## Resolved
 
 *(All pointers below: the kit push of 2026-07-12,
