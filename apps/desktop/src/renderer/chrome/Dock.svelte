@@ -9,6 +9,7 @@
   AI-IMP-067 adds the ◉ pin tool between connector and the divider.
 -->
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import {
     isTextData,
     type AlignOp,
@@ -37,6 +38,14 @@
   import { formatBinding, getBinding, matches } from '../keys/registry'
   import { takeoverActive } from './takeover'
   import { tooltip } from './tooltip'
+  import {
+    currentShape,
+    rememberShape,
+    SHAPE_OPTIONS,
+    ShapeHoldGesture,
+    tailOffset,
+    type ShapeToolKind,
+  } from './shape-flyout'
 
   interface EyeDropperResult { sRGBHex: string }
   interface EyeDropperApi { open(): Promise<EyeDropperResult> }
@@ -55,12 +64,6 @@
     hostElement: HTMLElement
   } = $props()
 
-  const SHAPE_KINDS: Array<{ kind: ToolKind; label: string; glyph: string }> = [
-    { kind: 'rect', label: 'Rect', glyph: '▭' },
-    { kind: 'ellipse', label: 'Ellipse', glyph: '◯' },
-    { kind: 'triangle', label: 'Triangle', glyph: '△' },
-    { kind: 'shape-arrow', label: 'Arrow shape', glyph: '➤' },
-  ]
   // Tool keys (AI-IMP-117): the binding id carries the shortcut. Both
   // the dispatch map and the tooltip chip read from the registry, so
   // the letter lives in exactly one place.
@@ -122,9 +125,16 @@
   ]
 
   let activeTool = $state<ToolKind>(handle.tools.active)
-  let lastShapeKind = $state<ToolKind>('rect')
+  let lastShapeKind = $state<ShapeToolKind>(currentShape())
   let shapeFlyoutOpen = $state(false)
+  let shapeButton = $state<HTMLButtonElement | null>(null)
+  let shapeFlyout = $state<HTMLElement | null>(null)
+  let shapeTailX = $state(12)
+  let shapeFlyoutBelow = $state(false)
   let zoomPct = $state(Math.round(handle.controller.camera.zoom * 100))
+
+  const shapeHold = new ShapeHoldGesture(() => (shapeFlyoutOpen = true))
+  onDestroy(() => shapeHold.cancel())
 
   // AI-IMP-289: defaults are deliberately session/host-local. They feed
   // ToolManager's next-create snapshot; they are not selection restyle
@@ -206,7 +216,10 @@
   $effect(() => {
     const offTool = handle.tools.onChanged((tool) => {
       activeTool = tool
-      if (SHAPE_KINDS.some((s) => s.kind === tool)) lastShapeKind = tool
+      if (isShapeTool(tool)) {
+        lastShapeKind = tool
+        rememberShape(tool)
+      }
     })
     const offSelection = handle.controller.selection.onChanged(() => refresh())
     // Deterministic (AI-IMP-054): the host signals every applied scene.
@@ -262,9 +275,9 @@
     handle.tools.style.textSizeScale = textSizeScale
   })
 
-  const shapeActive = $derived(SHAPE_KINDS.some((s) => s.kind === activeTool))
+  const shapeActive = $derived(isShapeTool(activeTool))
   const shapeGlyph = $derived(
-    SHAPE_KINDS.find((s) => s.kind === (shapeActive ? activeTool : lastShapeKind))?.glyph ?? '▭',
+    SHAPE_OPTIONS.find((s) => s.kind === (shapeActive ? activeTool : lastShapeKind))?.glyph ?? '▭',
   )
   const hasGroup = $derived(selected.some((d) => d.groupId !== null))
   const allLocked = $derived(selected.length > 0 && selected.every((d) => d.locked === 1))
@@ -332,6 +345,82 @@
     handle.tools.setTool(kind)
     shapeFlyoutOpen = false
   }
+
+  function isShapeTool(kind: string | null): kind is ShapeToolKind {
+    return SHAPE_OPTIONS.some((shape) => shape.kind === kind)
+  }
+
+  function pickShape(kind: ShapeToolKind): void {
+    lastShapeKind = kind
+    rememberShape(kind)
+    // ToolManager toggles an already-active non-select tool back to select;
+    // a picker choice means "keep this armed", never "toggle it off".
+    if (handle.tools.active !== kind) handle.tools.setTool(kind)
+    shapeFlyoutOpen = false
+  }
+
+  function quickShapePress(): void {
+    if (shapeActive) shapeFlyoutOpen = true
+    else pickShape(lastShapeKind)
+  }
+
+  function beginShapePress(event: PointerEvent): void {
+    if (event.button !== 0) return
+    ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
+    shapeHold.press()
+  }
+
+  function endShapePress(event: PointerEvent): void {
+    if (event.button !== 0) return
+    const button = event.currentTarget as HTMLElement
+    if (button.hasPointerCapture?.(event.pointerId)) button.releasePointerCapture(event.pointerId)
+    const outcome = shapeHold.release()
+    if (outcome === 'quick') {
+      quickShapePress()
+      return
+    }
+    const hit = document.elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLElement>('[data-shape-kind]')
+      ?.dataset['shapeKind'] ?? null
+    if (isShapeTool(hit)) pickShape(hit)
+    else shapeFlyoutOpen = false
+  }
+
+  function cancelShapePress(): void {
+    shapeHold.cancel()
+    shapeFlyoutOpen = false
+  }
+
+  function shapeFlyoutPlaced(
+    placement: { x: number; flipped: boolean },
+    surface: { width: number },
+  ): void {
+    if (!shapeButton) return
+    const anchor = shapeButton.getBoundingClientRect()
+    shapeTailX = tailOffset(anchor.left + anchor.width / 2, placement.x, surface.width)
+    shapeFlyoutBelow = placement.flipped
+  }
+
+  $effect(() => {
+    if (!shapeFlyoutOpen) return
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      shapeFlyoutOpen = false
+      shapeButton?.focus()
+    }
+    const onRelease = (event: PointerEvent): void => {
+      const target = event.target as Node | null
+      if (target && (shapeButton?.contains(target) || shapeFlyout?.contains(target))) return
+      shapeFlyoutOpen = false
+    }
+    window.addEventListener('keydown', onKey, true)
+    window.addEventListener('pointerup', onRelease, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('pointerup', onRelease, true)
+    }
+  })
 
   function zoomBy(factor: number): void {
     const bounds = hostElement.getBoundingClientRect()
@@ -792,23 +881,6 @@
     </div>
   {/if}
 
-  {#if shapeFlyoutOpen}
-    <div class="dock-row flyout" data-testid="shape-flyout">
-      {#each SHAPE_KINDS as shape (shape.kind)}
-        <button
-          type="button"
-          class:active={activeTool === shape.kind}
-          data-testid={`tool-${shape.kind}`}
-          onclick={() => setTool(shape.kind)}
-          use:tooltip={{ name: shape.label, shortcut: 'esc returns to select' }}
-        >
-          <span class="glyph">{shape.glyph}</span>
-          {shape.label}
-        </button>
-      {/each}
-    </div>
-  {/if}
-
   <div class="dock-row main">
     {#each PLAIN_TOOLS as tool (tool.kind)}
       <button
@@ -833,10 +905,22 @@
       class="tool"
       class:active={shapeActive}
       data-testid="dock-shape"
-      onclick={() => (shapeFlyoutOpen = !shapeFlyoutOpen)}
+      aria-haspopup="menu"
+      aria-expanded={shapeFlyoutOpen}
+      bind:this={shapeButton}
+      onpointerdown={beginShapePress}
+      onpointerup={endShapePress}
+      onpointercancel={cancelShapePress}
+      onclick={(event) => {
+        event.preventDefault()
+        // Keyboard activation has no pointer detail; pointer activation was
+        // already classified at pointerup and must not run twice.
+        if (event.detail === 0) quickShapePress()
+      }}
       use:tooltip={{ name: 'Shapes', shortcut: formatBinding(KEY.toolShapes) }}
     >
       {shapeGlyph}
+      <span class="more" aria-hidden="true"></span>
     </button>
     {#each DRAW_TOOLS as tool (tool.kind)}
       <button
@@ -904,6 +988,42 @@
     </button>
   </div>
 </div>
+
+{#if shapeFlyoutOpen && shapeButton}
+  <div
+    class="shape-flyout"
+    class:below={shapeFlyoutBelow}
+    data-testid="shape-flyout"
+    role="menu"
+    aria-label="Shapes"
+    bind:this={shapeFlyout}
+    use:placeAnchoredElement={() => ({
+      anchor: shapeButton!.getBoundingClientRect(),
+      host: { x: 0, y: 0, width: innerWidth, height: innerHeight },
+      x: { preferred: 'center' },
+      y: { preferred: 'before', fallback: 'after' },
+      gap: 8,
+      onplace: shapeFlyoutPlaced,
+    })}
+  >
+    <div class="shape-header">Shapes <span>· {formatBinding(KEY.toolShapes)}</span></div>
+    {#each SHAPE_OPTIONS as shape (shape.kind)}
+      <button
+        type="button"
+        class:active={lastShapeKind === shape.kind}
+        role="menuitemradio"
+        aria-checked={lastShapeKind === shape.kind}
+        data-testid={`tool-${shape.kind}`}
+        data-shape-kind={shape.kind}
+        onclick={() => pickShape(shape.kind)}
+      >
+        <span class="glyph">{shape.glyph}</span>
+        {shape.label}
+      </button>
+    {/each}
+    <span class="shape-tail" style:left={`${shapeTailX}px`} aria-hidden="true"></span>
+  </div>
+{/if}
 
 <style>
   .dock-stack {
@@ -986,11 +1106,87 @@
   }
 
   .tool {
+    position: relative;
     min-width: 1.9rem;
     height: 1.9rem;
     display: inline-grid;
     place-items: center;
     font-size: 0.95rem;
+  }
+
+  .more {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-bottom: 4px solid currentColor;
+    opacity: 0.65;
+  }
+
+  .shape-flyout {
+    position: fixed;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    min-width: 9.5rem;
+    padding: 0.32rem;
+    background: var(--ew-surface);
+    border: 1px solid var(--ew-border-panel);
+    border-radius: 8px;
+    color: var(--ew-text);
+    pointer-events: auto;
+  }
+
+  .shape-header {
+    padding: 0.2rem 0.38rem 0.35rem;
+    font-family: var(--ew-font-mono);
+    font-size: 0.66rem;
+    color: var(--ew-text-muted);
+    border-bottom: 1px solid var(--ew-border);
+    margin-bottom: 0.2rem;
+  }
+
+  .shape-header span {
+    color: var(--ew-text-subtle);
+  }
+
+  .shape-flyout button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 1.75rem;
+    border-color: transparent;
+    background: transparent;
+    text-align: left;
+  }
+
+  .shape-flyout button:hover {
+    background: var(--ew-surface-hover);
+  }
+
+  .shape-flyout button.active {
+    background: var(--ew-accent);
+  }
+
+  .shape-tail {
+    position: absolute;
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    transform: translateX(-50%) rotate(45deg);
+    background: var(--ew-surface);
+    border-right: 1px solid var(--ew-border-panel);
+    border-bottom: 1px solid var(--ew-border-panel);
+  }
+
+  .shape-flyout.below .shape-tail {
+    top: -6px;
+    bottom: auto;
+    border: 0;
+    border-left: 1px solid var(--ew-border-panel);
+    border-top: 1px solid var(--ew-border-panel);
   }
 
   .pipette svg {

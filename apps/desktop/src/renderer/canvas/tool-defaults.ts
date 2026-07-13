@@ -2,7 +2,7 @@ import { legibleFontSize, type ToolKind, type ToolStyle } from '@ew/canvas-engin
 
 export type ToolDefaultsKind = 'text' | 'shape' | 'line'
 
-const SHAPES = new Set<ToolKind>(['rect', 'ellipse', 'triangle', 'shape-arrow'])
+const SHAPES = new Set<ToolKind>(['rect', 'ellipse', 'triangle', 'diamond', 'shape-arrow'])
 const LINES = new Set<ToolKind>(['path', 'line', 'arrow', 'connector'])
 
 /** Which defaults the armed tool consumes; null means the Dock stays at rest. */

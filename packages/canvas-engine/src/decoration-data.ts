@@ -3,7 +3,7 @@
  * units are world-space: a decoration owns a fixed world size and
  * scales only with canvas zoom, never rescaled afterwards. The `kind`
  * column discriminates the family ('text' | 'path' | 'shape' | 'line'
- * | 'arrow' | 'connector'); rect/ellipse/triangle are discriminated
+ * | 'arrow' | 'connector'); basic shapes are discriminated
  * INSIDE shape data via `data.shape`. Text MUST store its string at
  * `data.text` — canvas_text_fts extracts `$.text` (§9).
  */
@@ -30,7 +30,7 @@ export interface TextData {
   italic?: boolean
 }
 
-export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'arrow'
+export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'diamond' | 'arrow'
 
 export interface ShapeData {
   shape: ShapeKind
@@ -121,6 +121,7 @@ export function isShapeData(data: unknown): data is ShapeData {
     (data['shape'] === 'rect' ||
       data['shape'] === 'ellipse' ||
       data['shape'] === 'triangle' ||
+      data['shape'] === 'diamond' ||
       data['shape'] === 'arrow') &&
     isFinite_(data['x']) &&
     isFinite_(data['y']) &&

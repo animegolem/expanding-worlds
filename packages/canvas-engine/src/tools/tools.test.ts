@@ -135,7 +135,7 @@ describe('draw gestures', () => {
 
   it('a click without drag creates nothing', () => {
     const { tools, created } = setup()
-    for (const tool of ['rect', 'triangle', 'line', 'arrow', 'connector'] as const) {
+    for (const tool of ['rect', 'triangle', 'diamond', 'line', 'arrow', 'connector'] as const) {
       tools.setTool(tool)
       tools.pointerDown({ x: 5, y: 5 })
       tools.pointerUp({ x: 5, y: 5 })
@@ -287,6 +287,18 @@ describe('shift-constrained drawing (AI-IMP-035)', () => {
     const tri = triangle.finish({ x: 40, y: 10 }, { shift: true })!
     expect(tri.data['width']).toBe(40)
     expect(tri.data['height']).toBeCloseTo((40 * Math.sqrt(3)) / 2)
+
+    const diamond = beginDrawSession(
+      'diamond',
+      { x: 0, y: 0 },
+      { stroke: '#fff', strokeScale: 1.5, fill: '#224466', textColor: '#fff' },
+      { zoom: 1, items: () => [] },
+    )
+    const gem = diamond.finish({ x: 60, y: 20 }, { shift: true })!
+    expect(gem).toMatchObject({
+      kind: 'shape',
+      data: { shape: 'diamond', width: 60, height: 60, stroke: '#fff', strokeWidth: 3, fill: '#224466' },
+    })
   })
 
   it('shapes drag toward negative axes keep the start corner anchored', () => {

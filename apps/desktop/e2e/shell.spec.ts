@@ -143,12 +143,34 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   await win.getByTestId('zoom-out').click()
   await expect(win.getByTestId('zoom-pct')).toHaveText('100%')
 
-  // The shape flyout carries the shape kinds behind one dock button.
+  // The shape slot quick-arms its remembered face; a re-press or hold
+  // opens the kit flyout, whose exits never change that face.
+  await expect(win.getByTestId('tool-rect')).toHaveCount(0)
+  await win.getByTestId('dock-shape').click()
+  await expect(win.getByTestId('dock-shape')).toHaveClass(/active/)
   await expect(win.getByTestId('tool-rect')).toHaveCount(0)
   await win.getByTestId('dock-shape').click()
   await expect(win.getByTestId('tool-rect')).toBeVisible()
-  await win.getByTestId('tool-ellipse').click()
+  await win.keyboard.press('Escape')
+  await expect(win.getByTestId('tool-rect')).toHaveCount(0)
+
+  const shapeBox = (await win.getByTestId('dock-shape').boundingBox())!
+  await win.mouse.move(shapeBox.x + shapeBox.width / 2, shapeBox.y + shapeBox.height / 2)
+  await win.mouse.down()
+  await win.waitForTimeout(320)
+  await expect(win.getByTestId('shape-flyout')).toBeVisible()
+  await expect(win.getByTestId('shape-flyout')).toContainText('Shapes')
+  const ellipseBox = (await win.getByTestId('tool-ellipse').boundingBox())!
+  await win.mouse.move(ellipseBox.x + ellipseBox.width / 2, ellipseBox.y + ellipseBox.height / 2)
+  await win.mouse.up()
   await expect(win.getByTestId('tool-ellipse')).toHaveCount(0) // flyout closed
+  await expect(win.getByTestId('dock-shape')).toHaveText('◯')
+
+  await win.getByTestId('dock-shape').click() // armed re-press
+  await expect(win.getByTestId('shape-flyout')).toBeVisible()
+  await win.mouse.click(20, 200) // release outside closes without changing ellipse
+  await expect(win.getByTestId('shape-flyout')).toHaveCount(0)
+  await expect(win.getByTestId('dock-shape')).toHaveText('◯')
   await win.getByTestId('tool-select').click()
 
   // Tool shortcuts: the GUI is the tutorial for the keyboard app.

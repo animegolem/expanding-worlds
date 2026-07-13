@@ -18,6 +18,11 @@ date_created: 2026-07-08
 
 > SUPERSEDED (2026-07-12): the hold flyout is ruled and drawn (kit 2a; DESIGN-LETTER ruling 3) and re-scoped as AI-IMP-290 under AI-EPIC-029, which cites this ticket's Miro comparison table as the shape-set benchmark — the table stays authoritative reading.
 
+> ROUND-1 DELTA (2026-07-12): this ticket never contained the claimed
+> comparison table. AI-IMP-290 authors it and ships the ratified
+> rectangle · ellipse · triangle · diamond · block-arrow set; its Issues
+> table is the authoritative gap record.
+
 ## Summary of Issue #1
 
 Owner testing note + ruling (2026-07-08): the shape tool's current

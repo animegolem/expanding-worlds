@@ -4,7 +4,7 @@ import { defaultsKind, nextTextDefaults, rememberToolColor } from './tool-defaul
 describe('Dock tool defaults (AI-IMP-289)', () => {
   it('shows exactly one defaults species for tools that consume one', () => {
     expect(defaultsKind('text')).toBe('text')
-    for (const shape of ['rect', 'ellipse', 'triangle', 'shape-arrow'] as const)
+    for (const shape of ['rect', 'ellipse', 'triangle', 'diamond', 'shape-arrow'] as const)
       expect(defaultsKind(shape)).toBe('shape')
     for (const line of ['path', 'line', 'arrow', 'connector'] as const)
       expect(defaultsKind(line)).toBe('line')

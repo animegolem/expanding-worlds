@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js'
 import { ARROW_LEGIBLE_SCREEN_PX, STROKE_LEGIBLE_SCREEN_PX } from '../decoration-data'
 import { hitTest, itemWorldAABB } from '../hit-test'
 import { arrowPolygon } from '../renderers/decorations/line'
-import { shapeArrowPolygon } from '../renderers/decorations/shape'
+import { diamondPolygon, shapeArrowPolygon } from '../renderers/decorations/shape'
 import type { Point } from '../camera'
 import type { ScenePlacement, SceneItem } from '../types'
 import type { ToolStyle } from './tool-mode'
@@ -72,7 +72,7 @@ export function placementAt(world: Point, items: readonly SceneItem[]): ScenePla
   return (hitTest(world, placements) as ScenePlacement | null) ?? null
 }
 
-type ShapeVariant = 'rect' | 'ellipse' | 'triangle' | 'arrow'
+type ShapeVariant = 'rect' | 'ellipse' | 'triangle' | 'diamond' | 'arrow'
 
 class ShapeSession implements DrawSession {
   #shape: ShapeVariant
@@ -261,6 +261,7 @@ export type DrawToolKind =
   | 'rect'
   | 'ellipse'
   | 'triangle'
+  | 'diamond'
   | 'shape-arrow'
   | 'path'
   | 'line'
@@ -294,6 +295,7 @@ export function beginDrawSession(
     case 'rect':
     case 'ellipse':
     case 'triangle':
+    case 'diamond':
       return new ShapeSession(tool, startWorld, style, minDrag, strokeWidth)
     case 'shape-arrow':
       return new ShapeSession('arrow', startWorld, style, minDrag, strokeWidth)
@@ -376,6 +378,15 @@ export class ToolOverlay {
             d['x']!,
             d['y']! + d['height']!,
           ])
+        } else if (shape === 'diamond') {
+          const cx = d['x']! + d['width']! / 2
+          const cy = d['y']! + d['height']! / 2
+          const points = diamondPolygon(d['width']!, d['height']!)
+          const world: number[] = []
+          for (let i = 0; i < points.length; i += 2) {
+            world.push(cx + points[i]!, cy + points[i + 1]!)
+          }
+          gfx.poly(world)
         } else {
           gfx.rect(d['x']!, d['y']!, d['width']!, d['height']!)
         }

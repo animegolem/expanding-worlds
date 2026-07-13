@@ -4,12 +4,20 @@ import { join } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 import type { EwApi } from '../src/preload/index'
 import type { SceneDecoration } from '@ew/canvas-engine'
-import { openBoardMenu, selectShapeTool } from './helpers'
+import { openBoardMenu } from './helpers'
 
 declare global {
   interface Window {
     ew: EwApi
   }
+}
+
+async function selectShapeTool(win: import('@playwright/test').Page, kind: string): Promise<void> {
+  await win.getByTestId('dock-shape').click()
+  // An inactive slot's first quick click arms its remembered face. Its
+  // armed re-press opens the flyout; an already-armed slot opens at once.
+  if ((await win.getByTestId(`tool-${kind}`).count()) === 0) await win.getByTestId('dock-shape').click()
+  await win.getByTestId(`tool-${kind}`).click()
 }
 
 /**
@@ -91,7 +99,7 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     via: Array<[number, number]> = [],
   ): Promise<void> {
     // Shape kinds live behind the dock's flyout (AI-IMP-059).
-    if (['rect', 'ellipse', 'triangle', 'shape-arrow'].includes(tool))
+    if (['rect', 'ellipse', 'triangle', 'diamond', 'shape-arrow'].includes(tool))
       await selectShapeTool(win, tool)
     else await win.getByTestId(`tool-${tool}`).click()
     const before = await revision()
@@ -111,6 +119,8 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   await drawTool('rect', [500, 300], [560, 340])
   await drawTool('ellipse', [600, 300], [660, 340])
   await drawTool('triangle', [500, 400], [560, 440])
+  await drawTool('diamond', [700, 300], [760, 340])
+  await drawTool('shape-arrow', [700, 400], [780, 440])
   await drawTool('path', [600, 420], [660, 450], [
     [615, 430],
     [630, 415],
@@ -125,7 +135,9 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
     (await decorations()).filter((d) => d.kind === kind)
 
   const shapes = await byKind('shape')
-  expect(shapes.map((s) => s.data['shape']).sort()).toEqual(['ellipse', 'rect', 'triangle'])
+  expect(shapes.map((s) => s.data['shape']).sort()).toEqual([
+    'arrow', 'diamond', 'ellipse', 'rect', 'triangle',
+  ])
   expect(await byKind('path')).toHaveLength(1)
   expect(await byKind('line')).toHaveLength(1)
   expect(await byKind('arrow')).toHaveLength(1)
@@ -416,7 +428,7 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   const scaled = (await byKind('text'))[0]!.data as { fontSize: number }
   expect(scaled.fontSize).toBeGreaterThan(32)
 
-  expect((await decorations()).length).toBe(8)
+  expect((await decorations()).length).toBe(10)
   await app.close()
 })
 

@@ -6,12 +6,12 @@ tags:
   - dock
   - tools
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on: [AI-IMP-289]
 parent_epic: [[AI-EPIC-029-the-kit-adoption-push]]
 confidence_score: 0.75
 date_created: 2026-07-12
-date_completed:
+date_completed: 2026-07-12
 ---
 
 # AI-IMP-290-shape-flyout
@@ -24,9 +24,9 @@ owner's dock-species ruling folded AI-IMP-190 in): hold ~300ms (or
 re-press the armed slot) opens a flyout that CENTERS on the armed
 slot with a pointer tail; pick arms that shape and the slot wears
 its glyph; long-press is the touch synonym (GR-5 §2 — slot wins
-inside dock bounds). The shape set fills toward AI-IMP-190's Miro
-comparison baseline where the decoration model already supports
-the geometry. Done means: one shape slot, kit-anatomy flyout with
+inside dock bounds). AI-IMP-190 never authored the comparison table
+it claimed; this ticket authors the candidate/geometry/decision table
+below. Done means: one shape slot, kit-anatomy flyout with
 esc/release-outside/pick exits, the 190 table's Phase-1 set
 decision executed and recorded, AI-IMP-190 closed by pointer.
 
@@ -43,12 +43,12 @@ decision executed and recorded, AI-IMP-190 closed by pointer.
 ### Design/Approach
 
 Flyout is an anchored surface on the one-physics rule (grows from
-the slot, pointer tail, clamps in the frame). Hold detection on the
-slot (~300ms, same threshold desktop and touch); a quick click arms
-the current shape as today. Drawn set per the kit page (2a shows
-the drawn four); the 190 comparison table adjudicates which extra
-shapes ship — each candidate maps to existing decoration geometry
-(round-1 lists the mapping; anything unmappable goes to Issues).
+the slot, pointer tail, clamps in the frame). Hold detection is
+~300ms: quick-release arms the remembered shape, re-pressing an armed
+slot or holding opens, release-over-row picks, and release-outside/Esc
+cancels. The first touch line reads `Shapes · S`. The ratified set is
+rectangle, ellipse, triangle, diamond, and the shipped arrow. Diamond
+is a JSON variant of `kind:'shape'`, not a record kind or schema change.
 Arming from the flyout writes the slot's remembered shape
 (per-session; round-1 checks whether tool defaults persist
 anywhere already before inventing storage).
@@ -72,21 +72,21 @@ e2e: flyout open/pick/esc + draw-one-of-each spec.
 Before marking an item complete on the checklist MUST **stop** and **think**. Have you validated all aspects are **implemented** and **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1: verify current shape-tool inventory in Dock/
+- [x] Round-1: verified current shape-tool inventory in Dock/
       decorations-ui, the 190 table's candidates vs decoration
       geometry, and the kit 2a anatomy; record the shipping set
       decision here.
-- [ ] One shape slot; quick-click arms current; hold ~300ms /
+- [x] One shape slot; quick-click arms current; hold ~300ms /
       long-press opens the flyout centered on the slot with
       pointer tail.
-- [ ] Flyout exits: esc, release-outside, pick (preflight B1);
+- [x] Flyout exits: esc, release-outside, pick (preflight B1);
       pick arms + slot glyph updates.
-- [ ] Shape set per the round-1 decision; each drawable by the
+- [x] Shape set per the round-1 decision; each drawable by the
       shape tool and undo-captured as one command including
       defaults (preflight D2).
-- [ ] AI-IMP-190's cancelled-with-pointer record still matches
+- [x] AI-IMP-190's cancelled-with-pointer record still matches
       what shipped; append any delta there.
-- [ ] Unit + e2e green; full local gate green with counts read.
+- [x] Unit + e2e green; full local gate green with counts read.
 
 ### Acceptance Criteria
 
@@ -102,3 +102,31 @@ the armed shape.
 
 ### Issues Encountered
 
+| Candidate | Geometry mapping | Decision |
+| --- | --- | --- |
+| Rectangle | Existing `shape` rectangle | Ship |
+| Ellipse | Existing `shape` ellipse | Ship |
+| Triangle | Existing `shape` triangle | Ship |
+| Diamond | Extend `shape` JSON variant | Ship |
+| Block arrow | Existing `shape-arrow` tool / `shape:'arrow'` geometry | Ship |
+| Rounded rectangle | Rectangle + defaults rounding | Defer to defaults |
+| Pentagon | No current geometry variant | Defer; no schema invented |
+| Hexagon | No current geometry variant | Defer; no schema invented |
+| Star | No current geometry variant | Defer; no schema invented |
+| Parallelogram | No current geometry variant | Defer; no schema invented |
+| Speech bubble | No variant; intersects deferred text-in-shape | Defer |
+| Cross | No current geometry variant | Defer; no schema invented |
+| Cylinder / 3D family | No current geometry; triggers 2b graduation | Defer |
+
+Round-1 correction: use the shared phase-A measured anchor and keep
+the pointer tail honest after frame clamping. Shape memory is session-only.
+
+Implementation evidence: the hold boundary and memory live in a pure
+tested helper; the phase-A action reports its measured placement so the
+nub follows a clamped surface; diamond extends the JSON shape validator,
+draw session, preview, and durable renderer together. Focused validation:
+canvas-engine 29 files / 409 tests; desktop helper/defaults 2 files / 6
+tests; shell + decorations Playwright 10 tests green after correcting the
+expected final decoration census from 8 to 10. `pnpm -r build` is green.
+The full wave gate passed: persistence 658, canvas-engine 409, desktop
+541, and hidden-window Playwright 268.
