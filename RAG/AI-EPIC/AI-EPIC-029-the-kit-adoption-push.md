@@ -99,19 +99,20 @@ rulings 1–33, kit DC pages, GR-5), KIT-PREFLIGHT waiver terms.
 
 ### Functional Requirements
 
-- [ ] FR-1: Reservation-frame band tokens (names normative) +
+- [x] FR-1: Reservation-frame band tokens (names normative) +
       shared clamp adoption + `showReservations` dev toggle +
       density token pair. (AI-IMP-286)
-- [ ] FR-2: Charm-halo clearance in all node-anchored positioning.
+- [x] FR-2: Charm-halo clearance in all node-anchored positioning.
       (AI-IMP-287)
-- [ ] FR-3: Kit input components in ui/: ColorPicker, SwatchRow,
+- [x] FR-3: Kit input components in ui/: ColorPicker, SwatchRow,
       PickerList, Stepper, uniform focus ring. (AI-IMP-288)
-- [ ] FR-4: Dock rebuild — toolbelt, defaults row, contextual rows
+- [x] FR-4: Dock rebuild — toolbelt, defaults row, contextual rows
       retired, eyedropper, stale sort-toggle fix. (AI-IMP-289)
-- [ ] FR-5: One shape slot with hold flyout + Miro-baseline shape
+- [x] FR-5: One shape slot with hold flyout + Miro-baseline shape
       set. (AI-IMP-290, updates AI-IMP-190)
-- [ ] FR-6: Selection charm-bar ⌗ arrange popover + ◧ restyle
-      panel; align-center spread fix. (AI-IMP-291)
+- [x] FR-6: Selection charm-bar ⌗ arrange popover + ◧ restyle
+      panel; align-center EXONERATED at round 1 — the defect was
+      label ambiguity, fixed with a named regression. (AI-IMP-291)
 - [ ] FR-7: Board menu on the crumb (❖, MenuPopover, swatch row) +
       ground menu HERE section. (AI-IMP-292)
 - [ ] FR-8: Rail recomposition — lens toggles only, ☰ to strip, ⚠
@@ -145,7 +146,12 @@ rulings 1–33, kit DC pages, GR-5), KIT-PREFLIGHT waiver terms.
 
 ## Implementation Breakdown
 
-Phase A (286→287→288) is interface-defining and lands first; 286
+Phase A closed 2026-07-12 (main e55d3b5d, + a round-3 gutter
+correction convicted by its own strengthened pin). Phase B closed
+2026-07-13 (three rounds: the oracle's red turned out to be runner
+arithmetic — AI-IMP-269 Issue #3 — not a defect; CI now uploads
+failure evidence and traces retries). Phase A (286→287→288) is
+interface-defining and lands first; 286
 and 288 may run in parallel (token file vs ui/ components), 287
 follows 286. Phase B (289→290→291) serializes after 288. Phase C
 (292, 293, 295 parallelizable; 294 alone — largest) after A.

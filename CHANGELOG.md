@@ -12,6 +12,36 @@ annotations.
 
 ## [Unreleased]
 
+### For testers (the dock grows up)
+- Changed: the dock is now just tools. Arm a tool and ONE row appears
+  above it with that tool's defaults — font, size, ink for text;
+  stroke, weight, fill for shapes — all app-drawn controls (the OS
+  color dialog and system dropdowns are gone from the dock). Ink rows
+  remember your recent colors, and an eyedropper can sample any color
+  on the board.
+- New: the shape tool is one slot — quick-click draws your last shape,
+  hold ~300ms (or re-press) for a small flyout: rectangle, ellipse,
+  triangle, diamond (new), and arrow.
+- Changed: the long strip of word-buttons is gone. Select two or more
+  things and the selection's own toolbar grows a ⌗ button — align,
+  spread, pack, and equalize live in a grouped panel there. Restyle a
+  drawn shape or text via the ◧ button on its toolbar; one ⌘Z undoes
+  a whole restyle. Reorder, group, lock, and hide live in the
+  right-click menu, and anything that can't apply to a mixed
+  selection says why instead of graying out silently.
+- Fixed: "align centers" was never collapsing your spread — the labels
+  were just ambiguous about which axis they meant. They aren't now.
+
+### Under the hood (dock wave, EPIC-029 phase B)
+- AI-IMP-289 — dock rebuild: kit controls, session-local tool
+  defaults, 3/6/9 recents, eyedropper (inert-with-why sans API).
+- AI-IMP-290 — remembered five-shape hold flyout; diamond as an
+  engine JSON variant (no schema); 190's comparison table authored.
+- AI-IMP-291 — ⌗/◧ charm panels, union-bounds selection furniture,
+  all-or-inert eligibility with reasons, one-group fail-stop restyle;
+  25+3 dock rows retired; align-center exonerated with a named
+  regression; native-control guard down to one tuple.
+
 ### For testers (the chrome learns its edges)
 - Changed: floating menus, tooltips, and pop-up panels now respect a
   shared frame — nothing opens under the title strip, the right rail,

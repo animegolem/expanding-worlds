@@ -1014,3 +1014,28 @@ look exactly as before (no regression at 100%+ display scaling).
 - Nothing else should look different — this wave is invisible if it
   worked. The four new input controls are dormant until the dock
   rebuild; skip them.
+
+## 2026-07-12 — dock wave (AI-IMP-289/290/291, EPIC-029 phase B)
+
+**Build:** v0.24.1 (the intermediate tag) — this is the wave to FEEL.
+**Try (mac + alph Windows):**
+- Arm T: one defaults row above the dock (font list, size stepper,
+  ink swatches). Pick a font from the app's own list — no OS dropdown
+  anywhere. Sample a board color with the eyedropper; if the button
+  is inert it should say why on hover.
+- Shape slot: quick-click draws your remembered shape; hold ~300ms
+  for the flyout; glide and release over a row to pick it. Try it
+  near the screen edges — the flyout should stay inside the frame
+  with its tail still pointing at the slot. Escape cancels.
+- Select 3+ items: ⌗ appears on the selection toolbar — align/spread/
+  pack/equalize from the panel; labels should read unambiguously
+  (this replaces the old "align centers collapsed my spread"
+  confusion). One ⌘Z per gesture.
+- Select a shape + an image together: ◧ and group/hide should be
+  inert WITH a reason, never silently missing, never silently
+  half-applying.
+- Restyle several shapes at once (stroke/fill), one ⌘Z brings it all
+  back.
+- Select a frame: sort-on-drop and "Add from library" live on the
+  frame's toolbar/right-click now — confirm you can still find them
+  without the old dock row.
