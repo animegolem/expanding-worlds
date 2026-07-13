@@ -12,13 +12,14 @@
  */
 import { setFadeDelay } from '../chrome/engagement'
 import { CHROME_FADE_DELAY_MS } from '../chrome/feel'
+import { setReservationDensity } from '../chrome/reservation'
 import { condition, toast } from '../chrome/status'
 import { applyTheme, type ThemeName } from '../theme'
 
 export type FadeDelay = number | 'never'
 export type CharmCorner = 'lower-right' | 'upper-right'
 export type TitleStripMode = 'hover' | 'always' | 'never'
-export type MenuPlacement = 'rail' | 'system'
+export type Density = 'compact' | 'comfortable'
 export type CaptionPromotionRouting = 'ask' | 'title' | 'body'
 /** §6.9 (AI-IMP-205): mouse vs trackpad wheel muscle memory. Chromium
  * cannot tell a mouse wheel from a trackpad two-finger scroll — both
@@ -37,8 +38,8 @@ export interface AppSettings {
   windowOpacity: number
   /** An --ew-canvas-flat-N token name, or 'off' for the theme surface. */
   flatCanvasColor: string
-  /** Windows/Linux only (§11.5); inert on macOS. */
-  menuPlacement: MenuPlacement
+  /** AI-IMP-300: live chrome/control target sizing. */
+  density: Density
   /** §6.9 (AI-IMP-205): plain-wheel muscle memory. Default trackpad. */
   navigationScheme: NavigationScheme
   /** §4.5 (AI-IMP-267): where caption text goes when promoted to a note. */
@@ -52,7 +53,7 @@ export const APP_SETTING_DEFAULTS: AppSettings = {
   titleStrip: 'hover',
   windowOpacity: 1,
   flatCanvasColor: 'off',
-  menuPlacement: 'rail',
+  density: 'compact',
   navigationScheme: 'trackpad',
   captionPromotionRouting: 'ask',
 }
@@ -88,8 +89,8 @@ function sanitize(raw: Record<string, unknown>): AppSettings {
   if (flat === 'off' || (typeof flat === 'string' && flat.startsWith('--ew-canvas-flat-'))) {
     next.flatCanvasColor = flat
   }
-  const menu = raw['menuPlacement']
-  if (menu === 'rail' || menu === 'system') next.menuPlacement = menu
+  const density = raw['density']
+  if (density === 'compact' || density === 'comfortable') next.density = density
   const nav = raw['navigationScheme']
   if (nav === 'trackpad' || nav === 'mouse') next.navigationScheme = nav
   const captionRouting = raw['captionPromotionRouting']
@@ -110,6 +111,9 @@ function applySideEffects(previous: AppSettings): void {
   if (current.fadeDelayMs !== previous.fadeDelayMs) setFadeDelay(current.fadeDelayMs)
   if (current.windowOpacity !== previous.windowOpacity) {
     void window.ew.window.setOpacity(current.windowOpacity)
+  }
+  if (current.density !== previous.density) {
+    setReservationDensity(current.density)
   }
 }
 
@@ -141,6 +145,7 @@ export async function initSettings(): Promise<void> {
     current = { ...APP_SETTING_DEFAULTS }
   }
   await applyTheme(current.theme)
+  setReservationDensity(current.density)
   setFadeDelay(current.fadeDelayMs)
   if (current.windowOpacity !== 1) void window.ew.window.setOpacity(current.windowOpacity)
   window.ew.settings.onAppChanged(({ key, value }) => {
