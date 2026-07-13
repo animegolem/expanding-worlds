@@ -12,6 +12,44 @@ annotations.
 
 ## [Unreleased]
 
+### For testers (paper, plaques, and one lens)
+- New: opening a bound note is a FLIGHT — the camera eases out until
+  image and page fill your view; Escape flies back to exactly where
+  you were, to the pixel. The page keeps the image's height at any
+  window size.
+- New: captions are little museum plaques now — a cream card in a
+  slim frame, centered under its print, with a small pop when one is
+  born. In the outline, a placement's row shows its caption text so
+  you can tell two copies of the same image apart.
+- Changed: the tag lens is ONE system — engage it from a node's tag
+  chip, the tag panel, or a note page's chips and the board answers
+  the same way everywhere: matches ringed, everything else dimmed,
+  an ✕ chip to drop it. Escape drops the lens first, panels second.
+  Flying to a place gives the landing a brief ring.
+- Changed: the gallery's controls are the app's own everywhere; a
+  name-sorted grid past ~24 items gets letter sections (unnamed
+  things share a # section — never raw ids).
+- Changed: Settings is the kit sheet — folding sections, this-world
+  chips, honest rows only (placeholders that did nothing are gone),
+  and a density setting (compact / comfortable) that resizes the
+  whole chrome live.
+
+### Under the hood (content wave, EPIC-029 phase D — the epic closes)
+- AI-IMP-296 — reading flight via one flyCameraTo host seam;
+  whisper/origin treatment; rebind where durable verbs exist;
+  renderer pin/tape stays deliberately non-undoable.
+- AI-IMP-297 — plaque in the engine label pipeline; pop on
+  null→non-null SetPlacementCaption only; outline row meta via a
+  caption column on the existing getOutlineTree child row.
+- AI-IMP-298 — session tag-lens coordinator + three doors + active
+  chip; transient arrival ring separate from lens state; wiki-hover
+  door deferred by ruling.
+- AI-IMP-299 — Segmented/FacetChip shared; NAME_GROUP_THRESHOLD 24;
+  gallery index gains nullable noteTitle (read projection only);
+  bare-variant consumer contract pinned.
+- AI-IMP-300 — kit settings sheet; two-state density persisted
+  app-tier; menuPlacement codec removed; every inert row retired.
+
 ### For testers (the chrome finds its places)
 - Changed: the board's menu lives on its name now — click the ❖ on
   the board's crumb in the path bar. Right-click (or long-press)

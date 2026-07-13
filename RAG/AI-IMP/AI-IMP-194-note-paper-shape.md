@@ -90,3 +90,7 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+> Close-time delta (2026-07-13): AI-IMP-296 shipped the remainder —
+> reading flight + whisper/origin + rebind-where-durable; the posture
+> family itself had largely landed via AI-IMP-135. Record accurate.

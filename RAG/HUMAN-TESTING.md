@@ -1057,3 +1057,20 @@ look exactly as before (no regression at 100%+ display scaling).
   face; one Ctrl/⌘Z takes it back), fly to a place from the list.
 - Switch world… from ☰ and cancel; Open folder as source… in the
   gallery — picking a non-project folder should say so politely.
+
+## 2026-07-13 — content wave (AI-IMP-296–300, EPIC-029 closes) — v0.25.0
+
+**Build:** v0.25.0.
+**Try (mac + alph Windows — this is the feel-heavy wave):**
+- Open a bound note (✎): the flight should feel like leaning in, not
+  teleporting; Escape must land you EXACTLY where you were. Try from
+  a weird zoom.
+- Caption an image: the plaque pops once; reload — no pop. Two
+  copies of one image with different captions: the outline rows tell
+  them apart.
+- Tag lens from all three doors (node chip, tag panel, note page):
+  identical board answer; Escape order (lens, then panel); ⌖ flight
+  landings get a brief ring.
+- Gallery by name at 30+ items: letter sections, # for unnamed.
+- Settings: fold sections, flip density comfortable — the chrome
+  grows live; nothing in Settings is a dead row anymore.

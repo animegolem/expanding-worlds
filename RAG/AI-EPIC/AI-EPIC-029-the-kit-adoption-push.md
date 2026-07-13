@@ -7,8 +7,8 @@ tags:
   - chrome
   - ui-kit
 date_created: 2026-07-12
-date_completed:
-kanban_status: in-progress
+date_completed: 2026-07-13
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-286
   - AI-IMP-287
@@ -121,12 +121,12 @@ rulings 1–33, kit DC pages, GR-5), KIT-PREFLIGHT waiver terms.
       tag pills, fzf name-space matcher, drag-out, G7 error/type
       fixes. (AI-IMP-294)
 - [x] FR-10: Identity corner ◎ panel. (AI-IMP-295)
-- [ ] FR-11: Note-paper postures + open-as-flight. (AI-IMP-296)
-- [ ] FR-12: Caption plaque + outline row meta. (AI-IMP-297)
-- [ ] FR-13: Lens wires — tags-charm lens + placement hit ring +
+- [x] FR-11: Note-paper postures + open-as-flight. (AI-IMP-296)
+- [x] FR-12: Caption plaque + outline row meta. (AI-IMP-297)
+- [x] FR-13: Lens wires — tags-charm lens + placement hit ring +
       note-page chips as lens doors. (AI-IMP-298)
-- [ ] FR-14: Gallery facets/action-bar kit adoption. (AI-IMP-299)
-- [ ] FR-15: Settings sheet adoption incl. density segment.
+- [x] FR-14: Gallery facets/action-bar kit adoption. (AI-IMP-299)
+- [x] FR-15: Settings sheet adoption incl. density segment.
       (AI-IMP-300)
 
 ### Non-Functional Requirements
@@ -146,6 +146,9 @@ rulings 1–33, kit DC pages, GR-5), KIT-PREFLIGHT waiver terms.
 
 ## Implementation Breakdown
 
+EPIC CLOSED 2026-07-13 — shipped in v0.25.0. Phase D closed same
+day (two mid-wave read-projection corrections ratified at
+acceptance; both guard allowlists empty and absolute).
 Phase C closed 2026-07-13 (three rounds: a stale test coordinate
 against the moved board menu — Linux lacks the traffic-light inset —
 repaired with measured geometry; the wave-gate evidence train ran
