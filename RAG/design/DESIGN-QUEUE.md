@@ -851,3 +851,17 @@ field + domain tag-offer chip.)
   user and will buy the dev account before another one exists
   ("I'm just gonna eat the $100 pre-1.0"). Notice migrates into
   the library activity log when that surface lands.
+
+- **Three dock-ledger rulings (2026-07-14, from the promise-pilot
+  driver's-seat pass — `RAG/design/promises/dock.md` carries the
+  full cards):** (1) MINIMUM SUPPORTED WIDTH — the window declares
+  no minWidth; every narrow-stress promise is unreproducible until
+  a minimum (or explicit specimen widths) is ruled; 1280 must not
+  silently become the answer. (2) SHAPE-FLYOUT CLICK SWALLOW — the
+  kit doesn't draw whether dismissing the hold-flyout by clicking
+  the board also ACTS on the board; the AI-IMP-215 board-menu
+  swallow precedent generalizes or it doesn't (card DOCK-FLY-06
+  held on this). (3) COMFORTABLE ↔ 44px MAPPING — the grammar grows
+  rail/dock bands at the 44px touch density, but shipped
+  "comfortable" retains 64/112 and no button-size rule: missing
+  implementation or missing mapping, not a defect until ruled.
