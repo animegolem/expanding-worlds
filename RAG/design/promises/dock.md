@@ -1,13 +1,14 @@
 # UI promises — the dock family
 
-**STATUS: DRAFT rev 2 — nothing below binds until owner ratification.**
+**STATUS: DRAFT rev 3 — nothing below binds until owner ratification.**
 Pilot ledger of the four-layer observability contract
 (`RAG/design/DESIGN-LETTER-geometry-and-promises.md` §1). Rev 1 was
 drafted by both operators; rev 2 folds in Codex's full driver's-seat
 markup (ui-observability-pilot r3, 2026-07-14), every grade-critical
-claim spot-verified against shipped source by the lead. Authorship
-confers nothing — every card is equally unbound until ratified here,
-in a visible diff.
+claim spot-verified against shipped source by the lead; rev 3
+applies Codex's own r4 self-correction (its proposed FLY split had
+stopped one step early). Authorship confers nothing — every card is
+equally unbound until ratified here, in a visible diff.
 
 ## How to read a card
 
@@ -18,7 +19,8 @@ with one exception: when a card is classified
 *automated-regression candidate*, its EVIDENCE line becomes the
 seed of the test spec and travels with the promotion. A card that
 bundles independently-failing outcomes must split (rev 2 split
-three of rev 1's cards for exactly this).
+three of rev 1's cards for exactly this; rev 3 split rev 2's
+FLY-04, on its own author's correction).
 
 ## Binding rules
 
@@ -121,7 +123,9 @@ makes these facts knowable.
 ### DOCK-FLY-03 — Quick press arms the remembered face
 - STATE: shape slot pressed and released before the hold threshold
   (~300ms), starting from Select.
-- STRESS: repeated quick presses.
+- STRESS: release at 0/150/299ms, resetting to Select between
+  trials (an armed re-press opens the flyout by design — that is
+  FLY-07's promise, not a quick-press trial).
 - PROMISE: `data-armed=true`, `data-flyout-open=false`, and the
   remembered glyph remains the slot's face.
 - EVIDENCE: attribute reads + face glyph read.
@@ -130,14 +134,27 @@ makes these facts knowable.
 - STATE: shape slot held across the threshold.
 - STRESS: release at 299ms vs 300ms.
 - PROMISE: at 299ms the flyout remains closed; at 300ms
-  `data-flyout-open=true`. Release outside closes without changing
-  the remembered face; picking a row arms that shape.
+  `data-flyout-open=true`.
 - EVIDENCE: scripted holds bracketing the boundary + state reads.
   (The state transition is automated-regression material — a pure
   unit-test foothold exists in `shape-flyout.ts`; whether the beat
   FEELS right stays intentionally human.)
 
-### DOCK-FLY-05 — Re-press is idempotent-open
+### DOCK-FLY-05 — Hold-release outside cancels without changing the face
+- STATE: flyout open via hold; release outside the flyout.
+- STRESS: release over empty board vs over another dock control.
+- PROMISE: the flyout closes and the remembered face and armed
+  tool are unchanged.
+- EVIDENCE: state + face glyph + armed-tool reads before/after.
+
+### DOCK-FLY-06 — Release over a row picks, closes, and arms
+- STATE: flyout open via hold; release over a shape row.
+- STRESS: each of the five rows.
+- PROMISE: the flyout closes, the released row's shape becomes the
+  armed tool, and the slot's face updates to that glyph.
+- EVIDENCE: state + face glyph + armed-tool reads.
+
+### DOCK-FLY-07 — Re-press is idempotent-open
 - STATE: flyout open; the slot is pressed again.
 - STRESS: repeated re-presses mid-aim.
 - PROMISE: the flyout stays open — never toggles shut. Authority:
@@ -145,8 +162,10 @@ makes these facts knowable.
   kit demo's inline toggle script.
 - EVIDENCE: state reads across repeated presses.
 
-### DOCK-FLY-06 — Outside dismissal acts nowhere beneath ⚠ MISSING RULING
-- STATE: flyout open; pointer-down on the board beneath.
+### DOCK-FLY-08 — Outside dismissal acts nowhere beneath ⚠ MISSING RULING
+- STATE: flyout open; click/tap the board beneath (shipped
+  dismissal fires on window `pointerup`; whether it should instead
+  swallow at pointer-down is part of the ruling).
 - STRESS: down on a placement vs empty ground.
 - PROMISE (proposed): dismissal leaves the observable board state
   unchanged — scene census, selection, camera, active tool, and

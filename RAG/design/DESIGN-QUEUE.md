@@ -860,7 +860,7 @@ field + domain tag-offer chip.)
   silently become the answer. (2) SHAPE-FLYOUT CLICK SWALLOW — the
   kit doesn't draw whether dismissing the hold-flyout by clicking
   the board also ACTS on the board; the AI-IMP-215 board-menu
-  swallow precedent generalizes or it doesn't (card DOCK-FLY-06
+  swallow precedent generalizes or it doesn't (card DOCK-FLY-08
   held on this). (3) COMFORTABLE ↔ 44px MAPPING — the grammar grows
   rail/dock bands at the 44px touch density, but shipped
   "comfortable" retains 64/112 and no button-size rule: missing
