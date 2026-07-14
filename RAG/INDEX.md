@@ -158,8 +158,8 @@ Git edit date so a second review can be judged.
 - RAG/design/archive/pending-merge-to-design-system-for-1.3/App Icon Document.dc.html (883 LOC)
 - RAG/design/archive/App Icon Document.dc.html (883 LOC)
 - apps/desktop/src/renderer/tags/TagPanel.svelte (862 LOC) — review stale: 2026-07-12T01:53:22Z at 851 LOC; +11 LOC; last edit 2026-07-13T15:27:45-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
+- RAG/design/DESIGN-QUEUE.md (853 LOC)
 - apps/desktop/e2e/panels.spec.ts (851 LOC) — review stale: 2026-07-12T01:53:24Z at 826 LOC; +25 LOC; last edit 2026-07-13T11:50:54-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as test evidence; split only with an owning production boundary or shard need.
-- RAG/design/DESIGN-QUEUE.md (818 LOC)
 - apps/desktop/src/renderer/menus/inventory.ts (806 LOC) — review stale: 2026-07-12T01:53:23Z at 726 LOC; +80 LOC; last edit 2026-07-13T06:26:04-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Reviewed as cohesive for now; optional carve-outs and safety constraints are in audit R3.
 - packages/persistence/src/handlers/lifecycle.ts (802 LOC) — review stale: 2026-07-12T01:53:22Z at 785 LOC; +17 LOC; last edit 2026-07-12T00:32:05-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split recommended; preserve the facade and parity gates described in audit R1.
 - apps/desktop/src/renderer/chrome/Dock.svelte (792 LOC) — review stale: 2026-07-12T01:53:22Z at 833 LOC; -41 LOC; last edit 2026-07-13T06:26:04-05:00; RAG/audits/CODE-AUDIT-2026-07-11-LOC-MODULARITY.md; note: Split with adjacent feature or design work; sequencing constraints are in audit R2.
