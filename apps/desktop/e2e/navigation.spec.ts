@@ -394,10 +394,12 @@ test('bookmarks degrade explicitly: In Trash greys with Restore, purged offers r
   await openBookmarkMenu(win)
   await win.getByTestId('bookmark-add').click()
   await win.keyboard.press('Escape')
+  await expect(win.getByTestId('bookmark-menu')).toBeHidden()
   await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Ruin'), { id: canvasC })
   await openBookmarkMenu(win)
   await win.getByTestId('bookmark-add').click()
   await win.keyboard.press('Escape')
+  await expect(win.getByTestId('bookmark-menu')).toBeHidden()
   await win.getByTestId('nav-home').click()
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
 
@@ -450,6 +452,7 @@ test('bookmark to a board whose OWNER node is trashed degrades and Restore reviv
   await openBookmarkMenu(win)
   await win.getByTestId('bookmark-add').click()
   await win.keyboard.press('Escape')
+  await expect(win.getByTestId('bookmark-menu')).toBeHidden()
   await win.getByTestId('nav-home').click()
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
 

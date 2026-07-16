@@ -353,6 +353,11 @@ test('§17 slice items 2–6, 9–10, 17–19 in one project', async () => {
   rev = await revision(win)
   await win.getByTestId('distribute-horizontal').click()
   await expect.poll(() => revision(win)).toBe(rev + 1)
+  // Arrange is still the topmost floating surface after its commands. Put it
+  // down through its own toggle before the independent zoom gesture;
+  // dismissal never clicks through, and the selection must stay intact.
+  await win.getByTestId('charm-arrange').click()
+  await expect(win.getByTestId('arrange-popover')).toBeHidden()
   const flipTarget = await win.evaluate(() => window.__ewDebug!.selection()[0]!)
   await exec(ctx, 'FlipPlacement', { placementId: flipTarget, axis: 'x' })
   const flipped = await scene()

@@ -10,6 +10,7 @@
   import { closeSearchPanel, type SearchPanelState } from './search'
   import { contextMenuOpen } from '../menus/ContextMenu'
   import { failurePerch } from './status'
+  import { dismissOnOutside } from './dismissal-guard'
   import { fuzzyMatch, subsequenceScore } from './fzf-match'
   import {
     loadSearchSnapshot,
@@ -317,8 +318,15 @@
   })
 </script>
 
-<div class:hidden={folded} class="search-scrim" data-testid="search-scrim" role="presentation" onclick={(event) => { if (event.target === event.currentTarget) closeSearchPanel() }}>
-  <section class="search-palette" data-testid="search-panel" data-mode={panel.mode} data-cursor={cursor} aria-label="Search palette">
+<div class:hidden={folded} class="search-scrim" data-testid="search-scrim" role="presentation">
+  <section
+    class="search-palette"
+    data-testid="search-panel"
+    data-mode={panel.mode}
+    data-cursor={cursor}
+    aria-label="Search palette"
+    use:dismissOnOutside={{ dismiss: closeSearchPanel }}
+  >
     <header>
       <span class="glyph">⌕</span>
       <div class="query-stack" data-testid="search-query-field">

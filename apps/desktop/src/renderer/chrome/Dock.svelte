@@ -17,6 +17,7 @@
   import SwatchRow from '../ui/SwatchRow.svelte'
   import { placeAnchoredElement } from './anchored-placement-dom'
   import { dispatchReservationChange } from './reservation'
+  import { dismissOnOutside } from './dismissal-guard'
   import type { CanvasHostHandle } from '../canvas/host'
   import type { BoardTooling } from '../canvas/board-tooling'
   import { KEY } from '../keys/bindings'
@@ -79,7 +80,6 @@
   let lastShapeKind = $state<ShapeToolKind>(currentShape())
   let shapeFlyoutOpen = $state(false)
   let shapeButton = $state<HTMLButtonElement | null>(null)
-  let shapeFlyout = $state<HTMLElement | null>(null)
   let shapeTailX = $state(12)
   let shapeFlyoutBelow = $state(false)
   let zoomPct = $state(Math.round(handle.controller.camera.zoom * 100))
@@ -316,16 +316,9 @@
       shapeFlyoutOpen = false
       shapeButton?.focus()
     }
-    const onRelease = (event: PointerEvent): void => {
-      const target = event.target as Node | null
-      if (target && (shapeButton?.contains(target) || shapeFlyout?.contains(target))) return
-      shapeFlyoutOpen = false
-    }
     window.addEventListener('keydown', onKey, true)
-    window.addEventListener('pointerup', onRelease, true)
     return () => {
       window.removeEventListener('keydown', onKey, true)
-      window.removeEventListener('pointerup', onRelease, true)
     }
   })
 
@@ -403,6 +396,10 @@
       <div
         class="font-picker"
         data-testid="default-font-list"
+        use:dismissOnOutside={{
+          dismiss: () => (fontListOpen = false),
+          exclude: () => [fontAnchor],
+        }}
         use:placeAnchoredElement={() => ({
           anchor: fontAnchor!.getBoundingClientRect(),
           host: { x: 0, y: 0, width: innerWidth, height: innerHeight },
@@ -545,7 +542,10 @@
     data-testid="shape-flyout"
     role="menu"
     aria-label="Shapes"
-    bind:this={shapeFlyout}
+    use:dismissOnOutside={{
+      dismiss: () => (shapeFlyoutOpen = false),
+      exclude: () => [shapeButton],
+    }}
     use:placeAnchoredElement={() => ({
       anchor: shapeButton!.getBoundingClientRect(),
       host: { x: 0, y: 0, width: innerWidth, height: innerHeight },

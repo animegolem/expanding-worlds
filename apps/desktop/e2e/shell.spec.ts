@@ -141,6 +141,14 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   }
   await expect(win.getByTestId('charm-project')).toHaveCount(0)
   await expect(win.getByTestId('charm-menu')).toBeVisible()
+  // AI-IMP-301: keep one real placement beneath the dismissal gestures.
+  // Pixi renders it into the canvas at this world/screen point on the
+  // default camera, so a leaked click would select/draw against it.
+  await seedPlacedNote(win, 'Dismissal guard', 'stays put', { x: 20, y: 200 })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.sceneStats().placements)).toBe(1)
+  await win.getByTestId('canvas-host').click({ position: { x: 20, y: 200 } })
+  await win.keyboard.press('ControlOrMeta+a')
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
   // Tool modes and the zoom cluster live in the dock.
   await expect(win.getByTestId('tool-select')).toBeVisible()
   await expect(win.getByTestId('dock-shape')).toBeVisible()
@@ -181,9 +189,25 @@ test('floating chrome: rail, dock, title strip, engagement cadence', async () =>
   await win.getByTestId('dock-shape').click()
   await expect(win.getByTestId('shape-flyout')).toBeVisible()
   await expect(win.getByTestId('dock-shape')).toHaveAttribute('data-flyout-open', 'true')
-  await win.mouse.click(20, 200) // release outside closes without changing ellipse
+  const flyoutBoard = await win.evaluate(() => ({
+    scene: window.__ewDebug!.sceneStats(),
+    selection: window.__ewDebug!.selection(),
+    camera: window.__ewDebug!.camera(),
+    activeTool: window.__ewDebug!.activeTool(),
+    decorations: window.__ewDebug!.decorations(),
+  }))
+  await win.mouse.click(20, 200)
   await expect(win.getByTestId('shape-flyout')).toHaveCount(0)
   await expect(win.getByTestId('dock-shape')).toHaveText('◯')
+  // The complete down/up/click sequence was a dismissal only: it did not
+  // draw with the armed ellipse tool or clear the placement selection.
+  expect(await win.evaluate(() => ({
+    scene: window.__ewDebug!.sceneStats(),
+    selection: window.__ewDebug!.selection(),
+    camera: window.__ewDebug!.camera(),
+    activeTool: window.__ewDebug!.activeTool(),
+    decorations: window.__ewDebug!.decorations(),
+  }))).toEqual(flyoutBoard)
   await win.getByTestId('tool-select').click()
 
   // Tool shortcuts: the GUI is the tutorial for the keyboard app.
@@ -376,8 +400,27 @@ test('takeover framework: charm entry, Esc return, camera and board untouched', 
   await win.getByTestId('menu-settings').click()
   await expect(win.getByTestId('rail-menu')).toHaveCount(0)
   await expect(win.getByTestId('takeover-settings')).toBeVisible()
-  await win.keyboard.press('Escape')
+  const takeoverBoard = await win.evaluate(() => ({
+    scene: window.__ewDebug!.sceneStats(),
+    selection: window.__ewDebug!.selection(),
+    camera: window.__ewDebug!.camera(),
+    activeTool: window.__ewDebug!.activeTool(),
+    decorations: window.__ewDebug!.decorations(),
+  }))
+  const takeoverBox = (await win.getByTestId('takeover-settings').boundingBox())!
+  const settingsBox = (await win.getByTestId('takeover-settings').locator('.sheet').boundingBox())!
+  const dismissPoint = { x: takeoverBox.x + 4, y: takeoverBox.y + 4 }
+  expect(dismissPoint.x).toBeLessThan(settingsBox.x)
+  expect(dismissPoint.y).toBeLessThan(settingsBox.y)
+  await win.mouse.click(dismissPoint.x, dismissPoint.y)
   await expect(win.getByTestId('takeover-settings')).toHaveCount(0)
+  expect(await win.evaluate(() => ({
+    scene: window.__ewDebug!.sceneStats(),
+    selection: window.__ewDebug!.selection(),
+    camera: window.__ewDebug!.camera(),
+    activeTool: window.__ewDebug!.activeTool(),
+    decorations: window.__ewDebug!.decorations(),
+  }))).toEqual(takeoverBoard)
 
   // Board input lives again after return.
   await win.getByTestId('canvas-host').click({ position: { x: 400, y: 400 } })

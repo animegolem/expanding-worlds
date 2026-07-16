@@ -79,23 +79,23 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1 review: verify the diagnosis against source (flyout
+- [x] Round-1 review: verify the diagnosis against source (flyout
       pointerup path; takeover margin liveness; the 215 swallow
       seam's exact mechanism); record corrections in this ticket
       before any code.
-- [ ] Implement/extend ONE shared dismissal-guard; no per-surface
+- [x] Implement/extend ONE shared dismissal-guard; no per-surface
       copies.
-- [ ] Wire the full inventory above onto it; takeovers gain
+- [x] Wire the full inventory above onto it; takeovers gain
       click-out dismiss + swallow.
-- [ ] e2e: for shape flyout and one takeover — open surface,
+- [x] e2e: for shape flyout and one takeover — open surface,
       pointer-down on a placement beneath, assert dismissal AND
       board state unchanged (scene census, selection, camera,
       active tool, decorations) — the DOCK-FLY-08 evidence recipe.
-- [ ] e2e: dismissing click on empty ground creates nothing and
+- [x] e2e: dismissing click on empty ground creates nothing and
       arms nothing.
-- [ ] Unit: guard consumes down+up+click as a sequence, not click
+- [x] Unit: guard consumes down+up+click as a sequence, not click
       alone.
-- [ ] Evidence bundle: before/after captures keyed to DOCK-FLY-08.
+- [x] Evidence bundle: before/after captures keyed to DOCK-FLY-08.
 
 ### Acceptance Criteria
 
@@ -120,3 +120,87 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+#### Round-1 source verification (2026-07-16)
+
+- The two reported failures are source-convicted. The shape flyout closes
+  from a window-capture `pointerup` after the canvas has already received
+  `pointerdown` (`renderer/chrome/Dock.svelte:311-329`). The takeover root
+  itself is inset to frame + gutter
+  (`renderer/chrome/TakeoverLayer.svelte:94-108`), so the visible board
+  outside that root remains a live canvas
+  target and there is no takeover click-away listener.
+- The proposed reusable AI-IMP-215 seam does not yet exist. Its implementation
+  is local to `ContextMenu`: only a board-kind menu dismissed by a direct
+  `CANVAS` target stops the capture-phase `pointerdown`
+  (`renderer/menus/ContextMenu.ts:147-152`). It neither owns the matching
+  `pointerup`/`click` nor serves other surfaces.
+- `ChromeLayer` cannot be the capture root described above. `ChromeLayer`,
+  `NotePanels`, and `TakeoverLayer` are sibling mounts
+  (`renderer/CanvasHost.svelte:155-160`), and the chrome root itself has
+  `pointer-events:none` (`renderer/chrome/ChromeLayer.svelte:105-115`). A
+  shared guard that must beat canvas capture listeners therefore belongs at
+  document/window capture and needs a topmost-surface registry, not one copy
+  per component.
+- The live outside-dismiss inventory is broader and less uniform than the
+  ticket text: `ColorPicker` (`renderer/ui/ColorPicker.svelte:17`), the
+  condition panel (`renderer/chrome/ConditionPanel.svelte:16-29`), identity
+  (`renderer/chrome/IdentityCorner.svelte:126-151`), and arrange/restyle
+  (`renderer/canvas/charms-ui.ts:933-948`) all close without swallowing.
+  Conversely, the title-menu popover and bookmark menu currently have no
+  click-away path (`renderer/chrome/TitleStrip.svelte:162-184`;
+  `renderer/chrome/BookmarkMenu.svelte:46-63`). Search already owns a full
+  scrim which receives and closes on the outside click
+  (`renderer/chrome/SearchPalette.svelte:320,368-370`). The app-wide law
+  governs a click that *does* dismiss; it does not by itself invent
+  click-away semantics for explicit-close surfaces such as TagPanel.
+- Focused repair scope: one document-capture dismissal registry consumes the
+  complete `pointerdown` -> matching `pointerup` -> `click` sequence by
+  pointer id; migrate every existing or normatively required click-away
+  surface, add the takeover margin as a dismiss region, and regression-pin
+  both canvas state and topmost-surface ordering. Inventory additions beyond
+  an existing/kit-required click-away remain out of scope.
+
+#### Implementation and validation (2026-07-16)
+
+- Added one document-capture topmost-surface registry. A dismissing primary
+  pointer consumes its down, matching up, and click even when dismissal
+  synchronously unmounts the final registered surface. Secondary presses
+  remain available to open a replacement context menu.
+- Migrated the ticket inventory plus the four review-discovered surfaces.
+  Explicit-close-only panels remain explicit-close-only. The Help/Restore
+  modal children suspend their parent menu guard so the parent cannot steal
+  the modal's first press.
+- The existing arrange test initially failed because it expected one board
+  click to both close the still-open arrange popover and clear selection.
+  That expectation violated the newly ratified law. It now pins the lawful
+  sequence: first click dismisses with selection unchanged; the second click
+  reaches the board.
+- The later full gates found the same stale click-through premise in both
+  existing decorations flows. Switching sibling pickers, extending selection,
+  and starting a resize now explicitly close the active picker/panel first;
+  the original edit assertions remain intact
+  (`e2e/decorations.spec.ts:403-437,582-621`). Focused reruns passed 2/2.
+- The complete e2e gate found two bookmark-degradation cases issuing Home
+  immediately after Escape while BookmarkMenu was still mounted for its
+  closing fade. The guard correctly swallowed Home as the menu's outside
+  dismissal gesture. Both cases now await the menu's completed dismissal
+  before issuing the independent Home action (`e2e/navigation.spec.ts:392-405,
+  449-457`), preserving the bookmark assertions without restoring
+  click-through.
+- The §17 slice likewise issued Zoom-to-fit while Arrange remained the
+  topmost surface after a distribute command. The test now closes and awaits
+  Arrange before the independent zoom gesture (`e2e/slice.spec.ts:350-372`);
+  the camera/content-command assertions are unchanged.
+- Evidence manifest entry `DOCK-FLY-08`: `e2e/shell.spec.ts` captures and
+  compares scene census, selection, camera, active tool, and decorations for
+  placement-backed shape-flyout and inset-takeover dismissals;
+  `e2e/board-tooling.spec.ts` captures scene/tool state for empty-ground menu
+  dismissal. Focused validation: build green; guard unit 3/3; shell e2e 7/7;
+  board-menu e2e 1/1; corrected arrange regression 1/1.
+- Round-2 Linux evidence reported the note-body undo test flaky once and green
+  on its traced retry. No guard key handler exists and the retry showed the
+  structural route behaving correctly; the unreliable seam was the test's
+  coordinate click as a proxy for leaving editor focus. The test now uses the
+  already-established Select-button focus seam and asserts the non-typing
+  precondition before Mod+Z, preserving the keyboard behavior under test.

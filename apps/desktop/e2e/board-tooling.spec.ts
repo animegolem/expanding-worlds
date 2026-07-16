@@ -251,8 +251,14 @@ test('align, distribute, snap with guides, Alt bypass, and camera-only zoom', as
   // (world 170): at proposed left 173 the snap pulls it flush, a
   // vertical smart guide shows the matched edge, and the drop is
   // still exactly one TransformContent.
-  await win.mouse.click(box.x + 600, box.y + 500) // clear selection
-  await win.waitForFunction(() => window.__ewDebug!.selection().length === 0)
+  // The arrange popover remains open across verbs. Under the app-wide
+  // dismissal law, the first outside gesture puts it down and does not
+  // also clear the selection beneath; the next gesture acts on the board.
+  await win.mouse.click(box.x + 600, box.y + 500)
+  await expect(win.getByTestId('arrange-popover')).toHaveCount(0)
+  expect(await win.evaluate(() => window.__ewDebug!.selection().length)).toBe(3)
+  await win.mouse.click(box.x + 600, box.y + 500)
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(0)
   await win.mouse.click(box.x + 265, box.y + 150)
   await win.waitForFunction(() => window.__ewDebug!.selection().length === 1)
   const beforeSnap = await revision(win)
@@ -754,11 +760,19 @@ test('AI-IMP-215: a board click outside the Board menu puts it down and is swall
     }) ?? null
   }, { canvas: box, menu: menuBox })
   expect(clickAway).not.toBeNull()
+  const dismissBoard = await win.evaluate(() => ({
+    scene: window.__ewDebug!.sceneStats(),
+    activeTool: window.__ewDebug!.activeTool(),
+  }))
   await win.mouse.click(clickAway!.x, clickAway!.y)
   await expect(win.getByTestId('board-menu')).toHaveCount(0)
   // ...and the dismissing click is SWALLOWED (the gallery precedent,
   // AI-IMP-188): it lowered the menu and did NOT also deselect the pin.
   expect(await win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+  expect(await win.evaluate(() => ({
+    scene: window.__ewDebug!.sceneStats(),
+    activeTool: window.__ewDebug!.activeTool(),
+  }))).toEqual(dismissBoard)
 
   // Inside clicks are unchanged, and Escape composition is intact: reopen,
   // then Escape still peels the menu first-layer (AI-IMP-183).

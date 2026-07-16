@@ -15,6 +15,7 @@
   import { canRedo, canUndo, onUndoChanged, redo, undo } from '../undo/undo-store'
   import { requestSettingsIntent } from './settings-intent'
   import { toast } from './status'
+  import { dismissOnOutside } from './dismissal-guard'
 
   const { onclose }: { onclose: () => void } = $props()
 
@@ -123,7 +124,18 @@
 
 <!-- §8.2 decision 06 (AI-IMP-167): the universal CASCADE — rows fade in
      staggered top-to-bottom on open, stamped once here. -->
-<div class="menu" data-testid="rail-menu" role="menu" use:applyMenuCascade>
+<div
+  class="menu"
+  data-testid="rail-menu"
+  role="menu"
+  use:applyMenuCascade
+  use:dismissOnOutside={{
+    dismiss: onclose,
+    exclude: () => helpOpen || restoreOpen
+      ? [document.body]
+      : [document.querySelector('[data-testid="charm-menu"]')],
+  }}
+>
   <button
     type="button"
     role="menuitem"

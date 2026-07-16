@@ -21,6 +21,7 @@
   import { tooltip } from './tooltip'
   import { runAsUndoGroup } from '../undo/undo-store'
   import { toast } from './status'
+  import { dismissOnOutside } from './dismissal-guard'
 
   // `closing` drives the unpin fade (RFC §8.2 rev 0.64, AI-IMP-166): the
   // ceremony is for arrival, so close is a plain opacity fade over
@@ -183,6 +184,10 @@
   style={`--menu-fade:${EW_PIN_MENU_FADE_MS}ms`}
   data-testid="bookmark-menu"
   data-closing={closing ? 'true' : 'false'}
+  use:dismissOnOutside={{
+    dismiss: onClose,
+    exclude: () => [document.querySelector('[data-testid="bookmark-pin"]')],
+  }}
 >
   {#if displayRows.length === 0}
     <div class="empty" data-testid="bookmark-empty">No bookmarks yet</div>

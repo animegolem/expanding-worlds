@@ -15,6 +15,7 @@
   import TrashView from '../views/TrashView.svelte'
   import { holdEngagement } from './engagement'
   import { closeTakeover, onTakeoverChanged, type TakeoverKind } from './takeover'
+  import { dismissOnOutside } from './dismissal-guard'
 
   let kind = $state<TakeoverKind | null>(null)
   let sheet = $state<HTMLElement | null>(null)
@@ -52,8 +53,19 @@
 </script>
 
 {#if kind}
-  <div class="takeover" data-testid={`takeover-${kind}`} role="dialog" aria-label={TITLES[kind]}>
-    <div class="sheet" class:inset={kind === 'settings'} bind:this={sheet} tabindex="-1">
+  <div
+    class="takeover"
+    data-testid={`takeover-${kind}`}
+    role="dialog"
+    aria-label={TITLES[kind]}
+  >
+    <div
+      class="sheet"
+      class:inset={kind === 'settings'}
+      bind:this={sheet}
+      tabindex="-1"
+      use:dismissOnOutside={{ dismiss: closeTakeover }}
+    >
       <header class="sheet-header">
         <div class="sheet-title">
           <h1>{TITLES[kind]}</h1>

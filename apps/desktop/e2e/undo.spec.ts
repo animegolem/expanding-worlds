@@ -245,8 +245,19 @@ test('note-body typing never enters the structural stack; Mod+Z defers to the ed
   expect(await depth(win)).toBe(1)
   expect(Math.round((await placements(win))[0]!.x)).toBe(Math.round(before.x + 90))
 
-  // Focus the board; now Mod+Z reverts the move.
-  await win.mouse.click(box.x + 60, box.y + 60)
+  // Leave editor focus through an unambiguous chrome control; a coordinate
+  // click can land on platform-dependent floating-panel geometry. This keeps
+  // the keyboard route under test while proving its dispatch precondition.
+  await win.getByTestId('tool-select').click()
+  await expect
+    .poll(() =>
+      win.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null
+        if (!el) return false
+        return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
+      }),
+    )
+    .toBe(false)
   await win.keyboard.press('Meta+z')
   await expect.poll(async () => Math.round((await placements(win))[0]!.x)).toBe(
     Math.round(before.x),

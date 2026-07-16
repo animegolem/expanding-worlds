@@ -56,6 +56,7 @@ import {
   selectionHaloRect,
 } from './selection-halo'
 import { isSelectionBelowFurnitureFloor } from './selection-furniture'
+import { registerDismissibleSurface } from '../chrome/dismissal-guard'
 
 export interface CharmsUiHandle {
   destroy(): void
@@ -794,12 +795,16 @@ export function attachCharmsUi(
 
   let arrangeMount: ReturnType<typeof mount> | null = null
   let restyleMount: ReturnType<typeof mount> | null = null
+  let unregisterArrangeDismissal: (() => void) | null = null
+  let unregisterRestyleDismissal: (() => void) | null = null
   let arrangeOpen = false
   let restyleOpen = false
   let restyleSelectionKey = ''
 
   function closeArrange(): void {
     arrangeOpen = false
+    unregisterArrangeDismissal?.()
+    unregisterArrangeDismissal = null
     arrangeHost.style.display = 'none'
     if (arrangeMount) void unmount(arrangeMount)
     arrangeMount = null
@@ -807,6 +812,8 @@ export function attachCharmsUi(
 
   function closeRestyle(): void {
     restyleOpen = false
+    unregisterRestyleDismissal?.()
+    unregisterRestyleDismissal = null
     restyleSelectionKey = ''
     restyleHost.style.display = 'none'
     if (restyleMount) void unmount(restyleMount)
@@ -846,6 +853,10 @@ export function attachCharmsUi(
         },
       },
     })
+    unregisterRestyleDismissal = registerDismissibleSurface({
+      contains: (target) => bar.contains(target) || restyleHost.contains(target),
+      dismiss: closeRestyle,
+    })
     restyleOpen = true
     schedule()
   })
@@ -870,6 +881,10 @@ export function attachCharmsUi(
           onarrange: (key: import('@ew/canvas-engine').ArrangeSortKey) => void tooling.arrange(key),
           onnormalize: (mode: import('@ew/canvas-engine').NormalizeMode) => void tooling.normalize(mode),
         },
+      })
+      unregisterArrangeDismissal = registerDismissibleSurface({
+        contains: (target) => bar.contains(target) || arrangeHost.contains(target),
+        dismiss: closeArrange,
       })
       arrangeOpen = true
       schedule()
@@ -930,21 +945,13 @@ export function attachCharmsUi(
     surface.style.top = `${placed.y}px`
   }
 
-  const onSelectionPanelPointer = (event: PointerEvent): void => {
-    const target = event.target as Node
-    if (bar.contains(target) || arrangeHost.contains(target) || restyleHost.contains(target)) return
-    closeArrange()
-    closeRestyle()
-  }
   const onSelectionPanelKey = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape' || (!arrangeOpen && !restyleOpen)) return
     event.preventDefault()
     closeArrange()
     closeRestyle()
   }
-  document.addEventListener('pointerdown', onSelectionPanelPointer, true)
   window.addEventListener('keydown', onSelectionPanelKey, true)
-  disposers.push(() => document.removeEventListener('pointerdown', onSelectionPanelPointer, true))
   disposers.push(() => window.removeEventListener('keydown', onSelectionPanelKey, true))
 
   // ---------------------------------------- frame sort chip (§4.9)

@@ -10,6 +10,7 @@
   import { onOpenIdentity } from './identity'
   import { setIdentityProfileImage } from './identity-profile'
   import { tooltip } from './tooltip'
+  import { dismissOnOutside } from './dismissal-guard'
 
   const { handle }: { handle: CanvasHostHandle } = $props()
 
@@ -21,7 +22,6 @@
   let ownerNodeId = $state<string | null>(null)
   let model = $state<OutlinePreview | null>(null)
   let modelCanvasId: string | null = null
-  let panel = $state<HTMLElement | null>(null)
   let input = $state<HTMLInputElement | null>(null)
   let loadEpoch = 0
   let beatTimer: ReturnType<typeof setTimeout> | null = null
@@ -133,14 +133,7 @@
       event.stopPropagation()
       close()
     }
-    const pointerdown = (event: PointerEvent): void => {
-      if (!open || panel?.contains(event.target as Node)) return
-      const target = event.target as HTMLElement | null
-      if (target?.closest('[data-testid="identity-corner-button"]')) return
-      close()
-    }
     window.addEventListener('keydown', keydown, true)
-    window.addEventListener('pointerdown', pointerdown, true)
     void refresh()
     return () => {
       disposeOpen()
@@ -148,7 +141,6 @@
       disposeScene()
       if (beatTimer !== null) clearTimeout(beatTimer)
       window.removeEventListener('keydown', keydown, true)
-      window.removeEventListener('pointerdown', pointerdown, true)
     }
   })
 </script>
@@ -169,7 +161,15 @@
 >◎</button>
 
 {#if open}
-  <aside bind:this={panel} class="identity-panel" data-testid="identity-corner-panel" aria-label="This world">
+  <aside
+    class="identity-panel"
+    data-testid="identity-corner-panel"
+    aria-label="This world"
+    use:dismissOnOutside={{
+      dismiss: close,
+      exclude: () => [document.querySelector('[data-testid="identity-corner-button"]')],
+    }}
+  >
     <header>
       <div>
         <small>THIS WORLD</small>

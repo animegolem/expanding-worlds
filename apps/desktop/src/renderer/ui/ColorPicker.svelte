@@ -2,23 +2,24 @@
   import { onMount } from 'svelte'
   import type { Snippet } from 'svelte'
   import { placeAnchoredElement } from '../chrome/anchored-placement-dom'
+  import { dismissOnOutside } from '../chrome/dismissal-guard'
   import { hexToHsv, hsvToHex, hueFromPoint, normalizeHex, recentColors, svFromPoint } from './color-picker-state'
   import SwatchRow from './SwatchRow.svelte'
   let { open = $bindable(false), value = $bindable(''), recent = $bindable([]), anchor, oncommit, onclose, eyedropper }: {
     open?: boolean; value?: string; recent?: string[]; anchor: HTMLElement; oncommit?: (value: string) => void; onclose?: () => void; eyedropper?: Snippet
   } = $props()
-  let panel = $state<HTMLElement | null>(null), hexText = $state(value)
+  let hexText = $state(value)
   let hsv = $state(hexToHsv(value) ?? { h: 0, s: 0, v: 0 })
   const anchored = () => ({ anchor: anchor.getBoundingClientRect(), host: { x: 0, y: 0, width: innerWidth, height: innerHeight }, x: { preferred: 'center' as const }, y: { preferred: 'after' as const, fallback: 'before' as const }, gap: 8 })
   function commit(color: string): void { const normalized = normalizeHex(color); if (!normalized) return; const changed = normalizeHex(value) !== normalized; value = normalized; hexText = normalized; hsv = hexToHsv(normalized)!; recent = recentColors(recent, normalized); if (changed) oncommit?.(normalized) }
   function close(): void { open = false; onclose?.(); anchor.focus() }
   function pickSv(event: PointerEvent): void { const rect = (event.currentTarget as HTMLElement).getBoundingClientRect(); hsv = { ...hsv, ...svFromPoint(rect, event.clientX, event.clientY) }; commit(hsvToHex(hsv)) }
   function pickHue(event: PointerEvent): void { const rect = (event.currentTarget as HTMLElement).getBoundingClientRect(); hsv = { ...hsv, h: hueFromPoint(rect, event.clientX) }; commit(hsvToHex(hsv)) }
-  onMount(() => { const outside = (event: PointerEvent) => { if (open && panel && !panel.contains(event.target as Node) && !anchor.contains(event.target as Node)) close() }; const key = (event: KeyboardEvent) => { if (open && event.key === 'Escape') { event.preventDefault(); close() } }; document.addEventListener('pointerdown', outside, true); window.addEventListener('keydown', key, true); return () => { document.removeEventListener('pointerdown', outside, true); window.removeEventListener('keydown', key, true) } })
+  onMount(() => { const key = (event: KeyboardEvent) => { if (open && event.key === 'Escape') { event.preventDefault(); close() } }; window.addEventListener('keydown', key, true); return () => window.removeEventListener('keydown', key, true) })
 </script>
 
 {#if open}
-  <div class="color-picker" bind:this={panel} use:placeAnchoredElement={anchored} role="dialog" aria-label="Color picker">
+  <div class="color-picker" use:dismissOnOutside={{ dismiss: close, exclude: () => [anchor] }} use:placeAnchoredElement={anchored} role="dialog" aria-label="Color picker">
     <span class="tail"></span><button class="close" type="button" aria-label="Close color picker" onclick={close}>×</button>
     <button type="button" class="sv" aria-label="Saturation and value" style={`--hue:${hsv.h}`} onpointerdown={pickSv}></button>
     <button type="button" class="hue" aria-label="Hue" onpointerdown={pickHue}></button>
