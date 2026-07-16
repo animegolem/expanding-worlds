@@ -35,14 +35,15 @@ app and judges the rendered result before submitting.
 
 A representative promise, so you can hear the register:
 
-> When the dock is at the minimum supported width, persistent
+> When the dock is at the narrowest ruled width (a threshold the
+> owner has yet to rule — see the ledger's open dependency), persistent
 > controls remain inside its visible bounds; transient menus may
 > escape through the overlay layer without expanding or clipping
 > the dock.
 
 Pilot: the dock family, 8–12 promises, running now. Findings
 classify six ways — implementation defect · missing kit ruling ·
-missing promise · accepted exception · automated-regression
+missing promise · exception requested · automated-regression
 candidate · intentionally human judgment. "Missing kit ruling"
 items come back to you; that's the loop this letter opens.
 
