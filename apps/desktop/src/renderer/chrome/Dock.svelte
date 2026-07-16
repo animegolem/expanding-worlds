@@ -656,7 +656,7 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: center;
     gap: 0.3rem;
     pointer-events: none;
