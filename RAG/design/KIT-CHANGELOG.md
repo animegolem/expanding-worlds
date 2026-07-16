@@ -16,6 +16,46 @@ dirs stay local (gitignored); the zip is canonical.
 
 ## Design package (the rev 0.71 kit-document home)
 
+### package 1.6 — 2026-07-16
+
+- The code-lead 1.5-review letter answered in full, same day
+  (letter addendum 16, rulings 41–46): minimum supported window
+  width RULED at 960 (owner) — edges specimens drawn at 960 + full
+  width; the click-swallow law ruled app-wide (design, under owner
+  delegation) — any dismissing outside-click is swallowed, one law,
+  no split; density becomes a TRIAD (owner) — compact ·
+  comfortable (~36px controls, reservations unchanged) · touch
+  (44px, strip 0, bands grow), only touch changing the frame; the
+  floating-window law's second half — bar fills width, window hugs
+  content, 240×140 minimum honest size, else stow-to-opener; THE
+  PROPORTION LAW drawn as a law-tier lifecycle page (sovereign
+  measure 45–65ch · optical centering · minimum-measure floor,
+  tall-portrait specimen proving the needle cannot return under
+  the equal-height bind); the geometry contract (I1–I8 + sovereign
+  measure/sacrifice order/visual axis) added to KIT-PREFLIGHT;
+  Note Paper kit closeout — postures live, edges + zoom-ruler
+  specimens, settings sheet respecting the released rail band and
+  carrying the density triad. Ratified into the RFC at rev 0.73.
+
+### package 1.5 — 2026-07-16 (design session of 07-14/15)
+
+- Ruling 40/8c, the takeover chrome migration (letter addendum 15,
+  Panel Stow Wireframes turn 8): during a takeover the vertical
+  rail RETIRES and the bottom band changes identity into the
+  takeover's chrome (mode switcher + ⌕; the lead ruled the strip's
+  universal ☰ never duplicates — kit's bar-☰ pending a small
+  redraw); 240ms reset both ways; board mode untouched; rail band
+  releases; takeover panels relax to right:24/bottom:64. Wired in
+  Outliner/Gallery/Graph/Search kits + grammar §1/§5. Note Paper
+  wireframes: postures RULED (fly to read · pin to the world ·
+  tape to the glass; equal-height bind; torn edge on the separated
+  side); zoom ruler becomes a mandatory specimen. Ratified into
+  the RFC at rev 0.73 (with 1.6). Review note: the design session
+  ran against a stale implementation map (thought phases C/D
+  un-gated; they had shipped in v0.25.0) — harmless to the
+  rulings; its 293-brief-amendment note was moot and ruling 40 is
+  post-ship work instead.
+
 ### package 1.4 — 2026-07-13
 
 - The 1.3 correction queue resolved in full (letter addendum 14,

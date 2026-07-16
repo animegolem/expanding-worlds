@@ -85,42 +85,22 @@ all moved into the RFC.
   should ever have to ask. UNBLOCKS AI-IMP-259's display half;
   the sweep ticket cites the grammar doc.
 
-- **PROPORTION LAW — the design language's missing section (owner +
-  lead, 2026-07-13, from the v0.25.0 feel pass; SEEDS THE NOTES
-  EPIC).** The kit's grammar speaks in fixed tokens (40px strips,
-  12px halos) and edge-bindings, and has NO vocabulary for ratios
-  between things — which is why this kept failing to convey. The
-  isolating evidence: two bound notes, same components, same law —
-  a squarish image gives a ~50/50 book with a readable column
-  (okay); a tall portrait gives a needle of tiny text running down
-  the image's full height (never acceptable). The shipped law binds
-  the page's edge and height to the image and says nothing about
-  the page's OWN proportions.
-
-  **The ruling, owner-approved wording:** *The page's MEASURE is
-  sovereign. A bound page's width is set by its readable measure
-  (~45–65 characters at its own type size) — never derived from the
-  image's aspect. The shared edge binds position; height-matching
-  is subordinate: when honoring the image's height would starve the
-  measure below minimum, the page keeps its measure and its own
-  height, and the ring seam runs only along the shared extent.*
-
-  Generalized as a new law family — PROPORTION LAW: (1) page
-  measure is sovereign (above); (2) surfaces center OPTICALLY in
-  their available space — the reservation frame is a collision
-  floor, never a layout anchor (the v0.25.0 left-shunt is this
-  failing); (3) no readable surface may fall below its minimum
-  measure regardless of what it is bound to. Ratio invariants are
-  CHECKABLE ("is the column ever narrower than N characters") —
-  they can gate like tokens do.
-
-  Owner is revising the design kit against this now; the ruling
-  lands in the notes epic as the bound posture's governing rule and
-  in the RFC with that epic's ratification. Kit revision should
-  also decide the seam behavior when page and image heights diverge
-  (partial ring run — how it's drawn).
+- (PROPORTION LAW **RESOLVED** 2026-07-16, kit 1.6 ruling 45 →
+  RFC rev 0.73 §8.8.5: measure sovereign at 45–65ch, never
+  image-derived; optical centering in the post-chrome frame;
+  minimum-measure floor; floating-window law — bar fills width,
+  window hugs content, 240×140 minimum honest size. The law-tier
+  kit page draws the tall-portrait proof; with width
+  measure-driven the equal-height bind cannot starve the measure,
+  so the partial-ring seam question dissolved.)
 
 - **Reading a note on the board — the open-verb as a camera verb**
+  *(Status 2026-07-16: the direction SHIPPED as AI-IMP-296's
+  reading flight and rev 0.73 ratified fly-to-read as the default
+  open; the caption tier shipped as the plaque. Residual questions
+  below — tiny-image cap at reading zoom, the big editor's exact
+  remaining role, the OS-zoom text axis — fold into the notes-epic
+  charter.)*
   (owner, 2026-07-09, HIGH — direction RATIFIED same day: "I think
   you're right"; the detailed ruling below still needs its answers
   before build). The bound book is
@@ -852,16 +832,9 @@ field + domain tag-offer chip.)
   ("I'm just gonna eat the $100 pre-1.0"). Notice migrates into
   the library activity log when that surface lands.
 
-- **Three dock-ledger rulings (2026-07-14, from the promise-pilot
-  driver's-seat pass — `RAG/design/promises/dock.md` carries the
-  full cards):** (1) MINIMUM SUPPORTED WIDTH — the window declares
-  no minWidth; every narrow-stress promise is unreproducible until
-  a minimum (or explicit specimen widths) is ruled; 1280 must not
-  silently become the answer. (2) SHAPE-FLYOUT CLICK SWALLOW — the
-  kit doesn't draw whether dismissing the hold-flyout by clicking
-  the board also ACTS on the board; the AI-IMP-215 board-menu
-  swallow precedent generalizes or it doesn't (card DOCK-FLY-08
-  held on this). (3) COMFORTABLE ↔ 44px MAPPING — the grammar grows
-  rail/dock bands at the 44px touch density, but shipped
-  "comfortable" retains 64/112 and no button-size rule: missing
-  implementation or missing mapping, not a defect until ruled.
+- (Three dock-ledger rulings **RESOLVED** 2026-07-16, kit 1.6 →
+  RFC rev 0.73: minimum window width 960 owner-ruled (§8.8.3);
+  click-swallow generalized app-wide (§8.8.6) — DOCK-FLY-08
+  unblocks; density triad compact/comfortable/touch with only
+  touch changing the frame (§8.8.3) — the comfortable↔44px
+  question dissolved.)

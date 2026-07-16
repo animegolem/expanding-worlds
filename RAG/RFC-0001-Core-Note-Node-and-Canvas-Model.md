@@ -5,7 +5,7 @@ architecture for the Phase 1 prototype
 
 | **STATUS**           | **REVISION** | **LAST UPDATED** |
 |----------------------|--------------|------------------|
-| Accepted for Phase 1 | 0.72         | 13 July 2026     |
+| Accepted for Phase 1 | 0.73         | 16 July 2026     |
 
 > **WORKING PRODUCT STATEMENT**
 >
@@ -2087,10 +2087,20 @@ them — one physics rule everywhere.
 
 - Window controls upper-left, with the §8.1 path beside them.
 
-- A vertical mode charm rail, upper-right: project ⧉ · search ⌕ ·
-  graph ⊛ · gallery ⊞ · outline ▤ · menu ☰. Icon-only, generous hit
-  targets. The §8.6 ongoing-condition charm appends below when
-  present.
+- A vertical mode charm rail, upper-right — a BOARD-MODE resident
+  (rev 0.73, kit-1.5 ruling 40): gallery ⊞ · outline ▤ · graph ⊛ ·
+  search ⌕, icon-only, generous hit targets, the §8.6
+  ongoing-condition perch at its foot. ☰ is universal window
+  furniture at the strip's top-right (shipped, AI-IMP-293) and
+  never duplicates elsewhere. When a takeover opens (outline ·
+  gallery · graph · search · settings) the rail RETIRES and the
+  bottom band changes identity into the takeover's own chrome —
+  the ⊛ ▤ ⊞ mode switcher + ⌕ (no second ☰; the strip's serves) —
+  because the dock's drawing tools are dead weight inside a
+  takeover. Closing (✕ / esc / click-out) resets in one 240ms
+  ease-out: the bar morphs back to tools and the rail flies home.
+  Board mode is untouched; the rail band RELEASES its reservation
+  while retired (§8.8.3).
 
 - One floating dock, bottom-center: tool modes (select · text ·
   shape with press-and-hold flyout · draw · line · arrow ·
@@ -2441,6 +2451,23 @@ the bound page and the landmark are world content and render flat.
 Hardware — rings, tape, push pin — tells the state; the red glossy
 pin appears exactly three ways, all ON paper.
 
+**The posture verbs, ratified (rev 0.73, kit 1.5/1.6 — Note Paper
+wireframes 3a/3b/3c, aligned to the Two Materials law):** FLY TO
+READ → PIN TO THE WORLD → TAPE TO THE GLASS. Opening a note (✎)
+is by default the READING FLIGHT — the camera flies (240ms
+ease-out) until image + page fill the viewport, and esc/✕ flies
+the exact path back (shipped, AI-IMP-296); the ladder's full-page
+rung is a destination, not a fight with every zoom height. When
+bound beside its image, image and page share the SAME vertical
+height at every viewport — while the page's WIDTH stays
+measure-driven per the proportion law (§8.8.5); the page binds to
+the image's longest edge and may run wider. The torn edge always
+sits on the side the page actually separated from. Detach = the
+landmark (push pin, angled, punching through — planted in the
+world); float = the sticky (tape — on your glass). The zoom
+ruler — every paper posture drawn at 100/50/25/8% — is a
+mandatory kit specimen (KIT-PREFLIGHT §E rung-check).
+
 **The indicator escalates with how broken the spatial link is:**
 
 - Open book / tethered, node on-screen: nothing — the binding (or
@@ -2579,13 +2606,24 @@ match the kits' standing citations): the chrome bands form one
 named RESERVATION FRAME — strip (top) · rail (right) · dock
 (bottom) · plus a uniform gutter — declared as chrome.css tokens
 whose NAMES are normative while their VALUES stay kit-owned
-(kit-1.4 proposal: strip 40 · rail 56 · dock 64 growing to 112
-when an armed tool shows its defaults row · gutter 24). The left
-edge reserves nothing. Every floating surface clamps inside
-frame + gutter; takeovers fill the frame, never the window. On
-touch the strip band is 0 (no cursor, no reveal to serve) and all
-bands grow with the density token. Every kit ships an edges
-specimen proving its surface against the frame (KIT-PREFLIGHT §F).
+(kit-1.4, strip RULED at 46 — the shipped value: strip 46 ·
+rail 56 · dock 64 growing to 112 when an armed tool shows its
+defaults row · gutter 24). The left edge reserves nothing. Every
+floating surface clamps inside frame + gutter; takeovers fill the
+frame, never the window — and while a takeover is up the RAIL
+BAND RELEASES its reservation (rev 0.73, ruling 40: the rail is
+retired, and takeover panels relax into the freed edge). The
+MINIMUM SUPPORTED WINDOW WIDTH is 960 CSS px (rev 0.73,
+owner-ruled — half a 27″ display, the honest side-by-side floor;
+the BrowserWindow declares it, edge specimens are drawn at 960
+and at full width, and 1280 is never a silent assumption).
+DENSITY is a TRIAD (rev 0.73, superseding the earlier pair):
+compact — the dense cursor default · comfortable —
+cursor-friendly spacious (~36px controls; reservations UNCHANGED)
+· touch — the 44px spec (targets ≥ 44px, the strip band is 0 — no
+cursor, no reveal to serve — and the bands grow). Only TOUCH
+changes the reservation frame. Every kit ships an edges specimen
+proving its surface against the frame (KIT-PREFLIGHT §F).
 
 ### 8.8.4 The charm halo (rev 0.71)
 
@@ -2594,6 +2632,49 @@ bounds + 12px + the charm height — the HALO. Anything chrome
 places near a selected node (anchored panels, overlays, toasts
 avoiding a selection) pads by the halo, never the card edge, so
 charms are never grazed by well-meaning chrome.
+
+### 8.8.5 The proportion law (rev 0.73)
+
+Ratified from the kit-1.6 law page ("The Proportion Law," law
+tier beside GR-1..5), seeded by the v0.25.0 feel pass:
+
+1. **The measure is sovereign.** A readable page holds ~45–65
+   characters per line at ITS OWN type size; its width derives
+   from the measure, NEVER from a bound image's aspect. A shared
+   edge binds POSITION; height-matching is subordinate — the
+   bound posture's equal-height rule keeps width measure-driven
+   (the kit's tall-portrait specimen proves the needle case
+   cannot return).
+2. **Surfaces center OPTICALLY** — within the frame that remains
+   after chrome claims its space, never the raw viewport. The
+   reservation frame is a collision floor, not a layout anchor.
+3. **No readable surface falls below minimum measure.** A surface
+   that cannot honestly hold its minimum measure does not shrink
+   further — it changes form or stows.
+4. **The floating-window law.** A floating window's header bar
+   fills the window's width — no partial strips over reserved
+   emptiness; the window HUGS its content — height fits content
+   up to its max, holding no dead paper; minimum honest size is
+   header + one content unit (240×140), and anything that cannot
+   honestly show that stows to its opener instead of shrinking
+   further.
+
+Kit pages make every non-trivial geometry statement reproducible
+with three fields — sovereign measure (which dimension owns the
+result) · sacrifice order (what compresses, wraps, clips, scrolls,
+or vanishes first under constraint) · visual axis (viewport center
+vs container center vs optical center) — via the KIT-PREFLIGHT
+geometry contract (§I1–I8).
+
+### 8.8.6 The dismissal swallow (rev 0.73)
+
+One law, app-wide (design-ruled under owner delegation,
+generalizing AI-IMP-215's board-menu precedent): any outside-click
+that dismisses an anchored or floating surface — board menu,
+flyouts, pickers, anchored panels, takeovers — is SWALLOWED; it
+never also acts on what lies beneath. The shape flyout's
+hold-release cancel is not a click at all, so nothing lands
+beneath it either way.
 
 # 9. Deletion, trash, and resource retention
 
@@ -3134,7 +3215,9 @@ NOT settings. The Phase 1 inventory:
 
 - **Appearance:** theme (dark default · light · glass) · grid (none ·
   lines · dots) · flat canvas color (small swatch set · off) ·
-  window opacity.
+  window opacity · density (compact default · comfortable · touch —
+  the rev 0.73 triad, §8.8.3; only touch changes the reservation
+  frame, and `auto` remains refused as a quiet lie).
 
 - **Behavior:** charm corner (lower-right default · upper-right) ·
   chrome fade delay (slider · never) · snap to grid (when grid
@@ -5034,3 +5117,22 @@ Accepted for the Phase 1 prototype:
   §7.4 gains its one scoped exception — a canvas-owning node's own
   note defers its places to the identity corner with a visible
   affordance, never a duplicated list. All other notes unchanged.
+
+- Kit 1.5/1.6 ratified (rev 0.73, post-feel-pass design push —
+  DESIGN-LETTER rulings 40–46): the rail is a board-mode resident
+  and takeovers change the bottom band's identity into their own
+  chrome (⊛ ▤ ⊞ + ⌕; the strip's universal ☰ never duplicates —
+  lead ruling on the design side's 293 question), the rail band
+  releasing while retired (§8.2, §8.8.3); minimum supported window
+  width 960 (owner-ruled, §8.8.3); density becomes a triad —
+  compact · comfortable · touch — and only touch changes the
+  reservation frame (§8.8.3, §11.5); THE PROPORTION LAW is written
+  as §8.8.5 — sovereign measure (45–65ch, never image-derived),
+  optical centering, minimum-measure floor, and the
+  floating-window law (bar fills width · window hugs content ·
+  240×140 minimum honest size, else stow-to-opener); the dismissal
+  swallow generalizes app-wide as §8.8.6; the note posture verbs
+  ratify as fly-to-read / pin-to-world / tape-to-glass with the
+  equal-height, measure-driven-width bind (§8.5); the zoom ruler
+  and the geometry contract (I1–I8 + sovereign measure · sacrifice
+  order · visual axis) enter KIT-PREFLIGHT as gating specimens.

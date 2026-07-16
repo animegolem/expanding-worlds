@@ -1,6 +1,11 @@
 # UI promises — the dock family
 
-**STATUS: DRAFT rev 3 — nothing below binds until owner ratification.**
+**STATUS: DRAFT rev 4 — nothing below binds until owner ratification.**
+*(Rev 4, 2026-07-16: kit 1.6 / RFC rev 0.73 resolved all three ⚠
+holds — width ruled 960, GEO-02's center ruled optical, FLY-08's
+swallow ruled app-wide law — and the density triad settled HIT-01's
+companion. No card carries an open dependency; the ledger is fully
+cosignable.)*
 Pilot ledger of the four-layer observability contract
 (`RAG/design/DESIGN-LETTER-geometry-and-promises.md` §1). Rev 1 was
 drafted by both operators; rev 2 folds in Codex's full driver's-seat
@@ -37,14 +42,12 @@ FLY-04, on its own author's correction).
   ruling · missing promise · exception requested ·
   automated-regression candidate · intentionally human.
 
-## Ledger-wide open dependency: MINIMUM SUPPORTED WIDTH
+## Ledger-wide dependency — RESOLVED (kit 1.6 / RFC rev 0.73)
 
-"Minimum supported width" is currently UNDEFINED: the window
-launches 1280×800 and `BrowserWindow` declares no
-`minWidth`/`minHeight` (verified, `apps/desktop/src/main/index.ts`).
-Cards naming a narrow stress cannot reproduce it until the owner
-rules a minimum (or explicit specimen widths). 1280 is NOT silently
-the minimum.
+**Minimum supported width is RULED: 960 CSS px** (owner, ruling 41,
+§8.8.3). "Every ruled specimen width" in the cards below reads as
+960 and full width. Implementation note: `BrowserWindow` must
+declare `minWidth` — the enforcement ticket rides the next wave.
 
 ## Scope note
 
@@ -69,13 +72,14 @@ makes these facts knowable.
   containment).
 - EVIDENCE: stack + viewport rects, DPR/zoom, screenshot.
 
-### DOCK-GEO-02 — Stable main-row anchor ⚠ proportion-law ruling
+### DOCK-GEO-02 — Stable main-row anchor
 - STATE: toggle any defaults row.
-- STRESS: compact and comfortable densities; ruled widths.
-- PROMISE: the main row's horizontal center remains the RULED
-  center. **Pending:** viewport center vs optical center within the
-  reservation frame is exactly the unruled choice the v0.25.0 feel
-  pass contested. Does not bind until that ruling lands.
+- STRESS: compact and comfortable densities; 960 and full width.
+- PROMISE: the main row's horizontal center remains the OPTICAL
+  center of the frame remaining after chrome claims its space —
+  RULED by the proportion law (rev 0.73 §8.8.5 clause 2), which
+  chose optical over raw viewport center; the reservation frame is
+  a collision floor, not a layout anchor.
 - EVIDENCE: before/after rects + screenshots.
 
 ### DOCK-GEO-03 — Defaults row does not displace the dock
@@ -162,19 +166,18 @@ makes these facts knowable.
   kit demo's inline toggle script.
 - EVIDENCE: state reads across repeated presses.
 
-### DOCK-FLY-08 — Outside dismissal acts nowhere beneath ⚠ MISSING RULING
-- STATE: flyout open; click/tap the board beneath (shipped
-  dismissal fires on window `pointerup`; whether it should instead
-  swallow at pointer-down is part of the ruling).
+### DOCK-FLY-08 — Outside dismissal acts nowhere beneath
+- STATE: flyout open; click/tap the board beneath.
 - STRESS: down on a placement vs empty ground.
-- PROMISE (proposed): dismissal leaves the observable board state
-  unchanged — scene census, selection, camera, active tool, and
-  decorations identical. **Held:** the kit does not draw click
-  swallowing for this flyout, and the shipped listener is window
-  `pointerup` (the board sees `pointerdown` first). Binds only if
-  the owner extends the AI-IMP-215 board-menu swallow precedent.
-  "No command occurred" is deliberately NOT the phrasing — no
-  read-only command-count seam exists.
+- PROMISE: dismissal leaves the observable board state unchanged —
+  scene census, selection, camera, active tool, and decorations
+  identical. RULED: the dismissal swallow is app-wide law (rev
+  0.73 §8.8.6, generalizing AI-IMP-215 — kit 1.6 ruling 42); the
+  hold-release cancel is not a click at all, so nothing lands
+  beneath it either way. Shipped listener is window `pointerup`
+  and the board sees `pointerdown` first — enforcement work rides
+  the next wave. "No command occurred" is deliberately NOT the
+  phrasing — no read-only command-count seam exists.
 - EVIDENCE: before/after scene census + selection + camera + tool.
 
 ### DOCK-STATE-01 — Eyedropper inert-with-why
@@ -203,11 +206,13 @@ makes these facts knowable.
   explicit number for these controls; deliberately NOT applied to
   swatches, which the kit draws smaller).
 - EVIDENCE: per-control rects.
-- **Held companion:** a comfortable/44px card awaits the owner's
-  ruling on how "comfortable" maps to the grammar's 44px touch
-  density — shipped comfortable currently retains 64/112 and no
-  button-size rule, which is either a missing implementation or a
-  missing mapping. Not a defect until ruled.
+- **Companion, now ruled (density triad, rev 0.73 §8.8.3):**
+  comfortable = ~36px controls with reservations UNCHANGED; touch
+  = ≥44px targets, strip 0, bands grow — only touch changes the
+  frame. A comfortable card (~36px) is draftable now; the touch
+  card waits for a touch build to exist. Shipped comfortable
+  retaining 64/112 was CORRECT; its missing ~36px control rule is
+  now an implementation gap, not a mapping mystery.
 
 ---
 
