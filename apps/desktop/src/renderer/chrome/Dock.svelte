@@ -6,7 +6,8 @@
   AI-IMP-067 adds the ◉ pin tool between connector and the divider.
 -->
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
+  import { fly } from 'svelte/transition'
   import { type ToolKind } from '@ew/canvas-engine'
   import { themeTokenValue } from '../theme'
   import { FONT_STACKS, loadFontOptions, type FontOption } from '../canvas/system-fonts'
@@ -22,7 +23,8 @@
   import type { BoardTooling } from '../canvas/board-tooling'
   import { KEY } from '../keys/bindings'
   import { formatBinding, getBinding, matches } from '../keys/registry'
-  import { takeoverActive } from './takeover'
+  import { openTakeover, takeoverActive, type TakeoverKind } from './takeover'
+  import { closeSearchPanel, toggleSearchPanel } from './search'
   import { tooltip } from './tooltip'
   import {
     currentShape,
@@ -46,10 +48,12 @@
     handle,
     tooling,
     hostElement,
+    takeoverMode = null,
   }: {
     handle: CanvasHostHandle
     tooling: BoardTooling
     hostElement: HTMLElement
+    takeoverMode?: TakeoverKind | 'search' | null
   } = $props()
 
   // Tool keys (AI-IMP-117): the binding id carries the shortcut. Both
@@ -106,6 +110,10 @@
   let fontListOpen = $state(false)
   let fontAnchor = $state<HTMLButtonElement | null>(null)
   let dockElement = $state<HTMLElement | null>(null)
+  let hasMounted = $state(false)
+  onMount(() => {
+    hasMounted = true
+  })
   let defaultsShift = $state(0)
   const eyedropperAvailable = typeof window !== 'undefined' && typeof window.EyeDropper === 'function'
 
@@ -192,16 +200,25 @@
   const shapeDefaultsVisible = $derived(activeDefaults === 'shape')
   const lineDefaultsVisible = $derived(activeDefaults === 'line')
   const toolOptionsVisible = $derived(activeDefaults !== null)
+  const dockExpanded = $derived(takeoverMode === null && toolOptionsVisible)
 
   $effect(() => {
     const root = document.documentElement
-    if (toolOptionsVisible) root.dataset['dockExpanded'] = 'true'
+    if (dockExpanded) root.dataset['dockExpanded'] = 'true'
     else delete root.dataset['dockExpanded']
     dispatchReservationChange(root)
     return () => {
       delete root.dataset['dockExpanded']
       dispatchReservationChange(root)
     }
+  })
+
+  $effect(() => {
+    if (takeoverMode === null) return
+    shapeFlyoutOpen = false
+    fontListOpen = false
+    pickerOpen = false
+    pickerKind = null
   })
 
   function rememberColor(color: string): void {
@@ -327,10 +344,63 @@
     handle.controller.camera.zoomAt({ x: bounds.width / 2, y: bounds.height / 2 }, factor)
   }
 
+  function switchTakeoverMode(kind: 'outline' | 'gallery'): void {
+    if (takeoverMode === 'search') closeSearchPanel()
+    openTakeover(kind)
+  }
+
 </script>
 
-<div class="dock-stack" data-testid="dock" data-dock-expanded={toolOptionsVisible} bind:this={dockElement}>
-  {#if toolOptionsVisible}
+<div
+  class="dock-stack"
+  data-testid="dock"
+  data-dock-expanded={dockExpanded}
+  data-band={takeoverMode === null ? 'board' : 'takeover'}
+  bind:this={dockElement}
+>
+  {#if takeoverMode !== null}
+    <div
+      class="dock-row takeover-band"
+      data-testid="takeover-band"
+      in:fly={{ y: 10, duration: 240 }}
+      out:fly={{ y: 10, duration: 240 }}
+    >
+      <span class="mode-switcher" data-testid="takeover-mode-switcher" aria-label="View mode">
+        <button
+          type="button"
+          class="mode"
+          aria-disabled="true"
+          data-testid="takeover-mode-graph"
+          use:tooltip={{ name: 'Graph — arrives with the graph epic' }}
+        >⊛ graph</button>
+        <button
+          type="button"
+          class="mode"
+          class:active={takeoverMode === 'outline'}
+          aria-pressed={takeoverMode === 'outline'}
+          data-testid="takeover-mode-outline"
+          onclick={() => switchTakeoverMode('outline')}
+        >▤ outline</button>
+        <button
+          type="button"
+          class="mode"
+          class:active={takeoverMode === 'gallery'}
+          aria-pressed={takeoverMode === 'gallery'}
+          data-testid="takeover-mode-gallery"
+          onclick={() => switchTakeoverMode('gallery')}
+        >⊞ gallery</button>
+      </span>
+      <span class="divider"></span>
+      <button
+        type="button"
+        class="tool"
+        data-testid="takeover-search"
+        onclick={() => toggleSearchPanel()}
+        use:tooltip={{ name: 'Search', shortcut: formatBinding(KEY.quickOpen) }}
+      >⌕</button>
+    </div>
+  {:else}
+  {#if dockExpanded}
     <div
       class="dock-row defaults"
       data-testid="tool-defaults"
@@ -428,7 +498,11 @@
     {/if}
   {/if}
 
-  <div class="dock-row main">
+  <div
+    class="dock-row main"
+    in:fly={{ y: 10, duration: hasMounted ? 240 : 0 }}
+    out:fly={{ y: 10, duration: 240 }}
+  >
     {#each PLAIN_TOOLS as tool (tool.kind)}
       <button
         type="button"
@@ -533,9 +607,10 @@
       ⤢
     </button>
   </div>
+  {/if}
 </div>
 
-{#if shapeFlyoutOpen && shapeButton}
+{#if takeoverMode === null && shapeFlyoutOpen && shapeButton}
   <div
     class="shape-flyout"
     class:below={shapeFlyoutBelow}
@@ -744,6 +819,46 @@
     background: currentColor;
     -webkit-mask: var(--pipette-glyph) center / contain no-repeat;
     mask: var(--pipette-glyph) center / contain no-repeat;
+  }
+
+  .takeover-band {
+    gap: 0.5rem;
+    border-color: var(--ew-border-panel);
+    border-radius: 10px;
+    box-shadow: 0 6px 22px var(--ew-shadow);
+  }
+
+  .mode-switcher {
+    display: inline-flex;
+    overflow: hidden;
+    border: 1px solid var(--ew-border);
+    border-radius: 8px;
+    font-size: 0.75rem;
+  }
+
+  .mode {
+    padding: 5px 14px;
+    border: 0;
+    border-left: 1px solid var(--ew-border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--ew-text-muted);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .mode:first-child {
+    border-left: 0;
+  }
+
+  .mode.active {
+    background: var(--ew-accent);
+    color: var(--ew-on-accent);
+  }
+
+  .mode[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: default;
   }
 
   .divider {

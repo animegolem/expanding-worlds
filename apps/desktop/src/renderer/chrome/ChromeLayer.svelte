@@ -24,9 +24,10 @@
   import { onEngagementChanged } from './engagement'
   import { attachNavigation } from './navigation'
   import { onSourcePanelChanged, type SourcePanelState } from './source-slot'
-  import { onTakeoverChanged } from './takeover'
+  import { onTakeoverChanged, type TakeoverKind } from './takeover'
+  import { onSearchPanelChanged } from './search'
   import { CHROME_FADE_MS, CHROME_REST_OPACITY } from './feel'
-  import { onReservationChanged } from './reservation'
+  import { onReservationChanged, setTakeoverChromeActive } from './reservation'
   import { reservationsVisible } from '../dev/reservation-debug'
 
   const {
@@ -42,12 +43,17 @@
   } = $props()
 
   let engaged = $state(true)
-  let takeoverOpen = $state(false)
+  let takeover = $state<TakeoverKind | null>(null)
+  let searchOpen = $state(false)
+  const takeoverMode = $derived(searchOpen ? 'search' as const : takeover)
+  const takeoverChrome = $derived(takeoverMode !== null)
   // §14.4 source panel (AI-IMP-091): screen-fixed chrome, one at most.
   let sourcePanel = $state<SourcePanelState | null>(null)
   let showReservations = $state(false)
   $effect(() => onEngagementChanged((next) => (engaged = next)))
-  $effect(() => onTakeoverChanged((kind) => (takeoverOpen = kind !== null)))
+  $effect(() => onTakeoverChanged((kind) => (takeover = kind)))
+  $effect(() => onSearchPanelChanged((state) => (searchOpen = state !== null)))
+  $effect(() => setTakeoverChromeActive(takeoverChrome))
   $effect(() => onSourcePanelChanged((next) => (sourcePanel = next)))
   $effect(() => attachNavigation(handle))
   $effect(() => onReservationChanged(() => (showReservations = reservationsVisible())))
@@ -59,6 +65,8 @@
   style={`--chrome-fade-ms: ${CHROME_FADE_MS}ms; --chrome-rest-opacity: ${CHROME_REST_OPACITY}`}
   data-testid="chrome-layer"
   data-engaged={engaged}
+  class:takeover-chrome={takeoverChrome}
+  data-takeover-chrome={takeoverChrome ? 'true' : 'false'}
 >
   {#if showReservations}
     <div class="reservation-debug" aria-hidden="true" data-testid="reservation-debug">
@@ -70,12 +78,12 @@
        Linux's drawn controls must never disappear. Board-scoped
        chrome retires under the cover; the mode rail and toasts stay. -->
   <TitleStrip {tooling} />
-  {#if !takeoverOpen}
+  {#if !takeoverChrome}
     <PathBar {handle} />
-    <Dock {handle} {tooling} {hostElement} />
     <IdentityCorner {handle} />
   {/if}
-  <CharmRail />
+  <Dock {handle} {tooling} {hostElement} {takeoverMode} />
+  <CharmRail retired={takeoverChrome} />
   <Toasts {handle} />
   <!-- §14.4 inbox mirror (AI-IMP-092): both surfaces ride the drop
        and obey the engagement fade — INSIDE the fading root, unlike
@@ -129,6 +137,7 @@
   .reserve.right { inset: var(--ew-reserve-strip) 0 var(--ew-reserve-dock) auto; width: var(--ew-reserve-rail); }
   .reserve.bottom { inset: auto 0 0; height: var(--ew-reserve-dock); }
   .reserve.left { inset: var(--ew-reserve-strip) auto var(--ew-reserve-dock) 0; width: 0; }
+  .chrome-layer.takeover-chrome .reserve.right { width: 0; }
 
   /* §8.2: controls rest at partial opacity; hovering lights that
      control alone to full. */

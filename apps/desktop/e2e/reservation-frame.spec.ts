@@ -22,10 +22,13 @@ test('reservation frame owns takeover edges and search uses its centered top-flu
   const takeover = win.getByTestId('takeover-settings')
   await expect(takeover).toBeVisible()
   const compact = await takeover.boundingBox()
-  expect(compact!.x).toBeGreaterThanOrEqual(24)
+  expect(compact!.x).toBe(24)
   expect(compact!.y).toBeGreaterThanOrEqual(46 + 24)
-  expect(compact!.x + compact!.width).toBeLessThanOrEqual(viewport.width - 56 - 24 + 1)
-  expect(compact!.y + compact!.height).toBeLessThanOrEqual(viewport.height - 64 - 24 + 1)
+  expect(compact!.x + compact!.width).toBe(viewport.width - 24)
+  expect(compact!.y + compact!.height).toBe(viewport.height - 64)
+  await expect(win.locator('html')).toHaveAttribute('data-takeover-chrome', 'true')
+  const releasedRail = await win.getByTestId('reservation-debug').locator('.right').boundingBox()
+  expect(releasedRail!.width).toBe(0)
 
   await win.evaluate(() => window.__ewReservations!.density('comfortable'))
   await expect

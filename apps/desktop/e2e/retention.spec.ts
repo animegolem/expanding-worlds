@@ -45,6 +45,12 @@ test('retention purges on reopen, reports in the perch, and links back to Trash'
       lifecycleState: 'trashed',
     })
 
+    // Takeover chrome retires the mode rail (including its status perch).
+    // Close Trash first, then dismiss the still-live condition when the rail
+    // returns; do not reach through the takeover for retired furniture.
+    await second.win.getByTestId('takeover-close').click()
+    await expect(second.win.getByTestId('takeover-trash')).toHaveCount(0)
+    await expect(second.win.getByTestId('perch')).toBeVisible()
     await second.win.getByTestId('perch').click()
     await second.win.getByTestId('dismiss-trash-retention').click()
     await expect(second.win.getByTestId('perch')).toHaveCount(0)

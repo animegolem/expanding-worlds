@@ -142,9 +142,11 @@ test('search mode: grouped kinds; note, tag, and asset-location activation (§8.
   const panel = win.getByTestId('search-panel')
   await expect(panel).toBeVisible()
   await expect(panel).toHaveAttribute('data-mode', 'search')
-  await expect(win.getByTestId('charm-search')).toHaveAttribute('aria-pressed', 'true')
+  await expect(win.getByTestId('charm-rail')).toHaveCount(0)
+  await expect(win.getByTestId('takeover-band')).toBeVisible()
   await win.keyboard.press('Escape')
   await expect(panel).not.toBeVisible()
+  await expect(win.getByTestId('charm-rail')).toBeVisible()
   await expect(win.getByTestId('charm-search')).toHaveAttribute('aria-pressed', 'false')
 
   // Note result (flat cursor starts on it): Enter opens the note panel.
@@ -259,22 +261,22 @@ test('Mod+K palette: keyboard round trip to a note and to a canvas; takeover gua
   const { app, win } = await launchApp('ew-e2e-search-quick-')
   const world = await seedSearchWorld(win)
 
-  // Suppressed while a takeover owns the window (068 guard).
+  // Mod+K stays suppressed while a named view owns the window, but the
+  // takeover band's explicit ⌕ door opens Search as a centered layer above
+  // that view and returns to it on close.
   await win.getByTestId('charm-outline').click()
   await win.keyboard.press('ControlOrMeta+k')
   await expect(win.getByTestId('search-panel')).not.toBeVisible()
-  // The ⌕ CHARM is a mode switch instead: it returns to the board
-  // and opens the panel — never a panel beneath the cover (§8.2).
-  await win.getByTestId('charm-search').click()
-  await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
+  await win.getByTestId('takeover-search').click()
+  await expect(win.getByTestId('takeover-outline')).toBeVisible()
   await expect(win.getByTestId('search-panel')).toBeVisible()
-  // The scrim is an explicit exit and prevents click-through. Exit,
-  // then open a takeover; the two never coexist.
+  // Search is the top layer even before/without its autofocus settling. Pin
+  // the fast-runner state that once let Outline's capture map steal Escape.
+  await win.getByTestId('takeover-close').focus()
   await win.keyboard.press('Escape')
-  await win.getByTestId('charm-outline').click()
   await expect(win.getByTestId('takeover-outline')).toBeVisible()
   await expect(win.getByTestId('search-panel')).not.toBeVisible()
-  await win.getByTestId('charm-outline').click()
+  await win.keyboard.press('Escape')
   await expect(win.getByTestId('takeover-outline')).toHaveCount(0)
 
   // Round trip 1: board focus → Mod+K → title → Enter → note panel.

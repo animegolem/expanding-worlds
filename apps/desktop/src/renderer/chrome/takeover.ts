@@ -76,6 +76,12 @@ export function takeoverActive(): boolean {
   return false
 }
 
+/** Unnamed takeover-family blockers are input policy, not chrome modes. */
+export function inputBlockerActive(): boolean {
+  for (const blocks of inputBlockers) if (blocks()) return true
+  return false
+}
+
 /** Subscribe; fires immediately with the current state. */
 export function onTakeoverChanged(listener: Listener): () => void {
   listeners.add(listener)

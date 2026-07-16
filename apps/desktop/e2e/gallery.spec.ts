@@ -63,7 +63,7 @@ test('⊞ opens a virtualized, bucketed grid; kinds render; camera survives (§1
 
   await win.getByTestId('charm-gallery').click()
   await expect(win.getByTestId('takeover-gallery')).toBeVisible()
-  await expect(win.getByTestId('charm-gallery')).toHaveAttribute('aria-pressed', 'true')
+  await expect(win.getByTestId('takeover-mode-gallery')).toHaveAttribute('aria-pressed', 'true')
 
   // Virtualization: 223 entries, viewport-scale DOM.
   const cells = win.locator('[data-testid="gallery-cell"]')
@@ -100,10 +100,10 @@ test('⊞ opens a virtualized, bucketed grid; kinds render; camera survives (§1
   expect(await cells.count()).toBeLessThan(150)
 
   // Mode switch: outline replaces gallery under the same cover rules.
-  await win.getByTestId('charm-outline').click()
+  await win.getByTestId('takeover-mode-outline').click()
   await expect(win.getByTestId('takeover-outline')).toBeVisible()
   await expect(win.getByTestId('takeover-gallery')).toHaveCount(0)
-  await win.getByTestId('charm-gallery').click()
+  await win.getByTestId('takeover-mode-gallery').click()
   await expect(win.getByTestId('takeover-gallery')).toBeVisible()
 
   // Esc returns with the camera untouched (§8.2: DOM, not a flight).

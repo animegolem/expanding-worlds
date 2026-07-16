@@ -1,5 +1,5 @@
 /** One centered search palette, reached through the rail or Mod+K. */
-import { onTakeoverChanged, takeoverActive } from './takeover'
+import { inputBlockerActive, onTakeoverChanged } from './takeover'
 
 export type SearchPanelMode = 'search' | 'quick'
 export interface SearchPanelState { mode: SearchPanelMode; serial: number }
@@ -37,4 +37,6 @@ export function onSearchPanelChanged(listener: Listener): () => void {
   return () => listeners.delete(listener)
 }
 
-onTakeoverChanged(() => { if (takeoverActive()) closeSearchPanel() })
+// A centered Search layer may sit above a named view and return to it.
+// Unnamed takeover-family blockers still retire Search for input safety.
+onTakeoverChanged(() => { if (inputBlockerActive()) closeSearchPanel() })

@@ -8,7 +8,6 @@
   import { openTagPanel } from '../tags/tag-panel'
   import { navigateTo } from './navigation'
   import { closeSearchPanel, type SearchPanelState } from './search'
-  import { contextMenuOpen } from '../menus/ContextMenu'
   import { failurePerch } from './status'
   import { dismissOnOutside } from './dismissal-guard'
   import { fuzzyMatch, subsequenceScore } from './fzf-match'
@@ -308,14 +307,6 @@
     window.addEventListener('dragend', onEnd, true)
   }
 
-  $effect(() => {
-    const onKeydown = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || contextMenuOpen()) return
-      event.stopImmediatePropagation(); closeSearchPanel()
-    }
-    window.addEventListener('keydown', onKeydown, true)
-    return () => window.removeEventListener('keydown', onKeydown, true)
-  })
 </script>
 
 <div class:hidden={folded} class="search-scrim" data-testid="search-scrim" role="presentation">
@@ -325,7 +316,14 @@
     data-mode={panel.mode}
     data-cursor={cursor}
     aria-label="Search palette"
-    use:dismissOnOutside={{ dismiss: closeSearchPanel }}
+    use:dismissOnOutside={{
+      dismiss: closeSearchPanel,
+      exclude: () => [
+        document.querySelector('[data-testid="takeover-band"]'),
+        document.querySelector('[data-testid="title-strip"]'),
+        document.querySelector('[data-testid="charm-menu"]'),
+      ],
+    }}
   >
     <header>
       <span class="glyph">⌕</span>
@@ -373,7 +371,7 @@
 </div>
 
 <style>
-  .search-scrim { position:absolute; inset:0; z-index:500; display:flex; justify-content:center; align-items:flex-start; padding-top:46px; background:var(--ew-scrim); pointer-events:auto; }
+  .search-scrim { position:absolute; inset:0; z-index:350; display:flex; justify-content:center; align-items:flex-start; padding-top:46px; background:var(--ew-scrim); pointer-events:auto; }
   .search-scrim.hidden { display:none; }
   .search-palette { width:min(680px, calc(100vw - 160px)); max-height:calc(100vh - 160px); display:flex; flex-direction:column; padding:0.65rem 0.75rem 0.75rem; background:var(--ew-surface-menu); border:1px solid var(--ew-border); border-radius:9px; box-shadow:0 16px 42px var(--ew-shadow); color:var(--ew-text); font-size:0.78rem; pointer-events:auto; }
   header { display:flex; align-items:flex-start; gap:0.5rem; }

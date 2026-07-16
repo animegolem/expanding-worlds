@@ -25,4 +25,11 @@ describe('reservation frame (§8.8.3)', () => {
     expect(frame.bands.bottom).toBe(112)
     expect(frame.rect.height).toBe(394)
   })
+
+  it('releases only the rail band for takeover chrome', () => {
+    const frame = reservationFrameFromValues(HOST, 'compact', false, COMPACT_RESERVATION, true)
+    expect(frame.railReleased).toBe(true)
+    expect(frame.bands).toEqual({ top: 46, right: 0, bottom: 64, left: 0 })
+    expect(frame.rect).toEqual({ x: 34, y: 90, width: 752, height: 442 })
+  })
 })
