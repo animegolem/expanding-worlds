@@ -139,3 +139,10 @@ carries the ruling numbers.)*
       ruling 7; panel wiring is a recorded kit debt).
 - [x] **Tag REMOVE gesture** — chip ✕ ruled rev 0.70; shipped with
       suppression in AI-IMP-285.
+
+- **Touch band numerics (2026-07-16, law-wave round 1):** rev 0.73
+  rules touch = targets ≥44px · strip 0 · "bands grow" — but no
+  numeric grown rail/dock/dock-expanded values exist anywhere in
+  kit or RFC. Implementation defers grown-band outputs (touch
+  emits 64/112 until ruled). The kit owes the numbers; they land
+  in grammar §1 beside the 46/56/64/112 set.
