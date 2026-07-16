@@ -126,7 +126,4 @@
     padding-bottom: 0.7rem;
   }
 
-  :global(:root[data-density='comfortable']) .section-head {
-    min-height: 44px;
-  }
 </style>

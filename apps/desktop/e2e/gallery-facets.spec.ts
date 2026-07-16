@@ -198,10 +198,15 @@ test('name groups past 24, size stays flat, and narrow facets wrap (AI-IMP-299)'
   await win.getByTestId('gallery-sort-size').click()
   await expect(headers).toHaveCount(0)
 
-  await app.evaluate(({ BrowserWindow }) => {
-    BrowserWindow.getAllWindows()[0]?.setSize(560, 800)
+  // §8.8.3 now clamps the desktop frame at 960px. Exercise the facet
+  // component's narrow-container contract without asking BrowserWindow to
+  // violate that frame law (the same component also ships in SourcePanel).
+  const facets = win.getByTestId('gallery-facets')
+  await facets.evaluate((element) => {
+    element.style.width = '520px'
+    element.style.boxSizing = 'border-box'
   })
-  await expect.poll(() => win.evaluate(() => innerWidth)).toBeLessThanOrEqual(560)
+  await expect.poll(async () => (await facets.boundingBox())?.width).toBeLessThanOrEqual(520)
   const sortBox = (await win.getByTestId('gallery-sort-date').boundingBox())!
   const cleanupBox = (await win.getByTestId('gallery-filter-untagged').boundingBox())!
   expect(cleanupBox.y).toBeGreaterThan(sortBox.y)

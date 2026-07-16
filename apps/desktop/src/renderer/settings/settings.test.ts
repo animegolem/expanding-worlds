@@ -218,7 +218,7 @@ describe('caption promotion routing', () => {
 })
 
 describe('density', () => {
-  it.each(['compact', 'comfortable'] as const)('accepts and applies persisted %s density', async (density) => {
+  it.each(['compact', 'comfortable', 'touch'] as const)('accepts and applies persisted %s density', async (density) => {
     stubWindow({
       appAll: () => Promise.resolve({ density }),
       setApp: () => Promise.resolve({ ok: true }),

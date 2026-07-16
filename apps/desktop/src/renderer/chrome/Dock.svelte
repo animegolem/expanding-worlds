@@ -762,6 +762,10 @@
     max-width: 78vw;
   }
 
+  .dock-row.main {
+    width: max-content;
+  }
+
   .defaults {
     position: relative;
     flex-wrap: nowrap;

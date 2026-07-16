@@ -19,7 +19,7 @@ import { applyTheme, type ThemeName } from '../theme'
 export type FadeDelay = number | 'never'
 export type CharmCorner = 'lower-right' | 'upper-right'
 export type TitleStripMode = 'hover' | 'always' | 'never'
-export type Density = 'compact' | 'comfortable'
+export type Density = 'compact' | 'comfortable' | 'touch'
 export type CaptionPromotionRouting = 'ask' | 'title' | 'body'
 /** §6.9 (AI-IMP-205): mouse vs trackpad wheel muscle memory. Chromium
  * cannot tell a mouse wheel from a trackpad two-finger scroll — both
@@ -90,7 +90,9 @@ function sanitize(raw: Record<string, unknown>): AppSettings {
     next.flatCanvasColor = flat
   }
   const density = raw['density']
-  if (density === 'compact' || density === 'comfortable') next.density = density
+  if (density === 'compact' || density === 'comfortable' || density === 'touch') {
+    next.density = density
+  }
   const nav = raw['navigationScheme']
   if (nav === 'trackpad' || nav === 'mouse') next.navigationScheme = nav
   const captionRouting = raw['captionPromotionRouting']

@@ -9,6 +9,7 @@
   --ew-reserve-dock: 64px;
   --ew-reserve-dock-expanded: 112px;
   --ew-reserve-gutter: 24px;
+  --ew-control-target: 28px;
 
   --ew-surface: rgba(23, 25, 29, 0.92);
   --ew-surface-solid: #17191d;
@@ -309,7 +310,21 @@
 }
 
 :root[data-density='comfortable'] {
+  --ew-control-target: 36px;
+}
+
+:root[data-density='touch'] {
+  --ew-control-target: 44px;
   --ew-reserve-strip: 0px;
+}
+
+/* Density is a token tier, not a component-by-component exception list.
+   Compact has no selector so its shipped geometry remains byte-unchanged. */
+:root:is([data-density='comfortable'], [data-density='touch'])
+  :where(button, [role='button']) {
+  box-sizing: border-box;
+  min-width: var(--ew-control-target);
+  min-height: var(--ew-control-target);
 }
 
 :root[data-theme='light'] {
