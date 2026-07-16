@@ -13,6 +13,7 @@
   import { FONT_STACKS, loadFontOptions, type FontOption } from '../canvas/system-fonts'
   import { defaultsKind, rememberToolColor } from '../canvas/tool-defaults'
   import ColorPicker from '../ui/ColorPicker.svelte'
+  import { recentColorWindows } from '../ui/color-picker-state'
   import PickerList from '../ui/PickerList.svelte'
   import Stepper from '../ui/Stepper.svelte'
   import SwatchRow from '../ui/SwatchRow.svelte'
@@ -105,6 +106,10 @@
   let pickerKind = $state<'ink' | 'fill' | null>(null)
   let pickerOpen = $state(false)
   let pickerAnchor = $state<HTMLElement | null>(null)
+  let dropperMenuOpen = $state(false)
+  let dropperAnchor = $state<HTMLButtonElement | null>(null)
+  let dropperTailX = $state(12)
+  let dropperMenuBelow = $state(false)
   let inkAnchor = $state<HTMLElement | null>(null)
   let fillAnchor = $state<HTMLElement | null>(null)
   let fontListOpen = $state(false)
@@ -116,6 +121,8 @@
   })
   let defaultsShift = $state(0)
   const eyedropperAvailable = typeof window !== 'undefined' && typeof window.EyeDropper === 'function'
+  const colorWindows = $derived(recentColorWindows(recentColors))
+  const dropperDisabled = $derived(!eyedropperAvailable && colorWindows.eyedropper.length === 0)
 
   // §4.9 rev 0.13: installed fonts, enumerated lazily on the picker's
   // first user gesture; curated stacks until then (and on failure).
@@ -219,6 +226,7 @@
     fontListOpen = false
     pickerOpen = false
     pickerKind = null
+    dropperMenuOpen = false
   })
 
   function rememberColor(color: string): void {
@@ -250,6 +258,40 @@
       // Cancellation is the native API's ordinary exit; it changes no default.
     }
   }
+
+  function toggleDropperMenu(): void {
+    if (dropperDisabled) return
+    const opening = !dropperMenuOpen
+    dropperMenuOpen = opening
+    if (!opening) return
+    shapeFlyoutOpen = false
+    fontListOpen = false
+    pickerOpen = false
+    pickerKind = null
+    if (eyedropperAvailable) void sampleInk()
+  }
+
+  function dropperMenuPlaced(
+    placement: { x: number; flipped: boolean },
+    surface: { width: number },
+  ): void {
+    if (!dropperAnchor) return
+    const anchor = dropperAnchor.getBoundingClientRect()
+    dropperTailX = tailOffset(anchor.left + anchor.width / 2, placement.x, surface.width)
+    dropperMenuBelow = placement.flipped
+  }
+
+  $effect(() => {
+    if (!dropperMenuOpen) return
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      dropperMenuOpen = false
+      dropperAnchor?.focus()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  })
 
   $effect(() => {
     activeTool
@@ -486,16 +528,6 @@
       </div>
     {/if}
 
-    {#if pickerOpen && pickerAnchor && pickerKind}
-      <ColorPicker
-        bind:open={pickerOpen}
-        value={pickerKind === 'fill' ? (fill ?? ink) : ink}
-        recent={recentColors}
-        anchor={pickerAnchor}
-        oncommit={(color) => pickerKind === 'fill' ? chooseFill(color) : chooseInk(color)}
-        onclose={() => (pickerKind = null)}
-      />
-    {/if}
   {/if}
 
   <div
@@ -564,15 +596,20 @@
     <button
       type="button"
       class="tool pipette"
-      class:disabled={!eyedropperAvailable}
-      aria-disabled={!eyedropperAvailable}
+      class:active={dropperMenuOpen}
+      class:disabled={dropperDisabled}
+      aria-disabled={dropperDisabled}
+      aria-expanded={dropperMenuOpen}
       aria-label="Eyedropper"
       data-testid="tool-eyedropper"
-      onclick={() => eyedropperAvailable && void sampleInk()}
+      bind:this={dropperAnchor}
+      onclick={toggleDropperMenu}
       use:tooltip={{
         name: eyedropperAvailable
-          ? 'Eyedropper — pick ink from the board'
-          : 'Eyedropper unavailable in this Chromium build',
+          ? 'Eyedropper — sample the board or choose a recent color'
+          : colorWindows.eyedropper.length > 0
+            ? 'Board sampling unavailable — choose a recent color'
+            : 'Eyedropper unavailable in this Chromium build',
       }}
     >
       <span class="pipette-glyph" style={`--pipette-glyph: url("${eyedropperGlyphUrl}")`} aria-hidden="true"></span>
@@ -610,6 +647,17 @@
   {/if}
 </div>
 
+{#if takeoverMode === null && pickerOpen && pickerAnchor && pickerKind}
+  <ColorPicker
+    bind:open={pickerOpen}
+    value={pickerKind === 'fill' ? (fill ?? ink) : ink}
+    recent={recentColors}
+    anchor={pickerAnchor}
+    oncommit={(color) => pickerKind === 'fill' ? chooseFill(color) : chooseInk(color)}
+    onclose={() => (pickerKind = null)}
+  />
+{/if}
+
 {#if takeoverMode === null && shapeFlyoutOpen && shapeButton}
   <div
     class="shape-flyout"
@@ -646,6 +694,42 @@
       </button>
     {/each}
     <span class="shape-tail" style:left={`${shapeTailX}px`} aria-hidden="true"></span>
+  </div>
+{/if}
+
+{#if takeoverMode === null && dropperMenuOpen && dropperAnchor && colorWindows.eyedropper.length > 0}
+  <div
+    class="eyedropper-menu"
+    class:below={dropperMenuBelow}
+    data-testid="eyedropper-recents"
+    role="menu"
+    aria-label="Recent eyedropper colors"
+    use:dismissOnOutside={{
+      dismiss: () => (dropperMenuOpen = false),
+      exclude: () => [dropperAnchor],
+    }}
+    use:placeAnchoredElement={() => ({
+      anchor: dropperAnchor!.getBoundingClientRect(),
+      host: { x: 0, y: 0, width: innerWidth, height: innerHeight },
+      x: { preferred: 'center' },
+      y: { preferred: 'before', fallback: 'after' },
+      gap: 8,
+      onplace: dropperMenuPlaced,
+    })}
+  >
+    {#each colorWindows.eyedropper as color, index (color)}
+      <button
+        type="button"
+        class="eyedropper-recent"
+        style={`--swatch:${color}`}
+        aria-label={`Use ${color}`}
+        data-color={color}
+        data-swatch-index={index}
+        role="menuitem"
+        onclick={() => chooseInk(color)}
+      ></button>
+    {/each}
+    <span class="eyedropper-tail" style:left={`${dropperTailX}px`} aria-hidden="true"></span>
   </div>
 {/if}
 
@@ -806,6 +890,47 @@
   }
 
   .shape-flyout.below .shape-tail {
+    top: -6px;
+    bottom: auto;
+    border: 0;
+    border-left: 1px solid var(--ew-border-panel);
+    border-top: 1px solid var(--ew-border-panel);
+  }
+
+  .eyedropper-menu {
+    position: fixed;
+    z-index: 500;
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.45rem 0.55rem;
+    background: var(--ew-surface-menu);
+    border: 1px solid var(--ew-border-panel);
+    border-radius: 7px;
+    box-shadow: 0 10px 28px var(--ew-shadow);
+    pointer-events: auto;
+  }
+
+  .eyedropper-menu .eyedropper-recent {
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    background: var(--swatch);
+    border-color: var(--ew-border-strong);
+    border-radius: 4px;
+  }
+
+  .eyedropper-tail {
+    position: absolute;
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    transform: translateX(-50%) rotate(45deg);
+    background: var(--ew-surface-menu);
+    border-right: 1px solid var(--ew-border-panel);
+    border-bottom: 1px solid var(--ew-border-panel);
+  }
+
+  .eyedropper-menu.below .eyedropper-tail {
     top: -6px;
     bottom: auto;
     border: 0;

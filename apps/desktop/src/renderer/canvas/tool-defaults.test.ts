@@ -12,10 +12,10 @@ describe('Dock tool defaults (AI-IMP-289)', () => {
       expect(defaultsKind(quiet)).toBeNull()
   })
 
-  it('keeps one de-duplicated MRU queue capped at the kit-owned nine', () => {
+  it('keeps one de-duplicated MRU queue capped at twelve for the 3/6/9 windows', () => {
     const seed = Array.from({ length: 12 }, (_, index) => `hsl(${index} 50% 50%)`)
-    expect(rememberToolColor(seed, seed[4]!)).toEqual([seed[4], ...seed.filter((_, index) => index !== 4).slice(0, 8)])
-    expect(rememberToolColor(seed, 'white')).toEqual(['white', ...seed.slice(0, 8)])
+    expect(rememberToolColor(seed, seed[4]!)).toEqual([seed[4], ...seed.filter((_, index) => index !== 4)])
+    expect(rememberToolColor(seed, 'white')).toEqual(['white', ...seed.slice(0, 11)])
   })
 
   it('applies font, ink, and a zoom-relative size multiplier to new text', () => {

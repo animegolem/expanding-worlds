@@ -37,6 +37,25 @@ export function recentColors(previous: readonly string[], color: string, limit =
   return [normalized, ...previous.map(normalizeHex).filter((entry): entry is string => Boolean(entry) && entry !== normalized)].slice(0, limit)
 }
 
+/** One normalized MRU, exposed through the kit's three fixed windows. */
+export function recentColorWindows(previous: readonly string[]): {
+  defaults: string[]
+  eyedropper: string[]
+  picker: string[]
+} {
+  const queue: string[] = []
+  for (const entry of previous) {
+    const normalized = normalizeHex(entry)
+    if (normalized && !queue.includes(normalized)) queue.push(normalized)
+    if (queue.length === 12) break
+  }
+  return {
+    defaults: queue.slice(0, 3),
+    eyedropper: queue.slice(0, 6),
+    picker: queue.slice(0, 9),
+  }
+}
+
 export function svFromPoint(rect: { left: number; top: number; width: number; height: number }, x: number, y: number): Pick<HsvColor, 's' | 'v'> {
   return { s: clamp((x - rect.left) / Math.max(1, rect.width)), v: 1 - clamp((y - rect.top) / Math.max(1, rect.height)) }
 }

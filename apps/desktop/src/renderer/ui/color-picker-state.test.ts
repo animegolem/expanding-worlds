@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { hexToHsv, hsvToHex, hueFromPoint, normalizeHex, recentColors, svFromPoint } from './color-picker-state'
+import {
+  hexToHsv,
+  hsvToHex,
+  hueFromPoint,
+  normalizeHex,
+  recentColors,
+  recentColorWindows,
+  svFromPoint,
+} from './color-picker-state'
 
 describe('color picker state', () => {
   const hex = (digits: string): string => `${String.fromCharCode(35)}${digits}`
@@ -20,5 +28,12 @@ describe('color picker state', () => {
     const next = recentColors(prior, prior[5]!)
     expect(next[0]).toBe(prior[5])
     expect(new Set(next).size).toBe(12)
+  })
+  it('derives the 3/6/9 doors from one normalized ordering', () => {
+    const queue = Array.from({ length: 12 }, (_, index) => hex(`0000${index.toString(16).padStart(2, '0')}`))
+    const windows = recentColorWindows([queue[0]!.toUpperCase(), ...queue, 'invalid'])
+    expect(windows.defaults).toEqual(queue.slice(0, 3))
+    expect(windows.eyedropper).toEqual(queue.slice(0, 6))
+    expect(windows.picker).toEqual(queue.slice(0, 9))
   })
 })

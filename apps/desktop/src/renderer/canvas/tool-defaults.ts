@@ -15,7 +15,7 @@ export function defaultsKind(tool: ToolKind): ToolDefaultsKind | null {
 
 /** One MRU queue feeds the kit's 3/6/9 color windows. */
 export function rememberToolColor(recent: readonly string[], color: string): string[] {
-  return [color, ...recent.filter((entry) => entry !== color)].slice(0, 9)
+  return [color, ...recent.filter((entry) => entry !== color)].slice(0, 12)
 }
 
 /** Defaults for a new text decoration. Size remains legible at the
