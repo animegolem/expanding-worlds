@@ -105,3 +105,10 @@ an unattached host (net-guard test).
 ## Implementation Breakdown
 
 IMPs to be cut when this epic activates.
+
+## Tester idea capture (2026-07-17, alph field doc item 5)
+
+Shift-select two images, press the connector/arrow tool: an
+automatic connection from first-selected to second-selected —
+selection order as direction. Clean fit for the connector
+grammar's verb set when this epic cuts.

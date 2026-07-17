@@ -838,3 +838,32 @@ field + domain tag-offer chip.)
   unblocks; density triad compact/comfortable/touch with only
   touch changing the frame (§8.8.3) — the comfortable↔44px
   question dissolved.)
+
+- **The arrange envelope + frames as units (alph field doc,
+  2026-07-17, items 1/1.1/7 — one cluster, needs a ruling before
+  arrange work):** (a) arrange/pack operations act on the IMAGE
+  AABB and hide captions/titles under neighbors (compact-pack in
+  reading order buries the plaques) — the candidate law: arrange
+  operates on the FULL VISUAL ENVELOPE (image + plaque/label
+  clearance), same family as the charm halo; (b) arranging splits
+  a frame from its members — PureRef lets groups resize/arrange
+  as single images; candidate law: A FRAME IS AN ARRANGE UNIT
+  (move/pack/align treat it as one object; resize scales members);
+  (c) his stretch wish: frames that grow dynamically like board
+  edges. Rule (a)+(b) together; (c) is a separate feasibility
+  conversation.
+- **Caption form factor — tester evidence (alph, 2026-07-17, item
+  2):** plaques read "compressed and centered" against wide art
+  with long text; his open question — notes = side, captions =
+  bottom as distinct form factors? Rides the notes epic's caption
+  tier (evidence for the cosign conversation, joins his earlier
+  captions-counter-frame).
+- **Scroll-to-zoom preference (alph, 2026-07-17, item 8):** he
+  wants wheel = zoom (PureRef muscle memory). Tension to rule:
+  §11.5's opinions-ship-as-defaults doctrine vs genuine
+  input-dialect differences between source apps. Decide default
+  vs setting vs chord.
+- **Gallery thumbnail context (alph, 2026-07-17, item 12):**
+  should board-images wear a board badge in the gallery; should
+  captions surface as gallery descriptions? Feeds AI-IMP-204's
+  inspector design as tester evidence.

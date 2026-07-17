@@ -67,7 +67,8 @@ Pre-cut census first (this epic's round-0): read the shipped note
 surfaces against the Note Paper kit + grammar and §8.5/§8.8.5,
 enumerate the per-posture deltas with citations, and cut the
 ticket range from the census — not from memory. Tickets are
-AI-IMP-307+ (reserved from here; the stragglers wave holds 306).
+AI-IMP-312+ (re-reserved 2026-07-17: the alph-feedback bug wave
+took 307–311).
 Expect one wave of 4–6 tickets after the census; the big-editor
 role ruling goes to the owner BEFORE its ticket cuts. The dock
 promise-ledger pattern extends: a note-paper promise family
