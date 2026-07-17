@@ -7,11 +7,11 @@
 | Status | EPICs | IMPs |
 |--------|-------|------|
 | In Progress | 2 | 0 |
-| Planned | 5 | 4 |
+| Planned | 6 | 4 |
 | Deferred | 1 | 0 |
 | Cancelled | 0 | 1 |
 | Completed | 22 | 272 |
-| **Total** | **30** | **300** |
+| **Total** | **31** | **300** |
 
 ## In Progress
 
@@ -70,6 +70,11 @@
 
 **IMPs:**
 - [[AI-IMP-239-new-board-verb|IMP-239]] New board verb — completed
+
+---
+
+### [[AI-EPIC-031-the-notes-epic|EPIC-031: The notes epic]]
+> The v0.25.0 feel pass's largest finding, in the owner's words: "the
 
 ---
 
