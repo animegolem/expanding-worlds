@@ -6,12 +6,12 @@ tags:
   - chrome
   - kit-primitives
   - feel-pass
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic: [[AI-EPIC-030-the-ratified-law-wave]]
 confidence_score: 0.75
 date_created: 2026-07-16
-date_completed:
+date_completed: 2026-07-17
 ---
 
 # AI-IMP-303-color-doors-drawn-behavior

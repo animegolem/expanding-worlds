@@ -1074,3 +1074,20 @@ look exactly as before (no regression at 100%+ display scaling).
 - Gallery by name at 30+ items: letter sections, # for unnamed.
 - Settings: fold sections, flip density comfortable — the chrome
   grows live; nothing in Settings is a dead row anymore.
+
+## v0.26.0 — the law-enforcement build (EPIC-030, 2026-07-17)
+- [ ] Click-away never acts beneath: open the board menu / shape
+  flyout / color picker / a lens, then click a placement under it —
+  the surface should close and NOTHING should select or open.
+- [ ] Takeover chrome: open outline — the side rail should step
+  away and the bottom bar become mode switcher + search; Esc should
+  morph everything home in one beat. Try switching modes in place.
+- [ ] Restore flow: trash something, undo from the toast — the
+  toast button must still work over the Trash view.
+- [ ] Color doors: pick a dozen colors, then check 3 in the tool
+  row, 6 on the eyedropper press, 9 in the picker — same order,
+  no duplicates. Drag the picker dot and hue strip; it should feel
+  live and commit once on release.
+- [ ] Squeeze the window: it should stop at 960 wide and nothing
+  should look crushed. Flip compact/comfortable — comfortable is
+  roomier controls, same layout.

@@ -7,8 +7,8 @@ tags:
   - chrome
   - feel-pass
 date_created: 2026-07-16
-date_completed:
-kanban_status: planned
+date_completed: 2026-07-17
+kanban_status: completed
 AI_IMP_spawned:
   - AI-IMP-301
   - AI-IMP-302
@@ -53,6 +53,21 @@ request-only).
   doors from one MRU (ledger convictions).
 - AI-IMP-304 — frame law: minWidth 960 + density triad plumbing.
 - AI-IMP-305 — bars-under-notes diagnostic and fix (layering).
+
+## Close (2026-07-17 — shipped in v0.26.0)
+
+One wave, four rounds, all five tickets landed as five atomic
+commits (merge `ae68aee5`; oracle run 29544465545 "success").
+Round 1 corrected the mislabeled density mapping before code; the
+evidence-bundle pilot caught two defects pre-submission
+(restore-toast swallowed over Trash; picker containment); the
+oracle caught a cross-platform focus-order race at the takeover
+boundary (Escape reaching the underlying view when Search's
+autofocus hadn't settled — deterministic on Windows/Linux,
+invisible on macOS) that round 4 convicted at the TakeoverLayer
+host after honestly retracting round 3's mount-order diagnosis.
+Two missing-promise findings and one ledger correction went to
+the cosign queue. PH-002 trial data recorded (r1 verdict 3m43s).
 
 ## Success Metrics
 

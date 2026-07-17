@@ -12,6 +12,47 @@ annotations.
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-07-17
+
+### For testers (the law-enforcement build)
+- Fixed: clicking outside a menu, flyout, picker, or panel to
+  dismiss it can no longer ALSO act on the board beneath — the
+  click is swallowed, app-wide, one law. Lenses and takeovers now
+  close on click-out too.
+- New: when a full-screen view opens (outline, gallery, search,
+  settings), the side rail steps aside and the bottom bar becomes
+  that view's own controls — a mode switcher and search — morphing
+  back to your drawing tools in one smooth beat when you close.
+- Fixed: the dock no longer shifts when a tool's options row opens
+  — the row grows upward from a stationary dock (this was the
+  "bars moving the dock" bug).
+- Fixed: the color picker actually works like it looks — drag the
+  dot, drag the hue, and your recent colors now show as 3 in the
+  tool row, 6 on the eyedropper, and 9 in the full picker, all
+  from one shared history (no more duplicate row).
+- Fixed: pressing Escape over search opened from another view now
+  closes search first instead of sometimes closing the view
+  underneath (a Windows/Linux-only race our CI caught).
+- Changed: the window can't shrink below 960px wide, and the
+  "comfortable" density is now genuinely a mid-size — roomier
+  controls without rearranging the frame.
+
+### Under the hood
+- AI-IMP-301 — the §8.8.6 dismissal swallow enforced via one
+  document-capture topmost-surface guard; toast region excluded.
+- AI-IMP-302 — ruling 40's takeover chrome migration; layered
+  Search preserving the underlying view; rail band reservation
+  released while retired; the round-4 Escape peel at
+  TakeoverLayer.
+- AI-IMP-303 — color doors 3/6/9 from one MRU; real SV/hue drag
+  with one durable commit per release; keyboard stepping.
+- AI-IMP-304 — minWidth 960; density triad plumbed (touch
+  unexposed pending band numerics); comfortable corrected from
+  the mislabeled touch mapping.
+- AI-IMP-305 — diagnosis-first: layering exonerated, dock
+  displacement convicted as column-reverse and fixed; GEO-03 and
+  LAYER-01 pinned as permanent law tests.
+
 ## [0.25.0] - 2026-07-13
 
 ### For testers (paper, plaques, and one lens)

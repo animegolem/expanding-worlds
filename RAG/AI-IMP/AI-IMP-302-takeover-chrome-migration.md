@@ -6,13 +6,13 @@ tags:
   - chrome
   - takeover
   - design-adoption
-kanban_status: planned
+kanban_status: completed
 depends_on:
   - AI-IMP-301
 parent_epic: [[AI-EPIC-030-the-ratified-law-wave]]
 confidence_score: 0.75
 date_created: 2026-07-16
-date_completed:
+date_completed: 2026-07-17
 ---
 
 # AI-IMP-302-takeover-chrome-migration
