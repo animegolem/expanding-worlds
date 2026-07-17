@@ -38,6 +38,7 @@ import { placeAnchored, pointAnchor } from '../chrome/anchored-placement'
 import { navigateTo } from '../chrome/navigation'
 import { takeoverActive } from '../chrome/takeover'
 import { applyMenuCascade } from '../chrome/menu-cascade'
+import { registerDismissibleSurface } from '../chrome/dismissal-guard'
 import { runAsUndoGroup } from '../undo/undo-store'
 import { requestCharmPopover } from '../canvas/charms-ui'
 import { currentSelectionHalo } from '../canvas/selection-halo'
@@ -99,7 +100,7 @@ export function attachContextMenu(
   decorationsUi: DecorationsUi,
 ): ContextMenuHandle {
   let menu: HTMLDivElement | null = null
-  let menuKind: MenuKind | null = null
+  let unregisterDismissal: (() => void) | null = null
   /** Enabled, focusable rows in the currently open menu, in order. */
   let rows: HTMLButtonElement[] = []
   let focusIndex = -1
@@ -135,20 +136,13 @@ export function attachContextMenu(
     openGen.bump()
     if (colorMount) void unmount(colorMount)
     colorMount = null
+    unregisterDismissal?.()
+    unregisterDismissal = null
     menu?.remove()
     menu = null
-    menuKind = null
     rows = []
     focusIndex = -1
-    document.removeEventListener('pointerdown', onOutsidePointer, true)
     document.removeEventListener('keydown', onMenuKeyDown, true)
-  }
-
-  const onOutsidePointer = (event: PointerEvent): void => {
-    if (!menu || menu.contains(event.target as Node)) return
-    const swallowsBoardClick = menuKind === 'board' && (event.target as Element | null)?.tagName === 'CANVAS'
-    close()
-    if (swallowsBoardClick) event.stopPropagation()
   }
 
   const onMenuKeyDown = (event: KeyboardEvent): void => {
@@ -437,7 +431,6 @@ export function attachContextMenu(
   ): void {
     close()
     menu = makeShell(kind)
-    menuKind = kind
     if (kind === 'board') {
       const marker = document.createElement('span')
       marker.dataset['testid'] = 'board-menu'
@@ -453,6 +446,10 @@ export function attachContextMenu(
       for (const item of group.items) renderRow(menu!, item)
     })
     element.appendChild(menu)
+    unregisterDismissal = registerDismissibleSurface({
+      contains: (target) => menu?.contains(target) ?? false,
+      dismiss: close,
+    })
     // §8.2 decision 06 (AI-IMP-167): the universal CASCADE — rows fade
     // in staggered top-to-bottom on open. One-shot per fresh render;
     // opacity only, so every row stays clickable through the fade.
@@ -470,7 +467,6 @@ export function attachContextMenu(
     })
     menu.style.left = `${placed.x}px`
     menu.style.top = `${placed.y}px`
-    document.addEventListener('pointerdown', onOutsidePointer, true)
     document.addEventListener('keydown', onMenuKeyDown, true)
   }
 
@@ -992,7 +988,7 @@ export function attachContextMenu(
     // resolution is stale and must not paint over it. AI-IMP-155.
     const token = openGen.current()
     // AI-IMP-184 (M-25): the PRE-render window. No menu is up yet, so
-    // onOutsidePointer is not listening and close() never runs — a
+    // The shared dismissal guard is not registered yet and close() never runs — a
     // click-away during the await would leave openGen unbumped and let
     // the resolved menu paint late. Watch for an intervening pointerdown
     // ourselves and bail if one lands before we render.

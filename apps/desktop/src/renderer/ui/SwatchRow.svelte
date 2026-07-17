@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { normalizeHex } from './color-picker-state'
+  import { normalizeHex, recentColorWindows } from './color-picker-state'
   export interface SwatchChoice {
     value: string
     label: string
@@ -22,10 +22,7 @@
     onopen?: () => void
   } = $props()
   const recentChoices = $derived(
-    recent
-      .map(normalizeHex)
-      .filter((entry): entry is string => Boolean(entry))
-      .slice(0, 3)
+    recentColorWindows(recent).defaults
       .map((color) => ({ value: color, label: `Use ${color}` })),
   )
   const swatches = $derived(choices ?? recentChoices)
@@ -36,7 +33,7 @@
 </script>
 
 <div class="swatch-row" aria-label={choices ? 'Canvas colors' : 'Recent colors'}>
-  {#each swatches as choice (choice.value)}
+  {#each swatches as choice, index (choice.value)}
     <button
       type="button"
       class:active={choice.value === value || choice.value === normalizeHex(value)}
@@ -45,6 +42,8 @@
       aria-label={choice.label}
       aria-pressed={choice.value === value || choice.value === normalizeHex(value)}
       data-testid={choice.testid}
+      data-swatch-index={index}
+      data-swatch-color={choice.value}
       {disabled}
       onclick={() => onselect(choice.value)}
     >{choice.text ?? ''}</button>

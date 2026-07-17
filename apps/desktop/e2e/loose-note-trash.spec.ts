@@ -45,7 +45,7 @@ test('outline loose bin: Trash removes the row; Trash-view restore returns it lo
   await trashRow.getByTestId('trash-restore').click()
   await expect(win.getByTestId('trash-row')).toHaveCount(0)
 
-  await win.getByTestId('charm-outline').click()
+  await win.getByTestId('takeover-mode-outline').click()
   await expect(win.getByTestId('loose-note-row')).toHaveCount(1)
   await expect(win.getByTestId('loose-note-row')).toContainText('Stray thought')
   await app.close()

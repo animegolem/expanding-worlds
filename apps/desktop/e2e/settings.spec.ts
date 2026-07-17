@@ -58,7 +58,8 @@ test('settings commit on click, apply live, and persist per tier across relaunch
     .toBeGreaterThan(compactHeight)
   await expect
     .poll(async () => (await win.getByTestId('settings-row-density').boundingBox())!.height)
-    .toBeGreaterThanOrEqual(44)
+    .toBeGreaterThanOrEqual(36)
+  await expect(win.getByTestId('settings-density-touch')).toHaveCount(0)
 
   // Flat canvas color repaints the background-less board live.
   await win.getByTestId('settings-flat-3').click()

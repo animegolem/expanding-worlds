@@ -22,15 +22,50 @@ test('reservation frame owns takeover edges and search uses its centered top-flu
   const takeover = win.getByTestId('takeover-settings')
   await expect(takeover).toBeVisible()
   const compact = await takeover.boundingBox()
-  expect(compact!.x).toBeGreaterThanOrEqual(24)
+  expect(compact!.x).toBe(24)
   expect(compact!.y).toBeGreaterThanOrEqual(46 + 24)
-  expect(compact!.x + compact!.width).toBeLessThanOrEqual(viewport.width - 56 - 24 + 1)
-  expect(compact!.y + compact!.height).toBeLessThanOrEqual(viewport.height - 64 - 24 + 1)
+  expect(compact!.x + compact!.width).toBe(viewport.width - 24)
+  expect(compact!.y + compact!.height).toBe(viewport.height - 64)
+  await expect(win.locator('html')).toHaveAttribute('data-takeover-chrome', 'true')
+  const releasedRail = await win.getByTestId('reservation-debug').locator('.right').boundingBox()
+  expect(releasedRail!.width).toBe(0)
 
   await win.evaluate(() => window.__ewReservations!.density('comfortable'))
   await expect
     .poll(async () => (await takeover.boundingBox())?.y)
-    .toBe(24)
+    .toBe(46 + 24)
 
+  await app.close()
+})
+
+test('window floor and comfortable control tier enforce the ratified frame law', async () => {
+  const { app, win } = await launchApp('ew-e2e-frame-law-')
+
+  const clamped = await app.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows()[0]!
+    window.setSize(700, 800)
+    return window.getBounds()
+  })
+  expect(clamped.width).toBe(960)
+
+  await win.evaluate(() => window.__ewReservations!.density('comfortable'))
+  await expect(win.locator('html')).toHaveAttribute('data-density', 'comfortable')
+  const token = await win.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--ew-control-target').trim(),
+  )
+  expect(token).toBe('36px')
+
+  const dock = (await win.getByTestId('tool-select').boundingBox())!
+  const dockRow = (await win.locator('.dock-row.main').boundingBox())!
+  const charm = (await win.getByTestId('charm-menu').boundingBox())!
+  expect(dock.width).toBeGreaterThanOrEqual(36)
+  expect(dock.height).toBeGreaterThanOrEqual(36)
+  expect(charm.width).toBeGreaterThanOrEqual(36)
+  expect(charm.height).toBeGreaterThanOrEqual(36)
+  expect(dockRow.height).toBeLessThanOrEqual(64)
+
+  await openAppMenu(win)
+  const menuRow = (await win.getByTestId('menu-settings').boundingBox())!
+  expect(menuRow.height).toBeGreaterThanOrEqual(36)
   await app.close()
 })

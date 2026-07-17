@@ -407,6 +407,10 @@ test('decorations: draw, anchor, group, lock, hide, search', async () => {
   await expect
     .poll(async () => ((await byKind('text'))[0]!.data as { fontFamily?: string }).fontFamily)
     .toBe('serif')
+  // §8.8.6: close the floating restyle panel before the canvas resize;
+  // the first outside gesture is dismissal-only and cannot start a drag.
+  await win.getByTestId('charm-restyle').click()
+  await expect(textPanel).toBeHidden()
 
   // Art-text resize: dragging the SE corner ZONE (AI-IMP-062 — no
   // drawn handles) scales fontSize uniformly. Corner from the text's
@@ -581,11 +585,17 @@ test('selection restyle: stroke, fill, width, rounding after placement (AI-IMP-0
   await hex.fill('#ff0000')
   await hex.press('Enter')
   await expect.poll(async () => (await dataOf(rectId))['stroke']).toBe('#ff0000')
+  // §8.8.6: a picker-dismissal click is consumed, so close explicitly before
+  // invoking a sibling picker instead of relying on the old click-through.
+  await win.getByRole('button', { name: 'Close color picker' }).click()
+  await expect(win.getByRole('textbox', { name: 'Hex color' })).toBeHidden()
   await win.getByRole('button', { name: 'Open fill color picker' }).click()
   hex = win.getByRole('textbox', { name: 'Hex color' })
   await hex.fill('#00ff00')
   await hex.press('Enter')
   await expect.poll(async () => (await dataOf(rectId))['fill']).toBe('#00ff00')
+  await win.getByRole('button', { name: 'Close color picker' }).click()
+  await expect(win.getByRole('textbox', { name: 'Hex color' })).toBeHidden()
   const rounding = win.getByTestId('restyle-panel').locator('label').filter({ hasText: 'round' }).locator('input')
   await rounding.fill('50')
   await rounding.press('Enter')
@@ -594,6 +604,10 @@ test('selection restyle: stroke, fill, width, rounding after placement (AI-IMP-0
   await expect.poll(async () => (await dataOf(rectId))['fill']).toBeUndefined()
 
   // Multi-select rect + line: stroke applies to both.
+  // Close the floating restyle panel before extending selection; its outside
+  // dismissal gesture is intentionally swallowed by §8.8.6.
+  await win.getByTestId('charm-restyle').click()
+  await expect(win.getByTestId('restyle-panel')).toBeHidden()
   // keyboard.down: the click `modifiers` option doesn't reach
   // synthesized POINTER events in Electron (only DOM mouse events).
   await win.keyboard.down('Shift')

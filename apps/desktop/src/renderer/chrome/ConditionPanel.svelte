@@ -5,30 +5,28 @@
 -->
 <script lang="ts">
   import { dismissCondition, type Condition } from './status'
+  import { dismissOnOutside } from './dismissal-guard'
 
   const {
     conditions,
     onclose,
   }: { conditions: readonly Condition[]; onclose: () => void } = $props()
 
-  let panel = $state<HTMLElement | null>(null)
-
-  function onWindowPointerDown(event: PointerEvent): void {
-    const target = event.target as Element | null
-    if (panel?.contains(target as Node)) return
-    // The perch's own click toggles the panel; don't double-close.
-    if (target?.closest?.('[data-testid="perch"]')) return
-    onclose()
-  }
-
   function onWindowKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Escape') onclose()
   }
 </script>
 
-<svelte:window onpointerdowncapture={onWindowPointerDown} onkeydowncapture={onWindowKeyDown} />
+<svelte:window onkeydowncapture={onWindowKeyDown} />
 
-<div class="condition-panel" data-testid="perch-panel" bind:this={panel}>
+<div
+  class="condition-panel"
+  data-testid="perch-panel"
+  use:dismissOnOutside={{
+    dismiss: onclose,
+    exclude: () => [document.querySelector('[data-testid="perch"]')],
+  }}
+>
   <ul>
     {#each conditions as condition (condition.id)}
       <li data-testid="perch-condition">

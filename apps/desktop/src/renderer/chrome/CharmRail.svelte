@@ -5,18 +5,25 @@
   the rail's foot, and vanishes with its last condition.
 -->
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import { fly } from 'svelte/transition'
   import ConditionPanel from './ConditionPanel.svelte'
   import { PERCH_PULSE_MS } from './feel'
   import { onSearchPanelChanged, toggleSearchPanel } from './search'
   import { onConditionsChanged, type Condition } from './status'
   import {
     activeTakeover,
-    closeTakeover,
     onTakeoverChanged,
     toggleTakeover,
     type TakeoverKind,
   } from './takeover'
   import { tooltip } from './tooltip'
+
+  const { retired = false }: { retired?: boolean } = $props()
+  let hasMounted = $state(false)
+  onMount(() => {
+    hasMounted = true
+  })
 
   let conditions = $state<readonly Condition[]>([])
   let panelOpen = $state(false)
@@ -45,7 +52,13 @@
   ]
 </script>
 
-<nav class="charm-rail" data-testid="charm-rail">
+{#if !retired}
+<nav
+  class="charm-rail"
+  data-testid="charm-rail"
+  in:fly={{ y: 10, duration: hasMounted ? 240 : 0 }}
+  out:fly={{ y: 10, duration: 240 }}
+>
   {#each charms as charm (charm.id)}
     {#if charm.state === 'takeover'}
       <button
@@ -69,10 +82,6 @@
         aria-pressed={searchOpen}
         data-testid={`charm-${charm.id}`}
         onclick={(event) => {
-          // Mode switch, not a dead click: a charm press while a
-          // takeover covers the board returns to the board first —
-          // the panel must never open beneath the cover (§8.2).
-          if (takeover !== null) closeTakeover()
           void event
           toggleSearchPanel()
         }}
@@ -118,6 +127,7 @@
     </div>
   {/if}
 </nav>
+{/if}
 
 <style>
   .charm-rail {

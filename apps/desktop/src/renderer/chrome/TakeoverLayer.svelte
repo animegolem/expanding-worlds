@@ -15,6 +15,9 @@
   import TrashView from '../views/TrashView.svelte'
   import { holdEngagement } from './engagement'
   import { closeTakeover, onTakeoverChanged, type TakeoverKind } from './takeover'
+  import { closeSearchPanel, searchPanelState } from './search'
+  import { dismissOnOutside } from './dismissal-guard'
+  import { contextMenuOpen } from '../menus/ContextMenu'
 
   let kind = $state<TakeoverKind | null>(null)
   let sheet = $state<HTMLElement | null>(null)
@@ -43,6 +46,16 @@
     return () => window.removeEventListener('keydown', onKeydown)
   })
 
+  // Search is the top layer even when focus has not reached its input yet.
+  // Own that peel at the stable host mounted before every named view: an
+  // underlying view's capture map must never see the same Escape first.
+  function onLayeredEscape(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || !searchPanelState() || contextMenuOpen()) return
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    closeSearchPanel()
+  }
+
   const TITLES: Record<TakeoverKind, string> = {
     outline: 'Outline',
     settings: 'Settings',
@@ -51,9 +64,30 @@
   }
 </script>
 
+<svelte:window onkeydowncapture={onLayeredEscape} />
+
 {#if kind}
-  <div class="takeover" data-testid={`takeover-${kind}`} role="dialog" aria-label={TITLES[kind]}>
-    <div class="sheet" class:inset={kind === 'settings'} bind:this={sheet} tabindex="-1">
+  <div
+    class="takeover"
+    data-testid={`takeover-${kind}`}
+    role="dialog"
+    aria-label={TITLES[kind]}
+  >
+    <div
+      class="sheet"
+      class:inset={kind === 'settings'}
+      bind:this={sheet}
+      tabindex="-1"
+      use:dismissOnOutside={{
+        dismiss: closeTakeover,
+        exclude: () => [
+          document.querySelector('[data-testid="takeover-band"]'),
+          document.querySelector('[data-testid="title-strip"]'),
+          document.querySelector('[data-testid="charm-menu"]'),
+          document.querySelector('[data-testid="toasts"]'),
+        ],
+      }}
+    >
       <header class="sheet-header">
         <div class="sheet-title">
           <h1>{TITLES[kind]}</h1>
@@ -95,8 +129,8 @@
     position: absolute;
     inset:
       calc(var(--ew-reserve-strip) + var(--ew-reserve-gutter))
-      calc(var(--ew-reserve-rail) + var(--ew-reserve-gutter))
-      calc(var(--ew-reserve-dock) + var(--ew-reserve-gutter))
+      var(--ew-reserve-gutter)
+      var(--ew-reserve-dock)
       var(--ew-reserve-gutter);
     /* rung: takeover (Z.takeover = 300). Was a pre-ladder 9 (one above
        the old panels-8); ported with the AI-IMP-161 inversion fix so

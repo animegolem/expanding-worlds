@@ -1,6 +1,6 @@
 import type { ChromeBands, PlacementRect } from './anchored-placement'
 
-export type ChromeDensity = 'compact' | 'comfortable'
+export type ChromeDensity = 'compact' | 'comfortable' | 'touch'
 
 export const COMPACT_RESERVATION = Object.freeze({
   top: 46,
@@ -12,12 +12,14 @@ export const COMPACT_RESERVATION = Object.freeze({
 })
 
 export const COMFORTABLE_RESERVATION = Object.freeze({
+  ...COMPACT_RESERVATION,
+})
+
+/** Touch's strip ruling is ratified. The other bands deliberately retain
+ * cursor values until the kit publishes their authoritative grown sizes. */
+export const TOUCH_RESERVATION = Object.freeze({
+  ...COMPACT_RESERVATION,
   top: 0,
-  right: 56,
-  bottom: 64,
-  left: 0,
-  gutter: 24,
-  dockExpanded: 112,
 })
 
 export interface ReservationFrame {
@@ -26,6 +28,7 @@ export interface ReservationFrame {
   rect: PlacementRect
   density: ChromeDensity
   dockExpanded: boolean
+  railReleased: boolean
 }
 
 export interface ReservationValues extends ChromeBands {
@@ -42,7 +45,8 @@ function cssPixels(style: CSSStyleDeclaration, name: string, fallback: number): 
 }
 
 export function reservationDensity(root: HTMLElement = document.documentElement): ChromeDensity {
-  return root.dataset['density'] === 'comfortable' ? 'comfortable' : 'compact'
+  const density = root.dataset['density']
+  return density === 'comfortable' || density === 'touch' ? density : 'compact'
 }
 
 export function reservationFrame(
@@ -50,17 +54,28 @@ export function reservationFrame(
   root: HTMLElement = document.documentElement,
 ): ReservationFrame {
   const density = reservationDensity(root)
-  const defaults = density === 'comfortable' ? COMFORTABLE_RESERVATION : COMPACT_RESERVATION
+  const defaults = density === 'touch'
+    ? TOUCH_RESERVATION
+    : density === 'comfortable'
+      ? COMFORTABLE_RESERVATION
+      : COMPACT_RESERVATION
   const style = getComputedStyle(root)
   const dockExpanded = root.dataset['dockExpanded'] === 'true'
-  return reservationFrameFromValues(host, density, dockExpanded, {
-    top: cssPixels(style, '--ew-reserve-strip', defaults.top),
-    right: cssPixels(style, '--ew-reserve-rail', defaults.right),
-    bottom: cssPixels(style, '--ew-reserve-dock', defaults.bottom),
-    left: 0,
-    gutter: cssPixels(style, '--ew-reserve-gutter', defaults.gutter),
-    dockExpanded: cssPixels(style, '--ew-reserve-dock-expanded', defaults.dockExpanded),
-  })
+  const railReleased = root.dataset['takeoverChrome'] === 'true'
+  return reservationFrameFromValues(
+    host,
+    density,
+    dockExpanded,
+    {
+      top: cssPixels(style, '--ew-reserve-strip', defaults.top),
+      right: cssPixels(style, '--ew-reserve-rail', defaults.right),
+      bottom: cssPixels(style, '--ew-reserve-dock', defaults.bottom),
+      left: 0,
+      gutter: cssPixels(style, '--ew-reserve-gutter', defaults.gutter),
+      dockExpanded: cssPixels(style, '--ew-reserve-dock-expanded', defaults.dockExpanded),
+    },
+    railReleased,
+  )
 }
 
 export function reservationFrameFromValues(
@@ -68,10 +83,11 @@ export function reservationFrameFromValues(
   density: ChromeDensity,
   dockExpanded: boolean,
   values: ReservationValues,
+  railReleased = false,
 ): ReservationFrame {
   const bands = {
     top: values.top,
-    right: values.right,
+    right: railReleased ? 0 : values.right,
     bottom: dockExpanded ? values.dockExpanded : values.bottom,
     left: values.left,
   }
@@ -81,6 +97,7 @@ export function reservationFrameFromValues(
     gutter,
     density,
     dockExpanded,
+    railReleased,
     rect: {
       x: host.x + bands.left + gutter,
       y: host.y + bands.top + gutter,
@@ -108,11 +125,24 @@ export function dispatchReservationChange(root: HTMLElement = document.documentE
   for (const listener of listeners) listener()
 }
 
+export function setTakeoverChromeActive(
+  active: boolean,
+  root: HTMLElement = document.documentElement,
+): void {
+  if ((root.dataset['takeoverChrome'] === 'true') === active) return
+  if (active) root.dataset['takeoverChrome'] = 'true'
+  else delete root.dataset['takeoverChrome']
+  dispatchReservationChange(root)
+}
+
 export function listenForReservationChanges(listener: () => void): () => void {
   const root = document.documentElement
   root.addEventListener(CHANGE_EVENT, listener)
   const observer = new MutationObserver(listener)
-  observer.observe(root, { attributes: true, attributeFilter: ['data-density', 'data-dock-expanded'] })
+  observer.observe(root, {
+    attributes: true,
+    attributeFilter: ['data-density', 'data-dock-expanded', 'data-takeover-chrome'],
+  })
   return () => {
     root.removeEventListener(CHANGE_EVENT, listener)
     observer.disconnect()

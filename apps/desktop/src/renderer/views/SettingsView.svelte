@@ -384,6 +384,8 @@
 
     <div class="row" data-testid="settings-row-density">
       <span class="row-label">Density</span>
+      <!-- Touch is a valid persisted/plumbed tier, but stays unexposed until
+           a touch build exists; offering it on cursor desktop would lie. -->
       {@render segmented(
         'settings-density',
         [
@@ -879,8 +881,8 @@
     accent-color: var(--ew-accent);
   }
 
-  :global(:root[data-density='comfortable']) .row {
-    min-height: 44px;
+  :global(:root:is([data-density='comfortable'], [data-density='touch'])) .row {
+    min-height: var(--ew-control-target);
   }
 
   /* §11.4 remote push (AI-IMP-122): the Advanced backup-remote row. */

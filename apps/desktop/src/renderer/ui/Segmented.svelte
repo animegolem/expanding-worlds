@@ -75,7 +75,4 @@
     cursor: default;
   }
 
-  :global(:root[data-density='comfortable']) button {
-    min-height: 44px;
-  }
 </style>

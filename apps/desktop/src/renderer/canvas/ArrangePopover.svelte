@@ -74,5 +74,4 @@
   button:hover { background:var(--ew-surface-control-hover); }
   button:focus-visible { outline:2px solid var(--ew-focus-ring); outline-offset:1px; }
   .hint { border-top:1px solid var(--ew-border); padding-top:6px; color:var(--ew-text-subtle); font-size:.66rem; }
-  :global(:root[data-density='comfortable']) button { min-width:44px; height:44px; }
 </style>

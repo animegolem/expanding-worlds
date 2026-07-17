@@ -25,5 +25,4 @@
   input { width:100%; box-sizing:border-box; text-align:center; background:var(--ew-surface-input); }
   button:focus-visible, input:focus-visible { outline:2px solid var(--ew-focus-ring); outline-offset:-2px; }
   button:disabled, input:disabled, .disabled { opacity:.4; cursor:default; }
-  :global(:root[data-density='comfortable']) button { min-width:44px; min-height:44px; }
 </style>

@@ -809,6 +809,7 @@ async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
+    minWidth: 960,
     title: 'Expanding Worlds',
     show: !hiddenTestWindows,
     ...framelessWindowOptions(),
