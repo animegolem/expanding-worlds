@@ -11,7 +11,7 @@
 | Deferred | 1 | 0 |
 | Cancelled | 0 | 1 |
 | Completed | 22 | 275 |
-| **Total** | **31** | **305** |
+| **Total** | **31** | **307** |
 
 ## In Progress
 
@@ -106,6 +106,8 @@
 - [[AI-IMP-309-trashed-name-collision-honesty|IMP-309]] — planned, no epic dependency found
 - [[AI-IMP-310-pin-spawn-size-and-border|IMP-310]] — planned, no epic dependency found
 - [[AI-IMP-311-gallery-context-menu|IMP-311]] — planned, no epic dependency found
+- [[AI-IMP-320-ci-timing-evidence-and-six-shard-trial|IMP-320]] — planned, no epic dependency found
+- [[AI-IMP-321-branch-only-ci-trigger|IMP-321]] — planned, no epic dependency found
 
 ### Status Mismatches
 - [[AI-IMP-093-export-size-preflight|IMP-093]] — open but parent epic AI-EPIC-008 is completed
