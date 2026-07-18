@@ -31,9 +31,12 @@ normative spec) govern; this file is your delta.
   after implemented AND validated. Fill Issues Encountered honestly,
   including deviations — a flagged deviation is fine, a silent one
   is not.
-- Run `./RAG/scripts/generate-index.sh` after ticket changes.
-  Leave `kanban_status` for the lead to flip at merge unless your
-  ticket is unambiguously self-contained.
+- NEVER run `./RAG/scripts/generate-index.sh` or edit
+  `RAG/INDEX.md` — index regeneration is the LEAD's act at merge
+  (corrected 2026-07-17: this line previously contradicted
+  PROTOCOL.md and the wave briefs; Codex caught the conflict and
+  correctly followed the stricter rule). Leave `kanban_status`
+  for the lead to flip at merge.
 - Leave HUMAN-TESTING.md alone — suggest entries in your report; the
   lead appends. Never check off owner items anywhere.
 
