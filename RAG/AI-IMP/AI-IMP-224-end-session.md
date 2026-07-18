@@ -6,7 +6,7 @@ tags:
   - session
   - snapshots
   - design-first
-kanban_status: planned
+kanban_status: in-progress
 depends_on: []
 parent_epic: [[AI-EPIC-007-lifecycle-trash-undo]]
 confidence_score: 0.6

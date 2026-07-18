@@ -12,6 +12,38 @@ annotations.
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-07-18
+
+### For testers (the stragglers patch)
+- Fixed: the current-board name now sits right beside the Home
+  button — the invisible back/forward arrows no longer hold an
+  empty gap (they appear on hover, above the bar, without pushing
+  anything around; the hidden buttons also no longer steal clicks).
+- Fixed: boards and images now show their real names everywhere —
+  navigation, bookmarks, search, gallery, outline — never a raw
+  internal code. Bookmarks to deleted things keep their last-known
+  name.
+- Fixed (safety): if the automatic session backup fails for any
+  reason, cleanup no longer runs afterward — your data can't be
+  swept on top of a failed backup.
+- Under-the-hood groundwork for faster, steadier CI on the way to
+  quicker updates.
+
+### Under the hood
+- AI-IMP-306 — PathBar local inert arrow rung; ruled 0.15rem gap;
+  1/64 CSS-pixel layout-quantum tolerance (Blink).
+- AI-IMP-259 — display half only (containment premise
+  constitutionally rejected): one canonical live display-label
+  seam, app-wide; raw ids never render.
+- AI-IMP-224 (split) — typed snapshot outcome; snapshot success is
+  the capability for GC; injected-failure regression. End-Session
+  surface parked behind the session-selector; ticket remains open.
+- AI-IMP-269 — named-stage SourcePanel evidence + input-cadence
+  probe; hidden-vs-shown Xvfb experiment completed and REJECTED by
+  its retention gate (997→107ms/action but walls unmoved, shards
+  destabilized); both control runs preserved as evidence; residual
+  wall-time attribution handed to the PH-007 CI census.
+
 ## [0.26.0] - 2026-07-17
 
 ### For testers (the law-enforcement build)

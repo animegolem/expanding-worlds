@@ -1091,3 +1091,10 @@ look exactly as before (no regression at 100%+ display scaling).
 - [ ] Squeeze the window: it should stop at 960 wide and nothing
   should look crushed. Flip compact/comfortable — comfortable is
   roomier controls, same layout.
+
+## v0.26.1 — the stragglers patch (2026-07-18)
+- [ ] Path bar: the board name should sit snug next to Home; hover
+  the path — arrows appear above without anything shifting; click
+  where the arrows used to hide — nothing should react.
+- [ ] Names: check navigation, bookmarks, search results, gallery,
+  outline — no raw codes anywhere (things like `2xajxshy`).
