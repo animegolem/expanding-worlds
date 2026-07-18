@@ -21,6 +21,7 @@ import { exec, launchApp, launchAppInDir, runQuery, seedPlacedNote } from './hel
 
 const PNG_1PX =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg=='
+const SOURCE_ITEM_MIME = 'application/x-ew-source-item'
 
 /** Seed a source project: one imported image pinned on a TAGGED node.
  * Returns the asset's content hash (resolved through the gallery
@@ -125,13 +126,20 @@ test('open as source: mini grid browses, border=all drag-out ingests and places 
   })
 
   // Drag the cell onto the board: one DataTransfer through both ends.
-  await win.evaluate(() => {
+  const dragEvidence = await win.evaluate((mime) => {
     const source = document.querySelector('[data-testid="source-cell"]')!
     const board = document.querySelector('[data-testid="canvas-host"]')!
     const dataTransfer = new DataTransfer()
     source.dispatchEvent(
       new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer }),
     )
+    const payload = dataTransfer.getData(mime)
+    const types = [...dataTransfer.types]
+    if (!payload) {
+      throw new Error(
+        `[source-panel:dragstart] missing ${mime}; staged types: ${types.join(', ') || '(none)'}`,
+      )
+    }
     const rect = board.getBoundingClientRect()
     board.dispatchEvent(
       new DragEvent('drop', {
@@ -142,7 +150,14 @@ test('open as source: mini grid browses, border=all drag-out ingests and places 
         clientY: rect.top + rect.height * 0.6,
       }),
     )
+    return { stage: 'drop-dispatched', mime, payload, types }
+  }, SOURCE_ITEM_MIME)
+  expect(dragEvidence).toMatchObject({
+    stage: 'drop-dispatched',
+    mime: SOURCE_ITEM_MIME,
+    types: expect.arrayContaining([SOURCE_ITEM_MIME]),
   })
+  expect(JSON.parse(dragEvidence.payload)).toEqual({ contentHash: sourceHash })
 
   // The destination gains ONE node carrying the tag, placed once.
   await expect
