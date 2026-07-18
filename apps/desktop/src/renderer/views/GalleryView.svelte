@@ -73,7 +73,12 @@
   import { consumeGalleryEverythingRequest } from '../chrome/first-run'
   import { closeTakeover } from '../chrome/takeover'
   import { tooltip } from '../chrome/tooltip'
-  import { requestOpenNote, requestPlaceNode, requestPlaceNodes } from '../note/open-note'
+  import {
+    requestCenterPlacements,
+    requestOpenNote,
+    requestPlaceNode,
+    requestPlaceNodes,
+  } from '../note/open-note'
   import { openCornerPanel } from '../note/panels'
   import { runAsUndoGroup } from '../undo/undo-store'
   import GalleryActionBar from './GalleryActionBar.svelte'
@@ -83,6 +88,14 @@
   import Button from '../ui/Button.svelte'
   import Segmented from '../ui/Segmented.svelte'
   import FindingState from '../ui/FindingState.svelte'
+  import { ContextHoldGesture } from '../ui/context-hold'
+  import { buildOutlineInventory } from '../outline/actions'
+  import { buildOutlineContextMenu, type OutlineContextMenuGroup } from '../outline/context-menu'
+  import ActionContextMenu from './ActionContextMenu.svelte'
+  import GalleryPlacementChooser, {
+    type GalleryPlacementChoice,
+  } from './GalleryPlacementChooser.svelte'
+  import { buildGalleryActionBag } from './gallery-context-actions'
   import { bucketByDate, bucketByName, type GalleryBucket } from './gallery-buckets'
   import { onGalleryReselect } from './gallery-reselect'
   import {
@@ -116,6 +129,25 @@
     noteId: string | null
     noteExcerpt: string | null
     tagNames: string[]
+  }
+
+  interface NodeLocations {
+    nodeId: string
+    label: string
+    placements: GalleryPlacementChoice[]
+  }
+
+  interface ContextMenuState {
+    x: number
+    y: number
+    groups: readonly OutlineContextMenuGroup[]
+  }
+
+  interface PlacementChooserState {
+    x: number
+    y: number
+    label: string
+    placements: GalleryPlacementChoice[]
   }
 
   const CELL = 168
@@ -182,6 +214,9 @@
   let anchor = $state<string | null>(null)
   let tagOpen = $state(false)
   let actionBar = $state<{ trashSelection: () => Promise<void> } | null>(null)
+  let contextMenu = $state<ContextMenuState | null>(null)
+  let placementChooser = $state<PlacementChooserState | null>(null)
+  const contextHold = new ContextHoldGesture()
 
   onMount(() =>
     onGalleryReselect(async (nodeIds) => {
@@ -729,6 +764,11 @@
   }
 
   function onCellClick(event: MouseEvent, nodeId: string): void {
+    if (contextHold.consumeClick()) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
     // Every click variant parks the cursor on the clicked cell (the
     // keyboard picks up where the pointer left off).
     cursor = nodeId
@@ -740,6 +780,103 @@
     }
     selected = new Set([nodeId])
     anchor = nodeId
+  }
+
+  async function hydrateContextItem(nodeId: string): Promise<Item | null> {
+    const cached = items[nodeId]
+    if (cached) return cached
+    try {
+      const fetched = await runQuery<Item[]>('getGalleryItems', { nodeIds: [nodeId] })
+      return fetched[0] ?? null
+    } catch {
+      return null
+    }
+  }
+
+  async function flyToPlacement(placement: GalleryPlacementChoice): Promise<void> {
+    placementChooser = null
+    closeTakeover()
+    await navigateTo(placement.canvasId, placement.canvasLabel)
+    requestCenterPlacements([placement.placementId])
+  }
+
+  async function openCellMenuAt(x: number, y: number, nodeId: string): Promise<void> {
+    // A second door is a fresh measured surface, not a prop update on the
+    // mounted menu (whose placement runs on mount). Clear synchronously so
+    // the next resolved inventory remounts at the new cell's anchor.
+    contextMenu = null
+    placementChooser = null
+    const requestedScope = scope
+    const alreadySelected = selected.has(nodeId)
+    if (!alreadySelected) {
+      selected = new Set([nodeId])
+      anchor = nodeId
+    }
+    cursor = nodeId
+    preferredCol = columnOf(keyRows, indexOfNode(nodeId))
+    const targetIds = alreadySelected ? [...selected] : [nodeId]
+    const item = targetIds.length === 1 ? await hydrateContextItem(nodeId) : null
+    // A missing read model is not evidence that the node is note-less or
+    // board-less. Fail closed rather than inventing Place/Add-note offers.
+    if (targetIds.length === 1 && item === null) return
+    let locations: NodeLocations | null = null
+    if (scope === 'this-world' && targetIds.length === 1) {
+      try {
+        locations = await runQuery<NodeLocations | null>('getNodeLocations', { nodeId })
+      } catch {
+        locations = null
+      }
+    }
+    // The selection/scope may have changed while the read model resolved.
+    if (
+      scope !== requestedScope ||
+      selected.size !== targetIds.length ||
+      targetIds.some((id) => !selected.has(id))
+    )
+      return
+    const facts = {
+      scope,
+      count: targetIds.length,
+      kind: item?.kind ?? null,
+      hasChildCanvas: item?.childCanvasId != null,
+      hasNote: item?.noteId != null,
+      placementCount: locations?.placements.length ?? 0,
+    }
+    const bag = buildGalleryActionBag(facts, {
+      dive: () => activate(nodeId),
+      place: placeSelection,
+      pull: () => void pullSelectionAt({ clientX: x, clientY: y }),
+      flyTo: () => {
+        const places = locations?.placements ?? []
+        if (places.length === 1) void flyToPlacement(places[0]!)
+        else if (places.length > 1) {
+          placementChooser = {
+            x,
+            y,
+            label: locations?.label ?? item?.label ?? 'item',
+            placements: places,
+          }
+        }
+      },
+      openNote: () => activate(nodeId),
+      addNote: () => activate(nodeId),
+      tag: () => (tagOpen = true),
+      trash: () => void actionBar?.trashSelection(),
+    })
+    const groups = buildOutlineContextMenu(buildOutlineInventory(bag))
+    if (groups.length > 0) contextMenu = { x, y, groups }
+  }
+
+  function openCellMenu(event: MouseEvent, nodeId: string): void {
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+    void openCellMenuAt(event.clientX, event.clientY, nodeId)
+  }
+
+  function beginCellHold(event: PointerEvent, nodeId: string): void {
+    const point = { x: event.clientX, y: event.clientY }
+    contextHold.begin(event, () => void openCellMenuAt(point.x, point.y, nodeId))
   }
 
   // ------------------------------------------- 080 keyboard model
@@ -1024,6 +1161,18 @@
   $effect(() => {
     const onKeydown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
+      if (contextMenu) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        contextMenu = null
+        return
+      }
+      if (placementChooser) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        placementChooser = null
+        return
+      }
       // Quick Look is the outermost peel: Esc closes the preview and
       // STOPS here, so the takeover's own Esc-to-close never fires
       // (§8.8 — closing the preview must not close the gallery).
@@ -1141,7 +1290,7 @@
 
   /** Pull into this world (§14.4): ingest (or recognize), close the
    * takeover, and hand the board a place cursor at the click point. */
-  async function pullSelection(event: MouseEvent): Promise<void> {
+  async function pullSelectionAt(anchor: { clientX: number; clientY: number }): Promise<void> {
     if (scope === 'this-world') return
     const ids = [...selected]
     if (ids.length !== 1) return
@@ -1169,11 +1318,14 @@
       })
       return
     }
-    const anchor = { clientX: event.clientX, clientY: event.clientY }
     const nodeId = await resolvePullNode(contentHash)
     if (nodeId === null) return
     closeTakeover()
     requestPlaceMode({ nodeId, contentHash, clientX: anchor.clientX, clientY: anchor.clientY })
+  }
+
+  async function pullSelection(event: MouseEvent): Promise<void> {
+    await pullSelectionAt({ clientX: event.clientX, clientY: event.clientY })
   }
 
   /**
@@ -1184,6 +1336,10 @@
    * drop.
    */
   function beginCellDrag(event: DragEvent, nodeId: string): void {
+    if (contextHold.blocksDrag()) {
+      event.preventDefault()
+      return
+    }
     // 089: a drag-out PLACES — foreign node ids must not reach the
     // board's import surface (cells also render non-draggable).
     if (scope !== 'this-world') {
@@ -1444,6 +1600,11 @@
                   data-cursor={cursor === entry.nodeId ? 'true' : 'false'}
                   draggable={scope === 'this-world'}
                   onclick={(event) => onCellClick(event, entry.nodeId)}
+                  oncontextmenu={(event) => openCellMenu(event, entry.nodeId)}
+                  onpointerdown={(event) => beginCellHold(event, entry.nodeId)}
+                  onpointermove={(event) => contextHold.move(event)}
+                  onpointerup={(event) => contextHold.end(event)}
+                  onpointercancel={() => contextHold.cancel()}
                   ondragstart={(event) => beginCellDrag(event, entry.nodeId)}
                 >
                   {#if item && item.kind === 'image' && item.contentHash}
@@ -1491,6 +1652,28 @@
       onClear={clearSelection}
       onPlace={placeSelection}
       onPull={(event) => void pullSelection(event)}
+    />
+  {/if}
+
+  {#if contextMenu}
+    <ActionContextMenu
+      x={contextMenu.x}
+      y={contextMenu.y}
+      groups={contextMenu.groups}
+      onclose={() => (contextMenu = null)}
+      testid="gallery-context-menu"
+      ariaLabel="Gallery item actions"
+    />
+  {/if}
+
+  {#if placementChooser}
+    <GalleryPlacementChooser
+      x={placementChooser.x}
+      y={placementChooser.y}
+      label={placementChooser.label}
+      placements={placementChooser.placements}
+      onchoose={(placement) => void flyToPlacement(placement)}
+      onclose={() => (placementChooser = null)}
     />
   {/if}
 

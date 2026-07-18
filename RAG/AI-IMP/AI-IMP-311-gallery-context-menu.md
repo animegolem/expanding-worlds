@@ -24,9 +24,9 @@ INVENTORY, multiple doors (rev 0.55 context-menu grammar; the
 node context menu already exists board-side) — the gallery
 surface simply never got its door. Done means: right-click (and
 long-press per the touch dialect) on a gallery cell opens the
-node context menu with the inventory that makes sense from the
-gallery (open/fly-to where placed · place-existing · tag ops ·
-trash — round-1 review enumerates against the ruled inventory,
+shared verb context menu with the inventory that makes sense from the
+gallery (dive or place/pull · fly-to where placed · open note or add a
+note · tag · trash — round-1 review enumerates against the ruled inventory,
 excluding board-geometry verbs that have no meaning there).
 
 ### Out of Scope
@@ -37,13 +37,24 @@ verbs not already in the ruled inventory.
 
 ### Design/Approach
 
-Round-1 review cites the existing node context menu component and
-inventory ruling, and the gallery cell event handling. Reuse the
-SAME MenuPopover/inventory component filtered to
-gallery-meaningful rows — no second menu implementation (one
-inventory, one component, N doors). Anchor per one-physics
+Round-1 correction: there was no shared `MenuPopover`/node-menu
+component. Canvas owns an imperative placement menu; `MenuPopover` is
+the app ☰. The valid seam was Outliner's one verb inventory plus its
+Svelte context renderer. The renderer is now generalized and the
+inventory extended only by Gallery's already-shipped Pull verb. Gallery
+supplies a filtered action bag — no second row list (one inventory, one
+component, N doors). Anchor per one-physics
 (menu clamps at viewport edges; gallery is a takeover so §8.8
 rungs apply).
+
+Exact projection: one board offers Dive; one ordinary this-world node
+offers Place; a placed single node additionally offers Fly; notes use
+Outliner's verbatim `open note` / `add a note…`; Tag and Trash apply to
+the target selection. Multi-selection offers Place / Tag / Trash only.
+Everything offers Pull for one image and no foreign Fly. Inapplicable
+verbs are absent. A node with one placement flies directly; several
+placements open the ⌖ chooser. Right-click outside the selection retargets
+to that cell; inside preserves the selection.
 
 ### Files to Touch
 
@@ -61,14 +72,14 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1 review: cite the ruled inventory + existing menu
+- [x] Round-1 review: cite the ruled inventory + existing menu
       component; enumerate the gallery-meaningful subset here.
-- [ ] Right-click a gallery cell → the node context menu opens,
+- [x] Right-click a gallery cell → the node context menu opens,
       anchored and clamped; long-press parity per touch dialect.
-- [ ] Every offered verb works from the gallery (fly-to-placement
+- [x] Every offered verb works from the gallery (fly-to-placement
       closes the takeover and flies; trash routes §9).
-- [ ] Excluded verbs are absent, not disabled-forever rows.
-- [ ] e2e: door census + one verb round-trip per category.
+- [x] Excluded verbs are absent, not disabled-forever rows.
+- [x] e2e: door census + one verb round-trip per category.
 
 ### Acceptance Criteria
 
@@ -87,3 +98,16 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The round-1 component claim was false; generalizing the Outliner
+  renderer avoided coupling Gallery to CanvasHost's imperative,
+  placement-specific menu.
+- Gallery and Outline now share one 550ms / 8px touch-hold recognizer.
+  Meaningful movement cancels the hold and yields to native drag; a
+  fired hold consumes the synthetic click once.
+- Validation: `pnpm -r build`; pre-review desktop 80 files / 589 tests;
+  affected hidden-window Gallery + Outline shards 24/24. After the two
+  review corrections, focused units passed 28/28 and the Gallery context
+  shard passed 3/3. The final shared-worktree desktop run was 589 passed /
+  1 failed (590 total): the sole failure is the shrink-ladder guard against
+  AI-IMP-310's parallel `pin-geometry.ts` edit, outside this ticket.

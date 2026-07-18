@@ -96,7 +96,7 @@ describe('outline keyboard door', () => {
         name,
         offer && 'run' in offer && offer.run
           ? enabled(() => calls.push(({
-              dive: 'dive', place: 'place', flyTo: 'fly-to', openNote: 'open-note',
+              dive: 'dive', place: 'place', pull: 'pull', flyTo: 'fly-to', openNote: 'open-note',
               addNote: 'add-note', tag: 'tag', trash: 'trash',
             } as Record<string, OutlineVerbId>)[name]!))
           : offer,

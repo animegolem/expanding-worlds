@@ -11,6 +11,7 @@
 export type OutlineVerbId =
   | 'dive'
   | 'place'
+  | 'pull'
   | 'fly-to'
   | 'open-note'
   | 'add-note'
@@ -32,6 +33,8 @@ export type OutlineActionOffer =
 export interface OutlineActionBag {
   dive?: OutlineActionOffer
   place?: OutlineActionOffer
+  /** Gallery Everything-scope twin of place; already-shipped ingest+carry verb. */
+  pull?: OutlineActionOffer
   flyTo?: OutlineActionOffer
   openNote?: OutlineActionOffer
   addNote?: OutlineActionOffer
@@ -61,6 +64,7 @@ interface VerbSpec {
 const VERB_SPECS: readonly VerbSpec[] = [
   { id: 'dive', offer: 'dive', label: 'dive in', shortcut: '↵', group: 'primary' },
   { id: 'place', offer: 'place', label: 'place on board', shortcut: '␣', group: 'primary' },
+  { id: 'pull', offer: 'pull', label: 'pull into this world', shortcut: '␣', group: 'primary' },
   { id: 'fly-to', offer: 'flyTo', label: 'fly to place', shortcut: '⌥↵', group: 'primary' },
   { id: 'open-note', offer: 'openNote', label: 'open note', shortcut: 'N', group: 'note-and-tag' },
   { id: 'add-note', offer: 'addNote', label: 'add a note…', shortcut: 'N', group: 'note-and-tag' },
@@ -86,8 +90,8 @@ export function disabled(disabledReason: string): OutlineActionOffer {
 
 /** Build the immutable ordered inventory consumed by every door. */
 export function buildOutlineInventory(bag: OutlineActionBag): readonly OutlineVerb[] {
-  if (bag.dive && bag.place) {
-    throw new Error('outline action: a row cannot lead with both dive and place')
+  if ([bag.dive, bag.place, bag.pull].filter(Boolean).length > 1) {
+    throw new Error('outline action: a row cannot lead with more than one primary movement verb')
   }
   if (bag.openNote && bag.addNote) {
     throw new Error('outline action: a row cannot offer both open-note and add-note')
