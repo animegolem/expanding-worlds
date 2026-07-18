@@ -82,6 +82,41 @@ async function appearanceKindOf(win: Page, placementId: string): Promise<string 
   return (item?.['appearanceKind'] as string | null) ?? null
 }
 
+interface AppearanceState {
+  appearanceKind: string | null
+  appearanceAssetId: string | null
+  appearanceCrop: string | null
+  assetContentHash: string | null
+}
+
+async function appearanceStateOf(win: Page, placementId: string): Promise<AppearanceState> {
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const scene = await runQuery<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+    canvasId,
+  })
+  const item = scene.items.find((candidate) => candidate['id'] === placementId)
+  if (!item) throw new Error(`missing placement ${placementId}`)
+  return {
+    appearanceKind: (item['appearanceKind'] as string | null) ?? null,
+    appearanceAssetId: (item['appearanceAssetId'] as string | null) ?? null,
+    appearanceCrop: (item['appearanceCrop'] as string | null) ?? null,
+    assetContentHash: (item['assetContentHash'] as string | null) ?? null,
+  }
+}
+
+async function assetImageLoads(win: Page, contentHash: string): Promise<boolean> {
+  return win.evaluate(
+    (hash) =>
+      new Promise<boolean>((resolve) => {
+        const image = new Image()
+        image.onload = () => resolve(true)
+        image.onerror = () => resolve(false)
+        image.src = `ew-asset://${hash}`
+      }),
+    contentHash,
+  )
+}
+
 /** The note a node currently references (null when detached). */
 async function nodeNoteId(win: Page, nodeId: string): Promise<string | null> {
   return win.evaluate(async (id) => {
@@ -486,6 +521,84 @@ test('appearance change via the charm is one Mod+Z entry (M-07)', async () => {
   await app.close()
 })
 
+test('image -> dot -> Mod+Z restores the resident texture and redo returns dot (AI-IMP-307)', async () => {
+  const { app, win } = await launchApp('ew-e2e-undo-image-appearance-')
+  await readyUndo(win)
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const assetId = await win.evaluate(async () => {
+    const canvas = new OffscreenCanvas(24, 18)
+    const context = canvas.getContext('2d')!
+    context.fillStyle = 'rgb(40, 120, 210)'
+    context.fillRect(0, 0, 24, 18)
+    const blob = await canvas.convertToBlob({ type: 'image/png' })
+    const imported = await window.ew.project.importAsset({
+      bytes: new Uint8Array(await blob.arrayBuffer()),
+      originalFilename: 'undo-source.png',
+    })
+    if (!imported.ok) throw new Error(imported.message)
+    return imported.assetId
+  })
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'SetNodeAppearance', {
+    nodeId,
+    appearance: { kind: 'image', assetId, crop: null },
+  })
+  await exec(win, 'CreatePlacement', {
+    placementId,
+    canvasId,
+    nodeId,
+    x: 320,
+    y: 260,
+    width: 120,
+    height: 90,
+  })
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.placementBody(id), placementId))
+    .toBe('image')
+
+  const before = await appearanceStateOf(win, placementId)
+  expect(before).toMatchObject({
+    appearanceKind: 'image',
+    appearanceAssetId: assetId,
+    appearanceCrop: null,
+  })
+  expect(before.assetContentHash).not.toBeNull()
+  const galleryBefore = await runQuery<Array<{ nodeId: string }>>(win, 'getGalleryIndex')
+
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  await win.mouse.click(box.x + 320, box.y + 260)
+  await expect(win.getByTestId('charm-bar')).toBeVisible()
+  await win.getByTestId('charm-appearance').click()
+  await win.getByTestId('appearance-dot-red').click()
+  await expect.poll(() => appearanceKindOf(win, placementId)).toBe('dot')
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.placementBody(id), placementId))
+    .toBe('dot')
+  expect(await assetImageLoads(win, before.assetContentHash!)).toBe(true)
+  expect((await runQuery<Array<{ nodeId: string }>>(win, 'getGalleryIndex')).map((row) => row.nodeId)).toEqual(
+    galleryBefore.map((row) => row.nodeId),
+  )
+
+  await win.mouse.click(box.x + 40, box.y + 40)
+  await win.keyboard.press('Meta+z')
+  await expect.poll(() => appearanceStateOf(win, placementId)).toEqual(before)
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.placementBody(id), placementId))
+    .toBe('image')
+  expect(await assetImageLoads(win, before.assetContentHash!)).toBe(true)
+
+  await win.keyboard.press('Shift+Meta+z')
+  await expect.poll(() => appearanceKindOf(win, placementId)).toBe('dot')
+  expect(await assetImageLoads(win, before.assetContentHash!)).toBe(true)
+  expect((await runQuery<Array<{ nodeId: string }>>(win, 'getGalleryIndex')).map((row) => row.nodeId)).toEqual(
+    galleryBefore.map((row) => row.nodeId),
+  )
+
+  await app.close()
+})
+
 /**
  * AI-IMP-182 (RFC §6.6/§9.3 "immediately undoable"): detaching a note
  * from a node via the context menu is one Mod+Z; its inverse
@@ -504,7 +617,9 @@ test('detach note via the context menu is undoable (§6.6/§9.3)', async () => {
   expect(await nodeNoteId(win, nodeId)).toBe(noteId)
 
   // Right-click the dot → Detach note: the node→note reference clears.
-  await win.mouse.click(box.x + p.x + 12, box.y + p.y + 12, { button: 'right' })
+  // Click the visual center. The old +12/+12 square corner lies outside the
+  // exact radius-12 circle now shared by render and hit geometry.
+  await win.mouse.click(box.x + p.x, box.y + p.y, { button: 'right' })
   await win.getByTestId('node-menu-detach').click()
   await expect.poll(() => nodeNoteId(win, nodeId)).toBe(null)
   expect(await depth(win)).toBe(1)

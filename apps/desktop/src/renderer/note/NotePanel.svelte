@@ -465,6 +465,7 @@
           placementId,
           x: request.x,
           y: request.y,
+          diameter: request.diameter,
           appearance: { kind: 'dot', color: themeTokenValue('--ew-node-dot-default') },
           note: { kind: 'create', noteId, title, ...(body.length > 0 ? { body } : {}) },
         })

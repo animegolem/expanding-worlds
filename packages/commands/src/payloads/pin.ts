@@ -14,6 +14,10 @@ export interface CreatePinPayload {
   placementId: string
   x: number
   y: number
+  /** §6.2/AI-IMP-310: optional world-unit diameter for a dot pin.
+   * Materialization derives it from the screen ghost at drop zoom;
+   * omitted callers retain the legacy/natural-size behavior. */
+  diameter?: number
   appearance: NodeAppearance
   /**
    * 'create' makes a new note (linkable-title + title-free rules,

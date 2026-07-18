@@ -2,6 +2,7 @@ import { Container, Graphics, Matrix, NineSliceSprite, Sprite, Text, Texture } f
 import { assetUrl, type ScenePlacement } from '../types'
 import { EW_FURNITURE_MIN_PX, EW_PAGE_FLOOR_PX } from '../shrink-ladder'
 import { renderStrokeWidth } from '../stroke-render'
+import { pinDiameterWorld } from '../pin-geometry'
 import type { ImageTreatment, ItemRenderer, RendererResources } from './registry'
 
 /**
@@ -129,6 +130,10 @@ export function cssColorToNumber(color: string | null, fallback = 0x4a90d9): num
 interface PlacementObject extends Container {
   /** Generation guard so a stale async texture never lands. */
   __textureGeneration?: number
+  /** Spatial residency belongs to the placement, not its current body.
+   * It deliberately survives image -> non-image -> image rebuilds so a
+   * restored image can reacquire without waiting for a Culler transition. */
+  __textureResident?: boolean
   /** Content hash currently acquired from the texture budget. */
   __acquiredHash?: string | null
   /** Hash with an acquire in flight (double-grant guard). */
@@ -318,8 +323,10 @@ function buildBody(
   container.__textureGeneration = generation
   // The Culler only fires residency hooks on TRANSITIONS, so a body
   // rebuilt while resident must re-acquire its texture itself — no
-  // re-grant is coming (this left permanent grey boxes, AI-IMP-025).
-  const wasEngaged = Boolean(container.__acquiredHash || container.__acquiring)
+  // re-grant is coming (AI-IMP-025/307). Residency cannot be inferred
+  // from an acquired hash: a non-image body owns no texture but the
+  // placement remains spatially resident across appearance undo.
+  const isResident = container.__textureResident === true
   if (container.__acquiredHash && resources.textures) {
     // Appearance changed while resident: drop the old budget ref.
     resources.textures.release(container.__acquiredHash)
@@ -354,7 +361,7 @@ function buildBody(
     // unless it was already resident, in which case re-acquire now.
     if (!resources.textures) {
       void attachTexture(container, item.assetContentHash, generation, resources)
-    } else if (wasEngaged) {
+    } else if (isResident) {
       container.__acquiring = item.assetContentHash
       void attachTexture(container, item.assetContentHash, generation, resources)
     }
@@ -408,7 +415,7 @@ function buildBody(
   }
 
   // Dot appearance — and the visible default for appearance-less nodes.
-  const radius = item.width != null ? item.width / 2 : DEFAULT_DOT_RADIUS
+  const radius = kind === 'dot' ? pinDiameterWorld(item) / 2 : (item.width ?? DEFAULT_DOT_RADIUS * 2) / 2
   const dot = new Graphics()
   if (kind === 'dot') {
     dot.circle(0, 0, radius).fill({ color: cssColorToNumber(item.appearanceColor) })
@@ -630,7 +637,8 @@ async function attachTexture(
  * Residency switch driven by the Culler (§12.2). Granting residency
  * acquires the texture through the budget and swaps the sprite in;
  * revoking swaps the placeholder back and releases the budget ref.
- * No-ops for non-image bodies and when no budget is configured.
+ * The spatial-residency stamp applies to every body kind; texture work
+ * remains a no-op for non-image bodies and when no budget is configured.
  */
 export function setPlacementTextureResident(
   object: Container,
@@ -639,6 +647,10 @@ export function setPlacementTextureResident(
   resident: boolean,
 ): void {
   const container = object as PlacementObject
+  // Stamp before the body-kind guard. An image may change to a dot while
+  // resident, leave the residency rect as that dot, then be restored by
+  // undo. The later image rebuild must observe the real spatial state.
+  container.__textureResident = resident
   if (!resources.textures) return
   if (item.appearanceKind !== 'image' || !item.assetContentHash) return
   if (resident) {
@@ -682,12 +694,17 @@ function applyTransform(container: Container, item: ScenePlacement): void {
 /** Unscaled body extent the label hangs under (container scale applies on top). */
 function labelBasis(item: ScenePlacement): { height: number } {
   return {
-    height: item.height ?? item.width ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2,
+    height:
+      item.appearanceKind === 'dot'
+        ? pinDiameterWorld(item)
+        : (item.height ?? item.width ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2),
   }
 }
 
 function labelWidth(item: ScenePlacement): number {
-  return item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2
+  return item.appearanceKind === 'dot'
+    ? pinDiameterWorld(item)
+    : (item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2)
 }
 
 /**

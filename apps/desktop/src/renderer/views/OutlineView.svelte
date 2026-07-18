@@ -25,6 +25,7 @@
   import TagAddField from '../tags/TagAddField.svelte'
   import TextInput from '../ui/TextInput.svelte'
   import FindingState from '../ui/FindingState.svelte'
+  import { ContextHoldGesture } from '../ui/context-hold'
   import { disabled, enabled, type OutlineActionBag } from '../outline/actions'
   import { createOutlineActionDoors } from '../outline/inventory'
   import { Z } from '../z'
@@ -92,7 +93,7 @@
   }
   let trashImpact = $state<NodeImpact | null>(null)
   let trashBusy = $state(false)
-  let longPressTimer: ReturnType<typeof setTimeout> | null = null
+  const contextHold = new ContextHoldGesture()
   const outlineData = new OutlineData((name, args) => window.ew.project.query(name, args))
 
   const rows = $derived(
@@ -314,17 +315,11 @@
   }
 
   function beginLongPress(event: PointerEvent, row: OutlineViewRow): void {
-    if (event.pointerType !== 'touch') return
-    cancelLongPress()
-    longPressTimer = setTimeout(() => {
-      longPressTimer = null
-      openRowMenu(event, row)
-    }, 550)
-  }
-
-  function cancelLongPress(): void {
-    if (longPressTimer) clearTimeout(longPressTimer)
-    longPressTimer = null
+    const point = { clientX: event.clientX, clientY: event.clientY }
+    contextHold.begin(event, () => {
+      selectedKey = row.key
+      menuPoint = { x: point.clientX, y: point.clientY }
+    })
   }
 
   $effect(() => {
@@ -583,6 +578,10 @@
           style={`--outline-depth:${row.depth}`}
           draggable={!!row.node || !!row.note}
           ondragstart={(event) => {
+            if (contextHold.blocksDrag()) {
+              event.preventDefault()
+              return
+            }
             if (row.note) beginRowDrag(event, NOTE_DRAG_MIME, row.note.id)
             else if (row.node) beginRowDrag(event, NODE_DRAG_MIME, 'id' in row.node ? row.node.id : row.node.nodeId)
           }}
@@ -590,9 +589,9 @@
             selectedKey = row.key
             beginLongPress(event, row)
           }}
-          onpointerup={cancelLongPress}
-          onpointercancel={cancelLongPress}
-          onpointermove={cancelLongPress}
+          onpointerup={(event) => contextHold.end(event)}
+          onpointercancel={() => contextHold.cancel()}
+          onpointermove={(event) => contextHold.move(event)}
           onfocus={() => (selectedKey = row.key)}
           oncontextmenu={(event) => openRowMenu(event, row)}
         >
@@ -618,6 +617,11 @@
             class="row-main"
             data-testid="outline-row-activate"
             onclick={(event) => {
+              if (contextHold.consumeClick()) {
+                event.preventDefault()
+                event.stopPropagation()
+                return
+              }
               event.stopPropagation()
               selectedKey = row.key
               if (row.kind === 'alias' && row.aliasCanvasId) flyToEntry(row.aliasCanvasId)

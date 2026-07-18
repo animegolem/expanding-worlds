@@ -82,11 +82,48 @@ export function requireTitleFree(
     key,
   )
   if (existing && existing.id !== selfId) {
+    // AI-IMP-309: a board trashed through TrashNode leaves its attached
+    // note active, so lifecycle alone cannot explain the invisible title
+    // reservation.  Classify the narrow honest case here while the
+    // relationship graph is transactionally current: exactly one trashed
+    // canvas-owner refers to the note and no active node does.  A directly
+    // trashed canvas is excluded because restoring only its owner could not
+    // make that board navigable.
+    const referents = ctx.db.all<{
+      nodeId: string
+      nodeLifecycle: string
+      canvasId: string | null
+      canvasLifecycle: string | null
+    }>(
+      `SELECT n.id AS nodeId, n.lifecycle_state AS nodeLifecycle,
+              c.id AS canvasId, c.lifecycle_state AS canvasLifecycle
+       FROM node n
+       LEFT JOIN canvas c ON c.node_id = n.id AND c.project_id = n.project_id
+       WHERE n.project_id = ? AND n.note_id = ?
+       ORDER BY n.id`,
+      ctx.projectId,
+      existing.id,
+    )
+    const activeReferent = referents.some((row) => row.nodeLifecycle === 'active')
+    const trashedBoardOwners = referents.filter(
+      (row) =>
+        row.nodeLifecycle === 'trashed' &&
+        row.canvasId !== null &&
+        row.canvasLifecycle === 'active',
+    )
+    const trashedBoardOwner =
+      !activeReferent && trashedBoardOwners.length === 1
+        ? {
+            nodeId: trashedBoardOwners[0]!.nodeId,
+            canvasId: trashedBoardOwners[0]!.canvasId!,
+          }
+        : undefined
     throw new DomainError('NOTE_TITLE_CONFLICT', `a note titled "${title}" already exists`, {
       existingNoteId: existing.id,
       requestedTitle: title,
       titleKey: key,
       conflictingLifecycle: existing.lifecycle_state,
+      ...(trashedBoardOwner === undefined ? {} : { trashedBoardOwner }),
     })
   }
 }

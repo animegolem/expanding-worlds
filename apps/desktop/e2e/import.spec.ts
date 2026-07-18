@@ -397,6 +397,82 @@ test('the pin tool commits one command; inverse cleans up (§6.2 rev 0.20)', asy
   await app.close()
 })
 
+test('pin ghost materializes at its placement zoom and resizes as one circle (AI-IMP-310)', async () => {
+  const { app, win } = await launch('ew-e2e-pin-diameter-')
+  const box = (await win.getByTestId('canvas-host').boundingBox())!
+  const point = { x: box.x + 300, y: box.y + 300 }
+
+  await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 0.25 }))
+  await win.keyboard.press('n')
+  await win.mouse.click(point.x, point.y)
+
+  const ghost = win.getByTestId('pin-provisional-ghost')
+  await expect(ghost).toBeVisible()
+  const ghostBox = (await ghost.boundingBox())!
+  expect(ghostBox.width).toBeCloseTo(26, 1)
+  expect(ghostBox.height).toBeCloseTo(26, 1)
+
+  await win.getByTestId('pin-phantom-draft').fill('Zoom Pin')
+  await win.getByTestId('pin-phantom-draft').blur()
+  await expect.poll(() => placements(win), { timeout: 10_000 }).toBe(1)
+  await expect(ghost).toHaveCount(0)
+
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  const placement = async () => {
+    const scene = await query<{ items: Array<Record<string, unknown>> }>(win, 'getCanvasScene', {
+      canvasId,
+    })
+    return scene.items.find((item) => item['noteTitle'] === 'Zoom Pin')!
+  }
+  await expect.poll(async () => (await placement())['width']).toBe(104)
+  expect(await placement()).toMatchObject({ width: 104, height: 104, appearanceKind: 'dot' })
+
+  // Close the tethered editor, select the dot, then sweep both feel
+  // bounds through the real cursor-zone resize path. At 25% zoom the
+  // 13–104px bounds persist as 52–416 world units, always square.
+  await win.keyboard.press('Escape')
+  await win.keyboard.press('v')
+  await win.mouse.click(point.x, point.y)
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.selection().length)).toBe(1)
+
+  const selectionBounds = () => win.evaluate(() => window.__ewDebug!.selectionBounds())
+  const expectSquareChrome = async (minimum: number, maximum: number) => {
+    const bounds = await selectionBounds()
+    expect(bounds).not.toBeNull()
+    expect(bounds!.width).toBeCloseTo(bounds!.height, 1)
+    expect(bounds!.width).toBeGreaterThan(minimum)
+    expect(bounds!.width).toBeLessThan(maximum)
+  }
+  await expectSquareChrome(25, 30)
+
+  await win.mouse.move(point.x + 13, point.y)
+  await win.mouse.down()
+  await win.mouse.move(point.x + 300, point.y)
+  await win.mouse.up()
+  await expect.poll(async () => (await placement())['width']).toBe(416)
+  expect(await placement()).toMatchObject({ width: 416, height: 416 })
+  await expectSquareChrome(103, 108)
+
+  // The west edge stayed anchored at point.x−13, so the 104px
+  // maximum's east edge is point.x+91.
+  await win.mouse.move(point.x + 91, point.y)
+  await win.mouse.down()
+  await win.mouse.move(point.x - 300, point.y)
+  await win.mouse.up()
+  await expect.poll(async () => (await placement())['width']).toBe(52)
+  expect(await placement()).toMatchObject({ width: 52, height: 52 })
+  await expectSquareChrome(12, 17)
+
+  const pin = await placement()
+  await win.evaluate(
+    ({ x, y }) => window.__ewDebug!.setCamera({ x: x - 150, y: y - 150, zoom: 2 }),
+    { x: pin['x'] as number, y: pin['y'] as number },
+  )
+  await expectSquareChrome(103, 108)
+
+  await app.close()
+})
+
 test('node drag payload on the drop surface (§6.3) and node context menu (§6.6)', async () => {
   const { app, win } = await launch('ew-e2e-sources-')
   const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())

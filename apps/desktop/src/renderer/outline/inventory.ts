@@ -94,7 +94,9 @@ function keyboardVerb(event: KeyboardEvent, inventory: readonly OutlineVerb[]): 
   if (key === '#') return findVerb(inventory, 'tag')
   if (event.shiftKey) return undefined
   if (key === 'enter') return findVerb(inventory, 'dive') ?? noteVerb(inventory)
-  if (key === ' ' || event.code === 'Space') return findVerb(inventory, 'place')
+  if (key === ' ' || event.code === 'Space') {
+    return findVerb(inventory, 'place') ?? findVerb(inventory, 'pull')
+  }
   if (key === 'n') return noteVerb(inventory)
   if (key === 'delete' || key === 'backspace') return findVerb(inventory, 'trash')
   return undefined

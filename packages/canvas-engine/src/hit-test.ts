@@ -1,6 +1,7 @@
 import { isLineData, isTextData } from './decoration-data'
 import { arrowPolygon } from './renderers/decorations/line'
 import { DEFAULT_DOT_RADIUS, placementLabelWorldBottom } from './renderers/placement'
+import { pinEffectiveDiameterWorld } from './pin-geometry'
 import type { Point, Rect } from './camera'
 import type { SceneDecoration, SceneItem, ScenePlacement } from './types'
 
@@ -14,6 +15,10 @@ import type { SceneDecoration, SceneItem, ScenePlacement } from './types'
  */
 
 export function placementSize(item: ScenePlacement): { width: number; height: number } {
+  if (item.appearanceKind === 'dot') {
+    const diameter = pinEffectiveDiameterWorld(item)
+    return { width: diameter, height: diameter }
+  }
   const width = item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2
   const height = item.height ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2
   return { width: width * item.scale, height: height * item.scale }
@@ -205,6 +210,10 @@ function pointInPlacement(point: Point, item: ScenePlacement): boolean {
   const sin = Math.sin(-item.rotation)
   const localX = dx * cos - dy * sin
   const localY = dx * sin + dy * cos
+  if (item.appearanceKind === 'dot') {
+    const radius = width / 2
+    return localX * localX + localY * localY <= radius * radius
+  }
   return Math.abs(localX) <= width / 2 && Math.abs(localY) <= height / 2
 }
 
@@ -234,6 +243,65 @@ export function hitTest(point: Point, items: readonly SceneItem[]): SceneItem | 
       const aabb = decorationAABB(item)
       if (aabb && pointInRect(point, aabb, HIT_SLOP)) return item
     }
+  }
+  return null
+}
+
+/** The recorded frame relation needed by selection targeting. */
+export interface FrameHitIndex {
+  isFrame(placementId: string): boolean
+  parentOf(placementId: string): string | null
+}
+
+function isRecordedDescendant(
+  placementId: string,
+  ancestorFrameId: string,
+  frames: FrameHitIndex,
+): boolean {
+  const seen = new Set<string>()
+  let parent = frames.parentOf(placementId)
+  while (parent !== null && !seen.has(parent)) {
+    if (parent === ancestorFrameId) return true
+    seen.add(parent)
+    parent = frames.parentOf(parent)
+  }
+  return false
+}
+
+/**
+ * Selection-only frame priority (AI-IMP-308): a recorded descendant
+ * under the pointer outranks its ancestor frame's translucent wash.
+ * The ordinary render-order walk otherwise stays intact, so unrelated
+ * topmost content still wins and an uncovered frame body selects the
+ * frame. Other interaction dialects (notably double-click activation)
+ * continue to use `hitTest` and retain their established semantics.
+ */
+export function hitTestForSelection(
+  point: Point,
+  items: readonly SceneItem[],
+  frames: FrameHitIndex,
+): SceneItem | null {
+  const hits: SceneItem[] = []
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const item = items[i]!
+    if (!isHittable(item)) continue
+    if (item.itemKind === 'placement') {
+      if (pointInPlacement(point, item)) hits.push(item)
+    } else {
+      const aabb = decorationAABB(item)
+      if (aabb && pointInRect(point, aabb, HIT_SLOP)) hits.push(item)
+    }
+  }
+
+  for (const hit of hits) {
+    if (hit.itemKind !== 'placement' || !frames.isFrame(hit.id)) return hit
+    const coveredDescendant = hits.some(
+      (candidate) =>
+        candidate.itemKind === 'placement' &&
+        candidate.id !== hit.id &&
+        isRecordedDescendant(candidate.id, hit.id, frames),
+    )
+    if (!coveredDescendant) return hit
   }
   return null
 }

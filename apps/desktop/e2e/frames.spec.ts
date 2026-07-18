@@ -127,6 +127,45 @@ async function seedItem(win: Page, at: { x: number; y: number }): Promise<string
   return placementId
 }
 
+/** Seed a real imported image appearance at a fixed 40×40 body. */
+async function seedImage(
+  win: Page,
+  at: { x: number; y: number },
+  color: [number, number, number],
+): Promise<string> {
+  const assetId = await win.evaluate(async ([r, g, b]) => {
+    const canvas = new OffscreenCanvas(12, 12)
+    const context = canvas.getContext('2d')!
+    context.fillStyle = `rgb(${r}, ${g}, ${b})`
+    context.fillRect(0, 0, 12, 12)
+    const blob = await canvas.convertToBlob({ type: 'image/png' })
+    const result = await window.ew.project.importAsset({
+      bytes: new Uint8Array(await blob.arrayBuffer()),
+      originalFilename: `frame-member-${r}-${g}-${b}.png`,
+    })
+    if (!result.ok) throw new Error(result.message)
+    return result.assetId
+  }, color)
+  const nodeId = crypto.randomUUID()
+  const placementId = crypto.randomUUID()
+  const canvasId = await win.evaluate(() => window.__ewDebug!.canvasId())
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'SetNodeAppearance', {
+    nodeId,
+    appearance: { kind: 'image', assetId, crop: null },
+  })
+  await exec(win, 'CreatePlacement', {
+    placementId,
+    canvasId,
+    nodeId,
+    x: at.x,
+    y: at.y,
+    width: 40,
+    height: 40,
+  })
+  return placementId
+}
+
 test('draw → capture → carry → resize-immune → release → undo (§4.9)', async () => {
   const { app, win } = await launchApp('ew-e2e-frames-')
   try {
@@ -235,6 +274,62 @@ test('draw → capture → carry → resize-immune → release → undo (§4.9)'
     await expect
       .poll(async () => (await placements(win)).filter((p) => p.appearanceKind === 'frame').length)
       .toBe(0)
+  } finally {
+    await app.close()
+  }
+})
+
+test('later frame wash does not trap its three recorded members (AI-IMP-308)', async () => {
+  const { app, win } = await launchApp('ew-e2e-frame-member-selection-')
+  try {
+    await win.evaluate(() => window.__ewDebug!.setCamera({ x: 0, y: 0, zoom: 1 }))
+
+    // Seed the three members FIRST, then draw the frame later so its
+    // full-body wash paints above them — the tester's trapping order.
+    const itemA = await seedImage(win, { x: 180, y: 250 }, [190, 70, 75])
+    const itemB = await seedImage(win, { x: 250, y: 250 }, [65, 145, 210])
+    const itemC = await seedImage(win, { x: 320, y: 250 }, [75, 175, 105])
+    await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 3)
+
+    await win.getByTestId('tool-frame').click()
+    await dragWorld(win, { x: 100, y: 100 }, { x: 400, y: 400 }, 6)
+    await expect.poll(async () => (await frameRoots(win)).length).toBe(1)
+    const frameId = (await frameRoots(win))[0]!.placementId
+    await exec(win, 'CaptureInFrame', {
+      framePlacementId: frameId,
+      memberPlacementIds: [itemA, itemB, itemC],
+    })
+    await expect.poll(() => transitiveMembers(win, frameId)).toEqual(
+      [itemA, itemB, itemC].sort(),
+    )
+    await win.getByTestId('tool-select').click()
+
+    // Single-click reaches the recorded child through the later frame.
+    await selectItem(win, itemA)
+    expect(await win.evaluate(() => window.__ewDebug!.selection())).toEqual([itemA])
+
+    // It moves alone within the frame; membership remains recorded.
+    await dragWorld(win, { x: 180, y: 250 }, { x: 200, y: 300 })
+    await expect
+      .poll(async () => {
+        const item = (await placements(win)).find((placement) => placement.id === itemA)!
+        return [Math.round(item.x), Math.round(item.y)]
+      })
+      .toEqual([200, 300])
+    expect(await transitiveMembers(win, frameId)).toEqual([itemA, itemB, itemC].sort())
+
+    // Empty wash still targets the frame, preserving frame carry/selection.
+    const emptyWash = await screenOf(win, 130, 130)
+    await win.mouse.click(emptyWash.x, emptyWash.y)
+    await expect
+      .poll(() => win.evaluate(() => window.__ewDebug!.selection()))
+      .toEqual([frameId])
+
+    // Re-target the member through the wash and drag clear: the shipped
+    // move-end path releases it without deleting the frame.
+    await dragWorld(win, { x: 200, y: 300 }, { x: 600, y: 300 })
+    await expect.poll(() => transitiveMembers(win, frameId)).toEqual([itemB, itemC].sort())
+    expect((await placements(win)).some((placement) => placement.id === frameId)).toBe(true)
   } finally {
     await app.close()
   }

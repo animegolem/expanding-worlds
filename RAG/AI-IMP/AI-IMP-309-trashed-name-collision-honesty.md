@@ -22,8 +22,12 @@ First tester field doc (2026-07-17, item 6): he deleted a board
 (and its contents), tried to remake it with the same name, and hit
 "board with that name already exists" with no visible board
 anywhere — "seems like it's remembering the original board
-somewhere but idk where." It is: the TRASHED board still owns the
-title (§7.7 collisions + §9 retention are working as designed).
+somewhere but idk where." Round-1 correction: `TrashNode` flips only
+the node; its attached note deliberately remains ACTIVE and owns the
+title (§7.7 collisions + §9 retention are working as designed). The
+special board-in-Trash explanation is therefore relationship-aware,
+not derived from note lifecycle: it applies only when exactly one
+trashed canvas-owner refers to the note and no active node does.
 The defect is honesty: a dead-end error naming an invisible
 conflict is a wall where the grammar demands a door. Done means:
 the collision message names WHERE the conflict lives and offers
@@ -38,13 +42,16 @@ disagrees).
 
 ### Design/Approach
 
-Round-1 review locates where the collision surfaces (create-board
-validation path) and what the trash lookup costs. The surface:
+Round-1 review located the collision after the naming palette closes,
+at the `CreateNoteAndAttach` step of board seating. Structured handler
+details cross that command seam; there is no schema change. The surface:
 the existing collision error becomes a kit-drawn dialog/toast row
 stating "a board named X is in the Trash" with verbs
 [Restore it] [Keep both — name it X 2] [Cancel]; restore routes
-through the existing §9.7 restore command; keep-both applies the
-standard collision variant rule. Exact copy follows the GR-4
+through `RestoreRecord { kind: 'node' }`, exits the carry, and navigates
+to the revived owned canvas. Keep-both chooses the first free ascending
+space-separated integer (`X 2`, `X 3`, …), skipping occupied title
+keys. Exact copy follows the GR-4
 impact-as-fact register; cite the Empty-trash confirm specimen.
 
 ### Files to Touch
@@ -61,14 +68,14 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1 review: cite the collision path and confirm the
+- [x] Round-1 review: cite the collision path and confirm the
       trashed-owner case is distinguishable from a live collision.
-- [ ] Collision against a TRASHED owner surfaces source + doors
+- [x] Collision against a TRASHED owner surfaces source + doors
       (restore / keep-both / cancel); live collisions keep their
       current behavior.
-- [ ] Restore door round-trips through §9.7 (board returns, name
+- [x] Restore door round-trips through §9.7 (board returns, name
       intact); keep-both applies the variant rule.
-- [ ] e2e: delete board → recreate same name → dialog offers
+- [x] e2e: delete board → recreate same name → dialog offers
       doors → each door does what it says.
 
 ### Acceptance Criteria
@@ -88,3 +95,14 @@ This section is filled out post work as you fill out the checklists.
 You SHOULD document any issues encountered and resolved during the sprint.
 You MUST document any failed implementations, blockers or missing tests.
 -->
+
+- The original diagnosis inferred a trashed note from the invisible
+  collision. Source review convicted the common path as an ACTIVE note
+  referenced only by a trashed canvas-owner node; lifecycle-only copy
+  would have lied.
+- Shared notes and multiple trashed canvas owners intentionally fall
+  back to the existing generic title-conflict behavior rather than
+  selecting or naming an owner silently.
+- Validation: `pnpm -r build`; persistence 59 files / 665 tests;
+  focused renderer 1 file / 2 tests; hidden-window `new-board.spec.ts`
+  5/5 tests.

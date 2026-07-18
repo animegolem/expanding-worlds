@@ -6,6 +6,7 @@
  * and nothing ever existed, dot included. The dot lives exactly as
  * long as its phantom does: the panels store is the source of truth.
  */
+import { pinWorldDiameterAtZoom } from '@ew/canvas-engine'
 import type { CanvasHostHandle } from './host'
 import { Z } from '../z'
 import {
@@ -15,18 +16,13 @@ import {
   panelRecords,
 } from '../note/panels'
 
-const pinCanonicalUrl = new URL(
-  '../../../resources/icons/masters/pin-canonical.svg',
-  import.meta.url,
-).href
-
 export interface PinToolHandle {
   destroy(): void
 }
 
 export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): PinToolHandle {
-  let dot: HTMLImageElement | null = null
-  let dotWorld: { x: number; y: number; canvasId: string } | null = null
+  let dot: HTMLDivElement | null = null
+  let dotWorld: { x: number; y: number; canvasId: string; diameter: number } | null = null
   let phantomKey: number | null = null
   let frame = 0
 
@@ -49,9 +45,12 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
       return
     }
     const screen = host.controller.camera.worldToScreen({ x: dotWorld.x, y: dotWorld.y })
+    const diameter = dotWorld.diameter * host.controller.camera.zoom
     dot.style.display = 'block'
-    dot.style.left = `${screen.x - 15.6}px`
-    dot.style.top = `${screen.y - 44}px`
+    dot.style.width = `${diameter}px`
+    dot.style.height = `${diameter}px`
+    dot.style.left = `${screen.x - diameter / 2}px`
+    dot.style.top = `${screen.y - diameter / 2}px`
   }
 
   function schedule(): void {
@@ -62,25 +61,26 @@ export function attachPinTool(host: CanvasHostHandle, element: HTMLElement): Pin
     })
   }
 
-  function placeDot(world: { x: number; y: number }): void {
+  function placeDot(world: { x: number; y: number }): number {
     discardPair()
-    dot = document.createElement('img')
-    dot.src = pinCanonicalUrl
-    dot.alt = ''
+    const diameter = pinWorldDiameterAtZoom(host.controller.camera.zoom)
+    dot = document.createElement('div')
     dot.dataset['testid'] = 'pin-provisional-ghost'
     dot.style.cssText =
-      `position:absolute;width:31.2px;height:44px;z-index:${Z.affordance};` +
-      'opacity:0.45;pointer-events:none;transition:opacity 180ms ease,transform 180ms ease;transform-origin:50% 100%;'
+      `position:absolute;z-index:${Z.affordance};border-radius:50%;` +
+      'background:var(--ew-node-dot-default);opacity:0.45;pointer-events:none;' +
+      'transition:opacity 180ms ease,transform 180ms ease;transform-origin:50% 50%;'
     element.appendChild(dot)
-    dotWorld = { ...world, canvasId: host.canvasId }
+    dotWorld = { ...world, canvasId: host.canvasId, diameter }
     layout()
+    return diameter
   }
 
   // §6.2: click with the tool places the dot and opens the phantom
   // focused; the tool stays active for repeated placement.
   host.tools.onPlacePin = (world) => {
-    placeDot(world)
-    phantomKey = openPinPhantom(host.canvasId, world.x, world.y)
+    const diameter = placeDot(world)
+    phantomKey = openPinPhantom(host.canvasId, world.x, world.y, diameter)
   }
 
   const disposers = [

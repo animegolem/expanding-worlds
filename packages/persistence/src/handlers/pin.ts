@@ -53,6 +53,14 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
     if (typeof payload.x !== 'number' || typeof payload.y !== 'number') {
       throw new DomainError('VALIDATION_FAILED', 'CreatePin requires numeric x and y')
     }
+    if (
+      payload.diameter !== undefined &&
+      (typeof payload.diameter !== 'number' ||
+        !Number.isFinite(payload.diameter) ||
+        payload.diameter <= 0)
+    ) {
+      throw new DomainError('VALIDATION_FAILED', 'CreatePin diameter must be finite and positive')
+    }
 
     const canvas = ctx.db.get<{ id: string }>(
       `SELECT id FROM canvas
@@ -77,6 +85,14 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
     const appearanceColumns = preparedAppearance.columns
     const naturalWidth = preparedAppearance.asset?.width ?? null
     const naturalHeight = preparedAppearance.asset?.height ?? null
+    if (payload.diameter !== undefined && appearance.kind !== 'dot') {
+      throw new DomainError('VALIDATION_FAILED', 'CreatePin diameter is only valid for dot appearance')
+    }
+    // AI-IMP-310: a dot has ONE persisted diameter. SQLite retains its
+    // existing width/height columns; equal values make the circle law
+    // explicit without a schema change. Image pins keep natural size.
+    const placementWidth = payload.diameter ?? naturalWidth
+    const placementHeight = payload.diameter ?? naturalHeight
 
     // Note branch validation (§4.2/§7.7 for create, §6.10 for attach).
     const note = payload.note
@@ -199,8 +215,8 @@ export function registerPinHandlers(registry: CommandRegistry<CommandContext>): 
       payload.nodeId,
       payload.x,
       payload.y,
-      naturalWidth,
-      naturalHeight,
+      placementWidth,
+      placementHeight,
       nextRenderOrder(ctx, payload.canvasId),
       now,
       now,
