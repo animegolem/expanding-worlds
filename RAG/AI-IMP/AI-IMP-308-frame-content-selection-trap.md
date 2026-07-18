@@ -6,12 +6,12 @@ tags:
   - frames
   - selection
   - tester-feedback
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.65
 date_created: 2026-07-17
-date_completed:
+date_completed: 2026-07-18
 ---
 
 # AI-IMP-308-frame-content-selection-trap

@@ -12,6 +12,38 @@ annotations.
 
 ## [Unreleased]
 
+## [0.26.2] - 2026-07-18
+
+### For testers (the alph wave — your field notes, fixed)
+- Fixed: turning an image into a dot and pressing undo brings the
+  image back every time (it could come back as a grey box before).
+- Fixed: images sitting inside a frame can be clicked and selected
+  again — the frame only wins when you click its empty background.
+- Fixed: the "name already taken" wall when remaking a deleted
+  board is now honest — the dialog offers Restore (takes you to
+  the old board) or Keep Both (names the new one "… 2").
+- New: pins now spawn at a readable size no matter your zoom, stay
+  perfect circles while resizing, and resize within sensible
+  limits.
+- New: right-click (or press-and-hold on touch) works on gallery
+  cells — dive into boards, place things, fly to where an image
+  lives, open notes, tag, trash — the same verbs the outline has.
+
+### Under the hood
+- AI-IMP-307 — placement-owned spatial residency stamp; renderer
+  re-acquires textures across appearance undo (persistence/undo
+  exonerated).
+- AI-IMP-308 — selection-only frame-aware hit resolver; recorded
+  descendant outranks ancestor wash; activation dialect unchanged.
+- AI-IMP-309 — typed narrow trashed-board-owner classification in
+  the title-conflict error; Restore/Keep Both doors; ascending
+  race-safe name series.
+- AI-IMP-310 — one world-unit CreatePin diameter (26px at drop
+  zoom, 13–104px clamp); render = hit = resize on one number.
+- AI-IMP-311 — gallery context door generalizes the Outliner verb
+  inventory (absent-not-disabled, Everything = Pull-only, places
+  chooser, shared touch-hold recognizer).
+
 ## [0.26.1] - 2026-07-18
 
 ### For testers (the stragglers patch)

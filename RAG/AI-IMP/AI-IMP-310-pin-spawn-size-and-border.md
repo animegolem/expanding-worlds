@@ -5,12 +5,12 @@ tags:
   - Implementation
   - pins
   - tester-feedback
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.7
 date_created: 2026-07-17
-date_completed:
+date_completed: 2026-07-18
 ---
 
 # AI-IMP-310-pin-spawn-size-and-border
@@ -89,7 +89,7 @@ Before marking an item complete on the checklist MUST **stop** and
       extremes (visual capture evidence).
 - [x] Unit: size derivation; e2e: place at far zoom-out → pin
       legible; resize sweep → border intact.
-- [ ] HUMAN-TESTING entry for the feel value (lead-owned at wave close;
+- [x] HUMAN-TESTING entry for the feel value (lead-owned at wave close;
       suggested hand pass recorded below).
 
 ### Acceptance Criteria

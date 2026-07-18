@@ -10,6 +10,24 @@ tickets.
 
 ## Awaiting validation
 
+- [ ] **THE ALPH WAVE — pin feel** (AI-IMP-310, 2026-07-18): place
+  pins at 25%, 100%, and 200% zoom — each should spawn the same
+  apparent size (26px on screen at the moment you drop it) and stay
+  a true circle through resize (13–104px on-screen clamp). The
+  numbers are tunable feel constants; the circle/one-diameter law
+  is fixed. Say if 26 feels wrong or the clamp range pinches.
+
+- [ ] **THE ALPH WAVE — gallery doors** (AI-IMP-311/309/308/307,
+  2026-07-18): right-click (or touch-hold) a gallery cell — verbs
+  should feel native (dive/place/fly-to/open note/tag/trash;
+  Everything scope offers Pull only; a multi-placement image asks
+  which board to fly to). Then: make a board, trash it from the
+  gallery, try making a board with the same name — the dialog
+  should offer honest Restore (jumps you there) and Keep Both
+  ("name 2") doors. Click images sitting inside a frame — they
+  should select, not the frame, unless you click bare wash. And
+  the alph classic: image → dot → undo must bring the image back.
+
 - [ ] **THE SWEEPS** (AI-IMP-220/219, 2026-07-12): set Trash
   retention to 30 days — the control now lives IN the Trash view,
   amending its own promise sentence ("…or 30 days pass, per your

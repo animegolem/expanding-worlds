@@ -6,12 +6,12 @@ tags:
   - trash
   - naming
   - tester-feedback
-kanban_status: planned
+kanban_status: completed
 depends_on:
 parent_epic:
 confidence_score: 0.7
 date_created: 2026-07-17
-date_completed:
+date_completed: 2026-07-18
 ---
 
 # AI-IMP-309-trashed-name-collision-honesty
