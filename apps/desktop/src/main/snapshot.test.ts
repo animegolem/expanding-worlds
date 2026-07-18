@@ -112,14 +112,48 @@ describe('snapshot engine (AI-IMP-121)', () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     try {
       writeDb(projectDir, 'UNSEALED')
-      await failed.runSnapshot('end-session')
+      const outcome = await failed.runSnapshot('end-session')
 
+      expect(outcome).toEqual({
+        ok: false,
+        trigger: 'end-session',
+        message: 'snapshot deferred: database is busy',
+      })
       expect(commitCount(projectDir)).toBe(0)
       expect(existsSync(join(projectDir, '.git'))).toBe(false)
       expect(logged).toHaveBeenCalledWith(
         '[snapshot] end-session snapshot failed:',
         expect.objectContaining({ message: 'snapshot deferred: database is busy' }),
       )
+    } finally {
+      logged.mockRestore()
+      failed.dispose()
+    }
+  })
+
+  it('returns a typed failure when the readable notes snapshot cannot be written', async () => {
+    const failed = createSnapshotEngine({
+      callUtility: async (request) =>
+        request.type === 'snapshot-write-notes'
+          ? {
+              type: 'snapshot-write-notes',
+              ok: false,
+              code: 'WRITE_FAILED',
+              message: 'notes tree is read-only',
+            }
+          : stubCallUtility(request),
+      flushRenderers: () => Promise.resolve(),
+      projectDir: () => projectDir,
+    })
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      writeDb(projectDir, 'UNSEALED')
+      await expect(failed.runSnapshot('end-session')).resolves.toEqual({
+        ok: false,
+        trigger: 'end-session',
+        message: 'snapshot deferred: notes tree is read-only',
+      })
+      expect(commitCount(projectDir)).toBe(0)
     } finally {
       logged.mockRestore()
       failed.dispose()
@@ -137,11 +171,18 @@ describe('snapshot engine (AI-IMP-121)', () => {
     writeFileSync(lock, '')
 
     writeDb(projectDir, 'TWO')
-    await engine.runSnapshot('end-session')
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const outcome = await engine.runSnapshot('end-session')
+    logged.mockRestore()
     // The lock is untouched and no new commit was recorded — the change
     // rides the next (retry) episode once the lock ages out.
     expect(existsSync(lock)).toBe(true)
     expect(commitCount(projectDir)).toBe(1)
+    expect(outcome).toEqual({
+      ok: false,
+      trigger: 'end-session',
+      message: 'snapshot deferred: the git index is busy',
+    })
   })
 
   it('commits only the allowlist — strays and export staging stay out (AI-IMP-223)', async () => {

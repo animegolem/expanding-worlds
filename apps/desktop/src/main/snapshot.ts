@@ -158,6 +158,10 @@ export interface SnapshotDeps {
 
 export type SnapshotTrigger = 'idle' | 'rest' | 'end-session'
 
+export type SnapshotRunResult =
+  | { ok: true }
+  | { ok: false; trigger: SnapshotTrigger; message: string }
+
 export interface SnapshotEngine {
   gitAvailable: () => Promise<boolean>
   /** §11.4 git-ready projects: drop the ignore file so a project is
@@ -183,13 +187,14 @@ export interface SnapshotEngine {
    * ambiently. */
   testConnection: (url: string) => Promise<SnapshotTestConnectionResult>
   /** Run one snapshot moment: flush buffers, (when enabled) regenerate
-   * the notes tree, checkpoint the WAL, then commit. Always resolves;
-   * a git or checkpoint failure is logged, never thrown — a backup
-   * hiccup must never trap quit or the user. When mode is `commit-push`
+   * the notes tree, checkpoint the WAL, then commit. Always resolves
+   * with a typed outcome; a git/checkpoint failure is logged and returned
+   * so destructive follow-on work can fail-stop without trapping quit.
+   * When mode is `commit-push`
    * and a remote URL is set, a push is SCHEDULED (not awaited) after the
    * commit — the returned promise resolves on local success so the
    * session ritual never waits on the network. */
-  runSnapshot: (trigger: SnapshotTrigger) => Promise<void>
+  runSnapshot: (trigger: SnapshotTrigger) => Promise<SnapshotRunResult>
   dispose: () => void
 }
 
@@ -197,7 +202,7 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
   let gitProbe: Promise<boolean> | null = null
   let idleTimer: ReturnType<typeof setTimeout> | null = null
   // Serialize snapshots: a quit snapshot must not race an idle one.
-  let inFlight: Promise<void> = Promise.resolve()
+  let inFlight: Promise<SnapshotRunResult> = Promise.resolve({ ok: true })
   // §11.4 push (AI-IMP-122): a SEPARATE chain from `inFlight`. Pushes
   // serialize among themselves (two concurrent pushes to one remote can
   // race), but the snapshot chain NEVER awaits this one — the session
@@ -529,10 +534,15 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
       // Regenerate the readable tree (and refresh §7.8 blocks) BEFORE
       // the checkpoint seals project.sqlite.
       const written = await deps.callUtility({ type: 'snapshot-write-notes' })
-      if ('type' in written && written.type === 'snapshot-write-notes' && written.ok) {
-        notes = written.notes
-        assets = written.assets
+      if (!('type' in written) || written.type !== 'snapshot-write-notes' || !written.ok) {
+        const message =
+          'message' in written && typeof written.message === 'string'
+            ? written.message
+            : 'the readable notes tree could not be written'
+        throw new Error(`snapshot deferred: ${message}`)
       }
+      notes = written.notes
+      assets = written.assets
     }
     const checkpoint = await deps.callUtility({ type: 'checkpoint-wal' })
     if (
@@ -552,7 +562,9 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     // A fresh .git/index.lock (a possible LIVE external git op) defers
     // this snapshot — a logged skip; the next episode retries once the
     // lock ages out (AI-IMP-218).
-    if (!(await ensureGitReady(dir))) return
+    if (!(await ensureGitReady(dir))) {
+      throw new Error('snapshot deferred: the git index is busy')
+    }
     await commitIfChanged(dir, trigger, notes, assets)
 
     // §11.4 remote push (AI-IMP-122): commit-push mode with a configured
@@ -568,12 +580,17 @@ export function createSnapshotEngine(deps: SnapshotDeps): SnapshotEngine {
     }
   }
 
-  function runSnapshot(trigger: SnapshotTrigger): Promise<void> {
+  function runSnapshot(trigger: SnapshotTrigger): Promise<SnapshotRunResult> {
     inFlight = inFlight
-      .catch(() => undefined)
       .then(() => doSnapshot(trigger))
+      .then((): SnapshotRunResult => ({ ok: true }))
       .catch((err) => {
         console.error(`[snapshot] ${trigger} snapshot failed:`, err)
+        return {
+          ok: false,
+          trigger,
+          message: err instanceof Error ? err.message : String(err),
+        }
       })
     return inFlight
   }
