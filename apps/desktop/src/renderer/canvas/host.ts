@@ -23,6 +23,7 @@ import {
   drawGrid,
   drawSnapGuides,
   hitTest,
+  hitTestForSelection,
   indexFrameTree,
   innermostFrameAt,
   lensAlpha,
@@ -1106,6 +1107,9 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
   // drag-end capture/release, and the hover dim. Membership is NEVER
   // inferred from geometry — only a completed ITEM drag edits it.
   let frameIndex: FrameIndex = indexFrameTree([])
+  controller.registerSelectionTarget((point, items) =>
+    hitTestForSelection(point, items, frameIndex),
+  )
 
   /** Current frame geometry as containment candidates, taking each
    * frame's live gesture value when it is mid-drag (`geomFor`). */

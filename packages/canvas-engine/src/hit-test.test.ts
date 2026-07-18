@@ -3,6 +3,7 @@ import {
   adornedWorldAABB,
   classifyCursorZone,
   hitTest,
+  hitTestForSelection,
   itemWorldAABB,
   marqueeHits,
   orientedCorners,
@@ -14,6 +15,7 @@ import {
   LABEL_TEXT_HEIGHT_RATIO,
   placementLabelWorldBottom,
 } from './renderers/placement'
+import { indexFrameTree } from './frames'
 import { makeDecoration, makePlacement } from './test-helpers'
 
 describe('hitTest', () => {
@@ -44,6 +46,94 @@ describe('hitTest', () => {
     expect(hitTest({ x: 25, y: 25 }, [shape])).not.toBeNull()
     expect(hitTest({ x: 25, y: 25 }, [{ ...shape, locked: 1 as const }])).toBeNull()
     expect(hitTest({ x: 25, y: 25 }, [{ ...shape, hidden: 1 as const }])).toBeNull()
+  })
+
+  it('lets a recorded descendant outrank its ancestor frame for selection only', () => {
+    const child = makePlacement({ x: 0, y: 0, width: 20, height: 20 })
+    const frame = makePlacement({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      appearanceKind: 'frame',
+    })
+    const frames = indexFrameTree([
+      {
+        placementId: frame.id,
+        isFrame: true,
+        depth: 0,
+        members: [{ placementId: child.id, isFrame: false, depth: 1, members: [] }],
+      },
+    ])
+
+    // The later frame still owns generic activation hit-testing, but a
+    // single-click selection can reach its recorded child.
+    expect(hitTest({ x: 0, y: 0 }, [child, frame])?.id).toBe(frame.id)
+    expect(hitTestForSelection({ x: 0, y: 0 }, [child, frame], frames)?.id).toBe(child.id)
+    expect(hitTestForSelection({ x: 40, y: 40 }, [child, frame], frames)?.id).toBe(frame.id)
+  })
+
+  it('preserves unrelated topmost priority when an ancestor frame is transparent to a member', () => {
+    const child = makePlacement({ x: 0, y: 0, width: 20, height: 20 })
+    const unrelated = makePlacement({ x: 0, y: 0, width: 20, height: 20 })
+    const frame = makePlacement({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      appearanceKind: 'frame',
+    })
+    const frames = indexFrameTree([
+      {
+        placementId: frame.id,
+        isFrame: true,
+        depth: 0,
+        members: [{ placementId: child.id, isFrame: false, depth: 1, members: [] }],
+      },
+    ])
+
+    // Bottom→top: child, unrelated content, frame wash. Removing only
+    // the ancestor blocker must not let the lower child jump the unrelated item.
+    expect(hitTestForSelection({ x: 0, y: 0 }, [child, unrelated, frame], frames)?.id).toBe(
+      unrelated.id,
+    )
+  })
+
+  it('resolves nested recorded frames to the deepest body under the pointer', () => {
+    const leaf = makePlacement({ x: 0, y: 0, width: 20, height: 20 })
+    const inner = makePlacement({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 60,
+      appearanceKind: 'frame',
+    })
+    const outer = makePlacement({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      appearanceKind: 'frame',
+    })
+    const frames = indexFrameTree([
+      {
+        placementId: outer.id,
+        isFrame: true,
+        depth: 0,
+        members: [
+          {
+            placementId: inner.id,
+            isFrame: true,
+            depth: 1,
+            members: [{ placementId: leaf.id, isFrame: false, depth: 2, members: [] }],
+          },
+        ],
+      },
+    ])
+
+    expect(hitTestForSelection({ x: 0, y: 0 }, [leaf, inner, outer], frames)?.id).toBe(leaf.id)
+    expect(hitTestForSelection({ x: 25, y: 0 }, [leaf, inner, outer], frames)?.id).toBe(inner.id)
+    expect(hitTestForSelection({ x: 45, y: 0 }, [leaf, inner, outer], frames)?.id).toBe(outer.id)
   })
 
   it('bounds line-like decorations by their endpoints', () => {

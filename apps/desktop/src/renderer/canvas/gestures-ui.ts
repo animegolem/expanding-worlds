@@ -1,7 +1,6 @@
 import {
   classifyCursorZone,
   createResizeDriver,
-  hitTest,
   moveDriver,
   orientedBox,
   orientedCorners,
@@ -348,7 +347,7 @@ export function attachGesturesUI(
       // Lock refusal on first contact (§6.9): a press on a locked,
       // not-yet-selected placement selects it but never becomes a
       // drag. (Locked decorations never hit-test at all.)
-      const hit = hitTest(world, controller.items())
+      const hit = controller.selectionTargetAt(world)
       if (hit && hit.locked === 1) {
         event.preventDefault()
         event.stopImmediatePropagation()
@@ -442,7 +441,7 @@ export function attachGesturesUI(
         }
       }
     }
-    const hit = hitTest(world, controller.items())
+    const hit = controller.selectionTargetAt(world)
     if (hit) {
       // Unlocked hover keeps the host's 'move'; locked refuses.
       if (hit.locked === 1) canvas.style.cursor = 'not-allowed'

@@ -134,6 +134,7 @@ export {
   classifyCursorZone,
   CURSOR_ZONES,
   hitTest,
+  hitTestForSelection,
   isHittable,
   itemWorldAABB,
   marqueeHits,
@@ -143,6 +144,7 @@ export {
   unionBounds,
   type CursorZone,
   type CursorZoneWidths,
+  type FrameHitIndex,
   type OrientedBox,
 } from './hit-test'
 export { Selection } from './selection'

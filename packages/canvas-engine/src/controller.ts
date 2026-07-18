@@ -78,6 +78,9 @@ export class CanvasController {
   /** §4.9 frame carry (AI-IMP-127): expands the moved set for a plain
    * drag so a dragged frame carries its members. Identity by default. */
   #moveExpansion: (items: readonly SceneItem[]) => readonly SceneItem[] = (items) => items
+  /** Selection may refine the ordinary render-order hit for a ruled
+   * grouping relation (AI-IMP-308). Other gestures keep `hitTest`. */
+  #selectionTarget: (point: Point, items: readonly SceneItem[]) => SceneItem | null = hitTest
   /** True while the in-flight gesture is a plain move (not resize/rotate). */
   #gestureIsMove = false
 
@@ -133,6 +136,18 @@ export class CanvasController {
     this.#moveExpansion = expand
   }
 
+  /** Register the single-click selection dialect. Kept separate from
+   * generic hit testing so double-click activation remains unchanged. */
+  registerSelectionTarget(
+    target: (point: Point, items: readonly SceneItem[]) => SceneItem | null,
+  ): void {
+    this.#selectionTarget = target
+  }
+
+  selectionTargetAt(point: Point): SceneItem | null {
+    return this.#selectionTarget(point, this.#items)
+  }
+
   get state(): State['kind'] {
     return this.#state.kind
   }
@@ -155,7 +170,7 @@ export class CanvasController {
     }
     if (modifiers.button !== undefined && modifiers.button !== 0) return
     const world = this.camera.screenToWorld(screen)
-    const hit = hitTest(world, this.#items)
+    const hit = this.selectionTargetAt(world)
     if (hit) {
       if (!this.selection.has(hit.id)) {
         this.selection.click(hit.id, { shift: modifiers.shift ?? false })

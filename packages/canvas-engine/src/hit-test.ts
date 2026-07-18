@@ -238,6 +238,65 @@ export function hitTest(point: Point, items: readonly SceneItem[]): SceneItem | 
   return null
 }
 
+/** The recorded frame relation needed by selection targeting. */
+export interface FrameHitIndex {
+  isFrame(placementId: string): boolean
+  parentOf(placementId: string): string | null
+}
+
+function isRecordedDescendant(
+  placementId: string,
+  ancestorFrameId: string,
+  frames: FrameHitIndex,
+): boolean {
+  const seen = new Set<string>()
+  let parent = frames.parentOf(placementId)
+  while (parent !== null && !seen.has(parent)) {
+    if (parent === ancestorFrameId) return true
+    seen.add(parent)
+    parent = frames.parentOf(parent)
+  }
+  return false
+}
+
+/**
+ * Selection-only frame priority (AI-IMP-308): a recorded descendant
+ * under the pointer outranks its ancestor frame's translucent wash.
+ * The ordinary render-order walk otherwise stays intact, so unrelated
+ * topmost content still wins and an uncovered frame body selects the
+ * frame. Other interaction dialects (notably double-click activation)
+ * continue to use `hitTest` and retain their established semantics.
+ */
+export function hitTestForSelection(
+  point: Point,
+  items: readonly SceneItem[],
+  frames: FrameHitIndex,
+): SceneItem | null {
+  const hits: SceneItem[] = []
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const item = items[i]!
+    if (!isHittable(item)) continue
+    if (item.itemKind === 'placement') {
+      if (pointInPlacement(point, item)) hits.push(item)
+    } else {
+      const aabb = decorationAABB(item)
+      if (aabb && pointInRect(point, aabb, HIT_SLOP)) hits.push(item)
+    }
+  }
+
+  for (const hit of hits) {
+    if (hit.itemKind !== 'placement' || !frames.isFrame(hit.id)) return hit
+    const coveredDescendant = hits.some(
+      (candidate) =>
+        candidate.itemKind === 'placement' &&
+        candidate.id !== hit.id &&
+        isRecordedDescendant(candidate.id, hit.id, frames),
+    )
+    if (!coveredDescendant) return hit
+  }
+  return null
+}
+
 function rectsIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 }
