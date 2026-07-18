@@ -41,6 +41,20 @@ describe('hitTest', () => {
     expect(hitTest({ x: 40, y: 0 }, [dot])).toBeNull()
   })
 
+  it('hits the same one-diameter circle the dot renderer consumes', () => {
+    const dot = makePlacement({
+      x: 0,
+      y: 0,
+      width: 40,
+      height: 90,
+      appearanceKind: 'dot',
+    })
+    expect(hitTest({ x: 14, y: 14 }, [dot])).not.toBeNull()
+    expect(hitTest({ x: 19, y: 19 }, [dot])).toBeNull()
+    expect(hitTest({ x: 0, y: 30 }, [dot])).toBeNull()
+    expect(itemWorldAABB(dot)).toMatchObject({ x: -20, y: -20, width: 40, height: 40 })
+  })
+
   it('skips locked and hidden decorations', () => {
     const shape = makeDecoration({ data: { x: 0, y: 0, width: 50, height: 50 } })
     expect(hitTest({ x: 25, y: 25 }, [shape])).not.toBeNull()

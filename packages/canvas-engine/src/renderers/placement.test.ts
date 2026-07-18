@@ -90,6 +90,18 @@ describe('placementRenderer', () => {
     expect(dot.getBounds().width).toBeCloseTo(DEFAULT_DOT_RADIUS * 2)
   })
 
+  it('renders one circular diameter when legacy width and height disagree', () => {
+    const item = makePlacement({
+      appearanceKind: 'dot',
+      appearanceColor: '#ff0000',
+      width: 40,
+      height: 90,
+    })
+    const dot = placementRenderer.create(item, fakeResources()).children[0] as Graphics
+    expect(dot.getBounds().width).toBeCloseTo(40)
+    expect(dot.getBounds().height).toBeCloseTo(40)
+  })
+
   it('applies scale, rotation, and flip as scale sign', () => {
     const item = makePlacement({ scale: 2, rotation: Math.PI / 2, flipX: 1 })
     const object = placementRenderer.create(item, fakeResources())

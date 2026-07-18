@@ -765,6 +765,7 @@ test('double-clicking the label renames the note in place (AI-IMP-056)', async (
   const { app, win } = await launchApp('ew-e2e-label-rename-')
   const renameNoteId = crypto.randomUUID()
   const renameNodeId = crypto.randomUUID()
+  const renamePlacementId = crypto.randomUUID()
   await exec(win, 'CreateNote', { noteId: renameNoteId, title: 'Ash' })
   await exec(win, 'CreateNode', { nodeId: renameNodeId })
   await exec(win, 'SetNodeAppearance', {
@@ -773,7 +774,7 @@ test('double-clicking the label renames the note in place (AI-IMP-056)', async (
   })
   await exec(win, 'AttachNoteToNode', { nodeId: renameNodeId, noteId: renameNoteId })
   await exec(win, 'CreatePlacement', {
-    placementId: crypto.randomUUID(),
+    placementId: renamePlacementId,
     canvasId: await win.evaluate(() => window.__ewDebug!.canvasId()),
     nodeId: renameNodeId,
     x: 300,
@@ -783,9 +784,20 @@ test('double-clicking the label renames the note in place (AI-IMP-056)', async (
   })
   await win.waitForFunction(() => window.__ewDebug!.sceneStats().placements === 1)
 
-  // Label band: fontSize = 150 × 0.14 = 21; top = 300 + 75 + 21×0.35.
+  // A dot now has one diameter, so legacy width/height disagreement can no
+  // longer serve as label geometry. Aim at the renderer's actual label box.
   const box = (await win.getByTestId('canvas-host').boundingBox())!
-  await win.mouse.dblclick(box.x + 300, box.y + 393)
+  await expect
+    .poll(() => win.evaluate((id) => window.__ewDebug!.labelBounds(id), renamePlacementId))
+    .not.toBeNull()
+  const label = (await win.evaluate(
+    (id) => window.__ewDebug!.labelBounds(id),
+    renamePlacementId,
+  ))!
+  await win.mouse.dblclick(
+    box.x + label.x + label.width / 2,
+    box.y + label.y + label.height / 2,
+  )
   const input = win.getByTestId('label-rename-input')
   await expect(input).toBeVisible()
   await expect(input).toHaveValue('Ash')

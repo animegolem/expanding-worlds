@@ -60,7 +60,7 @@ export type PanelRequest =
   | { kind: 'canvas-phantom'; nodeId: string }
   /** §6.2 pin phantom: the pin tool clicked a spot; the first
    * committed edit is ONE CreatePin (note + dot node + placement). */
-  | { kind: 'pin-phantom'; canvasId: string; x: number; y: number }
+  | { kind: 'pin-phantom'; canvasId: string; x: number; y: number; diameter: number }
 
 export interface PanelSize {
   width: number
@@ -315,8 +315,11 @@ export function openPhantomPanel(title: string): void {
 
 /** The §6.2 pin tool: a focused phantom panel at the clicked spot;
  * nothing persists until the first committed edit. */
-export function openPinPhantom(canvasId: string, x: number, y: number): number {
-  return setTethered({ kind: 'pin-phantom', canvasId, x, y }, { kind: 'point', canvasId, x, y })
+export function openPinPhantom(canvasId: string, x: number, y: number, diameter: number): number {
+  return setTethered(
+    { kind: 'pin-phantom', canvasId, x, y, diameter },
+    { kind: 'point', canvasId, x, y },
+  )
 }
 
 /** Pin-tool leave/re-arm owns provisional cleanup, including a phantom

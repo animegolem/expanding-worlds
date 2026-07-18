@@ -31,15 +31,44 @@ Pin semantics (§6.2 unchanged); the signature path-tail pin
 
 ### Design/Approach
 
-Round-1 review cites the spawn-size derivation (fixed world units
-vs camera-scaled?) and the border draw (stroke width scaling —
-likely a world-unit stroke degenerating at small sizes or a
-non-uniform scale distorting the ring). Fix: spawn size derives
-from CAMERA (a ruled screen-size at placement zoom, like charm
-visibility keys on rendered size); border uses resolution-aware
-stroke that survives resize. If the kit draws a pin size, cite
-it; otherwise propose the constant in-ticket as a feel value for
-the owner's hand pass (HUMAN-TESTING entry on close).
+Round-1 source review convicted a geometry handoff, not a stroke
+failure:
+
+- The provisional was 31.2×44 screen px, while materialization
+  carried no size or zoom (`pin-tool.ts:27-83` and
+  `NotePanel.svelte:438-470` before this repair). The persisted dot
+  therefore fell back to 24 world units (`placement.ts:20,417-426`),
+  only 6 rendered px at 25% zoom.
+- A dot has no border. The reported broken border is the selection
+  chrome (`host.ts:893-928`). Resize could persist different width
+  and height, dot rendering consumed width only, and hit/selection
+  consumed both (`resize.ts:184-220`; `hit-test.ts:17-25,205-217`).
+  That disagreement produced the apparent broken ring/ellipse.
+- The 1.6 S3 pin-tool specimen names a 26px provisional mark. The
+  accepted ruling supersedes its teardrop silhouette with a circle
+  and adopts feel defaults of 26px spawn, 13px minimum, 104px
+  maximum.
+
+Implementation uses one camera-agnostic `CreatePin.diameter` in
+world units. The renderer converts 26 screen px ÷ placement zoom
+before opening the phantom; the command handler validates finite,
+positive, dot-only input and writes the same diameter into the
+existing placement width and height columns. No schema or second
+command. Render, radial hit, selection bounds, and aspect-locked
+resize share the same diameter; resize clamps its rendered size to
+13–104px at the live camera zoom.
+
+### Round-1 correction and follow-up ruling
+
+The original review and first verdict both referred to “existing
+optional CreatePin dimensions.” Fresh implementation-boundary review
+found that seam does not exist: `CreatePinPayload` was dimensionless
+and its handler wrote only image natural dimensions or NULL. Work
+stopped before changes. The follow-up ruling authorized a narrow
+`diameter?: number` extension, dot-only, with omitted callers retaining
+their byte-compatible behavior. `DeleteDraftPin` needs no new inverse
+data because it hard-deletes the placement; the regression confirms
+the diameter disappears in the existing one-step inverse.
 
 ### Files to Touch
 
@@ -54,13 +83,14 @@ Before marking an item complete on the checklist MUST **stop** and
 **tested**?
 </CRITICAL_RULE>
 
-- [ ] Round-1 review: cite spawn-size and border-draw mechanisms.
-- [ ] Spawn size camera-aware and ruled; recorded value + basis.
-- [ ] Border renders intact at min→max resize at both zoom
+- [x] Round-1 review: cite spawn-size and border-draw mechanisms.
+- [x] Spawn size camera-aware and ruled; recorded value + basis.
+- [x] Border renders intact at min→max resize at both zoom
       extremes (visual capture evidence).
-- [ ] Unit: size derivation; e2e: place at far zoom-out → pin
+- [x] Unit: size derivation; e2e: place at far zoom-out → pin
       legible; resize sweep → border intact.
-- [ ] HUMAN-TESTING entry for the feel value.
+- [ ] HUMAN-TESTING entry for the feel value (lead-owned at wave close;
+      suggested hand pass recorded below).
 
 ### Acceptance Criteria
 
@@ -73,8 +103,22 @@ Before marking an item complete on the checklist MUST **stop** and
 
 ### Issues Encountered
 
-<!--
-This section is filled out post work as you fill out the checklists.
-You SHOULD document any issues encountered and resolved during the sprint.
-You MUST document any failed implementations, blockers or missing tests.
--->
+- **Verdict seam corrected before code:** optional dimensions belonged
+  to `CreatePlacementPayload`, not `CreatePinPayload`. The STOP round
+  produced the authorized single-diameter interface above instead of
+  splitting birth into two commands and breaking one-command undo.
+- **Border hypothesis exonerated:** no dot border exists. Actual
+  selection-chrome bounds are asserted square at the 13/26/104px
+  states and again after zooming from 25% to 200%.
+- **Mixed-selection disposition:** if legacy dots already differ by
+  more than the 8× feel range, no uniform factor can satisfy both
+  bounds. Minimum legibility wins deliberately; a regression records
+  that maximum may be exceeded only in this already-impossible case.
+- **Full-gate coordinate proxies corrected:** the prior detach test clicked
+  the old square body's `+12,+12` corner, and the rename test derived a label
+  point from disagreeing width/height. They now click the circle center and
+  the renderer's measured label bounds respectively; the verb assertions are
+  unchanged.
+- **Owner hand pass suggested (lead-owned):** assess the 26px default
+  and 13–104px resize range at 25%, 100%, and 200%; adjust feel
+  constants only, with circle/one-diameter law held fixed.

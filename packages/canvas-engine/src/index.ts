@@ -263,6 +263,16 @@ export {
 export { Culler, RENDER_PADDING, RESIDENCY_PADDING, type CullerHooks } from './culling'
 export { MIN_STROKE_SCREEN_PX, renderStrokeWidth } from './stroke-render'
 export {
+  PIN_DEFAULT_DIAMETER_PX,
+  PIN_FALLBACK_DIAMETER_WORLD,
+  PIN_MAX_DIAMETER_PX,
+  PIN_MIN_DIAMETER_PX,
+  clampPinResizeFactor,
+  pinDiameterWorld,
+  pinEffectiveDiameterWorld,
+  pinWorldDiameterAtZoom,
+} from './pin-geometry'
+export {
   DEFAULT_TEXTURE_BUDGET_BYTES,
   TextureBudget,
   type BudgetTexture,

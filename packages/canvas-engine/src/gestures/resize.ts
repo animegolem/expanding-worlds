@@ -1,9 +1,10 @@
 import { placementTransformOf } from '../gesture'
 import { placementSize, unionBounds } from '../hit-test'
+import { clampPinResizeFactor } from '../pin-geometry'
 import { scaleDecorationData, scaleTextData } from './decoration-data'
 import type { GestureDriver } from '../controller'
 import type { Point, Rect } from '../camera'
-import type { SceneItem } from '../types'
+import type { SceneItem, ScenePlacement } from '../types'
 
 /**
  * Handle-based resize (§6.9, §10.2). Geometry is anchored scaling:
@@ -67,6 +68,12 @@ function hasImageAppearance(items: readonly SceneItem[]): boolean {
   return items.some((item) => item.itemKind === 'placement' && item.appearanceKind === 'image')
 }
 
+function dotPlacements(items: readonly SceneItem[]): ScenePlacement[] {
+  return items.filter(
+    (item): item is ScenePlacement => item.itemKind === 'placement' && item.appearanceKind === 'dot',
+  )
+}
+
 /** Body rotation and center for the single-item local-frame path. */
 function orientationOf(item: SceneItem): { angle: number; cx: number; cy: number } | null {
   if (item.itemKind === 'placement') {
@@ -121,14 +128,20 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
         const currentL = toLocal(currentWorld)
         let sx = affectsX ? safeFactor(currentL.x - anchor.x, startL.x - anchor.x) : 1
         let sy = affectsY ? safeFactor(currentL.y - anchor.y, startL.y - anchor.y) : 1
-        // Aspect lock: images by default (Alt frees); Shift forces it
-        // for anything and wins over Alt (AI-IMP-041).
+        // Dot pins are circles: every handle is uniformly locked and
+        // Alt cannot turn one into an ellipse (AI-IMP-310). Images keep
+        // their existing corner-only, Alt-freeable aspect policy.
+        const dots = dotPlacements(items)
+        const dotLocked = dots.length > 0
         if (
-          affectsX &&
-          affectsY &&
-          ((hasImageAppearance(items) && !(modifiers.alt ?? false)) || (modifiers.shift ?? false))
+          dotLocked ||
+          (affectsX &&
+            affectsY &&
+            ((hasImageAppearance(items) && !(modifiers.alt ?? false)) ||
+              (modifiers.shift ?? false)))
         ) {
-          const s = Math.abs(sx - 1) >= Math.abs(sy - 1) ? sx : sy
+          const raw = affectsX && affectsY ? (Math.abs(sx - 1) >= Math.abs(sy - 1) ? sx : sy) : affectsX ? sx : sy
+          const s = dotLocked ? clampPinResizeFactor(dots, raw, camera.zoom) : raw
           sx = s
           sy = s
         }
@@ -172,12 +185,15 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
       if (!bounds) return []
       const anchor = anchorOf(handle, bounds)
       const corner = affectsX && affectsY
-      // Aspect lock: images by default (Alt frees); Shift forces it
-      // for anything and wins over Alt (AI-IMP-041). Follows
-      // whichever axis moved further from rest.
+      const dots = dotPlacements(items)
+      const dotLocked = dots.length > 0
+      // Dot pins are always circles, including from an edge handle and
+      // under Alt. Images retain their corner-only policy; Shift still
+      // forces a corner lock for every other kind.
       const locked =
-        corner &&
-        ((hasImageAppearance(items) && !(modifiers.alt ?? false)) || (modifiers.shift ?? false))
+        dotLocked ||
+        (corner &&
+          ((hasImageAppearance(items) && !(modifiers.alt ?? false)) || (modifiers.shift ?? false)))
       const rawFactors = (current: Point) => ({
         sx: affectsX ? safeFactor(current.x - anchor.x, startWorld.x - anchor.x) : 1,
         sy: affectsY ? safeFactor(current.y - anchor.y, startWorld.y - anchor.y) : 1,
@@ -187,13 +203,18 @@ export function createResizeDriver(handle: ResizeHandle): GestureDriver {
       // pointer, so a snap adjustment can never flip dominance and
       // pull the snapped edge back off its guide.
       const lockAxis: 'x' | 'y' | null = locked
-        ? Math.abs(sx - 1) >= Math.abs(sy - 1)
+        ? !affectsY
           ? 'x'
-          : 'y'
+          : !affectsX
+            ? 'y'
+            : Math.abs(sx - 1) >= Math.abs(sy - 1)
+              ? 'x'
+              : 'y'
         : null
       const applyLock = (f: { sx: number; sy: number }): { sx: number; sy: number } => {
         if (!lockAxis) return f
-        const s = lockAxis === 'x' ? f.sx : f.sy
+        const raw = lockAxis === 'x' ? f.sx : f.sy
+        const s = dotLocked ? clampPinResizeFactor(dots, raw, camera.zoom) : raw
         return { sx: s, sy: s }
       }
       ;({ sx, sy } = applyLock({ sx, sy }))

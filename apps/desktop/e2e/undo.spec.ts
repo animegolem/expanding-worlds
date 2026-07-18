@@ -617,7 +617,9 @@ test('detach note via the context menu is undoable (§6.6/§9.3)', async () => {
   expect(await nodeNoteId(win, nodeId)).toBe(noteId)
 
   // Right-click the dot → Detach note: the node→note reference clears.
-  await win.mouse.click(box.x + p.x + 12, box.y + p.y + 12, { button: 'right' })
+  // Click the visual center. The old +12/+12 square corner lies outside the
+  // exact radius-12 circle now shared by render and hit geometry.
+  await win.mouse.click(box.x + p.x, box.y + p.y, { button: 'right' })
   await win.getByTestId('node-menu-detach').click()
   await expect.poll(() => nodeNoteId(win, nodeId)).toBe(null)
   expect(await depth(win)).toBe(1)

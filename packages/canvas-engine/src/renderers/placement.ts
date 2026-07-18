@@ -2,6 +2,7 @@ import { Container, Graphics, Matrix, NineSliceSprite, Sprite, Text, Texture } f
 import { assetUrl, type ScenePlacement } from '../types'
 import { EW_FURNITURE_MIN_PX, EW_PAGE_FLOOR_PX } from '../shrink-ladder'
 import { renderStrokeWidth } from '../stroke-render'
+import { pinDiameterWorld } from '../pin-geometry'
 import type { ImageTreatment, ItemRenderer, RendererResources } from './registry'
 
 /**
@@ -414,7 +415,7 @@ function buildBody(
   }
 
   // Dot appearance — and the visible default for appearance-less nodes.
-  const radius = item.width != null ? item.width / 2 : DEFAULT_DOT_RADIUS
+  const radius = kind === 'dot' ? pinDiameterWorld(item) / 2 : (item.width ?? DEFAULT_DOT_RADIUS * 2) / 2
   const dot = new Graphics()
   if (kind === 'dot') {
     dot.circle(0, 0, radius).fill({ color: cssColorToNumber(item.appearanceColor) })
@@ -693,12 +694,17 @@ function applyTransform(container: Container, item: ScenePlacement): void {
 /** Unscaled body extent the label hangs under (container scale applies on top). */
 function labelBasis(item: ScenePlacement): { height: number } {
   return {
-    height: item.height ?? item.width ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2,
+    height:
+      item.appearanceKind === 'dot'
+        ? pinDiameterWorld(item)
+        : (item.height ?? item.width ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2),
   }
 }
 
 function labelWidth(item: ScenePlacement): number {
-  return item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2
+  return item.appearanceKind === 'dot'
+    ? pinDiameterWorld(item)
+    : (item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2)
 }
 
 /**

@@ -160,6 +160,37 @@ describe('CreatePin', () => {
     ).toMatchObject({ width: null, height: null })
   })
 
+  it('persists one optional dot diameter into both placement dimensions', () => {
+    const dot = pinPayload({ diameter: 104 })
+    const created = committed('CreatePin', dot)
+    expect(
+      handle.db.get('SELECT width, height FROM placement WHERE id = ?', dot.placementId),
+    ).toMatchObject({ width: 104, height: 104 })
+
+    committed(created.inverse!.commandType, created.inverse!.payload)
+    expect(
+      handle.db.get('SELECT id FROM placement WHERE id = ?', dot.placementId),
+    ).toBeUndefined()
+  })
+
+  it('rejects invalid or non-dot diameters before writing', () => {
+    const before = counts()
+    for (const diameter of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(exec('CreatePin', pinPayload({ diameter }))).toMatchObject({
+        status: 'error',
+        code: 'VALIDATION_FAILED',
+      })
+    }
+    const assetId = importAsset(640, 480)
+    expect(
+      exec(
+        'CreatePin',
+        pinPayload({ diameter: 26, appearance: { kind: 'image', assetId, crop: null } }),
+      ),
+    ).toMatchObject({ status: 'error', code: 'VALIDATION_FAILED' })
+    expect(counts()).toEqual({ ...before, nodes: before.nodes, placements: before.placements })
+  })
+
   it('creates and attaches a new note, binding unresolved links to its title', () => {
     // A note whose body references [[Target]] before the pin exists.
     committed('CreateNote', { noteId: uuidv7(), title: 'Source', body: 'see [[Target]]' })

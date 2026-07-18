@@ -1,6 +1,7 @@
 import { isLineData, isTextData } from './decoration-data'
 import { arrowPolygon } from './renderers/decorations/line'
 import { DEFAULT_DOT_RADIUS, placementLabelWorldBottom } from './renderers/placement'
+import { pinEffectiveDiameterWorld } from './pin-geometry'
 import type { Point, Rect } from './camera'
 import type { SceneDecoration, SceneItem, ScenePlacement } from './types'
 
@@ -14,6 +15,10 @@ import type { SceneDecoration, SceneItem, ScenePlacement } from './types'
  */
 
 export function placementSize(item: ScenePlacement): { width: number; height: number } {
+  if (item.appearanceKind === 'dot') {
+    const diameter = pinEffectiveDiameterWorld(item)
+    return { width: diameter, height: diameter }
+  }
   const width = item.width ?? item.assetWidth ?? DEFAULT_DOT_RADIUS * 2
   const height = item.height ?? item.assetHeight ?? DEFAULT_DOT_RADIUS * 2
   return { width: width * item.scale, height: height * item.scale }
@@ -205,6 +210,10 @@ function pointInPlacement(point: Point, item: ScenePlacement): boolean {
   const sin = Math.sin(-item.rotation)
   const localX = dx * cos - dy * sin
   const localY = dx * sin + dy * cos
+  if (item.appearanceKind === 'dot') {
+    const radius = width / 2
+    return localX * localX + localY * localY <= radius * radius
+  }
   return Math.abs(localX) <= width / 2 && Math.abs(localY) <= height / 2
 }
 

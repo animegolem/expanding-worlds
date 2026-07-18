@@ -213,6 +213,9 @@ declare global {
       canvasId: () => string
       camera: () => { x: number; y: number; zoom: number }
       selection: () => string[]
+      /** AI-IMP-310: actual rendered selection-chrome bounds in screen
+       * pixels, used to prove a pin's outline remains square. */
+      selectionBounds: () => { x: number; y: number; width: number; height: number } | null
       interactionState: () => string
       activeTool: () => string
       cullStats: () => { total: number; renderable: number; resident: number }
@@ -2096,6 +2099,11 @@ export async function mountCanvasHost(element: HTMLElement): Promise<CanvasHostH
     canvasId: () => canvasId,
     camera: () => controller.camera.state(),
     selection: () => controller.selection.ids(),
+    selectionBounds: () => {
+      if (controller.selection.ids().length === 0) return null
+      const bounds = selectionGfx.getBounds()
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+    },
     interactionState: () => controller.state,
     activeTool: () => tools.active,
     cullStats: () => culler.stats(controller.items()),

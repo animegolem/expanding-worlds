@@ -63,6 +63,47 @@ describe('createResizeDriver', () => {
     })
   })
 
+  it('keeps dot pins circular from edge handles and Alt cannot free them', () => {
+    const dot = makePlacement({
+      x: 50,
+      y: 50,
+      width: 40,
+      height: 80,
+      appearanceKind: 'dot',
+    })
+    const locked = run('e', [dot], { x: 70, y: 50 }, { x: 110, y: 50 })
+    expect(locked.get(dot.id)).toMatchObject({
+      transform: { x: 70, y: 50, width: 80, height: 80 },
+    })
+    const altLocked = run('se', [dot], { x: 70, y: 70 }, { x: 110, y: 80 }, true)
+    expect(altLocked.get(dot.id)).toMatchObject({
+      transform: { width: 80, height: 80 },
+    })
+  })
+
+  it('clamps dot resize to 13–104 rendered px at the live zoom', () => {
+    const dot = makePlacement({
+      x: 0,
+      y: 0,
+      width: 104,
+      height: 104,
+      appearanceKind: 'dot',
+    })
+    const grow = ctx([dot], { x: 52, y: 0 }, { x: 520, y: 0 })
+    grow.camera.set({ x: 0, y: 0, zoom: 0.25 })
+    createResizeDriver('e').update(grow)
+    expect(grow.session.get(dot.id)).toMatchObject({
+      transform: { width: 416, height: 416 },
+    })
+
+    const shrink = ctx([dot], { x: 52, y: 0 }, { x: -50, y: 0 })
+    shrink.camera.set({ x: 0, y: 0, zoom: 0.25 })
+    createResizeDriver('e').update(shrink)
+    expect(shrink.session.get(dot.id)).toMatchObject({
+      transform: { width: 52, height: 52 },
+    })
+  })
+
   it('edge handles stretch exactly one axis', () => {
     const a = makePlacement({ x: 50, y: 50, width: 40, height: 20 })
     const session = run('e', [a], { x: 70, y: 50 }, { x: 110, y: 50 })
