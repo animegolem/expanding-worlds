@@ -16,11 +16,15 @@ describe('search name-space snapshot', () => {
       if (name === 'listNodeLibrary') return [
         {
           id: 'node-1', noteId: 'note-1', noteTitle: 'Chief', assetFilename: 'chief.png',
-          childCanvasId: 'canvas-1', tags: ['chieftain'],
+          childCanvasId: 'canvas-1', displayLabel: 'Chief', tags: ['chieftain'],
         },
         {
           id: 'node-2', noteId: 'note-1', noteTitle: 'Chief', assetFilename: null,
-          childCanvasId: null, tags: ['life-debt'],
+          childCanvasId: null, displayLabel: 'Chief', tags: ['life-debt'],
+        },
+        {
+          id: 'node-3', noteId: null, noteTitle: null, assetFilename: null,
+          childCanvasId: 'canvas-3', displayLabel: 'unnamed · 2 items', tags: [],
         },
       ]
       if (name === 'listLooseNotes') return [{ id: 'note-1', title: 'duplicate' }, { id: 'note-2', title: 'Loose' }]
@@ -33,6 +37,11 @@ describe('search name-space snapshot', () => {
     expect(snapshot.candidates.filter((candidate) => candidate.kind === 'note')).toHaveLength(2)
     expect(snapshot.candidates.find((candidate) => candidate.kind === 'note' && candidate.noteId === 'note-1')?.tags).toEqual(['chieftain', 'life-debt'])
     expect(snapshot.candidates.find((candidate) => candidate.kind === 'image-node')).toMatchObject({ nodeId: 'node-1' })
+    expect(snapshot.candidates).toContainEqual(expect.objectContaining({
+      kind: 'canvas',
+      canvasId: 'canvas-3',
+      label: 'unnamed · 2 items',
+    }))
   })
 
   it('can recover on a clean retry after one read-model rejection', async () => {

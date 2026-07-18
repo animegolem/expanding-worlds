@@ -85,6 +85,7 @@ describe('canvas text decoration data shape and FTS (AI-IMP-021)', () => {
       {
         decorationId,
         canvasId: handle.rootCanvasId,
+        canvasLabel: 'Home',
         snippet: expect.stringContaining('[watchtower]') as unknown as string,
       },
     ])

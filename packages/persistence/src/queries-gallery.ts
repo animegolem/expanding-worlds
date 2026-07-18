@@ -1,5 +1,5 @@
-import { shortCode } from '@ew/domain'
 import type { SqlValue } from './db'
+import { nodeDisplayLabel } from './display-labels'
 import type { QueryRegistry } from './queries'
 import { usableCanvasOwnerJoin } from './queries-structure'
 
@@ -47,9 +47,8 @@ export interface GalleryIndexEntry {
   nodeId: string
   createdAt: string
   kind: GalleryKind
-  /** Compact display key for name-sort section headers. Null keeps
-   * untitled rows on their existing short-code fallback without
-   * hydrating the viewport item projection. */
+  /** Compact title key; null means the hydrated projection supplies
+   * the app-wide filename/board/untitled fallback. */
   noteTitle: string | null
 }
 
@@ -108,11 +107,8 @@ const ACTIVE_PLACEMENT_EXISTS = `SELECT 1 FROM placement p
  *   presentation).
  * - name: the label's collation key — note title_key (already
  *   case/space-normalized) when a note is attached, else the node id.
- *   The untitled label the UI shows is shortCode(id), a digest OF the
- *   id, so id order is the honest cheap stand-in: stable, and since
- *   uuidv7 hex leads with digits it groups the untitled together
- *   ahead of the titled, in creation order, rather than pretending
- *   they have names.
+ *   Generated identity is never displayed; id remains only a stable
+ *   storage-order tie-break for fallback-named entries.
  * - size: assets store no byte size, so pixel area (width*height) is
  *   the honest proxy for anything with an image appearance; noted
  *   entries fall back to body length; bare nodes sink to 0. Largest
@@ -220,6 +216,8 @@ export function registerGalleryQueries(registry: QueryRegistry): void {
         width: number | null
         height: number | null
         childCanvasId: string | null
+        assetFilename: string | null
+        boardChildCount: number
         tagList: string | null
       }>(
         `SELECT n.id AS nodeId, ${KIND_CASE} AS kind,
@@ -228,10 +226,18 @@ export function registerGalleryQueries(registry: QueryRegistry): void {
                 n.appearance_icon AS appearanceIcon,
                 n.note_id AS noteId, note.title AS noteTitle,
                 substr(note.body, 1, 140) AS noteExcerpt,
-                a.content_hash AS contentHash, a.width, a.height,
+                a.content_hash AS contentHash,
+                a.original_filename AS assetFilename,
+                a.width, a.height,
                 (SELECT c.id FROM canvas c
                  WHERE c.node_id = n.id AND c.lifecycle_state = 'active'
                  ORDER BY c.id LIMIT 1) AS childCanvasId,
+                (SELECT count(*) FROM placement cp
+                  JOIN canvas child ON child.id = cp.canvas_id
+                  JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                  WHERE child.node_id = n.id
+                    AND child.lifecycle_state = 'active'
+                    AND cp.lifecycle_state = 'active') AS boardChildCount,
                 (SELECT group_concat(name, char(31)) FROM (
                    SELECT t.name FROM tag_assignment ta
                    JOIN tag t ON t.id = ta.tag_id
@@ -250,7 +256,7 @@ export function registerGalleryQueries(registry: QueryRegistry): void {
         out.push({
           nodeId: row.nodeId,
           kind: row.kind,
-          label: row.noteTitle ?? shortCode(row.nodeId),
+          label: nodeDisplayLabel({ ...row, isRoot: row.nodeId === ctx.rootNodeId }),
           appearanceKind: row.appearanceKind,
           appearanceColor: row.appearanceColor,
           appearanceIcon: row.appearanceIcon,

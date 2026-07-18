@@ -107,6 +107,13 @@ Before marking an item complete on the checklist MUST **stop** and **think**. Ha
 - [ ] Consolidation proposals with pin-transfer citations and
       estimated savings; owner sign-off requested.
 - [ ] Accepted proposals cut as tickets; nothing deleted here.
+- [x] SourcePanel synthetic drag fails at a named stage when
+      `SOURCE_ITEM_MIME` is absent and records the staged payload before
+      dispatching drop; no redundant product armed state added.
+- [x] Controlled input-cadence probe records evaluate, 1/3/4-step
+      moves, and locator-click durations with the window mode attached.
+- [x] Compare hidden vs shown under Xvfb one variable at a time; report
+      four-shard wall time and retain only a convicted CI configuration.
 
 ### Acceptance Criteria
 
@@ -146,3 +153,81 @@ measured runner. The analysis here should measure per-step cost
 directly (a probe spec), then trial: xvfb frame rate flags, Electron
 `show:true` under xvfb (windows are "visible" to X but unseen),
 offscreen rendering mode, and Playwright input dispatch options.
+
+## Round-1 residual verification (2026-07-17)
+
+### Issue #2 — proposed cause rejected
+
+- The asynchronous index/hydration structure and early-drag refusal are
+  real (`SourcePanel.svelte:144-205,226-238`), but the claimed race
+  cannot explain the current test. The cell's `draggable` attribute is
+  the exact same `item?.contentHash != null` predicate
+  (`SourcePanel.svelte:354-365`), and the test has awaited source URL,
+  decoded pixels, and `draggable="true"` before dispatching since the
+  original AI-IMP-091 commit (`e2e/source-panel.spec.ts:100-145`). A
+  second `data-armed` attribute would duplicate the existing readiness
+  signal.
+- The cited line numbers and failure arc are stale. The fresh law-wave
+  record names a placement-count failure but does not contain a trace
+  convicting the dragstart action. No SourcePanel behavior or loading
+  treatment is authorized until the exact failing stage is observed.
+  Narrow diagnostic repair: after synthetic `dragstart`, assert the
+  `DataTransfer` contains `SOURCE_ITEM_MIME` before dispatching `drop`,
+  and return named stage evidence so the next failure locates payload,
+  ingest, or placement. A visible loading voice would be a separate UX
+  ruling, not a flake fix.
+
+### Issue #3 — phenomenon confirmed; diagnosis broadened
+
+- CI runs under Xvfb (`ci.yml:109-117`) while Playwright defaults every
+  window to hidden (`playwright.config.ts:3-11`); BrowserWindow is then
+  `show:false` with `backgroundThrottling:false`
+  (`main/index.ts:808-823`). Trace evidence from run 29219899725 shows
+  4-step moves at 4.060-4.069s and 3-step moves at 3.045-3.050s, but
+  single-step moves also cost 0.74-0.91s and locator clicks 1.84-2.03s.
+  This is a general pointer/compositor cadence under hidden Xvfb, not
+  only a multi-step-move defect.
+- Do not globally collapse `steps`: 75 literal multi-step calls across
+  19 specs encode intermediate snap/drag/resize behavior. First land a
+  diagnostic CI probe measuring 1/3/4-step moves, locator click, and an
+  evaluate baseline; then compare hidden against
+  `EW_TEST_HIDDEN_WINDOWS=0` **inside Xvfb only**. A shown X window
+  remains invisible to humans and the local hidden default stays
+  untouched. If convicted, change only the CI e2e command and report
+  four-shard before/after wall time; otherwise trial Xvfb/offscreen
+  variables one at a time.
+- The current checklist and acceptance criteria describe only Issue #1.
+  Residual completion additionally requires: SourcePanel named-stage
+  evidence without redundant product state; a controlled pointer probe;
+  a one-variable-at-a-time CI trial; unchanged gesture-semantic pins;
+  and measured before/after shard minutes. “Roughly halves CI” remains a
+  hypothesis until the oracle reports it.
+
+## Residual diagnostic implementation (2026-07-17)
+
+- SourcePanel's existing `draggable="true"` readiness signal remains the
+  sole product state. The e2e now inspects `SOURCE_ITEM_MIME` immediately
+  after `dragstart`; a missing payload throws
+  `[source-panel:dragstart] ...` before drop, while success records MIME,
+  types, and parsed content hash. Local source-panel evidence is 3/3.
+- `input-cadence.spec.ts` is the controlled probe. It attaches JSON and
+  logs the window env/visibility plus evaluate, 1/3/4-step move, and
+  locator-click samples. Local hidden-window control measured 1.86ms,
+  5.19ms, 24.82ms, 32.54ms, and 23.54ms respectively (probe 1/1); these
+  are not the Linux/Xvfb oracle and do not convict a configuration.
+- Hidden-Xvfb control run 29625334194 measured evaluate 16.35ms,
+  1/3/4-step moves 997.39/3049.48/4066.89ms, and click 2121.73ms. Shard
+  job wall times were 18m39s / 14m57s / 11m57s / 11m55s; three shards
+  passed, while shard 3 exposed an unrelated 1/64 CSS-pixel tolerance bug
+  in the new PathBar regression pin, since corrected in its owning commit.
+- The one-variable shown-Xvfb trial (run 29626033980) measured evaluate
+  107.4ms, 1/3/4-step moves 107.02/312.28/415.59ms, and click 1137.8ms.
+  Showing the window therefore removes roughly 90% of the synthetic move
+  delay but only half the click delay. It did **not** improve the full
+  oracle: shard wall times were 16m44s / 17m05s / 13m16s / 14m38s, and
+  three shards failed across unrelated interaction/state arcs (GC + identity
+  corner; panels; source panel + undo). The trial configuration is rejected
+  and removed; local/CI hidden-window behavior and all gesture steps remain
+  unchanged. Window visibility is a convicted component of input latency,
+  not a safe end-to-end remedy. Further variables belong to a separately
+  measured CI census rather than being guessed here.

@@ -51,6 +51,7 @@ const listeners = new Set<Listener>()
 // openEntry, jumpToBookmark) are the belt to this suspenders — even a race
 // the token misses can never write one board's camera onto another.
 let navToken = 0
+let labelRefreshToken = 0
 
 function notify(): void {
   for (const listener of listeners) listener()
@@ -64,6 +65,35 @@ function captureViewport(): void {
 async function targetAlive(canvasId: string): Promise<boolean> {
   const response = await window.ew.project.query('getCanvasScene', { canvasId })
   return response.ok && response.result !== null
+}
+
+interface CanvasDisplayLabel {
+  canvasId: string
+  label: string
+}
+
+async function liveCanvasLabels(canvasIds: readonly string[]): Promise<Map<string, string> | null> {
+  const response = await window.ew.project.query('getCanvasDisplayLabels', { canvasIds })
+  if (!response.ok) return null
+  const rows = response.result as CanvasDisplayLabel[]
+  return new Map(rows.map((row) => [row.canvasId, row.label]))
+}
+
+/** Refresh every visible history label after a project mutation. The
+ * latest response wins so rapid title/child-count changes cannot roll
+ * the path back to an older projection. */
+async function refreshEntryLabels(): Promise<void> {
+  const myToken = ++labelRefreshToken
+  const labels = await liveCanvasLabels(entries.map((entry) => entry.canvasId))
+  if (myToken !== labelRefreshToken || labels === null) return
+  let changed = false
+  entries = entries.map((entry) => {
+    const label = labels.get(entry.canvasId)
+    if (!label || label === entry.label) return entry
+    changed = true
+    return { ...entry, label }
+  })
+  if (changed) notify()
 }
 
 async function openEntry(entry: NavEntry): Promise<void> {
@@ -86,12 +116,22 @@ async function openEntry(entry: NavEntry): Promise<void> {
 
 /** Push a new entry and go. The one true flight path for every
  * cross-canvas jump. No-op when already standing there. */
-export async function navigateTo(canvasId: string, label = 'Board'): Promise<void> {
+export async function navigateTo(canvasId: string, callerLabel?: string): Promise<void> {
+  // Keep the argument while callers migrate; it is context only and
+  // deliberately has no naming authority (AI-IMP-259).
+  void callerLabel
   if (!handle || canvasId === handle.canvasId) return
   // Claim the flight (supersedes any in-flight back/forward/goToIndex).
-  // The push/cursor mutation is synchronous, so it is atomic; the
-  // post-await camera write is guarded inside openEntry.
-  ++navToken
+  // Resolve the board's LIVE display label before mutating history.
+  // Caller text is navigation context, never naming authority; this is
+  // the app-wide no-generated-identity seam (AI-IMP-259).
+  const myToken = ++navToken
+  const labels = await liveCanvasLabels([canvasId])
+  if (myToken !== navToken || !labels) return
+  const label = labels.get(canvasId)
+  if (!label) return
+  // The push/cursor mutation is synchronous after the read, so it is
+  // atomic; the post-await camera write is guarded inside openEntry.
   captureViewport()
   entries = entries.slice(0, cursor + 1)
   entries.push({ canvasId, label, viewport: null })
@@ -248,6 +288,7 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
   }
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('pointerup', onPointerUp)
+  const offProjectChanged = window.ew.project.onChanged(() => void refreshEntryLabels())
   // macOS trackpad swipe / Windows mouse X-buttons, forwarded by main.
   const offGesture = window.ew.nav.onGesture((direction) => {
     if (takeoverActive()) return
@@ -272,11 +313,13 @@ export function attachNavigation(host: CanvasHostHandle): () => void {
     window.removeEventListener('keydown', onKeydown)
     window.removeEventListener('keydown', onQuickOpenKey, true)
     window.removeEventListener('pointerup', onPointerUp)
+    offProjectChanged()
     offGesture()
     delete window.__ewNav
     handle = null
     entries = []
     cursor = -1
+    ++labelRefreshToken
   }
 }
 

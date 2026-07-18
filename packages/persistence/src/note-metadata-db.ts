@@ -1,10 +1,10 @@
 import {
   composeNoteBody,
-  shortCode,
   stripMetadataBlock,
   type MetadataSectionsInput,
 } from '@ew/domain'
 import type { CommandContext } from './dispatcher'
+import { readLiveCanvasDisplayLabels } from './display-labels'
 import { usableCanvasOwnerJoin } from './queries-structure'
 import { getProjectSetting } from './settings'
 
@@ -167,14 +167,20 @@ export function computeNoteMetadata(ctx: ReadCtx, noteId: string): NoteMetadataV
   )
 
   const depth = boardDepths(ctx)
+  const canvasLabels = readLiveCanvasDisplayLabels(
+    ctx,
+    placementRows.map((row) => row.canvasId),
+  )
   const boards = new Map<string, NoteMetadataBoard>()
   for (const row of placementRows) {
     const isRoot = row.canvasId === ctx.rootCanvasId
     let board = boards.get(row.canvasId)
     if (!board) {
+      const label = canvasLabels.get(row.canvasId)
+      if (!label) throw new Error(`note metadata lost canvas ${row.canvasId}`)
       board = {
         canvasId: row.canvasId,
-        label: row.canvasTitle ?? (isRoot ? 'Home' : shortCode(row.canvasNodeId)),
+        label,
         isRoot,
         depth: depth.get(row.canvasId) ?? 0,
         count: 0,

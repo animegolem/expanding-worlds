@@ -16,6 +16,7 @@ import { assertPublicHost, resolveRedirectTarget } from './net-guard'
 import { checkForUpdate, type UpdateStatus } from './update-check'
 import { initTray, type TrayHandle } from './tray'
 import { createSnapshotEngine } from './snapshot'
+import { runSnapshotBeforeGc } from './end-session-data'
 import { MaterializedProjectOpenRegistry } from './open-capability'
 import { RendererFlushCoordinator } from './flush-coordinator'
 import type {
@@ -740,8 +741,8 @@ function setWindowVibrancy(win: BrowserWindow, enabled: boolean): boolean {
 // the quit path uses, §10.2) then checkpoint the WAL so the .sqlite is
 // complete at rest — a cloud daemon must never sync a live -wal. This
 // path NEVER blocks quit (it does not touch the close handler) and
-// NEVER throws: callUtility already returns typed dead responses, and
-// a checkpoint failure is the utility's to report, not ours to raise.
+// the public snapshot call NEVER throws: utility/flush failures return
+// a typed result for the end-session controller to disposition.
 
 /** The renderer commits pending editor buffers on app:flush and acks
  * with app:flush-done; bounded so a hung or dead renderer cannot trap
@@ -1287,10 +1288,10 @@ void app.whenReady().then(() => {
     // without waiting out a power event or the idle threshold. Gated
     // identically — no production renderer surface triggers snapshots.
     ipcMain.handle('test:snapshot', (_event, trigger: 'idle' | 'rest' | 'end-session') =>
-      snapshots.runSnapshot(trigger).then(() => true),
+      snapshots.runSnapshot(trigger).then((result) => result.ok),
     )
     ipcMain.handle('test:end-session-data', (_event, nowIso: string) =>
-      runEndSessionData(Date.now() + 15_000, String(nowIso)).then(() => true),
+      runEndSessionData(Date.now() + 15_000, String(nowIso)).then((result) => result.ok),
     )
   }
 
@@ -1320,15 +1321,16 @@ async function pushTagsBeforeSnapshot(): Promise<void> {
   }
 }
 
-async function runEndSessionData(deadlineAtMs: number, nowIso?: string): Promise<void> {
+async function runEndSessionData(deadlineAtMs: number, nowIso?: string) {
   await pushTagsBeforeSnapshot()
-  await snapshots.runSnapshot('end-session')
-  if (Date.now() >= deadlineAtMs - 100) return
-  await callUtility({
-    type: 'gc-sweep',
+  return runSnapshotBeforeGc(
+    {
+      runSnapshot: () => snapshots.runSnapshot('end-session'),
+      runGcSweep: callUtility,
+    },
     deadlineAtMs,
-    ...(nowIso === undefined ? {} : { nowIso }),
-  })
+    nowIso,
+  )
 }
 
 app.on('window-all-closed', () => {
@@ -1341,17 +1343,16 @@ app.on('window-all-closed', () => {
   snapshots.dispose()
   // §11.4 quit ritual (AI-IMP-120): take the end-session snapshot
   // BEFORE closing the project — the snapshot needs the live utility
-  // for the WAL checkpoint and notes-tree write. runSnapshot resolves
-  // even on failure and is time-bounded so a backup hiccup never traps
-  // quit; then close the project so the writer lock releases promptly
-  // (§11.1) and kill the utility.
-  let dataFinished = false
-  const dataWork = runEndSessionData(Date.now() + 15_000).then(() => {
-    dataFinished = true
+  // for the WAL checkpoint and notes-tree write. A typed failure aborts
+  // GC but never the independent quit bound; then close the project so
+  // the writer lock releases promptly (§11.1) and kill the utility.
+  let backupFinished = false
+  const dataWork = runEndSessionData(Date.now() + 15_000).then((result) => {
+    backupFinished = result.ok
   })
   void Promise.race([dataWork, new Promise((resolve) => setTimeout(resolve, 15_000))])
     .then(() => {
-      setAppSetting(LAST_QUIT_BACKUP_INCOMPLETE_KEY, !dataFinished)
+      setAppSetting(LAST_QUIT_BACKUP_INCOMPLETE_KEY, !backupFinished)
     })
     .then(() =>
       Promise.race([

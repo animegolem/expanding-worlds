@@ -11,7 +11,7 @@ export interface SearchResults {
   notes: Array<{ noteId: string; title: string; snippet: string }>
   tags: Array<{ tagId: string; name: string }>
   assets: SearchAssetResult[]
-  canvasText: Array<{ decorationId: string; canvasId: string; snippet: string }>
+  canvasText: Array<{ decorationId: string; canvasId: string; canvasLabel: string; snippet: string }>
 }
 
 export interface SearchNodeRow {
@@ -20,6 +20,7 @@ export interface SearchNodeRow {
   noteTitle: string | null
   assetFilename: string | null
   childCanvasId: string | null
+  displayLabel: string
   tags: string[]
 }
 
@@ -75,7 +76,7 @@ export async function loadSearchSnapshot(query: SearchQuery): Promise<SearchSnap
       }
     }
     if (node.childCanvasId) {
-      const label = node.noteTitle ?? 'Untitled board'
+      const label = node.displayLabel
       candidates.push({
         id: `canvas:${node.childCanvasId}`, kind: 'canvas', canvasId: node.childCanvasId,
         label, names: [label], tags: node.tags,
@@ -84,7 +85,7 @@ export async function loadSearchSnapshot(query: SearchQuery): Promise<SearchSnap
     if (node.assetFilename) {
       candidates.push({
         id: `image:${node.id}`, kind: 'image-node', nodeId: node.id,
-        filename: node.assetFilename, label: node.noteTitle ?? node.assetFilename,
+        filename: node.assetFilename, label: node.displayLabel,
         names: [node.noteTitle ?? '', node.assetFilename], tags: node.tags,
       })
     }

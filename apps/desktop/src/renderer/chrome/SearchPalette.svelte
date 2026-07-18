@@ -34,7 +34,7 @@
     | { group: 'Images'; kind: 'asset'; id: string; label: string; detail: string }
     | { group: 'Images'; kind: 'asset-loc'; id: string; label: string; detail: string; nodeId: string; placementId: string; canvasId: string; canvasLabel: string }
     | { group: 'Images'; kind: 'asset-bg'; id: string; label: string; detail: string; canvasId: string; canvasLabel: string }
-    | { group: 'Canvas text'; kind: 'canvas-text'; id: string; label: string; detail: string; canvasId: string }
+    | { group: 'Canvas text'; kind: 'canvas-text'; id: string; label: string; detail: string; canvasId: string; canvasLabel: string }
 
   const GROUP_VERB: Record<Row['group'], string> = {
     Notes: '↵ open note', Boards: '↵ dive', Tags: '↵ open tag',
@@ -221,7 +221,7 @@
     }
     for (const hit of bodyResults.canvasText) {
       if (facets.length > 0) continue
-      flat.push({ group: 'Canvas text', kind: 'canvas-text', id: hit.decorationId, label: hit.snippet, detail: '', canvasId: hit.canvasId })
+      flat.push({ group: 'Canvas text', kind: 'canvas-text', id: hit.decorationId, label: hit.snippet, detail: hit.canvasLabel, canvasId: hit.canvasId, canvasLabel: hit.canvasLabel })
     }
     return flat.sort((a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group))
   })
@@ -254,7 +254,7 @@
         requestCenterPlacements([row.placementId]); closeSearchPanel(); break
       case 'asset-bg': if (row.canvasId !== handle.canvasId) await navigateTo(row.canvasId, row.canvasLabel); closeSearchPanel(); break
       case 'canvas-text':
-        if (row.canvasId !== handle.canvasId) await navigateTo(row.canvasId, 'Board')
+        if (row.canvasId !== handle.canvasId) await navigateTo(row.canvasId, row.canvasLabel)
         requestCenterPlacements([row.id]); closeSearchPanel(); break
     }
   }
