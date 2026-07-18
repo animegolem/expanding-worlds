@@ -201,6 +201,7 @@ describe('searchProject', () => {
       {
         decorationId,
         canvasId: handle.rootCanvasId,
+        canvasLabel: 'Home',
         snippet: expect.stringContaining('[beacon]'),
       },
     ])
@@ -232,8 +233,8 @@ describe('searchProject', () => {
       assetId,
       settings: null,
     })
-    // A second background canvas whose owning node has no note: the
-    // location grammar labels it by short code ('Home' is the root's).
+    // A second background canvas whose owning node has no note uses
+    // the canonical unnamed-board fallback ('Home' is the root's).
     const nodeId = createNode()
     const canvasId = createCanvas(nodeId)
     committed('SetCanvasBackground', { canvasId, assetId, settings: null })
@@ -244,7 +245,7 @@ describe('searchProject', () => {
         usingNodeIds: [],
         usingCanvases: [
           { canvasId: handle.rootCanvasId, canvasLabel: 'Home' },
-          { canvasId, canvasLabel: shortCode(nodeId) },
+          { canvasId, canvasLabel: 'unnamed · 0 items' },
         ].sort((a, b) => (a.canvasId < b.canvasId ? -1 : 1)),
       },
     ])
@@ -333,17 +334,22 @@ describe('quickOpen', () => {
     ])
   })
 
-  it('addresses a canvas-owning node without a note by its short code', () => {
+  it('searches for a canvas-owning node by short code without displaying that raw id', () => {
     const nodeId = createNode()
     const canvasId = createCanvas(nodeId)
     const code = shortCode(nodeId)
 
     const entries = quickOpen(code)
-    expect(entries).toContainEqual({ kind: 'canvas', id: nodeId, canvasId, label: code })
+    expect(entries).toContainEqual({
+      kind: 'canvas',
+      id: nodeId,
+      canvasId,
+      label: 'unnamed · 0 items',
+    })
     // The root node owns the root canvas noteless too; only short-code
     // matches surface, never every noteless canvas.
     for (const entry of entries) {
-      expect(entry.label.includes(code)).toBe(true)
+      expect(entry.label.includes(code)).toBe(false)
     }
   })
 

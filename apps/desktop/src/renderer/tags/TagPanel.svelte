@@ -14,7 +14,7 @@
 -->
 <script lang="ts">
   import { tick } from 'svelte'
-  import { nameKey, shortCode } from '@ew/domain'
+  import { nameKey } from '@ew/domain'
   import NodeRow from '../rows/NodeRow.svelte'
   import TextInput from '../ui/TextInput.svelte'
   import Button from '../ui/Button.svelte'
@@ -55,6 +55,7 @@
     noteId: string | null
     noteTitle: string | null
     childCanvasId: string | null
+    displayLabel: string
     placementCount: number
     otherTags: string[]
     placements: TagViewPlacement[]
@@ -400,7 +401,7 @@
 
   // ------------------------------------------------------ row actions
   function rowLabel(node: TagViewNode): string {
-    return node.noteTitle ?? shortCode(node.id)
+    return node.displayLabel
   }
 
   /** Fly-to: same canvas selects and centers through the workspace

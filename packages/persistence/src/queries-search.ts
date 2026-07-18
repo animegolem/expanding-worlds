@@ -1,5 +1,6 @@
 import { shortCode, titleKey } from '@ew/domain'
 import type { QueryRegistry } from './queries'
+import { readLiveCanvasDisplayLabels } from './display-labels'
 import { usableCanvasOwnerJoin } from './queries-structure'
 import { ftsMatchExpression } from './search'
 
@@ -36,6 +37,7 @@ export interface AssetSearchResult {
 export interface CanvasTextSearchResult {
   decorationId: string
   canvasId: string
+  canvasLabel: string
   snippet: string
 }
 
@@ -107,38 +109,39 @@ export function registerSearchQueries(registry: QueryRegistry): void {
         match,
         ctx.projectId,
       )
-      .map((row) => ({
-        ...row,
-        usingNodeIds: ctx.db
+      .map((row) => {
+        const usingNodeIds = ctx.db
           .all<{ id: string }>(
             `SELECT id FROM node
              WHERE appearance_asset_id = ? AND lifecycle_state = 'active'
              ORDER BY id`,
             row.assetId,
           )
-          .map((n) => n.id),
-        usingCanvases: ctx.db
-          .all<{ id: string; canvasNodeId: string; canvasNoteTitle: string | null; isRoot: number }>(
-            `SELECT c.id, c.node_id AS canvasNodeId,
-                    cnote.title AS canvasNoteTitle,
-                    CASE WHEN c.node_id = pr.root_node_id THEN 1 ELSE 0 END
-                      AS isRoot
+          .map((n) => n.id)
+        const canvasRows = ctx.db.all<{ id: string }>(
+            `SELECT c.id
              FROM canvas c
-             JOIN project pr ON pr.id = c.project_id
              ${usableCanvasOwnerJoin('c', 'cn')}
-             LEFT JOIN note cnote ON cnote.id = cn.note_id
-               AND cnote.lifecycle_state = 'active'
              WHERE c.background_asset_id = ? AND c.lifecycle_state = 'active'
              ORDER BY c.id`,
             row.assetId,
           )
-          .map((c) => ({
-            canvasId: c.id,
-            canvasLabel: c.isRoot === 1 ? 'Home' : (c.canvasNoteTitle ?? shortCode(c.canvasNodeId)),
-          })),
-      }))
+        const labels = readLiveCanvasDisplayLabels(
+          ctx,
+          canvasRows.map((canvas) => canvas.id),
+        )
+        return {
+          ...row,
+          usingNodeIds,
+          usingCanvases: canvasRows.map((canvas) => {
+            const canvasLabel = labels.get(canvas.id)
+            if (!canvasLabel) throw new Error(`asset background lost canvas ${canvas.id}`)
+            return { canvasId: canvas.id, canvasLabel }
+          }),
+        }
+      })
 
-    const canvasText = ctx.db.all<CanvasTextSearchResult>(
+    const canvasTextRows = ctx.db.all<Omit<CanvasTextSearchResult, 'canvasLabel'>>(
       `SELECT d.id AS decorationId, d.canvas_id AS canvasId,
               snippet(canvas_text_fts, ${SNIPPET_ARGS}) AS snippet
        FROM canvas_text_fts
@@ -151,6 +154,16 @@ export function registerSearchQueries(registry: QueryRegistry): void {
       match,
       ctx.projectId,
     )
+
+    const canvasTextLabels = readLiveCanvasDisplayLabels(
+      ctx,
+      canvasTextRows.map((row) => row.canvasId),
+    )
+    const canvasText = canvasTextRows.map((row) => {
+      const canvasLabel = canvasTextLabels.get(row.canvasId)
+      if (!canvasLabel) throw new Error(`canvas text lost canvas ${row.canvasId}`)
+      return { ...row, canvasLabel }
+    })
 
     return { notes, tags, assets, canvasText }
   })
@@ -194,20 +207,26 @@ export function registerSearchQueries(registry: QueryRegistry): void {
          AND n.lifecycle_state = 'active'`,
       ctx.projectId,
     )
+    const canvasLabels = readLiveCanvasDisplayLabels(
+      ctx,
+      canvasNodes.map((row) => row.canvasId),
+    )
     for (const row of canvasNodes) {
+      const label = canvasLabels.get(row.canvasId)
+      if (!label) throw new Error(`quick-open lost canvas ${row.canvasId}`)
       if (row.noteTitle !== null && row.noteTitleKey !== null) {
         if (key.length > 0 && row.noteTitleKey.includes(key)) {
           entries.push({
             kind: 'canvas',
             id: row.nodeId,
             canvasId: row.canvasId,
-            label: row.noteTitle,
+            label,
           })
         }
       } else {
         const code = shortCode(row.nodeId)
         if (code.includes(codeNeedle)) {
-          entries.push({ kind: 'canvas', id: row.nodeId, canvasId: row.canvasId, label: code })
+          entries.push({ kind: 'canvas', id: row.nodeId, canvasId: row.canvasId, label })
         }
       }
     }

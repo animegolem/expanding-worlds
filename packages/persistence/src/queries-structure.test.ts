@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { shortCode, titleKey, uuidv7 } from '@ew/domain'
+import { titleKey, uuidv7 } from '@ew/domain'
 import { CommandRegistry, type CommittedResult } from '@ew/commands'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
@@ -14,6 +14,7 @@ import { registerPlacementHandlers } from './handlers/placements'
 import { registerTagHandlers } from './handlers/tags'
 import { createProject, type ProjectHandle } from './project'
 import { QueryRegistry } from './queries'
+import type { CanvasDisplayLabel } from './display-labels'
 import {
   registerStructureQueries,
   type BoardFilmstrip,
@@ -130,6 +131,44 @@ function insertImageAsset(contentHash: string, filename = 'reference.png'): stri
   return assetId
 }
 
+describe('getCanvasDisplayLabels (AI-IMP-259)', () => {
+  it('uses Home, live note titles, and live unnamed-board counts without exposing ids', () => {
+    const titledOwner = createNode()
+    const titledCanvas = uuidv7()
+    committed('CreateCanvas', { canvasId: titledCanvas, nodeId: titledOwner })
+    const titleId = insertNote('Robeau')
+    committed('AttachNoteToNode', { nodeId: titledOwner, noteId: titleId })
+
+    const unnamedOwner = createNode()
+    const unnamedCanvas = uuidv7()
+    committed('CreateCanvas', { canvasId: unnamedCanvas, nodeId: unnamedOwner })
+    createPlacement(createNode(), unnamedCanvas)
+
+    const labels = query<CanvasDisplayLabel[]>('getCanvasDisplayLabels', {
+      canvasIds: [handle.rootCanvasId, titledCanvas, unnamedCanvas],
+    })
+    expect(new Map(labels.map((row) => [row.canvasId, row.label]))).toEqual(
+      new Map([
+        [handle.rootCanvasId, 'Home'],
+        [titledCanvas, 'Robeau'],
+        [unnamedCanvas, 'unnamed · 1 items'],
+      ]),
+    )
+    expect(JSON.stringify(labels)).not.toContain(unnamedOwner)
+  })
+
+  it('omits unusable canvases so callers cannot mistake stale labels for live names', () => {
+    const owner = createNode()
+    const canvasId = uuidv7()
+    committed('CreateCanvas', { canvasId, nodeId: owner })
+    committed('TrashNode', { nodeId: owner })
+
+    expect(query<CanvasDisplayLabel[]>('getCanvasDisplayLabels', { canvasIds: [canvasId] })).toEqual(
+      [],
+    )
+  })
+})
+
 describe('getCanvasContents', () => {
   it('returns one render_order-sorted list across both kinds, active only', () => {
     const node = createNode()
@@ -168,11 +207,17 @@ describe('listNodeLibrary (§14.1)', () => {
     const byId = new Map(all.map((row) => [row.id as string, row]))
     expect(byId.get(placed)).toMatchObject({
       noteTitle: 'Person',
+      displayLabel: 'Person',
       placementCount: 2,
       tags: ['scout'],
     })
-    expect(byId.get(unplaced)).toMatchObject({ noteTitle: null, placementCount: 0, tags: [] })
-    expect(byId.has(handle.rootNodeId)).toBe(true)
+    expect(byId.get(unplaced)).toMatchObject({
+      noteTitle: null,
+      displayLabel: 'untitled node',
+      placementCount: 0,
+      tags: [],
+    })
+    expect(byId.get(handle.rootNodeId)).toMatchObject({ displayLabel: 'Home' })
 
     // Unplaced is a legitimate durable state, filterable.
     const filtered = query<Array<Record<string, unknown>>>('listNodeLibrary', {
@@ -1125,14 +1170,22 @@ describe('listBookmarks (§8.1)', () => {
       [third, 'purged'],
     ])
     expect(rows[0]!.viewport).toEqual({ x: 5, y: 6, zoom: 1.5 })
-    expect(rows[0]!).toMatchObject({ targetKind: 'canvas', canvasId: alive, label: 'Harbor' })
-    expect(rows[1]!.viewport).toBeNull()
+    expect(rows[0]!).toMatchObject({
+      targetKind: 'canvas',
+      canvasId: alive,
+      label: 'unnamed · 0 items',
+    })
+    expect(rows[1]!).toMatchObject({ label: 'Keep', viewport: null })
+    expect(rows[2]!).toMatchObject({ label: 'Ruin' })
 
     // Restore revalidates the bookmark with no user action (§8.1:
     // stable ids — no bookmark write happened at all).
     committed('RestoreRecord', { kind: 'canvas', id: doomedTrash })
     const after = query<BookmarkListRow[]>('listBookmarks')
-    expect(after.find((r) => r.id === second)!.targetState).toBe('active')
+    expect(after.find((r) => r.id === second)).toMatchObject({
+      targetState: 'active',
+      label: 'unnamed · 0 items',
+    })
   })
 
   it('degrades a bookmark whose OWNER node is trashed, restoring the node (§9.6)', () => {
@@ -1210,12 +1263,12 @@ describe('getNodeLocations (§8.3 asset-row expansion, AI-IMP-073)', () => {
     expect(byId.get(pB)!.canvasId).toBe(boardB)
   })
 
-  it('an unplaced node is a row with empty placements; a noteless node labels by short code', () => {
+  it('an unplaced node is a row with empty placements and the canonical untitled fallback', () => {
     const nodeId = createNode()
     const locations = query<NodeLocations | null>('getNodeLocations', { nodeId })
     expect(locations).not.toBeNull()
     expect(locations!.placements).toEqual([])
-    expect(locations!.label).toBe(shortCode(nodeId))
+    expect(locations!.label).toBe('untitled node')
     expect(locations!.noteId).toBeNull()
   })
 

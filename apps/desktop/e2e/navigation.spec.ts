@@ -9,10 +9,14 @@ import { exec, launchApp, launchAppInDir } from './helpers'
  * returns to the protected root canvas.
  */
 
-async function seedCanvas(win: import('@playwright/test').Page): Promise<string> {
+async function seedCanvas(
+  win: import('@playwright/test').Page,
+  title: string,
+): Promise<string> {
   const nodeId = crypto.randomUUID()
   const canvasId = crypto.randomUUID()
   await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'CreateNoteAndAttach', { nodeId, noteId: crypto.randomUUID(), title })
   await exec(win, 'CreateCanvas', { canvasId, nodeId })
   return canvasId
 }
@@ -20,8 +24,8 @@ async function seedCanvas(win: import('@playwright/test').Page): Promise<string>
 test('path, back/forward, viewport restore, home (§17 item 12)', async () => {
   const { app, win } = await launchApp('ew-e2e-nav-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
-  const canvasB = await seedCanvas(win)
-  const canvasC = await seedCanvas(win)
+  const canvasB = await seedCanvas(win, 'Harbor')
+  const canvasC = await seedCanvas(win, 'Keep')
 
   // A distinctive viewport on the root, to be restored by Back.
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 137, y: 59, zoom: 2 }))
@@ -50,7 +54,7 @@ test('path, back/forward, viewport restore, home (§17 item 12)', async () => {
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
 
   // A NEW navigation clears the forward stack (§8.1).
-  const canvasD = await seedCanvas(win)
+  const canvasD = await seedCanvas(win, 'Delta')
   await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Delta'), { id: canvasD })
   expect(await win.evaluate(() => window.__ewNav!.entries().length)).toBe(3) // Home, Harbor, Delta
   await win.keyboard.press('ControlOrMeta+BracketRight')
@@ -142,11 +146,60 @@ test('path, back/forward, viewport restore, home (§17 item 12)', async () => {
   await app.close()
 })
 
+test('live canvas names ignore caller/bookmark slugs and refresh item counts (AI-IMP-259)', async () => {
+  const { app, win } = await launchApp('ew-e2e-nav-labels-')
+  const nodeId = crypto.randomUUID()
+  const canvasId = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId })
+  await exec(win, 'CreateCanvas', { canvasId, nodeId })
+
+  // Arrival text is context, never naming authority. An unnamed board
+  // resolves through the canonical live read model at the flight seam.
+  await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, '2xajxshy'), { id: canvasId })
+  await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasId)
+  await expect(win.getByTestId('nav-crumb-1')).toHaveText('unnamed · 0 items')
+
+  // The fallback is live: child-count changes refresh every matching
+  // history occurrence without another navigation.
+  const childId = crypto.randomUUID()
+  await exec(win, 'CreateNode', { nodeId: childId })
+  await exec(win, 'CreatePlacement', {
+    placementId: crypto.randomUUID(),
+    canvasId,
+    nodeId: childId,
+  })
+  await expect(win.getByTestId('nav-crumb-1')).toHaveText('unnamed · 1 items')
+
+  // Old persisted bookmark labels remain recovery context for broken
+  // targets only. A live row renders the same canonical seam as PathBar.
+  await exec(win, 'CreateBookmark', {
+    bookmarkId: crypto.randomUUID(),
+    canvasId,
+    label: '2xajxshy',
+    viewport: null,
+  })
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-jump-0')).toHaveText('unnamed · 1 items')
+  await win.keyboard.press('Escape')
+
+  // Naming the owning node refreshes both surfaces again.
+  await exec(win, 'CreateNoteAndAttach', {
+    nodeId,
+    noteId: crypto.randomUUID(),
+    title: 'Robeau',
+  })
+  await expect(win.getByTestId('nav-crumb-1')).toHaveText('Robeau')
+  await openBookmarkMenu(win)
+  await expect(win.getByTestId('bookmark-jump-0')).toHaveText('Robeau')
+
+  await app.close()
+})
+
 test('racing two navigations never persists the wrong board’s camera (§8.1, AI-IMP-176 M-01)', async () => {
   const { app, win } = await launchApp('ew-e2e-nav-race-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
-  const canvasA = await seedCanvas(win)
-  const canvasB = await seedCanvas(win)
+  const canvasA = await seedCanvas(win, 'Alpha')
+  const canvasB = await seedCanvas(win, 'Beta')
 
   // Give A and B distinct SAVED cameras (persisted to the DB): fly to
   // each, set a camera, wait out the 500 ms camera-persist debounce.
@@ -196,8 +249,8 @@ test('racing two navigations never persists the wrong board’s camera (§8.1, A
 test('held-key back is one nav per press and never deletes Home (§8.1, AI-IMP-176 M-08)', async () => {
   const { app, win } = await launchApp('ew-e2e-nav-keyrepeat-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
-  const canvasB = await seedCanvas(win)
-  const canvasC = await seedCanvas(win)
+  const canvasB = await seedCanvas(win, 'Harbor')
+  const canvasC = await seedCanvas(win, 'Keep')
 
   await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Harbor'), { id: canvasB })
   await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Keep'), { id: canvasC })
@@ -248,8 +301,8 @@ test('held-key back is one nav per press and never deletes Home (§8.1, AI-IMP-1
 test('stale targets skip and collapse; history survives trash (§8.1)', async () => {
   const { app, win } = await launchApp('ew-e2e-nav-stale-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
-  const canvasB = await seedCanvas(win)
-  const canvasC = await seedCanvas(win)
+  const canvasB = await seedCanvas(win, 'Harbor')
+  const canvasC = await seedCanvas(win, 'Keep')
 
   await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Harbor'), { id: canvasB })
   await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Keep'), { id: canvasC })
@@ -302,7 +355,7 @@ test('bookmarks: add, jump with viewport, reorder rebinds Mod+n, order survives 
   const { projectDir } = launched
   let { app, win } = launched
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
-  const canvasB = await seedCanvas(win)
+  const canvasB = await seedCanvas(win, 'Harbor')
 
   // Bookmark the root under a distinctive viewport.
   await win.evaluate(() => window.__ewDebug!.setCamera({ x: 500, y: 250, zoom: 2 }))
@@ -452,8 +505,8 @@ test('migrated shortcuts still fire: Mod+K opens search post-registry (§8.3, AI
 test('bookmarks degrade explicitly: In Trash greys with Restore, purged offers removal (§8.1)', async () => {
   const { app, win } = await launchApp('ew-e2e-bookmarks-stale-')
   const root = await win.evaluate(() => window.__ewDebug!.canvasId())
-  const canvasB = await seedCanvas(win)
-  const canvasC = await seedCanvas(win)
+  const canvasB = await seedCanvas(win, 'Keep')
+  const canvasC = await seedCanvas(win, 'Ruin')
 
   // Bookmark B ('Keep') and C ('Ruin') from their own boards.
   await win.evaluate(({ id }) => window.__ewNav!.navigateTo(id, 'Keep'), { id: canvasB })
@@ -510,6 +563,11 @@ test('bookmark to a board whose OWNER node is trashed degrades and Restore reviv
   const nodeB = crypto.randomUUID()
   const canvasB = crypto.randomUUID()
   await exec(win, 'CreateNode', { nodeId: nodeB })
+  await exec(win, 'CreateNoteAndAttach', {
+    nodeId: nodeB,
+    noteId: crypto.randomUUID(),
+    title: 'Owned',
+  })
   await exec(win, 'CreateCanvas', { canvasId: canvasB, nodeId: nodeB })
 
   // Bookmark B from its own board, then return home.

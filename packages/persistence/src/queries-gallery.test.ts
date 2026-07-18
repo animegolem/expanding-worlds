@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { shortCode, uuidv7 } from '@ew/domain'
+import { uuidv7 } from '@ew/domain'
 import { CommandRegistry } from '@ew/commands'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Dispatcher, type CommandContext } from './dispatcher'
@@ -187,7 +187,7 @@ describe('gallery read models (§14.4)', () => {
     })
     expect(items[1]).toMatchObject({
       kind: 'image',
-      label: shortCode(image),
+      label: 'pic.png',
       contentHash: 'cd'.repeat(32),
       width: 640,
       height: 480,

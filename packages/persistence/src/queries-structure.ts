@@ -1,5 +1,10 @@
-import { shortCode } from '@ew/domain'
 import type { QueryRegistry } from './queries'
+import {
+  canvasDisplayLabel,
+  nodeDisplayLabel,
+  readLiveCanvasDisplayLabels,
+  type CanvasDisplayLabel,
+} from './display-labels'
 
 /**
  * Structural read models (AI-IMP-012): canvas contents over the
@@ -188,6 +193,7 @@ export interface TagViewNode extends NodeAppearanceColumns {
   noteId: string | null
   noteTitle: string | null
   childCanvasId: string | null
+  displayLabel: string
   placementCount: number
   otherTags: string[]
   placements: TagViewPlacement[]
@@ -246,6 +252,17 @@ export function usableCanvasOwnerJoin(canvasAlias: string, ownerAlias: string): 
 }
 
 export function registerStructureQueries(registry: QueryRegistry): void {
+  registry.register('getCanvasDisplayLabels', (ctx, args): CanvasDisplayLabel[] => {
+    const requested = (args ?? {}) as { canvasIds?: unknown }
+    const canvasIds = Array.isArray(requested.canvasIds)
+      ? requested.canvasIds.filter((id): id is string => typeof id === 'string')
+      : []
+    return [...readLiveCanvasDisplayLabels(ctx, canvasIds)].map(([canvasId, label]) => ({
+      canvasId,
+      label,
+    }))
+  })
+
   // §4.4: one render_order-sorted list across both content tables with
   // kind discriminators; UUID breaks ties deterministically.
   registry.register('getCanvasContents', (ctx, args) => {
@@ -474,7 +491,11 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       ctx.projectId,
     )
     const filtered = filter === 'unplaced' ? rows.filter((r) => r.placementCount === 0) : rows
-    return filtered.map((row) => ({ ...row, tags: tagNamesFor(ctx, row.id) }))
+    return filtered.map((row) => ({
+      ...row,
+      displayLabel: nodeDisplayLabel({ ...row, isRoot: row.id === ctx.rootNodeId }),
+      tags: tagNamesFor(ctx, row.id),
+    }))
 
     function tagNamesFor(c: typeof ctx, nodeId: string): string[] {
       return c.db
@@ -556,13 +577,18 @@ export function registerStructureQueries(registry: QueryRegistry): void {
        ORDER BY p.node_id, p.id`,
       tagId,
     )
+    const canvasLabels = readLiveCanvasDisplayLabels(
+      ctx,
+      locations.map((row) => row.canvasId),
+    )
     const placementsByNode = new Map<string, TagViewPlacement[]>()
     for (const row of locations) {
+      const canvasLabel = canvasLabels.get(row.canvasId)
+      if (!canvasLabel) throw new Error(`live tag location lost canvas ${row.canvasId}`)
       const entry: TagViewPlacement = {
         placementId: row.placementId,
         canvasId: row.canvasId,
-        canvasLabel:
-          row.isRoot === 1 ? 'Home' : (row.canvasNoteTitle ?? shortCode(row.canvasNodeId)),
+        canvasLabel,
       }
       const list = placementsByNode.get(row.nodeId)
       if (list) list.push(entry)
@@ -575,6 +601,8 @@ export function registerStructureQueries(registry: QueryRegistry): void {
           noteId: string | null
           noteTitle: string | null
           childCanvasId: string | null
+          assetFilename: string | null
+          boardChildCount: number
           placementCount: number
         }
       >(
@@ -582,6 +610,11 @@ export function registerStructureQueries(registry: QueryRegistry): void {
                 note.id AS noteId,
                 note.title AS noteTitle,
                 child.id AS childCanvasId,
+                asset.original_filename AS assetFilename,
+                (SELECT count(*) FROM placement cp
+                  JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                  WHERE cp.canvas_id = child.id AND cp.lifecycle_state = 'active')
+                  AS boardChildCount,
                 (SELECT count(*) FROM placement p
                   JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
                   ${usableCanvasOwnerJoin('c', 'co')}
@@ -592,12 +625,15 @@ export function registerStructureQueries(registry: QueryRegistry): void {
          LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
          LEFT JOIN canvas child ON child.node_id = n.id
            AND child.lifecycle_state = 'active'
+         LEFT JOIN asset ON asset.id = n.appearance_asset_id
+           AND asset.lifecycle_state = 'active'
          WHERE ta.tag_id = ? AND n.lifecycle_state = 'active'
          ORDER BY n.id`,
         tagId,
       )
       .map((node) => ({
         ...node,
+        displayLabel: nodeDisplayLabel({ ...node, isRoot: node.id === ctx.rootNodeId }),
         otherTags: ctx.db
           .all<{ name: string }>(
             `SELECT t.name FROM tag t
@@ -623,19 +659,33 @@ export function registerStructureQueries(registry: QueryRegistry): void {
   registry.register('getNodeLocations', (ctx, args): NodeLocations | null => {
     const { nodeId } = args as { nodeId: string }
     const node = ctx.db.get<
-      NodeAppearanceColumns & { id: string; noteId: string | null; noteTitle: string | null }
+      NodeAppearanceColumns & {
+        id: string
+        noteId: string | null
+        noteTitle: string | null
+        childCanvasId: string | null
+        assetFilename: string | null
+        boardChildCount: number
+      }
     >(
       `SELECT n.id, ${NODE_APPEARANCE_SELECT},
-              note.id AS noteId, note.title AS noteTitle
+              note.id AS noteId, note.title AS noteTitle,
+              child.id AS childCanvasId,
+              asset.original_filename AS assetFilename,
+              (SELECT count(*) FROM placement cp
+                JOIN node cpn ON cpn.id = cp.node_id AND cpn.lifecycle_state = 'active'
+                WHERE cp.canvas_id = child.id AND cp.lifecycle_state = 'active')
+                AS boardChildCount
        FROM node n
        LEFT JOIN note ON note.id = n.note_id AND note.lifecycle_state = 'active'
+       LEFT JOIN canvas child ON child.node_id = n.id AND child.lifecycle_state = 'active'
+       LEFT JOIN asset ON asset.id = n.appearance_asset_id AND asset.lifecycle_state = 'active'
        WHERE n.id = ? AND n.project_id = ? AND n.lifecycle_state = 'active'`,
       nodeId,
       ctx.projectId,
     )
     if (!node) return null
-    const placements = ctx.db
-      .all<{
+    const locationRows = ctx.db.all<{
         placementId: string
         canvasId: string
         canvasNodeId: string
@@ -656,15 +706,22 @@ export function registerStructureQueries(registry: QueryRegistry): void {
          ORDER BY p.id`,
         nodeId,
       )
-      .map((row) => ({
+    const canvasLabels = readLiveCanvasDisplayLabels(
+      ctx,
+      locationRows.map((row) => row.canvasId),
+    )
+    const placements = locationRows.map((row) => {
+      const canvasLabel = canvasLabels.get(row.canvasId)
+      if (!canvasLabel) throw new Error(`live node location lost canvas ${row.canvasId}`)
+      return {
         placementId: row.placementId,
         canvasId: row.canvasId,
-        canvasLabel:
-          row.isRoot === 1 ? 'Home' : (row.canvasNoteTitle ?? shortCode(row.canvasNodeId)),
-      }))
+        canvasLabel,
+      }
+    })
     return {
       nodeId: node.id,
-      label: node.noteTitle ?? shortCode(node.id),
+      label: nodeDisplayLabel({ ...node, isRoot: node.id === ctx.rootNodeId }),
       appearanceKind: node.appearanceKind,
       appearanceColor: node.appearanceColor,
       appearanceIcon: node.appearanceIcon,
@@ -685,9 +742,8 @@ export function registerStructureQueries(registry: QueryRegistry): void {
   // `trashedKind`/`ownerNodeId` so Restore targets the aggregate root
   // (the node) rather than issuing a canvas restore that cannot revive
   // a trashed owner.
-  registry.register('listBookmarks', (ctx): BookmarkListRow[] =>
-    ctx.db
-      .all<Omit<BookmarkListRow, 'viewport'> & { viewport: string | null }>(
+  registry.register('listBookmarks', (ctx): BookmarkListRow[] => {
+    const rows = ctx.db.all<Omit<BookmarkListRow, 'viewport'> & { viewport: string | null }>(
         `SELECT b.id, b.target_kind AS targetKind, b.canvas_id AS canvasId,
                 b.label, b.viewport, b.sort_key AS sortKey,
                 c.node_id AS ownerNodeId,
@@ -710,14 +766,27 @@ export function registerStructureQueries(registry: QueryRegistry): void {
          ORDER BY b.sort_key, b.id`,
         ctx.projectId,
       )
-      .map((row) => ({
+    const liveLabels = readLiveCanvasDisplayLabels(
+      ctx,
+      rows.filter((row) => row.targetState === 'active').map((row) => row.canvasId),
+    )
+    return rows.map((row) => {
+      const liveLabel = liveLabels.get(row.canvasId)
+      if (row.targetState === 'active' && !liveLabel) {
+        throw new Error(`active bookmark lost canvas display label ${row.canvasId}`)
+      }
+      return {
         ...row,
+        // Persisted text is historical recovery context only. A live
+        // target always resolves through the canonical naming seam.
+        label: liveLabel ?? row.label,
         viewport:
           row.viewport === null
             ? null
             : (JSON.parse(row.viewport) as BookmarkListRow['viewport']),
-      })),
-  )
+      }
+    })
+  })
 
   registry.register('getCanvasByNode', (ctx, args) => {
     const { nodeId } = args as { nodeId: string }
@@ -839,10 +908,11 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       .map((row) => ({
         canvasId: row.canvasId,
         nodeId: row.nodeId,
-        label:
-          row.nodeId === row.rootNodeId
-            ? 'Home'
-            : (row.noteTitle ?? `unnamed · ${row.childCount} items`),
+        label: canvasDisplayLabel({
+          isRoot: row.nodeId === row.rootNodeId,
+          noteTitle: row.noteTitle,
+          childCount: row.childCount,
+        }),
         isRoot: row.nodeId === row.rootNodeId,
         // A canvas whose owning node has no active placement cannot
         // appear as any board's child — it surfaces at root level.
@@ -933,26 +1003,36 @@ export function registerStructureQueries(registry: QueryRegistry): void {
       ctx.projectId,
     )
     if (!node) return null
-    const places = ctx.db.all<OutlinePlace>(
-      `SELECT p.id AS placementId, c.id AS canvasId,
-              CASE WHEN owner.id = ? THEN 'Home'
-                   WHEN note.title IS NOT NULL THEN note.title
-                   ELSE 'unnamed · ' ||
-                     (SELECT count(*) FROM placement cp
-                       JOIN node cpn ON cpn.id = cp.node_id
-                         AND cpn.lifecycle_state = 'active'
-                       WHERE cp.canvas_id = c.id AND cp.lifecycle_state = 'active') ||
-                     ' items'
-              END AS canvasLabel
+    const placeRows = ctx.db.all<Omit<OutlinePlace, 'canvasLabel'> & { renderOrder: number }>(
+      `SELECT p.id AS placementId, c.id AS canvasId, p.render_order AS renderOrder
        FROM placement p
        JOIN canvas c ON c.id = p.canvas_id AND c.lifecycle_state = 'active'
        ${usableCanvasOwnerJoin('c', 'owner')}
-       LEFT JOIN note ON note.id = owner.note_id AND note.lifecycle_state = 'active'
        WHERE p.node_id = ? AND p.lifecycle_state = 'active'
-       ORDER BY lower(canvasLabel), c.id, p.render_order, p.id`,
-      ctx.rootNodeId,
+       ORDER BY c.id, p.render_order, p.id`,
       target.nodeId,
     )
+    const placeLabels = readLiveCanvasDisplayLabels(
+      ctx,
+      placeRows.map((place) => place.canvasId),
+    )
+    const places = placeRows
+      .map((place) => {
+        const canvasLabel = placeLabels.get(place.canvasId)
+        if (!canvasLabel) throw new Error(`outline preview lost canvas ${place.canvasId}`)
+        return { ...place, canvasLabel }
+      })
+      .sort((a, b) =>
+        a.canvasLabel.toLocaleLowerCase().localeCompare(b.canvasLabel.toLocaleLowerCase()) ||
+        a.canvasId.localeCompare(b.canvasId) ||
+        a.renderOrder - b.renderOrder ||
+        a.placementId.localeCompare(b.placementId),
+      )
+      .map(({ placementId, canvasId, canvasLabel }): OutlinePlace => ({
+        placementId,
+        canvasId,
+        canvasLabel,
+      }))
     const tags = ctx.db
       .all<{ name: string }>(
         `SELECT t.name FROM tag_assignment ta
@@ -1089,13 +1169,13 @@ export function registerStructureQueries(registry: QueryRegistry): void {
         : row.appearanceKind === 'card' || row.appearanceKind === 'icon' || row.appearanceKind === 'image'
           ? row.appearanceKind
           : 'dot'
-      const label =
-        row.noteTitle ??
-        (appearanceKind === 'image' && row.filename
-          ? row.filename
-          : appearanceKind === 'board'
-            ? `unnamed · ${row.childCount} items`
-            : 'untitled node')
+      const label = nodeDisplayLabel({
+        isRoot: row.nodeId === ctx.rootNodeId,
+        noteTitle: row.noteTitle,
+        childCanvasId: row.childCanvasId,
+        boardChildCount: row.childCount,
+        assetFilename: appearanceKind === 'image' ? row.filename : null,
+      })
       return row.appearanceKind === 'image' && row.contentHash !== null && row.filename !== null
         ? ({
             kind: 'image',

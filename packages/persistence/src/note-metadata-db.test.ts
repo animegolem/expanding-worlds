@@ -110,6 +110,22 @@ describe('computeNoteMetadata', () => {
     expect(inner).toMatchObject({ label: 'Inner Board', depth: 1, count: 1 })
   })
 
+  it('uses the live unnamed-board count rather than a generated identity', () => {
+    const boardNode = createAttachedNode(createNote('Temporary'))
+    handle.db.run('UPDATE node SET note_id = NULL WHERE id = ?', boardNode)
+    const childCanvas = uuidv7()
+    commit('CreateCanvas', { canvasId: childCanvas, nodeId: boardNode })
+    place(boardNode, handle.rootCanvasId)
+
+    const noteId = createNote('Subject')
+    place(createAttachedNode(noteId), childCanvas)
+    place(createAttachedNode(createNote('Neighbor')), childCanvas)
+
+    const board = computeNoteMetadata(ctx, noteId)!.boards.find((row) => !row.isRoot)
+    expect(board).toMatchObject({ label: 'unnamed · 2 items', count: 1 })
+    expect(board!.label).not.toContain(boardNode)
+  })
+
   it('lists provenance for image-backed nodes with import date and source', () => {
     const noteId = createNote('Art')
     const node = createAttachedNode(noteId)
