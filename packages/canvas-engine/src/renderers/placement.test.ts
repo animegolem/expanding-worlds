@@ -225,6 +225,83 @@ describe('texture residency across updates (AI-IMP-025)', () => {
     expect(object.getChildByLabel('image-placeholder')).toBeFalsy()
   })
 
+  it('re-acquires after resident image -> non-image -> image round-trips (AI-IMP-307)', async () => {
+    const intermediates = [
+      { appearanceKind: null },
+      { appearanceKind: 'dot' as const, appearanceColor: '#abc' },
+      { appearanceKind: 'icon' as const, appearanceIcon: 'star' },
+      { appearanceKind: 'card' as const, noteId: 'note-1', noteTitle: 'Card' },
+      { appearanceKind: 'frame' as const },
+    ]
+
+    for (const appearance of intermediates) {
+      const resources = fakeBudget()
+      const item = image()
+      const object = placementRenderer.create(item, resources)
+      setPlacementTextureResident(object, item, resources, true)
+      resources.flush()
+      await settled()
+
+      const nonImage = {
+        ...item,
+        appearanceColor: null,
+        appearanceIcon: null,
+        appearanceAssetId: null,
+        appearanceCrop: null,
+        assetContentHash: null,
+        assetMimeType: null,
+        assetWidth: null,
+        assetHeight: null,
+        ...appearance,
+      }
+      placementRenderer.update(object, nonImage, item, resources)
+      expect(resources.released).toEqual([HASH_A])
+
+      placementRenderer.update(object, item, nonImage, resources)
+      // The placement never left Culler residency, so the rebuild itself
+      // must request the restored image instead of waiting for a new hook.
+      expect(resources.acquired).toEqual([HASH_A, HASH_A])
+      expect(object.getChildByLabel('image-placeholder')).toBeTruthy()
+      resources.flush()
+      await settled()
+      expect(object.getChildByLabel('image')).toBeTruthy()
+      expect(object.getChildByLabel('image-placeholder')).toBeFalsy()
+    }
+  })
+
+  it('does not eagerly restore an image after residency was left as a non-image', async () => {
+    const resources = fakeBudget()
+    const item = image()
+    const object = placementRenderer.create(item, resources)
+    setPlacementTextureResident(object, item, resources, true)
+    resources.flush()
+    await settled()
+
+    const dot = {
+      ...item,
+      appearanceKind: 'dot' as const,
+      appearanceColor: '#abc',
+      appearanceAssetId: null,
+      assetContentHash: null,
+      assetMimeType: null,
+      assetWidth: null,
+      assetHeight: null,
+    }
+    placementRenderer.update(object, dot, item, resources)
+    // Culler leave hooks still run for non-image bodies. They must clear
+    // the placement stamp even though there is no texture to release.
+    setPlacementTextureResident(object, dot, resources, false)
+    placementRenderer.update(object, item, dot, resources)
+    expect(resources.acquired).toEqual([HASH_A])
+    expect(object.getChildByLabel('image-placeholder')).toBeTruthy()
+
+    setPlacementTextureResident(object, item, resources, true)
+    expect(resources.acquired).toEqual([HASH_A, HASH_A])
+    resources.flush()
+    await settled()
+    expect(object.getChildByLabel('image')).toBeTruthy()
+  })
+
   it('rebuild with an acquire in flight: stale landing releases, new one attaches', async () => {
     const resources = fakeBudget()
     const item = image()

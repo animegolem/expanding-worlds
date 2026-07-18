@@ -129,6 +129,10 @@ export function cssColorToNumber(color: string | null, fallback = 0x4a90d9): num
 interface PlacementObject extends Container {
   /** Generation guard so a stale async texture never lands. */
   __textureGeneration?: number
+  /** Spatial residency belongs to the placement, not its current body.
+   * It deliberately survives image -> non-image -> image rebuilds so a
+   * restored image can reacquire without waiting for a Culler transition. */
+  __textureResident?: boolean
   /** Content hash currently acquired from the texture budget. */
   __acquiredHash?: string | null
   /** Hash with an acquire in flight (double-grant guard). */
@@ -318,8 +322,10 @@ function buildBody(
   container.__textureGeneration = generation
   // The Culler only fires residency hooks on TRANSITIONS, so a body
   // rebuilt while resident must re-acquire its texture itself — no
-  // re-grant is coming (this left permanent grey boxes, AI-IMP-025).
-  const wasEngaged = Boolean(container.__acquiredHash || container.__acquiring)
+  // re-grant is coming (AI-IMP-025/307). Residency cannot be inferred
+  // from an acquired hash: a non-image body owns no texture but the
+  // placement remains spatially resident across appearance undo.
+  const isResident = container.__textureResident === true
   if (container.__acquiredHash && resources.textures) {
     // Appearance changed while resident: drop the old budget ref.
     resources.textures.release(container.__acquiredHash)
@@ -354,7 +360,7 @@ function buildBody(
     // unless it was already resident, in which case re-acquire now.
     if (!resources.textures) {
       void attachTexture(container, item.assetContentHash, generation, resources)
-    } else if (wasEngaged) {
+    } else if (isResident) {
       container.__acquiring = item.assetContentHash
       void attachTexture(container, item.assetContentHash, generation, resources)
     }
@@ -630,7 +636,8 @@ async function attachTexture(
  * Residency switch driven by the Culler (§12.2). Granting residency
  * acquires the texture through the budget and swaps the sprite in;
  * revoking swaps the placeholder back and releases the budget ref.
- * No-ops for non-image bodies and when no budget is configured.
+ * The spatial-residency stamp applies to every body kind; texture work
+ * remains a no-op for non-image bodies and when no budget is configured.
  */
 export function setPlacementTextureResident(
   object: Container,
@@ -639,6 +646,10 @@ export function setPlacementTextureResident(
   resident: boolean,
 ): void {
   const container = object as PlacementObject
+  // Stamp before the body-kind guard. An image may change to a dot while
+  // resident, leave the residency rect as that dot, then be restored by
+  // undo. The later image rebuild must observe the real spatial state.
+  container.__textureResident = resident
   if (!resources.textures) return
   if (item.appearanceKind !== 'image' || !item.assetContentHash) return
   if (resident) {

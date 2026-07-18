@@ -265,6 +265,34 @@ describe('SetNodeAppearance (§4.6)', () => {
     expect(nodeRow(nodeId)).toMatchObject({ appearance_kind: 'dot', appearance_color: '#abc' })
   })
 
+  it('restores an image asset and crop exactly through a later appearance inverse', () => {
+    const nodeId = createNode()
+    const assetId = insertAsset()
+    const crop = { x: 0.1, y: 0.2, width: 0.3, height: 0.4 }
+    committed('SetNodeAppearance', {
+      nodeId,
+      appearance: { kind: 'image', assetId, crop },
+    })
+
+    const dot = committed('SetNodeAppearance', {
+      nodeId,
+      appearance: { kind: 'dot', color: '#abc' },
+    })
+    expect(dot.inverse).toMatchObject({
+      payload: { nodeId, appearance: { kind: 'image', assetId, crop } },
+    })
+
+    undo(dot.inverse)
+    const restored = nodeRow(nodeId)!
+    expect(restored).toMatchObject({
+      appearance_kind: 'image',
+      appearance_color: null,
+      appearance_icon: null,
+      appearance_asset_id: assetId,
+    })
+    expect(JSON.parse(restored.appearance_crop as string)).toEqual(crop)
+  })
+
   it('validates the image asset and clears appearance with null', () => {
     const nodeId = createNode()
     expect(
