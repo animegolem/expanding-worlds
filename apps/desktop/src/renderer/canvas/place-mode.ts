@@ -25,6 +25,7 @@ import { onTakeoverChanged } from '../chrome/takeover'
  */
 
 export const PLACE_MODE_EVENT = 'ew-place-mode'
+const PLACE_MODE_FINISH_EVENT = 'ew-place-mode-finish'
 
 export interface GalleryPlaceModeRequest {
   /** The ingested (or recognized) THIS-WORLD node to place. */
@@ -45,12 +46,19 @@ export interface BoardBirthPlaceModeRequest {
   worldY: number
   /** Commit at the seating point. A refusal keeps this request active. */
   commit: (world: { x: number; y: number }) => Promise<{ ok: true } | { ok: false; message: string }>
+  /** Renderer-only carry cancellation (Escape, secondary click, takeover). */
+  cancel: () => void
 }
 
 export type PlaceModeRequest = GalleryPlaceModeRequest | BoardBirthPlaceModeRequest
 
 export function requestPlaceMode(detail: PlaceModeRequest): void {
   window.dispatchEvent(new CustomEvent<PlaceModeRequest>(PLACE_MODE_EVENT, { detail }))
+}
+
+/** Complete a carry from an out-of-band door such as Restore/Keep both. */
+export function finishPlaceMode(): void {
+  window.dispatchEvent(new Event(PLACE_MODE_FINISH_EVENT))
 }
 
 export interface PlaceModeHandle {
@@ -96,6 +104,13 @@ export function attachPlaceMode(host: CanvasHostHandle, element: HTMLElement): P
     window.removeEventListener('keydown', onKeyDown, true)
   }
 
+  function cancel(): void {
+    const request = active
+    const birth = request !== null && isBirth(request)
+    exit()
+    if (birth) request.cancel()
+  }
+
   const onPointerMove = (event: PointerEvent): void => {
     positionGhost(event.clientX, event.clientY)
   }
@@ -107,7 +122,8 @@ export function attachPlaceMode(host: CanvasHostHandle, element: HTMLElement): P
       event.preventDefault()
       event.stopPropagation()
       const birth = isBirth(active)
-      exit()
+      if (birth) cancel()
+      else exit()
       if (!birth) toast('Stored in this world — unplaced', { surface: 'gallery-actions' })
       return
     }
@@ -176,7 +192,8 @@ export function attachPlaceMode(host: CanvasHostHandle, element: HTMLElement): P
     event.preventDefault()
     event.stopPropagation()
     const birth = isBirth(active)
-    exit()
+    if (birth) cancel()
+    else exit()
     if (!birth) toast('Stored in this world — unplaced', { surface: 'gallery-actions' })
   }
 
@@ -229,15 +246,17 @@ export function attachPlaceMode(host: CanvasHostHandle, element: HTMLElement): P
   }
 
   window.addEventListener(PLACE_MODE_EVENT, onRequest)
+  window.addEventListener(PLACE_MODE_FINISH_EVENT, exit)
   // Reopening a takeover mid-mode abandons the placement cleanly — the
   // ghost must never linger over another surface (§8.8).
   const offTakeover = onTakeoverChanged((kind) => {
-    if (kind !== null) exit()
+    if (kind !== null) cancel()
   })
 
   return {
     destroy() {
       window.removeEventListener(PLACE_MODE_EVENT, onRequest)
+      window.removeEventListener(PLACE_MODE_FINISH_EVENT, exit)
       offTakeover()
       exit()
     },

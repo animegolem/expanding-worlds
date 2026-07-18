@@ -146,6 +146,86 @@ describe('CreateNote', () => {
     })
   })
 
+  it('classifies the one hidden board owner without misclassifying shared or live referents', () => {
+    const existing = createNote('Warren')
+    const now = new Date().toISOString()
+    const addOwner = (lifecycle: 'active' | 'trashed', withCanvas = true) => {
+      const nodeId = uuidv7()
+      handle.db.run(
+        `INSERT INTO node
+           (id, project_id, note_id, lifecycle_state, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        nodeId,
+        handle.projectId,
+        existing,
+        lifecycle,
+        now,
+        now,
+      )
+      const canvasId = uuidv7()
+      if (withCanvas) {
+        handle.db.run(
+          `INSERT INTO canvas
+             (id, project_id, node_id, lifecycle_state, created_at, updated_at)
+           VALUES (?, ?, ?, 'active', ?, ?)`,
+          canvasId,
+          handle.projectId,
+          nodeId,
+          now,
+          now,
+        )
+      }
+      return { nodeId, canvasId }
+    }
+
+    const hidden = addOwner('trashed')
+    expect(execute('CreateNote', { noteId: uuidv7(), title: 'warren' })).toMatchObject({
+      status: 'error',
+      code: 'NOTE_TITLE_CONFLICT',
+      details: {
+        conflictingLifecycle: 'active',
+        trashedBoardOwner: hidden,
+      },
+    })
+
+    addOwner('active', false)
+    const shared = execute('CreateNote', { noteId: uuidv7(), title: 'WARREN' })
+    expect(shared).toMatchObject({ status: 'error', code: 'NOTE_TITLE_CONFLICT' })
+    expect((shared as ErrorResult).details).not.toHaveProperty('trashedBoardOwner')
+  })
+
+  it('does not choose between multiple trashed canvas owners', () => {
+    const existing = createNote('Warren')
+    const now = new Date().toISOString()
+    for (let i = 0; i < 2; i += 1) {
+      const nodeId = uuidv7()
+      handle.db.run(
+        `INSERT INTO node
+           (id, project_id, note_id, lifecycle_state, created_at, updated_at)
+         VALUES (?, ?, ?, 'trashed', ?, ?)`,
+        nodeId,
+        handle.projectId,
+        existing,
+        now,
+        now,
+      )
+      handle.db.run(
+        `INSERT INTO canvas
+           (id, project_id, node_id, lifecycle_state, created_at, updated_at)
+         VALUES (?, ?, ?, 'active', ?, ?)`,
+        uuidv7(),
+        handle.projectId,
+        nodeId,
+        now,
+        now,
+      )
+    }
+
+    const result = execute('CreateNote', { noteId: uuidv7(), title: 'warren' })
+    expect(result).toMatchObject({ status: 'error', code: 'NOTE_TITLE_CONFLICT' })
+    expect((result as ErrorResult).details).not.toHaveProperty('trashedBoardOwner')
+  })
+
   it('rejects titles that cannot be written as wiki-link tokens', () => {
     for (const title of ['a[b', 'a]b', 'a|b', 'a\nb', '   ']) {
       const result = execute('CreateNote', { noteId: uuidv7(), title })

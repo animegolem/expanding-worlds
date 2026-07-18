@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { launchApp, runQuery } from './helpers'
+import { exec, launchApp, runQuery } from './helpers'
 
 /**
  * AI-IMP-239 acceptance (RFC §8.4): "New board…" is one gesture. A
@@ -35,6 +35,20 @@ async function enterBoardMenu(win: Page): Promise<void> {
   await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'ground')
   await win.getByTestId('ctx-board').click()
   await expect(win.getByTestId('context-menu')).toHaveAttribute('data-kind', 'board')
+}
+
+async function beginBoardBirth(
+  win: Page,
+  box: { x: number; y: number },
+  title: string,
+): Promise<void> {
+  await win.mouse.click(box.x + 700, box.y + 460, { button: 'right' })
+  await enterBoardMenu(win)
+  await win.getByTestId('ctx-new-board').click()
+  await win.getByTestId('new-board-query').fill(title)
+  await win.getByTestId('new-board-query').press('Enter')
+  await expect(win.getByTestId('board-birth-ghost')).toBeVisible()
+  await win.mouse.click(box.x + 620, box.y + 380)
 }
 
 /** True when the canvas no longer exists (its scene is absent). */
@@ -171,6 +185,62 @@ test('New board… palette: Escape cancels cleanly, leaving the board untouched 
     expect(await canvasId(win)).toBe(origin)
     expect(await placements(win, origin)).toHaveLength(0)
     expect(await win.evaluate(() => window.__ewUndo!.undoDepth())).toBe(0)
+  } finally {
+    await app.close()
+  }
+})
+
+test('trashed board title collision names Trash and honors Cancel, Keep both, and Restore', async () => {
+  const { app, win } = await launchApp('ew-e2e-board-title-trash-')
+  try {
+    await readyUndo(win)
+    const box = (await win.getByTestId('canvas-host').boundingBox())!
+    const origin = await canvasId(win)
+
+    await beginBoardBirth(win, box, 'warren')
+    await expect.poll(() => canvasId(win)).not.toBe(origin)
+    const original = (await placements(win, origin))[0]!
+    await exec(win, 'TrashNode', { nodeId: original.nodeId })
+    await win.evaluate((id) => window.__ewNav!.navigateTo(id, 'Home'), origin)
+    await expect.poll(() => canvasId(win)).toBe(origin)
+
+    // Cancel means exactly cancel: the carry exits and no replacement is born.
+    await beginBoardBirth(win, box, 'warren')
+    await expect(win.getByTestId('board-title-conflict-dialog')).toContainText(
+      'A board named “warren” is in the Trash.',
+    )
+    await win.getByTestId('board-conflict-cancel').click()
+    await expect(win.getByTestId('board-birth-ghost')).toHaveCount(0)
+    await expect(win.getByTestId('board-title-conflict-dialog')).toHaveCount(0)
+    await expect.poll(() => placements(win, origin).then((rows) => rows.length)).toBe(0)
+
+    // Keep both allocates the first free space-separated suffix and seats
+    // the new board at the original click.
+    await beginBoardBirth(win, box, 'warren')
+    await expect(win.getByTestId('board-conflict-keep-both')).toContainText('warren 2')
+    await win.getByTestId('board-conflict-keep-both').click()
+    await expect.poll(() => canvasId(win)).not.toBe(origin)
+    await expect(win.getByTestId('path-bar').locator('button.crumb.current')).toHaveText('warren 2')
+    await expect.poll(() => placements(win, origin).then((rows) => rows.map((row) => row.noteTitle))).toEqual([
+      'warren 2',
+    ])
+
+    // The original conflict remains independently recoverable. Restore
+    // exits the ghost and navigates to the revived board aggregate.
+    await win.evaluate((id) => window.__ewNav!.navigateTo(id, 'Home'), origin)
+    await expect.poll(() => canvasId(win)).toBe(origin)
+    await beginBoardBirth(win, box, 'warren')
+    await win.evaluate(() => window.__ewDebug!.failNextCommand('RestoreRecord'))
+    await win.getByTestId('board-conflict-restore').click()
+    await expect(win.getByTestId('board-title-conflict-dialog').getByRole('alert')).toContainText(
+      'retry restoring the board',
+    )
+    await expect(win.getByTestId('board-birth-ghost')).toBeVisible()
+    expect(await canvasId(win)).toBe(origin)
+    await win.getByTestId('board-conflict-restore').click()
+    await expect.poll(() => canvasId(win)).toBe(original.childCanvasId)
+    await expect(win.getByTestId('path-bar').locator('button.crumb.current')).toHaveText('warren')
+    await expect(win.getByTestId('board-birth-ghost')).toHaveCount(0)
   } finally {
     await app.close()
   }
