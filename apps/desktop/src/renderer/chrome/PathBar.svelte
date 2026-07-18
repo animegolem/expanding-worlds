@@ -145,34 +145,39 @@
 
 <div class="path-wrap" class:mac={isMac}>
   <nav class="path-bar" data-testid="path-bar">
-    <button
-      type="button"
-      class="home"
-      data-testid="nav-home"
-      onclick={() => void home()}
-      use:tooltip={{ name: 'Home — the root board' }}
-    >
-      ⌂
-    </button>
-    <span class="arrows">
+    <span class="home-anchor">
       <button
         type="button"
-        data-testid="nav-back"
-        disabled={!backOk}
-        onclick={() => void back()}
-        use:tooltip={{ name: 'Back', shortcut: formatBinding(KEY.navBack) }}
+        class="home"
+        data-testid="nav-home"
+        onclick={() => void home()}
+        use:tooltip={{ name: 'Home — the root board' }}
       >
-        ‹
+        ⌂
       </button>
-      <button
-        type="button"
-        data-testid="nav-forward"
-        disabled={!forwardOk}
-        onclick={() => void forward()}
-        use:tooltip={{ name: 'Forward', shortcut: formatBinding(KEY.navForward) }}
-      >
-        ›
-      </button>
+      <!-- AI-IMP-306: resident geometry contains Home only. The arrows
+           stay mounted for the 120ms reveal beat, but live on a local
+           absolute overlay and own no pointer target while invisible. -->
+      <span class="arrows" data-testid="nav-arrows">
+        <button
+          type="button"
+          data-testid="nav-back"
+          disabled={!backOk}
+          onclick={() => void back()}
+          use:tooltip={{ name: 'Back', shortcut: formatBinding(KEY.navBack) }}
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          data-testid="nav-forward"
+          disabled={!forwardOk}
+          onclick={() => void forward()}
+          use:tooltip={{ name: 'Forward', shortcut: formatBinding(KEY.navForward) }}
+        >
+          ›
+        </button>
+      </span>
     </span>
     {#each crumbs as crumb, index (index)}
       {#if index > 0}
@@ -332,13 +337,33 @@
   .current-crumb .crumb { padding-right: 0.25rem; }
   .current-crumb .board-door { min-width: 1.55rem; padding: 0.15rem 0.35rem; }
 
-  /* Hover-revealed, never permanent (§8.1). Playwright still clicks
-     them: opacity does not gate hit-testing. */
+  /* AI-IMP-306: this wrapper occupies exactly Home's resident width.
+     The arrow host is positioned against it but does not participate in
+     the path's flex layout, so revealing history can never move crumbs. */
+  .home-anchor {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Hover-revealed, never permanent (§8.1). Opacity alone does not gate
+     hit-testing, so the host and its buttons are explicitly inert at
+     rest. They remain mounted to preserve the established 120ms beat. */
   .arrows {
     display: flex;
+    position: absolute;
+    left: 100%;
+    /* Seat the overlay immediately below the resident seam. Keeping it
+       on a separate vertical rung preserves every resident click (the
+       first crumb remains operable even while the arrows are revealed). */
+    top: calc(100% + 0.1rem);
+    z-index: 2;
     opacity: 0;
+    pointer-events: none;
     transition: opacity 120ms ease-out;
   }
+
+  .arrows button { pointer-events: none; }
 
   /* AI-IMP-214: the ‹ › arrows surface only on hover, and hovering the top
      band also smokes in the dark strip beneath them — so they must read as
@@ -352,7 +377,10 @@
 
   .path-bar:hover .arrows {
     opacity: 1;
+    pointer-events: auto;
   }
+
+  .path-bar:hover .arrows button { pointer-events: auto; }
 
   .arrows button:disabled {
     opacity: 0.35;

@@ -65,8 +65,74 @@ test('path, back/forward, viewport restore, home (§17 item 12)', async () => {
   await win.getByTestId('nav-home').click()
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(root)
 
-  // The hover ‹ › affordances exist beside the path and act: Back
-  // returns to where ⌂ was pressed, Forward to the root again.
+  // AI-IMP-306: at both supported frame widths, the invisible arrows
+  // reserve no resident width and own no phantom hits. Revealing them
+  // is opacity-only: Home and the first route crumb remain byte-still.
+  for (const width of [960, 1280]) {
+    await app.evaluate(({ BrowserWindow }, nextWidth) => {
+      BrowserWindow.getAllWindows()[0]?.setSize(nextWidth, 800)
+    }, width)
+    await win.mouse.move(width - 80, 400)
+
+    const rest = await win.evaluate(() => {
+      const rect = (testId: string): DOMRect =>
+        document.querySelector<HTMLElement>(`[data-testid="${testId}"]`)!.getBoundingClientRect()
+      const plain = (value: DOMRect) => ({
+        x: value.x,
+        y: value.y,
+        width: value.width,
+        height: value.height,
+        top: value.top,
+        right: value.right,
+        bottom: value.bottom,
+        left: value.left,
+      })
+      const homeRect = rect('nav-home')
+      const crumbRect = rect('nav-crumb-0')
+      const arrowRects = [rect('nav-back'), rect('nav-forward')]
+      const arrowOwnsHit = arrowRects.map((arrowRect) =>
+        document
+          .elementsFromPoint(
+            arrowRect.left + arrowRect.width / 2,
+            arrowRect.top + arrowRect.height / 2,
+          )
+          .some((element) =>
+            ['nav-back', 'nav-forward'].includes(element.getAttribute('data-testid') ?? ''),
+          ),
+      )
+      return {
+        home: plain(homeRect),
+        crumb: plain(crumbRect),
+        residentGap: crumbRect.left - homeRect.right,
+        ruledGap: Number.parseFloat(getComputedStyle(document.querySelector('.path-bar')!).gap),
+        arrowOwnsHit,
+      }
+    })
+    // Blink resolves layout to 1/64 CSS-pixel units, so the rendered rem gap
+    // may sit one quantum either side of the computed-style decimal.
+    expect(Math.abs(rest.residentGap - rest.ruledGap)).toBeLessThanOrEqual(1 / 64)
+    expect(rest.arrowOwnsHit).toEqual([false, false])
+
+    await win.getByTestId('path-bar').hover()
+    await expect(win.getByTestId('nav-arrows')).toHaveCSS('opacity', '1')
+    const revealedCrumb = await win.getByTestId('nav-crumb-0').evaluate((element) => {
+      const value = element.getBoundingClientRect()
+      return {
+        x: value.x,
+        y: value.y,
+        width: value.width,
+        height: value.height,
+        top: value.top,
+        right: value.right,
+        bottom: value.bottom,
+        left: value.left,
+      }
+    })
+    expect(revealedCrumb).toEqual(rest.crumb)
+  }
+
+  // The revealed ‹ › affordances still act: Back returns to where ⌂
+  // was pressed, Forward to the root again.
   await win.getByTestId('path-bar').hover()
   await win.getByTestId('nav-back').click()
   await expect.poll(() => win.evaluate(() => window.__ewDebug!.canvasId())).toBe(canvasB)
