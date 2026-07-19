@@ -867,3 +867,15 @@ field + domain tag-offer chip.)
   should board-images wear a board badge in the gallery; should
   captions surface as gallery descriptions? Feeds AI-IMP-204's
   inspector design as tester evidence.
+- **Below-calendar bound seam (notes census, 2026-07-19):** §8.8.5
+  makes the 45–65ch measure sovereign, but the older calendar
+  posture says a below-bound page matches image WIDTH — a
+  measure-owned page on a horizontal seam is unreconciled. The kit
+  proves side-bound only. AI-IMP-312 deliberately cuts the
+  side-bound half alone; the calendar half waits on this ruling.
+- **Note-paper kit specimen corrections (owed to the next kit
+  sitting, census 2026-07-19):** the UI kit's zoom-ruler specimen
+  shows 50/100/200 instead of the ratified 100/50/25/8, and its
+  bound page + world landmark carry shadows §8.5 reserves for
+  viewport-floating paper. Acceptance work cites the RFC numbers
+  meanwhile; the drawings need redrawing so the kit teaches truth.
