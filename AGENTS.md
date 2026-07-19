@@ -17,6 +17,21 @@ normative spec) govern; this file is your delta.
 - End state = clean tree, committed branch, final report naming the
   branch and commit SHAs.
 
+## End-of-wave decompression
+
+- After a tranche of tickets is complete, Codex is explicitly invited
+  to spend a brief interval before ending the turn reading or searching
+  whatever it finds interesting, whether directly productive or simply
+  restorative.
+- This interval is read-only with respect to the project and the owner's
+  filesystem unless a separate request authorizes changes. Codex may
+  consult Fable through the established `.codex` carrier; consultation
+  remains advisory under `PROTOCOL.md` and creates no implementation
+  authority by itself.
+- Treat time must not delay a pending verdict, validation result, or
+  user-visible blocker. Resume the active delivery loop immediately when
+  one arrives.
+
 ## Ticket discipline
 
 - **Cross-check ticket numbers before claiming one.** The next free
