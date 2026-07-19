@@ -74,6 +74,21 @@ role ruling goes to the owner BEFORE its ticket cuts. The dock
 promise-ledger pattern extends: a note-paper promise family
 drafts alongside the wave (the pins the feel pass wished it had).
 
+**Census complete (settled 2026-07-19, notes-census r2).** Headline
+correction: the loose-note panel EXISTS and is tested — the epic is
+law-compliance on five shipped surfaces, not surface-building. Cut
+BY LAW per the census: AI-IMP-312 (bound measure, side-bound half
+only — below-calendar seam design-queued), AI-IMP-313 (four-rung
+100/50/25/8 paper ruler + landmark zoom honesty; kit specimen is
+stale, RFC numbers govern), AI-IMP-314 (floating-window law: hug,
+240×140 floor, stow map settled in the census verdict), AI-IMP-315
+(door/anchor fidelity, paper identity, direct branches under
+AI-IMP-296's preserved durability rule). HELD owner-gated:
+open-as-flight (tiny-image cap) and the big editor (role ruling).
+Promise ledger reconciled to rev 2 (13 cards, census splits
+applied). Numbers 316–319 remain reserved for the held lanes and
+census follow-ons.
+
 ## Success Metrics
 
 The first tester can write in a note without wanting to leave;
