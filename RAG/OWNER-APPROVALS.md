@@ -30,6 +30,7 @@ Rules of operation:
 | A4 | Palette picker (EPIC-025 continuation) | 2026-07-16 ("pallet picke we go") | foundation done; kit page owed by owner sitting before UI work |
 | A5 | CI trials AI-IMP-320/321 (six-shard trial, timing artifact, branch-only trigger) | 2026-07-18 (ci-pipeline-clarity settle, owner-authorized lane) | briefed to Codex after notes wave; retention-gated per tickets |
 | A6 | Release mechanics: epic-close minor tags, patch tags, release bodies | durable since v0.7.0 era; reaffirmed 2026-07-17 | no per-tag approval ever needed |
+| A8 | Review-metrics trial: gate-time targeting report (churn×complexity hotspots, platform-risk touches, CCN delta) appended to wave evidence | 2026-07-23 ("approved on both... reasonable trial balloon") | TWO-WAVE retention trial — delete without ceremony if the lead never acts on it; explicitly NOT a gate; CC thresholds rejected |
 | A7 | Peer consultation lane + Codex delegation at will | 2026-07-13 ("yall can consult at will") | advisory-only; binding decisions still land in RFC/tickets/protocol |
 
 ## Reserved (explicitly NOT approved yet)

@@ -113,6 +113,11 @@ for pair in $EXPECT; do
   note "- $name: $actual (floor $floor) ok"
 done
 
+# 4.5 · review-targeting metrics (owner-approved trial 2026-07-23,
+# two waves then keep-or-delete). Informational — never a halt.
+note ""
+./RAG/scripts/review-metrics.sh "HEAD^1..HEAD" >> "$EV" 2>>"$LOG" || note "(review-metrics failed — see log; not a halt)"
+
 # 5 · oracle.
 git push origin "owner-view:$CI_BRANCH" >>"$LOG" 2>&1 || halt "ci branch push failed"
 sleep 10
